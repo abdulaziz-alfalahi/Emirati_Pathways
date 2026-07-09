@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS scholarships (
     title           VARCHAR(300) NOT NULL,
     title_ar        VARCHAR(300) DEFAULT '',
     provider        VARCHAR(200) NOT NULL DEFAULT '',
-    provider_type   VARCHAR(50) DEFAULT 'government',
+    provider_type   VARCHAR(50) DEFAULT 'compliance_auditor',
     amount          FLOAT DEFAULT 0,
     currency        VARCHAR(10) DEFAULT 'AED',
     description     TEXT DEFAULT '',
@@ -217,7 +217,7 @@ def run_migration():
 
         # Add missing columns to existing scholarships table
         alter_stmts = [
-            "ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS provider_type VARCHAR(50) DEFAULT 'government'",
+            "ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS provider_type VARCHAR(50) DEFAULT 'compliance_auditor'",
             "ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS skills_required JSONB DEFAULT '[]'",
             "ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS university_id INTEGER",
             "ALTER TABLE scholarships ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'General'",

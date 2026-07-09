@@ -184,9 +184,10 @@ Extract the following fields:
    - description: requirement text
    - is_required: true or false
 10. responsibilities: Array of responsibility strings
-11. benefits: Array of benefit objects with:
-   - category: compensation, health, time_off, development, or perks
-   - description: benefit text
+11. benefits: Array of benefit objects. Extract only actual employment benefits, allowances, and perks (e.g., health insurance, paid time off, housing allowance, flight tickets, retirement/pension, flexible work hours). IMPORTANT: Do NOT extract the role's strategic importance, business impact, responsibilities, or career growth opportunities as benefits. If there are no actual employee benefits or allowances listed in the document, return an empty array [].
+    Each benefit object must have:
+    - category: compensation, health, time_off, development, or perks
+    - description: benefit text
 12. salary_min: Minimum salary (number)
 13. salary_max: Maximum salary (number)
 14. salary_currency: Currency code (default: AED)
@@ -201,6 +202,8 @@ Return ONLY valid JSON.""",
                 response_format={"type": "json_object"},
             )
             logger.info("Successfully parsed with Qwen AI")
+            if isinstance(parsed, dict):
+                parsed['_ai_parsed'] = True
             return parsed
 
         except Exception as e:
@@ -349,7 +352,7 @@ Return ONLY valid JSON.""",
         if req_match:
             req_text = req_match.group(1)
             # Split by bullet points or newlines
-            items = re.split(r'[\n•\-\*]\s*', req_text)
+            items = re.split(r'\n+\s*[•\-\*]?\s*|\s*[•\-\*]\s+', req_text)
             
             for item in items:
                 item = item.strip()
@@ -391,7 +394,7 @@ Return ONLY valid JSON.""",
         if resp_match:
             resp_text = resp_match.group(1)
             # Split by bullet points or newlines
-            items = re.split(r'[\n•\-\*]\s*', resp_text)
+            items = re.split(r'\n+\s*[•\-\*]?\s*|\s*[•\-\*]\s+', resp_text)
             
             for item in items:
                 item = item.strip()
@@ -414,11 +417,22 @@ Return ONLY valid JSON.""",
         if ben_match:
             ben_text = ben_match.group(1)
             # Split by bullet points or newlines
-            items = re.split(r'[\n•\-\*]\s*', ben_text)
+            items = re.split(r'\n+\s*[•\-\*]?\s*|\s*[•\-\*]\s+', ben_text)
             
             for item in items:
                 item = item.strip()
                 if len(item) > 5:  # Reasonable benefit length
+                    # Filter out sentences that describe role importance instead of allowances/benefits
+                    item_lower = item.lower()
+                    skip_keywords = [
+                        'pivotal role', 'strategic role', 'opportunity to lead', 'role\'s importance',
+                        'importance of the role', 'visionary goals', 'national level', 'transformative',
+                        'key responsibility', 'responsibilities include', 'report to', 'reports to',
+                        'dubai\'s visionary goals', 'transformative initiatives'
+                    ]
+                    if any(kw in item_lower for kw in skip_keywords):
+                        continue
+                        
                     benefits.append({
                         'category': self._categorize_benefit(item),
                         'description': item

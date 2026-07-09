@@ -61,7 +61,7 @@ const InterviewPreparationPage: React.FC = () => {
     // Personalized focus based on career stage
     const getFocusAreas = (): { label: string; emphasis: string } => {
         const stage = careerStage?.current_stage || '';
-        if (stage === 'student' || stage === 'intern')
+        if (stage === 'candidate' || stage === 'intern')
             return { label: t('Entry Level', 'مستوى مبتدئ'), emphasis: t('Focus on behavioral and situational questions', 'ركّز على الأسئلة السلوكية والمواقف') };
         if (stage === 'mid_career')
             return { label: t('Mid-Career', 'منتصف المسيرة'), emphasis: t('Balance technical depth and leadership scenarios', 'وازن بين العمق التقني وسيناريوهات القيادة') };

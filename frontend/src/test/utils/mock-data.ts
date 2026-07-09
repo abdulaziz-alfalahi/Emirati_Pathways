@@ -1,5 +1,4 @@
 import { vi } from 'vitest';
-import { User } from '@/integrations/supabase/auth-types';
 import { MFAFactor, MFAStatus } from '@/types/mfa';
 
 // Mock user data
@@ -36,7 +35,7 @@ export const mockAdminUser: User = {
 
 // Mock roles
 export const mockUserRoles = ['user'];
-export const mockAdminRoles = ['administrator', 'user'];
+export const mockAdminRoles = ['admin', 'user'];
 
 // Mock MFA data
 export const mockMFAFactor: MFAFactor = {

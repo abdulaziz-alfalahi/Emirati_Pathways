@@ -153,6 +153,52 @@ const CandidateMatching = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'matching' | 'shortlist'>('matching');
+  const [isDownloadingCV, setIsDownloadingCV] = useState(false);
+
+  const handleDownloadCV = async (candidateId: string, candidateName: string) => {
+    if (!candidateId) {
+      toast({
+        title: "Error",
+        description: "No candidate ID found",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDownloadingCV(true);
+    toast({
+      title: "Downloading CV",
+      description: "Generating CV PDF, please wait..."
+    });
+
+    try {
+      const response = await restClient.get(`/api/cv/user/${candidateId}/export/pdf`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `cv_${candidateName || candidateId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast({
+        title: "Success",
+        description: "CV downloaded successfully"
+      });
+    } catch (error) {
+      console.error("Failed to download CV:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download CV",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloadingCV(false);
+    }
+  };
 
   // G22/G23: Stealth Headhunter state
   const [includePassiveTalent, setIncludePassiveTalent] = useState(false);
@@ -326,7 +372,7 @@ const CandidateMatching = () => {
           status: match.candidate.status, // preserve status if available
           is_applicant: match.is_applicant || match.candidate.is_applicant, // Check both levels for safety
           application_date: match.application_date || match.candidate.application_date,
-          employment_status: match.candidate.employment_status || 'job_seeker'
+          employment_status: match.candidate.employment_status || 'candidate'
         }));
 
         // Fetch existing shortlist status
@@ -538,8 +584,8 @@ const CandidateMatching = () => {
         return (candidate as any).is_applicant === true;
       }
 
-      // 2. For other modes, apply Threshold
-      if (candidate.overall_score < matchThreshold) return false;
+      // 2. For other modes, apply Threshold (bypass threshold check for actual applicants)
+      if (!candidate.is_applicant && candidate.overall_score < matchThreshold) return false;
 
       // 3. Apply Quality Filters (reject if outside selected range, but don't return true early)
       if (filterBy === 'excellent' && candidate.overall_score < 80) return false;
@@ -770,7 +816,7 @@ const CandidateMatching = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Candidates</SelectItem>
-                      <SelectItem value="job_seeker">Active Job Seeker</SelectItem>
+                      <SelectItem value='candidate'>Active Job Seeker</SelectItem>
                       <SelectItem value="employed_open">Open to Opportunities</SelectItem>
                       <SelectItem value="passive">All Passive Talent</SelectItem>
                       <SelectItem value="freelancer">Freelancer</SelectItem>
@@ -956,7 +1002,7 @@ const CandidateMatching = () => {
                               </Badge>
                             )}
                             {/* G22/G23: Employment status badge for passive talent */}
-                            {!candidate.is_applicant && candidate.employment_status && candidate.employment_status !== 'job_seeker' && (
+                            {!candidate.is_applicant && candidate.employment_status && candidate.employment_status !== 'candidate' && (
                               <Badge className={candidate.employment_status === 'employed_open'
                                 ? 'bg-amber-500 text-white hover:bg-amber-600'
                                 : candidate.employment_status === 'freelancer'
@@ -1077,7 +1123,7 @@ const CandidateMatching = () => {
                           <Eye className="h-4 w-4 mr-2" /> Quick View
                         </Button>
                         {/* G22/G23: Headhunt button for passive talent */}
-                        {candidate.employment_status && candidate.employment_status !== 'job_seeker' && !candidate.is_applicant ? (
+                        {candidate.employment_status && candidate.employment_status !== 'candidate' && !candidate.is_applicant ? (
                           <Button
                             variant="outline"
                             className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
@@ -1262,10 +1308,14 @@ const CandidateMatching = () => {
                 <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
                   Close
                 </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download CV
-                </Button>
+                 <Button 
+                   variant="outline"
+                   onClick={() => handleDownloadCV(selectedCandidate.candidate_id, selectedCandidate.candidate_name)}
+                   disabled={isDownloadingCV}
+                 >
+                   <Download className="h-4 w-4 mr-2" />
+                   {isDownloadingCV ? "Downloading..." : "Download CV"}
+                 </Button>
                 <Button onClick={() => {
                   setIsDetailOpen(false);
                   handleCandidateAction(selectedCandidate.candidate_id, 'shortlist');

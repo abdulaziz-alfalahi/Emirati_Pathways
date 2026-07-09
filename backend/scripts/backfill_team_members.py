@@ -47,7 +47,7 @@ def backfill_team_members():
             
             # Map user roles to team roles
             team_role = 'recruiter'
-            if role in ['hr_manager', 'admin', 'employer']:
+            if role in ['employer_admin', 'admin', 'employer_admin']:
                 team_role = 'admin'
             elif role == 'hiring_manager':
                 team_role = 'hiring_manager'

@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
-admin_bp = Blueprint('administrator', __name__, url_prefix='/api/admin')
+admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 # Initialize systems (these would be properly configured in the main app)
 admin_system = None
@@ -38,21 +38,23 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         try:
             # Get authorization header
+            resolved_user_id = None
             auth_header = request.headers.get('Authorization')
-            logger.debug(f"Admin Route {request.path} - Auth Header present: {bool(auth_header)}")
-
-            if not auth_header or not auth_header.startswith('Bearer '):
-                logger.debug(f"Missing Authorization header")
+            if auth_header and auth_header.startswith('Bearer '):
+                _vi = auth_manager.verify_token(auth_header.split(' ')[1])
+                if _vi:
+                    resolved_user_id = _vi.get('user_id')
+            if not resolved_user_id:
+                # Cookie-based session (UAE Pass): verify the JWT cookie
+                try:
+                    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+                    verify_jwt_in_request(locations=['cookies'])
+                    resolved_user_id = get_jwt_identity()
+                except Exception:
+                    resolved_user_id = None
+            if not resolved_user_id:
                 return jsonify({'error': 'Authentication required'}), 401
-            
-            token = auth_header.split(' ')[1]
-            logger.debug(f"Token received: {token[:10]}...")
-            
-            # Verify token and get user info
-            user_info = auth_manager.verify_token(token)
-            if not user_info:
-                logger.debug("auth_manager.verify_token returned None")
-                return jsonify({'error': 'Invalid token'}), 401
+            user_info = {'user_id': resolved_user_id}
             
             # Check if user has admin role
             user_details = admin_system.get_user_details(user_info['user_id'])
@@ -63,10 +65,24 @@ def admin_required(f):
                 return jsonify({'error': 'User not found'}), 401
             
             roles = user_details.get('roles') or []
+            if not isinstance(roles, list):
+                roles = [roles]
+            else:
+                roles = list(roles)
             
             # Check 'role' column from users table as well (for dev/simple users)
             if user_details.get('role'):
                 roles.append(user_details['role'])
+                
+            # Check secondary_roles column
+            secondary = user_details.get('secondary_roles') or []
+            if isinstance(secondary, list):
+                roles.extend(secondary)
+            elif isinstance(secondary, str):
+                try:
+                    roles.extend(json.loads(secondary))
+                except Exception:
+                    roles.append(secondary)
             
             logger.debug(f"User roles: {roles}")
                 
@@ -99,8 +115,22 @@ def permission_required(permission: str):
                 
                 # Check for admin roles to bypass specific permission checks
                 roles = user.get('roles', [])
+                if not isinstance(roles, list):
+                    roles = [roles]
+                else:
+                    roles = list(roles)
+
                 if user.get('role'):
                     roles.append(user['role'])
+                    
+                secondary = user.get('secondary_roles') or []
+                if isinstance(secondary, list):
+                    roles.extend(secondary)
+                elif isinstance(secondary, str):
+                    try:
+                        roles.extend(json.loads(secondary))
+                    except Exception:
+                        roles.append(secondary)
                     
                 admin_bypass_roles = {'super_admin', 'admin', 'platform_administrator', 'administrator'}
                 if admin_bypass_roles.intersection(roles):
@@ -710,33 +740,35 @@ def get_roles():
     try:
         roles = [
             # Administrative
-            {'id': 'administrator', 'name': 'administrator', 'display_name': 'Administrator', 'description': 'Full platform governance and system access', 'permissions': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], 'is_system': True, 'category': 'Administrative'},
+            {'id': 'admin', 'name': 'admin', 'display_name': 'Administrator', 'description': 'Full platform governance and system access', 'permissions': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], 'is_system': True, 'category': 'Administrative'},
             # Growth Operators
-            {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Onboard NAFIS job seekers and manage candidate engagement', 'permissions': ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Onboard private sector companies and manage employer partnerships', 'permissions': ['onboard_companies', 'manage_company_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_education', 'name': 'growth_operator_education', 'display_name': 'Education Operator', 'description': 'Partner with schools, universities, and training institutes', 'permissions': ['onboard_education', 'manage_education_partnerships', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_assessment', 'name': 'growth_operator_assessment', 'display_name': 'Assessment Operator', 'description': 'Manage assessment centers and certification bodies', 'permissions': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_mentorship', 'name': 'growth_operator_mentorship', 'display_name': 'Mentorship Operator', 'description': 'Onboard mentors and manage coaching programs', 'permissions': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_community', 'name': 'growth_operator_community', 'display_name': 'Community Operator', 'description': 'Moderate communities and manage events', 'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
-            {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitor platform operations and track metrics', 'permissions': ['view_operations_center', 'view_all_analytics', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'talent_operator', 'name': 'talent_operator', 'display_name': 'Candidate Onboarding Operator', 'description': 'Onboard NAFIS job seekers and manage candidate engagement', 'permissions': ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'employer_relations', 'name': 'employer_relations', 'display_name': 'Company Onboarding Operator', 'description': 'Onboard private sector companies and manage employer partnerships', 'permissions': ['onboard_companies', 'manage_company_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'education_operator', 'name': 'education_operator', 'display_name': 'Education Operator', 'description': 'Partner with schools, universities, and training institutes', 'permissions': ['onboard_education', 'manage_education_partnerships', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'assessment_operator', 'name': 'assessment_operator', 'display_name': 'Assessment Operator', 'description': 'Manage assessment centers and certification bodies', 'permissions': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'mentorship_operator', 'name': 'mentorship_operator', 'display_name': 'Mentorship Operator', 'description': 'Onboard mentors and manage coaching programs', 'permissions': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'community_operator', 'name': 'community_operator', 'display_name': 'Community Operator', 'description': 'Moderate communities and manage events', 'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'platform_operator', 'name': 'platform_operator', 'display_name': 'Monitoring Center Operator', 'description': 'Monitor platform operations and track metrics', 'permissions': ['view_operations_center', 'view_all_analytics', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'career_services_operator', 'name': 'career_services_operator', 'display_name': 'Career Services Operator', 'description': 'Manage salary benchmarks, startups, internships & gigs', 'permissions': ['view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'professional_dev_operator', 'name': 'professional_dev_operator', 'display_name': 'Professional Development Operator', 'description': 'Manage training programs and certifications', 'permissions': ['manage_training', 'manage_certifications', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
             # End User Roles
-            {'id': 'job_seeker', 'name': 'job_seeker', 'display_name': 'Job Seeker', 'description': 'UAE national seeking employment', 'permissions': ['view_jobs', 'apply_jobs', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'candidate', 'name': 'candidate', 'display_name': 'Job Seeker', 'description': 'UAE national seeking employment', 'permissions': ['view_jobs', 'apply_jobs', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             {'id': 'recruiter', 'name': 'recruiter', 'display_name': 'Recruiter', 'description': 'Private sector recruiter', 'permissions': ['post_jobs', 'screen_candidates', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
-            {'id': 'hr_manager', 'name': 'hr_manager', 'display_name': 'HR Manager', 'description': 'Company HR manager', 'permissions': ['post_jobs', 'screen_candidates', 'manage_candidates', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'employer_admin', 'name': 'employer_admin', 'display_name': 'HR Manager', 'description': 'Company HR manager', 'permissions': ['post_jobs', 'screen_candidates', 'manage_candidates', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
             {'id': 'mentor', 'name': 'mentor', 'display_name': 'Mentor', 'description': 'Career mentor for UAE nationals', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             {'id': 'assessor', 'name': 'assessor', 'display_name': 'Assessor', 'description': 'Skills assessor', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
-            {'id': 'educator', 'name': 'educator', 'display_name': 'Educator', 'description': 'Academic educator', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'training_provider', 'name': 'training_provider', 'display_name': 'Educator', 'description': 'Academic educator', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             {'id': 'parent', 'name': 'parent', 'display_name': 'Parent / Guardian', 'description': 'Parent or guardian of a student', 'permissions': ['view_dashboard'], 'is_system': True, 'category': 'End Users'},
-            {'id': 'government', 'name': 'government', 'display_name': 'Government Official', 'description': 'Government entity representative', 'permissions': ['view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
-            {'id': 'student', 'name': 'student', 'display_name': 'Student', 'description': 'School or university student', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'compliance_auditor', 'name': 'compliance_auditor', 'display_name': 'Government Official', 'description': 'Government entity representative', 'permissions': ['view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'candidate', 'name': 'candidate', 'display_name': 'Student', 'description': 'School or university student', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             # Specialized Roles (Phase 2-4)
             {'id': 'advisor', 'name': 'advisor', 'display_name': 'Academic Advisor', 'description': 'Academic pathway advisor for students and job seekers', 'permissions': ['view_dashboard', 'manage_profile', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'coach', 'name': 'coach', 'display_name': 'Career Coach', 'description': 'Professional career coach providing 1-on-1 coaching', 'permissions': ['view_dashboard', 'manage_profile', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'internship_coordinator', 'name': 'internship_coordinator', 'display_name': 'Internship Coordinator', 'description': 'Manages internship programs and student placements', 'permissions': ['view_dashboard', 'manage_profile', 'manage_candidates', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
-            {'id': 'training_center_rep', 'name': 'training_center_rep', 'display_name': 'Training Center Representative', 'description': 'Manages training center programs and enrollments', 'permissions': ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            {'id': 'training_provider', 'name': 'training_provider', 'display_name': 'Training Center Representative', 'description': 'Manages training center programs and enrollments', 'permissions': ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'call_center_agent', 'name': 'call_center_agent', 'display_name': 'Call Center Agent', 'description': 'Handles support tickets and user inquiries', 'permissions': ['view_dashboard', 'view_users', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'board_member', 'name': 'board_member', 'display_name': 'EHRDC Board Member', 'description': 'Board member of the Emirati Human Development Council', 'permissions': ['view_dashboard', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
-            {'id': 'operations_officer', 'name': 'operations_officer', 'display_name': 'Platform Operations Officer', 'description': 'Deep, detailed metrics for platform operations', 'permissions': ['view_operations_center', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            {'id': 'platform_operator', 'name': 'platform_operator', 'display_name': 'Platform Operations Officer', 'description': 'Deep, detailed metrics for platform operations', 'permissions': ['view_operations_center', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
         ]
         return jsonify({
             'status': 'success',

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Briefcase, TrendingUp, MapPin, Calendar } from 'lucide-react';
 
@@ -68,7 +67,7 @@ export function RecommendedJobs({ limit = 3 }) {
           // No matches found, try to generate matches
           try {
             // Call edge function to match user with jobs
-            const { data: generatedMatches, error: generationError } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
+            // TODO: Connect to Flask API - const { data: generatedMatches, error: generationError } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
               body: { 
                 resumeData: profileData.resume_data,
                 resumeId: user.id,

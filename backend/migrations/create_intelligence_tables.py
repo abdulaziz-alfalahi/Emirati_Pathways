@@ -52,7 +52,7 @@ def run_migration():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_skills (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
+                user_id VARCHAR(50) NOT NULL,
                 skill_id VARCHAR(100) NOT NULL,
                 skill_name VARCHAR(255) NOT NULL,
                 proficiency VARCHAR(50) DEFAULT 'beginner',
@@ -73,7 +73,7 @@ def run_migration():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_recommendations (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
+                user_id VARCHAR(50) NOT NULL,
                 recommendation_type VARCHAR(50) NOT NULL,
                 title VARCHAR(500) NOT NULL,
                 title_ar VARCHAR(500) DEFAULT '',
@@ -95,24 +95,50 @@ def run_migration():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_user_recs_type ON user_recommendations(recommendation_type)")
         logger.info("✅ user_recommendations table ensured")
 
-        # ─── 4. career_stages ───
+        # ─── 4. user_lifecycle_stage ───
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS career_stages (
+            CREATE TABLE IF NOT EXISTS user_lifecycle_stage (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER UNIQUE NOT NULL,
-                current_stage VARCHAR(100) NOT NULL DEFAULT 'exploration',
-                milestones_completed JSONB DEFAULT '[]',
+                user_id VARCHAR(50) UNIQUE NOT NULL,
+                stage VARCHAR(100) NOT NULL DEFAULT 'discovery',
+                milestones_completed INTEGER DEFAULT 0,
+                total_milestones INTEGER DEFAULT 0,
+                progress_pct INTEGER DEFAULT 0,
                 entered_at TIMESTAMP DEFAULT NOW(),
-                advanced_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT NOW(),
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_career_stages_user ON career_stages(user_id)")
-        logger.info("✅ career_stages table ensured")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_user_lifecycle_stage_user ON user_lifecycle_stage(user_id)")
+        logger.info("✅ user_lifecycle_stage table ensured")
+
+        # ─── 5. lifecycle_milestones ───
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS lifecycle_milestones (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(50) NOT NULL,
+                milestone_id VARCHAR(255) NOT NULL,
+                completed_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(user_id, milestone_id)
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_lifecycle_milestones_user ON lifecycle_milestones(user_id)")
+        logger.info("✅ lifecycle_milestones table ensured")
+
+        # ─── 6. stage_transitions ───
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS stage_transitions (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(50) NOT NULL,
+                from_stage VARCHAR(100) NOT NULL,
+                to_stage VARCHAR(100) NOT NULL,
+                transitioned_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        logger.info("✅ stage_transitions table ensured")
 
         conn.commit()
-        logger.info("✅ All intelligence tables created/verified")
+        logger.info("✅ All intelligence and lifecycle tables created/verified")
 
         # ─── Seed skill taxonomy if empty ───
         cur.execute("SELECT COUNT(*) FROM skill_taxonomy")
@@ -189,10 +215,10 @@ def seed_taxonomy(cur):
         ("soft_problem_solving", "Problem Solving", "حل المشكلات", "core", "Cognitive", 0.8),
         ("soft_presentation", "Presentation Skills", "مهارات العرض", "core", "Communication", 0.7),
         # Government & Public Sector
-        ("gov_policy", "Public Policy Analysis", "تحليل السياسات العامة", "government", "Policy", 0.8),
-        ("gov_governance", "Corporate Governance", "الحوكمة المؤسسية", "government", "Governance", 0.85),
-        ("gov_emiratization", "Emiratization Strategy", "استراتيجية التوطين", "government", "National Programs", 0.9),
-        ("gov_smart_gov", "Smart Government", "الحكومة الذكية", "government", "Digital Transformation", 0.85),
+        ("gov_policy", "Public Policy Analysis", "تحليل السياسات العامة", 'compliance_auditor', "Policy", 0.8),
+        ("gov_governance", "Corporate Governance", "الحوكمة المؤسسية", 'compliance_auditor', "Governance", 0.85),
+        ("gov_emiratization", "Emiratization Strategy", "استراتيجية التوطين", 'compliance_auditor', "National Programs", 0.9),
+        ("gov_smart_gov", "Smart Government", "الحكومة الذكية", 'compliance_auditor', "Digital Transformation", 0.85),
         # Hospitality & Tourism (UAE-critical)
         ("hosp_management", "Hospitality Management", "إدارة الضيافة", "hospitality", "Management", 0.8),
         ("hosp_tourism", "Tourism Development", "تطوير السياحة", "hospitality", "Tourism", 0.75),

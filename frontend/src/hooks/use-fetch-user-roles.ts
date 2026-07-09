@@ -1,7 +1,5 @@
 
 import { useState } from 'react';
-import { User } from '@/integrations/supabase/auth-types';
-import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/auth';
 
 export const useFetchUserRoles = () => {
@@ -13,7 +11,7 @@ export const useFetchUserRoles = () => {
       if (user?.email) {
         if (user.email.includes('admin')) {
           console.log("Setting admin role based on email");
-          return ['administrator'];
+          return ['admin'];
         }
         
         // Check for university student first (more specific)
@@ -23,7 +21,7 @@ export const useFetchUserRoles = () => {
         }
         
         // Then check for general student
-        if (user.email.includes('student')) {
+        if (user.email.includes('candidate')) {
           console.log("Setting school_student role based on email");
           return ['school_student'];
         }
@@ -65,9 +63,9 @@ export const useFetchUserRoles = () => {
         }
         
         // Add check for retiree emails
-        if (user.email.includes('retiree')) {
+        if (user.email.includes('candidate')) {
           console.log("Setting retiree role based on email");
-          return ['retiree'];
+          return ['candidate'];
         }
         
         // Add check for entrepreneur emails
@@ -80,7 +78,7 @@ export const useFetchUserRoles = () => {
       // Only try the edge function if we haven't assigned roles based on email
       try {
         // Use the edge function to fetch roles instead of direct query
-        const { data, error } = await supabase.functions.invoke('get-user-roles', {
+        // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('get-user-roles', {
           body: { userId }
         });
   
@@ -104,11 +102,11 @@ export const useFetchUserRoles = () => {
       if (user?.email) {
         if (user.email.includes('admin')) {
           console.log("Setting admin role based on email after error");
-          return ['administrator'];
+          return ['admin'];
         } else if (user.email.includes('university-student') || user.email.includes('university_student')) {
           console.log("Setting university_student role based on email after error");
           return ['university_student'];
-        } else if (user.email.includes('student')) {
+        } else if (user.email.includes('candidate')) {
           console.log("Setting school_student role based on email after error");
           return ['school_student'];
         } else if (user.email.includes('training-center') || user.email.includes('training_center')) {
@@ -129,9 +127,9 @@ export const useFetchUserRoles = () => {
         } else if (user.email.includes('school') || user.email.includes('edu')) {
           console.log("Setting educational_institution role based on email after error");
           return ['educational_institution'];
-        } else if (user.email.includes('retiree')) {
+        } else if (user.email.includes('candidate')) {
           console.log("Setting retiree role based on email after error");
-          return ['retiree'];
+          return ['candidate'];
         } else if (user.email.includes('entrepreneur')) {
           console.log("Setting entrepreneur role based on email after error");
           return ['entrepreneur'];

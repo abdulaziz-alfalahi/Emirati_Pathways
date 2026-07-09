@@ -35,6 +35,72 @@ jd_engine = get_jd_builder_engine()
 ai_matching = get_ai_matching_engine()
 
 
+def ensure_jd_tables_exist():
+    """Ensure job_postings and demand_signals tables exist at startup."""
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            # Create job_postings table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS job_postings (
+                    id SERIAL PRIMARY KEY,
+                    jd_id VARCHAR(100) UNIQUE NOT NULL,
+                    recruiter_id VARCHAR(100) NOT NULL,
+                    company_id VARCHAR(100) NOT NULL,
+                    title VARCHAR(500) NOT NULL,
+                    title_arabic VARCHAR(500),
+                    department VARCHAR(200),
+                    job_type VARCHAR(50),
+                    job_level VARCHAR(50),
+                    emirate VARCHAR(100),
+                    city VARCHAR(100),
+                    remote_option BOOLEAN DEFAULT FALSE,
+                    description TEXT,
+                    description_arabic TEXT,
+                    requirements JSONB,
+                    responsibilities JSONB,
+                    benefits JSONB,
+                    compensation JSONB,
+                    application_process JSONB,
+                    metadata JSONB,
+                    status VARCHAR(50) DEFAULT 'draft',
+                    views_count INTEGER DEFAULT 0,
+                    applications_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    published_at TIMESTAMP,
+                    closed_at TIMESTAMP
+                )
+            """)
+            
+            # Create demand_signals table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS demand_signals (
+                    id SERIAL PRIMARY KEY,
+                    company_id TEXT NOT NULL UNIQUE,
+                    company_name TEXT,
+                    job_count INTEGER DEFAULT 1,
+                    sector TEXT,
+                    emirate TEXT,
+                    matching_candidates INTEGER DEFAULT 0,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """)
+            conn.commit()
+            logger.info("✅ Recruiter JD tables verified/created at startup")
+    except Exception as e:
+        logger.error(f"Failed to create JD tables: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+# Ensure tables exist on module load
+ensure_jd_tables_exist()
+
+
 
 
 def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
@@ -91,7 +157,8 @@ def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
             'city': jd_dict.get('city', ''),
             'latitude': jd_dict.get('latitude'),
             'longitude': jd_dict.get('longitude'),
-            'remote_option': jd_dict.get('remote_option', False)
+            'remote_option': jd_dict.get('remote_option', False),
+            'application_deadline': jd_dict.get('application_deadline').isoformat() if jd_dict.get('application_deadline') else None
         }
         
         # Build JD data structure expected by engine
@@ -148,6 +215,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 jd_id VARCHAR(100) UNIQUE NOT NULL,
                 recruiter_id VARCHAR(100) NOT NULL,
                 company_id VARCHAR(100) NOT NULL,
+                created_by VARCHAR(100),
                 title VARCHAR(500) NOT NULL,
                 title_arabic VARCHAR(500),
                 department VARCHAR(200),
@@ -158,6 +226,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 latitude DOUBLE PRECISION,
                 longitude DOUBLE PRECISION,
                 remote_option BOOLEAN DEFAULT FALSE,
+                application_deadline DATE,
                 description TEXT,
                 description_arabic TEXT,
                 requirements JSONB,
@@ -185,6 +254,20 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
         recruiter_id = metadata.get('recruiter_id', 'unknown')
         company_id = metadata.get('company_id', 'unknown')
         
+        # Parse and normalize application_deadline
+        deadline_str = basic_info.get('application_deadline')
+        deadline_val = None
+        if deadline_str and str(deadline_str).strip():
+            try:
+                deadline_cleaned = str(deadline_str).strip()
+                if 'T' in deadline_cleaned:
+                    deadline_val = datetime.fromisoformat(deadline_cleaned).date()
+                else:
+                    deadline_val = datetime.strptime(deadline_cleaned, '%Y-%m-%d').date()
+            except ValueError:
+                logger.warning(f"Invalid application_deadline format: {deadline_str}")
+                deadline_val = None
+
         # Check if JD already exists
         cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
         existing = cur.fetchone()
@@ -203,6 +286,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     latitude = %s,
                     longitude = %s,
                     remote_option = %s,
+                    application_deadline = %s,
                     description = %s,
                     description_arabic = %s,
                     requirements = %s,
@@ -229,6 +313,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
                 json.dumps(jd_data.get('requirements', [])),
@@ -250,12 +335,13 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, latitude, longitude, remote_option,
+                    application_deadline,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -273,6 +359,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
                 json.dumps(jd_data.get('requirements', [])),
@@ -591,6 +678,29 @@ def update_compensation(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
+@jd_bp.route('/<jd_id>/smart-fill', methods=['POST'])
+def smart_fill_jd(jd_id):
+    """AI-generate a complete JD from a job title (description + requirements + responsibilities + benefits)."""
+    try:
+        data = request.get_json(silent=True) or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'success': False, 'message': 'title is required'}), 400
+        result = jd_engine.generate_full_jd_ai(
+            title=title,
+            department=data.get('department'),
+            level=data.get('job_level') or 'mid',
+            industry=data.get('industry') or 'General',
+            emirate=data.get('emirate') or 'UAE',
+        )
+        if not result or not result.get('description'):
+            return jsonify({'success': False, 'message': 'AI generation unavailable'}), 200
+        return jsonify({'success': True, 'data': result}), 200
+    except Exception as e:
+        logger.error(f"smart_fill error for {jd_id}: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @jd_bp.route('/<jd_id>/generate-description', methods=['POST'])
 def generate_description(jd_id):
     """Generate AI-powered job description"""
@@ -658,11 +768,15 @@ def match_candidates(jd_id):
         data = request.get_json()
         
         # Get employment status filter
-        employment_status_filter = data.get('employment_status_filter')  # 'employed', 'job_seeker', 'open_to_opportunities', or None
+        employment_status_filter = data.get('employment_status_filter')  # 'employed', 'candidate', 'open_to_opportunities', or None
         top_n = data.get('top_n', 10)
         
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"\n--- Request for JD {jd_id} ---\n")
+        debug_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'routes_debug.txt')
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"\n--- Request for JD {jd_id} ---\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
         
         # Retrieve JD from database
         jd_data = _get_jd_from_db(jd_id)
@@ -697,15 +811,15 @@ def match_candidates(jd_id):
                     COALESCE(u.full_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.email) as display_name,
                     u.email,
                     u.phone,
-                    u.emirate,
+                    COALESCE(NULLIF(u.emirate, ''), CASE WHEN strpos(LOWER(cp.target_roles::text), 'dubai') > 0 THEN 'Dubai' WHEN strpos(LOWER(cp.target_roles::text), 'abu dhabi') > 0 THEN 'Abu Dhabi' WHEN strpos(LOWER(cp.target_roles::text), 'sharjah') > 0 THEN 'Sharjah' ELSE '' END) as emirate,
                     u.nationality,
-                    u.is_uae_national,
-                    u.education_level,
-                    u.experience_years,
+                    (u.is_uae_national = true OR u.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati') OR cp.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati')) as is_uae_national,
+                    COALESCE(u.education_level, (SELECT CASE WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'phd') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'doctor') > 0 THEN 'PhD' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'master') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'emba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'mba') > 0 THEN 'Master' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'bachelor') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'bsc') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'ba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'degree') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'eng') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'hnd') > 0 THEN 'Bachelor' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'diploma') > 0 THEN 'Diploma' ELSE 'Bachelor' END FROM candidate_education_entries WHERE user_id = u.id::varchar)) as education_level,
+                    COALESCE(u.experience_years, (SELECT COALESCE(SUM(EXTRACT(YEAR FROM AGE(COALESCE(end_date, CURRENT_DATE), start_date))), 0) FROM candidate_experience_entries WHERE user_id = u.id::varchar), 0) as experience_years,
                     u.job_title as current_position,
                     u.company as current_company,
                     'applicant' as employment_status, -- Special status for applicants
-                    u.skills,
+                    COALESCE((SELECT array_agg(name) FROM candidate_skills WHERE user_id = u.id::varchar), ARRAY[]::text[]) as skills,
                     u.preferred_salary_min,
                     u.preferred_salary_max,
                     u.latitude,
@@ -713,11 +827,18 @@ def match_candidates(jd_id):
                     NULL as cv_url,
                     NULL as linkedin_url,
                     a.status as application_status,
-                    a.submitted_at
+                    a.submitted_at,
+                    cp.target_roles as compass_target_roles,
+                    cp.willing_to_relocate as compass_willing_to_relocate,
+                    cp.expected_salary_range as compass_expected_salary_range,
+                    cp.notice_period as compass_notice_period,
+                    cp.location as compass_preferred_location,
+                    cp.english_proficiency
                 FROM job_applications a
                 JOIN users u ON a.candidate_id = u.id
-                WHERE a.job_id = %s
-            """, (job_posting_int_id,))
+                LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
+                WHERE a.job_id::text = %s::text
+            """, (str(job_posting_int_id),))
             applicants = [dict(c) for c in cur.fetchall()]
         
         # Get applicant IDs to exclude from general search (as integers)
@@ -727,33 +848,41 @@ def match_candidates(jd_id):
         # Build query based on employment status filter
         query = """
             SELECT 
-                id as candidate_id,
-                id as user_id,
-                first_name,
-                last_name,
-                full_name,
-                COALESCE(full_name, NULLIF(CONCAT_WS(' ', first_name, last_name), ''), email) as display_name,
-                email,
-                phone,
-                emirate,
-                nationality,
-                is_uae_national,
-                education_level,
-                experience_years,
-                job_title as current_position,
-                company as current_company,
-                employment_status,
-                skills,
-                preferred_salary_min,
-                preferred_salary_max,
-                latitude,
-                longitude,
+                u.id as candidate_id,
+                u.id as user_id,
+                u.first_name,
+                u.last_name,
+                u.full_name,
+                COALESCE(u.full_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.email) as display_name,
+                u.email,
+                u.phone,
+                COALESCE(NULLIF(u.emirate, ''), CASE WHEN strpos(LOWER(cp.target_roles::text), 'dubai') > 0 THEN 'Dubai' WHEN strpos(LOWER(cp.target_roles::text), 'abu dhabi') > 0 THEN 'Abu Dhabi' WHEN strpos(LOWER(cp.target_roles::text), 'sharjah') > 0 THEN 'Sharjah' ELSE '' END) as emirate,
+                u.nationality,
+                (u.is_uae_national = true OR u.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati') OR cp.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati')) as is_uae_national,
+                COALESCE(u.education_level, (SELECT CASE WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'phd') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'doctor') > 0 THEN 'PhD' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'master') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'emba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'mba') > 0 THEN 'Master' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'bachelor') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'bsc') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'ba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'degree') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'eng') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'hnd') > 0 THEN 'Bachelor' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'diploma') > 0 THEN 'Diploma' ELSE 'Bachelor' END FROM candidate_education_entries WHERE user_id = u.id::varchar)) as education_level,
+                COALESCE(u.experience_years, (SELECT COALESCE(SUM(EXTRACT(YEAR FROM AGE(COALESCE(end_date, CURRENT_DATE), start_date))), 0) FROM candidate_experience_entries WHERE user_id = u.id::varchar), 0) as experience_years,
+                u.job_title as current_position,
+                u.company as current_company,
+                u.employment_status,
+                COALESCE((SELECT array_agg(name) FROM candidate_skills WHERE user_id = u.id::varchar), ARRAY[]::text[]) as skills,
+                u.preferred_salary_min,
+                u.preferred_salary_max,
+                u.latitude,
+                u.longitude,
                 NULL as cv_url,
-                NULL as linkedin_url
-            FROM users
-            WHERE role = 'job_seeker'
-                AND is_active = true
-                AND is_visible = true
+                NULL as linkedin_url,
+                cp.target_roles as compass_target_roles,
+                cp.willing_to_relocate as compass_willing_to_relocate,
+                cp.expected_salary_range as compass_expected_salary_range,
+                cp.notice_period as compass_notice_period,
+                cp.location as compass_preferred_location,
+                cp.english_proficiency
+            FROM users u
+            LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
+            WHERE u.role IN ('candidate', 'job_seeker')
+                AND u.is_active = true
+                AND u.is_visible = true
+            ORDER BY (CASE WHEN EXISTS (SELECT 1 FROM candidate_skills WHERE user_id = u.id::varchar) THEN 1 ELSE 0 END) DESC, u.id DESC
         """
         
         params = []
@@ -765,8 +894,8 @@ def match_candidates(jd_id):
         
         # G22/G23: Employment status filter for Stealth Headhunter
         if employment_status_filter and employment_status_filter.lower() != 'all':
-            if employment_status_filter.lower() == 'job_seeker':
-                query += " AND employment_status = 'job_seeker'"
+            if employment_status_filter.lower() == 'candidate':
+                query += " AND employment_status = 'candidate'"
             elif employment_status_filter.lower() == 'employed_open':
                 query += " AND employment_status = 'employed_open'"
                 query += " AND available_for_recruitment = true"
@@ -792,10 +921,13 @@ def match_candidates(jd_id):
         
         print(f"DEBUG_PRINT: Matching request for JD {jd_id}", flush=True)
         
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"Applicants: {len(applicants)}\n")
-             f.write(f"Passive: {len(passive_candidates)}\n")
-             f.write(f"Total: {len(applicants) + len(passive_candidates)}\n")
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"Applicants: {len(applicants)}\n")
+                 f.write(f"Passive: {len(passive_candidates)}\n")
+                 f.write(f"Total: {len(applicants) + len(passive_candidates)}\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
         
         print(f"DEBUG_PRINT: Found {len(applicants)} applicants", flush=True)
         
@@ -893,15 +1025,18 @@ def match_candidates(jd_id):
         matches = final_matches
         
         # Log payload
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"Matches return count: {len(matches)}\n")
-             if matches:
-                 try:
-                     import json
-                     sample = matches[0]
-                     f.write(f"Sample Match Payload: {json.dumps(sample, default=str)}\n")
-                 except Exception as err:
-                     f.write(f"Error logging sample: {err}\n")
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"Matches return count: {len(matches)}\n")
+                 if matches:
+                     try:
+                         import json
+                         sample = matches[0]
+                         f.write(f"Sample Match Payload: {json.dumps(sample, default=str)}\n")
+                     except Exception as err:
+                         f.write(f"Error logging sample: {err}\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
 
         return jsonify({
             'success': True,
@@ -956,6 +1091,30 @@ def add_to_shortlist():
                 logger.warning(f"Column migration check: {mig_err}")
                 conn.rollback()
 
+            # Ensure unique constraint exists on shortlisted_candidates (job_id, candidate_id)
+            try:
+                cursor.execute("""
+                    SELECT conname FROM pg_constraint 
+                    WHERE conrelid = 'shortlisted_candidates'::regclass 
+                      AND contype = 'u' 
+                      AND pg_get_constraintdef(oid) LIKE '%job_id%' 
+                      AND pg_get_constraintdef(oid) LIKE '%candidate_id%'
+                """)
+                has_uq = cursor.fetchone()
+                if not has_uq:
+                    logger.info("Adding unique constraint on shortlisted_candidates (job_id, candidate_id)")
+                    # Delete any duplicate entries first
+                    cursor.execute("""
+                        DELETE FROM shortlisted_candidates a USING shortlisted_candidates b
+                        WHERE a.id < b.id AND a.job_id = b.job_id AND a.candidate_id = b.candidate_id
+                    """)
+                    cursor.execute("ALTER TABLE shortlisted_candidates ADD CONSTRAINT uq_shortlisted_candidates UNIQUE (job_id, candidate_id)")
+                    conn.commit()
+                    logger.info("✅ Unique constraint added to shortlisted_candidates")
+            except Exception as uq_err:
+                logger.warning(f"Unique constraint check failed: {uq_err}")
+                conn.rollback()
+
             # Look up integer job_postings.id from the UUID jd_id
             cursor.execute(
                 "SELECT id FROM job_postings WHERE jd_id = %s",
@@ -990,10 +1149,10 @@ def add_to_shortlist():
                 sync_cur.execute("""
                     UPDATE job_applications 
                     SET status = 'shortlisted', updated_at = NOW()
-                    WHERE (user_id::text = %s OR candidate_id::text = %s)
+                    WHERE candidate_id::text = %s
                       AND (job_id::text = %s OR job_id::text = %s)
                       AND status NOT IN ('accepted', 'withdrawn', 'offered')
-                """, (str(candidate_id), str(candidate_id), str(jd_id), str(job_id_int)))
+                """, (str(candidate_id), str(jd_id), str(job_id_int)))
                 if sync_cur.rowcount > 0:
                     logger.info(f"G2: Synced job_applications status to 'shortlisted' for candidate {candidate_id}, job {jd_id}")
                 conn.commit()
@@ -1140,64 +1299,24 @@ def save_jd(jd_id):
         if not jd_data:
             return jsonify({'error': 'jd_data is required'}), 400
         
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
         current_user_id = None
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            current_user_id = user_id
-        else:
-            # Fallback to real JWT if configured and valid
-            try:
-                from flask_jwt_extended import verify_jwt_in_request
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-            except Exception as e:
-                logger.warning(f"JWT verification failed: {e}")
+        try:
+            from flask_jwt_extended import verify_jwt_in_request
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+        except Exception as e:
+            logger.warning(f"JWT verification failed: {e}")
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Check if job_postings table exists, create if not (don't drop existing table!)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS job_postings (
-                id SERIAL PRIMARY KEY,
-                jd_id VARCHAR(100) UNIQUE NOT NULL,
-                recruiter_id VARCHAR(100) NOT NULL,
-                company_id VARCHAR(100) NOT NULL,
-                title VARCHAR(500) NOT NULL,
-                title_arabic VARCHAR(500),
-                department VARCHAR(200),
-                job_type VARCHAR(50),
-                job_level VARCHAR(50),
-                emirate VARCHAR(100),
-                city VARCHAR(100),
-                remote_option BOOLEAN DEFAULT FALSE,
-                description TEXT,
-                description_arabic TEXT,
-                requirements JSONB,
-                responsibilities JSONB,
-                benefits JSONB,
-                compensation JSONB,
-                application_process JSONB,
-                metadata JSONB,
-                status VARCHAR(50) DEFAULT 'draft',
-                views_count INTEGER DEFAULT 0,
-                applications_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                published_at TIMESTAMP,
-                closed_at TIMESTAMP
-            )
-        """)
-        conn.commit()  # Commit table creation before using it
-        
         # Extract data for database columns
         basic_info = jd_data.get('basic_info', {})
         metadata = jd_data.get('metadata', {})
+        
+        app_deadline = basic_info.get('application_deadline')
+        if not app_deadline or app_deadline == '':
+            app_deadline = None
         
         # Get recruiter_id and company_id from metadata or request data
         recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id')
@@ -1288,6 +1407,7 @@ def save_jd(jd_id):
                     status = %s,
                     recruiter_id = %s,
                     company_id = %s,
+                    application_deadline = %s,
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1314,6 +1434,7 @@ def save_jd(jd_id):
                 status,
                 recruiter_id,
                 company_id,
+                app_deadline,
                 status,
                 jd_id
             ))
@@ -1329,9 +1450,9 @@ def save_jd(jd_id):
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
-                    status, published_at
+                    status, application_deadline, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1358,6 +1479,7 @@ def save_jd(jd_id):
                 json.dumps(jd_data.get('application_process', {})),
                 json.dumps(metadata),
                 status,
+                app_deadline,
                 status
             ))
             logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
@@ -1366,25 +1488,11 @@ def save_jd(jd_id):
 
         # ── G26: Demand Signal on Publish ──────────────────────────
         if status == 'published':
+            ds_conn = None
+            ds_cur = None
             try:
                 ds_conn = get_db_connection()
                 ds_cur = ds_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-                # Ensure demand_signals table exists
-                ds_cur.execute("""
-                    CREATE TABLE IF NOT EXISTS demand_signals (
-                        id SERIAL PRIMARY KEY,
-                        company_id TEXT NOT NULL UNIQUE,
-                        company_name TEXT,
-                        job_count INTEGER DEFAULT 1,
-                        sector TEXT,
-                        emirate TEXT,
-                        matching_candidates INTEGER DEFAULT 0,
-                        created_at TIMESTAMPTZ DEFAULT NOW(),
-                        updated_at TIMESTAMPTZ DEFAULT NOW()
-                    )
-                """)
-                ds_conn.commit()
 
                 # Count published jobs for this company
                 ds_cur.execute(
@@ -1430,10 +1538,15 @@ def save_jd(jd_id):
                             logger.warning(f"G26: Notification to operator {op['id']} failed: {notif_err}")
 
                 logger.info(f"G26: Demand signal upserted for company {company_id} (jobs={published_count})")
-                ds_cur.close()
-                ds_conn.close()
             except Exception as ds_err:
                 logger.warning(f"G26: Demand signal creation failed (non-blocking): {ds_err}")
+                if ds_conn:
+                    ds_conn.rollback()
+            finally:
+                if ds_cur:
+                    ds_cur.close()
+                if ds_conn:
+                    ds_conn.close()
         # ── End G26 ────────────────────────────────────────────────
 
         cur.close()

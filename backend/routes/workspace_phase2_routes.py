@@ -651,11 +651,20 @@ def csv_process(company_id):
                     cur.execute("SELECT id FROM users WHERE email = %s", (email,))
                     user = cur.fetchone()
                     if not user and email:
+                        cur.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
                         cur.execute("""
-                            INSERT INTO users (full_name, email, phone, user_type, created_at)
-                            VALUES (%s, %s, %s, 'job_seeker', NOW())
+                            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
+                            FROM users WHERE id LIKE '7840000%'
+                        """)
+                        max_row = cur.fetchone()
+                        max_seq = max_row['max_seq'] if max_row and max_row.get('max_seq') is not None else 0
+                        synthetic_id = f"7840000{max_seq + 1:07d}0"
+
+                        cur.execute("""
+                            INSERT INTO users (id, full_name, email, phone, user_type, created_at)
+                            VALUES (%s, %s, %s, %s, 'candidate', NOW())
                             RETURNING id
-                        """, (name, email, row.get(reverse_mapping.get('phone', ''), '')))
+                        """, (synthetic_id, name, email, row.get(reverse_mapping.get('phone', ''), '')))
                         user = cur.fetchone()
 
                     if user:

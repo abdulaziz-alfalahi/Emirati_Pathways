@@ -8,8 +8,6 @@ import {
   sanitizeResumeData 
 } from '../../utils/helpers/validation';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-
 // Import PDF.js dynamically to avoid SSR issues
 let pdfjsLib: any = null;
 
@@ -304,7 +302,7 @@ const processPdfWithFallbacks = async (file: File, startTime: number, processing
       }
       
       // Create a timeout promise for the API call
-      const apiPromise = supabase.functions.invoke('extract-resume-data', {
+      // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke('extract-resume-data', {
         body: { fileContent: pdfText },
       });
       

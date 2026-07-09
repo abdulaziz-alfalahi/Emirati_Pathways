@@ -568,6 +568,181 @@ def create_career_plan():
 
 
 # ═══════════════════════════════════════════════════════════
+# MARKET OVERVIEW (Career Hub real data)
+# ═══════════════════════════════════════════════════════════
+
+@career_services_bp.route('/market-overview', methods=['GET'])
+def get_market_overview():
+    """Aggregate real platform stats for the Career Hub page."""
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # ── Total jobs & vacancies ──
+        total_jobs = 0
+        active_jobs = 0
+        total_vacancies = 0
+        avg_salary_min = 0
+        avg_salary_max = 0
+        try:
+            cur.execute("SELECT COUNT(*) as c FROM job_postings")
+            total_jobs = cur.fetchone()['c'] or 0
+            cur.execute("SELECT COUNT(*) as c FROM job_postings WHERE LOWER(status) = 'published' OR status IS NULL")
+            active_jobs = cur.fetchone()['c'] or 0
+            cur.execute("SELECT COALESCE(SUM(number_of_vacancies), 0) as v FROM job_postings")
+            total_vacancies = cur.fetchone()['v'] or 0
+            cur.execute("""
+                SELECT COALESCE(AVG(salary_range_min), 0) as avg_min,
+                       COALESCE(AVG(salary_range_max), 0) as avg_max
+                FROM job_postings WHERE salary_range_min > 0
+            """)
+            sal = cur.fetchone()
+            avg_salary_min = int(sal['avg_min'] or 0)
+            avg_salary_max = int(sal['avg_max'] or 0)
+        except Exception as e:
+            logger.warning(f"market-overview jobs query: {e}")
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Companies count + by industry ──
+        total_companies = 0
+        companies_by_industry = []
+        try:
+            cur.execute("SELECT COUNT(*) as c FROM companies")
+            total_companies = cur.fetchone()['c'] or 0
+            cur.execute("""
+                SELECT COALESCE(industry, 'Other') as industry, COUNT(*) as count
+                FROM companies GROUP BY industry ORDER BY count DESC
+            """)
+            companies_by_industry = [dict(r) for r in cur.fetchall()]
+        except Exception as e:
+            logger.warning(f"market-overview companies query: {e}")
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Jobs by department/emirate ──
+        jobs_by_department = []
+        jobs_by_emirate = []
+        try:
+            cur.execute("""
+                SELECT COALESCE(department, 'General') as department,
+                       COUNT(*) as count,
+                       COALESCE(SUM(number_of_vacancies), 0) as vacancies
+                FROM job_postings GROUP BY department ORDER BY count DESC
+            """)
+            jobs_by_department = [dict(r) for r in cur.fetchall()]
+            cur.execute("""
+                SELECT COALESCE(emirate, 'UAE') as emirate, COUNT(*) as count
+                FROM job_postings GROUP BY emirate ORDER BY count DESC
+            """)
+            jobs_by_emirate = [dict(r) for r in cur.fetchall()]
+        except Exception as e:
+            logger.warning(f"market-overview dept query: {e}")
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Registered users ──
+        total_users = 0
+        try:
+            cur.execute("SELECT COUNT(*) as c FROM users")
+            total_users = cur.fetchone()['c'] or 0
+        except Exception as e:
+            logger.warning(f"market-overview users query: {e}")
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Training programs ──
+        training_count = 0
+        try:
+            cur.execute("SELECT COUNT(*) as c FROM training_courses")
+            training_count = cur.fetchone()['c'] or 0
+        except Exception:
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Recent job titles ──
+        recent_jobs = []
+        try:
+            cur.execute("""
+                SELECT jp.title, jp.emirate, jp.department, jp.created_at,
+                       c.name as company_name
+                FROM job_postings jp
+                LEFT JOIN companies c ON jp.company_id = c.id::text
+                ORDER BY jp.created_at DESC LIMIT 10
+            """)
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get('created_at'):
+                    d['created_at'] = str(d['created_at'])
+                recent_jobs.append(d)
+        except Exception as e:
+            logger.warning(f"market-overview recent jobs: {e}")
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        # ── Salary benchmarks summary ──
+        salary_benchmarks = []
+        try:
+            cur.execute("""
+                SELECT industry,
+                       COUNT(*) as roles,
+                       COALESCE(AVG(median_salary), 0) as avg_median,
+                       COALESCE(MIN(min_salary), 0) as lowest,
+                       COALESCE(MAX(max_salary), 0) as highest
+                FROM salary_benchmarks GROUP BY industry ORDER BY avg_median DESC
+            """)
+            salary_benchmarks = [dict(r) for r in cur.fetchall()]
+        except Exception:
+            try:
+                conn.rollback()
+            except:
+                pass
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "stats": {
+                "total_jobs": total_jobs,
+                "active_jobs": active_jobs,
+                "total_vacancies": total_vacancies,
+                "total_companies": total_companies,
+                "registered_users": total_users,
+                "training_programs": training_count,
+                "avg_salary_min": avg_salary_min,
+                "avg_salary_max": avg_salary_max,
+            },
+            "jobs_by_department": jobs_by_department,
+            "jobs_by_emirate": jobs_by_emirate,
+            "companies_by_industry": companies_by_industry,
+            "salary_benchmarks": salary_benchmarks,
+            "recent_jobs": recent_jobs,
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Market overview error: {e}")
+        try:
+            conn.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════
 # FINANCIAL PLANNING / SALARY BENCHMARKS
 # ═══════════════════════════════════════════════════════════
 
@@ -652,7 +827,7 @@ def get_financial_projections():
 # PORTFOLIO
 # ═══════════════════════════════════════════════════════════
 
-@career_services_bp.route('/portfolio/<int:user_id>', methods=['GET'])
+@career_services_bp.route('/portfolio/<user_id>', methods=['GET'])
 def get_portfolio(user_id):
     """Get user's portfolio projects."""
     conn = get_db()
@@ -707,10 +882,38 @@ def add_portfolio_project():
         project_id = cur.fetchone()[0]
         conn.commit()
 
-        # Auto-update skill graph: mark skills as "proven"
+        # Auto-update skill graph: mark skills as "proven" in active profile (candidate_skills) and legacy user_skills
         skills = data.get('skills_demonstrated', [])
         if skills:
             for skill_name in skills:
+                # 1. Sync to active profile candidate_skills table
+                try:
+                    cur.execute("""
+                        SELECT id, level FROM candidate_skills 
+                        WHERE user_id = %s AND LOWER(name) = LOWER(%s)
+                    """, (str(user_id), skill_name.strip()))
+                    existing = cur.fetchone()
+                    if existing:
+                        # Progressive Validation: Upgrade to intermediate if beginner, keep unverified for mentor dashboard
+                        if str(existing[1]).lower() == 'beginner':
+                            cur.execute("""
+                                UPDATE candidate_skills SET level = 'intermediate', is_verified = false
+                                WHERE id = %s
+                            """, (existing[0],))
+                    else:
+                        # Get category from taxonomy if possible
+                        cur.execute("SELECT category FROM skill_taxonomy WHERE LOWER(name) = LOWER(%s) LIMIT 1", (skill_name.strip(),))
+                        tax_row = cur.fetchone()
+                        category = tax_row[0] if tax_row else 'Portfolio'
+                        
+                        cur.execute("""
+                            INSERT INTO candidate_skills (user_id, name, level, category, is_verified)
+                            VALUES (%s, %s, 'intermediate', %s, false)
+                        """, (str(user_id), skill_name.strip(), category))
+                except Exception as inner_e:
+                    logger.warning(f"Failed to sync portfolio skill '{skill_name}' to candidate_skills: {inner_e}")
+
+                # 2. Legacy user_skills table sync (fails silently if table is not migrated)
                 try:
                     cur.execute("""
                         INSERT INTO user_skills (user_id, skill_id, proficiency_level, source)

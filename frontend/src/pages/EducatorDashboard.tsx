@@ -695,7 +695,7 @@ const EducatorDashboard: React.FC = () => {
 
             {/* Messages Tab */}
             <TabsContent value="messages" className="space-y-6">
-              <Messages senderRole="educator" />
+              <Messages senderRole='training_provider' />
             </TabsContent>
 
             {/* Approvals Tab */}

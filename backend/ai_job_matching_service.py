@@ -183,7 +183,7 @@ class AIJobMatchingService:
                 pass
             
             # Extract industry from company/description
-            company = exp.get('company') or exp.get('employer') or ''
+            company = exp.get('company') or exp.get('employer_admin') or ''
             description = exp.get('description') or exp.get('responsibilities') or ''
             combined = f"{company} {description}".lower()
             

@@ -382,26 +382,36 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
         return decorated_function
 
     def log_admin_action(action: str, provider_id: str, details: str, status: str = 'success'):
-        """Log administrative actions for audit trail."""
-        log_entry = {
-            'id': f"log_{int(time.time())}_{secrets.token_hex(4)}",
-            'timestamp': datetime.now().isoformat(),
-            'user': getattr(request, 'admin_user', {}).get('email', 'unknown'),
-            'action': action,
-            'provider_id': provider_id,
-            'details': details,
-            'status': status,
-            'ip_address': request.remote_addr,
-            'user_agent': request.headers.get('User-Agent', 'unknown')
-        }
-
-        admin_audit_logs.append(log_entry)
-
-        # Keep only last 1000 logs in memory
-        if len(admin_audit_logs) > 1000:
-            admin_audit_logs.pop(0)
-
-        logger.info(f"Admin action logged: {action} on {provider_id}")
+        """Log administrative actions for audit trail using the database."""
+        try:
+            user_id = getattr(request, 'admin_user', {}).get('user_id')
+            user_email = getattr(request, 'admin_user', {}).get('email', 'unknown')
+            
+            # Combine details and status for rich DB audit details
+            import json
+            details_dict = {
+                'email': user_email,
+                'provider_id': provider_id,
+                'status': status,
+                'details_message': details
+            }
+            
+            execute_query("""
+                INSERT INTO admin_audit_log 
+                (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s)
+            """, (
+                str(user_id) if user_id else None,
+                action,
+                'provider',
+                provider_id,
+                json.dumps(details_dict),
+                request.remote_addr,
+                request.headers.get('User-Agent', 'unknown')
+            ))
+            logger.info(f"Logged admin action to database: {action} on {provider_id}")
+        except Exception as e:
+            logger.error(f"Failed to log admin action to DB: {str(e)}")
 
     def ensure_fallback_schools_exist():
         """Ensure fallback schools exist in database for form functionality"""
@@ -576,7 +586,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 samples = [
                     {
                         'title': 'Software Engineer',
-                        'employer': 'Emirates Tech',
+                        'employer_admin': 'Emirates Tech',
                         'location': 'Dubai, UAE',
                         'description': 'Build and maintain web applications in React and Node.js.',
                         'requirements': ['react', 'node', 'typescript', 'api'],
@@ -584,7 +594,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Data Analyst',
-                        'employer': 'Dubai Analytics Lab',
+                        'employer_admin': 'Dubai Analytics Lab',
                         'location': 'Dubai, UAE',
                         'description': 'Analyze datasets and build BI dashboards.',
                         'requirements': ['sql', 'python', 'excel'],
@@ -592,7 +602,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'IT Security Specialist',
-                        'employer': 'Zayed University',
+                        'employer_admin': 'Zayed University',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Implement security policies and monitor incidents.',
                         'requirements': ['security', 'siem', 'network'],
@@ -600,7 +610,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Project Manager',
-                        'employer': 'ADNOC',
+                        'employer_admin': 'ADNOC',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Lead cross-functional projects and deliver on time.',
                         'requirements': ['project management', 'communications'],
@@ -608,7 +618,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Mobile App Developer',
-                        'employer': 'Careem',
+                        'employer_admin': 'Careem',
                         'location': 'Dubai, UAE',
                         'description': 'Develop and maintain mobile applications.',
                         'requirements': ['flutter', 'kotlin', 'swift'],
@@ -616,7 +626,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Cloud Engineer',
-                        'employer': 'Etisalat',
+                        'employer_admin': 'Etisalat',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Manage cloud infrastructure and CI/CD.',
                         'requirements': ['aws', 'docker', 'kubernetes'],
@@ -624,7 +634,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Business Analyst',
-                        'employer': 'Dubai Tourism',
+                        'employer_admin': 'Dubai Tourism',
                         'location': 'Dubai, UAE',
                         'description': 'Gather requirements and document business processes.',
                         'requirements': ['requirements', 'process mapping'],
@@ -632,7 +642,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'AI Researcher',
-                        'employer': 'Mohammed bin Zayed University of AI',
+                        'employer_admin': 'Mohammed bin Zayed University of AI',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Research AI models and publish results.',
                         'requirements': ['python', 'ml', 'deep learning'],
@@ -640,7 +650,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Frontend Developer',
-                        'employer': 'Noon',
+                        'employer_admin': 'Noon',
                         'location': 'Dubai, UAE',
                         'description': 'Build responsive UIs in React/Vue.',
                         'requirements': ['react', 'html', 'css'],
@@ -648,7 +658,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Backend Developer',
-                        'employer': 'Talabat',
+                        'employer_admin': 'Talabat',
                         'location': 'Dubai, UAE',
                         'description': 'Design REST APIs and microservices.',
                         'requirements': ['node', 'java', 'rest'],
@@ -669,7 +679,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                         VALUES (%s::uuid, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
                         """,
                         (
-                            v['id'], v['title'], v.get('employer'), v.get('location'), v.get('description'),
+                            v['id'], v['title'], v.get('employer_admin'), v.get('location'), v.get('description'),
                             json.dumps(v.get('requirements', [])), json.dumps(v.get('tags', []))
                         ),
                         fetch_all=False
@@ -1450,66 +1460,9 @@ Return only the JSON object, no additional text."""
                 'message': 'Authentication failed due to system error'
             }), 500
 
-    @_app.route('/api/auth/dev-login', methods=['POST'])
-    def dev_login():
-        """
-        Development Login Endpoint
-        Creates a valid JWT token for testing purposes without requiring password.
-        This endpoint should be disabled in production.
-        """
-        try:
-            data = request.get_json()
-
-            user_id = data.get('user_id')
-            email = data.get('email')
-            role = data.get('role', 'job_seeker')
-
-            if not user_id:
-                return jsonify({
-                    'success': False,
-                    'message': 'user_id is required'
-                }), 400
-
-            # Create access token with additional claims
-            from flask_jwt_extended import create_access_token, create_refresh_token
-
-            additional_claims = {
-                'role': role,
-                'email': email or f'user_{user_id}@dev.local'
-            }
-
-            access_token = create_access_token(
-                identity=str(user_id),
-                additional_claims=additional_claims
-            )
-            refresh_token = create_refresh_token(
-                identity=str(user_id),
-                additional_claims=additional_claims
-            )
-
-            logger.info(f"Dev login successful for user_id={user_id}, role={role}")
-
-            return jsonify({
-                'success': True,
-                'message': 'Development login successful',
-                'data': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token,
-                    'user': {
-                        'id': user_id,
-                        'email': email,
-                        'role': role,
-                        'user_type': role
-                    }
-                }
-            }), 200
-
-        except Exception as e:
-            logger.error(f"Dev login error: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': f'Dev login failed: {str(e)}'
-            }), 500
+    # DEV-LOGIN ENDPOINT REMOVED — Security remediation T1.2
+    # The ungated /api/auth/dev-login endpoint has been permanently deleted.
+    # Use UAEPass or standard email/password login instead.
 
     @_app.route('/api/auth/register', methods=['POST'])
     def register():
@@ -1615,20 +1568,16 @@ Return only the JSON object, no additional text."""
             if request.method == 'OPTIONS':
                 return ('', 204)
 
-            # For development: accept mock tokens or use fallback user_id
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-                user_id = 'mock_user_candidate'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity() or 'anonymous_user'
-                    # Post-EID migration: identity is CHAR(15) EID, use as-is
-                    user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
-                    user_id = 'anonymous_user'
+            # Authenticate via JWT
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                # Post-EID migration: identity is CHAR(15) EID, use as-is
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
             logger.debug(f"CV upload request from user_eid: {user_eid}")
 
             # Check if file is present (handle both 'file' and 'cv_file')
@@ -1874,19 +1823,14 @@ Return only the JSON object, no additional text."""
         """List user's saved CVs (Fixed Implementation)"""
         try:
             # Auth check
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity()
-                    if not user_id:
-                         user_eid = '784000000000010'
-                    else:
-                        user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
 
             query = """
                 SELECT
@@ -1915,19 +1859,14 @@ Return only the JSON object, no additional text."""
         """Save/Create CV (Fixed Implementation)"""
         try:
             # Auth check
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity()
-                    if not user_id:
-                         user_eid = '784000000000010'
-                    else:
-                        user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
 
             data = request.get_json()
             cv_data = data.get('cvData', {})
@@ -1981,20 +1920,15 @@ Return only the JSON object, no additional text."""
             return jsonify({'success': False, 'message': str(e)}), 500
 
     def get_current_user_eid_inline():
-        """Helper to get user EID from JWT. Returns CHAR(15) EID string."""
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            return '784000000000010'
-
+        """Helper to get user EID from JWT. Returns CHAR(15) EID string or None if unauthenticated."""
         try:
-            verify_jwt_in_request(optional=True)
+            verify_jwt_in_request()
             user_id = get_jwt_identity()
             if not user_id:
-                 return '784000000000010'
+                return None
             return str(user_id).strip()
-
         except Exception:
-            return '784000000000010'
+            return None
 
     # @_app.route('/api/cv/<cv_id>', methods=['GET'])
     def get_cv_fixed_deprecated(cv_id):
@@ -2157,14 +2091,46 @@ Return only the JSON object, no additional text."""
             if not cv:
                 return jsonify({'error': 'CV not found'}), 404
 
+            # Load parsed_data if available
+            parsed_data = cv.get('parsed_data')
+            if parsed_data:
+                import json as _json
+                if isinstance(parsed_data, str):
+                    try: parsed_data = _json.loads(parsed_data)
+                    except: parsed_data = {}
+            else:
+                parsed_data = {}
+
+            experience = safe_json_load(cv.get('work_experience'), [])
+            if not experience and parsed_data:
+                experience = parsed_data.get('work_experience') or parsed_data.get('experience') or []
+
+            education = safe_json_load(cv.get('education'), [])
+            if not education and parsed_data:
+                education = parsed_data.get('education') or []
+
+            tech_skills = safe_json_load(cv.get('technical_skills'), [])
+            if not tech_skills and parsed_data:
+                tech_skills = parsed_data.get('technical_skills') or parsed_data.get('skills', []) or []
+
+            soft_skills = safe_json_load(cv.get('soft_skills'), [])
+            if not soft_skills and parsed_data:
+                soft_skills = parsed_data.get('soft_skills') or []
+
+            summary = cv.get('professional_summary')
+            if not summary and parsed_data:
+                summary = parsed_data.get('professional_summary') or parsed_data.get('summary') or ''
+
+            skills = (tech_skills or []) + (soft_skills or [])
+
             cv_data = {
                 'metadata': {'title': cv['title'], 'cv_id': cv['id']},
                 'data': {
-                    'personal_info': safe_json_load(cv['personal_info'], {}),
-                    'professional_summary': cv['professional_summary'],
-                    'experience': safe_json_load(cv['work_experience'], []),
-                    'education': safe_json_load(cv['education'], []),
-                    'skills': (safe_json_load(cv['technical_skills'], []) or []) + (safe_json_load(cv['soft_skills'], []) or [])
+                    'personal_info': safe_json_load(cv.get('personal_info'), {}),
+                    'professional_summary': summary,
+                    'experience': experience,
+                    'education': education,
+                    'skills': skills
                 }
             }
 
@@ -2197,6 +2163,96 @@ Return only the JSON object, no additional text."""
             traceback.print_exc()
             return jsonify({'error': f"Export failed: {str(e)}"}), 500
 
+    @_app.route('/api/cv/user/<user_id>/export/<format>', methods=['GET'])
+    def export_user_cv_fixed(user_id, format):
+        try:
+            if format not in ['pdf', 'docx', 'json']:
+                return jsonify({'error': 'Invalid export format. Supported: pdf, docx, json'}), 400
+                
+            verify_jwt_in_request()
+
+            # Find the most recently updated CV for this user
+            cv = execute_query(
+                "SELECT * FROM user_cvs WHERE user_id::text = %s ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1",
+                (user_id,),
+                fetch_one=True
+            )
+            if not cv:
+                return jsonify({'error': 'No CV found for this user'}), 404
+
+            cv_id = cv['id']
+            # Load parsed_data if available
+            parsed_data = cv.get('parsed_data')
+            if parsed_data:
+                import json as _json
+                if isinstance(parsed_data, str):
+                    try: parsed_data = _json.loads(parsed_data)
+                    except: parsed_data = {}
+            else:
+                parsed_data = {}
+
+            experience = safe_json_load(cv.get('work_experience'), [])
+            if not experience and parsed_data:
+                experience = parsed_data.get('work_experience') or parsed_data.get('experience') or []
+
+            education = safe_json_load(cv.get('education'), [])
+            if not education and parsed_data:
+                education = parsed_data.get('education') or []
+
+            tech_skills = safe_json_load(cv.get('technical_skills'), [])
+            if not tech_skills and parsed_data:
+                tech_skills = parsed_data.get('technical_skills') or parsed_data.get('skills', []) or []
+
+            soft_skills = safe_json_load(cv.get('soft_skills'), [])
+            if not soft_skills and parsed_data:
+                soft_skills = parsed_data.get('soft_skills') or []
+
+            summary = cv.get('professional_summary')
+            if not summary and parsed_data:
+                summary = parsed_data.get('professional_summary') or parsed_data.get('summary') or ''
+
+            skills = (tech_skills or []) + (soft_skills or [])
+
+            cv_data = {
+                'metadata': {'title': cv['title'], 'cv_id': cv['id']},
+                'data': {
+                    'personal_info': safe_json_load(cv.get('personal_info'), {}),
+                    'professional_summary': summary,
+                    'experience': experience,
+                    'education': education,
+                    'skills': skills
+                }
+            }
+
+            if format == 'json':
+                return jsonify({'success': True, 'cv_data': cv_data})
+
+            # PDF/DOCX Handling
+            from cv_builder.cv_export import CVExporter
+            exporter = CVExporter()
+
+            file_path = exporter.export_cv(cv_data, format)
+
+            if not file_path or not os.path.exists(file_path):
+                 return jsonify({'error': 'Export failed: File not created'}), 500
+
+            mime_types = {
+                'pdf': 'application/pdf',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            }
+
+            return send_file(
+                file_path,
+                mimetype=mime_types.get(format, 'application/octet-stream'),
+                as_attachment=True,
+                download_name=f"cv_{cv_id}.{format}"
+            )
+
+        except Exception as e:
+            logger.error(f"User CV export error: {e}")
+            traceback.print_exc()
+            return jsonify({'error': f"Export failed: {str(e)}"}), 500
+
     # =====================================================
     # PUBLIC SHARING ROUTES
     # =====================================================
@@ -2212,7 +2268,7 @@ Return only the JSON object, no additional text."""
             # Check if visible
             query = """
                 SELECT
-                    id, title, template_name,
+                    id, user_id, title, template_name,
                     personal_info, professional_summary,
                     technical_skills, soft_skills,
                     work_experience, education,
@@ -2230,20 +2286,128 @@ Return only the JSON object, no additional text."""
                 return jsonify({'success': False, 'message': 'This CV is private'}), 403
 
             # Return data similar to list_cvs but detailed
+            cv_dict = dict(cv)
+
+            # Mask personal info contacts for external viewers (closed platform security)
+            pi = cv_dict.get('personal_info')
+            if pi:
+                import json
+                if isinstance(pi, str):
+                    try:
+                        pi = json.loads(pi)
+                    except Exception:
+                        pass
+                if isinstance(pi, dict):
+                    # Mask standard variations
+                    for key in ['email', 'phone', 'emailAddress', 'phoneNumber', 'email_address', 'phone_number']:
+                        if key in pi and pi[key]:
+                            pi[key] = '[Hidden - Closed Platform]'
+                    cv_dict['personal_info'] = pi
+
             return jsonify({
                 'success': True,
-                'data': cv
+                'data': cv_dict
             })
 
         except Exception as e:
             logger.error(f"Public CV fetch error: {e}")
             return jsonify({'success': False, 'message': 'System error'}), 500
 
+    @_app.route('/api/cv/public/<cv_id>/contact', methods=['POST'])
+    def contact_public_cv(cv_id):
+        """Send message/notification to CV owner (No Auth Required)"""
+        try:
+            data = request.get_json() or {}
+            sender_name = data.get('sender_name', '').strip()
+            sender_company = data.get('sender_company', '').strip()
+            sender_email = data.get('sender_email', '').strip()
+            subject = data.get('subject', '').strip()
+            message = data.get('message', '').strip()
+
+            if not sender_name or not sender_email or not subject or not message:
+                return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+            # Get CV owner
+            query = "SELECT user_id, is_visible FROM user_cvs WHERE id = %s::uuid"
+            cv = execute_query(query, (cv_id,), fetch_one=True)
+
+            if not cv:
+                return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+            if not cv.get('is_visible'):
+                return jsonify({'success': False, 'message': 'This CV is private'}), 403
+
+            candidate_id = cv.get('user_id')
+            if not candidate_id:
+                return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+
+            # Create platform notification
+            from backend.notification_helper import create_notification
+            
+            notif_title = f"New inquiry: {subject}"
+            notif_message = f"You received an inquiry from {sender_name} at {sender_company} ({sender_email}): {message}"
+            metadata = {
+                'sender_name': sender_name,
+                'sender_company': sender_company,
+                'sender_email': sender_email,
+                'subject': subject,
+                'message': message,
+                'cv_id': cv_id
+            }
+
+            notif_id = create_notification(
+                user_id=candidate_id,
+                notification_type='cv_inquiry',
+                title=notif_title,
+                message=notif_message,
+                metadata=metadata
+            )
+
+            if notif_id:
+                return jsonify({'success': True, 'message': 'Message sent successfully'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to send message'}), 500
+
+        except Exception as e:
+            logger.error(f"Public CV contact error: {e}")
+            return jsonify({'success': False, 'message': 'System error'}), 500
+
+    @_app.route('/api/public/settings/mission-video', methods=['GET'])
+    def get_public_mission_video():
+        """Retrieve the configured mission video URL (No Auth Required)"""
+        try:
+            query = "SELECT setting_value FROM admin_settings WHERE setting_key = 'mission_video_url'"
+            row = execute_query(query, fetch_one=True)
+            
+            video_url = "https://www.youtube.com/embed/zTct6QW-V28"
+            if row and row.get('setting_value') is not None:
+                import json
+                try:
+                    setting_val = row['setting_value']
+                    if isinstance(setting_val, str):
+                        video_url = json.loads(setting_val)
+                    else:
+                        video_url = setting_val
+                except Exception as val_err:
+                    logger.warning(f"Error parsing mission_video_url setting: {val_err}")
+                    if isinstance(row['setting_value'], str):
+                        video_url = row['setting_value']
+            
+            return jsonify({
+                'success': True,
+                'video_url': video_url
+            })
+        except Exception as e:
+            logger.error(f"Public settings fetch error: {e}")
+            return jsonify({'success': False, 'message': 'System error'}), 500
+
+
 
 
     # Legacy list_vacancies removed (replaced by newer version at end of file)
 
     @_app.route('/api/matching/cv/<cv_id>/top-vacancies', methods=['GET'])
+    @jwt_required()
     def match_cv_top_vacancies(cv_id: str):
         """Return top-N matching vacancies for a specific CV using real job_postings."""
         try:
@@ -2253,9 +2417,16 @@ Return only the JSON object, no additional text."""
             type_filter = request.args.get('type', '').strip()
             experience_filter = request.args.get('experience', '').strip()
 
+            user_id = get_jwt_identity()
+
             cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
             if not cv:
                 return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+            # Verify that the CV belongs to the logged-in candidate
+            if str(cv.get('user_id')).strip() != str(user_id).strip():
+                logger.warning(f"Unauthorized access attempt to CV {cv_id} by user {user_id}")
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
 
             cvk = _collect_cv_keywords(dict(cv))
             return _match_and_return(cvk, limit, search, location_filter, type_filter, experience_filter)
@@ -2355,24 +2526,17 @@ Return only the JSON object, no additional text."""
     def match_visible_cv_top_vacancies():
         """Return top-N matches for the user's visible CV, or use candidate_skills as fallback."""
         try:
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_id = 'mock_user_candidate'
-            else:
-                try:
-                    user_id = get_jwt_identity()
-                except Exception:
-                    user_id = None
-                if not user_id:
-                    user_id = 'anonymous_user'
+            try:
+                user_id = get_jwt_identity()
+            except Exception:
+                user_id = None
+            if not user_id:
+                user_id = 'anonymous_user'
 
             logger.info(f"Job matching request from user_id={user_id}")
 
-            if user_id == 'mock_user_candidate':
-                user_eid = '784000000000010'
-            else:
-                # Post-EID migration: identity is CHAR(15) EID, use as-is
-                user_eid = str(user_id).strip()
+            # Post-EID migration: identity is CHAR(15) EID, use as-is
+            user_eid = str(user_id).strip()
 
             limit = int(request.args.get('limit', 20))
             search = request.args.get('search', '').strip()

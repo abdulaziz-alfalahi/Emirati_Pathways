@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -184,11 +185,11 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
         setSelectedApplication(null);
         setWithdrawReason('');
       } else {
-        alert(response.data.message || 'Failed to withdraw application');
+        toast.error(response.data.message || 'Failed to withdraw application');
       }
     } catch (error) {
       console.error('Error withdrawing application:', error);
-      alert('Failed to withdraw application. Please try again.');
+      toast.error('Failed to withdraw application. Please try again.');
     } finally {
       setWithdrawing(false);
     }
@@ -400,7 +401,7 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.location.hash = '#messages'}
+              onClick={() => navigate('/candidate-dashboard?tab=messages')}
             >
               <MessageSquare className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
               {t('Contact Employer', 'التواصل مع الموظِّف')}

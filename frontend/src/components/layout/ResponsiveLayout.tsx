@@ -101,7 +101,7 @@ const getNavigationItems = (userType: string): NavigationItem[] => {
 
   // Add user-type specific items
   switch (userType) {
-    case 'job_seeker':
+    case 'candidate':
       baseItems.push(
         {
           id: 'profile',
@@ -123,7 +123,7 @@ const getNavigationItems = (userType: string): NavigationItem[] => {
       );
       break;
 
-    case 'hr_recruiter':
+    case 'recruiter':
       baseItems.push(
         {
           id: 'candidates',
@@ -157,7 +157,7 @@ const getNavigationItems = (userType: string): NavigationItem[] => {
       );
       break;
 
-    case 'educator':
+    case 'training_provider':
       baseItems.push(
         {
           id: 'students',

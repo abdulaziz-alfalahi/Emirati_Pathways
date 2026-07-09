@@ -7,7 +7,7 @@ export const mockScholarships: Scholarship[] = [
     title: "UAE Future Leaders Scholarship",
     description: "A comprehensive scholarship program for outstanding Emirati students pursuing higher education in strategic fields including technology, engineering, and business administration.",
     provider: "UAE Ministry of Education",
-    provider_type: "government",
+    provider_type: 'compliance_auditor',
     eligibility_criteria: {
       nationality: "UAE National",
       gpa_minimum: 3.5,
@@ -90,7 +90,7 @@ export const mockScholarships: Scholarship[] = [
     title: "Dubai Future Accelerators Professional Development",
     description: "Professional development scholarship for working professionals looking to advance their careers in emerging technologies and digital transformation.",
     provider: "Dubai Future Foundation",
-    provider_type: "government",
+    provider_type: 'compliance_auditor',
     eligibility_criteria: {
       work_experience_years: 2,
       UAE_resident: true,

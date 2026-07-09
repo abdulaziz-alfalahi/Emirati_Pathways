@@ -13,13 +13,23 @@ import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Users, Briefcase, TrendingUp, Shield, AlertTriangle, CheckCircle, Clock,
   BarChart3, UserCheck, FileText, MessageSquare, Activity, Video, Loader2,
-  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings
+  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings, Eye, HelpCircle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -35,6 +45,15 @@ const AdminDashboard = () => {
   // Derive tab from URL or default to "overview"
   const activeTab = searchParams.get("tab") || "overview";
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Feedback detail viewer states
+  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warning'>('all');
+  const [logSearch, setLogSearch] = useState('');
+  const [showClarificationInput, setShowClarificationInput] = useState(false);
+  const [clarificationNotes, setClarificationNotes] = useState('');
+  const [isSubmittingClarification, setIsSubmittingClarification] = useState(false);
 
   // Handler for UI tab changes
   const handleTabChange = (value: string) => {
@@ -93,10 +112,55 @@ const AdminDashboard = () => {
     security_score: 0, failed_logins_24h: 0, active_sessions: 0, verified_users_pct: 0
   });
 
+  const [missionVideoUrl, setMissionVideoUrl] = useState('https://www.youtube.com/embed/zTct6QW-V28');
+  const [savingVideoUrl, setSavingVideoUrl] = useState(false);
+
+  const loadMissionVideoUrl = async () => {
+    try {
+      const response = await restClient.get('/api/admin/settings');
+      if (response.data && response.data.status === 'success' && response.data.data.mission_video_url) {
+        setMissionVideoUrl(response.data.data.mission_video_url.value);
+      }
+    } catch (error) {
+      console.error("Failed to load mission video url setting:", error);
+    }
+  };
+
+  const handleSaveVideoUrl = async () => {
+    setSavingVideoUrl(true);
+    try {
+      const response = await restClient.put('/api/admin/settings/mission_video_url', { value: missionVideoUrl });
+      if (response.data && response.data.status === 'success') {
+        toast({
+          title: b("Setting Saved", "تم حفظ الإعداد"),
+          description: b("Mission video URL updated successfully.", "تم تحديث رابط فيديو الرسالة بنجاح."),
+        });
+      } else {
+        throw new Error(response.data?.message || 'Failed to save');
+      }
+    } catch (error) {
+      console.error("Failed to save mission video url setting:", error);
+      toast({
+        title: b("Error", "خطأ"),
+        description: b("Failed to update mission video URL.", "فشل تحديث رابط فيديو الرسالة."),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingVideoUrl(false);
+    }
+  };
+
   // Load dashboard data on mount
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  // Load settings when system tab is active
+  useEffect(() => {
+    if (activeTab === 'system') {
+      loadMissionVideoUrl();
+    }
+  }, [activeTab]);
 
   const getUserDisplayName = () => {
     return user?.full_name || user?.email || 'Administrator';
@@ -716,9 +780,16 @@ const AdminDashboard = () => {
                                   </div>
                                 </td>
                                 <td className="p-3">
-                                  <Badge variant={item.status === 'resolved' ? 'outline' : 'default'} className={item.status === 'resolved' ? 'text-green-600 border-green-600' : 'bg-blue-600'}>
-                                    {item.status ? item.status.toUpperCase() : 'OPEN'}
-                                  </Badge>
+                                  {(() => {
+                                    const nStatus = item.status ? item.status.toLowerCase() : 'open';
+                                    if (nStatus === 'resolved') {
+                                      return <Badge variant="outline" className="text-green-600 border-green-600">RESOLVED</Badge>;
+                                    } else if (nStatus === 'pending_clarification') {
+                                      return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">NEED DETAIL</Badge>;
+                                    } else {
+                                      return <Badge className="bg-blue-600 text-white">OPEN</Badge>;
+                                    }
+                                  })()}
                                 </td>
                                 <td className="p-3 max-w-md">
                                   <p className="font-medium truncate">{item.message}</p>
@@ -737,13 +808,25 @@ const AdminDashboard = () => {
                                 <td className="p-3 text-xs text-muted-foreground">
                                   {new Date(item.created_at).toLocaleString()}
                                 </td>
-                                <td className="p-3">
+                                <td className="p-3 font-dubai-medium">
                                   <div className="flex items-center space-x-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white font-medium"
+                                      onClick={() => {
+                                        setSelectedFeedback(item);
+                                        setIsDetailsOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" /> View Details
+                                    </Button>
+
                                     {item.status !== 'resolved' && (
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700"
+                                        className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700 font-medium"
                                         onClick={() => updateFeedbackStatus(item.id, 'resolved')}
                                       >
                                         <CheckCircle className="h-3 w-3 mr-1" /> Resolve
@@ -752,8 +835,15 @@ const AdminDashboard = () => {
                                     <Button
                                       size="sm"
                                       variant="secondary"
-                                      className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                                      className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium"
                                       onClick={() => {
+                                        const fmtNet = Array.isArray(item.network_logs) && item.network_logs.length
+                                          ? item.network_logs.map((n: any) => `[${n.t || ''}] ${n.method} ${n.url} -> ${n.status} (${n.ms}ms)${n.body ? `\n    ${String(n.body).slice(0, 300)}` : ''}`).join('\n')
+                                          : '(none captured)';
+                                        const fmtCrumbs = Array.isArray(item.breadcrumbs) && item.breadcrumbs.length
+                                          ? item.breadcrumbs.slice(0, 20).map((b: any) => `[${b.t || ''}] ${b.kind}: ${b.detail}`).join('\n')
+                                          : '(none captured)';
+                                        const screenshotUrl = item.screenshot_path ? `${window.location.origin}/api/feedback/${item.id}/screenshot` : null;
                                         const text = `
 **Feedback Report**
 ID: ${item.id}
@@ -761,17 +851,32 @@ User: ${item.role} (ID: ${item.user_id})
 Type: ${item.type}
 Page: ${item.metadata?.path || item.pageUrl || 'N/A'}
 Date: ${new Date(item.created_at).toLocaleString()}
+App Version: ${item.app_version || 'N/A'}
 
 **Message:**
 ${item.message}
+
+**Session / Auth (server-computed at submit):**
+${item.session_state ? JSON.stringify(item.session_state, null, 2) : '(not captured)'}
+
+**Network Errors (failed requests, newest first):**
+\`\`\`
+${fmtNet}
+\`\`\`
 
 **Console Logs:**
 \`\`\`
 ${Array.isArray(item.console_logs) ? item.console_logs.join('\n') : JSON.stringify(item.console_logs || [])}
 \`\`\`
 
+**Breadcrumbs (recent actions, newest first):**
+${fmtCrumbs}
+
 **Metadata:**
 ${JSON.stringify(item.metadata, null, 2)}
+
+**Screenshot:**
+${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screenshot_path}` : '(none)'}
                                                         `.trim();
                                         navigator.clipboard.writeText(text);
                                         toast({
@@ -793,6 +898,373 @@ ${JSON.stringify(item.metadata, null, 2)}
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Feedback Detail Inspection Dialog */}
+                <Dialog open={isDetailsOpen} onOpenChange={(open) => {
+                  setIsDetailsOpen(open);
+                  if (!open) {
+                    setShowClarificationInput(false);
+                    setClarificationNotes('');
+                  }
+                }}>
+                  <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto font-dubai">
+                    {selectedFeedback && (
+                      <>
+                        <DialogHeader>
+                          <div className="flex items-center gap-2 mb-1">
+                            {(() => {
+                              const nStatus = selectedFeedback.status ? selectedFeedback.status.toLowerCase() : 'open';
+                              if (nStatus === 'resolved') {
+                                return <Badge variant="outline" className="text-green-600 border-green-600">RESOLVED</Badge>;
+                              } else if (nStatus === 'pending_clarification') {
+                                return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">NEED DETAIL</Badge>;
+                              } else {
+                                return <Badge className="bg-blue-600 text-white">OPEN</Badge>;
+                              }
+                            })()}
+                            <Badge variant={selectedFeedback.type === 'bug' ? 'destructive' : 'secondary'}>
+                              {selectedFeedback.type?.toUpperCase()}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {new Date(selectedFeedback.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <DialogTitle className="text-xl font-bold text-slate-900 leading-snug">
+                            {selectedFeedback.metadata?.title || 'Feedback Report'}
+                          </DialogTitle>
+                          <DialogDescription className="text-xs text-slate-500 font-mono">
+                            ID: {selectedFeedback.id}
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-4">
+                          {/* Left Side: Report Message & Screenshot */}
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</h4>
+                              <div className="bg-slate-50 border p-3 rounded-lg text-sm text-slate-800 whitespace-pre-wrap min-h-[100px] leading-relaxed">
+                                {selectedFeedback.message}
+                              </div>
+                            </div>
+
+                            {selectedFeedback.status === 'pending_clarification' && selectedFeedback.resolution_notes && (
+                              <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-800 leading-relaxed">
+                                <strong>Clarification Request Sent:</strong> {selectedFeedback.resolution_notes}
+                              </div>
+                            )}
+
+                            {showClarificationInput && (
+                              <div className="border border-amber-200 bg-amber-50/50 p-4 rounded-lg space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Clarification Request Message</h4>
+                                <Textarea
+                                  value={clarificationNotes}
+                                  onChange={(e) => setClarificationNotes(e.target.value)}
+                                  placeholder="Type your request for details here (e.g. 'Can you specify the browser/version and provide exact steps?')"
+                                  className="bg-white border-amber-200 focus:border-amber-500 min-h-[80px]"
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                                    onClick={() => {
+                                      setShowClarificationInput(false);
+                                      setClarificationNotes('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                                    onClick={async () => {
+                                      if (!clarificationNotes.trim()) return;
+                                      setIsSubmittingClarification(true);
+                                      try {
+                                        await restClient.put(`/api/feedback/${selectedFeedback.id}/status`, {
+                                          status: 'pending_clarification',
+                                          resolution_notes: clarificationNotes
+                                        });
+                                        setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'pending_clarification', resolution_notes: clarificationNotes } : null);
+                                        setShowClarificationInput(false);
+                                        setClarificationNotes('');
+                                        loadFeedbackList();
+                                        toast({
+                                          title: "Clarification Requested",
+                                          description: "Clarification request sent to the user successfully",
+                                        });
+                                      } catch (err) {
+                                        console.error(err);
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to request clarification",
+                                          variant: "destructive"
+                                        });
+                                      } finally {
+                                        setIsSubmittingClarification(false);
+                                      }
+                                    }}
+                                    disabled={isSubmittingClarification || !clarificationNotes.trim()}
+                                  >
+                                    {isSubmittingClarification && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                    Send Request
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                            {selectedFeedback.metadata?.reproSteps && (
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Steps to Reproduce</h4>
+                                <pre className="bg-slate-50 border p-3 rounded-lg text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
+                                  {selectedFeedback.metadata.reproSteps}
+                                </pre>
+                              </div>
+                            )}
+
+                            {selectedFeedback.screenshot && (
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex justify-between items-center">
+                                  <span>Viewport Screenshot</span>
+                                  <a 
+                                    href={selectedFeedback.screenshot} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                                  >
+                                    View Full Size
+                                  </a>
+                                </h4>
+                                <div className="border rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center max-h-[320px] shadow-sm cursor-pointer hover:opacity-95 transition-opacity">
+                                  <img 
+                                    src={selectedFeedback.screenshot} 
+                                    alt="Feedback Screenshot" 
+                                    className="max-h-[320px] w-full object-contain"
+                                    onClick={() => {
+                                      const newTab = window.open();
+                                      if (newTab) {
+                                        newTab.document.write(`<img src="${selectedFeedback.screenshot}" style="max-width:100%; height:auto;" />`);
+                                        newTab.document.title = `Feedback Screenshot - ${selectedFeedback.id}`;
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Side: Diagnostics & Metadata */}
+                          <div className="space-y-4 flex flex-col">
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Diagnostic Context</h4>
+                              <div className="bg-slate-50 border rounded-lg p-3 text-xs space-y-2 leading-relaxed">
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Page URL:</span>
+                                  <a 
+                                    href={selectedFeedback.pageUrl || '#'} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="col-span-2 text-teal-600 hover:underline truncate"
+                                  >
+                                    {selectedFeedback.pageUrl || 'N/A'}
+                                  </a>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Path:</span>
+                                  <span className="col-span-2 font-mono truncate">{selectedFeedback.metadata?.path || 'N/A'}</span>
+                                </div>
+                                {selectedFeedback.metadata?.queryParams && (
+                                  <div className="grid grid-cols-3 gap-1">
+                                    <span className="text-slate-500 font-medium">Query Params:</span>
+                                    <span className="col-span-2 font-mono truncate">{selectedFeedback.metadata.queryParams}</span>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Role:</span>
+                                  <span className="col-span-2 font-medium text-slate-800">{selectedFeedback.role || 'guest'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Email:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.userEmail || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Resolution:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.screenSize || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Language:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.language || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Network Status:</span>
+                                  <span className="col-span-2">
+                                    <Badge variant="outline" className={selectedFeedback.metadata?.isOnline === 'online' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}>
+                                      {selectedFeedback.metadata?.isOnline || 'online'}
+                                    </Badge>
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Agent:</span>
+                                  <span className="col-span-2 text-[10px] text-slate-600 font-mono break-all max-h-12 overflow-y-auto" title={selectedFeedback.metadata?.userAgent}>
+                                    {selectedFeedback.metadata?.userAgent || 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Console Logs section */}
+                            <div className="flex-1 flex flex-col min-h-[220px]">
+                              <div className="flex justify-between items-center mb-1">
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Console & Crash Logs</h4>
+                                <div className="flex gap-1 text-[10px]">
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                                    onClick={() => setLogFilter('all')}
+                                  >
+                                    All
+                                  </button>
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'error' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                    onClick={() => setLogFilter('error')}
+                                  >
+                                    Errors
+                                  </button>
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'warning' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                                    onClick={() => setLogFilter('warning')}
+                                  >
+                                    Warns
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="relative flex-1 flex flex-col border rounded-lg overflow-hidden">
+                                <input 
+                                  type="text"
+                                  placeholder="Search logs..."
+                                  className="w-full bg-slate-900 border-b border-slate-800 text-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-0 font-mono"
+                                  value={logSearch}
+                                  onChange={(e) => setLogSearch(e.target.value)}
+                                />
+                                <div className="flex-1 bg-slate-950 text-slate-100 font-mono text-[11px] p-3 overflow-y-auto h-[160px] leading-relaxed whitespace-pre-wrap select-text">
+                                  {Array.isArray(selectedFeedback.console_logs) && selectedFeedback.console_logs.length > 0 ? (
+                                    (() => {
+                                      const filtered = selectedFeedback.console_logs.filter((log: string) => {
+                                        const matchFilter = 
+                                          logFilter === 'all' ? true :
+                                          logFilter === 'error' ? (log.includes('[ERROR]') || log.includes('[CRASH]')) :
+                                          logFilter === 'warning' ? log.includes('[WARN]') : true;
+                                        const matchSearch = logSearch.trim() === '' ? true : log.toLowerCase().includes(logSearch.toLowerCase());
+                                        return matchFilter && matchSearch;
+                                      });
+                                      
+                                      return filtered.length > 0 ? (
+                                        filtered.map((log: string, idx: number) => {
+                                          const isError = log.includes('[ERROR]') || log.includes('[CRASH]') || log.includes('[RUNTIME CRASH]');
+                                          const isWarn = log.includes('[WARN]');
+                                          return (
+                                            <div key={idx} className={`border-b border-slate-900/50 pb-1 mb-1 last:border-b-0 ${isError ? 'text-red-400' : isWarn ? 'text-amber-300' : 'text-slate-300'}`}>
+                                              {log}
+                                            </div>
+                                          );
+                                        })
+                                      ) : (
+                                        <div className="text-slate-500 italic text-center py-4">No matching logs found.</div>
+                                      );
+                                    })()
+                                  ) : (
+                                    <div className="text-slate-500 italic text-center py-4">No console logs captured.</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <DialogFooter className="border-t pt-4">
+                          <div className="flex justify-between items-center w-full">
+                            <div className="flex gap-2">
+                              {selectedFeedback.status !== 'resolved' ? (
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                                    onClick={async () => {
+                                      await updateFeedbackStatus(selectedFeedback.id, 'resolved');
+                                      setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'resolved' } : null);
+                                    }}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" /> Mark as Resolved
+                                  </Button>
+                                  {selectedFeedback.status !== 'pending_clarification' && !showClarificationInput && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="border-amber-300 hover:bg-amber-50 text-amber-700 font-medium"
+                                      onClick={() => setShowClarificationInput(true)}
+                                    >
+                                      <HelpCircle className="h-4 w-4 mr-2" /> Request Clarification
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
+                                  onClick={async () => {
+                                    await updateFeedbackStatus(selectedFeedback.id, 'open');
+                                    setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'open' } : null);
+                                  }}
+                                >
+                                  Reopen Report
+                                </Button>
+                              )}
+                              
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium"
+                                onClick={() => {
+                                  const text = `
+**Feedback Report**
+ID: ${selectedFeedback.id}
+User: ${selectedFeedback.role} (ID: ${selectedFeedback.user_id})
+Type: ${selectedFeedback.type}
+Page: ${selectedFeedback.metadata?.path || selectedFeedback.pageUrl || 'N/A'}
+Date: ${new Date(selectedFeedback.created_at).toLocaleString()}
+
+**Message:**
+${selectedFeedback.message}
+
+**Console Logs:**
+\`\`\`
+${Array.isArray(selectedFeedback.console_logs) ? selectedFeedback.console_logs.join('\n') : JSON.stringify(selectedFeedback.console_logs || [])}
+\`\`\`
+
+**Metadata:**
+${JSON.stringify(selectedFeedback.metadata, null, 2)}
+                                                          `.trim();
+                                  navigator.clipboard.writeText(text);
+                                  toast({
+                                    title: "Copied",
+                                    description: "Feedback report copied to clipboard",
+                                  });
+                                }}
+                              >
+                                <ClipboardCopy className="h-4 w-4 mr-2" /> Copy for Dev
+                              </Button>
+                            </div>
+                            
+                            <Button type="button" variant="outline" className="font-medium" onClick={() => setIsDetailsOpen(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        </DialogFooter>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               {/* User Management Tab */}
@@ -812,7 +1284,7 @@ ${JSON.stringify(item.metadata, null, 2)}
 
               {/* Messaging Tab */}
               <TabsContent value="messaging" className="space-y-6">
-                <Messages senderRole="administrator" showNewConversation />
+                <Messages senderRole='admin' showNewConversation />
               </TabsContent>
 
               {/* Role Requests Tab */}
@@ -873,6 +1345,71 @@ ${JSON.stringify(item.metadata, null, 2)}
                         </CardContent>
                       </Card>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Our Mission Page Settings */}
+                <Card className="border-l-4 border-l-teal-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Video className="h-5 w-5 text-teal-600" />
+                      {b('Our Mission Page Settings', 'إعدادات صفحة رسالتنا')}
+                    </CardTitle>
+                    <CardDescription>
+                      {b('Configure the YouTube video to display on the public Our Mission page.', 'تكوين فيديو YouTube لعرضه على صفحة رسالتنا العامة.')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 font-dubai">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-semibold text-slate-700">
+                        {b('YouTube Embed URL', 'رابط تضمين YouTube')}
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          type="text"
+                          placeholder="https://www.youtube.com/embed/..."
+                          value={missionVideoUrl}
+                          onChange={(e) => setMissionVideoUrl(e.target.value)}
+                          className="flex-1 font-mono text-sm"
+                        />
+                        <Button 
+                          onClick={handleSaveVideoUrl} 
+                          disabled={savingVideoUrl || !missionVideoUrl}
+                          className="bg-teal-600 hover:bg-teal-700 text-white font-medium min-w-[120px]"
+                        >
+                          {savingVideoUrl ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {b('Saving...', 'جاري الحفظ...')}
+                            </>
+                          ) : (
+                            b('Save Setting', 'حفظ الإعداد')
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {b('Note: The URL must be in the embed format, e.g., https://www.youtube.com/embed/VIDEO_ID', 'ملاحظة: يجب أن يكون الرابط بتنسيق التضمين، على سبيل المثال https://www.youtube.com/embed/VIDEO_ID')}
+                      </p>
+                    </div>
+
+                    {/* Live Preview */}
+                    {missionVideoUrl && (
+                      <div className="border rounded-xl p-4 bg-slate-50">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                          {b('Video Embed Preview', 'معاينة تضمين الفيديو')}
+                        </h4>
+                        <div className="aspect-video max-w-lg mx-auto rounded-lg overflow-hidden border bg-black shadow-sm">
+                          <iframe
+                            className="w-full h-full"
+                            src={missionVideoUrl}
+                            title="Video preview"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

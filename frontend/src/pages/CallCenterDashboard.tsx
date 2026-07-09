@@ -899,7 +899,7 @@ const CallCenterDashboard: React.FC = () => {
                         className="bg-transparent border-none outline-none w-full text-sm text-slate-800 placeholder:text-slate-400" />
                     </div>
                     <div className="flex gap-1.5 flex-wrap">
-                      {['', 'account', 'technical', 'jobs', 'nafis', 'employer', 'general'].map(c => (
+                      {['', 'account', 'technical', 'jobs', 'nafis', 'employer_admin', 'general'].map(c => (
                         <button key={c} onClick={() => setKbCategory(c)}
                           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${kbCategory === c ? 'bg-teal-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:border-teal-300'}`}>
                           {c || b('All', 'الكل')}
@@ -1060,7 +1060,7 @@ const CallCenterDashboard: React.FC = () => {
                 <label className="text-xs font-semibold text-slate-700 mb-1.5 block">{b('Category', 'الفئة')}</label>
                 <select value={createForm.category} onChange={e => setCreateForm(p => ({ ...p, category: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white">
-                  {['general', 'technical', 'account', 'jobs', 'training', 'nafis', 'employer'].map(c => <option key={c} value={c}>{c}</option>)}
+                  {['general', 'technical', 'account', 'jobs', 'training', 'nafis', 'employer_admin'].map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>

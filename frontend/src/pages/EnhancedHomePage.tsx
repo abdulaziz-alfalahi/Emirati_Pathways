@@ -25,7 +25,7 @@ const EnhancedHomePage: React.FC = () => {
 
   const personas = [
     {
-      id: 'job_seeker',
+      id: 'candidate',
       title: t('persona_job_seeker'),
       description: t('persona_job_seeker_desc'),
       icon: Users,
@@ -39,7 +39,7 @@ const EnhancedHomePage: React.FC = () => {
       popular: true
     },
     {
-      id: 'hr_recruiter',
+      id: 'recruiter',
       title: t('persona_hr_recruiter'),
       description: t('persona_hr_recruiter_desc'),
       icon: Building2,
@@ -52,7 +52,7 @@ const EnhancedHomePage: React.FC = () => {
       ]
     },
     {
-      id: 'educator',
+      id: 'training_provider',
       title: t('persona_educator'),
       description: t('persona_educator_desc'),
       icon: GraduationCap,

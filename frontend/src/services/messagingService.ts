@@ -2,7 +2,7 @@
 // Handles all messaging and communication API calls to the backend
 import { getAuthToken } from '@/utils/tokenUtils';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface Message {
   id: string;

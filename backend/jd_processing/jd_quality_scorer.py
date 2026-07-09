@@ -121,7 +121,7 @@ class JDQualityScorer:
                 'preferred_length': {'min': 350, 'max': 850},
                 'certification_requirements': True
             },
-            'government': {
+            'compliance_auditor': {
                 'min_technical_skills': 2,
                 'required_sections': ['responsibilities', 'requirements', 'eligibility'],
                 'preferred_length': {'min': 400, 'max': 1000},
@@ -751,7 +751,7 @@ class JDQualityScorer:
             if re.search(r'\b(?:license|certification|registered|board certified)\b', jd_text.lower()):
                 sector_score += 25
         
-        elif sector == 'government' and standards.get('emiratization_required'):
+        elif sector == 'compliance_auditor' and standards.get('emiratization_required'):
             # Check for Emiratization mentions
             if re.search(r'\b(?:uae national|emirati|emiratization)\b', jd_text.lower()):
                 sector_score += 25

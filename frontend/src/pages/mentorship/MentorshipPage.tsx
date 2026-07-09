@@ -148,6 +148,7 @@ const MentorshipPage: React.FC = () => {
                 {mentors.map((m, i) => (
                     <div
                         key={i}
+                        className="ep-card"
                         style={{
                             background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                             padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
@@ -221,7 +222,7 @@ const MentorshipPage: React.FC = () => {
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Active', 'نشطة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
                 {myMentorships.map((m, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
+                    <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                             <div>
                                 <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{m.topic}</h4>
@@ -254,7 +255,7 @@ const MentorshipPage: React.FC = () => {
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Completed', 'مكتملة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {pastMentorships.map((m, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <CheckCircle size={20} style={{ color: brand.primary }} />
                         </div>
@@ -351,7 +352,7 @@ const MentorshipPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
                 {resources.map((r, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <span style={{ fontSize: 24 }}>{r.icon}</span>
                             <span style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 4 }}>{r.type}</span>

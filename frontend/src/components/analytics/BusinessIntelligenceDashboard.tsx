@@ -23,11 +23,11 @@ export const BusinessIntelligenceDashboard: React.FC<BusinessIntelligenceDashboa
 }) => {
   const { roles } = useAuth();
   const [activeTimeRange, setActiveTimeRange] = useState(timeRange);
-  const [selectedStakeholder, setSelectedStakeholder] = useState('government');
+  const [selectedStakeholder, setSelectedStakeholder] = useState('compliance_auditor');
   const [activeTab, setActiveTab] = useState('overview');
 
   const hasAdminAccess = roles.some(role => 
-    ['administrator', 'super_user', 'platform_operator', 'government_representative'].includes(role)
+    ['admin', 'super_user', 'platform_operator', 'government_representative'].includes(role)
   );
 
   if (!hasAdminAccess) {
@@ -100,7 +100,7 @@ export const BusinessIntelligenceDashboard: React.FC<BusinessIntelligenceDashboa
                 <SelectValue placeholder="Stakeholder View" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="government">Government Officials</SelectItem>
+                <SelectItem value='compliance_auditor'>Government Officials</SelectItem>
                 <SelectItem value="education">Educational Institutions</SelectItem>
                 <SelectItem value="employers">Employers</SelectItem>
                 <SelectItem value="communities">Community Organizations</SelectItem>

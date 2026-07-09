@@ -287,7 +287,7 @@ export default function RecruiterInterviews() {
                     )}
 
                     <div className="flex gap-2 items-center pt-2">
-                      {session.status === 'scheduled' && (
+                      {(session.status === 'scheduled' || session.status === 'in_progress') && (
                         <Button className="flex-1" onClick={() => handleJoin(session)}>
                           <Video className="mr-2 h-4 w-4" /> Join Call
                         </Button>

@@ -303,7 +303,7 @@ class StudentTrackingSystem:
                 
                 return {
                     'success': True,
-                    'student': dict(student),
+                    'candidate': dict(student),
                     'guardians': [dict(guardian) for guardian in guardians],
                     'enrollments': [dict(enrollment) for enrollment in enrollments],
                     'recent_attendance': [dict(record) for record in recent_attendance],

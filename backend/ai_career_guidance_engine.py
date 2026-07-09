@@ -31,7 +31,7 @@ class CareerPathCategory(Enum):
     HEALTHCARE = "healthcare"
     FINANCE = "finance"
     EDUCATION = "education"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     ENGINEERING = "engineering"
     BUSINESS = "business"
     CREATIVE = "creative"

@@ -3,12 +3,28 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import JDWizardWithUpload from '@/components/recruiter/job-descriptions/JDWizardWithUpload';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { restClient } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
 
 const JobDescriptionWizardPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [initialJdId, setInitialJdId] = useState<string | undefined>();
   const [initialData, setInitialData] = useState<any>(null);
+
+  const { user, switchRole, getUserRole } = useAuth();
+
+  // Auto switch role to recruiter or employer_admin if they are secondary roles
+  useEffect(() => {
+    const activeRole = getUserRole();
+    if (activeRole !== 'recruiter' && activeRole !== 'employer_admin') {
+      const secRoles = user?.secondary_roles || [];
+      if (secRoles.includes('recruiter')) {
+        switchRole('recruiter').catch(err => console.error("Auto role switch to recruiter failed:", err));
+      } else if (secRoles.includes('employer_admin')) {
+        switchRole('employer_admin').catch(err => console.error("Auto role switch to employer_admin failed:", err));
+      }
+    }
+  }, [user, getUserRole, switchRole]);
 
   // Get user info from localStorage or context
   const getUserInfo = () => {
@@ -64,24 +80,12 @@ const JobDescriptionWizardPage: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Get user role for navigation logic
-  const getUserRole = () => {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        return user.role || user.user_type || '';
-      }
-    } catch {
-      return '';
-    }
-    return '';
-  };
+
 
   const handleComplete = (jdId: string) => {
     console.log('JD created successfully:', jdId);
     const role = getUserRole();
-    if (role === 'hr_manager' || role === 'hr') {
+    if (role === 'employer_admin' || role === 'employer_admin') {
       navigate('/hr-dashboard?tab=positions');
     } else {
       navigate('/recruiter?tab=jobs');
@@ -90,7 +94,7 @@ const JobDescriptionWizardPage: React.FC = () => {
 
   const handleCancel = () => {
     const role = getUserRole();
-    if (role === 'hr_manager' || role === 'hr') {
+    if (role === 'employer_admin' || role === 'employer_admin') {
       navigate('/hr-dashboard?tab=positions');
     } else {
       navigate('/recruiter?tab=jobs');

@@ -61,6 +61,22 @@ class StorageService:
             os.makedirs(self.local_dir, exist_ok=True)
 
     # -----------------------------------------------------------------
+    # Path safety
+    # -----------------------------------------------------------------
+
+    def _sanitize_path(self, filename: str, base_dir: str) -> str:
+        """Prevent path traversal attacks.
+
+        Raises ``ValueError`` if the resolved path escapes *base_dir*.
+        """
+        if '..' in filename:
+            raise ValueError('Invalid filename')
+        full_path = os.path.realpath(os.path.join(base_dir, filename))
+        if not full_path.startswith(os.path.realpath(base_dir)):
+            raise ValueError('Path traversal detected')
+        return full_path
+
+    # -----------------------------------------------------------------
     # High-level helpers (for Flask route handlers)
     # -----------------------------------------------------------------
 
@@ -104,7 +120,8 @@ class StorageService:
             url = self.get_url(key, expires_in=3600)
             return redirect(url)
         else:
-            full_path = os.path.join(self.local_dir, key)
+            # Validate path before serving
+            full_path = self._sanitize_path(key, self.local_dir)
             if not os.path.isfile(full_path):
                 from flask import abort
                 abort(404)
@@ -119,7 +136,7 @@ class StorageService:
         """
         if self.storage_type != 'local':
             raise RuntimeError("local_path() only available with STORAGE_TYPE=local")
-        return os.path.join(self.local_dir, key)
+        return self._sanitize_path(key, self.local_dir)
 
     # -----------------------------------------------------------------
     # Low-level primitives

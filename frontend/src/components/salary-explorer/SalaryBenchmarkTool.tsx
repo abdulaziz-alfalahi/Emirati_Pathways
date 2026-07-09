@@ -68,7 +68,7 @@ export const SalaryBenchmarkTool: React.FC = () => {
                   <SelectItem value="finance">Finance & Banking</SelectItem>
                   <SelectItem value="healthcare">Healthcare</SelectItem>
                   <SelectItem value="education">Education</SelectItem>
-                  <SelectItem value="government">Government</SelectItem>
+                  <SelectItem value='compliance_auditor'>Government</SelectItem>
                   <SelectItem value="retail">Retail</SelectItem>
                 </SelectContent>
               </Select>

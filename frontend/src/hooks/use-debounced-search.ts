@@ -88,7 +88,7 @@ export const useDebouncedSearch = <T = any>(
  * @param delay - Delay in milliseconds (default: 300ms)
  * @returns The debounced value
  */
-export const useDebounceValue = <T>(value: T, delay: number = 300): T => {
+export function useDebounceValue<T>(value: T, delay: number = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {

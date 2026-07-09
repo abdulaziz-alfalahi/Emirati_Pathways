@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { Assessment } from '@/types/assessments';
 
 export class AssessmentCore {

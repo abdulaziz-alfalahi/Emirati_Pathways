@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 export interface AuditLogEntry {
   id?: string;
   user_id: string;

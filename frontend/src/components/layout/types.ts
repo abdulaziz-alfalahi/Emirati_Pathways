@@ -12,6 +12,7 @@ export interface NavItem {
   label?: string;
   description?: string; // Add description property
   featureFlagKey?: string; // Toggles page activity
+  allowedRoles?: string[]; // Role-based visibility filter
 }
 
 export interface NavGroup {

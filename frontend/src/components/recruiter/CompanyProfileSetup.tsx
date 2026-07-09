@@ -84,11 +84,13 @@ interface CompanyProfile {
 
 interface CompanyProfileSetupProps {
   onComplete?: (profile: CompanyProfile) => void;
+  onProfileUpdate?: () => void;
   initialData?: Partial<CompanyProfile>;
 }
 
 const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
   onComplete,
+  onProfileUpdate,
   initialData
 }) => {
   const [profile, setProfile] = useState<CompanyProfile>({
@@ -346,7 +348,11 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
       });
 
       if (response.data.success) {
-        onComplete?.(profile);
+        if (onComplete) {
+          onComplete(profile);
+        } else if (onProfileUpdate) {
+          onProfileUpdate();
+        }
       } else {
         console.error('Save failed:', response.data.message);
         alert('Failed to save company profile. Please try again.');

@@ -33,7 +33,7 @@ export interface VirtualBooth {
   id: string;
   event_id: string;
   company_id: string;
-  booth_type: 'company' | 'university' | 'government' | 'training_center' | 'startup';
+  booth_type: 'company' | 'university' | 'compliance_auditor' | 'training_center' | 'startup';
   title: string;
   description?: string;
   logo_url?: string;

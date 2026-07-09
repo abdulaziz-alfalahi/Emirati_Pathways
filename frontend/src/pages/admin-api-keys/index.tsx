@@ -95,7 +95,7 @@ interface Statistics {
   };
 }
 
-const ADMIN_API_BASE = 'http://localhost:5001/api/admin';
+const ADMIN_API_BASE = (import.meta.env.VITE_API_BASE_URL || '') + '/api/admin';
 
 const AdminApiKeysPage: React.FC = () => {
   const { user, roles, isLoading } = useAuth();

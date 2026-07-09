@@ -47,7 +47,7 @@ def create_notification(user_id, notification_type, title, message='', metadata=
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO notifications (user_id, type, title, message, metadata)
+            INSERT INTO notifications (user_id, type, title, content, metadata)
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id
         """, (

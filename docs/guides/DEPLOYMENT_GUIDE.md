@@ -34,7 +34,7 @@ The frontend has been packaged and is ready for immediate deployment:
 #### Backend Deployment
 ```bash
 # 1. Set up environment variables
-export GEMINI_API_KEY=AIzaSyAquLWzSBTEzzIAnFL6h6LUs_Ngso-2NoY
+export GEMINI_API_KEY=<REDACTED — set via environment variable>
 export DATABASE_URL=postgresql://user:password@host:port/database
 export JWT_SECRET_KEY=your-secure-jwt-key
 
@@ -60,9 +60,9 @@ GRANT ALL PRIVILEGES ON DATABASE emirati_journey TO emirati_user;
 
 #### Backend (.env)
 ```bash
-GEMINI_API_KEY=AIzaSyAquLWzSBTEzzIAnFL6h6LUs_Ngso-2NoY
+GEMINI_API_KEY=<REDACTED — set via environment variable>
 DATABASE_URL=postgresql://emirati_user:password@localhost/emirati_journey
-JWT_SECRET_KEY=emirati_journey_secure_jwt_key_2024
+JWT_SECRET_KEY=<REDACTED — set via environment variable>
 FLASK_ENV=production
 PORT=5003
 ```

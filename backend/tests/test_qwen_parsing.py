@@ -190,7 +190,7 @@ class TestResumeParser:
         "volunteer_work": [],
     }
 
-    @patch("backend.services.qwen_client.chat_completion")
+    @patch("backend.services.resume_parser.chat_completion")
     def test_parse_resume_from_text(self, mock_chat):
         """Test parsing a resume from raw text."""
         mock_chat.return_value = self.MOCK_RESPONSE
@@ -302,7 +302,7 @@ class TestMatchingEngine:
         "salary_alignment": "Within range",
     }
 
-    @patch("backend.services.qwen_client.chat_completion")
+    @patch("backend.services.matching_engine.chat_completion")
     def test_parse_jd(self, mock_chat):
         mock_chat.return_value = self.MOCK_JD_RESPONSE
 

@@ -27,7 +27,6 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { AssessmentType } from '@/types/assessments';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UploadCloud } from 'lucide-react';
 
 const formSchema = z.object({
@@ -96,7 +95,7 @@ export const AssessmentUpload: React.FC = () => {
         const fileExt = assessmentFile.name.split('.').pop();
         const filePath = `assessments/${assessment.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        // TODO: Connect to Flask API - const { error: uploadError } = await supabase.storage
           .from('assessment-materials')
           .upload(filePath, assessmentFile);
           

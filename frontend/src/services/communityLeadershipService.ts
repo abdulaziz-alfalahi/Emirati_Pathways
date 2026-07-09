@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { CommunityLeadershipResource } from '@/types/communityLeadership';
 
 export const communityLeadershipService = {

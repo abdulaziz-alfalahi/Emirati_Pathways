@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { VolunteerOpportunity, VolunteerApplication } from '@/types/volunteer';
 
 export const volunteerService = {

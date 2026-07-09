@@ -18,6 +18,7 @@ class CandidateProfile(db.Model):
     latitude = Column(db.Float)
     longitude = Column(db.Float)
     nationality = Column(String(100), default='UAE')
+    english_proficiency = Column(String(50), default='conversational')
     dob = Column(DateTime, nullable=True)
     
     # Rich Media
@@ -29,6 +30,15 @@ class CandidateProfile(db.Model):
     willing_to_relocate = Column(Boolean, default=False)
     expected_salary_range = Column(String(100))
     notice_period = Column(String(50))
+    
+    # Counseling CRM Structured Fields
+    preferred_locations = Column(JSON)
+    preferred_sector = Column(String(50))
+    preferred_work_setup = Column(String(50))
+    preferred_schedule = Column(String(50))
+    alternative_phone = Column(String(50))
+    unavailability_reason = Column(String(100))
+    role_preferences = Column(String(255))
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -85,6 +95,7 @@ class CandidateProfile(db.Model):
                 'full_name': self.full_name or 'User', # Fallback to 'User' only if empty
                 'headline': self.headline,
                 'bio': self.bio,
+                'english_proficiency': self.english_proficiency or 'conversational',
                 'contact': {
                     'phone': masked_phone,
                     'location': self.location,

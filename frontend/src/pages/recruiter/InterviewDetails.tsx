@@ -11,7 +11,7 @@ export default function InterviewDetailsPage() {
   const [sp] = useSearchParams();
   const { toast } = useToast();
   const [sessionId, setSessionId] = useState(sp.get('session') || '');
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const [sessions, setSessions] = useState<any[]>([]);
@@ -54,7 +54,22 @@ export default function InterviewDetailsPage() {
   };
 
   useEffect(() => { loadSessions(); }, []);
-  useEffect(() => { loadReport(); loadRecordings(); }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) {
+      setReport(null);
+      setRecordings(null);
+      return;
+    }
+    const currentSess = sessions.find(s => s.session_id === sessionId);
+    if (currentSess && currentSess.status === 'completed') {
+      loadReport();
+      loadRecordings();
+    } else {
+      setReport(null);
+      setRecordings(null);
+    }
+  }, [sessionId, sessions]);
 
   const sess = sessions.find(s => s.session_id === sessionId);
 
@@ -83,31 +98,47 @@ export default function InterviewDetailsPage() {
             </TabsList>
 
             <TabsContent value="ai">
-              {!report && <div className="text-sm text-slate-500">No report loaded</div>}
-              {report && (
-                <div className="space-y-2">
-                  <div className="text-sm"><b>Summary:</b> {report.summary || '-'}</div>
-                  <div className="text-sm"><b>Strengths:</b> {(report.strengths || []).join(', ')}</div>
-                  <div className="text-sm"><b>Improvements:</b> {(report.improvements || []).join(', ')}</div>
-                  <div className="text-sm"><b>Recommendations:</b> {(report.recommendations || []).join(', ')}</div>
+              {sess && sess.status !== 'completed' ? (
+                <div className="text-sm text-slate-500 p-4 border border-dashed rounded bg-slate-50/50">
+                  AI Analysis report will be available once the interview has been conducted and completed. Current status: <span className="font-semibold capitalize text-teal-600">{sess.status}</span>
                 </div>
+              ) : (
+                <>
+                  {!report && <div className="text-sm text-slate-500">No report loaded</div>}
+                  {report && (
+                    <div className="space-y-2">
+                      <div className="text-sm"><b>Summary:</b> {report.summary || '-'}</div>
+                      <div className="text-sm"><b>Strengths:</b> {(report.strengths || []).join(', ')}</div>
+                      <div className="text-sm"><b>Improvements:</b> {(report.improvements || []).join(', ')}</div>
+                      <div className="text-sm"><b>Recommendations:</b> {(report.recommendations || []).join(', ')}</div>
+                    </div>
+                  )}
+                  <div className="mt-3">
+                    <Button onClick={loadReport} disabled={!sessionId || sess?.status !== 'completed'}>Generate/Refresh Report</Button>
+                  </div>
+                </>
               )}
-              <div className="mt-3">
-                <Button onClick={loadReport} disabled={!sessionId}>Generate/Refresh Report</Button>
-              </div>
             </TabsContent>
 
             <TabsContent value="recordings">
-              {!recordings && <div className="text-sm text-slate-500">No recordings found</div>}
-              {recordings && (
-                <div className="space-y-2">
-                  <div className="text-sm">Available: {recordings.available ? 'Yes' : 'No'}</div>
-                  {recordings.stream_token && (
-                    <div className="text-sm">
-                      <a className="text-ehrdc-teal underline" href={API(`/api/video-interview/stream/${sessionId}?token=${encodeURIComponent(recordings.stream_token)}`)} target="_blank">Open Recording</a>
+              {sess && sess.status !== 'completed' ? (
+                <div className="text-sm text-slate-500 p-4 border border-dashed rounded bg-slate-50/50">
+                  Recording streaming will be available once the interview has been completed.
+                </div>
+              ) : (
+                <>
+                  {!recordings && <div className="text-sm text-slate-500">No recordings found</div>}
+                  {recordings && (
+                    <div className="space-y-2">
+                      <div className="text-sm">Available: {recordings.available ? 'Yes' : 'No'}</div>
+                      {recordings.stream_token && (
+                        <div className="text-sm">
+                          <a className="text-ehrdc-teal underline" href={API(`/api/video-interview/stream/${sessionId}?token=${encodeURIComponent(recordings.stream_token)}`)} target="_blank">Open Recording</a>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
             </TabsContent>
           </Tabs>

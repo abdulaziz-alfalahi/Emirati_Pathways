@@ -252,30 +252,14 @@ def geocode_uae_location(location_text: str):
 
 
 @candidate_job_bp.route('/job-matches', methods=['GET'])
+@jwt_required()
 def get_job_matches():
     """Get job matches for the candidate with AI scoring"""
     try:
         # 1. Authentication & User Identification
-        user_id = None
-        raw_user_id = None
-        normalized_uuid = None
-        
-        auth_header = request.headers.get('Authorization', '')
-        
-        # Handle mock authentication
-        if 'mock_token' in auth_header:
-            user_id = '784000000000010'
-            raw_user_id = user_id
-            normalized_uuid = user_id
-        else:
-            try:
-                verify_jwt_in_request(optional=True)
-                raw_user_id = str(get_jwt_identity())
-                user_id = raw_user_id
-                # Post-EID migration: identity is CHAR(15) EID, use as-is
-                normalized_uuid = user_id
-            except Exception as e:
-                pass
+        user_id = str(get_jwt_identity())
+        raw_user_id = user_id
+        normalized_uuid = user_id
 
         # 2. Get Query Parameters
         filter_by_level = request.args.get('filter_by_level', 'true').lower() == 'true'
@@ -369,7 +353,7 @@ def get_job_matches():
                     applied_rows = cur.fetchall()
                     
                     for row in applied_rows:
-                        job_id = row['job_id']
+                        job_id = str(row['job_id'])
                         status = row['status']
                         
                         # Only mark as "applied" if not withdrawn or rejected
@@ -390,7 +374,7 @@ def get_job_matches():
                         search_id = raw_user_id or user_id
                         cur.execute("SELECT job_id FROM job_applications WHERE candidate_id = %s", (search_id,))
                         applied_rows = cur.fetchall()
-                        applied_job_ids = {row['job_id'] for row in applied_rows}
+                        applied_job_ids = {str(row['job_id']) for row in applied_rows}
                         logger.info(f"User {search_id} has {len(applied_job_ids)} applications (status column not available)")
                     except Exception as e2:
                         logger.warning(f"Could not fetch applications at all: {e2}")
@@ -518,8 +502,8 @@ def get_job_matches():
                             'requirements': reqs,
                             'benefits': benefits,
                             'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat(),
-                            'hasApplied': job_id in applied_job_ids,
-                            'applicationStatus': application_statuses.get(job_id),  # Include status (withdrawn, rejected, etc.)
+                            'hasApplied': str(job_id) in applied_job_ids,
+                            'applicationStatus': application_statuses.get(str(job_id)),  # Include status (withdrawn, rejected, etc.)
                             'experienceLevel': job.get('experience_level', 'Mid Level')
                         })
                     except Exception as loop_e:
@@ -841,33 +825,13 @@ def get_job_matches():
 
 
 @candidate_job_bp.route('/dashboard/stats', methods=['GET'])
+@jwt_required()
 def get_dashboard_stats():
     """Get candidate dashboard statistics"""
     conn = None
     try:
-        # Try to get user ID from JWT or mock token
-        user_id = None
-        raw_user_id = None
-        auth_header = request.headers.get('Authorization', '')
-        
-        # Handle mock authentication (for development/testing)
-        if 'mock_token' in auth_header:
-            user_id = '784000000000010'
-            raw_user_id = user_id
-            logger.info(f"Dashboard stats: Using mock user ID: {user_id}")
-        else:
-            try:
-                verify_jwt_in_request(optional=True)
-                raw_user_id = str(get_jwt_identity())
-                user_id = raw_user_id
-                # if user_id:
-                #    try:
-                #        uuidlib.UUID(str(user_id))
-                #    except ValueError:
-                #        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
-                pass
-            except Exception:
-                pass
+        user_id = str(get_jwt_identity())
+        raw_user_id = user_id
         
         conn = get_db_connection()
         if not conn:
@@ -934,9 +898,7 @@ def get_dashboard_stats():
                 except Exception as e:
                     logger.warning(f"Failed to fetch Profile V2 level: {e}")
             
-            # Manual Override for known executive user (Fail-safe)
-            if str(raw_user_id) == '73' or str(user_id) == '73':
-                 candidate_level = 'executive'
+            # Manual Override removed
 
             # 2. Fallback to Legacy AI
             if candidate_level == 'trainee' and cv_data and AI_MATCHING_AVAILABLE:
@@ -1013,12 +975,59 @@ def get_dashboard_stats():
                logger.error(f"Profile photo lookup failed with IDs {user_ids_to_try}: {e}")
                if conn: conn.rollback()
 
+        # Fetch recent activities dynamically
+        recent_activity = []
+        if user_id:
+            try:
+                # 1. Fetch applications
+                cur.execute("""
+                    SELECT ja.applied_at as timestamp, jp.title as job_title, jp.company_id 
+                    FROM job_applications ja 
+                    LEFT JOIN job_postings jp ON ja.job_id::text = jp.id::text 
+                    WHERE ja.candidate_id = %s 
+                    ORDER BY ja.applied_at DESC LIMIT 5
+                """, (search_id,))
+                for row in cur.fetchall():
+                    company = row['company_id'] or 'UAE Employer'
+                    if company.lower() in ('unknown', 'null', ''):
+                        company = 'UAE Employer'
+                    recent_activity.append({
+                        'id': f"app_{row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else row['timestamp']}",
+                        'type': 'application',
+                        'title': 'Applied to Job',
+                        'description': f"Submitted application for {row['job_title']} at {company}",
+                        'timestamp': row['timestamp'].strftime('%Y-%m-%d') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp'])
+                    })
+                
+                # 2. Fetch interviews
+                cur.execute("""
+                    SELECT iv.created_at as timestamp, iv.title, iv.status, jp.title as job_title 
+                    FROM interview_sessions iv 
+                    LEFT JOIN job_postings jp ON iv.job_id::text = jp.id::text 
+                    WHERE iv.candidate_id = %s 
+                    ORDER BY iv.created_at DESC LIMIT 5
+                """, (search_id,))
+                for row in cur.fetchall():
+                    recent_activity.append({
+                        'id': f"int_{row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else row['timestamp']}",
+                        'type': 'interview',
+                        'title': row['title'] or 'Interview Scheduled',
+                        'description': f"Interview for {row['job_title']} (Status: {row['status']})",
+                        'timestamp': row['timestamp'].strftime('%Y-%m-%d') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp'])
+                    })
+                    
+                # Sort all activity by timestamp desc
+                recent_activity.sort(key=lambda x: x['timestamp'], reverse=True)
+            except Exception as e:
+                logger.error(f"Error fetching recent activity for stats: {e}")
+                if conn: conn.rollback()
+
         return jsonify({
             'success': True,
             'data': {
                 'stats': {
                     'profileViews': 12,  # Mock for now
-                    'jobMatches': max(job_count, 8),  # At least show fallback count
+                    'jobMatches': job_count,
                     'applications': app_count,
                     'interviews': 0
                 },
@@ -1028,7 +1037,8 @@ def get_dashboard_stats():
                     'cvUploaded': cv_uploaded,
                     'experienceLevel': candidate_level,
                     'profile_photo_url': profile_photo_url
-                }
+                },
+                'recentActivity': recent_activity
             }
         }), 200
         
@@ -1139,25 +1149,11 @@ def get_service_status():
 # =====================================================
 
 @candidate_job_bp.route('/offers', methods=['GET'])
+@jwt_required()
 def get_candidate_offers():
     """Get all offers for a candidate"""
     try:
-        # Get candidate_id from query params or auth
-        candidate_id = request.args.get('candidate_id')
-        
-        if not candidate_id:
-            # Try to get from JWT
-            try:
-                verify_jwt_in_request(optional=True)
-                candidate_id = get_jwt_identity()
-            except:
-                pass
-        
-        if not candidate_id:
-            return jsonify({
-                'success': False,
-                'message': 'Candidate ID required'
-            }), 400
+        candidate_id = get_jwt_identity()
         
         conn = get_db_connection()
         if not conn:
@@ -1331,9 +1327,11 @@ def get_candidate_offers():
 
 
 @candidate_job_bp.route('/offers/<offer_id>', methods=['GET'])
+@jwt_required()
 def get_candidate_offer_details(offer_id):
     """Get details of a specific offer"""
     try:
+        candidate_id = get_jwt_identity()
         conn = get_db_connection()
         if not conn:
             return jsonify({
@@ -1343,6 +1341,85 @@ def get_candidate_offer_details(offer_id):
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # Try job_offers first
+        try:
+            cur.execute("""
+                SELECT 
+                    jo.offer_id as id,
+                    jo.jd_id as job_posting_id,
+                    jo.candidate_id,
+                    jo.recruiter_id,
+                    jo.position_title as job_title,
+                    jo.salary_amount,
+                    jo.salary_currency,
+                    jo.salary_period,
+                    jo.employment_type,
+                    jo.start_date,
+                    jo.expiry_date,
+                    jo.benefits,
+                    jo.status,
+                    jo.work_location as job_location,
+                    jo.notes,
+                    jo.probation_period_months,
+                    jo.candidate_response,
+                    jo.response_notes,
+                    jo.response_date,
+                    jo.negotiation_notes,
+                    jo.negotiation_status,
+                    jo.created_at,
+                    jo.updated_at,
+                    jp.title as job_title_db,
+                    jp.company_id as company_name,
+                    jp.description as job_description,
+                    r.first_name as recruiter_first_name,
+                    r.last_name as recruiter_last_name,
+                    r.email as recruiter_email
+                FROM job_offers jo
+                LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+                LEFT JOIN users r ON jo.recruiter_id::text = r.id::text
+                WHERE jo.offer_id = %s
+            """, (offer_id,))
+            row = cur.fetchone()
+            if row:
+                if str(row.get('candidate_id')) != str(candidate_id):
+                    conn.close()
+                    return jsonify({'success': False, 'message': 'Forbidden'}), 403
+                
+                conn.close()
+                return jsonify({
+                    'success': True,
+                    'data': {
+                        'id': row.get('id'),
+                        'job_posting_id': row.get('job_posting_id'),
+                        'job_title': row.get('job_title_db') or row.get('job_title') or 'Position',
+                        'company_name': row.get('company_name') or 'Company',
+                        'job_location': row.get('job_location') or 'UAE',
+                        'job_description': row.get('job_description') or row.get('notes'),
+                        'status': row.get('status'),
+                        'salary_amount': float(row.get('salary_amount') or 0),
+                        'salary_currency': row.get('salary_currency') or 'AED',
+                        'salary_period': row.get('salary_period') or 'monthly',
+                        'start_date': str(row.get('start_date')) if row.get('start_date') else None,
+                        'employment_type': row.get('employment_type') or 'full-time',
+                        'probation_period_months': row.get('probation_period_months'),
+                        'benefits': row.get('benefits') or {},
+                        'notes': row.get('notes'),
+                        'candidate_response': row.get('candidate_response'),
+                        'response_notes': row.get('response_notes'),
+                        'negotiation_notes': row.get('negotiation_notes'),
+                        'negotiation_status': row.get('negotiation_status'),
+                        'expiry_date': str(row.get('expiry_date')) if row.get('expiry_date') else None,
+                        'recruiter_name': f"{row.get('recruiter_first_name', '')} {row.get('recruiter_last_name', '')}".strip() or 'Recruiter',
+                        'recruiter_email': row.get('recruiter_email'),
+                        'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
+                        'updated_at': row.get('updated_at').isoformat() if row.get('updated_at') else None
+                    }
+                })
+        except Exception as e:
+            logger.warning(f"Error querying job_offers details: {e}")
+            conn.rollback()
+            
+        # Fallback to offers table
         query = """
             SELECT 
                 o.id,
@@ -1375,7 +1452,10 @@ def get_candidate_offer_details(offer_id):
                 'success': False,
                 'message': 'Offer not found'
             }), 404
-        
+            
+        if str(result.get('candidate_id')) != str(candidate_id):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
+            
         offer = dict(result)
         offer_data = offer.get('offer_data') or {}
         if isinstance(offer_data, str):
@@ -1419,9 +1499,11 @@ def get_candidate_offer_details(offer_id):
 
 
 @candidate_job_bp.route('/offers/<offer_id>/respond', methods=['POST'])
+@jwt_required()
 def respond_to_offer(offer_id):
     """Accept, decline, or negotiate an offer"""
     try:
+        candidate_id = get_jwt_identity()
         data = request.get_json() or {}
         action = data.get('action')  # 'accept', 'decline', or 'negotiate'
         message = data.get('message', '')  # Optional message to recruiter
@@ -1454,6 +1536,9 @@ def respond_to_offer(offer_id):
             """, (offer_id,))
             offer = cur.fetchone()
             if offer:
+                if str(offer.get('candidate_id')) != str(candidate_id):
+                    conn.close()
+                    return jsonify({'success': False, 'message': 'Forbidden'}), 403
                 offer_source = 'job_offers'
         except Exception as e:
             logger.warning(f"job_offers lookup failed: {e}")
@@ -1469,6 +1554,9 @@ def respond_to_offer(offer_id):
                 """, (offer_id,))
                 offer = cur.fetchone()
                 if offer:
+                    if str(offer.get('candidate_id')) != str(candidate_id):
+                        conn.close()
+                        return jsonify({'success': False, 'message': 'Forbidden'}), 403
                     offer_source = 'offers'
             except Exception as e:
                 logger.warning(f"offers table lookup failed: {e}")
@@ -1728,23 +1816,11 @@ def respond_to_offer(offer_id):
 
 
 @candidate_job_bp.route('/offers/stats', methods=['GET'])
+@jwt_required()
 def get_candidate_offer_stats():
     """Get offer statistics for a candidate"""
     try:
-        candidate_id = request.args.get('candidate_id')
-        
-        if not candidate_id:
-            try:
-                verify_jwt_in_request(optional=True)
-                candidate_id = get_jwt_identity()
-            except:
-                pass
-        
-        if not candidate_id:
-            return jsonify({
-                'success': False,
-                'message': 'Candidate ID required'
-            }), 400
+        candidate_id = get_jwt_identity()
         
         conn = get_db_connection()
         if not conn:

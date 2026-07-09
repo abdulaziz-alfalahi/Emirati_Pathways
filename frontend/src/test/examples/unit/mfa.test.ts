@@ -15,7 +15,7 @@ const mockSupabase = {
 };
 
 // Mock the Supabase client module
-vi.mock('@/integrations/supabase/client', () => ({
+// vi.mock('@/integrations/supabase/client', () => ({
   supabase: mockSupabase,
 }));
 

@@ -580,7 +580,7 @@ const UAEWorkforceAnalytics = () => {
                       <Legend />
                       <Line type="monotone" dataKey="overall" stroke="#3BACB6" strokeWidth={2} name="Overall" />
                       <Line type="monotone" dataKey="private" stroke="#E74C3C" strokeWidth={2} name="Private Sector" />
-                      <Line type="monotone" dataKey="government" stroke="#27AE60" strokeWidth={2} name="Government" />
+                      <Line type="monotone" dataKey='compliance_auditor' stroke="#27AE60" strokeWidth={2} name="Government" />
                     </LineChart>
                   </ResponsiveContainer>
                 </CrossFilterableChart>

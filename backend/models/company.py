@@ -19,7 +19,7 @@ class CompanySize(Enum):
 
 class CompanyType(Enum):
     """Company Type Categories"""
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     SEMI_GOVERNMENT = "semi_government"
     PRIVATE = "private"
     MULTINATIONAL = "multinational"
@@ -32,7 +32,7 @@ class SubscriptionTier(Enum):
     BASIC = "basic"
     PREMIUM = "premium"
     ENTERPRISE = "enterprise"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
 
 class CompanyStatus(Enum):
     """Company Account Status"""
@@ -215,7 +215,7 @@ class Company:
         """Add user to company with specific role"""
         if role == "admin" and user_id not in self.admin_users:
             self.admin_users.append(user_id)
-        elif role == "hr" and user_id not in self.hr_users:
+        elif role == 'employer_admin' and user_id not in self.hr_users:
             self.hr_users.append(user_id)
         elif role == "recruiter" and user_id not in self.recruiter_users:
             self.recruiter_users.append(user_id)

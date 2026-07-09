@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserRole } from '@/types/auth';
+import { UserRole, normalizeRole } from '@/types/auth';
 import { useAuth } from '@/context/AuthContext';
 import { analyticsService } from '@/services/analyticsService';
 
@@ -17,17 +17,21 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
   const [activeRole, setActiveRoleState] = useState<UserRole | null>(null);
   
-  // Get available roles from user's actual roles, with fallback to candidate
-  const availableRoles: UserRole[] = user?.roles?.filter(role => 
-    // Ensure the role is a valid UserRole type
-    ['candidate', 'administrator', 'super_user', 'private_sector_recruiter', 
-     'government_representative', 'educational_institution', 'mentor', 
-     'career_advisor', 'school_student', 'university_student', 'jobseeker',
-     'intern', 'full_time_employee', 'part_time_employee', 'gig_worker',
-     'lifelong_learner', 'entrepreneur', 'retiree', 'parent', 'training_center',
-     'assessment_center', 'platform_operator', 'national_service_participant',
-     'retiree_advocate'].includes(role)
-  ) as UserRole[] || ['candidate'];
+  // Available roles = every role the user actually holds, from all sources
+  // (primary role, user_type, roles[], and the authoritative secondary_roles),
+  // normalized and de-duplicated. The previous hardcoded allow-list used a stale
+  // role vocabulary that silently dropped most assigned roles from the switcher.
+  const availableRoles: UserRole[] = React.useMemo(() => {
+    if (!user) return ['candidate'] as UserRole[];
+    const raw = [
+      ...((user as any).roles || []),
+      (user as any).role,
+      (user as any).user_type,
+      ...((user as any).secondary_roles || []),
+    ].filter(Boolean) as string[];
+    const normalized = Array.from(new Set(raw.map((r) => normalizeRole(r) as string)));
+    return (normalized.length ? normalized : ['candidate']) as UserRole[];
+  }, [user]);
 
   // Initialize active role
   useEffect(() => {

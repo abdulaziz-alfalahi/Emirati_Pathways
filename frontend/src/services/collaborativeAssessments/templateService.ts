@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { AssessmentTemplate, AssessmentTemplateStatus } from '@/types/collaborativeAssessments';
 
 export const createAssessmentTemplate = async (template: Omit<AssessmentTemplate, 'id' | 'created_at' | 'updated_at'>) => {

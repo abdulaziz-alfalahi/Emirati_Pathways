@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 // Import components
@@ -66,7 +65,7 @@ const JobMatchingPage = () => {
     
     try {
       // Call match-resume-job edge function to find matching candidates
-      const response = await supabase.functions.invoke('match-resume-job', {
+      // TODO: Connect to Flask API - const response = await supabase.functions.invoke('match-resume-job', {
         body: {
           jobData: jobDescription,
           jobId: id,

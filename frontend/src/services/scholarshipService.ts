@@ -24,7 +24,7 @@ function toScholarship(raw: any): Scholarship {
     title: raw.title || '',
     description: raw.description || raw.description_ar || '',
     provider: raw.provider_name || raw.provider || '',
-    provider_type: raw.provider_type || 'government',
+    provider_type: raw.provider_type || 'compliance_auditor',
     eligibility_criteria: raw.eligibility
       ? (typeof raw.eligibility === 'string' ? JSON.parse(raw.eligibility) : raw.eligibility)
       : {},
@@ -136,7 +136,7 @@ export const getUserApplications = async (userId: string): Promise<Application[]
         title: sa.title,
         description: '',
         provider: sa.provider || '',
-        provider_type: 'government',
+        provider_type: 'compliance_auditor',
         is_active: true,
         created_at: '',
         created_by: '',

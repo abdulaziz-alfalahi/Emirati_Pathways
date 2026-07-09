@@ -360,7 +360,7 @@ def create_scholarship():
             data.get('description', ''),
             data.get('description_ar', ''),
             data.get('provider', data.get('provider_name', '')),
-            data.get('provider_type', 'government'),
+            data.get('provider_type', 'compliance_auditor'),
             data.get('amount'),
             data.get('currency', data.get('coverage_type', 'AED')),
             data.get('application_deadline', data.get('deadline')),
@@ -1149,6 +1149,22 @@ def ensure_profdev_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS profdev_settings (
+                setting_key TEXT PRIMARY KEY,
+                setting_value TEXT NOT NULL,
+                description TEXT
+            )
+        """)
+        cursor.execute("SELECT COUNT(*) FROM profdev_settings")
+        if cursor.fetchone()[0] == 0:
+            for s in [
+                ("training_accreditation", "Required", "Require KHDA/ACTVET accreditation for all courses"),
+                ("blockchain_credential_issuing", "Beta", "Enable blockchain-based digital credential issuance")
+            ]:
+                cursor.execute("INSERT INTO profdev_settings (setting_key, setting_value, description) VALUES (%s, %s, %s)", s)
+            db.commit()
+
         cursor.execute("SELECT COUNT(*) FROM training_courses")
         if cursor.fetchone()[0] == 0:
             for c in [
@@ -1199,6 +1215,164 @@ def profdev_operator_stats():
         'courses': courses,
         'certification_bodies': cert_bodies,
     })
+
+
+@education_bp.route('/profdev/courses', methods=['POST'])
+def add_profdev_course():
+    """Add a new training course to the Professional Development catalog."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        data = request.get_json() or {}
+        name = data.get('name', '').strip()
+        name_ar = data.get('name_ar', '').strip()
+        provider = data.get('provider', '').strip()
+        course_type = data.get('course_type', 'General').strip()
+
+        if not name or not provider:
+            return jsonify({'error': 'Name and provider are required'}), 400
+
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO training_courses (name, name_ar, provider, enrolled, status, course_type) VALUES (%s, %s, %s, 0, 'pending', %s) RETURNING id",
+            (name, name_ar if name_ar else None, provider, course_type)
+        )
+        course_id = cursor.fetchone()[0]
+        db.commit()
+        return jsonify({'success': True, 'course_id': course_id, 'message': 'Course added and pending review'}), 201
+    except Exception as e:
+        logger.error(f"Error adding profdev course: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to add course'}), 500
+
+
+@education_bp.route('/profdev/courses/<int:course_id>/approve', methods=['PUT'])
+def approve_profdev_course(course_id):
+    """Approve a pending course and publish it."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        cursor = db.cursor()
+        cursor.execute("UPDATE training_courses SET status = 'published' WHERE id = %s", (course_id,))
+        db.commit()
+        return jsonify({'success': True, 'message': 'Course approved and published'}), 200
+    except Exception as e:
+        logger.error(f"Error approving course: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to approve course'}), 500
+
+
+@education_bp.route('/profdev/courses/<int:course_id>/reject', methods=['PUT'])
+def reject_profdev_course(course_id):
+    """Reject or set a course to draft/pending status."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        cursor = db.cursor()
+        cursor.execute("UPDATE training_courses SET status = 'pending' WHERE id = %s", (course_id,))
+        db.commit()
+        return jsonify({'success': True, 'message': 'Course set to pending status'}), 200
+    except Exception as e:
+        logger.error(f"Error rejecting course: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to reject course'}), 500
+
+
+@education_bp.route('/profdev/settings', methods=['GET'])
+def get_profdev_settings():
+    """Retrieve settings for Professional Development."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        cursor = db.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT * FROM profdev_settings")
+        rows = cursor.fetchall()
+        settings = {r['setting_key']: r['setting_value'] for r in rows}
+        return jsonify({'success': True, 'settings': settings}), 200
+    except Exception as e:
+        logger.error(f"Error getting profdev settings: {e}")
+        return jsonify({'error': 'Failed to load settings'}), 500
+
+
+@education_bp.route('/profdev/settings', methods=['PUT'])
+def update_profdev_settings():
+    """Update settings for Professional Development."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        data = request.get_json() or {}
+        cursor = db.cursor()
+        for k, v in data.items():
+            cursor.execute(
+                "INSERT INTO profdev_settings (setting_key, setting_value) VALUES (%s, %s) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value",
+                (k, v)
+            )
+        db.commit()
+        return jsonify({'success': True, 'message': 'Settings updated successfully'}), 200
+    except Exception as e:
+        logger.error(f"Error updating profdev settings: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to save settings'}), 500
+
+
+@education_bp.route('/profdev/certification-bodies', methods=['POST'])
+def add_certification_body():
+    """Register a new certification body."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        data = request.get_json() or {}
+        name = data.get('name', '').strip()
+        certs_issued = int(data.get('certs_issued', 0))
+
+        if not name:
+            return jsonify({'error': 'Name is required'}), 400
+
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO certification_bodies (name, certs_issued, is_active) VALUES (%s, %s, TRUE) RETURNING id",
+            (name, certs_issued)
+        )
+        body_id = cursor.fetchone()[0]
+        db.commit()
+        return jsonify({'success': True, 'body_id': body_id, 'message': 'Certification body registered successfully'}), 201
+    except Exception as e:
+        logger.error(f"Error adding certification body: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to add certification body'}), 500
+
+
+@education_bp.route('/profdev/certification-bodies/<int:body_id>/toggle', methods=['PUT'])
+def toggle_certification_body(body_id):
+    """Toggle the active/inactive state of a certification body."""
+    ensure_profdev_tables()
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+    try:
+        cursor = db.cursor()
+        cursor.execute("UPDATE certification_bodies SET is_active = NOT is_active WHERE id = %s RETURNING is_active", (body_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'error': 'Certification body not found'}), 404
+        db.commit()
+        return jsonify({'success': True, 'is_active': result[0], 'message': 'Status toggled successfully'}), 200
+    except Exception as e:
+        logger.error(f"Error toggling certification body: {e}")
+        db.rollback()
+        return jsonify({'error': 'Failed to toggle status'}), 500
 
 
 # ═══════════════════════════════════════════════════════════════════

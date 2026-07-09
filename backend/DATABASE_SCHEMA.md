@@ -1,5 +1,11 @@
 # Database Schema Documentation
 
+> [!IMPORTANT]
+> **`users.id` is character(15) (Emirates ID)** in the live production database.
+> Some SQL files (e.g., `database/setup_database.sql`, `create_job_application_tables.sql`) reference
+> `users.id` as UUID or INTEGER — these are STALE and do NOT match production.
+> The authoritative type is `character(15)`.
+
 **Total Tables:** 130
 
 ## Table of Contents

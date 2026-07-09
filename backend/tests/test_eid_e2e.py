@@ -39,7 +39,7 @@ DB_USER = os.getenv("DB_USER", "emirati_user")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "emirati_secure_password")
 
 API_BASE = os.getenv("API_BASE_URL", "http://127.0.0.1:5005")
-JWT_SECRET = os.getenv("JWT_SECRET_KEY", "emirati_journey_secure_jwt_key_2024")
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "test-only-secret-not-for-production")
 
 EID_REGEX = re.compile(r"^[0-9]{15}$")
 
@@ -265,7 +265,7 @@ class TestUAEPassLoginSimulation:
         email = email or self.TEST_EMAIL
         cur.execute("""
             INSERT INTO users (id, email, first_name, last_name, role, uaepass_uuid)
-            VALUES (%s, %s, 'Test', 'EID', 'job_seeker', %s)
+            VALUES (%s, %s, 'Test', 'EID', 'candidate', %s)
             ON CONFLICT (id) DO NOTHING
         """, (eid, email, uaepass_uuid))
 

@@ -14,7 +14,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-educator_bp = Blueprint('educator', __name__, url_prefix='/api/educator')
+educator_bp = Blueprint('training_provider', __name__, url_prefix='/api/educator')
 
 
 # ── DB helper ────────────────────────────────────────────────────────────────
@@ -431,7 +431,7 @@ def get_student_detail(student_id):
             elif hasattr(v, 'isoformat'):
                 student[k] = str(v)
 
-        return jsonify({"success": True, "student": student}), 200
+        return jsonify({"success": True, 'candidate': student}), 200
     except Exception as e:
         logger.error(f"Student detail error: {e}")
         conn.close()

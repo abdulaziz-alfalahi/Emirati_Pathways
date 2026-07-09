@@ -27,10 +27,10 @@ const RoleTestDashboard: React.FC = () => {
   const currentRole = getUserRole();
 
   const roles = [
-    { value: 'job_seeker', label: 'Job Seeker / Candidate', icon: User, color: 'bg-blue-100 text-blue-800', route: '/candidate-dashboard' },
-    { value: 'hr_manager', label: 'HR Manager', icon: Users, color: 'bg-green-100 text-green-800', route: '/hr-dashboard' },
+    { value: 'candidate', label: 'Job Seeker / Candidate', icon: User, color: 'bg-blue-100 text-blue-800', route: '/candidate-dashboard' },
+    { value: 'employer_admin', label: 'HR Manager', icon: Users, color: 'bg-green-100 text-green-800', route: '/hr-dashboard' },
     { value: 'recruiter', label: 'Recruiter', icon: Briefcase, color: 'bg-purple-100 text-purple-800', route: '/recruiter-dashboard' },
-    { value: 'administrator', label: 'Administrator', icon: Crown, color: 'bg-red-100 text-red-800', route: '/admin-dashboard' }
+    { value: 'admin', label: 'Administrator', icon: Crown, color: 'bg-red-100 text-red-800', route: '/admin-dashboard' }
   ];
 
   const getCurrentRoleInfo = () => {

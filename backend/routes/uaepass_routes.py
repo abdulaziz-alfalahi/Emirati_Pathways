@@ -15,11 +15,13 @@ import json
 import logging
 import secrets
 from datetime import datetime, timedelta
+from typing import Optional
 
-from flask import Blueprint, request, jsonify, redirect, session
+from flask import Blueprint, request, jsonify, redirect, session, make_response
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
-    jwt_required, get_jwt_identity
+    jwt_required, get_jwt_identity,
+    set_access_cookies, set_refresh_cookies
 )
 import psycopg2
 import psycopg2.extras
@@ -31,8 +33,66 @@ logger = logging.getLogger(__name__)
 
 uaepass_bp = Blueprint('uaepass', __name__, url_prefix='/api/auth/uaepass')
 
-# In-memory state store (use Redis in production with >1 worker)
+# In-memory state store (fallback when Redis is not available)
 _pending_states: dict = {}
+_redis_client = None
+
+def _get_redis_client():
+    global _redis_client
+    if _redis_client is not None:
+        if _redis_client is False:
+            return None
+        return _redis_client
+        
+    redis_url = os.getenv('REDIS_URL')
+    if redis_url and redis_url.strip():
+        try:
+            import redis
+            client = redis.from_url(redis_url)
+            client.ping()
+            _redis_client = client
+            logger.info("✅ UAE Pass routes: Connected to Redis for state store")
+            return _redis_client
+        except Exception as e:
+            logger.warning(f"⚠️ UAE Pass routes: Redis connection failed: {e}")
+            _redis_client = False
+    else:
+        _redis_client = False
+    return None
+
+def _store_state(state: str, data: dict):
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            redis_client.setex(f"uaepass_state:{state}", 600, json.dumps(data))
+            return
+        except Exception as e:
+            logger.warning(f"Failed to set state in Redis: {e}")
+    # Fallback to local memory
+    data_copy = data.copy()
+    data_copy['created_at'] = datetime.utcnow()
+    _pending_states[state] = data_copy
+
+def _pop_state(state: str) -> Optional[dict]:
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            data_str = redis_client.get(f"uaepass_state:{state}")
+            if data_str:
+                redis_client.delete(f"uaepass_state:{state}")
+                if isinstance(data_str, bytes):
+                    data_str = data_str.decode('utf-8')
+                return json.loads(data_str)
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get/delete state in Redis: {e}")
+    # Fallback to local memory
+    state_data = _pending_states.pop(state, None)
+    if state_data:
+        # Exclude internal field
+        state_data.pop('created_at', None)
+    return state_data
+
 
 
 def _get_db():
@@ -46,28 +106,50 @@ def _get_db():
     )
 
 
+def mask_eid(eid: str) -> str:
+    """Mask Emirates ID for privacy (e.g. 784-XXXX-XXXXXXX-X)"""
+    if not eid:
+        return ""
+    eid_str = str(eid).strip()
+    if len(eid_str) == 15 and eid_str.isdigit():
+        return f"{eid_str[:3]}-****-{eid_str[7:14]}-{eid_str[14]}"
+    return eid_str
+
+
 def _encrypt_eid(plaintext: str) -> str:
     """
-    Encrypt Emirates ID for storage.
-
-    For now, uses a simple reversible encoding.
-    TODO: Replace with AES-256-GCM using UAEPASS_EID_KEY when available.
+    Encrypt Emirates ID for storage using AES-256-GCM.
+    Requires UAEPASS_EID_KEY to be configured in environment.
     """
     import base64
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    import os
+
     key = os.getenv('UAEPASS_EID_KEY', '')
     if not key:
-        # Fallback: base64 encode (NOT production-safe — placeholder)
-        logger.warning("UAEPASS_EID_KEY not set — using base64 encoding (NOT SECURE)")
-        return base64.b64encode(plaintext.encode('utf-8')).decode('utf-8')
+        logger.error("UAEPASS_EID_KEY not set. Encryption failed.")
+        raise ValueError("UAEPASS_EID_KEY environment variable is mandatory but not configured.")
 
-    # When key is available: AES-256-GCM
     try:
-        from cryptography.fernet import Fernet
-        f = Fernet(key.encode('utf-8') if isinstance(key, str) else key)
-        return f.encrypt(plaintext.encode('utf-8')).decode('utf-8')
+        try:
+            key_bytes = base64.b64decode(key)
+            if len(key_bytes) != 32:
+                key_bytes = key.encode('utf-8')
+        except Exception:
+            key_bytes = key.encode('utf-8')
+
+        if len(key_bytes) < 32:
+            key_bytes = key_bytes.ljust(32, b'\x00')
+        elif len(key_bytes) > 32:
+            key_bytes = key_bytes[:32]
+
+        aesgcm = AESGCM(key_bytes)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode('utf-8'), None)
+        return base64.b64encode(nonce + ciphertext).decode('utf-8')
     except Exception as e:
         logger.error(f"EID encryption failed: {e}")
-        return base64.b64encode(plaintext.encode('utf-8')).decode('utf-8')
+        raise
 
 
 @uaepass_bp.route('/login', methods=['GET'])
@@ -84,14 +166,14 @@ def uaepass_login():
     """
     try:
         oauth = UAEPassOAuth()
-        auth_url, state = oauth.get_authorization_url()
+        auth_url, state, nonce = oauth.get_authorization_url()
 
         # Store state for CSRF validation on callback
         return_url = request.args.get('return_url', '')
-        _pending_states[state] = {
-            'created_at': datetime.utcnow(),
-            'return_url': return_url
-        }
+        _store_state(state, {
+            'return_url': return_url,
+            'nonce': nonce
+        })
 
         # Clean up old states (> 10 minutes)
         _cleanup_stale_states()
@@ -154,7 +236,7 @@ def uaepass_callback():
         return redirect(f"{frontend_url}/auth?error=missing_params")
 
     # Validate state (CSRF protection)
-    state_data = _pending_states.pop(state, None)
+    state_data = _pop_state(state)
     if not state_data:
         logger.warning(f"Invalid or expired state token: {state[:16]}...")
         return redirect(f"{frontend_url}/auth?error=invalid_state")
@@ -165,9 +247,18 @@ def uaepass_callback():
         # Step 1: Exchange code for tokens
         token_data = oauth.exchange_code_for_tokens(code)
         uaepass_access_token = token_data.get('access_token')
+        id_token = token_data.get('id_token')
 
         if not uaepass_access_token:
             raise UAEPassError("No access_token in token response")
+
+        # Step 1b: Verify OIDC id_token and nonce (T4.1)
+        expected_nonce = state_data.get('nonce', '')
+        if not id_token:
+            raise UAEPassError("No id_token in token response — OIDC validation failed")
+            
+        # Verify JWKS + signature + audience + issuer + nonce
+        oauth.verify_id_token(id_token, expected_nonce)
 
         # Step 2: Fetch user profile
         raw_profile = oauth.fetch_user_profile(uaepass_access_token)
@@ -201,29 +292,29 @@ def uaepass_callback():
             expires_delta=timedelta(days=30)
         )
 
-        # Step 6: Redirect to frontend with tokens
-        # Using URL fragment (#) so tokens are NOT sent to the server in logs
+        # Step 6: Redirect to frontend and set HttpOnly cookies (T4.1)
         return_url = state_data.get('return_url', '')
         redirect_path = '/auth/uaepass/callback'
 
-        redirect_params = (
-            f"access_token={access_token}"
-            f"&refresh_token={refresh_token}"
-            f"&is_new_user={str(is_new_user).lower()}"
-            f"&user_id={user_id}"
+        query_params = (
+            f"is_new_user={str(is_new_user).lower()}"
             f"&role={user_data.get('role', 'candidate')}"
         )
         if return_url:
-            redirect_params += f"&return_url={return_url}"
+            import urllib.parse
+            query_params += f"&return_url={urllib.parse.quote(return_url)}"
 
-        redirect_url = f"{frontend_url}{redirect_path}#{redirect_params}"
+        redirect_url = f"{frontend_url}{redirect_path}?{query_params}"
 
         logger.info(
-            f"UAE Pass auth successful for user {user_id} "
-            f"(new={is_new_user}), redirecting to frontend"
+            f"UAE Pass auth successful for user {mask_eid(user_id)} "
+            f"(new={is_new_user}), redirecting to frontend with cookie delivery"
         )
 
-        return redirect(redirect_url)
+        response = make_response(redirect(redirect_url))
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+        return response
 
     except UAEPassError as e:
         logger.error(f"UAE Pass auth error: {e}")
@@ -309,6 +400,75 @@ def uaepass_profile():
         }), 500
 
 
+def _migrate_user_id(cursor, old_id: str, new_id: str):
+    """
+    Migrate a user's primary key ID from old_id to new_id,
+    cascading the change to all referencing tables manually.
+    """
+    logger.info(f"Migrating user ID from synthetic {old_id} to real {new_id}...")
+    
+    # 1. Fetch the user's original data
+    cursor.execute("SELECT * FROM users WHERE id = %s", (old_id,))
+    user_row = cursor.fetchone()
+    if not user_row:
+        logger.error(f"User {old_id} not found for migration")
+        return
+    user_data = dict(user_row)
+    
+    # 2. Update the old user's unique fields to prevent unique constraint violation
+    temp_suffix = f"_tmp_{secrets.token_hex(4)}"
+    cursor.execute("""
+        UPDATE users SET
+            username = CASE WHEN username IS NOT NULL THEN username || %s ELSE NULL END,
+            email = CASE WHEN email IS NOT NULL THEN email || %s ELSE NULL END,
+            uaepass_uuid = CASE WHEN uaepass_uuid IS NOT NULL THEN uaepass_uuid || %s ELSE NULL END
+        WHERE id = %s
+    """, (temp_suffix, temp_suffix, temp_suffix, old_id))
+    
+    # 3. Insert the new user with new_id and original values
+    columns = list(user_data.keys())
+    placeholders = [f"%({col})s" for col in columns]
+    insert_data = user_data.copy()
+    insert_data['id'] = new_id
+    
+    # Ensure raw values are used for unique fields
+    insert_data['username'] = user_data['username']
+    insert_data['email'] = user_data['email']
+    insert_data['uaepass_uuid'] = user_data['uaepass_uuid']
+    
+    query_insert = f"INSERT INTO users ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+    cursor.execute(query_insert, insert_data)
+    
+    # 4. Get all tables referencing users(id)
+    cursor.execute("""
+        SELECT
+            tc.table_name, 
+            kcu.column_name
+        FROM 
+            information_schema.table_constraints AS tc 
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name='users';
+    """)
+    fks = cursor.fetchall()
+    
+    # 5. Update referencing tables
+    for tab_name, col_name in fks:
+        try:
+            cursor.execute(f"UPDATE {tab_name} SET {col_name} = %s WHERE {col_name} = %s", (new_id, old_id))
+            logger.info(f"Updated reference in table {tab_name}.{col_name} from {old_id} to {new_id}")
+        except Exception as e:
+            logger.warning(f"Could not update reference in table {tab_name}.{col_name}: {e}")
+        
+    # 6. Delete old user record
+    cursor.execute("DELETE FROM users WHERE id = %s", (old_id,))
+    logger.info(f"Migration from {old_id} to {new_id} completed successfully")
+
+
 def _find_or_create_user(profile: dict) -> tuple:
     """
     Find existing user by uaepass_uuid, or create a new one.
@@ -322,6 +482,11 @@ def _find_or_create_user(profile: dict) -> tuple:
     conn = _get_db()
     conn.autocommit = False
 
+    raw_eid = profile.get('emirates_id', '')
+    eid_encrypted = ''
+    if raw_eid:
+        eid_encrypted = _encrypt_eid(raw_eid)
+
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -333,9 +498,23 @@ def _find_or_create_user(profile: dict) -> tuple:
         existing = cursor.fetchone()
 
         if existing:
+            user_id_to_update = existing['id']
+            # If existing user has a synthetic ID but we now have a real EID, migrate it!
+            if existing['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                real_eid_pk = strip_eid_hyphens(raw_eid)
+                if existing['id'] != real_eid_pk:
+                    _migrate_user_id(cursor, existing['id'], real_eid_pk)
+                    user_id_to_update = real_eid_pk
+
             # Update profile with latest UAE Pass data
             cursor.execute("""
                 UPDATE users SET
+                    first_name = COALESCE(NULLIF(%s, ''), first_name),
+                    last_name = COALESCE(NULLIF(%s, ''), last_name),
+                    full_name = COALESCE(NULLIF(%s, ''), full_name),
+                    email = COALESCE(NULLIF(%s, ''), email),
+                    phone = COALESCE(NULLIF(%s, ''), phone),
+                    emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                     fullname_ar = COALESCE(%s, fullname_ar),
                     nationality = COALESCE(%s, nationality),
                     nationality_ar = COALESCE(%s, nationality_ar),
@@ -349,13 +528,19 @@ def _find_or_create_user(profile: dict) -> tuple:
                 WHERE id = %s
                 RETURNING *
             """, (
+                profile.get('first_name'),
+                profile.get('last_name'),
+                profile.get('full_name'),
+                profile.get('email'),
+                profile.get('phone'),
+                eid_encrypted,
                 profile.get('fullname_ar'),
                 profile.get('nationality'),
                 profile.get('nationality_ar'),
                 profile.get('id_type'),
                 profile.get('uaepass_usertype'),
                 profile.get('title_en'),
-                existing['id']
+                user_id_to_update
             ))
 
             updated = cursor.fetchone()
@@ -363,7 +548,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             cursor.close()
             conn.close()
 
-            logger.info(f"Existing user found and updated: {existing['id']}")
+            logger.info(f"Existing user found and updated: {mask_eid(user_id_to_update)}")
             return dict(updated), False
 
         # 2. Try to find by email (link existing account)
@@ -375,10 +560,23 @@ def _find_or_create_user(profile: dict) -> tuple:
             email_match = cursor.fetchone()
 
             if email_match:
+                user_id_to_update = email_match['id']
+                # If email-matched user has a synthetic ID but we now have a real EID, migrate it!
+                if email_match['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                    real_eid_pk = strip_eid_hyphens(raw_eid)
+                    if email_match['id'] != real_eid_pk:
+                        _migrate_user_id(cursor, email_match['id'], real_eid_pk)
+                        user_id_to_update = real_eid_pk
+
                 # Link UAE Pass to existing account
                 cursor.execute("""
                     UPDATE users SET
                         uaepass_uuid = %s,
+                        first_name = COALESCE(NULLIF(%s, ''), first_name),
+                        last_name = COALESCE(NULLIF(%s, ''), last_name),
+                        full_name = COALESCE(NULLIF(%s, ''), full_name),
+                        phone = COALESCE(NULLIF(%s, ''), phone),
+                        emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                         fullname_ar = COALESCE(%s, fullname_ar),
                         nationality_ar = COALESCE(%s, nationality_ar),
                         id_type = COALESCE(%s, id_type),
@@ -392,12 +590,17 @@ def _find_or_create_user(profile: dict) -> tuple:
                     RETURNING *
                 """, (
                     profile['uaepass_uuid'],
+                    profile.get('first_name'),
+                    profile.get('last_name'),
+                    profile.get('full_name'),
+                    profile.get('phone'),
+                    eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
                     profile.get('uaepass_usertype'),
                     profile.get('title_en'),
-                    email_match['id']
+                    user_id_to_update
                 ))
 
                 linked = cursor.fetchone()
@@ -407,7 +610,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{email_match['id']} (email match)"
+                    f"{mask_eid(user_id_to_update)} (email match)"
                 )
                 return dict(linked), False
 
@@ -421,10 +624,22 @@ def _find_or_create_user(profile: dict) -> tuple:
             phone_match = cursor.fetchone()
 
             if phone_match:
+                user_id_to_update = phone_match['id']
+                # If phone-matched user has a synthetic ID but we now have a real EID, migrate it!
+                if phone_match['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                    real_eid_pk = strip_eid_hyphens(raw_eid)
+                    if phone_match['id'] != real_eid_pk:
+                        _migrate_user_id(cursor, phone_match['id'], real_eid_pk)
+                        user_id_to_update = real_eid_pk
+
                 cursor.execute("""
                     UPDATE users SET
                         uaepass_uuid = %s,
+                        first_name = COALESCE(NULLIF(%s, ''), first_name),
+                        last_name = COALESCE(NULLIF(%s, ''), last_name),
+                        full_name = COALESCE(NULLIF(%s, ''), full_name),
                         email = COALESCE(NULLIF(%s, ''), email),
+                        emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                         fullname_ar = COALESCE(%s, fullname_ar),
                         nationality_ar = COALESCE(%s, nationality_ar),
                         id_type = COALESCE(%s, id_type),
@@ -438,13 +653,17 @@ def _find_or_create_user(profile: dict) -> tuple:
                     RETURNING *
                 """, (
                     profile['uaepass_uuid'],
-                    profile.get('email', ''),
+                    profile.get('first_name'),
+                    profile.get('last_name'),
+                    profile.get('full_name'),
+                    profile.get('email'),
+                    eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
                     profile.get('uaepass_usertype'),
                     profile.get('title_en'),
-                    phone_match['id']
+                    user_id_to_update
                 ))
 
                 linked = cursor.fetchone()
@@ -454,13 +673,12 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{phone_match['id']} (phone match)"
+                    f"{mask_eid(user_id_to_update)} (phone match)"
                 )
                 return dict(linked), False
 
         # 4. Create new user
         # Determine the user's EID for the primary key
-        raw_eid = profile.get('emirates_id', '')
         eid_for_pk = ''
         if raw_eid and is_valid_eid(raw_eid):
             eid_for_pk = strip_eid_hyphens(raw_eid)
@@ -469,11 +687,11 @@ def _find_or_create_user(profile: dict) -> tuple:
             # Use advisory lock to prevent race condition under concurrent registration
             cursor.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
             cursor.execute("""
-                SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+                SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
                 FROM users WHERE id LIKE '7840000%'
             """)
             row = cursor.fetchone()
-            max_seq = row[0] if row and row[0] else 0
+            max_seq = row['max_seq'] if row and row.get('max_seq') else 0
             eid_for_pk = f"784{'0000'}{max_seq + 1:07d}{'0'}"
 
         # Encrypt EID before storage in the enc column (backward compat)
@@ -483,7 +701,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
         cursor.execute("""
             INSERT INTO users (
-                id, email, first_name, last_name, phone, role,
+                id, email, first_name, last_name, full_name, phone, role,
                 emirate, nationality, nationality_ar,
                 is_active, is_verified,
                 uaepass_uuid, emirates_id_enc, fullname_ar,
@@ -491,7 +709,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                 auth_method, uaepass_verified_at,
                 last_login, created_at, updated_at
             ) VALUES (
-                %s, %s, %s, %s, %s, 'candidate',
+                %s, %s, %s, %s, %s, %s, 'candidate',
                 '', %s, %s,
                 TRUE, TRUE,
                 %s, %s, %s,
@@ -505,6 +723,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             profile.get('email', '').lower().strip() or f"{profile['uaepass_uuid']}@uaepass.local",
             profile.get('first_name', ''),
             profile.get('last_name', ''),
+            profile.get('full_name', ''),
             profile.get('phone', ''),
             profile.get('nationality', 'UAE'),
             profile.get('nationality_ar', ''),
@@ -517,11 +736,28 @@ def _find_or_create_user(profile: dict) -> tuple:
         ))
 
         new_user = cursor.fetchone()
+        
+        # Record consents for the new UAE Pass user
+        from flask import has_request_context
+        req_ip = request.remote_addr if has_request_context() else '127.0.0.1'
+        req_ua = request.headers.get('User-Agent', 'unknown') if has_request_context() else 'unknown'
+        
+        for consent_type in ['terms', 'privacy', 'data_processing']:
+            cursor.execute("""
+                INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
+                VALUES (%s, %s, True, '1.0', 'uaepass', %s, %s);
+            """, (
+                new_user['id'],
+                consent_type,
+                req_ip,
+                req_ua
+            ))
+            
         conn.commit()
         cursor.close()
         conn.close()
 
-        logger.info(f"New user created via UAE Pass: {new_user['id']}")
+        logger.info(f"New user created via UAE Pass: {mask_eid(new_user['id'])}")
         return dict(new_user), True
 
     except Exception as e:
@@ -560,8 +796,8 @@ def dev_login():
 
     ⚠️ MUST be removed or disabled before production deployment.
     """
-    if os.getenv('FLASK_ENV') == 'production':
-        return jsonify({'success': False, 'message': 'Dev login is disabled in production'}), 403
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+        return jsonify({'error': 'Not available'}), 404
 
     data = request.get_json() or {}
     user_id = str(data.get('user_id', '')).strip()
@@ -636,8 +872,8 @@ def dev_login_users():
     DEV-ONLY: List all test users available for dev login.
     GET /api/auth/uaepass/dev-login/users
     """
-    if os.getenv('FLASK_ENV') == 'production':
-        return jsonify({'success': False, 'message': 'Disabled in production'}), 403
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+        return jsonify({'error': 'Not available'}), 404
 
     try:
         conn = _get_db()

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { profileService, ExperienceEntry } from '@/services/profile/profileService';
-import { Briefcase, Calendar, MapPin, Plus, Trash2 } from 'lucide-react';
+import { Briefcase, Calendar, Edit2, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 export const ExperienceModule = () => {
     const [experiences, setExperiences] = useState<ExperienceEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [editId, setEditId] = useState<number | null>(null);
     const { language, isRTL } = useLanguage();
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
@@ -19,6 +20,32 @@ export const ExperienceModule = () => {
         is_current: false,
         description: ''
     });
+
+    const resetForm = () => {
+        setNewEntry({
+            job_title: '',
+            company: '',
+            location: '',
+            start_date: '',
+            is_current: false,
+            description: ''
+        });
+        setEditId(null);
+    };
+
+    const handleEdit = (exp: ExperienceEntry) => {
+        setNewEntry({
+            job_title: exp.job_title || '',
+            company: exp.company || '',
+            location: exp.location || '',
+            start_date: exp.start_date ? exp.start_date.substring(0, 10) : '',
+            end_date: exp.end_date ? exp.end_date.substring(0, 10) : '',
+            is_current: exp.is_current || false,
+            description: exp.description || ''
+        });
+        setEditId(exp.id || null);
+        setShowAddForm(true);
+    };
 
     useEffect(() => {
         loadExperience();
@@ -42,19 +69,34 @@ export const ExperienceModule = () => {
 
     const handleSave = async () => {
         try {
-            await profileService.addExperience(newEntry);
+            if (editId) {
+                await profileService.updateExperience(editId, newEntry);
+            } else {
+                await profileService.addExperience(newEntry);
+            }
             setShowAddForm(false);
-            setNewEntry({
-                job_title: '',
-                company: '',
-                location: '',
-                start_date: '',
-                is_current: false,
-                description: ''
-            });
+            resetForm();
             loadExperience();
         } catch (e) {
-            alert(t('Failed to save experience', 'فشل حفظ الخبرة'));
+            alert(editId ? t('Failed to update experience', 'فشل تحديث الخبرة') : t('Failed to save experience', 'فشل حفظ الخبرة'));
+        }
+    };
+
+    const handleDelete = async (id?: number) => {
+        if (!id) return;
+        if (!window.confirm(t('Are you sure you want to delete this experience?', 'هل أنت متأكد من حذف هذه الخبرة؟'))) {
+            return;
+        }
+        try {
+            const res = await profileService.deleteExperience(id);
+            if (res.success) {
+                loadExperience();
+            } else {
+                alert(res.message || t('Failed to delete experience', 'فشل حذف الخبرة'));
+            }
+        } catch (e) {
+            console.error(e);
+            alert(t('Failed to delete experience', 'فشل حذف الخبرة'));
         }
     };
 
@@ -68,7 +110,10 @@ export const ExperienceModule = () => {
                     <p className="text-gray-500">{t('Showcase your professional journey.', 'اعرض مسيرتك المهنية.')}</p>
                 </div>
                 <button
-                    onClick={() => setShowAddForm(true)}
+                    onClick={() => {
+                        resetForm();
+                        setShowAddForm(true);
+                    }}
                     className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-colors shadow-md"
                 >
                     <Plus size={18} />
@@ -78,7 +123,9 @@ export const ExperienceModule = () => {
 
             {showAddForm && (
                 <div className="bg-white p-6 rounded-2xl shadow-lg border border-teal-100 animate-slide-down">
-                    <h3 className="font-bold text-lg mb-4">{t('Add New Role', 'إضافة منصب جديد')}</h3>
+                    <h3 className="font-bold text-lg mb-4">
+                        {editId ? t('Edit Position', 'تعديل المنصب') : t('Add New Role', 'إضافة منصب جديد')}
+                    </h3>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <input
                             placeholder={t('Job Title', 'المسمى الوظيفي')}
@@ -136,7 +183,10 @@ export const ExperienceModule = () => {
 
                     <div className="flex justify-end gap-3">
                         <button
-                            onClick={() => setShowAddForm(false)}
+                            onClick={() => {
+                                resetForm();
+                                setShowAddForm(false);
+                            }}
                             className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                         >
                             {t('Cancel', 'إلغاء')}
@@ -145,7 +195,7 @@ export const ExperienceModule = () => {
                             onClick={handleSave}
                             className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-sm"
                         >
-                            {t('Save Position', 'حفظ المنصب')}
+                            {editId ? t('Update Position', 'تحديث المنصب') : t('Save Position', 'حفظ المنصب')}
                         </button>
                     </div>
                 </div>
@@ -183,9 +233,22 @@ export const ExperienceModule = () => {
                                     {exp.description}
                                 </p>
                             </div>
-                            <button className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Trash2 size={18} />
-                            </button>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    onClick={() => handleEdit(exp)}
+                                    className="text-gray-400 hover:text-teal-600 transition-colors"
+                                    title={t('Edit', 'تعديل')}
+                                >
+                                    <Edit2 size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(exp.id)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                    title={t('Delete', 'حذف')}
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}

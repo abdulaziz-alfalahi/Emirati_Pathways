@@ -5,8 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Briefcase, Users, TrendingUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 interface RetireeResource {
   id: string;
   title: string;

@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type { 
   Mentor, 
   MentorshipRelationship, 
@@ -26,7 +24,7 @@ const castMentorData = (data: any): Mentor => {
 export class MentorshipService {
   // Mentor profile management
   async createMentorProfile(profileData: MentorProfile): Promise<Mentor> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -43,7 +41,7 @@ export class MentorshipService {
   }
 
   async updateMentorProfile(updates: Partial<MentorProfile>): Promise<Mentor> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -58,7 +56,7 @@ export class MentorshipService {
   }
 
   async getMentorProfile(userId?: string): Promise<Mentor | null> {
-    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
+    // TODO: Connect to Flask API - const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
     if (!targetUserId) return null;
 
     const { data, error } = await supabase
@@ -233,7 +231,7 @@ export class MentorshipService {
 
   // Mentorship relationship management
   async requestMentorship(mentorId: string, goals: string): Promise<MentorshipRelationship> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -271,7 +269,7 @@ export class MentorshipService {
   }
 
   async getUserRelationships(): Promise<MentorshipRelationship[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase

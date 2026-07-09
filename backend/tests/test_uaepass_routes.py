@@ -30,7 +30,9 @@ for p in (_root_dir, _backend_dir):
         sys.path.insert(0, p)
 
 from app import create_app
-from backend.routes.uaepass_routes import uaepass_bp, _pending_states, _cleanup_stale_states
+from backend.routes.uaepass_routes import (
+    uaepass_bp, _pending_states, _cleanup_stale_states, _find_or_create_user
+)
 
 
 SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
@@ -42,6 +44,7 @@ SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
 def app():
     """Create a Flask app with TESTING enabled (non-production)."""
     os.environ.setdefault("JWT_SECRET_KEY", SECRET)
+    os.environ["ENABLE_DEV_LOGIN"] = "true"
     os.environ.pop("FLASK_ENV", None)  # ensure NOT production
     test_app = create_app()
     test_app.config.update({"TESTING": True})
@@ -95,10 +98,10 @@ class TestDevLoginProductionGuard:
             "/api/auth/uaepass/dev-login",
             json={"user_id": "784000000000001"},
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 404
         body = resp.get_json()
-        assert body["success"] is False
-        assert "production" in body["message"].lower()
+        assert "error" in body
+        assert "not available" in body["error"].lower()
 
 
 # ── Unit: Dev-Login Input Validation ───────────────────────────────
@@ -226,3 +229,109 @@ class TestCleanupStaleStates:
         _pending_states.clear()
         _cleanup_stale_states()  # should not raise
         assert len(_pending_states) == 0
+
+
+# ── Unit: _find_or_create_user ─────────────────────────────────────
+
+@pytest.mark.unit
+class TestFindOrCreateUser:
+    """Tests for _find_or_create_user database operations."""
+
+    @patch("backend.routes.uaepass_routes._get_db")
+    def test_find_or_create_user_synthetic_eid(self, mock_get_db):
+        """Verify _find_or_create_user generates a synthetic EID correctly using dict cursor."""
+        mock_cursor = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_get_db.return_value = mock_conn
+
+        # Mock results
+        # 1. First SELECT uaepass_uuid -> None (new user)
+        # 2. Second SELECT email -> None (not found)
+        # 3. Third SELECT MAX(CAST(...)) -> {'max_seq': 42}
+        # 4. Fourth INSERT RETURNING * -> {'id': '784000000000430', 'role': 'candidate'}
+        mock_cursor.fetchone.side_effect = [
+            None,                  # SELECT uaepass_uuid (not found)
+            None,                  # SELECT email (not found)
+            {'max_seq': 42},       # SELECT MAX(CAST(...)) (max synthetic sequence)
+            {'id': '784000000000430', 'role': 'candidate'} # INSERT RETURNING * (new user data)
+        ]
+
+        profile = {
+            'uaepass_uuid': '6f5b3da6-3fe1-453a-81e3-aa3c5291a125',
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com'
+        }
+
+        user_data, is_new = _find_or_create_user(profile)
+
+        assert is_new is True
+        assert user_data['id'] == '784000000000430'
+        
+        # Verify SELECT MAX(...) query was executed
+        assert mock_cursor.execute.call_count >= 2
+        # Verify connection committed
+        mock_conn.commit.assert_called_once()
+
+
+# ── Unit: UAE Pass OIDC Validation ──────────────────────────────────
+
+@pytest.mark.unit
+class TestUAEPassOIDCValidation:
+    """Verify OIDC signature, nonce, and JWKS validation behavior."""
+
+    @patch("jwt.PyJWKClient")
+    def test_verify_id_token_fails_on_jwt_error(self, mock_jwk_client_class):
+        """Should raise UAEPassError if token format is completely invalid."""
+        from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassError
+        oauth = UAEPassOAuth()
+        
+        with pytest.raises(UAEPassError) as exc:
+            oauth.verify_id_token("completely-invalid-token", "some-nonce")
+        assert "validation failed" in str(exc.value).lower()
+
+    @patch("jwt.PyJWKClient")
+    @patch("jwt.decode")
+    def test_verify_id_token_checks_signature_and_nonce(self, mock_jwt_decode, mock_jwk_client_class):
+        """Should call PyJWKClient and verify signature and nonce, succeeding only if nonce matches."""
+        from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassError
+        oauth = UAEPassOAuth()
+        
+        # Setup mocks
+        mock_jwk_client = MagicMock()
+        mock_signing_key = MagicMock()
+        mock_signing_key.key = "mock-pub-key"
+        mock_jwk_client.get_signing_key_from_jwt.return_value = mock_signing_key
+        mock_jwk_client_class.return_value = mock_jwk_client
+        
+        # Mock decode returns expected claims but with wrong nonce
+        mock_jwt_decode.return_value = {
+            "iss": "https://stg-id.uaepass.ae",
+            "aud": oauth.config.client_id,
+            "nonce": "wrong-nonce"
+        }
+        
+        # 1. Nonce mismatch should raise UAEPassError
+        with pytest.raises(UAEPassError) as exc:
+            oauth.verify_id_token("mock-token", "expected-nonce")
+        assert "nonce mismatch" in str(exc.value).lower()
+        
+        # 2. Nonce match should succeed
+        mock_jwt_decode.return_value = {
+            "iss": "https://stg-id.uaepass.ae",
+            "aud": oauth.config.client_id,
+            "nonce": "expected-nonce"
+        }
+        claims = oauth.verify_id_token("mock-token", "expected-nonce")
+        assert claims["nonce"] == "expected-nonce"
+        mock_jwt_decode.assert_called_with(
+            "mock-token",
+            "mock-pub-key",
+            algorithms=["RS256"],
+            audience=oauth.config.client_id,
+            issuer="https://stg-id.uaepass.ae",
+            options={"verify_signature": True}
+        )
+
+

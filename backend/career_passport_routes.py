@@ -38,7 +38,7 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS career_passports (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id INTEGER REFERENCES users(id) UNIQUE,
+            user_id VARCHAR(50) REFERENCES users(id) UNIQUE,
             level INTEGER DEFAULT 1,
             total_stamps INTEGER DEFAULT 0,
             title VARCHAR(100) DEFAULT 'Explorer',
@@ -145,7 +145,7 @@ def init_tables():
 # GET PASSPORT
 # ═══════════════════════════════════════════════════════════
 
-@career_passport_bp.route('/<int:user_id>', methods=['GET'])
+@career_passport_bp.route('/<user_id>', methods=['GET'])
 def get_passport(user_id):
     """Get full passport with all stamps for a user."""
     conn = get_db()
@@ -229,7 +229,7 @@ def get_passport(user_id):
 # SUMMARY
 # ═══════════════════════════════════════════════════════════
 
-@career_passport_bp.route('/<int:user_id>/summary', methods=['GET'])
+@career_passport_bp.route('/<user_id>/summary', methods=['GET'])
 def get_passport_summary(user_id):
     """Quick stats for a user's passport (for dashboard widgets)."""
     conn = get_db()

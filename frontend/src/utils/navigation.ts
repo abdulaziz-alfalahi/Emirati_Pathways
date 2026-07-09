@@ -66,7 +66,7 @@ const ROLE_OFFER_ROUTES: Record<string, string> = {
  * Use this everywhere instead of duplicated if/else chains.
  *
  * @param notificationType  e.g. 'new_message', 'application_update', 'interview_scheduled'
- * @param userRole          e.g. 'recruiter', 'candidate', 'administrator'
+ * @param userRole          e.g. 'recruiter', 'candidate', 'admin'
  * @param metadata          Optional extra data (e.g. { conversation_id: '...' })
  * @param fallbackLink      Optional link from the notification itself
  */

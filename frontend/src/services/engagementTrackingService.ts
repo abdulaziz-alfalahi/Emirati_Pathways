@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export interface SessionAttendance {
   id: string;
   session_id: string;
@@ -57,7 +54,7 @@ export class EngagementTrackingService {
 
   // Session Attendance Tracking
   static async startSessionAttendance(sessionId: string, eventId: string): Promise<SessionAttendance> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -131,7 +128,7 @@ export class EngagementTrackingService {
     interactionData: Record<string, any> = {},
     durationSeconds: number = 0
   ): Promise<BoothInteraction> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAuthToken } from '@/utils/tokenUtils';
+import { getAuthToken, getCookie } from '@/utils/tokenUtils';
 
 // Determine Base URL
 // Priority: Vite Env Var -> Default Localhost
@@ -13,17 +13,30 @@ const getToken = () => {
 
 const apiClient = axios.create({
     baseURL: API_URL,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request Interceptor: Attach Token
+// Request Interceptor: Attach Token & CSRF Token
 apiClient.interceptors.request.use(
     (config) => {
         const token = getToken();
-        if (token) {
+        if (token && token !== 'cookie_authenticated') {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        // Ensure no legacy/inline headers send the placeholder or null/undefined values
+        if (config.headers.Authorization) {
+            const authHeader = String(config.headers.Authorization);
+            if (authHeader.includes('cookie_authenticated') || authHeader.includes('null') || authHeader.includes('undefined')) {
+                delete config.headers.Authorization;
+            }
+        }
+        // Add CSRF Token if present in cookies
+        const csrfToken = getCookie('csrf_access_token');
+        if (csrfToken) {
+            config.headers['X-CSRF-TOKEN'] = csrfToken;
         }
         return config;
     },

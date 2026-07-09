@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type {
   Skill,
   UserSkill,
@@ -57,7 +55,7 @@ export class SkillsMarketplaceService {
 
   // User Skills Management
   async getUserSkills(userId?: string): Promise<UserSkill[]> {
-    const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
+    // TODO: Connect to Flask API - const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
     if (!targetUserId) return [];
 
     const { data, error } = await supabase
@@ -80,7 +78,7 @@ export class SkillsMarketplaceService {
     description?: string;
     portfolio_links?: string[];
   }): Promise<UserSkill> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -224,7 +222,7 @@ export class SkillsMarketplaceService {
     deadline?: string;
     max_applicants?: number;
   }): Promise<SkillOpportunity> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -254,7 +252,7 @@ export class SkillsMarketplaceService {
   }
 
   async getUserOpportunities(): Promise<SkillOpportunityWithExtras[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -278,7 +276,7 @@ export class SkillsMarketplaceService {
     proposed_budget?: number;
     portfolio_links?: string[];
   }): Promise<SkillApplication> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -310,7 +308,7 @@ export class SkillsMarketplaceService {
   }
 
   async getUserApplications(): Promise<SkillApplication[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -376,7 +374,7 @@ export class SkillsMarketplaceService {
   }
 
   async getUserCollaborations(): Promise<ProjectCollaboration[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -414,7 +412,7 @@ export class SkillsMarketplaceService {
     description?: string;
     duration_hours?: number;
   }): Promise<SkillExchangeRequest> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -447,7 +445,7 @@ export class SkillsMarketplaceService {
   }
 
   async getUserExchangeRequests(): Promise<SkillExchangeRequest[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase

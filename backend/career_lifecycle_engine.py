@@ -131,12 +131,12 @@ class CareerLifecycleEngine:
     def initialize_user_stage(self, user_id: int, role: str = "candidate") -> Dict[str, Any]:
         """Initialize lifecycle stage for a new user based on role."""
         stage_map = {
-            "student": LifecycleStage.DISCOVERY,
+            'candidate': LifecycleStage.DISCOVERY,
             "candidate": LifecycleStage.ASSESSMENT,
-            "job_seeker": LifecycleStage.ENTRY,
+            'candidate': LifecycleStage.ENTRY,
             "mentor": LifecycleStage.LEADERSHIP,
-            "employer": LifecycleStage.GROWTH,
-            "retiree": LifecycleStage.LEGACY,
+            'employer_admin': LifecycleStage.GROWTH,
+            'candidate': LifecycleStage.LEGACY,
         }
         stage = stage_map.get(role, LifecycleStage.DISCOVERY)
 

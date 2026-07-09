@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { restClient } from '@/utils/api';
 import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api/v2/profile` : '/api/v2/profile';
@@ -32,6 +33,7 @@ export interface CandidateProfile {
         notice_period: string;
     };
     assessments: Assessment[];
+    english_proficiency?: string;
 }
 
 export interface Assessment {
@@ -81,7 +83,9 @@ const getHeaders = () => {
 export const profileService = {
     getProfile: async () => {
         try {
-            const response = await axios.get(`${API_URL}/`, { headers: getHeaders() });
+            // restClient sends the httpOnly cookie (withCredentials) and never the
+            // 'cookie_authenticated' placeholder Bearer, so cookie auth succeeds.
+            const response = await restClient.get(`${API_URL}/`);
             return response.data;
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -91,7 +95,7 @@ export const profileService = {
 
     updateIdentity: async (data: Partial<CandidateProfile>) => {
         try {
-            const response = await axios.put(`${API_URL}/identity`, data, { headers: getHeaders() });
+            const response = await restClient.put(`${API_URL}/identity`, data);
             return response.data;
         } catch (error) {
             throw error;
@@ -100,7 +104,7 @@ export const profileService = {
 
     addExperience: async (entry: ExperienceEntry) => {
         try {
-            const response = await axios.post(`${API_URL}/experience`, entry, { headers: getHeaders() });
+            const response = await restClient.post(`${API_URL}/experience`, entry);
             return response.data;
         } catch (error) {
             throw error;
@@ -109,7 +113,7 @@ export const profileService = {
 
     addEducation: async (entry: EducationEntry) => {
         try {
-            const response = await axios.post(`${API_URL}/education`, entry, { headers: getHeaders() });
+            const response = await restClient.post(`${API_URL}/education`, entry);
             return response.data;
         } catch (error) {
             throw error;
@@ -120,16 +124,11 @@ export const profileService = {
         const formData = new FormData();
         formData.append('cv_file', file);
 
-        const token = getAuthToken();
-        const headers = {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-        };
-
         const uploadUrl = '/api/cv/upload';
 
         try {
-            const response = await axios.post(uploadUrl, formData, { headers });
+            // restClient adds cookie auth + CSRF and sets the multipart boundary.
+            const response = await restClient.post(uploadUrl, formData);
             return response.data;
         } catch (error) {
             console.error('CV Upload failed:', error);
@@ -139,7 +138,7 @@ export const profileService = {
 
     listCVs: async () => {
         try {
-            const response = await axios.get('/api/cv/list', { headers: getHeaders() });
+            const response = await restClient.get('/api/cv/list');
             return response.data;
         } catch (error) {
             console.error('Error listing CVs:', error);
@@ -149,7 +148,7 @@ export const profileService = {
 
     deleteCV: async (cvId: string) => {
         try {
-            const response = await axios.delete(`/api/cv/${cvId}`, { headers: getHeaders() });
+            const response = await restClient.delete(`/api/cv/${cvId}`);
             return response.data;
         } catch (error) {
             console.error('Error deleting CV:', error);
@@ -160,7 +159,7 @@ export const profileService = {
     toggleCVVisibility: async (cvId: string, isVisible: boolean) => {
         try {
             // Check if endpoint exists, otherwise we might need to rely on generic update
-            const response = await axios.put(`/api/cv/${cvId}/visible`, { visible: isVisible }, { headers: getHeaders() });
+            const response = await restClient.put(`/api/cv/${cvId}/visible`, { visible: isVisible });
             return response.data;
         } catch (error) {
             console.error('Error toggling CV visibility:', error);
@@ -170,11 +169,63 @@ export const profileService = {
 
     getDebugAuth: async () => {
         try {
-            const response = await axios.get('/api/cv/debug-auth', { headers: getHeaders() });
+            const response = await restClient.get('/api/cv/debug-auth');
             return response.data;
         } catch (error) {
             console.error('Debug auth check failed', error);
             return { error: 'Failed to check auth' };
+        }
+    },
+
+    deleteExperience: async (id: number) => {
+        try {
+            const response = await restClient.delete(`${API_URL}/experience/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting experience:', error);
+            throw error;
+        }
+    },
+
+    updateExperience: async (id: number, entry: ExperienceEntry) => {
+        try {
+            const response = await restClient.put(`${API_URL}/experience/${id}`, entry);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating experience:', error);
+            throw error;
+        }
+    },
+
+    deleteEducation: async (id: number) => {
+        try {
+            const response = await restClient.delete(`${API_URL}/education/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting education:', error);
+            throw error;
+        }
+    },
+
+    updateEducation: async (id: number, entry: EducationEntry) => {
+        try {
+            const response = await restClient.put(`${API_URL}/education/${id}`, entry);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating education:', error);
+            throw error;
+        }
+    },
+
+    uploadVideoIntro: async (videoBlob: Blob) => {
+        try {
+            const formData = new FormData();
+            formData.append('video', videoBlob, 'video_intro.webm');
+            const response = await restClient.post(`${API_URL}/video/upload`, formData);
+            return response.data;
+        } catch (error) {
+            console.error('Error uploading video intro:', error);
+            throw error;
         }
     }
 };

@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
   Smartphone, 
@@ -42,7 +41,7 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
   const setupTOTP = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName: 'Authenticator App'
       });
@@ -69,13 +68,13 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
 
     setIsLoading(true);
     try {
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+      // TODO: Connect to Flask API - const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId
       });
 
       if (challengeError) throw challengeError;
 
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      // TODO: Connect to Flask API - const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
         code: verificationCode

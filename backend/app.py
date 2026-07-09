@@ -25,7 +25,7 @@ from functools import wraps
 
 from flask import Flask, request, jsonify, g, send_file, send_from_directory
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, verify_jwt_in_request, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import psycopg2
 import psycopg2.extras
@@ -40,9 +40,80 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = os.path.join(script_dir, '.env')
 load_dotenv(env_path)
 
+# Automatically compile DATABASE_URL from individual DB_ connection details
+# to prevent connection failures in endpoints using the DATABASE_URL environment fallback.
+import urllib.parse
+if not os.environ.get('DATABASE_URL'):
+    db_user = os.environ.get('DB_USER', 'emirati_user')
+    db_pass = os.environ.get('DB_PASSWORD', 'emirati_secure_password')
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT', '5432')
+    db_name = os.environ.get('DB_NAME', 'emirati_journey')
+    
+    encoded_user = urllib.parse.quote_plus(db_user)
+    encoded_pass = urllib.parse.quote_plus(db_pass)
+    
+    database_url = f"postgresql://{encoded_user}:{encoded_pass}@{db_host}:{db_port}/{db_name}"
+    os.environ['DATABASE_URL'] = database_url
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# =====================================================
+# OBSERVABILITY (T4.4): request-id correlation, JSON logs, Sentry
+# =====================================================
+class _RequestIdFilter(logging.Filter):
+    """Inject the current request id into every log record (best-effort)."""
+    def filter(self, record):
+        try:
+            from flask import g, has_request_context
+            record.request_id = getattr(g, 'request_id', '-') if has_request_context() else '-'
+        except Exception:
+            record.request_id = '-'
+        return True
+
+
+class _JsonLogFormatter(logging.Formatter):
+    """Structured JSON log lines for centralized aggregation."""
+    def format(self, record):
+        payload = {
+            'ts': datetime.utcnow().isoformat() + 'Z',
+            'level': record.levelname,
+            'logger': record.name,
+            'request_id': getattr(record, 'request_id', '-'),
+            'message': record.getMessage(),
+        }
+        if record.exc_info:
+            payload['exc'] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+# Opt-in JSON logging (set LOG_FORMAT=json in production); plain text otherwise.
+if os.getenv('LOG_FORMAT', '').lower() == 'json':
+    _json_handler = logging.StreamHandler()
+    _json_handler.setFormatter(_JsonLogFormatter())
+    _json_handler.addFilter(_RequestIdFilter())
+    _root_logger = logging.getLogger()
+    _root_logger.handlers = [_json_handler]
+    _root_logger.setLevel(getattr(logging, os.getenv('LOG_LEVEL', 'INFO').upper(), logging.INFO))
+
+# Initialize Sentry only when a DSN is configured (inert otherwise).
+_sentry_dsn = os.getenv('SENTRY_DSN')
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            integrations=[FlaskIntegration()],
+            environment=os.getenv('FLASK_ENV', 'production'),
+            traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.0')),
+            send_default_pii=False,  # never ship citizen PII to Sentry
+        )
+        logger.info("Sentry initialized")
+    except Exception as _sentry_err:
+        logger.warning(f"Sentry init failed: {_sentry_err}")
 
 # Debug: Print AI API Key status
 dashscope_key = os.getenv('DASHSCOPE_API_KEY')
@@ -109,7 +180,27 @@ from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
 # Initialize SocketIO (lazy — will attach to app below)
 # IMPORTANT: cors_allowed_origins MUST be in the constructor.
 # Setting it as a property after init_app() is silently ignored.
-socketio = SocketIO(async_mode='gevent', logger=True, engineio_logger=True, cors_allowed_origins='*')
+_socketio_allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'https://emirati.ehrdc.gov.ae').split(',')
+if os.getenv('FLASK_ENV', 'production') != 'production':
+    _socketio_allowed_origins.extend(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5005'])
+# Cross-worker message queue: gunicorn runs multiple GeventWebSocket workers, so a
+# `join`/`offer`/`answer`/`ice-candidate` handled by one worker must be relayed to a
+# participant connected to another worker. Without a shared message_queue, room emits
+# stay worker-local and WebRTC signaling never reaches the peer — each side sees only
+# its own camera. Reuse the app-wide REDIS_URL (compose points it at the `redis`
+# service, sometimes password-protected) so the queue matches the notification system
+# and rate limiter; SOCKETIO_MESSAGE_QUEUE can override it independently.
+_socketio_message_queue = os.environ.get(
+    'SOCKETIO_MESSAGE_QUEUE',
+    os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+)
+socketio = SocketIO(
+    async_mode='gevent',
+    logger=True,
+    engineio_logger=True,
+    cors_allowed_origins=_socketio_allowed_origins,
+    message_queue=_socketio_message_queue,
+)
 
 # In-memory presence tracking
 online_users: dict[str, str] = {}
@@ -124,10 +215,36 @@ _jwt_secret = os.getenv('JWT_SECRET_KEY')
 if not _jwt_secret:
     raise RuntimeError("FATAL: JWT_SECRET_KEY environment variable is required.")
 app.config['JWT_SECRET_KEY'] = _jwt_secret
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # T4.1: short-lived access token
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
+app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
+app.config['JWT_COOKIE_SECURE'] = True
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+app.config['JWT_REFRESH_COOKIE_SAMESITE'] = 'Strict'
+app.config['JWT_ACCESS_COOKIE_SAMESITE'] = 'Lax'
 
 jwt = JWTManager(app)
+
+# T4.4: apply hardened session/cookie settings from SecurityConfig (wires the
+# previously-unused security_config.py into the running app).
+try:
+    from backend.security_config import SecurityConfig
+    app.config['SESSION_COOKIE_SECURE'] = SecurityConfig.SESSION_COOKIE_SECURE
+    app.config['SESSION_COOKIE_HTTPONLY'] = SecurityConfig.SESSION_COOKIE_HTTPONLY
+    app.config['SESSION_COOKIE_SAMESITE'] = SecurityConfig.SESSION_COOKIE_SAMESITE
+    app.config['PERMANENT_SESSION_LIFETIME'] = SecurityConfig.PERMANENT_SESSION_LIFETIME
+except Exception as _sc_err:
+    logger.warning(f"Could not apply SecurityConfig session settings: {_sc_err}")
+
+# UAE Pass EID Encryption Key Configuration
+_uaepass_eid_key = os.getenv('UAEPASS_EID_KEY')
+if not _uaepass_eid_key:
+    if os.getenv('FLASK_ENV', 'production') == 'production':
+        raise RuntimeError("FATAL: UAEPASS_EID_KEY environment variable is required in production.")
+    else:
+        logger.warning("⚠️  UAEPASS_EID_KEY not set. Using dev default key (non-production).")
+        import base64
+        os.environ['UAEPASS_EID_KEY'] = base64.b64encode(b'dev_uaepass_eid_key_32bytes_long').decode('utf-8')
 
 # CORS Configuration
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
@@ -158,14 +275,14 @@ else:
     cors_origins.extend(allowed_origin_list)
     logger.info("CORS: Development mode — localhost + ngrok origins ENABLED")
 
-# Note: socketio cors_allowed_origins is set to '*' in the constructor above.
+# Note: socketio cors_allowed_origins is now restricted (see constructor above).
 # The Flask CORS below handles API route CORS separately.
 
 CORS(app, resources={
     r"/api/*": {
         "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-CSRF-Token", "X-CSRF-TOKEN"],
         "supports_credentials": True,
         "expose_headers": ["Authorization"]
     },
@@ -194,6 +311,12 @@ def rate_limit_auth():
     """Apply strict rate limits to sensitive endpoints."""
     pass  # flask-limiter decorators are applied on the individual routes
 
+
+@app.before_request
+def _assign_request_id():
+    """T4.4: give every request a correlation id (honor inbound X-Request-ID)."""
+    g.request_id = request.headers.get('X-Request-ID') or secrets.token_hex(8)
+
 # =====================================================
 # SECURITY HEADERS (OWASP: Security Misconfiguration)
 # =====================================================
@@ -214,18 +337,23 @@ def add_security_headers(response):
     response.headers.pop('Server', None)
 
     if _is_production:
-        # HSTS — force HTTPS (only enable after SSL is configured)
-        # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        # Content Security Policy
+        # HSTS — force HTTPS
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        # Content Security Policy — tightened (no unsafe-eval)
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com data:; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self' wss: ws:; "
-            "frame-ancestors 'none';"
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https://emirati.ehrdc.gov.ae wss://emirati.ehrdc.gov.ae; "
+            "frame-ancestors 'none'"
         )
+
+    # T4.4: expose the request correlation id to clients/log aggregators
+    _rid = getattr(g, 'request_id', None)
+    if _rid:
+        response.headers['X-Request-ID'] = _rid
     return response
 
 # =====================================================
@@ -289,7 +417,7 @@ def on_connect(auth=None):
             return
 
         import jwt as pyjwt
-        payload = pyjwt.decode(token, options={"verify_signature": False})
+        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
         user_id = payload.get('sub') or payload.get('user_id')
         if user_id:
             user_id = str(user_id)
@@ -347,11 +475,22 @@ def on_get_online_users():
 # G12: Real-time notification push infrastructure
 @socketio.on('join_notification_room')
 def on_join_notification_room(data):
-    """User joins their personal notification room for real-time push."""
-    user_id = data.get('user_id')
+    """Join notification room — uses verified token identity, not client data."""
+    # Get user_id from the authenticated connection, not client data
+    token = request.args.get('token') or (data or {}).get('token', '')
+    if not token:
+        return
+    try:
+        import jwt as pyjwt
+        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        user_id = str(payload.get('sub') or payload.get('user_id', ''))
+    except Exception:
+        return  # Reject invalid tokens silently
+
     if user_id:
         room = f"notifications:{user_id}"
         join_room(room)
+        emit('notification_room_joined', {'room': room, 'user_id': user_id})
         logger.info(f"[G12] User {user_id} joined notification room {room}")
 
 def push_notification_to_user(user_id, event_type, payload):
@@ -385,16 +524,29 @@ app.push_notification_to_user = push_notification_to_user
 # =====================================================
 
 @app.route('/uploads/<path:filename>')
+@jwt_required()
 def serve_uploads(filename):
-    """Serve uploaded files via the StorageService abstraction."""
+    """Serve uploaded files - requires authentication."""
+    # Path traversal protection
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({'error': 'Invalid path'}), 400
+
+    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    # Resolve and verify path stays within upload directory
+    requested_path = os.path.realpath(os.path.join(upload_dir, filename))
+    if not requested_path.startswith(os.path.realpath(upload_dir)):
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not os.path.exists(requested_path):
+        return jsonify({'error': 'File not found'}), 404
+
     try:
         from backend.services.storage import storage
         return storage.serve(filename)
     except Exception as e:
         logger.error(f"File serve error: {e}")
         # Fallback to direct filesystem serve
-        uploads_dir = os.path.join(script_dir, 'uploads')
-        return send_from_directory(uploads_dir, filename)
+        return send_from_directory(upload_dir, filename)
 
 
 # =====================================================
@@ -483,6 +635,7 @@ _additional_blueprints = [
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
     ('backend.career_services_routes', 'career_services_bp', None, 'Career Services'),
     ('backend.operations_routes', 'operations_bp', None, 'Operations Monitoring'),
+    ('backend.demographics_routes', 'demographics_bp', None, 'Demographics Analytics'),
     ('backend.skills_development_routes', 'skills_dev_bp', None, 'Skills & Development'),
     ('backend.community_mentorship_routes', 'community_mentorship_bp', None, 'Community & Mentorship'),
     ('backend.mentor_routes', 'mentor_bp', None, 'Mentor System'),
@@ -499,6 +652,7 @@ _additional_blueprints = [
     ('backend.routes.workspace_phase2_routes', 'workspace_phase2_bp', None, 'Workspace Phase 2'),
     ('backend.routes.career_dial_routes', 'career_dial_bp', None, 'Career Dial'),
     ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
+    ('backend.routes.company_routes', 'company_bp', None, 'Companies'),
     # --- Blueprints migrated from recruiter_server.py ---
     ('backend.routes.profile.profile_readiness', 'profile_readiness_bp', None, 'Profile Readiness'),
     ('backend.hr_approval_routes', 'hr_approval_bp', None, 'HR Approval Workflow'),
@@ -512,6 +666,7 @@ _additional_blueprints = [
     ('backend.recruiter.mentorship_routes', 'mentorship_bp', None, 'Recruiter Mentorship'),
     ('backend.routes.user_activity_api', 'user_activity_bp', None, 'User Activity'),
     ('backend.recruiter.analytics_routes', 'analytics_bp', '/api/recruiter', 'Recruiter Analytics'),
+    ('backend.routes.strategic_metrics_api', 'strategic_metrics_bp', None, 'Strategic Metrics'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
@@ -611,8 +766,11 @@ def _log_security_warnings():
     if flask_env != 'production':
         logger.warning("=" * 72)
         logger.warning("⚠️  SECURITY WARNING: FLASK_ENV='%s' (non-production)", flask_env)
-        logger.warning("⚠️  Dev-login bypass is ACTIVE — /api/auth/uaepass/dev-login accepts any EID")
-        logger.warning("⚠️  Set FLASK_ENV=production to disable dev-login.")
+        if os.getenv('ENABLE_DEV_LOGIN') == 'true':
+            logger.warning("⚠️  Dev-login bypass is ACTIVE — ENABLE_DEV_LOGIN=true")
+            logger.warning("⚠️  Unset ENABLE_DEV_LOGIN to disable dev-login.")
+        else:
+            logger.info("🔒 Dev-login is disabled (ENABLE_DEV_LOGIN not set)")
         logger.warning("=" * 72)
     else:
         logger.info("🔒 Production mode — dev-login is DISABLED")

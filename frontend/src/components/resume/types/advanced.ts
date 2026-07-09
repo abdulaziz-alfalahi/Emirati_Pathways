@@ -5,7 +5,7 @@ export interface ResumeTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'corporate' | 'creative' | 'technical' | 'government' | 'academic' | 'executive';
+  category: 'corporate' | 'creative' | 'technical' | 'compliance_auditor' | 'academic' | 'executive';
   preview: string;
   sections: ResumeSection[];
   colors: TemplateColors;

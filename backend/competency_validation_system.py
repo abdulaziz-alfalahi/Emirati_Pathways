@@ -629,7 +629,7 @@ class CompetencyValidationSystem:
         base_score = 80.0
         
         # Adjust based on industry relevance
-        if validation_data.get('industry_category') in ['government', 'energy', 'finance']:
+        if validation_data.get('industry_category') in ['compliance_auditor', 'energy', 'finance']:
             base_score += 5.0
         
         # Adjust based on Emiratization factors

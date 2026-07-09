@@ -1,6 +1,6 @@
 -- Create School Program Tables with CORRECT Data Types
 -- Based on actual table structures:
--- - users.id is INTEGER (not UUID)
+-- - users.id is character(15) (not UUID/INTEGER)
 -- - schools.id is UUID
 -- Created: 2025-09-27
 

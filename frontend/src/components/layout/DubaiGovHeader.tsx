@@ -96,35 +96,25 @@ const DubaiGovHeader: React.FC = () => {
         {/* Main header section with fixed logo positioning */}
         <div className="bg-white">
           <div className="dubai-container">
-            <div className="relative py-4" style={{ minHeight: '80px' }}>
+            <div className="flex items-center justify-between gap-2 py-4" style={{ minHeight: '80px' }}>
 
-              {/* Dubai Government Logo - Fixed to Physical Left (viewport left) */}
-              <div
-                style={{
-                  position: 'fixed',
-                  left: 'max(1rem, calc((100vw - 1200px) / 2))',
-                  top: 'calc(50px + 2rem)',
-                  zIndex: 10,
-                  transform: 'translateY(-50%)'
-                }}
+              {/* Dubai Government Logo (left) — normal flow, never squished */}
+              <a
+                href="https://tec.gov.ae/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center flex-shrink-0 hover:opacity-80 transition-opacity"
+                aria-label="Visit Dubai Government TEC Portal"
               >
-                <a
-                  href="https://tec.gov.ae/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center hover:opacity-80 transition-opacity"
-                  aria-label="Visit Dubai Government TEC Portal"
-                >
-                  <img
-                    src="/lovable-uploads/8e8dde72-de3d-4664-b8d9-541c109edc51.png"
-                    alt="Government of Dubai - The Executive Council"
-                    className="h-12 md:h-16"
-                  />
-                </a>
-              </div>
+                <img
+                  src="/lovable-uploads/8e8dde72-de3d-4664-b8d9-541c109edc51.png"
+                  alt="Government of Dubai - The Executive Council"
+                  className="h-12 md:h-16 w-auto object-contain"
+                />
+              </a>
 
               {/* Center - Search functionality */}
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center flex-shrink min-w-0 px-1">
                 <div className="relative">
                   {isSearchOpen ? (
                     <form onSubmit={handleSearch} className="flex items-center">
@@ -166,42 +156,32 @@ const DubaiGovHeader: React.FC = () => {
                 </div>
               </div>
 
-              {/* EHRDC Logo - Fixed to Physical Right (viewport right) */}
-              <div
-                style={{
-                  position: 'fixed',
-                  right: 'max(1rem, calc((100vw - 1200px) / 2))',
-                  top: 'calc(50px + 2rem)',
-                  zIndex: 10,
-                  transform: 'translateY(-50%)'
-                }}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* EHRDC Logo and Platform Name */}
-                  <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-                    <img
-                      src="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png"
-                      alt="Emirati Human Resources Development Council"
-                      className="h-10 md:h-12"
-                    />
-                    <div className="hidden lg:block">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-lg text-ehrdc-teal leading-none">Emirati Gateway</span>
-                        <span className="text-xs text-ehrdc-neutral-dark opacity-75 leading-none">EHRDC Digital Platform</span>
-                      </div>
+              {/* EHRDC Logo (right) — normal flow, never squished */}
+              <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+                {/* EHRDC Logo and Platform Name */}
+                <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                  <img
+                    src="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png"
+                    alt="Emirati Human Resources Development Council"
+                    className="h-10 md:h-12 w-auto object-contain"
+                  />
+                  <div className="hidden lg:block">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-lg text-ehrdc-teal leading-none">Emirati Gateway</span>
+                      <span className="text-xs text-ehrdc-neutral-dark opacity-75 leading-none">EHRDC Digital Platform</span>
                     </div>
-                  </Link>
+                  </div>
+                </Link>
 
-                  {/* Mobile menu trigger */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="md:hidden text-ehrdc-neutral-dark hover:text-ehrdc-teal"
-                    aria-label="Open mobile menu"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </div>
+                {/* Mobile menu trigger */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden text-ehrdc-neutral-dark hover:text-ehrdc-teal"
+                  aria-label="Open mobile menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
               </div>
 
             </div>

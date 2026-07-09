@@ -123,7 +123,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_drafts', 'true');
 
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
         const response = await fetch(`${API_BASE}/api/recruiter/jd/upload/batch`, {
           method: 'POST',

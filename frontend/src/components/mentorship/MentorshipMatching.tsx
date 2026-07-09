@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Star, Calendar, MessageCircle, Target, Clock, User, Heart, BarChart3, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mentorshipService } from '@/services/mentorshipService';
-import { supabase } from '@/integrations/supabase/client';
 import { MatchVisualization, MatchInsights } from '@/components/mentorship/matching';
 import type { MatchSuggestion, MenteePreferences, Mentor } from '@/types/mentorship';
 import { useMatchReEvaluation } from '@/hooks/useMatchReEvaluation';
@@ -75,7 +74,7 @@ export const MentorshipMatching: React.FC = () => {
   useEffect(() => {
     // Get current user ID
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
     };
     getCurrentUser();

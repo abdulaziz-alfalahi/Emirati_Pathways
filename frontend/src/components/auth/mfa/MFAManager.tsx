@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { MFASetupWizard } from './MFASetupWizard';
 import { 
   Shield, 
@@ -49,7 +48,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.listFactors();
       
       if (error) throw error;
 
@@ -67,7 +66,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
 
   const checkMFARequirement = () => {
     // Check if user's roles require MFA
-    const adminRoles = ['administrator', 'super_user', 'platform_operator'];
+    const adminRoles = ['admin', 'super_user', 'platform_operator'];
     const sensitiveRoles = ['training_center', 'assessment_center', 'recruiter'];
     
     if (roles.some(role => adminRoles.includes(role))) {
@@ -82,7 +81,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
   const removeFactor = async (factorId: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.mfa.unenroll({ factorId });
+      // TODO: Connect to Flask API - const { error } = await supabase.auth.mfa.unenroll({ factorId });
       
       if (error) throw error;
 

@@ -509,7 +509,7 @@ class CVJobMatchingIntegration:
                 jobs.append({
                     'job_id': str(row['id']),
                     'title': row.get('title', ''),
-                    'company': row.get('employer', ''),
+                    'company': row.get('employer_admin', ''),
                     'location': row.get('location', 'UAE'),
                     'description': row.get('description', ''),
                     'required_skills': [r if isinstance(r, str) else r.get('name', '') for r in requirements],

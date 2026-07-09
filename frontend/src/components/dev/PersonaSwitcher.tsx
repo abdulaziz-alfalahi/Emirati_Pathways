@@ -41,9 +41,9 @@ const PersonaSwitcher: React.FC = () => {
   const getRoleIcon = (userType: string) => {
     switch (userType) {
       case 'candidate': return <User className="w-4 h-4" />;
-      case 'hr_manager': return <Building className="w-4 h-4" />;
+      case 'employer_admin': return <Building className="w-4 h-4" />;
       case 'recruiter': return <Briefcase className="w-4 h-4" />;
-      case 'educator': return <GraduationCap className="w-4 h-4" />;
+      case 'training_provider': return <GraduationCap className="w-4 h-4" />;
       case 'mentor': return <UserCheck className="w-4 h-4" />;
       case 'assessor': return <ClipboardCheck className="w-4 h-4" />;
       case 'admin': return <Settings className="w-4 h-4" />;
@@ -54,9 +54,9 @@ const PersonaSwitcher: React.FC = () => {
   const getRoleColor = (userType: string) => {
     switch (userType) {
       case 'candidate': return 'bg-blue-500';
-      case 'hr_manager': return 'bg-green-500';
+      case 'employer_admin': return 'bg-green-500';
       case 'recruiter': return 'bg-purple-500';
-      case 'educator': return 'bg-orange-500';
+      case 'training_provider': return 'bg-orange-500';
       case 'mentor': return 'bg-teal-500';
       case 'assessor': return 'bg-pink-500';
       case 'admin': return 'bg-red-500';

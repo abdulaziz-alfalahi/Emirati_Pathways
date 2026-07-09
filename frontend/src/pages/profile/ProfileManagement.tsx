@@ -66,7 +66,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
+  const { switchRole, refreshUser, getUserRole } = useAuth();
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: '1',
     firstName: 'Ahmed',
@@ -107,7 +107,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
           setCurrentUser(prev => ({
             ...prev,
             secondaryRoles: data.data.secondary_roles || [],
-            primaryRole: data.data.role // Sync primary role too
+            primaryRole: getUserRole() || data.data.role // Sync primary role too
           }));
         }
       } catch (error) {
@@ -164,8 +164,8 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
           lastName: apiData.last_name || prev.lastName,
           email: apiData.email || prev.email,
           profilePhotoUrl: apiData.profile_photo_url || prev.profilePhotoUrl,
-          // Sync role if backend returns it
-          primaryRole: apiData.role ? normalizeRole(apiData.role) : prev.primaryRole,
+          // Sync role using global active role as authoritative source
+          primaryRole: getUserRole() || (apiData.role ? normalizeRole(apiData.role) : prev.primaryRole),
           // Calculate completion if needed or use backend
           profileCompletion: apiData.profile_completion || prev.profileCompletion
         }));
@@ -178,7 +178,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         variant: "destructive"
       });
     }
-  }, [currentUser.primaryRole, toast]);
+  }, [currentUser.primaryRole, getUserRole, toast]);
 
   useEffect(() => {
     fetchProfile();
@@ -208,7 +208,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
 
   // Consolidated Role Configurations
   const roleConfigs: Record<string, any> = {
-    'job_seeker': {
+    'candidate': {
       label: 'Job Seeker',
       icon: User,
       color: 'bg-blue-500',
@@ -241,7 +241,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         preferences: RecruiterPreferences
       }
     },
-    'hr_manager': {
+    'employer_admin': {
       label: 'HR Manager',
       icon: Users,
       color: 'bg-green-600',
@@ -253,7 +253,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         team: () => <div>Team Management</div>
       }
     },
-    'educator': {
+    'training_provider': {
       label: 'Educator',
       icon: GraduationCap,
       color: 'bg-purple-500',
@@ -286,7 +286,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         methodology: () => <div>Assessment Methodology</div>
       }
     },
-    'guardian': {
+    'parent': {
       label: 'Guardian',
       icon: Shield,
       color: 'bg-slate-500',
@@ -301,23 +301,37 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   // Helper to normalize role keys for config lookup 
   const getRoleConfigKey = (role: string) => {
     const normalized = normalizeRole(role) as string;
-    if (normalized === 'candidate') return 'job_seeker';
+    if (normalized === 'candidate') return 'candidate';
     // Map variations to the config key 'recruiter'
-    if (normalized === 'hr/recruiter' || normalized === 'hr_recruiter') return 'recruiter';
+    if (normalized === 'hr/recruiter' || normalized === 'recruiter') return 'recruiter';
     return normalized;
   };
 
   const getCurrentRoleConfig = () => {
     const configKey = getRoleConfigKey(currentUser.primaryRole);
-    return roleConfigs[configKey] || roleConfigs['job_seeker'];
+    return roleConfigs[configKey] || roleConfigs['candidate'];
   };
 
-  const handleRoleSwitch = (newRole: string) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      primaryRole: newRole
-    }));
-    setActiveTab('overview');
+  const handleRoleSwitch = async (newRole: string) => {
+    try {
+      await switchRole(newRole);
+      setCurrentUser(prev => ({
+        ...prev,
+        primaryRole: newRole
+      }));
+      setActiveTab('overview');
+      toast({
+        title: "Role Switched",
+        description: `Active persona switched to ${newRole}`,
+      });
+    } catch (error) {
+      console.error("Failed to switch role:", error);
+      toast({
+        title: "Switch Failed",
+        description: "Could not switch active persona.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleProfileUpdate = async () => {
@@ -507,7 +521,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                       setPossessedRoles(allRoles);
                       setCurrentUser(prev => ({
                         ...prev,
-                        primaryRole: data.data.role || 'Job Seeker',
+                        primaryRole: getUserRole() || data.data.role || 'Job Seeker',
                         secondaryRoles: data.data.secondary_roles || []
                       }));
                     }
@@ -700,9 +714,9 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                 <TabsContent key={tab} value={tab}>
                   <div className="space-y-6">
                     {/* Explicitly render ProfileForm for Job Seeker to avoid re-mounting issues */}
-                    {currentUser.primaryRole === 'Job Seeker' && tab === 'personal' ? (
+                    {['job_seeker', 'candidate'].includes(normalizeRole(currentUser.primaryRole) as string) && tab === 'personal' ? (
                       <CandidateStudioPointer section="identity" />
-                    ) : currentUser.primaryRole === 'student' && tab === 'personal' ? (
+                    ) : normalizeRole(currentUser.primaryRole) === 'student' && tab === 'personal' ? (
                       <StudentProfileForm
                         initialData={candidateData}
                         onSave={async (data) => {
@@ -730,6 +744,39 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     ) : roleConfig.components[tab as keyof typeof roleConfig.components] ? (
                       React.createElement(roleConfig.components[tab as keyof typeof roleConfig.components], {
                         onProfileUpdate: handleProfileUpdate,
+                        onComplete: async (data: any) => {
+                          setIsSaving(true);
+                          try {
+                            if (tab === 'company') {
+                              await handleProfileUpdate();
+                            } else if (tab === 'institution') {
+                              const response = await restClient.put('/api/auth/profile', {
+                                ...data,
+                                role: 'training_provider',
+                                update_type: 'institution'
+                              });
+                              if (response.data.success) {
+                                await handleProfileUpdate();
+                              } else {
+                                throw new Error(response.data.message || 'Failed to save');
+                              }
+                            }
+                            setActiveTab('overview');
+                            toast({
+                              title: "Setup Completed",
+                              description: "Your profile has been saved successfully.",
+                            });
+                          } catch (error: any) {
+                            console.error('Error saving profile:', error);
+                            toast({
+                              title: "Error",
+                              description: error.message || "Failed to save profile changes.",
+                              variant: "destructive"
+                            });
+                          } finally {
+                            setIsSaving(false);
+                          }
+                        },
                         initialData: candidateData // Provide loaded data to component
                       })
                     ) : (
@@ -771,7 +818,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
               <div className="space-y-4">
                 {currentUser.secondaryRoles.map(role => {
                   const configKey = getRoleConfigKey(role);
-                  const config = roleConfigs[configKey] || roleConfigs['job_seeker'];
+                  const config = roleConfigs[configKey] || roleConfigs['candidate'];
                   const Icon = config?.icon || User;
                   const displayName = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 

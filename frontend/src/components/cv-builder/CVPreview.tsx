@@ -462,7 +462,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
     // Template-specific styling
     const getTemplateStyles = () => {
       switch (template as unknown as string) {
-        case 'government':
+        case 'compliance_auditor':
           return 'bg-white border-2 border-blue-200';
         case 'corporate':
           return 'bg-white border border-gray-300';

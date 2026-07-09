@@ -314,7 +314,7 @@ class CVExporter:
                     
                     # Job title - try multiple field names
                     job_title = get_field(exp, 'jobTitle', 'job_title', 'position', 'title', default='')
-                    company = get_field(exp, 'company', 'employer', 'organization', default='')
+                    company = get_field(exp, 'company', 'employer_admin', 'organization', default='')
                     
                     # Dates
                     start_date = get_field(exp, 'startDate', 'start_date', default='')

@@ -115,9 +115,9 @@ The **Emirati Journey Platform** has been successfully set up and is **PRODUCTIO
 ### 🔧 Environment Configuration
 ```bash
 # Backend Environment
-GEMINI_API_KEY=AIzaSyAquLWzSBTEzzIAnFL6h6LUs_Ngso-2NoY
+GEMINI_API_KEY=<REDACTED>
 DATABASE_URL=postgresql://emirati_user:emirati_secure_password@localhost/emirati_journey
-JWT_SECRET_KEY=emirati_journey_secure_jwt_key_2024
+JWT_SECRET_KEY=<REDACTED>
 
 # Frontend Environment
 VITE_API_BASE_URL=http://localhost:5003

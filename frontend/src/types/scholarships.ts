@@ -4,7 +4,7 @@ export interface Scholarship {
   title: string;
   description?: string;
   provider: string;
-  provider_type: string; // 'government', 'private_sector', 'university'
+  provider_type: string; // 'compliance_auditor', 'private_sector', 'university'
   eligibility_criteria?: Record<string, any>;
   amount?: number;
   currency?: string;

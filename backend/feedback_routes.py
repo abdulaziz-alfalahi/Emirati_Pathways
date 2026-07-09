@@ -58,7 +58,8 @@ def submit_feedback():
             message=data.get('message'),
             type=data.get('type', 'bug'),
             console_logs=data.get('consoleLogs', []), 
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            screenshot=data.get('screenshot')
         )
         
         Feedback.save(feedback)
@@ -219,13 +220,13 @@ def update_feedback_status(feedback_id):
                     
                     # Determine link based on role
                     link_url = '/'
-                    if user_role in ['hr', 'hr_manager']:
+                    if user_role in ['employer_admin', 'employer_admin']:
                         link_url = '/hr-dashboard'
-                    elif user_role in ['recruiter', 'hr_recruiter']:
+                    elif user_role in ['recruiter', 'recruiter']:
                         link_url = '/recruiter-dashboard'
-                    elif user_role in ['job_seeker', 'candidate']:
+                    elif user_role in ['candidate', 'candidate']:
                         link_url = '/candidate-dashboard'
-                    elif user_role in ['admin', 'administrator', 'super_user']:
+                    elif user_role in ['admin', 'admin', 'super_user']:
                         link_url = '/admin-dashboard?tab=feedback'
 
                     # Determine message based on status

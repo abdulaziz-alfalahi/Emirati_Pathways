@@ -220,6 +220,7 @@ def register_all_blueprints(app: Flask):
     # 16. Assessor Modules
     _register_safe(app, 'backend.routes.assessor_routes', 'assessor_bp', 'Assessor Dashboard', url_prefix=None)
     _register_safe(app, 'backend.assessment_analytics_qa_routes', 'assessment_analytics_qa_bp', 'Assessment Analytics & QA')
+    _register_safe(app, 'backend.routes.assessment_center_routes', 'assessment_center_bp', 'Assessment Center Core', url_prefix=None)
 
 
 def _register_safe(app, module_path, bp_name, display_name, url_prefix=None):

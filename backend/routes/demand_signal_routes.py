@@ -144,7 +144,7 @@ def get_demand_signals():
                 (
                     SELECT COUNT(*)
                     FROM users u
-                    WHERE u.role = 'job_seeker'
+                    WHERE u.role = 'candidate'
                       AND u.is_active = true
                       AND u.is_visible = true
                 ) AS matching_candidates_count
@@ -199,7 +199,7 @@ def get_demand_signals():
             SELECT
                 COUNT(DISTINCT jp.company_id) AS total_companies,
                 COUNT(DISTINCT jp.id) AS total_jobs,
-                (SELECT COUNT(*) FROM users WHERE role = 'job_seeker' AND is_active = true AND is_visible = true) AS total_candidates
+                (SELECT COUNT(*) FROM users WHERE role = 'candidate' AND is_active = true AND is_visible = true) AS total_candidates
             FROM job_postings jp
             WHERE jp.status = 'published'
         """)
@@ -395,7 +395,7 @@ def get_matching_candidates(company_id):
                 u.skills,
                 u.is_uae_national
             FROM users u
-            WHERE u.role = 'job_seeker'
+            WHERE u.role = 'candidate'
               AND u.is_active = true
               AND u.is_visible = true
             ORDER BY u.experience_years DESC NULLS LAST

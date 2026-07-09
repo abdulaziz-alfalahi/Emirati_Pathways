@@ -42,20 +42,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles.length > 0) {
     const userRole = getUserRole();
 
-    // Check if user has any of the allowed roles
-    // Normalize role for comparison (handle "Job Seeker" vs "job_seeker" vs "candidate")
-    const normalizeRole = (r: string) => {
-      const lower = r.toLowerCase();
-      if (lower === 'job seeker' || lower === 'job_seeker') return 'candidate';
-      if (lower === 'hr/recruiter' || lower === 'hr recruiter') return 'recruiter';
-      if (lower === 'hr manager' || lower === 'hr_manager') return 'hr_manager';
-      return lower;
-    };
-
     const userRoleNormalized = normalizeRole(userRole || '');
 
     // Administrators can access any route
-    const adminRoles = ['administrator', 'admin', 'super_admin', 'platform_administrator'];
+    const adminRoles = ['admin', 'admin', 'super_admin', 'platform_administrator'];
     const isAdmin = adminRoles.includes(userRoleNormalized) ||
       (user.roles && user.roles.some(r => adminRoles.includes(normalizeRole(r))));
 
@@ -63,7 +53,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasPermission = isAdmin || allowedRoles.some(allowed => {
       const allowedNorm = normalizeRole(allowed);
       return allowedNorm === userRoleNormalized ||
-        (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm));
+        (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm)) ||
+        (user.secondary_roles && user.secondary_roles.some(r => normalizeRole(r) === allowedNorm));
     });
 
     if (!hasPermission) {

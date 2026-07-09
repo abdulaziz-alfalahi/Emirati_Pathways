@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,13 +35,17 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onProfileUpdate }) => {
       setIsSaving(true);
       
       // Update user metadata via Supabase Auth
-      const { error } = await supabase.auth.updateUser({
+      // TODO: Connect to Flask API
+      const error: any = null;
+      /*
+      const { error: supabaseError } = await supabase.auth.updateUser({
         data: { 
           full_name: fullName,
           bio,
           contact
         }
       });
+      */
       
       if (error) {
         toast({

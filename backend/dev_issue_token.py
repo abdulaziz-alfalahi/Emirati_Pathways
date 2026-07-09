@@ -4,4 +4,4 @@ app=Flask(__name__)
 app.config["JWT_SECRET_KEY"]="dev-secret"
 JWTManager(app)
 with app.app_context():
-    print(create_access_token(identity=14, additional_claims={"role":"hr_recruiter"}))
+    print(create_access_token(identity=14, additional_claims={"role":'recruiter'}))

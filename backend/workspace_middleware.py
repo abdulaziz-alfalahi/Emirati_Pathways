@@ -33,7 +33,7 @@ ROLE_PERMISSIONS = {
         'workspace.view', 'workspace.manage_employees', 'workspace.assign_resources',
         'workspace.post_jobs', 'workspace.settings',
     },
-    'hr_manager': {
+    'employer_admin': {
         'workspace.view', 'workspace.manage_employees', 'workspace.assign_resources',
         'workspace.post_jobs',
     },
@@ -49,7 +49,7 @@ ROLE_PERMISSIONS = {
 }
 
 # Growth Operators have cross-company access
-GROWTH_OPERATOR_ROLES = {'growth_operator_company', 'growth_operator', 'platform_administrator', 'super_user'}
+GROWTH_OPERATOR_ROLES = {'employer_relations', 'growth_operator', 'platform_administrator', 'super_user'}
 
 
 def get_company_context(user_id, company_id):

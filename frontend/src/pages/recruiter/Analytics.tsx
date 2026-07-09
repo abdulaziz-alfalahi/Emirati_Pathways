@@ -13,7 +13,7 @@ const API = (p: string) => `${p}`;
 export default function RecruiterAnalyticsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
   const contentRef = useRef<HTMLDivElement>(null);
 

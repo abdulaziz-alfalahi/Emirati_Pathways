@@ -22,42 +22,46 @@ import {
   Zap,
   Target,
   Award,
-  Building
+  Building,
+  Video,
+  Loader2
 } from 'lucide-react';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
 import DashboardActions from '@/components/dashboard/DashboardActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
+import { restClient } from '@/utils/api';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 interface AdminDashboardProps {
   activeTab: string;
 }
 
+// Defining interfaces for the data structure
+interface DashboardData {
+  health: any;
+  metrics: {
+    recent: any[];
+  };
+  notifications: {
+    unread_count: number;
+    recent: any[];
+  };
+  users: {
+    total: number;
+  };
+  timestamp: string;
+}
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
-  import { restClient } from '@/utils/api';
-  import { useQuery } from '@tanstack/react-query'; // Assuming react-query is used in the project, otherwise standard useEffect
-
-  // Defining interfaces for the data structure
-  interface DashboardData {
-    health: any;
-    metrics: {
-      recent: any[];
-    };
-    notifications: {
-      unread_count: number;
-      recent: any[];
-    };
-    users: {
-      total: number;
-    };
-    timestamp: string;
-  }
-
-  const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
-    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [missionVideoUrl, setMissionVideoUrl] = useState('https://www.youtube.com/embed/zTct6QW-V28');
+  const [savingVideoUrl, setSavingVideoUrl] = useState(false);
 
     // Initial Real-time Data State (Fallbacks)
     const [realTimeData, setRealTimeData] = useState({
@@ -115,8 +119,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
         }
       };
 
+      const loadMissionVideoUrl = async () => {
+        try {
+          const response = await restClient.get('/api/admin/settings');
+          if (response.data && response.data.status === 'success' && response.data.data.mission_video_url) {
+            setMissionVideoUrl(response.data.data.mission_video_url.value);
+          }
+        } catch (error) {
+          console.error("Failed to load mission video url setting:", error);
+        }
+      };
+
       fetchDashboardData();
+      loadMissionVideoUrl();
     }, []);
+
+    const handleSaveVideoUrl = async () => {
+      setSavingVideoUrl(true);
+      try {
+        const response = await restClient.put('/api/admin/settings/mission_video_url', { value: missionVideoUrl });
+        if (response.data && response.data.status === 'success') {
+          toast({
+            title: "Setting Saved",
+            description: "Mission video URL updated successfully.",
+          });
+        } else {
+          throw new Error(response.data?.message || 'Failed to save');
+        }
+      } catch (error) {
+        console.error("Failed to save mission video url setting:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update mission video URL.",
+          variant: "destructive",
+        });
+      } finally {
+        setSavingVideoUrl(false);
+      }
+    };
 
     const getStatusColor = (status: string) => {
       switch (status) {
@@ -390,6 +430,71 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Our Mission Page Settings */}
+          <Card className="border-l-4 border-l-teal-500 mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Video className="h-5 w-5 text-teal-600" />
+                Our Mission Page Settings
+              </CardTitle>
+              <CardDescription>
+                Configure the YouTube video to display on the public Our Mission page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-slate-700">
+                  YouTube Embed URL
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="text"
+                    placeholder="https://www.youtube.com/embed/..."
+                    value={missionVideoUrl}
+                    onChange={(e) => setMissionVideoUrl(e.target.value)}
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <Button 
+                    onClick={handleSaveVideoUrl} 
+                    disabled={savingVideoUrl || !missionVideoUrl}
+                    className="bg-teal-600 hover:bg-teal-700 text-white font-medium min-w-[120px]"
+                  >
+                    {savingVideoUrl ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Setting"
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Note: The URL must be in the embed format, e.g., https://www.youtube.com/embed/VIDEO_ID
+                </p>
+              </div>
+
+              {/* Live Preview */}
+              {missionVideoUrl && (
+                <div className="border rounded-xl p-4 bg-slate-50">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                    Video Embed Preview
+                  </h4>
+                  <div className="aspect-video max-w-lg mx-auto rounded-lg overflow-hidden border bg-black shadow-sm">
+                    <iframe
+                      className="w-full h-full"
+                      src={missionVideoUrl}
+                      title="Video preview"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

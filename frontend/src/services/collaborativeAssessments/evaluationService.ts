@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { AssessmentEvaluation, AssessmentComment, AssessmentProgress } from '@/types/collaborativeAssessments';
 
 export const submitEvaluation = async (evaluation: Omit<AssessmentEvaluation, 'id' | 'created_at' | 'updated_at'>) => {

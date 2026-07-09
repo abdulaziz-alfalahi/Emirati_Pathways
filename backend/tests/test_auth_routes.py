@@ -48,7 +48,7 @@ def client(app):
     return app.test_client()
 
 
-def _make_token(user_id="784000000000001", role="job_seeker"):
+def _make_token(user_id="784000000000001", role='candidate'):
     """Issue a short-lived JWT for test requests."""
     payload = {
         "sub": user_id,
@@ -114,7 +114,7 @@ class TestGetRolePermissions:
 
     def test_job_seeker_permissions(self):
         """job_seeker should have basic candidate permissions."""
-        perms = get_role_permissions("job_seeker")
+        perms = get_role_permissions('candidate')
         assert isinstance(perms, list)
         assert "view_dashboard" in perms
         assert "upload_cv" in perms
@@ -142,7 +142,7 @@ class TestGetRolePermissions:
 
     def test_educator_permissions(self):
         """educator should have curriculum and student tracking permissions."""
-        perms = get_role_permissions("educator")
+        perms = get_role_permissions('training_provider')
         assert isinstance(perms, list)
         assert "manage_curriculum" in perms
         assert "track_students" in perms
@@ -159,7 +159,7 @@ class TestGetRolePermissions:
     def test_unknown_role_falls_back_to_job_seeker(self):
         """An unrecognized role should get the job_seeker defaults."""
         perms = get_role_permissions("nonexistent_role_xyz")
-        expected = get_role_permissions("job_seeker")
+        expected = get_role_permissions('candidate')
         assert perms == expected, (
             "Unknown role should fall back to job_seeker permissions"
         )
@@ -167,8 +167,8 @@ class TestGetRolePermissions:
     def test_all_roles_include_view_dashboard(self):
         """Every known role should have the 'view_dashboard' permission."""
         known_roles = [
-            "job_seeker", "admin", "recruiter", "educator", "mentor",
-            "assessor", "hr_manager", "hr_recruiter", "growth_operator",
+            'candidate', "admin", "recruiter", 'training_provider', "mentor",
+            "assessor", 'employer_admin', 'recruiter', "growth_operator",
         ]
         for role in known_roles:
             perms = get_role_permissions(role)
@@ -178,7 +178,7 @@ class TestGetRolePermissions:
 
     def test_permissions_are_lists_of_strings(self):
         """Every role's permissions should be a list of non-empty strings."""
-        for role in ("job_seeker", "admin", "recruiter", "educator", "mentor"):
+        for role in ('candidate', "admin", "recruiter", 'training_provider', "mentor"):
             perms = get_role_permissions(role)
             assert isinstance(perms, list)
             assert all(isinstance(p, str) and len(p) > 0 for p in perms), (

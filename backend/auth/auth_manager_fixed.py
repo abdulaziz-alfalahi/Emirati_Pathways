@@ -102,11 +102,11 @@ class AuthenticationManager:
         Scans existing users to find the max sequence and increments.
         """
         cursor.execute("""
-            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
             FROM users WHERE id LIKE '7840000%'
         """)
         row = cursor.fetchone()
-        max_seq = row[0] if row and row[0] else 0
+        max_seq = row['max_seq'] if row and row.get('max_seq') else 0
         next_seq = max_seq + 1
         return f"784{'0000'}{next_seq:07d}{'0'}"
     
@@ -241,7 +241,7 @@ class AuthenticationManager:
                 effective_role = user_row.get('role') or user_row.get('user_type')
                 user_row['role'] = effective_role
                 
-                if effective_role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
+                if effective_role in ('employer_admin', 'recruiter', 'recruiter', 'employer_admin'):
                     try:
                         cursor.execute("""
                             SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
@@ -254,7 +254,7 @@ class AuthenticationManager:
                             user_row['company_id'] = str(hr_info['company_id']) if hr_info['company_id'] else None
                             user_row['company_name'] = hr_info.get('company_name')
                     except Exception as e:
-                        self.logger.warning(f"Failed to fetch company info for user {user_id}: {e}")
+                        self.logger.warning(f"Failed to fetch company info for HR user: {e}")
 
             cursor.close()
             conn.close()
@@ -375,11 +375,11 @@ class AuthenticationManager:
                     user_data['first_name'].strip(),
                     user_data['last_name'].strip(),
                     user_data.get('phone', ''),
-                    user_data.get('role', 'candidate'),
+                    'candidate',  # Always candidate on registration — admin promotes later (T1.4)
                     user_data.get('emirate', ''),
                     user_data.get('nationality', 'UAE'),
-                    True,  # is_active
-                    True   # is_verified
+                    True,   # is_active — users can log in
+                    False   # is_verified — needs email/admin verification (T1.4)
                 ))
                 
                 user_id = cursor.fetchone()['id']
@@ -806,7 +806,7 @@ class AuthenticationManager:
                 
                 # Fetch company_id from hr_profiles for HR users
                 user_role = user_data.get('role') or user_data.get('user_type') or ''
-                if user_role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
+                if user_role in ('employer_admin', 'recruiter', 'recruiter', 'employer_admin'):
                     try:
                         conn_hr = self._get_db_connection()
                         cursor_hr = conn_hr.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -873,7 +873,7 @@ class AuthenticationManager:
             if additional_data:
                 try:
                     # --- Recruiter / HR ---
-                    if role in ['recruiter', 'hr_recruiter', 'hr_manager']:
+                    if role in ['recruiter', 'recruiter', 'employer_admin']:
                         company_name = additional_data.get('company_name')
                         if company_name:
                             # Check if company exists
@@ -902,7 +902,7 @@ class AuthenticationManager:
                             """, (user_id, company_id))
 
                     # --- Educator ---
-                    elif role == 'educator':
+                    elif role == 'training_provider':
                         institution_name = additional_data.get('institution_name')
                         if institution_name:
                             # Check if institution exists
@@ -931,7 +931,7 @@ class AuthenticationManager:
                             """, (user_id, inst_id))
 
                     # --- Student / Candidate ---
-                    elif role in ['student', 'candidate', 'job_seeker']:
+                    elif role in ['candidate', 'candidate', 'candidate']:
                         university_name = additional_data.get('university_name')
                         if university_name:
                             # Create education object

@@ -64,11 +64,11 @@ export const ds = {
     
     /**
      * Determine which design pattern to use based on context
-     * @param context - Context like 'government', 'innovation', 'education'
+     * @param context - Context like 'compliance_auditor', 'innovation', 'education'
      */
-    getDesignPattern: (context: 'government' | 'innovation' | 'education' | 'default') => {
+    getDesignPattern: (context: 'compliance_auditor' | 'innovation' | 'education' | 'default') => {
       switch (context) {
-        case 'government':
+        case 'compliance_auditor':
           return designTokens.patterns.group1;
         case 'innovation':
         case 'education':

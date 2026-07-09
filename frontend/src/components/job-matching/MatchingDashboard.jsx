@@ -8,8 +8,6 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 export function MatchingDashboard({ initialTab = 'candidates' }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'candidates');
   const [candidates, setCandidates] = useState([]);
@@ -94,7 +92,7 @@ export function MatchingDashboard({ initialTab = 'candidates' }) {
       }
       
       // Call matching function
-      const { data, error } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
+      // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
         body: { 
           resumeData: candidateData.resume_data,
           resumeId: selectedCandidate,
@@ -152,7 +150,7 @@ export function MatchingDashboard({ initialTab = 'candidates' }) {
       }
       
       // Call matching function
-      const { data, error } = await supabase.functions.invoke('match-resume-job/job-to-candidates', {
+      // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('match-resume-job/job-to-candidates', {
         body: { 
           jobData,
           jobId: selectedJob,

@@ -28,7 +28,7 @@ const CATEGORIES = [
   { id: 'account', icon: Shield, en: 'Account & Login', ar: 'الحساب وتسجيل الدخول' },
   { id: 'jobs', icon: Briefcase, en: 'Jobs & Applications', ar: 'الوظائف والطلبات' },
   { id: 'training', icon: GraduationCap, en: 'Training & Certificates', ar: 'التدريب والشهادات' },
-  { id: 'employer', icon: Building2, en: 'Employer Services', ar: 'خدمات أصحاب العمل' },
+  { id: 'employer_admin', icon: Building2, en: 'Employer Services', ar: 'خدمات أصحاب العمل' },
 ];
 
 const SupportChatWidget: React.FC = () => {

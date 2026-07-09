@@ -1,8 +1,6 @@
 
 import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-
 /**
  * Hook to fetch API keys from the server
  */
@@ -19,7 +17,7 @@ export const useApiKeys = () => {
     queryKey: ['mapbox-api-key', tokenRetryCount],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-api-keys', {
+        // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('get-api-keys', {
           method: 'POST'
         });
         
@@ -30,7 +28,7 @@ export const useApiKeys = () => {
         // Check if Mapbox token exists
         if (!data || (!data.mapbox_access_token && !data.MAPBOX_ACCESS_TOKEN)) {
           // Try with GET instead
-          const getResponse = await supabase.functions.invoke('get-api-keys', {
+          // TODO: Connect to Flask API - const getResponse = await supabase.functions.invoke('get-api-keys', {
             method: 'GET'
           });
           

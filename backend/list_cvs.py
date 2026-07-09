@@ -1,9 +1,10 @@
 
 import requests
 import json
+import os
 
 BASE_URL = "http://localhost:5006/api/cv"
-TOKEN = "mock_token_1"
+TOKEN = os.environ.get("API_TOKEN", "")
 
 def list_cvs():
     headers = {

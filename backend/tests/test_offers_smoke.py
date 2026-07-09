@@ -8,8 +8,8 @@ from app import create_app
 SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
 
 
-def make_token(user_id=1, role="hr_recruiter"):
-    payload = {"sub": user_id, "role": role, "iat": int(time.time()), "exp": int(time.time()) + 3600}
+def make_token(user_id='784000000000001', role='recruiter'):
+    payload = {"sub": str(user_id), "role": role, "iat": int(time.time()), "exp": int(time.time()) + 3600}
     return jwt.encode(payload, SECRET, algorithm="HS256")
 
 
@@ -22,7 +22,7 @@ def test_offers_end_to_end_smoke(monkeypatch):
     headers = {"Authorization": f"Bearer {token}"}
 
     # Find a job id the recruiter can access; fallback to 404 is acceptable in smoke
-    r = client.get("/api/hr/jobs/?limit=1", headers=headers)
+    r = client.get("/api/hr/jobs?limit=1", headers=headers)
     assert r.status_code in (200, 400, 401, 403)  # tolerant smoke
     if r.status_code != 200:
         return

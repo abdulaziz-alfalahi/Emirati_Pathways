@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import {
     MessageSquare,
     X,
@@ -38,6 +39,209 @@ import { format } from 'date-fns';
 
 import { useSearchParams } from 'react-router-dom';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Diagnostics capture (module-level, installed once on import). Feeds richer data
+// into the feedback report: FAILED network calls, a breadcrumb trail (clicks +
+// route changes), redaction of secrets, session hints, and app version.
+// Console capture stays in the component (it needs React state).
+// ─────────────────────────────────────────────────────────────────────────────
+const FB_MAX_NET = 25;
+const FB_MAX_CRUMBS = 40;
+const fbNetworkLog: Array<Record<string, any>> = [];
+const fbBreadcrumbs: Array<Record<string, any>> = [];
+
+const fbNow = () => new Date().toISOString();
+
+// Strip secrets (tokens, Emirates ID) from any captured string before it leaves the browser.
+export const fbRedact = (input: any): string => {
+    let s = typeof input === 'string'
+        ? input
+        : (() => { try { return JSON.stringify(input); } catch { return String(input); } })();
+    if (!s) return s;
+    return s
+        .replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, '$1<redacted>')
+        .replace(/("?(?:authorization|access_token|refresh_token|token|password|csrf[_-]?token|x-csrf-token)"?\s*[:=]\s*"?)[^"'`,}\s]+/gi, '$1<redacted>')
+        .replace(/\b784[-\s]?\d{4}[-\s]?\d{7}[-\s]?\d\b/g, '<redacted-eid>')
+        .replace(/\b\d{15}\b/g, '<redacted-15d>');
+};
+
+const fbPushNet = (method: string, url: string, status: number, ms: number, body: string) => {
+    fbNetworkLog.unshift({ t: fbNow(), method, url: fbRedact(url), status, ms: Math.round(ms), body: fbRedact(body).slice(0, 500) });
+    if (fbNetworkLog.length > FB_MAX_NET) fbNetworkLog.length = FB_MAX_NET;
+};
+
+const fbPushCrumb = (kind: string, detail: string) => {
+    fbBreadcrumbs.unshift({ t: fbNow(), kind, detail: fbRedact(detail).slice(0, 120) });
+    if (fbBreadcrumbs.length > FB_MAX_CRUMBS) fbBreadcrumbs.length = FB_MAX_CRUMBS;
+};
+
+let fbInstalled = false;
+const fbInstallCapture = () => {
+    if (fbInstalled || typeof window === 'undefined') return;
+    fbInstalled = true;
+
+    // Intercept fetch — record only FAILED calls (non-2xx or network error).
+    const origFetch = window.fetch ? window.fetch.bind(window) : null;
+    if (origFetch) {
+        window.fetch = async (...args: any[]) => {
+            const start = performance.now();
+            const req = args[0];
+            const method = (args[1]?.method || (req && req.method) || 'GET').toString().toUpperCase();
+            const url = typeof req === 'string' ? req : (req?.url || String(req));
+            try {
+                const res = await origFetch(...args);
+                if (!res.ok) {
+                    let body = '';
+                    try { body = await res.clone().text(); } catch { /* opaque/streamed */ }
+                    fbPushNet(method, url, res.status, performance.now() - start, body);
+                }
+                return res;
+            } catch (err: any) {
+                fbPushNet(method, url, 0, performance.now() - start, err?.message || String(err));
+                throw err;
+            }
+        };
+    }
+
+    // Intercept XHR (axios uses XHR) — record only FAILED calls.
+    try {
+        const XHR = window.XMLHttpRequest;
+        const origOpen = XHR.prototype.open;
+        const origSend = XHR.prototype.send;
+        XHR.prototype.open = function (method: string, url: string, ...rest: any[]) {
+            (this as any).__fb = { method: (method || 'GET').toUpperCase(), url: String(url), start: 0 };
+            // @ts-ignore
+            return origOpen.call(this, method, url, ...rest);
+        };
+        XHR.prototype.send = function (...sendArgs: any[]) {
+            const meta = (this as any).__fb;
+            if (meta) {
+                meta.start = performance.now();
+                this.addEventListener('loadend', () => {
+                    if (this.status === 0 || this.status >= 400) {
+                        let body = '';
+                        try { body = String(this.responseText || ''); } catch { /* non-text */ }
+                        fbPushNet(meta.method, meta.url, this.status, performance.now() - meta.start, body);
+                    }
+                });
+            }
+            // @ts-ignore
+            return origSend.apply(this, sendArgs);
+        };
+    } catch { /* XHR not patchable */ }
+
+    // Breadcrumbs: user clicks (nearest interactive ancestor).
+    document.addEventListener('click', (e) => {
+        try {
+            const t = e.target as HTMLElement;
+            const el = (t?.closest?.('button,a,[role="button"],input,select,[data-testid]') as HTMLElement) || t;
+            if (!el) return;
+            const tag = el.tagName ? el.tagName.toLowerCase() : '';
+            const id = el.id ? `#${el.id}` : '';
+            const txt = (el.textContent || (el as HTMLInputElement).value || el.getAttribute?.('aria-label') || '')
+                .trim().replace(/\s+/g, ' ').slice(0, 40);
+            fbPushCrumb('click', `${tag}${id} ${txt}`.trim());
+        } catch { /* ignore */ }
+    }, true);
+
+    // Breadcrumbs: SPA route changes (patch history + popstate).
+    const recordNav = () => fbPushCrumb('nav', window.location.pathname + window.location.search);
+    window.addEventListener('popstate', recordNav);
+    (['pushState', 'replaceState'] as const).forEach((fn) => {
+        const orig = (history as any)[fn];
+        (history as any)[fn] = function (...a: any[]) { const r = orig.apply(this, a); recordNav(); return r; };
+    });
+    recordNav();
+};
+
+// Best-effort client session hints (the httpOnly access cookie can't be read in JS;
+// the authoritative token status is computed server-side at submit time).
+const fbSessionHints = () => {
+    let hasCsrf = false, hasRefreshCsrf = false;
+    try {
+        hasCsrf = document.cookie.includes('csrf_access_token');
+        hasRefreshCsrf = document.cookie.includes('csrf_refresh_token');
+    } catch { /* ignore */ }
+    const token = (() => { try { return localStorage.getItem('token') || localStorage.getItem('access_token') || ''; } catch { return ''; } })();
+    return {
+        clientAuthMode: (!token || token === 'cookie_authenticated') ? 'cookie' : 'bearer',
+        hasLocalRefreshToken: (() => { try { return !!localStorage.getItem('refresh_token'); } catch { return false; } })(),
+        hasCsrfAccessCookie: hasCsrf,
+        hasCsrfRefreshCookie: hasRefreshCsrf,
+    };
+};
+
+const fbAppVersion = () => {
+    // VITE_APP_VERSION / VITE_BUILD_TIME are statically replaced by Vite (dev + build);
+    // __APP_VERSION__ / __BUILD_TIME__ come from vite.config `define` as a build fallback.
+    const v = import.meta.env.VITE_APP_VERSION
+        || (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '')
+        || 'unknown';
+    const built = import.meta.env.VITE_BUILD_TIME
+        || (typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '')
+        || '';
+    const mode = import.meta.env.MODE || 'unknown';
+    let loadedAt = '';
+    try { loadedAt = new Date(performance.timeOrigin).toISOString(); } catch { /* ignore */ }
+    return `${v} (${mode}${built ? `, built ${built}` : ''}, page loaded ${loadedAt})`;
+};
+
+// Install as soon as this module is imported (the widget mounts app-wide).
+fbInstallCapture();
+
+const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string; onSuccess: () => void }) => {
+    const [reply, setReply] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSend = async () => {
+        if (!reply.trim()) return;
+        setIsSubmitting(true);
+        try {
+            await restClient.post(`/api/feedback/${feedbackId}/clarify`, {
+                message: reply
+            });
+            toast({
+                title: "Reply Sent",
+                description: "Your response has been sent to our support team.",
+            });
+            setReply('');
+            onSuccess();
+        } catch (err) {
+            console.error(err);
+            toast({
+                title: "Failed to Send",
+                description: "Unable to submit clarification response.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-2 mt-2">
+            <Textarea
+                placeholder="Type your response here..."
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                className="min-h-[60px] text-xs bg-white border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
+                disabled={isSubmitting}
+            />
+            <div className="flex justify-end">
+                <Button 
+                    size="sm" 
+                    className="h-7 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                    onClick={handleSend}
+                    disabled={isSubmitting || !reply.trim()}
+                >
+                    {isSubmitting ? 'Sending...' : 'Send Response'}
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export const FeedbackWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState('');
@@ -49,6 +253,11 @@ export const FeedbackWidget = () => {
     const { user, isAuthenticated } = useAuth();
     const { toast } = useToast();
     const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+    
+    // Screenshot States
+    const [includeScreenshot, setIncludeScreenshot] = useState(true);
+    const [screenshot, setScreenshot] = useState<string | null>(null);
+    const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
 
     // Deep linking support
     const [searchParams] = useSearchParams();
@@ -68,7 +277,7 @@ export const FeedbackWidget = () => {
         }
     }, [searchParams]);
 
-    // Capture console logs (simple version)
+    // Capture console logs and global runtime crashes
     useEffect(() => {
         if (!isAuthenticated) return;
 
@@ -76,41 +285,137 @@ export const FeedbackWidget = () => {
         const originalWarn = console.warn;
         const originalLog = console.log;
 
-        const captureLog = (level: string, args: any[]) => {
+        const captureLog = (level: string, messageStr: string) => {
+            // Redact secrets, timestamp each line, and collapse consecutive duplicates
+            // (e.g. repeated "Socket timeout") into a single "(xN)" entry so the noise
+            // doesn't evict useful logs from the buffer.
+            const core = `[${level}] ${fbRedact(messageStr)}`;
+            const ts = new Date().toISOString().slice(11, 19);
+            setTimeout(() => {
+                setConsoleLogs(prev => {
+                    const top = prev[0] || '';
+                    const topCore = top.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '').replace(/\s*\(x\d+\)$/, '');
+                    if (topCore === core) {
+                        const m = top.match(/\(x(\d+)\)$/);
+                        const n = m ? parseInt(m[1], 10) + 1 : 2;
+                        return [`[${ts}] ${core} (x${n})`, ...prev.slice(1)];
+                    }
+                    return [`[${ts}] ${core}`, ...prev].slice(0, 60);
+                });
+            }, 0);
+        };
+
+        console.error = (...args) => {
             try {
                 const logMsg = args.map(arg =>
                     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
                 ).join(' ');
-
-                // Use setTimeout to avoid state updates during render (if log happens during render)
-                setTimeout(() => {
-                    setConsoleLogs(prev => [`[${level}] ${logMsg}`, ...prev].slice(0, 50));
-                }, 0);
-            } catch (e) {
-                // ignore circular structure errors etc
-            }
-        };
-
-        console.error = (...args) => {
-            captureLog('ERROR', args);
+                captureLog('ERROR', logMsg);
+            } catch (e) {}
             originalError.apply(console, args);
         };
+        
         console.warn = (...args) => {
-            captureLog('WARN', args);
+            try {
+                const logMsg = args.map(arg =>
+                    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+                ).join(' ');
+                captureLog('WARN', logMsg);
+            } catch (e) {}
             originalWarn.apply(console, args);
         };
-        // Optional: capture logs too, might be noisy
-        // console.log = (...args) => {
-        //   captureLog('LOG', args);
-        //   originalLog.apply(console, args);
-        // };
+
+        const handleGlobalError = (event: ErrorEvent) => {
+            const errorMsg = `[RUNTIME CRASH] ${event.message || 'Unknown error'} at ${event.filename || 'unknown'}:${event.lineno || 0}:${event.colno || 0}`;
+            captureLog('CRASH', errorMsg);
+        };
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const reason = event.reason;
+            let logMsg = '';
+            if (reason instanceof Error) {
+                logMsg = reason.stack || reason.message;
+            } else {
+                try {
+                    logMsg = typeof reason === 'object' ? JSON.stringify(reason) : String(reason);
+                } catch (e) {
+                    logMsg = String(reason);
+                }
+            }
+            captureLog('REJECTION', logMsg);
+        };
+
+        window.addEventListener('error', handleGlobalError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
         return () => {
             console.error = originalError;
             console.warn = originalWarn;
             console.log = originalLog;
+            window.removeEventListener('error', handleGlobalError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
         };
     }, [isAuthenticated]);
+
+    // Capture screenshot function
+    const capturePageScreenshot = async () => {
+        setIsCapturingScreenshot(true);
+        setScreenshot(null);
+        
+        // Hide the entire feedback UI so the shot shows only the page underneath:
+        // the dialog content ([role="dialog"]), its dark/blur overlay, the floating
+        // trigger button, and any toasts. The overlay is `fixed inset-0` with a
+        // theme-dependent z-index (currently z-[90]); the old selector `.fixed.inset-0.z-50`
+        // never matched it, which is why the darkened/blurred backdrop leaked into
+        // the screenshot. Match the overlay z-index-agnostically instead.
+        const elementsToHide: HTMLElement[] = [];
+        [
+            '[role="dialog"]',
+            '.fixed.inset-0',
+            '.feedback-trigger-btn',
+            '[data-radix-toast-viewport]',
+            '[data-sonner-toaster]',
+        ].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => elementsToHide.push(el as HTMLElement));
+        });
+
+        const prevVisibility = elementsToHide.map(el => el.style.visibility);
+        elementsToHide.forEach(el => {
+            el.style.visibility = 'hidden';
+        });
+        
+        try {
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => setTimeout(resolve, 100)); // small delay for transition
+            
+            const canvas = await html2canvas(document.body, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 0.75,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            
+            const base64Image = canvas.toDataURL('image/jpeg', 0.6);
+            setScreenshot(base64Image);
+        } catch (err) {
+            console.error('Failed to capture page screenshot', err);
+        } finally {
+            elementsToHide.forEach((el, i) => {
+                el.style.visibility = prevVisibility[i] || '';
+            });
+            setIsCapturingScreenshot(false);
+        }
+    };
+
+    // Auto-capture screenshot on open/type changes
+    useEffect(() => {
+        if (isOpen && type === 'bug' && includeScreenshot) {
+            capturePageScreenshot();
+        } else if (!isOpen) {
+            setScreenshot(null);
+        }
+    }, [isOpen, type, includeScreenshot]);
 
     // Fetch history when tab changes to 'history'
     useEffect(() => {
@@ -148,7 +453,14 @@ export const FeedbackWidget = () => {
                 path: window.location.pathname,
                 title,
                 severity,
-                reproSteps
+                reproSteps,
+                userEmail: user?.email || 'N/A',
+                userId: user?.id || 'N/A',
+                userRole: user?.role || 'N/A',
+                queryParams: window.location.search,
+                isOnline: navigator.onLine ? 'online' : 'offline',
+                language: navigator.language,
+                referrer: document.referrer || 'direct'
             };
 
             // Format message for immediate visibility
@@ -165,7 +477,12 @@ export const FeedbackWidget = () => {
                 type,
                 pageUrl: window.location.href,
                 consoleLogs,
-                metadata
+                networkLogs: fbNetworkLog,
+                breadcrumbs: fbBreadcrumbs,
+                sessionState: fbSessionHints(),
+                appVersion: fbAppVersion(),
+                metadata,
+                screenshot: includeScreenshot ? screenshot : null
             });
 
             toast({
@@ -180,6 +497,7 @@ export const FeedbackWidget = () => {
             setSeverity('medium');
             setType('bug');
             setConsoleLogs([]); // Clear logs after send
+            setScreenshot(null);
 
             // Switch to history tab to show progress
             setActiveTab('history');
@@ -202,14 +520,18 @@ export const FeedbackWidget = () => {
             case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
             case 'in_progress':
             case 'in progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'pending_clarification': return 'bg-amber-100 text-amber-800 border-amber-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
     return (
         <>
-            {/* Floating Trigger Button */}
-            <div className="fixed bottom-24 right-6 z-50 group">
+            {/* Floating Trigger Button — sits clearly above the Support-chat FAB (which is
+                a 60px circle at bottom:24px right:24px). bottom-40 (10rem) keeps a comfortable
+                gap so the two don't crowd/overlap on short viewports, where the button was
+                otherwise hard to reach. */}
+            <div className="fixed bottom-40 right-6 z-50 group feedback-trigger-btn">
                 {/* Pulse effect ring */}
                 <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
 
@@ -334,6 +656,83 @@ export const FeedbackWidget = () => {
                                     </div>
                                 )}
 
+                                {/* Screenshot Toggle & Preview */}
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                    <Label htmlFor="screenshot" className="text-right pt-1 text-xs font-semibold text-muted-foreground uppercase">
+                                        Screenshot
+                                    </Label>
+                                    <div className="col-span-3 space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id="include-screenshot"
+                                                checked={includeScreenshot}
+                                                onChange={(e) => {
+                                                    setIncludeScreenshot(e.target.checked);
+                                                    if (e.target.checked && !screenshot && !isCapturingScreenshot) {
+                                                        capturePageScreenshot();
+                                                    }
+                                                }}
+                                                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                            />
+                                            <label htmlFor="include-screenshot" className="text-xs text-muted-foreground font-medium select-none cursor-pointer">
+                                                Include screenshot of the current page
+                                            </label>
+                                        </div>
+                                        
+                                        {includeScreenshot && (
+                                            <div className="relative border rounded-md overflow-hidden bg-slate-50 h-24 flex items-center justify-center group/screenshot">
+                                                {isCapturingScreenshot ? (
+                                                    <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1">
+                                                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                                                        <span>Capturing page...</span>
+                                                    </div>
+                                                ) : screenshot ? (
+                                                    <>
+                                                        <img 
+                                                            src={screenshot} 
+                                                            alt="Page snapshot" 
+                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover/screenshot:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/screenshot:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="h-7 text-[10px] px-2 py-0 bg-white hover:bg-slate-100 text-black border-none"
+                                                                onClick={capturePageScreenshot}
+                                                            >
+                                                                Retake
+                                                            </Button>
+                                                            <a
+                                                                href={screenshot}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="h-7 text-[10px] px-2 py-1 bg-white text-black rounded hover:bg-slate-100 flex items-center justify-center font-medium"
+                                                            >
+                                                                View
+                                                            </a>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1 p-2 text-center">
+                                                        <span className="text-[10px] text-amber-600">Failed to capture canvas.</span>
+                                                        <Button 
+                                                            type="button" 
+                                                            size="sm" 
+                                                            variant="outline" 
+                                                            className="h-6 text-[10px] mt-1" 
+                                                            onClick={capturePageScreenshot}
+                                                        >
+                                                            Retry Capture
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label className="text-right text-xs text-muted-foreground">
                                         Context
@@ -380,7 +779,18 @@ export const FeedbackWidget = () => {
                                                         {format(new Date(item.created_at), 'MMM d, yyyy')}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm line-clamp-2" title={item.message}>{item.message}</p>
+                                                <p className="text-sm line-clamp-3 whitespace-pre-wrap" title={item.message}>{item.message}</p>
+                                                {item.status === 'pending_clarification' && item.resolution_notes && (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded p-2.5 my-2 text-xs space-y-1">
+                                                        <div className="text-amber-800 font-medium">
+                                                            <strong>Support Request:</strong> {item.resolution_notes}
+                                                        </div>
+                                                        <ClarificationReplyForm 
+                                                            feedbackId={item.id} 
+                                                            onSuccess={fetchHistory} 
+                                                        />
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-end">
                                                     <Badge variant="secondary" className={`${getStatusColor(item.status)} uppercase text-[10px]`}>
                                                         {item.status}

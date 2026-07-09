@@ -86,7 +86,7 @@ class UAEMatchingCriteria:
         self.emirates_data = {
             EmirateType.ABU_DHABI: {
                 'population': 3100000,
-                'economic_focus': ['oil_gas', 'government', 'finance', 'tourism', 'renewable_energy'],
+                'economic_focus': ['oil_gas', 'compliance_auditor', 'finance', 'tourism', 'renewable_energy'],
                 'major_employers': ['ADNOC', 'Mubadala', 'ADIA', 'Government Entities'],
                 'business_districts': ['Downtown', 'Al Reem Island', 'Yas Island', 'Saadiyat Island'],
                 'cost_of_living_index': 85,
@@ -233,7 +233,7 @@ class UAEMatchingCriteria:
                 'arabic_importance': 0.5,
                 'cultural_sensitivity_importance': 0.9
             },
-            'government': {
+            'compliance_auditor': {
                 'priority': IndustryPriority.CRITICAL,
                 'growth_rate': 'stable',
                 'demand_level': 'medium',
@@ -518,12 +518,37 @@ class UAEMatchingCriteria:
             bonuses['cultural_fit_score'] = 20
             bonuses['overall_score'] = 15
         
-        # 2. Arabic Language Bonus
-        languages = [l.lower() for l in cv_info.get('languages', [])]
-        if 'arabic' in languages:
-            bonuses['language_compatibility_score'] = 15
-            if 'native' in str(cv_info.get('languages')).lower():
+        # 2. English Language Bonus (Prioritized for private sector vacancies since candidates are native Arabic speakers)
+        languages_raw = cv_info.get('languages', [])
+        languages = []
+        has_fluent_english = False
+        
+        # Check explicit english_proficiency field
+        english_prof = cv_info.get('english_proficiency') or cv_info.get('preferences', {}).get('english_proficiency')
+        if english_prof:
+            if any(kw in english_prof.lower() for kw in ['fluent', 'native', 'professional', 'advanced', 'high']):
                 bonuses['language_compatibility_score'] = 25
+            else:
+                bonuses['language_compatibility_score'] = 15
+        else:
+            if isinstance(languages_raw, list):
+                for lang in languages_raw:
+                    if isinstance(lang, str):
+                        lang_lower = lang.lower()
+                        languages.append(lang_lower)
+                        if 'english' in lang_lower and any(kw in lang_lower for kw in ['native', 'fluent', 'professional', 'advanced', 'high']):
+                            has_fluent_english = True
+                    elif isinstance(lang, dict):
+                        name = str(lang.get('name', '')).lower()
+                        proficiency = str(lang.get('proficiency', '')).lower()
+                        languages.append(name)
+                        if 'english' in name and any(kw in proficiency or kw in name for kw in ['native', 'fluent', 'professional', 'advanced', 'high']):
+                            has_fluent_english = True
+
+            if 'english' in languages or any('english' in str(l).lower() for l in languages_raw):
+                bonuses['language_compatibility_score'] = 15
+                if has_fluent_english:
+                    bonuses['language_compatibility_score'] = 25
         
         # 3. UAE Experience Bonus
         # Simple check for UAE in experience locations

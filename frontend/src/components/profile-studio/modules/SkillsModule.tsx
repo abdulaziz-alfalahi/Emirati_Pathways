@@ -146,7 +146,7 @@ export const SkillsModule = () => {
 
                         {!skill.verified && (
                             <button
-                                onClick={() => navigate('/assessments')}
+                                onClick={() => navigate(`/mentorship?tab=find&search=${encodeURIComponent(skill.name)}`)}
                                 className="text-xs text-teal-600 flex items-center hover:underline mt-2 gap-1"
                             >
                                 <Zap size={12} />

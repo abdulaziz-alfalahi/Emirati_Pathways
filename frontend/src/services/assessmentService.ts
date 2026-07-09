@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { Assessment } from '@/types/assessments';
 import { assessmentCore } from './assessments/assessmentCore';
 import { mockSessionData } from './assessments/mockSessionData';

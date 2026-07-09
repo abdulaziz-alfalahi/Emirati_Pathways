@@ -133,7 +133,20 @@ export function ScheduleVideoInterviewDialog({
                 return response.data.data?.id || response.data.shortlist_id;
             }
             return null;
-        } catch (error) {
+        } catch (error: any) {
+            // 409 = candidate already shortlisted for this job. That is expected/benign when
+            // scheduling an interview for an already-shortlisted candidate — not an error.
+            // Recover the existing shortlist id from the response, or look it up.
+            if (error.response?.status === 409) {
+                const existingId = error.response.data?.shortlist_id || error.response.data?.data?.id;
+                if (existingId) return existingId;
+                try {
+                    const list = await fetchShortlist(jobId);
+                    const match = list.find((c: any) => String(c.candidate_id) === String(candidateId));
+                    if (match?.shortlist_id) return match.shortlist_id;
+                } catch { /* lookup failed — fall through */ }
+                return null;
+            }
             console.error("Error adding to shortlist:", error);
             return null;
         }
@@ -167,7 +180,7 @@ export function ScheduleVideoInterviewDialog({
                         }
                     } else if (initialCandidateId) {
                         let targetShortlistId = "";
-                        const match = shortlist.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
+                        const match = shortlist.find((c: any) => String(c.candidate_id) === String(initialCandidateId) || String(c.shortlist_id) === String(initialCandidateId));
 
                         if (match) {
                             targetShortlistId = match.shortlist_id;

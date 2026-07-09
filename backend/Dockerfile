@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code (filtered by .dockerignore)
 COPY . .
+
+# Create symlink for "backend." imports
+RUN ln -s /app /backend
 
 # Create upload directory
 RUN mkdir -p /app/uploads
@@ -35,7 +38,7 @@ CMD ["gunicorn", \
      "--workers", "4", \
      "--bind", "0.0.0.0:5005", \
      "--timeout", "120", \
-     "--keepalive", "5", \
+     "--keep-alive", "5", \
      "--max-requests", "1000", \
      "--max-requests-jitter", "100", \
      "--access-logfile", "-", \

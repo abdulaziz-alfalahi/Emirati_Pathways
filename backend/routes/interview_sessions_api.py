@@ -109,6 +109,19 @@ def ensure_tables_exist():
                     UNIQUE(session_id, user_id)
                 )
             """)
+
+            # Create candidate_interview_recommendations table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS candidate_interview_recommendations (
+                    id SERIAL PRIMARY KEY,
+                    session_id VARCHAR(100) NOT NULL UNIQUE,
+                    candidate_id VARCHAR(100) NOT NULL,
+                    recommended_articles JSONB DEFAULT '[]',
+                    recommended_trainings JSONB DEFAULT '[]',
+                    recommended_mentors JSONB DEFAULT '[]',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             
             conn.commit()
             
@@ -179,7 +192,7 @@ def list_sessions():
         # 1. Resolve user_id: JWT first, then query params
         user_id = None
         auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer ') and 'mock_token' not in auth_header:
+        if auth_header.startswith('Bearer '):
             try:
                 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
                 verify_jwt_in_request()
@@ -210,6 +223,34 @@ def list_sessions():
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Self-healing auto-complete: settle this user's interviews whose window
+                # has fully passed (scheduled start + duration + 30m grace < now, UAE local
+                # time). Engaged sessions -> 'completed'; never-engaged -> 'expired'.
+                # Runs on read (no cron needed); idempotent and non-fatal.
+                try:
+                    cur.execute("""
+                        UPDATE interview_schedules
+                        SET status = CASE
+                                WHEN status IN ('in_progress','accepted','joined','started') THEN 'completed'
+                                ELSE 'expired'
+                            END,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE (candidate_id::text = %s OR recruiter_id::text = %s)
+                          AND status NOT IN ('completed','cancelled','expired','no_show','declined')
+                          AND (scheduled_date + COALESCE(scheduled_time, TIME '09:00')
+                               + ((COALESCE(duration_minutes, 45) + 30) * INTERVAL '1 minute'))
+                              < (NOW() AT TIME ZONE 'Asia/Dubai')
+                    """, (user_id_str, user_id_str))
+                    if cur.rowcount:
+                        logger.info("Auto-settled %d past-window interview(s) for %s" % (cur.rowcount, user_id_str))
+                    conn.commit()
+                except Exception as _sweep_err:
+                    logger.warning("Interview auto-complete sweep skipped: %s" % _sweep_err)
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
+
                 # Query interview_schedules — the ONLY table where interviews are written
                 if role == 'candidate':
                     cur.execute("""
@@ -285,6 +326,7 @@ def list_sessions():
                 sessions = []
                 for row in rows:
                     session = dict(row)
+                    session['session_id'] = session['id']
                     # Normalize status
                     if session.get('status') == 'accepted':
                         session['status'] = 'confirmed'

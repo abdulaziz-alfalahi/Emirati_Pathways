@@ -556,8 +556,7 @@ OUTPUT (return ONLY this JSON, no markdown, no explanation)
         "nationality": "UAE National",
         "location": "Dubai, UAE",
         "address": "Dubai, UAE",
-        "linkedin": "",
-        "emirates_id": ""
+        "linkedin": ""
     }},
     "professional_summary": "Concise 2-sentence summary here.",
     "highest_nqf_level": 7,

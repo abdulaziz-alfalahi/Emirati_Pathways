@@ -23,7 +23,7 @@ import {
 import HybridGovernmentNavFixed from '../../components/layout/HybridGovernmentNavFixed';
 import { schoolProgramsAPIService } from '../../services/schoolProgramsServiceAPI';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 const SchoolProgramsAdminAPI: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');

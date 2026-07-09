@@ -15,11 +15,13 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 import random
 import string
+import psycopg2.extras
+from backend.db import get_db_connection
 
 user_activity_bp = Blueprint('user_activity', __name__)
 
 
-def generate_mock_activity(user_id: int, count: int = 20):
+def generate_mock_activity(user_id, count: int = 20):
     """Generate mock activity logs for a user."""
     actions = [
         ('login', 'User logged in successfully'),
@@ -55,7 +57,7 @@ def generate_mock_activity(user_id: int, count: int = 20):
     return activities
 
 
-def generate_mock_sessions(user_id: int):
+def generate_mock_sessions(user_id):
     """Generate mock active sessions for a user."""
     sessions = [
         {
@@ -95,7 +97,7 @@ def generate_mock_sessions(user_id: int):
     return sessions
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/activity', methods=['GET'])
+@user_activity_bp.route('/api/admin/users/<user_id>/activity', methods=['GET'])
 def get_user_activity(user_id):
     """
     Get activity logs and sessions for a specific user.
@@ -192,7 +194,7 @@ def terminate_session(session_id):
         }), 500
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/sessions', methods=['GET'])
+@user_activity_bp.route('/api/admin/users/<user_id>/sessions', methods=['GET'])
 def get_user_sessions(user_id):
     """
     Get all active sessions for a specific user.
@@ -211,7 +213,7 @@ def get_user_sessions(user_id):
         }), 500
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/sessions/terminate-all', methods=['POST'])
+@user_activity_bp.route('/api/admin/users/<user_id>/sessions/terminate-all', methods=['POST'])
 def terminate_all_sessions(user_id):
     """
     Terminate all sessions for a specific user except the current one.
@@ -284,6 +286,96 @@ def get_user_statistics():
     Get comprehensive user statistics for the admin dashboard.
     """
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # 1. Total and status-based user counts
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_users,
+                COUNT(*) FILTER (WHERE is_active = true) as active_users,
+                COUNT(*) FILTER (WHERE is_active = false) as inactive_users,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE) as new_users_today,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '7 days') as new_users_this_week,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '30 days') as new_users_this_month
+            FROM users
+        """)
+        counts = cursor.fetchone()
+        
+        # 2. Users by role
+        cursor.execute("""
+            SELECT role, COUNT(*) as count
+            FROM users
+            WHERE role IS NOT NULL AND role != ''
+            GROUP BY role
+        """)
+        role_rows = cursor.fetchall()
+        users_by_role = {row['role']: row['count'] for row in role_rows}
+        
+        # 3. Users by status
+        cursor.execute("""
+            SELECT 
+                COUNT(*) FILTER (WHERE is_active = true) as active,
+                COUNT(*) FILTER (WHERE is_active = false) as inactive
+            FROM users
+        """)
+        status_row = cursor.fetchone()
+        users_by_status = {
+            'active': status_row['active'] or 0,
+            'inactive': status_row['inactive'] or 0,
+            'suspended': 0,
+            'pending_verification': 0
+        }
+        
+        # 4. Users by department (using company as department)
+        cursor.execute("""
+            SELECT company, COUNT(*) as count
+            FROM users
+            WHERE company IS NOT NULL AND company != ''
+            GROUP BY company
+            LIMIT 10
+        """)
+        company_rows = cursor.fetchall()
+        users_by_department = {row['company']: row['count'] for row in company_rows}
+        
+        cursor.close()
+        conn.close()
+        
+        total = counts['total_users'] or 0
+        active = counts['active_users'] or 0
+        inactive = counts['inactive_users'] or 0
+        today = counts['new_users_today'] or 0
+        week = counts['new_users_this_week'] or 0
+        month = counts['new_users_this_month'] or 0
+        
+        stats = {
+            'total_users': total,
+            'active_users': active,
+            'inactive_users': inactive,
+            'new_users_today': today,
+            'new_users_this_week': week,
+            'new_users_this_month': month,
+            'users_by_role': users_by_role,
+            'users_by_status': users_by_status,
+            'users_by_department': users_by_department,
+            'login_activity': {
+                'today': today,
+                'this_week': week,
+                'this_month': month
+            },
+            'growth_rate': {
+                'daily': round((today / max(total, 1)) * 100, 1),
+                'weekly': round((week / max(total, 1)) * 100, 1),
+                'monthly': round((month / max(total, 1)) * 100, 1)
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': stats
+        })
+    except Exception as e:
+        # Fallback mock statistics in case of database connectivity issues
         stats = {
             'total_users': 1247,
             'active_users': 1089,
@@ -294,7 +386,7 @@ def get_user_statistics():
             'users_by_role': {
                 'candidate': 850,
                 'recruiter': 120,
-                'hr_manager': 45,
+                'employer_admin': 45,
                 'growth_operator': 15,
                 'platform_administrator': 5,
                 'mentor': 42,
@@ -327,13 +419,8 @@ def get_user_statistics():
                 'monthly': 18.7
             }
         }
-        
         return jsonify({
             'success': True,
-            'data': stats
+            'data': stats,
+            'warning': f'Database query failed, returning fallback statistics: {str(e)}'
         })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500

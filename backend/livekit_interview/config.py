@@ -2,6 +2,8 @@
 Configuration — Environment-driven settings for all LiveKit services.
 """
 
+import os
+
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -17,8 +19,8 @@ class Settings(BaseSettings):
     # ── S3 / MinIO ───────────────────────────────────────────────────
     s3_endpoint: str = Field("http://localhost:9000", alias="S3_ENDPOINT")
     s3_bucket: str = Field("interview-recordings", alias="S3_BUCKET")
-    s3_access_key: str = Field("minioadmin", alias="S3_ACCESS_KEY")
-    s3_secret_key: str = Field("minioadmin123", alias="S3_SECRET_KEY")
+    s3_access_key: str = Field(default_factory=lambda: os.environ.get("S3_ACCESS_KEY", ""), alias="S3_ACCESS_KEY")
+    s3_secret_key: str = Field(default_factory=lambda: os.environ.get("S3_SECRET_KEY", ""), alias="S3_SECRET_KEY")
     s3_region: str = Field("us-east-1", alias="S3_REGION")
 
     # ── Database ─────────────────────────────────────────────────────

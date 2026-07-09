@@ -532,7 +532,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
     try {
       const convRes = await messagingService.createConversation({
         participants: [userId, String(selectedUser.id)],
-        title: newSubject || `${senderRole === 'administrator' ? 'Admin' : 'Message'} → ${selectedUser.full_name || selectedUser.name || selectedUser.email}`,
+        title: newSubject || `${senderRole === 'admin' ? 'Admin' : 'Message'} → ${selectedUser.full_name || selectedUser.name || selectedUser.email}`,
       });
       if (convRes.success && convRes.data?.id) {
         await messagingService.sendMessage(convRes.data.id, {
@@ -604,8 +604,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                 const grouped: Record<string, PlatformUser[]> = {};
                 foundUsers.forEach(u => {
                   const roleLabel = u.role === 'recruiter' ? 'Recruiters'
-                    : u.role === 'administrator' || u.role === 'admin' ? 'Admins'
-                      : u.role === 'hr_manager' ? 'HR Managers'
+                    : u.role === 'admin' || u.role === 'admin' ? 'Admins'
+                      : u.role === 'employer_admin' ? 'HR Managers'
                         : 'Candidates';
                   (grouped[roleLabel] = grouped[roleLabel] || []).push(u);
                 });
@@ -709,7 +709,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
             hasMore={hasMore}
             loadingMore={loadingMore}
             onLoadMore={loadOlderMessages}
-            onScheduleInterview={(senderRole === 'recruiter' || senderRole === 'hr_manager') ? (() => {
+            onScheduleInterview={(senderRole === 'recruiter' || senderRole === 'employer_admin') ? (() => {
               if (selectedConversation) {
                 const conv = conversations.find(c => c.id === selectedConversation);
                 if (conv) {

@@ -43,32 +43,43 @@ def get_user_id_from_token():
 
 
 def require_auth(f):
-    """Simple auth decorator — reuses existing auth middleware."""
+    """Auth decorator that accepts a Bearer JWT or the httpOnly JWT cookie (UAE Pass
+    cookie sessions). Sets g.user_id / g.user_role for the handler."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        if not token:
-            return jsonify({"error": "Authentication required"}), 401
-        try:
-            from auth.auth_manager import AuthManager
-            auth = AuthManager()
-            user_data = auth.verify_token(token)
-            if not user_data:
-                return jsonify({"error": "Invalid token"}), 401
-            from flask import g
-            g.user_id = user_data.get('user_id') or user_data.get('id')
-            g.user_role = user_data.get('role', 'candidate')
-        except Exception as e:
-            logger.warning(f"Auth error: {e}")
-            # Fallback: try to extract user_id from token payload
+        from flask import g, current_app
+        resolved_id = None
+        resolved_role = 'candidate'
+
+        # 1) Bearer header (ignore the 'cookie_authenticated' placeholder).
+        auth_header = request.headers.get('Authorization', '') or ''
+        token = auth_header[7:].strip() if auth_header.startswith('Bearer ') else ''
+        if token and token != 'cookie_authenticated':
             try:
-                import jwt
-                payload = jwt.decode(token, options={"verify_signature": False})
-                from flask import g
-                g.user_id = payload.get('user_id') or payload.get('sub')
-                g.user_role = payload.get('role', 'candidate')
-            except:
-                return jsonify({"error": "Authentication required"}), 401
+                import jwt as pyjwt
+                payload = pyjwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                resolved_id = payload.get('sub') or payload.get('user_id')
+                resolved_role = payload.get('role', 'candidate')
+            except Exception as jwt_err:
+                logger.warning(f"Intelligence auth: bearer decode failed: {jwt_err}")
+
+        # 2) Cookie-based session (UAE Pass): verify the JWT cookie.
+        if not resolved_id:
+            try:
+                from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
+                verify_jwt_in_request(locations=['cookies'])
+                resolved_id = get_jwt_identity()
+                try:
+                    resolved_role = (get_jwt() or {}).get('role', 'candidate')
+                except Exception:
+                    pass
+            except Exception:
+                resolved_id = None
+
+        if not resolved_id:
+            return jsonify({"error": "Authentication required"}), 401
+        g.user_id = resolved_id
+        g.user_role = resolved_role
         return f(*args, **kwargs)
     return decorated
 
@@ -430,11 +441,45 @@ def profile_snapshot():
     try:
         from flask import g
         user_id = g.user_id
+        db = get_db()
         skill_graph, recommendation, lifecycle = _get_engines()
 
         # 1. User skills summary
         all_skills = skill_graph.get_user_skills(user_id)
-        top_skills = sorted(all_skills, key=lambda s: s.get('demand_score', 0), reverse=True)[:8]
+
+        # Auto-sync legacy user_skills from candidate_skills if empty
+        if not all_skills and db:
+            try:
+                cur = db.cursor()
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s", (str(user_id),))
+                c_skills = cur.fetchall()
+                if c_skills:
+                    for name, category, level in c_skills:
+                        skill_id = name.lower().replace(' ', '_').replace('-', '_')
+                        proficiency = 'intermediate'
+                        if level:
+                            l_lower = level.lower()
+                            if 'expert' in l_lower: proficiency = 'expert'
+                            elif 'advanced' in l_lower: proficiency = 'advanced'
+                            elif 'intermediate' in l_lower: proficiency = 'intermediate'
+                            elif 'beginner' in l_lower: proficiency = 'beginner'
+                            elif 'novice' in l_lower: proficiency = 'novice'
+                        skill_graph.add_user_skill(
+                            user_id=user_id,
+                            skill_id=skill_id,
+                            skill_name=name,
+                            proficiency=proficiency,
+                            source='self_reported'
+                        )
+                    # Re-fetch after sync
+                    all_skills = skill_graph.get_user_skills(user_id)
+            except Exception as e:
+                logger.warning(f"Error auto-syncing user skills: {e}")
+                if db:
+                    try: db.rollback()
+                    except: pass
+
+        top_skills = sorted(all_skills, key=lambda s: s.get('demand_score') or 0, reverse=True)[:8]
         skill_sources = {}
         for s in all_skills:
             src = s.get('source', 'self_reported')
@@ -444,6 +489,9 @@ def profile_snapshot():
         try:
             gap_result = skill_graph.analyze_skill_gaps(user_id)
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             gap_result = {"gaps": [], "readiness_score": 0, "target_role": "Market Demand", "total_required": 0, "skills_met": 0, "gaps_found": 0}
         top_gaps = gap_result.get('gaps', [])[:5]
 
@@ -455,12 +503,18 @@ def profile_snapshot():
                 max_per_type=3
             )
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             rec_result = {"recommendations": [], "quick_wins": [], "long_term": []}
 
         # 4. Career stage
         try:
             stage_result = lifecycle.get_user_stage(user_id)
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             stage_result = {"current_stage": "exploration", "progress_pct": 0}
 
         # 5. AI Career Insight — generate a personalized text
@@ -515,40 +569,174 @@ def recommended_jobs():
 
         # Get user skills
         user_skills = skill_graph.get_user_skills(user_id)
+
+        # Auto-sync legacy user_skills from candidate_skills if empty
+        if not user_skills and db:
+            try:
+                cur = db.cursor()
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s", (str(user_id),))
+                c_skills = cur.fetchall()
+                if c_skills:
+                    for name, category, level in c_skills:
+                        skill_id = name.lower().replace(' ', '_').replace('-', '_')
+                        proficiency = 'intermediate'
+                        if level:
+                            l_lower = level.lower()
+                            if 'expert' in l_lower: proficiency = 'expert'
+                            elif 'advanced' in l_lower: proficiency = 'advanced'
+                            elif 'intermediate' in l_lower: proficiency = 'intermediate'
+                            elif 'beginner' in l_lower: proficiency = 'beginner'
+                            elif 'novice' in l_lower: proficiency = 'novice'
+                        skill_graph.add_user_skill(
+                            user_id=user_id,
+                            skill_id=skill_id,
+                            skill_name=name,
+                            proficiency=proficiency,
+                            source='self_reported'
+                        )
+                    # Re-fetch after sync
+                    user_skills = skill_graph.get_user_skills(user_id)
+            except Exception as e:
+                logger.warning(f"Error auto-syncing user skills in recommended-jobs: {e}")
+
         user_skill_names = set(s.get('skill_name', '').lower() for s in user_skills)
 
         matched_jobs = []
 
         if db:
             try:
+                # Fetch applied job IDs
+                applied_job_ids = set()
+                if user_id:
+                    cur = db.cursor()
+                    cur.execute("""
+                        SELECT job_id, status 
+                        FROM job_applications 
+                        WHERE candidate_id = %s
+                    """, (str(user_id),))
+                    for row in cur.fetchall():
+                        if row[1] not in ['withdrawn', 'rejected']:
+                            applied_job_ids.add(str(row[0]))
+
                 cur = db.cursor()
                 cur.execute("""
-                    SELECT id, title, company_id, location, description, requirements, status, salary_range
+                    SELECT id, title, company_id, location, description, requirements, status, salary_range, employment_type, experience_level
                     FROM job_postings 
-                    WHERE status IN ('active', 'open', 'Active', 'Open')
+                    WHERE status IN ('published', 'active', 'open', 'Active', 'Open', 'Published')
                     ORDER BY created_at DESC
                     LIMIT 50
                 """)
                 columns = [d[0] for d in cur.description]
                 rows = [dict(zip(columns, r)) for r in cur.fetchall()]
 
-                for job in rows:
-                    # Score based on skill overlap with requirements
-                    req_text = (job.get('requirements') or '').lower() + ' ' + (job.get('description') or '').lower()
-                    skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
-                    match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
+                # Use EnhancedMatchingEngine for consistent scoring if candidate profile exists
+                matches_dict = {}
+                try:
+                    from backend.services.profile_v2_service import ProfileV2Service
+                    from backend.services.enhanced_matching_service import enhanced_matching_engine, JobRequirements
+                    
+                    candidate_profile = ProfileV2Service.get_matching_profile_data(user_id)
+                    if candidate_profile:
+                        job_requirements_list = []
+                        for job in rows:
+                            req_list = job.get('requirements') or []
+                            req_skills = []
+                            if isinstance(req_list, list):
+                                req_skills = [str(r) for r in req_list]
+                            elif isinstance(req_list, str):
+                                req_skills = [r.strip() for r in req_list.split(',')]
+                                
+                            # Parse salary
+                            sal_range = None
+                            sal_str = job.get('salary_range') or ''
+                            if sal_str and '-' in str(sal_str):
+                                try:
+                                    parts = str(sal_str).replace('AED', '').replace(',', '').split('-')
+                                    sal_range = {'min_salary': int(parts[0]), 'max_salary': int(parts[1])}
+                                except:
+                                    pass
+                            
+                            # Parse experience requirement
+                            min_exp_parsed = 0
+                            for r in req_skills:
+                                 import re
+                                 m = re.search(r'(\d+)(\+|\s*-\s*\d+)?\s*years?', str(r).lower())
+                                 if m:
+                                     try:
+                                         val = int(m.group(1))
+                                         if val > min_exp_parsed and val < 30:
+                                             min_exp_parsed = val
+                                     except: pass
+                            
+                            title_lower = job['title'].lower()
+                            if min_exp_parsed == 0:
+                                 if 'senior' in title_lower or 'lead' in title_lower or 'manager' in title_lower or 'head' in title_lower:
+                                     min_exp_parsed = 5
+                                 elif 'executive' in title_lower or 'chief' in title_lower or 'director' in title_lower:
+                                     min_exp_parsed = 10
+                            
+                            # Create JobRequirements object
+                            job_req = JobRequirements(
+                                id=str(job['id']),
+                                required_skills=req_skills,
+                                preferred_skills=[], 
+                                min_experience=min_exp_parsed,
+                                max_experience=min_exp_parsed + 15 if min_exp_parsed > 0 else None,
+                                education_requirements=[],
+                                location={'emirate': job.get('location', '')},
+                                salary_range=sal_range,
+                                languages=['English'],
+                                industry='',
+                                company_size='',
+                                career_level=job.get('experience_level', 'Mid_Level'),
+                                emiratization_priority=False,
+                                visa_sponsorship=True
+                            )
+                            job_requirements_list.append(job_req)
+                        
+                        if job_requirements_list:
+                            matches = enhanced_matching_engine.find_best_matches(candidate_profile, job_requirements_list, limit=50)
+                            matches_dict = {job_req.id: score_obj.overall_score for job_req, score_obj in matches}
+                except Exception as match_eng_err:
+                    logger.warning(f"Could not compute consistent match scores via EnhancedMatchingEngine: {match_eng_err}")
 
-                    if skill_hits > 0 or len(user_skill_names) == 0:
+                for job in rows:
+                    job_id = str(job.get('id'))
+                    
+                    req_list = job.get('requirements') or []
+                    req_strings = []
+                    if isinstance(req_list, list):
+                        for r in req_list:
+                            if isinstance(r, dict):
+                                req_strings.append(r.get('description', ''))
+                            elif isinstance(r, str):
+                                req_strings.append(r)
+                    elif isinstance(req_list, str):
+                        req_strings.append(req_list)
+                    req_text = ' '.join(req_strings).lower() + ' ' + (job.get('description') or '').lower()
+
+                    skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
+                    
+                    if job_id in matches_dict:
+                        match_score = int(matches_dict[job_id])
+                    else:
+                        match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
+
+                    if skill_hits > 0 or len(user_skill_names) == 0 or job_id in matches_dict:
+                        company = job.get('company_id') or 'UAE Employer'
+                        if company.lower() in ('unknown', 'null', ''):
+                            company = 'UAE Employer'
                         matched_jobs.append({
                             "id": job.get('id'),
                             "title": job.get('title', 'Untitled'),
-                            "company": job.get('company_id', 'UAE Employer'),
+                            "company": company,
                             "location": job.get('location', 'UAE'),
                             "salary": job.get('salary_range') or 'Competitive',
                             "match_score": match_score,
-                            "type": "Full-time",
+                            "type": job.get('employment_type') or 'Full-time',
                             "skill_overlap": skill_hits,
-                            "source": "live"
+                            "source": "live",
+                            "hasApplied": job_id in applied_job_ids
                         })
 
                 matched_jobs.sort(key=lambda j: j['match_score'], reverse=True)

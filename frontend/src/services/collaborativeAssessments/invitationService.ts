@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 interface InvitationEmailData {
   recipientEmail: string;
   recipientName?: string;
@@ -12,7 +9,7 @@ interface InvitationEmailData {
 
 export const sendInvitationEmail = async (data: InvitationEmailData) => {
   try {
-    const { error } = await supabase.functions.invoke('send-invitation-email', {
+    // TODO: Connect to Flask API - const { error } = await supabase.functions.invoke('send-invitation-email', {
       body: data
     });
 

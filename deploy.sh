@@ -152,12 +152,22 @@ set_env_vars() {
     case "$ENV" in
         appdev)
             export FLASK_ENV=development
-            export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            if [ -f "${REPO_DIR}/backend/.env" ] && grep -q "^FRONTEND_URL=" "${REPO_DIR}/backend/.env"; then
+                local env_val=$(grep "^FRONTEND_URL=" "${REPO_DIR}/backend/.env" | cut -d'=' -f2- | tr -d '\r')
+                export FRONTEND_URL="$env_val"
+            else
+                export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            fi
             log "FLASK_ENV=development, FRONTEND_URL=$FRONTEND_URL"
             ;;
         appqa)
             export FLASK_ENV=development
-            export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            if [ -f "${REPO_DIR}/backend/.env" ] && grep -q "^FRONTEND_URL=" "${REPO_DIR}/backend/.env"; then
+                local env_val=$(grep "^FRONTEND_URL=" "${REPO_DIR}/backend/.env" | cut -d'=' -f2- | tr -d '\r')
+                export FRONTEND_URL="$env_val"
+            else
+                export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            fi
             log "FLASK_ENV=development (QA), FRONTEND_URL=$FRONTEND_URL"
             ;;
         production)
@@ -180,12 +190,12 @@ restart_services() {
     mkdir -p "$LOG_DIR"
 
     # Kill existing backend process
-    pkill -f "python.*app.py" 2>/dev/null || true
+    pkill -f "gunicorn.*wsgi" 2>/dev/null || true
     sleep 2
 
     # Start backend
     cd "$REPO_DIR/backend"
-    nohup python app.py > "$LOG_DIR/backend.log" 2>&1 &
+    nohup gunicorn -c gunicorn.conf.py wsgi:app > "$LOG_DIR/backend.log" 2>&1 &
     local backend_pid=$!
     log "Backend started (PID: $backend_pid)"
 
@@ -243,7 +253,7 @@ show_status() {
     }
 
     # Process status
-    local backend_pid=$(pgrep -f "python.*app.py" | head -1)
+    local backend_pid=$(pgrep -f "gunicorn.*wsgi" | head -1)
     if [ -n "$backend_pid" ]; then
         echo "  Backend:      ✅ Running (PID: $backend_pid, port $BACKEND_PORT)"
     else

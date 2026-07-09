@@ -58,19 +58,19 @@ import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils';
 // Available roles with metadata
 export const AVAILABLE_ROLES = [
   {
-    id: 'job_seeker',
+    id: 'candidate',
     name: 'Job Seeker',
     description: 'Find your dream career with AI-powered job matching',
     dashboard: '/candidate-dashboard'
   },
   {
-    id: 'student',
+    id: 'candidate',
     name: 'Student',
     description: 'Explore scholarships, internships, and educational programs',
     dashboard: '/student-dashboard'
   },
   {
-    id: 'hr_manager',
+    id: 'employer_admin',
     name: 'HR Manager',
     description: 'Oversee workforce planning and talent strategy',
     dashboard: '/hr-dashboard'
@@ -82,7 +82,7 @@ export const AVAILABLE_ROLES = [
     dashboard: '/recruiter'
   },
   {
-    id: 'educator',
+    id: 'training_provider',
     name: 'Educator',
     description: 'Enhance student outcomes with curriculum management',
     dashboard: '/educator-dashboard'
@@ -100,7 +100,7 @@ export const AVAILABLE_ROLES = [
     dashboard: '/assessor-dashboard'
   },
   {
-    id: 'guardian',
+    id: 'parent',
     name: 'Guardian / Parent',
     description: 'Monitor your child\'s career journey and milestones',
     dashboard: '/guardian-dashboard'
@@ -292,12 +292,18 @@ class AuthService {
         throw new Error('No access token found');
       }
 
+      // Cookie-based UAE Pass session: the real JWT lives in an httpOnly cookie.
+      // Never send the 'cookie_authenticated' placeholder as a Bearer token — the
+      // backend 401s on it instead of falling back to the cookie. Omit the header
+      // for the placeholder and authenticate via the cookie (credentials:'include').
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token && token !== 'cookie_authenticated') {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${this.API_BASE_URL}/auth/profile`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {
@@ -463,27 +469,22 @@ class AuthService {
 
       // Legacy fallback logic
       switch (role?.toLowerCase()) {
-        case 'hr_manager':
+        case 'employer_admin':
         case 'hr manager':
-        case 'hr':
           console.log('AuthService: Routing to HR Dashboard (legacy)');
           return '/hr-dashboard';
         case 'recruiter':
           console.log('AuthService: Routing to Recruiter Dashboard (legacy)');
           return '/recruiter-dashboard';
-        case 'administrator':
         case 'admin':
           console.log('AuthService: Routing to Admin Dashboard (legacy)');
           return '/admin-dashboard';
-        case 'student':
+        case 'candidate':
           console.log('AuthService: Routing to Student Dashboard (legacy fallback)');
           return '/student-dashboard';
-        case 'guardian':
         case 'parent':
           console.log('AuthService: Routing to Guardian Dashboard (legacy)');
           return '/guardian-dashboard';
-        case 'job_seeker':
-        case 'candidate':
         case 'job seeker':
         default:
           console.log('AuthService: Routing to Candidate Dashboard (default)');

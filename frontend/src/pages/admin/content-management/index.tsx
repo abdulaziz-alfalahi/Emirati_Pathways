@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { ContentItem, ContentCategory, ContentType, ContentStatus } from '@/types/content';
 import Layout from '@/components/layout/Layout';
@@ -27,7 +26,7 @@ const ContentManagementPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<ContentType | 'all'>('all');
 
   // Check if user has admin permissions
-  const isAuthorized = hasRole('administrator') || hasRole('super_user');
+  const isAuthorized = hasRole('admin') || hasRole('super_user');
 
   useEffect(() => {
     if (!user) return;

@@ -330,7 +330,7 @@ export const CollaboratorInviteDialog: React.FC<CollaboratorInviteDialogProps> =
                 <SelectItem value="evaluator">Evaluator</SelectItem>
                 <SelectItem value="mentor">Mentor</SelectItem>
                 <SelectItem value="trainer">Trainer</SelectItem>
-                <SelectItem value="employer">Employer</SelectItem>
+                <SelectItem value='employer_admin'>Employer</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>

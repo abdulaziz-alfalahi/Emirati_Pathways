@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export interface ABTestExperiment {
   id: string;
   experiment_name: string;
@@ -37,7 +34,7 @@ export interface ABTestResults {
 class ABTestingService {
   async createExperiment(experiment: Omit<ABTestExperiment, 'id' | 'created_by'>): Promise<ABTestExperiment | null> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -130,7 +127,7 @@ class ABTestingService {
 
   async getUserAssignment(experimentId: string): Promise<'A' | 'B' | null> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return 'A'; // Default for unauthenticated users
 
       const { data, error } = await supabase
@@ -156,10 +153,10 @@ class ABTestingService {
 
   private async assignUserToVariant(experimentId: string, variant: 'A' | 'B'): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      await supabase.from('ab_testing_assignments').insert({
+      // TODO: Connect to Flask API - await supabase.from('ab_testing_assignments').insert({
         experiment_id: experimentId,
         user_id: user.user.id,
         variant

@@ -14,13 +14,13 @@ export const Overview: React.FC<OverviewProps> = ({ activeRole }) => {
 
   const getMetricsForRole = (role: string) => {
     switch (role) {
-      case 'job_seeker':
+      case 'candidate':
         return [
           { title: 'Applications Submitted', value: '12', description: 'This month', change: '+3 from last month' },
           { title: 'Profile Views', value: '48', description: 'By employers', change: '+15% increase' },
           { title: 'Skill Assessments', value: '4', description: 'Completed', change: '2 pending' }
         ];
-      case 'student':
+      case 'candidate':
         return [
           { title: 'Courses Enrolled', value: '6', description: 'This semester', change: '2 in progress' },
           { title: 'Assignments Due', value: '3', description: 'This week', change: '1 overdue' },
@@ -58,21 +58,21 @@ export const Overview: React.FC<OverviewProps> = ({ activeRole }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {activeRole === 'job_seeker' && (
+              {activeRole === 'candidate' && (
                 <>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Update Resume</button>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Search Jobs</button>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Practice Interview</button>
                 </>
               )}
-              {activeRole === 'student' && (
+              {activeRole === 'candidate' && (
                 <>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">View Assignments</button>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Join Study Group</button>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Schedule Mentoring</button>
                 </>
               )}
-              {!['job_seeker', 'student'].includes(activeRole) && (
+              {!['candidate', 'candidate'].includes(activeRole) && (
                 <>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Complete Profile</button>
                   <button className="w-full text-left p-2 hover:bg-muted rounded">Explore Opportunities</button>

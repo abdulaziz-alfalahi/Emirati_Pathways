@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 export interface AnalyticsEvent {
@@ -57,7 +56,7 @@ class CrossPhaseAnalyticsService {
 
   private async initializeTracking() {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (user.user) {
         const consent = await this.getAnalyticsConsent(user.user.id);
         this.isTrackingEnabled = consent?.essential_analytics || false;
@@ -73,10 +72,10 @@ class CrossPhaseAnalyticsService {
     if (!this.isTrackingEnabled) return;
 
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      await supabase.from('user_journey_analytics').insert({
+      // TODO: Connect to Flask API - await supabase.from('user_journey_analytics').insert({
         user_id: user.user.id,
         phase: event.phase,
         event_type: event.event_type,
@@ -94,10 +93,10 @@ class CrossPhaseAnalyticsService {
     if (!this.isTrackingEnabled) return;
 
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      await supabase.from('phase_transitions').insert({
+      // TODO: Connect to Flask API - await supabase.from('phase_transitions').insert({
         user_id: user.user.id,
         from_phase: transition.from_phase,
         to_phase: transition.to_phase,
@@ -115,9 +114,9 @@ class CrossPhaseAnalyticsService {
     if (!this.isTrackingEnabled) return;
 
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       
-      await supabase.from('feature_usage_analytics').insert({
+      // TODO: Connect to Flask API - await supabase.from('feature_usage_analytics').insert({
         user_id: user.user?.id,
         feature_name: usage.feature_name,
         phase: usage.phase,
@@ -136,10 +135,10 @@ class CrossPhaseAnalyticsService {
     if (!this.isTrackingEnabled) return;
 
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      await supabase.from('user_journey_milestones').insert({
+      // TODO: Connect to Flask API - await supabase.from('user_journey_milestones').insert({
         user_id: user.user.id,
         phase: milestone.phase,
         milestone_type: milestone.milestone_type,
@@ -154,10 +153,10 @@ class CrossPhaseAnalyticsService {
 
   async updateAnalyticsConsent(consent: ConsentSettings): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      await supabase.from('analytics_consent').upsert({
+      // TODO: Connect to Flask API - await supabase.from('analytics_consent').upsert({
         user_id: user.user.id,
         essential_analytics: consent.essential_analytics,
         performance_analytics: consent.performance_analytics,
@@ -224,7 +223,7 @@ class CrossPhaseAnalyticsService {
   async createInitialConsentRecord(userId: string): Promise<void> {
     try {
       const defaultSettings = this.getDefaultConsentSettings();
-      await supabase.from('analytics_consent').insert({
+      // TODO: Connect to Flask API - await supabase.from('analytics_consent').insert({
         user_id: userId,
         essential_analytics: defaultSettings.essential_analytics,
         performance_analytics: defaultSettings.performance_analytics,
@@ -363,7 +362,7 @@ class CrossPhaseAnalyticsService {
   // NEW: Method to check if analytics service is working properly
   async healthCheck(): Promise<boolean> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return false;
 
       // Try to get consent settings - this should not throw an error now

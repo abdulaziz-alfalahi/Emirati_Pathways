@@ -108,7 +108,7 @@ def run_matching_flow_tests():
     # ── 2.4 Match with Employment Filter ─────────────────────
     if test_jd_id:
         r = api('POST', f'/api/recruiter/jd/{test_jd_id}/match-candidates', token=token,
-                json={'employment_status_filter': 'job_seeker'})
+                json={'employment_status_filter': 'candidate'})
         if r.status_code < 400:
             body = r.json()
             matches = body.get('top_matches') or body.get('matches') or []

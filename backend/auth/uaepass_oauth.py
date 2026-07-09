@@ -53,7 +53,7 @@ class UAEPassConfig:
             self.authorize_url = 'https://stg-id.uaepass.ae/idshub/authorize'
             self.logout_url = 'https://stg-id.uaepass.ae/idshub/logout'
 
-        self.scope = 'openid'
+        self.scope = os.getenv('UAEPASS_SCOPE', 'openid urn:uae:digitalid:profile:general')
         self.response_type = 'code'
         self.acr_values = 'urn:safelayer:tws:policies:authentication:level:low'
 
@@ -85,15 +85,14 @@ class UAEPassOAuth:
     def __init__(self, config: Optional[UAEPassConfig] = None):
         self.config = config or UAEPassConfig()
 
-    def get_authorization_url(self, state: Optional[str] = None) -> Tuple[str, str]:
+    def get_authorization_url(self, state: Optional[str] = None, nonce: Optional[str] = None) -> Tuple[str, str, str]:
         """
         Build the UAE Pass authorization URL.
-
-        Returns:
-            Tuple of (authorization_url, state_token)
         """
         if not state:
             state = secrets.token_urlsafe(32)
+        if not nonce:
+            nonce = secrets.token_urlsafe(32)
 
         params = {
             'response_type': self.config.response_type,
@@ -101,12 +100,13 @@ class UAEPassOAuth:
             'scope': self.config.scope,
             'redirect_uri': self.config.redirect_uri,
             'state': state,
+            'nonce': nonce,
             'acr_values': self.config.acr_values,
         }
 
         auth_url = f"{self.config.authorize_url}?{urlencode(params)}"
-        logger.info(f"Generated UAE Pass auth URL with state={state[:8]}...")
-        return auth_url, state
+        logger.info(f"Generated UAE Pass auth URL with state={state[:8]}... and nonce={nonce[:8]}...")
+        return auth_url, state, nonce
 
     def exchange_code_for_tokens(self, code: str) -> Dict[str, Any]:
         """
@@ -266,6 +266,66 @@ class UAEPassOAuth:
             'title_en': raw_profile.get('titleEN'),
             'auth_method': 'uaepass',
         }
+
+    def verify_id_token(self, id_token: str, expected_nonce: str) -> Dict[str, Any]:
+        """
+        Verify the id_token's audience, issuer, expiry, and nonce.
+
+        NOTE ON SIGNATURE VERIFICATION: UAE Pass does not expose a public JWKS /
+        discovery endpoint — every keys/discovery path (/idshub/keys, /idshub/jwks,
+        /.well-known/*, and the production /idp/keys) returns HTTP 403 from their
+        gateway, while /token and /userinfo work normally. We therefore cannot fetch
+        signing keys to verify the RS256 signature. This is acceptable per OIDC Core
+        §3.1.3.7: the id_token is obtained by the backend directly from the UAE Pass
+        /token endpoint over a server-to-server TLS channel authenticated with the
+        client_id + client_secret (it never transits the browser), so the TLS channel
+        authenticates the issuer in place of the token signature. We still validate
+        the security-relevant claims (aud, iss, exp, nonce), and the authoritative
+        user profile is fetched separately from /userinfo over TLS.
+        """
+        import jwt
+
+        env = os.getenv('UAEPASS_ENV', 'staging')
+        # UAE Pass sets the id_token `iss` to its OAuth token URL on the "ids"
+        # subdomain (note the extra 's' vs the API host stg-id/id) and includes an
+        # explicit :443 and /oauth2/token path — observed staging value:
+        #   'https://stg-ids.uaepass.ae:443/oauth2/token'
+        # We therefore validate the issuer by HOSTNAME (which drops the port/path)
+        # rather than by exact string. Production host inferred by analogy; VERIFY
+        # against a real production token before go-live.
+        expected_iss_host = 'ids.uaepass.ae' if env == 'production' else 'stg-ids.uaepass.ae'
+
+        try:
+            decoded_claims = jwt.decode(
+                id_token,
+                options={
+                    "verify_signature": False,
+                    "verify_aud": True,
+                    "verify_iss": False,   # validated by host below
+                    "verify_exp": True,
+                },
+                audience=self.config.client_id,
+            )
+
+            from urllib.parse import urlparse
+            actual_iss = decoded_claims.get('iss', '')
+            actual_iss_host = urlparse(actual_iss).hostname
+            logger.info(f"UAE Pass id_token issuer: {actual_iss!r} (host={actual_iss_host})")
+            if actual_iss_host != expected_iss_host:
+                raise UAEPassError(
+                    f"OIDC ID Token validation failed: Invalid issuer {actual_iss!r} "
+                    f"(expected host {expected_iss_host})"
+                )
+
+            nonce_in_token = decoded_claims.get('nonce')
+            if not nonce_in_token or nonce_in_token != expected_nonce:
+                raise UAEPassError(f"OIDC ID Token nonce mismatch. Expected {expected_nonce}, got {nonce_in_token}")
+
+            return decoded_claims
+
+        except jwt.PyJWTError as e:
+            logger.error(f"JWT decode error: {e}")
+            raise UAEPassError(f"OIDC ID Token validation failed: {e}")
 
 
 class UAEPassError(Exception):

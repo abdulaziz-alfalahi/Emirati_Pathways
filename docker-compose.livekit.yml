@@ -21,23 +21,22 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     environment:
-      - LIVEKIT_KEYS=devkey:secret
+      - "LIVEKIT_KEYS=${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── LiveKit Egress (Recording) ─────────────────────────────────────
   livekit-egress:
     image: livekit/egress:latest
     environment:
-      - EGRESS_CONFIG_FILE=/etc/egress.yaml
       # LiveKit connection
       - LIVEKIT_URL=ws://livekit-server:7880
-      - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       # S3 upload (MinIO)
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin123
+      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
       - AWS_DEFAULT_REGION=us-east-1
     volumes:
       - egress-tmp:/tmp/egress
@@ -46,7 +45,7 @@ services:
       - minio
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
     cap_add:
       - SYS_ADMIN   # Required for headless Chrome
 
@@ -57,14 +56,14 @@ services:
       dockerfile: Dockerfile.agent
     environment:
       - LIVEKIT_URL=ws://livekit-server:7880
-      - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - GRANITE_SPEECH_URL=http://10.228.145.194:8001/v1
     depends_on:
       - livekit-server
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── MinIO (S3-Compatible Object Storage) ───────────────────────────
   minio:
@@ -74,11 +73,11 @@ services:
       - "9000:9000"   # S3 API
       - "9001:9001"   # MinIO Console UI
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin123
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
       # AES-256 Server-Side Encryption (SSE-S3)
       - MINIO_KMS_AUTO_ENCRYPTION=on
-      - MINIO_KMS_SECRET_KEY=emirati-key-1:MjJhZmI4N2QzNjc4NWZjNmMyMTcxMzg4YjlmMmFhNTc=
+      - MINIO_KMS_SECRET_KEY=${MINIO_KMS_SECRET_KEY}
     volumes:
       - minio-data:/data
     healthcheck:
@@ -88,7 +87,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── MinIO Bucket Init ──────────────────────────────────────────────
   minio-init:
@@ -98,14 +97,14 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin123;
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
       mc mb --ignore-existing local/interview-recordings;
       mc anonymous set none local/interview-recordings;
       mc encrypt set sse-s3 local/interview-recordings;
       echo 'Bucket ready with SSE-S3 encryption';
       "
     networks:
-      - lk-net
+      - emirati_net
 
 volumes:
   minio-data:
@@ -114,5 +113,5 @@ volumes:
     driver: local
 
 networks:
-  lk-net:
-    driver: bridge
+  emirati_net:
+    external: true

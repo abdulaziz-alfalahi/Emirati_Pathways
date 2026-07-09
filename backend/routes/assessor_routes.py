@@ -79,7 +79,7 @@ def create_assessment_template():
 
 @assessor_bp.route('/templates', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter'])
+@require_role(['assessor', 'admin', 'recruiter'])
 def get_assessment_templates():
     """Get assessment templates with optional filters"""
     try:
@@ -198,7 +198,7 @@ def create_assessment():
 
 @assessor_bp.route('/assessments', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter'])
+@require_role(['assessor', 'admin', 'recruiter'])
 def get_assessments():
     """Get assessments with optional filters"""
     try:
@@ -333,7 +333,7 @@ def create_competency_model():
 
 @assessor_bp.route('/competencies', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter', 'mentor', 'educator'])
+@require_role(['assessor', 'admin', 'recruiter', 'mentor', 'training_provider'])
 def get_competency_models():
     """Get competency models with optional filters"""
     try:
@@ -721,6 +721,242 @@ def assessor_dashboard():
             'specializations': {'primaryAreas': [], 'certifications': [], 'yearsExperience': 0, 'assessmentTypes': []},
             'activity': [],
         })
+
+
+# ═══════════════════════════════════════════
+# ASSESSMENT CENTER APPLICANTS ENDPOINTS
+# ═══════════════════════════════════════════
+
+@assessor_bp.route('/applications', methods=['GET'])
+@jwt_required()
+def get_center_applications():
+    """Retrieve all assessment applications matching the assessor's center/company workspace."""
+    try:
+        assessor_id = get_jwt_identity()
+        if not assessor_id:
+            return jsonify({"success": False, "message": "Unauthorized"}), 401
+            
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Get company associated with this assessor/admin
+        cur.execute("""
+            SELECT company_id FROM company_team_members 
+            WHERE user_id = %s AND invitation_status = 'accepted'
+            LIMIT 1
+        """, (str(assessor_id),))
+        member = cur.fetchone()
+        
+        if not member:
+            # Fall back to checking workspace_admin_id
+            cur.execute("""
+                SELECT id FROM companies 
+                WHERE workspace_admin_id = %s
+                LIMIT 1
+            """, (str(assessor_id),))
+            comp = cur.fetchone()
+            if comp:
+                company_id = comp['id']
+            else:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    "success": False,
+                    "message": "Assessor is not associated with any company workspace"
+                }), 403
+        else:
+            company_id = member['company_id']
+            
+        # Fetch applications
+        cur.execute("""
+            SELECT aa.id, aa.candidate_id, aa.template_id, aa.status, aa.applied_at, aa.scheduled_at, aa.completed_at, aa.notes,
+                   u.full_name as candidate_name, u.email as candidate_email,
+                   at.name as assessment_name, at.description as assessment_description, at.duration_minutes
+            FROM assessment_applications aa
+            JOIN users u ON aa.candidate_id = u.id
+            JOIN assessment_templates at ON aa.template_id = at.id
+            WHERE aa.company_id = %s
+            ORDER BY aa.applied_at DESC
+        """, (company_id,))
+        
+        applications = [dict(row) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "applications": applications
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching assessor applications: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch applications",
+            "error": str(e)
+        }), 500
+
+@assessor_bp.route('/applications/<uuid:app_id>/schedule', methods=['PUT'])
+@jwt_required()
+def schedule_center_applicant(app_id):
+    """Schedule a date and time for the candidate's assessment."""
+    try:
+        assessor_id = get_jwt_identity()
+        data = request.get_json()
+        scheduled_at = data.get('scheduled_at')
+        
+        if not scheduled_at:
+            return jsonify({"success": False, "message": "scheduled_at is required"}), 400
+            
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verify assessor belongs to the center holding this application
+        cur.execute("SELECT company_id FROM assessment_applications WHERE id = %s", (str(app_id),))
+        app_row = cur.fetchone()
+        if not app_row:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Application not found"}), 404
+            
+        company_id = app_row[0]
+        
+        # Verify membership
+        cur.execute("""
+            SELECT 1 FROM company_team_members WHERE company_id = %s AND user_id = %s
+            UNION
+            SELECT 1 FROM companies WHERE id = %s AND workspace_admin_id = %s
+        """, (company_id, str(assessor_id), company_id, str(assessor_id)))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized access to this application"}), 403
+            
+        # Update scheduling info
+        cur.execute("""
+            UPDATE assessment_applications
+            SET status = 'scheduled', scheduled_at = %s
+            WHERE id = %s
+        """, (scheduled_at, str(app_id)))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "message": "Applicant scheduled successfully"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error scheduling applicant: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to schedule applicant",
+            "error": str(e)
+        }), 500
+
+@assessor_bp.route('/applications/<uuid:app_id>/complete', methods=['POST'])
+@jwt_required()
+def complete_and_grade_applicant(app_id):
+    """Grade an assessment application, provide feedback, and sync verified competencies with candidate's portfolio."""
+    try:
+        assessor_id = get_jwt_identity()
+        data = request.get_json()
+        score = data.get('score')
+        feedback = data.get('feedback', '')
+        skills_to_verify = data.get('skills_to_verify', [])
+        
+        if score is None:
+            return jsonify({"success": False, "message": "score is required"}), 400
+            
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. Fetch application details
+        cur.execute("""
+            SELECT aa.company_id, aa.candidate_id, aa.template_id,
+                   at.name as assessment_name, at.template_type, at.industry_sector
+            FROM assessment_applications aa
+            JOIN assessment_templates at ON aa.template_id = at.id
+            WHERE aa.id = %s
+        """, (str(app_id),))
+        app_row = cur.fetchone()
+        
+        if not app_row:
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Application not found"}), 404
+            
+        company_id = app_row['company_id']
+        candidate_id = app_row['candidate_id']
+        template_id = app_row['template_id']
+        assessment_name = app_row['assessment_name']
+        template_type = app_row['template_type']
+        industry_sector = app_row['industry_sector']
+        
+        # 2. Verify assessor authorization
+        cur.execute("""
+            SELECT 1 FROM company_team_members WHERE company_id = %s AND user_id = %s
+            UNION
+            SELECT 1 FROM companies WHERE id = %s AND workspace_admin_id = %s
+        """, (company_id, str(assessor_id), company_id, str(assessor_id)))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({"success": False, "message": "Unauthorized access to this application"}), 403
+            
+        # 3. Update application status
+        cur.execute("""
+            UPDATE assessment_applications
+            SET status = 'completed', completed_at = NOW(), notes = %s
+            WHERE id = %s
+        """, (feedback, str(app_id)))
+        
+        # 4. Insert record into candidate_assessments (sync with portfolio)
+        cur.execute("""
+            INSERT INTO candidate_assessments 
+            (user_id, assessment_type, title, score, max_score, status, completed_at, d33_sector)
+            VALUES (%s, %s, %s, %s, 100, 'completed', NOW(), %s)
+        """, (str(candidate_id), template_type, assessment_name, score, industry_sector))
+        
+        # 5. Verify and update skills in candidate_skills
+        for skill_name in skills_to_verify:
+            # Check if skill exists
+            cur.execute("""
+                SELECT id FROM candidate_skills 
+                WHERE user_id = %s AND LOWER(name) = LOWER(%s)
+            """, (str(candidate_id), skill_name))
+            skill_row = cur.fetchone()
+            
+            if skill_row:
+                cur.execute("""
+                    UPDATE candidate_skills
+                    SET is_verified = true, assessment_score = %s
+                    WHERE id = %s
+                """, (int(score), skill_row['id']))
+            else:
+                cur.execute("""
+                    INSERT INTO candidate_skills (user_id, name, category, level, is_verified, assessment_score)
+                    VALUES (%s, %s, 'Technical', 'Advanced', true, %s)
+                """, (str(candidate_id), skill_name, int(score)))
+                
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "message": "Evaluation and grading completed successfully, candidate portfolio updated."
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error completing evaluation: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to complete evaluation",
+            "error": str(e)
+        }), 500
 
 
 # Error Handlers

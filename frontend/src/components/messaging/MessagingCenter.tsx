@@ -28,7 +28,6 @@ import {
 import ConversationList from './ConversationList';
 import MessageThread from './MessageThread';
 import NotificationPanel from './NotificationPanel';
-import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/auth';
 
 const MessagingCenter: React.FC = () => {
@@ -86,7 +85,7 @@ const MessagingCenter: React.FC = () => {
     setLoading(false);
     
     return () => {
-      supabase.removeChannel(messageChannel);
+      // TODO: Connect to Flask API - supabase.removeChannel(messageChannel);
     };
   }, [user, toast]);
   

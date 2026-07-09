@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type { TrainingProgram, TrainingProvider, TrainingApplication, TrainingEnrollment, TrainingFilters } from '@/types/training';
 
 export const trainingService = {
@@ -82,7 +80,7 @@ export const trainingService = {
 
   // Apply for training program
   async applyForProgram(programId: string, applicationData: Record<string, any>): Promise<TrainingApplication> {
-    const { data: { user } } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error('User must be authenticated to apply');
@@ -111,7 +109,7 @@ export const trainingService = {
 
   // Get user's applications
   async getUserApplications(): Promise<TrainingApplication[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       return [];
@@ -142,7 +140,7 @@ export const trainingService = {
 
   // Get user's enrollments
   async getUserEnrollments(): Promise<TrainingEnrollment[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       return [];

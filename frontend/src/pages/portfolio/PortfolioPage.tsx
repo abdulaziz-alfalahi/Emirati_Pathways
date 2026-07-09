@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { getPortfolio, addPortfolioProject, type PortfolioProject } from '@/services/careerServicesAPI';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
@@ -57,6 +58,7 @@ const FALLBACK_PROJECTS = [
 const PortfolioPage: React.FC = () => {
 
     const { i18n } = useTranslation();
+    const { user } = useAuth();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
@@ -75,7 +77,8 @@ const PortfolioPage: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await getPortfolio(1); // current user
+                const userId = user?.id || '784000000000030';
+                const data = await getPortfolio(userId);
                 if (data && data.length > 0) {
                     setProjects(data.map((p: PortfolioProject) => ({
                         ...p,

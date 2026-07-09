@@ -15,6 +15,7 @@ import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
+from flask_jwt_extended import jwt_required
 
 from backend.db import get_db_connection
 
@@ -736,105 +737,7 @@ def get_all_shortlisted_candidates():
         })
 
 
-@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist', methods=['POST'])
-@optional_auth
-def add_to_shortlist(job_id):
-    """
-    Add a candidate to the shortlist for a job
-    
-    Body:
-        candidate_id: ID of the candidate
-        notes: Optional notes
-    """
-    try:
-        data = request.get_json()
-        candidate_id = data.get('candidate_id')
-        notes = data.get('notes', '')
-        hr_user_id = data.get('hr_user_id', 1)  # Should come from auth
-        
-        if not candidate_id:
-            return jsonify({
-                'success': False,
-                'message': 'Candidate ID required'
-            }), 400
-        
-        # Check if already shortlisted
-        check_query = """
-            SELECT id FROM shortlisted_candidates 
-            WHERE job_id = %s AND candidate_id = %s
-        """
-        existing = execute_query(check_query, (job_id, candidate_id), fetch_one=True)
-        
-        if existing:
-            return jsonify({
-                'success': False,
-                'message': 'Candidate already shortlisted for this job'
-            }), 400
-        
-        # Add to shortlist
-        insert_query = """
-            INSERT INTO shortlisted_candidates (job_id, candidate_id, hr_user_id, notes)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id
-        """
-        shortlist_id = execute_query(
-            insert_query, 
-            (job_id, candidate_id, hr_user_id, notes),
-            return_id=True
-        )
-        
-        # G2: Sync job_applications.status → 'shortlisted'
-        try:
-            execute_query("""
-                UPDATE job_applications 
-                SET status = 'shortlisted', updated_at = NOW()
-                WHERE (user_id::text = %s OR candidate_id::text = %s)
-                  AND job_id::text = %s
-                  AND status NOT IN ('accepted', 'withdrawn', 'offered')
-            """, (str(candidate_id), str(candidate_id), str(job_id)))
-            logger.info(f"G2: Synced job_applications status to 'shortlisted' for candidate {candidate_id}, job {job_id}")
-        except Exception as sync_err:
-            logger.warning(f"G2: Application status sync failed (non-blocking): {sync_err}")
-        
-        return jsonify({
-            'success': True,
-            'data': {'id': shortlist_id},
-            'message': 'Candidate added to shortlist'
-        }), 201
-        
-    except Exception as e:
-        logger.error(f"Failed to add to shortlist: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to add candidate to shortlist'
-        }), 500
-
-
-@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist/<int:candidate_id>', methods=['DELETE'])
-@optional_auth
-def remove_from_shortlist(job_id, candidate_id):
-    """Remove a candidate from the shortlist"""
-    try:
-        query = """
-            DELETE FROM shortlisted_candidates 
-            WHERE job_id = %s AND candidate_id = %s
-        """
-        execute_query(query, (job_id, candidate_id), fetch_all=False)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Candidate removed from shortlist'
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to remove from shortlist: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to remove candidate from shortlist'
-        }), 500
-
-
-@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist/<int:candidate_id>/status', methods=['PUT'])
+@hr_dashboard_api_bp.route('/jobs/<job_id>/shortlist/<candidate_id>/status', methods=['PUT'])
 @optional_auth
 def update_shortlist_status(job_id, candidate_id):
     """Update the status of a shortlisted candidate"""
@@ -849,6 +752,21 @@ def update_shortlist_status(job_id, candidate_id):
                 'success': False,
                 'message': f'Invalid status. Must be one of: {valid_statuses}'
             }), 400
+        
+        # Resolve job_id to integer ID for shortlisted_candidates table
+        resolved_job_id = None
+        if str(job_id).isdigit():
+            resolved_job_id = int(job_id)
+        else:
+            job_row = execute_query("SELECT id FROM job_postings WHERE jd_id = %s", (job_id,), fetch_one=True)
+            if job_row:
+                resolved_job_id = job_row['id']
+            else:
+                job_desc_row = execute_query("SELECT id FROM job_descriptions WHERE id::text = %s", (job_id,), fetch_one=True)
+                if job_desc_row:
+                    resolved_job_id = job_desc_row['id']
+                else:
+                    return jsonify({'success': False, 'message': 'Job posting not found'}), 404
         
         updates = []
         params = []
@@ -868,7 +786,7 @@ def update_shortlist_status(job_id, candidate_id):
                 SET {', '.join(updates)}
                 WHERE job_id = %s AND candidate_id = %s
             """
-            params.extend([job_id, candidate_id])
+            params.extend([resolved_job_id, candidate_id])
             execute_query(query, tuple(params), fetch_all=False)
         
         return jsonify({
@@ -946,7 +864,7 @@ def get_team_members():
                     email,
                     full_name
                 FROM users
-                WHERE role IN ('hr_manager', 'recruiter', 'hr', 'hiring_manager')
+                WHERE role IN ('employer_admin', 'recruiter', 'employer_admin', 'hiring_manager')
                 AND is_active = true
                 ORDER BY full_name
             """
@@ -972,7 +890,7 @@ def get_team_members():
 # =====================================================
 
 @hr_dashboard_api_bp.route('/candidates/search', methods=['GET', 'POST'])
-@optional_auth
+@jwt_required()
 def search_candidates():
     """
     Search for candidates with various filters
@@ -998,8 +916,20 @@ def search_candidates():
         if isinstance(skills, str):
             skills = [s.strip() for s in skills.split(',') if s.strip()]
         
-        experience_min = data.get('experience_min', type=int) if request.method == 'GET' else data.get('experience_min')
-        experience_max = data.get('experience_max', type=int) if request.method == 'GET' else data.get('experience_max')
+        experience_min = None
+        experience_max = None
+        if request.method == 'GET':
+            experience_min_val = request.args.get('experience_min')
+            experience_max_val = request.args.get('experience_max')
+        else:
+            experience_min_val = data.get('experience_min')
+            experience_max_val = data.get('experience_max')
+
+        if experience_min_val is not None and str(experience_min_val).isdigit():
+            experience_min = int(experience_min_val)
+        if experience_max_val is not None and str(experience_max_val).isdigit():
+            experience_max = int(experience_max_val)
+
         location = data.get('location', '')
         education = data.get('education', '')
         page = int(data.get('page', 1))
@@ -1036,7 +966,7 @@ def search_candidates():
             query += " LEFT JOIN (SELECT NULL as candidate_id) js ON 1=0 "
 
         query += """
-            WHERE (u.role = 'job_seeker' OR u.role IS NULL)
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
         """
         
@@ -1108,7 +1038,7 @@ def search_candidates():
             SELECT COUNT(DISTINCT u.id) as total
             FROM users u
             LEFT JOIN cv_data cv ON u.id = cv.user_id
-            WHERE (u.role = 'job_seeker' OR u.role IS NULL)
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
         """
         total_result = execute_query(count_query, fetch_one=True)

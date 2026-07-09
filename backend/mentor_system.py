@@ -31,7 +31,7 @@ class ExpertiseArea(Enum):
     FINANCE = "finance"
     HEALTHCARE = "healthcare"
     EDUCATION = "education"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     ENERGY = "energy"
     TOURISM = "tourism"
     REAL_ESTATE = "real_estate"

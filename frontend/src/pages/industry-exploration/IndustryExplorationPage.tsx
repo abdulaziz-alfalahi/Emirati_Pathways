@@ -183,7 +183,7 @@ const IndustryExplorationPage: React.FC = () => {
   useEffect(() => {
     const fetchIndustries = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const API_BASE = import.meta.env.VITE_API_URL || '';
         const res = await fetch(`${API_BASE}/api/education/content/industries`);
         if (res.ok) {
           const data = await res.json();

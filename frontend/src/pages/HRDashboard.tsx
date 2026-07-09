@@ -115,6 +115,7 @@ const HRDashboard: React.FC = () => {
 
   // Team Member Selection for Interviews
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [assessorsList, setAssessorsList] = useState<any[]>([]);
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
@@ -160,7 +161,7 @@ const HRDashboard: React.FC = () => {
     const fetchTeamMembers = async () => {
       try {
         const token = getAuthToken();
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
         if (response.data.success) {
           setTeamMembers(response.data.members);
@@ -170,10 +171,21 @@ const HRDashboard: React.FC = () => {
       }
     };
 
+    const fetchAssessors = async () => {
+      try {
+        const response = await restClient.get('/api/interviews/assessors');
+        if (response.data.success) {
+          setAssessorsList(response.data.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch assessors", error);
+      }
+    };
+
     const fetchJobs = async () => {
       try {
         const token = getAuthToken();
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const response = await restClient.get(`/api/hr/jobs?limit=5`);
         if (response.data.success) {
           setActiveJobs(response.data.jobs || []);
@@ -184,6 +196,7 @@ const HRDashboard: React.FC = () => {
     };
 
     fetchTeamMembers();
+    fetchAssessors();
     fetchJobs();
   }, []);
 
@@ -205,7 +218,7 @@ const HRDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to remove this candidate from the shortlist?')) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`);
       // Refresh list
       setShortlistedCandidates(prev => prev.filter(c => c.candidate_id !== candidateId));
@@ -220,7 +233,7 @@ const HRDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const response = await restClient.delete(`/api/recruiter/jd/${jobId}`);
 
       if (response.data.success) {
@@ -238,7 +251,7 @@ const HRDashboard: React.FC = () => {
     if (!selectedCandidate || !messageContent) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       await restClient.post(`/api/communication/messages`, {
         recipient_id: selectedCandidate.candidate_id,
         content: messageContent,
@@ -257,7 +270,7 @@ const HRDashboard: React.FC = () => {
     if (!selectedCandidate || !interviewDate || !interviewTitle) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
       // Look up application_id if available, otherwise might fail if strict
       // For now we assume we have enough context or backend handles it loosely
@@ -305,7 +318,7 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. Fetch Metrics
@@ -881,6 +894,30 @@ const HRDashboard: React.FC = () => {
                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                   >
                                     {member.full_name} <span className="text-xs text-slate-400">({member.role})</span>
+                                  </label>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Invite Accredited Assessors (Optional)</Label>
+                          <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                            {assessorsList.length === 0 ? (
+                              <p className="text-sm text-slate-500">No accredited assessors found.</p>
+                            ) : (
+                              assessorsList.map(assessor => (
+                                <div key={assessor.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`invite-${assessor.id}`}
+                                    checked={selectedAttendees.includes(assessor.id)}
+                                    onCheckedChange={() => handleAttendeeToggle(assessor.id)}
+                                  />
+                                  <label
+                                    htmlFor={`invite-${assessor.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {assessor.full_name} <span className="text-xs text-slate-400">({assessor.specialization || 'General Assessor'})</span>
                                   </label>
                                 </div>
                               ))

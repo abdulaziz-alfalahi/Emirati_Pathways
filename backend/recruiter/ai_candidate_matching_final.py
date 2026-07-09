@@ -67,6 +67,14 @@ class AICandidateMatchingEngineFinal:
             self.matching_engine = None
         
         self.logger.info("AICandidateMatchingEngineFinal initialized")
+        
+    def _get_candidate_skills(self, candidate: Dict[str, Any]) -> List[str]:
+        skills_raw = candidate.get('skills')
+        if isinstance(skills_raw, list):
+            return [s for s in skills_raw if isinstance(s, str)]
+        elif isinstance(skills_raw, str):
+            return [s.strip() for s in skills_raw.replace('{','').replace('}','').split(',') if s.strip()]
+        return []
     
     def match_candidates_for_job(
         self,
@@ -82,7 +90,7 @@ class AICandidateMatchingEngineFinal:
             jd_data: Job description data
             candidates: List of candidate profiles
             employment_status_filter: Filter by employment status 
-                                     ('employed', 'job_seeker', 'open_to_opportunities', None for all)
+                                     ('employed', 'candidate', 'open_to_opportunities', None for all)
             top_n: Number of top candidates to return (default: 10)
         
         Returns:
@@ -172,15 +180,15 @@ class AICandidateMatchingEngineFinal:
         
         filtered = []
         for candidate in candidates:
-            candidate_status = candidate.get('employment_status', 'job_seeker').lower()
+            candidate_status = candidate.get('employment_status', 'candidate').lower()
             
             # Handle different status values
             if status_filter.lower() == 'employed':
                 if candidate_status in ['employed', 'currently_employed']:
                     filtered.append(candidate)
             
-            elif status_filter.lower() == 'job_seeker':
-                if candidate_status in ['job_seeker', 'unemployed', 'actively_looking']:
+            elif status_filter.lower() == 'candidate':
+                if candidate_status in ['candidate', 'unemployed', 'actively_looking']:
                     filtered.append(candidate)
             
             elif status_filter.lower() == 'open_to_opportunities':
@@ -232,19 +240,29 @@ class AICandidateMatchingEngineFinal:
     ) -> Dict[str, Any]:
         """Score candidate using AI matching engine"""
         try:
+            cleaned_skills = self._get_candidate_skills(candidate)
             # Prepare data for matching engine
             cv_data = {
                 'personal_info': {
-                    'full_name': f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}",
-                    'email': candidate.get('email', ''),
-                    'phone': candidate.get('phone', ''),
-                    'emirate': candidate.get('emirate', ''),
-                    'nationality': candidate.get('nationality', '')
+                    'full_name': f"{candidate.get('first_name') or ''} {candidate.get('last_name') or ''}".strip(),
+                    'email': candidate.get('email') or '',
+                    'phone': candidate.get('phone') or '',
+                    'emirate': candidate.get('emirate') or '',
+                    'nationality': candidate.get('nationality') or ''
                 },
-                'experience': candidate.get('experience', []),
-                'education': candidate.get('education', []),
-                'skills': candidate.get('skills', []),
-                'experience_years': candidate.get('experience_years', 0)
+                'experience': candidate.get('experience') or [],
+                'education': candidate.get('education') or [],
+                'skills': cleaned_skills,
+                'experience_years': candidate.get('experience_years') or 0,
+                'english_proficiency': candidate.get('english_proficiency') or 'conversational',
+                'preferences': {
+                    'target_roles': candidate.get('compass_target_roles') or [],
+                    'willing_to_relocate': bool(candidate.get('compass_willing_to_relocate')),
+                    'expected_salary_range': candidate.get('compass_expected_salary_range') or '',
+                    'notice_period': candidate.get('compass_notice_period') or '',
+                    'preferred_location': candidate.get('compass_preferred_location') or '',
+                    'english_proficiency': candidate.get('english_proficiency') or 'conversational'
+                }
             }
             
             # Convert JD to format expected by matching engine
@@ -378,7 +396,7 @@ class AICandidateMatchingEngineFinal:
                 self.logger.debug("Required Skills: %s | Candidate Skills: %s", required_skills, candidate.get('skills', []))
 
             self.logger.info(f"Required skills: {required_skills}")
-            candidate_skills = [s.lower() for s in candidate.get('skills', []) if s is not None and isinstance(s, str)]
+            candidate_skills = [s.lower() for s in self._get_candidate_skills(candidate)]
             self.logger.info(f"Candidate skills: {candidate_skills}")
             
             if required_skills:
@@ -409,7 +427,7 @@ class AICandidateMatchingEngineFinal:
             
             # Experience matching (30 points)
             required_exp = self._extract_experience_requirement(jd_data)
-            candidate_exp = candidate.get('experience_years', 0)
+            candidate_exp = candidate.get('experience_years') or 0
             
             if required_exp:
                 if candidate_exp >= required_exp:
@@ -426,7 +444,7 @@ class AICandidateMatchingEngineFinal:
             
             # Education matching (15 points)
             required_education = self._extract_education_requirement(jd_data)
-            candidate_education = candidate.get('education_level', '').lower()
+            candidate_education = (candidate.get('education_level') or '').lower()
             
             education_levels = ['high_school', 'diploma', 'bachelor', 'master', 'phd']
             
@@ -447,19 +465,71 @@ class AICandidateMatchingEngineFinal:
                 except ValueError:
                     pass
             
-            # Location matching (10 points)
-            jd_emirate = jd_data.get('basic_info', {}).get('emirate', '').lower()
-            candidate_emirate = candidate.get('emirate', '').lower()
+            # Location & Relocation matching (10 points)
+            jd_emirate = (jd_data.get('basic_info', {}).get('emirate') or '').lower()
+            candidate_emirate = (candidate.get('emirate') or '').lower()
+            preferred_loc = str(candidate.get('compass_preferred_location') or '').lower()
+            willing_relocate = bool(candidate.get('compass_willing_to_relocate'))
             
-            if jd_emirate and candidate_emirate:
-                if jd_emirate == candidate_emirate:
+            location_score = 5
+            if jd_emirate:
+                if candidate_emirate and jd_emirate == candidate_emirate:
                     location_score = 10
                     strengths.append("Located in same emirate")
+                elif preferred_loc and jd_emirate in preferred_loc:
+                    location_score = 10
+                    strengths.append("Vacancy matches preferred work city")
+                elif willing_relocate:
+                    location_score = 10
+                    strengths.append("Willing to relocate")
                 else:
-                    location_score = 5
-                
-                score += location_score
-                breakdown['location'] = location_score
+                    concerns.append("Location mismatch (different emirate and unwilling to relocate)")
+            
+            score += location_score
+            breakdown['location'] = location_score
+            
+            # Career Compass Preferences (Salary, Target Roles)
+            # 1. Salary Check
+            expected_salary = candidate.get('compass_expected_salary_range')
+            comp = jd_data.get('compensation', {})
+            jd_max = comp.get('salary_max')
+            
+            if expected_salary and jd_max:
+                try:
+                    # Clean and parse expected minimum salary
+                    s_txt = str(expected_salary).lower().replace(',', '').replace('aed', '').strip()
+                    min_expected = 0
+                    if '-' in s_txt:
+                        min_expected = int(float(s_txt.split('-')[0].strip()))
+                    elif '+' in s_txt:
+                        min_expected = int(float(s_txt.replace('+', '').strip()))
+                    elif s_txt.isdigit():
+                        min_expected = int(s_txt)
+                        
+                    if min_expected > 0:
+                        if min_expected <= jd_max:
+                            strengths.append("Salary expectations align with vacancy budget")
+                        else:
+                            # Mismatch penalty: reduce score and flag concern
+                            score -= 10
+                            concerns.append(f"Expected salary ({expected_salary}) exceeds vacancy maximum budget ({jd_max} AED)")
+                except Exception as sal_err:
+                    self.logger.warning(f"Error parsing expected salary in rule match: {sal_err}")
+            
+            # 2. Target Roles Check
+            target_roles = candidate.get('compass_target_roles', [])
+            jd_title = jd_data.get('basic_info', {}).get('title', '').lower()
+            if target_roles and jd_title:
+                matched_role = None
+                for role in target_roles:
+                    if isinstance(role, str):
+                        role_clean = role.lower().strip()
+                        if role_clean and (role_clean in jd_title or jd_title in role_clean):
+                            matched_role = role
+                            break
+                if matched_role:
+                    score += 5  # Bonus points for aligned target role
+                    strengths.append(f"Target role aligns with vacancy ({matched_role})")
             
             # UAE National preference (5 points)
             if candidate.get('is_uae_national', False):
@@ -468,7 +538,7 @@ class AICandidateMatchingEngineFinal:
                 strengths.append("UAE National")
             
             return {
-                'overall_score': min(score, 100),
+                'overall_score': max(0.0, min(score, 100)),
                 'breakdown': breakdown,
                 'matching_skills': matching_skills,
                 'missing_skills': missing_skills,

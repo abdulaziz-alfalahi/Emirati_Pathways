@@ -1,8 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Power, Settings, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Power, Settings, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 import toast from 'react-hot-toast';
+
+// Maps feature-flag key_name → frontend route (only flags with real pages)
+const FLAG_ROUTE_MAP: Record<string, string> = {
+  page_job_matching: '/job-matching',
+  page_interview_preparation: '/interview-preparation',
+  page_portfolio: '/portfolio',
+  page_internships: '/internships',
+  page_knowledge_camps: '/knowledge-camps',
+  page_lms: '/lms',
+  page_mentorship: '/mentorship',
+  page_national_service: '/national-service',
+  page_retiree: '/retiree',
+  page_scholarships: '/scholarships',
+  page_school_programs: '/school-programs',
+  page_graduate_programs: '/graduate-programs',
+  page_gig_marketplace: '/gig-marketplace',
+  page_interactive_map: '/interactive-map',
+  page_career_hub: '/career-hub',
+  ai_career_simulator: '/career-simulator',
+  page_cv_builder: '/cv-builder',
+  page_communities: '/communities',
+  page_credentials: '/credentials',
+  page_analytics: '/analytics',
+  page_assessments: '/assessments',
+  page_financial_planning: '/financial-planning',
+  page_startup_launchpad: '/startup-launchpad',
+  page_training: '/training',
+  page_university_programs: '/university-programs',
+  page_youth_development: '/youth-development',
+  page_professional_certifications: '/professional-certifications',
+  operations_center: '/operations-center',
+  government_dashboard: '/executive',
+};
 
 interface FeatureFlag {
   key_name: string;
@@ -126,9 +160,21 @@ const FeatureFlagsTab: React.FC = () => {
             
             <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-medium">
               <span className="text-gray-400 font-mono">ID: {flag.key_name}</span>
-              <span className={`px-2.5 py-1 rounded-full ${flag.is_enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                {flag.is_enabled ? 'Active' : 'Coming Soon'}
-              </span>
+              <div className="flex items-center gap-2">
+                {FLAG_ROUTE_MAP[flag.key_name] && (
+                  <Link
+                    to={FLAG_ROUTE_MAP[flag.key_name]}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                    title={`Go to ${flag.name}`}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    View Page
+                  </Link>
+                )}
+                <span className={`px-2.5 py-1 rounded-full ${flag.is_enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {flag.is_enabled ? 'Active' : 'Coming Soon'}
+                </span>
+              </div>
             </div>
           </div>
         ))}

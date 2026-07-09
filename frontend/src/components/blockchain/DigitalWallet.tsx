@@ -76,7 +76,7 @@ const DigitalWallet: React.FC = () => {
 
   const canRevokeCredentials = roles.includes('training_center') || 
                               roles.includes('educational_institution') || 
-                              roles.includes('administrator');
+                              roles.includes('admin');
 
   const handlePreviewCredential = (credential: BlockchainCredential) => {
     setPreviewCredential(credential);

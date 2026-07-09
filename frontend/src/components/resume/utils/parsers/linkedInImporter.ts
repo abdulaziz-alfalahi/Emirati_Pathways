@@ -3,7 +3,6 @@
  * LinkedIn profile import utility
  */
 import { ResumeData } from '../../types';
-import { supabase } from '@/integrations/supabase/client';
 import { extractFromLinkedIn } from './linkedInParser';
 
 // Import data from LinkedIn profile

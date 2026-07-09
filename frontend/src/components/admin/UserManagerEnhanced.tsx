@@ -57,9 +57,11 @@ import {
   FileSpreadsheet,
   UserCheck,
   Key,
+  CreditCard,
 
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { useDebounceValue } from '@/hooks/use-debounced-search';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -73,6 +75,8 @@ interface User {
   username: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   roles: string[];
   is_active: boolean;
   last_login?: string;
@@ -295,26 +299,52 @@ const getRoleColor = (role: string): string => {
     'platform_administrator': 'bg-red-100 text-red-800 border-red-200',
     'content_admin': 'bg-purple-100 text-purple-800 border-purple-200',
     'user_admin': 'bg-blue-100 text-blue-800 border-blue-200',
-    'hr_manager': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    'employer_admin': 'bg-indigo-100 text-indigo-800 border-indigo-200',
     'recruiter': 'bg-pink-100 text-pink-800 border-pink-200',
     'growth_operator': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'growth_operator_company': 'bg-green-100 text-green-800 border-green-200',
-    'growth_operator_candidate': 'bg-teal-100 text-teal-800 border-teal-200',
-    'growth_operator_monitoring': 'bg-blue-100 text-blue-800 border-blue-200',
-    'job_seeker': 'bg-cyan-100 text-cyan-800 border-cyan-200',
+    'employer_relations': 'bg-green-100 text-green-800 border-green-200',
+    'talent_operator': 'bg-teal-100 text-teal-800 border-teal-200',
+    'platform_operator': 'bg-blue-100 text-blue-800 border-blue-200',
+    'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'mentor': 'bg-orange-100 text-orange-800 border-orange-200',
-    'educator': 'bg-teal-100 text-teal-800 border-teal-200',
     'assessor': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'advisor': 'bg-sky-100 text-sky-800 border-sky-200',
     'coach': 'bg-violet-100 text-violet-800 border-violet-200',
     'internship_coordinator': 'bg-amber-100 text-amber-800 border-amber-200',
-    'training_center_rep': 'bg-lime-100 text-lime-800 border-lime-200',
+    'training_provider': 'bg-lime-100 text-lime-800 border-lime-200',
     'call_center_agent': 'bg-rose-100 text-rose-800 border-rose-200',
-    'government': 'bg-slate-100 text-slate-800 border-slate-200',
-    'parent': 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
-    'student': 'bg-cyan-100 text-cyan-800 border-cyan-200'
+    'compliance_auditor': 'bg-slate-100 text-slate-800 border-slate-200',
+    'parent': 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200'
   };
   return colors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
+};
+
+// ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Helper to format Emirates ID (EID) from 15-digit number to 784-0000-0000000-0 format
+ */
+const formatEID = (id: any): string | null => {
+  if (!id) return null;
+  const idStr = String(id).trim();
+  if (/^\d{15}$/.test(idStr)) {
+    return idStr.replace(/^(\d{3})(\d{4})(\d{7})(\d{1})$/, '$1-$2-$3-$4');
+  }
+  return null;
+};
+
+/**
+ * Helper to get a robust display name for a user
+ */
+const getUserDisplayName = (user: User): string => {
+  if (user.full_name && user.full_name.trim()) return user.full_name;
+  const parts = [];
+  if (user.first_name) parts.push(user.first_name);
+  if (user.last_name) parts.push(user.last_name);
+  if (parts.length > 0) return parts.join(' ');
+  return user.username || 'User';
 };
 
 // ============================================
@@ -350,6 +380,7 @@ const UserManagerEnhanced: React.FC = () => {
 
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounceValue(searchTerm, 300);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({
     status: 'all',
@@ -383,6 +414,30 @@ const UserManagerEnhanced: React.FC = () => {
 
   // Roles
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+
+  // Statistics state
+  const [stats, setStats] = useState<{
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    activeRoles: number;
+  }>({
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    activeRoles: 0
+  });
+
+  const uniqueRoles = useMemo(() => {
+    const seen = new Set<string>();
+    return availableRoles.filter(role => {
+      if (!role.name || seen.has(role.name)) {
+        return false;
+      }
+      seen.add(role.name);
+      return true;
+    });
+  }, [availableRoles]);
 
   // Activity logs
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -420,10 +475,10 @@ const UserManagerEnhanced: React.FC = () => {
   // EFFECTS
   // ============================================
 
-  // Fetch users on mount and when filters change
+  // Fetch users on mount and when filters or search change
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, itemsPerPage, filters, sortConfig]);
+  }, [currentPage, itemsPerPage, filters, sortConfig, debouncedSearchTerm]);
 
   // Fetch roles on mount
   useEffect(() => {
@@ -477,7 +532,7 @@ const UserManagerEnhanced: React.FC = () => {
         sort_dir: sortConfig.direction
       };
 
-      if (searchTerm) params.search = searchTerm;
+      if (debouncedSearchTerm) params.search = debouncedSearchTerm;
       if (filters.status !== 'all') params.status = filters.status;
       if (filters.role) params.role = filters.role;
       if (filters.department) params.department = filters.department;
@@ -499,6 +554,7 @@ const UserManagerEnhanced: React.FC = () => {
         setTotalUsers(50);
         setTotalPages(3);
       }
+      fetchUserStats();
     } catch (err) {
       console.error('Failed to fetch users:', err);
       setError('Failed to load users. Using sample data.');
@@ -520,6 +576,31 @@ const UserManagerEnhanced: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch roles:', err);
       setAvailableRoles(getDefaultRoles());
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await restClient.get('/api/admin/users/statistics');
+      if (response.data?.success && response.data?.data) {
+        const s = response.data.data;
+        let activeRolesCount = 0;
+        if (s.users_by_role) {
+          if (Array.isArray(s.users_by_role)) {
+            activeRolesCount = s.users_by_role.filter((r: any) => r.count > 0).length;
+          } else if (typeof s.users_by_role === 'object') {
+            activeRolesCount = Object.keys(s.users_by_role).filter((k: any) => s.users_by_role[k] > 0).length;
+          }
+        }
+        setStats({
+          totalUsers: s.total_users || 0,
+          activeUsers: s.active_users || 0,
+          inactiveUsers: s.inactive_users || 0,
+          activeRoles: activeRolesCount
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch user statistics:', err);
     }
   };
 
@@ -620,7 +701,9 @@ const UserManagerEnhanced: React.FC = () => {
       }
     }
 
-    if (!formData.full_name || formData.full_name.length < 2) {
+    // Only require full_name when CREATING a user. Editing an existing user
+    // (e.g. to assign or change roles) must not be blocked by a missing legacy name.
+    if (!showEditModal && (!formData.full_name || formData.full_name.length < 2)) {
       errors.full_name = 'Please enter a full name';
     }
 
@@ -834,12 +917,12 @@ const UserManagerEnhanced: React.FC = () => {
   const openEditModal = (user: User) => {
     setSelectedUser(user);
     setFormData({
-      username: user.username,
-      email: user.email,
-      full_name: user.full_name,
+      username: user.username || '',
+      email: user.email || '',
+      full_name: user.full_name || '',
       password: '',
       confirmPassword: '',
-      roles: user.roles,
+      roles: user.roles || [],
       is_active: user.is_active,
       profile_data: {
         phone: user.profile_data?.phone || '',
@@ -875,7 +958,7 @@ const UserManagerEnhanced: React.FC = () => {
       'Hessa Al Mansoori', 'Sultan Al Dhaheri', 'Mariam Al Zaabi'
     ];
 
-    const roles = ['candidate', 'recruiter', 'hr_manager', 'growth_operator', 'platform_administrator', 'advisor', 'coach', 'internship_coordinator', 'training_center_rep', 'call_center_agent'];
+    const roles = ['candidate', 'recruiter', 'employer_admin', 'growth_operator', 'platform_administrator', 'advisor', 'coach', 'internship_coordinator', 'training_provider', 'call_center_agent'];
     const departments = ['Engineering', 'HR', 'Marketing', 'Operations', 'Finance'];
 
     return names.map((name, i) => ({
@@ -926,32 +1009,34 @@ const UserManagerEnhanced: React.FC = () => {
 
   const getDefaultRoles = (): Role[] => [
     // Administrative
-    { id: 'administrator', name: 'administrator', display_name: 'Administrator', description: 'Full platform governance and system access', permissions: ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], is_system: true, user_count: 0, category: 'Administrative' },
+    { id: 'admin', name: 'admin', display_name: 'Administrator', description: 'Full platform governance and system access', permissions: ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], is_system: true, user_count: 0, category: 'Administrative' },
     // Growth Operators
-    { id: 'growth_operator_candidate', name: 'growth_operator_candidate', display_name: 'Candidate Onboarding Operator', description: 'Onboard NAFIS job seekers', permissions: ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_company', name: 'growth_operator_company', display_name: 'Company Onboarding Operator', description: 'Onboard private sector companies', permissions: ['onboard_companies', 'manage_company_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_education', name: 'growth_operator_education', display_name: 'Education Operator', description: 'Education partnerships', permissions: ['onboard_education', 'manage_education_partnerships', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_assessment', name: 'growth_operator_assessment', display_name: 'Assessment Operator', description: 'Assessment centers', permissions: ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_mentorship', name: 'growth_operator_mentorship', display_name: 'Mentorship Operator', description: 'Mentorship programs', permissions: ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_community', name: 'growth_operator_community', display_name: 'Community Operator', description: 'Community management', permissions: ['moderate_communities', 'manage_community_events', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
-    { id: 'growth_operator_monitoring', name: 'growth_operator_monitoring', display_name: 'Monitoring Center Operator', description: 'Monitor platform operations', permissions: ['view_operations_center', 'view_all_analytics', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'talent_operator', name: 'talent_operator', display_name: 'Candidate Onboarding Operator', description: 'Onboard NAFIS job seekers', permissions: ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'employer_relations', name: 'employer_relations', display_name: 'Company Onboarding Operator', description: 'Onboard private sector companies', permissions: ['onboard_companies', 'manage_company_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'education_operator', name: 'education_operator', display_name: 'Education Operator', description: 'Education partnerships', permissions: ['onboard_education', 'manage_education_partnerships', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'assessment_operator', name: 'assessment_operator', display_name: 'Assessment Operator', description: 'Assessment centers', permissions: ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'mentorship_operator', name: 'mentorship_operator', display_name: 'Mentorship Operator', description: 'Mentorship programs', permissions: ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'community_operator', name: 'community_operator', display_name: 'Community Operator', description: 'Community management', permissions: ['moderate_communities', 'manage_community_events', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'platform_operator', name: 'platform_operator', display_name: 'Monitoring Center Operator', description: 'Monitor platform operations', permissions: ['view_operations_center', 'view_all_analytics', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'career_services_operator', name: 'career_services_operator', display_name: 'Career Services Operator', description: 'Manage salary benchmarks, startups, internships & gigs', permissions: ['view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'professional_dev_operator', name: 'professional_dev_operator', display_name: 'Professional Development Operator', description: 'Manage training programs and certifications', permissions: ['manage_training', 'manage_certifications', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
     // Persona Roles
-    { id: 'job_seeker', name: 'job_seeker', display_name: 'Job Seeker', description: 'UAE national seeking employment', permissions: ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'candidate', name: 'candidate', display_name: 'Job Seeker', description: 'UAE national seeking employment', permissions: ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'recruiter', name: 'recruiter', display_name: 'Recruiter', description: 'Private sector recruiter', permissions: ['post_jobs', 'screen_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
-    { id: 'hr_manager', name: 'hr_manager', display_name: 'HR Manager', description: 'Company HR manager', permissions: ['post_jobs', 'screen_candidates', 'manage_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'employer_admin', name: 'employer_admin', display_name: 'HR Manager', description: 'Company HR manager', permissions: ['post_jobs', 'screen_candidates', 'manage_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'mentor', name: 'mentor', display_name: 'Mentor', description: 'Career mentor for UAE nationals', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'assessor', name: 'assessor', display_name: 'Assessor', description: 'Skills assessor', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
-    { id: 'educator', name: 'educator', display_name: 'Educator', description: 'Academic educator', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'training_provider', name: 'training_provider', display_name: 'Educator', description: 'Academic educator', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'parent', name: 'parent', display_name: 'Parent / Guardian', description: 'Parent or guardian of a student', permissions: ['view_dashboard'], is_system: true, user_count: 0, category: 'End Users' },
-    { id: 'government', name: 'government', display_name: 'Government Official', description: 'Government entity representative', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'compliance_auditor', name: 'compliance_auditor', display_name: 'Government Official', description: 'Government entity representative', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'board_member', name: 'board_member', display_name: 'EHDC Board Member', description: 'EHDC Board strategic intelligence portal', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'Government & Board' },
-    { id: 'operations_officer', name: 'operations_officer', display_name: 'Platform Operations Officer', description: 'Platform telemetry and operations command', permissions: ['view_dashboard', 'view_operations_center'], is_system: true, user_count: 0, category: 'Government & Board' },
-    { id: 'student', name: 'student', display_name: 'Student', description: 'School or university student', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'platform_operator', name: 'platform_operator', display_name: 'Platform Operations Officer', description: 'Platform telemetry and operations command', permissions: ['view_dashboard', 'view_operations_center'], is_system: true, user_count: 0, category: 'Government & Board' },
+    { id: 'candidate', name: 'candidate', display_name: 'Student', description: 'School or university student', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
     // Phase 2-4 New Roles
     { id: 'advisor', name: 'advisor', display_name: 'Academic Advisor', description: 'Academic pathway advisor for students and job seekers', permissions: ['view_dashboard', 'manage_profile', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
     { id: 'coach', name: 'coach', display_name: 'Career Coach', description: 'Professional career coach providing 1-on-1 coaching', permissions: ['view_dashboard', 'manage_profile', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
     { id: 'internship_coordinator', name: 'internship_coordinator', display_name: 'Internship Coordinator', description: 'Manages internship programs and student placements', permissions: ['view_dashboard', 'manage_profile', 'manage_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
-    { id: 'training_center_rep', name: 'training_center_rep', display_name: 'Training Center Representative', description: 'Manages training center programs and enrollments', permissions: ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
+    { id: 'training_provider', name: 'training_provider', display_name: 'Training Center Representative', description: 'Manages training center programs and enrollments', permissions: ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
     { id: 'call_center_agent', name: 'call_center_agent', display_name: 'Call Center Agent', description: 'Handles support tickets and user inquiries', permissions: ['view_dashboard', 'view_users', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
   ];
 
@@ -963,18 +1048,30 @@ const UserManagerEnhanced: React.FC = () => {
     let result = [...users];
 
     // Apply search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(u =>
-        u.username.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term) ||
-        u.full_name.toLowerCase().includes(term) ||
-        u.id.toString().includes(term)
-      );
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
+      result = result.filter(u => {
+        const username = (u.username || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const fullName = (u.full_name || '').toLowerCase();
+        const firstName = (u.first_name || '').toLowerCase();
+        const lastName = (u.last_name || '').toLowerCase();
+        const idStr = String(u.id || '').toLowerCase();
+        const formattedEid = formatEID(u.id);
+        const eidStr = formattedEid ? formattedEid.toLowerCase() : '';
+
+        return username.includes(term) ||
+          email.includes(term) ||
+          fullName.includes(term) ||
+          firstName.includes(term) ||
+          lastName.includes(term) ||
+          idStr.includes(term) ||
+          eidStr.includes(term);
+      });
     }
 
     return result;
-  }, [users, searchTerm]);
+  }, [users, debouncedSearchTerm]);
 
   // ============================================
   // RENDER
@@ -1007,7 +1104,7 @@ const UserManagerEnhanced: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers || totalUsers}</p>
             </div>
             <Users className="w-8 h-8 text-blue-500" />
           </div>
@@ -1017,7 +1114,7 @@ const UserManagerEnhanced: React.FC = () => {
             <div>
               <p className="text-sm text-gray-500">Active Users</p>
               <p className="text-2xl font-bold text-green-600">
-                {users.filter(u => u.is_active).length}
+                {stats.activeUsers}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
@@ -1028,7 +1125,7 @@ const UserManagerEnhanced: React.FC = () => {
             <div>
               <p className="text-sm text-gray-500">Inactive Users</p>
               <p className="text-2xl font-bold text-red-600">
-                {users.filter(u => !u.is_active).length}
+                {stats.inactiveUsers}
               </p>
             </div>
             <Ban className="w-8 h-8 text-red-500" />
@@ -1038,7 +1135,7 @@ const UserManagerEnhanced: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Active Roles</p>
-              <p className="text-2xl font-bold text-purple-600">{new Set(users.flatMap(u => u.roles)).size}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.activeRoles}</p>
             </div>
             <Shield className="w-8 h-8 text-purple-500" />
           </div>
@@ -1119,7 +1216,7 @@ const UserManagerEnhanced: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Roles</option>
-                {availableRoles.map(role => (
+                {uniqueRoles.map(role => (
                   <option key={role.id} value={role.name}>{role.display_name}</option>
                 ))}
               </select>
@@ -1297,11 +1394,14 @@ const UserManagerEnhanced: React.FC = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
-                          {(user.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          {getUserDisplayName(user).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
+                          <div className="text-sm font-medium text-gray-900">{getUserDisplayName(user)}</div>
                           <div className="text-sm text-gray-500">{user.email}</div>
+                          {formatEID(user.id) && (
+                            <div className="text-xs text-gray-400 mt-0.5 font-mono">EID: {formatEID(user.id)}</div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1541,7 +1641,7 @@ const UserManagerEnhanced: React.FC = () => {
                   Roles <span className="text-red-500">*</span>
                 </label>
                 <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto grid grid-cols-2 gap-2">
-                  {availableRoles.map(role => (
+                  {uniqueRoles.map(role => (
                     <label key={role.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
@@ -1682,7 +1782,7 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Edit User: {selectedUser.full_name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit User: {getUserDisplayName(selectedUser)}</h3>
               <button onClick={() => { setShowEditModal(false); setSelectedUser(null); resetForm(); }} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
@@ -1725,7 +1825,7 @@ const UserManagerEnhanced: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
                 <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto grid grid-cols-2 gap-2">
-                  {availableRoles.map(role => (
+                  {uniqueRoles.map(role => (
                     <label key={role.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
@@ -1855,11 +1955,14 @@ const UserManagerEnhanced: React.FC = () => {
               {/* Profile Header */}
               <div className="flex items-start gap-6 mb-6">
                 <div className="flex-shrink-0 h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                  {(selectedUser.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {getUserDisplayName(selectedUser).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900">{selectedUser.full_name}</h4>
+                  <h4 className="text-xl font-bold text-gray-900">{getUserDisplayName(selectedUser)}</h4>
                   <p className="text-gray-500">{selectedUser.email}</p>
+                  {formatEID(selectedUser.id) && (
+                    <p className="text-xs text-gray-400 mt-1 font-mono">EID: {formatEID(selectedUser.id)}</p>
+                  )}
                   <div className="flex items-center gap-2 mt-2">
                     {selectedUser.is_active ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -1901,6 +2004,15 @@ const UserManagerEnhanced: React.FC = () => {
                         <p className="text-sm text-gray-900">{selectedUser.username}</p>
                       </div>
                     </div>
+                    {formatEID(selectedUser.id) && (
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Emirates ID</p>
+                          <p className="text-sm text-gray-900 font-mono">{formatEID(selectedUser.id)}</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3">
                       <Mail className="w-4 h-4 text-gray-400" />
                       <div>
@@ -1998,7 +2110,7 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Activity & Sessions: {selectedUser.full_name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Activity & Sessions: {getUserDisplayName(selectedUser)}</h3>
               <button onClick={() => { setShowActivityModal(false); setSelectedUser(null); }} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
@@ -2104,7 +2216,7 @@ const UserManagerEnhanced: React.FC = () => {
                 Select roles to assign to all selected users. This will replace their existing roles.
               </p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {availableRoles.map(role => (
+                {uniqueRoles.map(role => (
                   <label key={role.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"

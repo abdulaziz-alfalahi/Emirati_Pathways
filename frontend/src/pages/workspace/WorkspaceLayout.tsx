@@ -13,7 +13,7 @@ const brand = {
   textPrimary: '#111827', textSecondary: '#6B7280', white: '#fff',
 };
 
-const MANAGER_ROLES = ['hr_manager', 'hr', 'hr_recruiter', 'recruiter', 'growth_operator', 'growth_operator_company', 'admin', 'administrator'];
+const MANAGER_ROLES = ['employer_admin', 'employer_admin', 'recruiter', 'recruiter', 'growth_operator', 'employer_relations', 'admin', 'admin'];
 
 const allNavItems = [
   { path: 'dashboard', icon: BarChart3, labelEn: 'Dashboard', labelAr: 'لوحة القيادة', managerOnly: false },
@@ -45,8 +45,8 @@ const WorkspaceLayout: React.FC = () => {
   const getUserRole = (): string => {
     try {
       const u = JSON.parse(localStorage.getItem('user') || '{}');
-      return u.role || u.user_type || 'job_seeker';
-    } catch { return 'job_seeker'; }
+      return u.role || u.user_type || 'candidate';
+    } catch { return 'candidate'; }
   };
   const userRole = getUserRole();
   const isManager = MANAGER_ROLES.includes(userRole);

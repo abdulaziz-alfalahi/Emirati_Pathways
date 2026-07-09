@@ -1,5 +1,3 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { Certificate, Portfolio, PortfolioHighlight, Training } from "@/types/portfolio";
 import { fetchUserAssessmentSessions } from "./assessments/sessionService";
 import { fetchAdvisorySessions } from "./careerAdvisory/advisorySessionService";
@@ -496,7 +494,7 @@ export const canViewPortfolio = async (viewerId: string, portfolioOwnerId: strin
     }
 
     // Check if viewer has one of the authorized roles
-    const authorizedRoles = ["career_advisor", "administrator", "private_sector_recruiter", "mentor"];
+    const authorizedRoles = ["career_advisor", 'admin', "private_sector_recruiter", "mentor"];
     return data.some(roleObj => authorizedRoles.includes(roleObj.role));
     */
   } catch (error) {

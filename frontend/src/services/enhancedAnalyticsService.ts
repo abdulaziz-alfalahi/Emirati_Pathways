@@ -129,7 +129,7 @@ export interface ServiceConfig {
 }
 
 const DEFAULT_CONFIG: ServiceConfig = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001',
+  baseURL: import.meta.env.VITE_API_URL || '',
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
   retryDelay: 1000, // 1 second

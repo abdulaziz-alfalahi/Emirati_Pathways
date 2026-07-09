@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { LegacyProject, ProjectContribution } from '@/types/legacyProject';
 
 export const legacyProjectService = {

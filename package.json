@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@0xshariq/docker-mcp-server": "^2.0.4"
+  }
+}

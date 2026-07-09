@@ -95,7 +95,7 @@ class MentorMatchingEngine:
             'education': ['education', 'training', 'academic', 'university', 'school'],
             'tourism': ['hospitality', 'tourism', 'hotel', 'travel', 'aviation'],
             'construction': ['construction', 'real estate', 'engineering', 'architecture'],
-            'government': ['government', 'public sector', 'civil service', 'municipality'],
+            'compliance_auditor': ['compliance_auditor', 'public sector', 'civil service', 'municipality'],
             'logistics': ['logistics', 'supply chain', 'shipping', 'transportation'],
             'retail': ['retail', 'e-commerce', 'consumer goods', 'fashion']
         }
@@ -228,7 +228,7 @@ class MentorMatchingEngine:
                 ('oil_gas', 'technology'),
                 ('healthcare', 'technology'),
                 ('education', 'technology'),
-                ('government', 'technology')
+                ('compliance_auditor', 'technology')
             ]
             if (mentor_category, mentee_category) in related_pairs or (mentee_category, mentor_category) in related_pairs:
                 return 0.6

@@ -430,7 +430,7 @@ class MentorSessionScheduler:
             with self.get_database_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT id FROM users WHERE id = %s AND role = 'job_seeker'
+                        SELECT id FROM users WHERE id = %s AND role = 'candidate'
                     """, (mentee_id,))
                     
                     result = cursor.fetchone()
@@ -614,6 +614,11 @@ class MentorSessionScheduler:
         try:
             with self.get_database_connection() as conn:
                 with conn.cursor() as cursor:
+                    # Fetch mentor_id for points awarding
+                    cursor.execute("SELECT mentor_id FROM mentorship_sessions WHERE id = %s", (session_id,))
+                    row = cursor.fetchone()
+                    mentor_id = str(row[0]) if row else None
+
                     cursor.execute("""
                         UPDATE mentorship_sessions 
                         SET session_status = %s,
@@ -633,8 +638,17 @@ class MentorSessionScheduler:
                         session_id
                     ))
                     
+                    row_count = cursor.rowcount
+                    
+                    if row_count > 0 and mentor_id:
+                        from mentor_incentive_helper import award_mentor_points
+                        try:
+                            award_mentor_points(conn, cursor, mentor_id, 50, 'session_completed', session_id)
+                        except Exception as points_err:
+                            logger.error(f"Failed to award points for completed session {session_id}: {points_err}")
+
                     conn.commit()
-                    return cursor.rowcount > 0
+                    return row_count > 0
                     
         except Exception as e:
             logger.error(f"Error completing session: {e}")

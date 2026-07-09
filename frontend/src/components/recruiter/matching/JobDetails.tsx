@@ -8,8 +8,6 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Json } from '@/integrations/supabase/types';
-
 interface JobDetailsProps {
   jobDescription: any;
   matchThreshold: number;
@@ -42,15 +40,15 @@ const JobDetails = ({
     
     // Handle different formats of requirements data
     if (Array.isArray(jobDescription.requirements)) {
-      // Convert all items to strings to handle Json array that might contain numbers
-      requirements = (jobDescription.requirements as Json[]).map(item => String(item));
+      // Convert all items to strings to handle any array that might contain numbers
+      requirements = (jobDescription.requirements as any[]).map(item => String(item));
     } else if (typeof jobDescription.requirements === 'string') {
       requirements = [jobDescription.requirements];
     } else if (jobDescription.requirements && typeof jobDescription.requirements === 'object') {
       // Try to extract an array if possible
-      const reqObj = jobDescription.requirements as Record<string, Json>;
+      const reqObj = jobDescription.requirements as Record<string, any>;
       if (reqObj.skills && Array.isArray(reqObj.skills)) {
-        requirements = (reqObj.skills as Json[]).map((skill: Json) => 
+        requirements = (reqObj.skills as any[]).map((skill: any) => 
           typeof skill === 'string' ? skill : 
           typeof skill === 'object' && skill !== null && 'name' in skill ? String(skill.name) : 
           String(skill)

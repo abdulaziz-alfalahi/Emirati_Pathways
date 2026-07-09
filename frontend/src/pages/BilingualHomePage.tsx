@@ -13,7 +13,6 @@ import {
   TrendingUp,
   CheckCircle,
   Star,
-  Play,
   Briefcase,
   Heart,
   BarChart3,
@@ -150,7 +149,7 @@ const BilingualHomePage: React.FC = () => {
   /* ---- data ---- */
   const personas = [
     {
-      id: 'job_seeker',
+      id: 'candidate',
       title: translations.personas?.jobSeeker?.title || 'Job Seeker',
       description: translations.personas?.jobSeeker?.description || 'Find your dream career with AI-powered job matching and personalized career guidance',
       icon: Users,
@@ -183,7 +182,7 @@ const BilingualHomePage: React.FC = () => {
       getStarted: translations.personas?.recruiter?.getStarted || 'Get Started as Recruiter',
     },
     {
-      id: 'hr_manager',
+      id: 'employer_admin',
       title: translations.personas?.hrManager?.title || 'HR Manager',
       description: translations.personas?.hrManager?.description || 'Oversee workforce planning, compliance, and organizational development strategies',
       icon: Building2,
@@ -199,7 +198,7 @@ const BilingualHomePage: React.FC = () => {
       getStarted: translations.personas?.hrManager?.getStarted || 'Get Started as HR Manager',
     },
     {
-      id: 'educator',
+      id: 'training_provider',
       title: translations.personas?.educator?.title || 'Educator',
       description: translations.personas?.educator?.description || 'Enhance student outcomes with curriculum management and industry integration',
       icon: GraduationCap,
@@ -352,23 +351,7 @@ const BilingualHomePage: React.FC = () => {
                   'The comprehensive AI-powered platform connecting UAE professionals, employers, educators, mentors, and assessors in one unified ecosystem for career development and growth.'}
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 items-start">
-                <Link
-                  to="/auth"
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg hover:shadow-teal-600/20 flex items-center"
-                >
-                  {translations.hero?.startJourney || 'Start Your Journey'}
-                  <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-                </Link>
-                <button
-                  onClick={() => setIsDemoModalOpen(true)}
-                  className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors px-4 py-4"
-                >
-                  <Play className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {translations.hero?.watchDemo || 'Watch Demo'}
-                </button>
-              </div>
+
             </div>
 
             {/* Dashboard mockup — auto moves to left in RTL via grid */}

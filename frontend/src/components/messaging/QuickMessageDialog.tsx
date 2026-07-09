@@ -114,7 +114,7 @@ const QuickMessageDialog: React.FC<QuickMessageDialogProps> = ({
     switch (role) {
       case 'recruiter': return <Briefcase className="h-4 w-4" />;
       case 'mentor': return <Star className="h-4 w-4" />;
-      case 'employer': return <Building className="h-4 w-4" />;
+      case 'employer_admin': return <Building className="h-4 w-4" />;
       default: return <User className="h-4 w-4" />;
     }
   };
@@ -123,7 +123,7 @@ const QuickMessageDialog: React.FC<QuickMessageDialogProps> = ({
     switch (role) {
       case 'recruiter': return 'bg-blue-100 text-blue-800';
       case 'mentor': return 'bg-purple-100 text-purple-800';
-      case 'employer': return 'bg-green-100 text-green-800';
+      case 'employer_admin': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };

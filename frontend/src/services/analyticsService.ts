@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/auth';
 
 interface RoleSwitchEvent {
@@ -31,7 +30,7 @@ class AnalyticsService {
 
   async trackRoleSwitch(fromRole: UserRole | null, toRole: UserRole): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
       const event: RoleSwitchEvent = {
@@ -55,7 +54,7 @@ class AnalyticsService {
 
   async trackEvent(eventType: string, eventData: Record<string, any>): Promise<void> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       
       const analyticsEvent: AnalyticsEvent = {
         event_type: eventType,

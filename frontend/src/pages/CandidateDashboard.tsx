@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
@@ -16,18 +15,14 @@ import {
   TrendingUp,
   Upload,
   CheckCircle,
-  AlertCircle,
   Target,
   Calendar,
   Eye,
   Bell,
   Search,
-  Settings,
   Sparkles,
   ArrowRight,
-  Lightbulb,
   Clock,
-  ChevronRight,
   Zap,
   BookOpen,
   Building2
@@ -39,6 +34,7 @@ import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
 import CandidateInterviews from '@/components/candidate/Interviews';
+import { CandidateOffers } from '@/components/candidate/CandidateOffers';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
@@ -171,7 +167,8 @@ const CandidateDashboard: React.FC = () => {
           setDashboardData(prev => ({
             ...prev,
             profile: { ...prev.profile, ...result.data.profile },
-            stats: { ...prev.stats, ...result.data.stats }
+            stats: { ...prev.stats, ...result.data.stats },
+            recentActivity: result.data.recentActivity || []
           }));
         }
 
@@ -253,19 +250,14 @@ const CandidateDashboard: React.FC = () => {
 
   const firstName = dashboardData.profile.name.split(' ')[0];
 
-  // Mock recent activity if none from API
-  const recentActivity = dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity : [
-    { id: '1', type: 'interview' as const, title: t('Interview Scheduled', 'تمت جدولة مقابلة'), description: t('with Dubai Municipality • 3:00 PM Tomorrow', 'مع بلدية دبي • 3:00 مساءً غداً'), timestamp: t('1h ago', 'منذ ساعة') },
-    { id: '2', type: 'application' as const, title: t('Application Viewed', 'تم عرض الطلب'), description: t('by ADNOC for Senior Analyst role', 'من أدنوك لوظيفة محلل أول'), timestamp: t('3h ago', 'منذ 3 ساعات') },
-    { id: '3', type: 'job_match' as const, title: t('New AI Matches', 'مطابقات ذكاء اصطناعي جديدة'), description: t('12 new jobs matching your skill profile', '12 وظيفة جديدة تتطابق مع ملفك المهني'), timestamp: t('Yesterday', 'أمس') },
-  ];
+  const recentActivity = dashboardData.recentActivity;
 
   // Stat card config
   const statCards = [
-    { label: t('Profile Views', 'مشاهدات الملف'), value: dashboardData.stats.profileViews, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: '+12%' },
-    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100', trend: '+8' },
-    { label: t('Applications', 'الطلبات'), value: dashboardData.stats.applications, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', trend: '' },
-    { label: t('Interviews', 'المقابلات'), value: dashboardData.stats.interviews, icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: '+1 new' },
+    { label: t('Profile Views', 'مشاهدات الملف'), value: dashboardData.stats.profileViews, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
+    { label: t('Applications', 'الطلبات'), value: dashboardData.stats.applications, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+    { label: t('Interviews', 'المقابلات'), value: dashboardData.stats.interviews, icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
   ];
 
   return (
@@ -371,11 +363,12 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-7' : 'grid-cols-6'} bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
+            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-8' : 'grid-cols-7'} bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
               <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
               <TabsTrigger value="applications" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
+              <TabsTrigger value="offers" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
               <TabsTrigger value="interviews" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
               <TabsTrigger value="messages" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
                 {t('Messages', 'الرسائل')}
@@ -467,11 +460,6 @@ const CandidateDashboard: React.FC = () => {
                               <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
                               <div className="flex items-baseline gap-2">
                                 <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                                {stat.trend && (
-                                  <span className="text-xs font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
-                                    {stat.trend}
-                                  </span>
-                                )}
                               </div>
                             </div>
                             <div className={`p-3 ${stat.bg} rounded-xl group-hover:scale-110 transition-transform`}>
@@ -497,9 +485,7 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-3 space-y-3">
-                      {(recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3) : [
-                        { title: t('Senior Project Manager', 'مدير مشاريع أول'), company: t('Emirates Group', 'مجموعة الإمارات'), salary: t('AED 35k–45k', '35-45 ألف درهم'), match_score: 94, type: t('Full-time', 'دوام كامل'), location: 'Dubai', source: 'curated' as const },
-                      ]).map((job, i) => (
+                      {recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3).map((job, i) => (
                         <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
@@ -521,13 +507,27 @@ const CandidateDashboard: React.FC = () => {
                               <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-bold">
                                 ✦ {job.match_score}% {t('Match', 'تطابق')}
                               </Badge>
-                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-7 px-3">
-                                {t('Apply Now', 'قدّم الآن')}
-                              </Button>
+                              {(job as any).hasApplied ? (
+                                <Badge className="bg-green-100 text-green-800 border-none text-[11px] font-medium py-1 px-2.5 flex items-center gap-1">
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  {t('Applied', 'تم التقديم')}
+                                </Badge>
+                              ) : (
+                                <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-7 px-3" onClick={(e) => { e.stopPropagation(); setActiveTab('jobs'); }}>
+                                  {t('Apply Now', 'قدّم الآن')}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center py-6 text-slate-400">
+                          <p className="text-sm">{t('Upload your CV to get personalized job recommendations', 'ارفع سيرتك الذاتية للحصول على توصيات وظيفية مخصصة')}</p>
+                          <Button variant="link" size="sm" className="text-teal-600 mt-1" onClick={() => setActiveTab('jobs')}>
+                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} →
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
@@ -541,18 +541,24 @@ const CandidateDashboard: React.FC = () => {
                     </CardHeader>
                     <CardContent className="pt-3">
                       <div className="space-y-1">
-                        {recentActivity.map((activity) => (
-                          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer group">
-                            <div className={`p-2 rounded-lg border ${getActivityColor(activity.type)} flex-shrink-0 mt-0.5`}>
-                              {getActivityIcon(activity.type)}
+                        {recentActivity.length > 0 ? (
+                          recentActivity.map((activity) => (
+                            <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer group">
+                              <div className={`p-2 rounded-lg border ${getActivityColor(activity.type)} flex-shrink-0 mt-0.5`}>
+                                {getActivityIcon(activity.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
+                              </div>
+                              <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
-                            </div>
-                            <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-slate-400">
+                            <p className="text-sm">{t('No recent activity yet. Start applying to jobs!', 'لا توجد نشاطات أخيرة بعد. ابدأ بالتقدم للوظائف!')}</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -663,49 +669,7 @@ const CandidateDashboard: React.FC = () => {
                     </Card>
                   )}
 
-                  {/* Upcoming Events */}
-                  <Card className="bg-white border border-slate-200/80">
-                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                        <Calendar className="h-4 w-4 text-teal-600" />
-                        {t('Upcoming Events', 'الأحداث القادمة')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-3 space-y-3">
-                      {/* Interview */}
-                      <div className="p-3 rounded-lg border border-slate-100 hover:border-teal-200 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="bg-teal-50 text-teal-700 rounded-lg p-2 text-center min-w-[44px]">
-                            <div className="text-[10px] font-bold uppercase">{t('OCT', 'أكت')}</div>
-                            <div className="text-lg font-bold leading-none">12</div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-slate-800">{t('Final Interview: Digital Dubai', 'المقابلة النهائية: دبي الرقمية')}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{t('2:00 PM - 3:00 PM • Virtual', '2:00 م - 3:00 م • عن بُعد')}</p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="w-full mt-2 text-xs text-slate-600 hover:bg-teal-50">
-                          {t('Prepare', 'استعد')}
-                        </Button>
-                      </div>
-                      {/* Webinar */}
-                      <div className="p-3 rounded-lg border border-slate-100 hover:border-teal-200 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="bg-indigo-50 text-indigo-700 rounded-lg p-2 text-center min-w-[44px]">
-                            <div className="text-[10px] font-bold uppercase">{t('OCT', 'أكت')}</div>
-                            <div className="text-lg font-bold leading-none">15</div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-slate-800">{t('Emiratization Career Webinar', 'ندوة التوطين المهنية')}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{t('3:00 PM - 5:30 PM • Online', '3:00 م - 5:30 م • عبر الإنترنت')}</p>
-                          </div>
-                        </div>
-                        <Button size="sm" className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white text-xs">
-                          {t('Join Live', 'انضم مباشرة')}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+
                 </div>
 
               </div>
@@ -722,6 +686,10 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="applications" className="space-y-6 mt-6">
               <ApplicationTracker />
+            </TabsContent>
+
+            <TabsContent value="offers" className="space-y-6 mt-6">
+              <CandidateOffers />
             </TabsContent>
 
             <TabsContent value="interviews" className="space-y-6 mt-6">

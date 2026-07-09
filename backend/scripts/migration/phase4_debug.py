@@ -44,9 +44,9 @@ conn.commit()
 try_sql("Backup users role data", 
         "CREATE TABLE IF NOT EXISTS _backup_users_roles AS SELECT id, email, role, user_type FROM users")
 try_sql("Migrate candidate to job_seeker", 
-        "UPDATE users SET role = 'job_seeker' WHERE role = 'candidate'")
+        "UPDATE users SET role = 'candidate' WHERE role = 'candidate'")
 try_sql("Migrate admin to administrator", 
-        "UPDATE users SET role = 'administrator' WHERE role = 'admin'")
+        "UPDATE users SET role = 'admin' WHERE role = 'admin'")
 try_sql("Migrate growth_operator to operator", 
         "UPDATE users SET role = 'operator' WHERE role = 'growth_operator'")
 try_sql("Sync user_type to match role", 

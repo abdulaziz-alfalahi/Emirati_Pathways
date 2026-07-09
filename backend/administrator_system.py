@@ -225,15 +225,15 @@ class AdministratorSystem:
             system_roles = self._execute_query(role_query)
             
             # Build Normalization Maps
-            # 1. Display Name -> Slug (e.g., "HR Manager" -> "hr_manager")
+            # 1. Display Name -> Slug (e.g., "HR Manager" -> 'employer_admin')
             # 2. Known Legacy Overrides
             norm_map = {r['display_name']: r['name'] for r in system_roles}
             norm_map.update({
                 'HR/Recruiter': 'recruiter',
-                'HR Manager': 'hr_manager',
-                'Job Seeker': 'job_seeker',
-                'candidate': 'job_seeker',   # Legacy: normalize 'candidate' → 'job_seeker'
-                'Candidate': 'job_seeker',
+                'HR Manager': 'employer_admin',
+                'Job Seeker': 'candidate',
+                'candidate': 'candidate',   # Legacy: normalize 'candidate' → 'candidate'
+                'Candidate': 'candidate',
             })
             
             system_slugs = {r['name'] for r in system_roles}
@@ -392,6 +392,50 @@ class AdministratorSystem:
             result = self._execute_query(query, (user_id,))
             if result:
                 user = result[0]
+                # Merge roles from database columns and join tables
+                final_roles = set()
+                if user.get('roles') and user['roles'] != [None]:
+                    final_roles.update([r for r in user['roles'] if r])
+                
+                # Fetch system roles for normalization
+                try:
+                    role_query = "SELECT name, display_name FROM admin_roles"
+                    system_roles = self._execute_query(role_query)
+                    norm_map = {r['display_name']: r['name'] for r in system_roles}
+                    system_slugs = {r['name'] for r in system_roles}
+                except Exception:
+                    norm_map = {}
+                    system_slugs = set()
+                
+                norm_map.update({
+                    'HR/Recruiter': 'recruiter',
+                    'HR Manager': 'employer_admin',
+                    'Job Seeker': 'candidate',
+                    'candidate': 'candidate',
+                    'Candidate': 'candidate',
+                })
+
+                secondary = user.get('secondary_roles') or []
+                if isinstance(secondary, str):
+                    try:
+                        secondary = json.loads(secondary)
+                    except Exception:
+                        secondary = [secondary]
+                
+                raw_roles = (secondary if isinstance(secondary, list) else []) + ([user.get('role')] if user.get('role') else [])
+                
+                for raw_role in raw_roles:
+                    if not raw_role: continue
+                    if raw_role in norm_map:
+                        norm_role = norm_map[raw_role]
+                    elif raw_role in system_slugs:
+                        norm_role = raw_role
+                    else:
+                        norm_role = raw_role
+                    final_roles.add(norm_role)
+                
+                user['roles'] = list(final_roles)
+
                 # Flatten permissions from ARRAY_AGG of JSONB arrays
                 if user.get('permissions'):
                     flat_perms = set()
@@ -601,7 +645,7 @@ class AdministratorSystem:
             ))  # dict.fromkeys preserves order and deduplicates
             
             # The first role in the requested list becomes primary
-            primary_role = roles[0] if roles else original_role or 'job_seeker'
+            primary_role = roles[0] if roles else original_role or 'candidate'
             
             update_role_query = """
                 UPDATE users 
@@ -1040,7 +1084,6 @@ class AdministratorSystem:
         except Exception as e:
             logger.error(f"Failed to get system metrics: {str(e)}")
             return []
-    
     # Settings Management
     
     def get_system_settings(self, category: str = None, 
@@ -1070,8 +1113,14 @@ class AdministratorSystem:
             
             settings = {}
             for row in results:
+                val = row['setting_value']
+                if isinstance(val, str):
+                    try:
+                        val = json.loads(val)
+                    except Exception:
+                        pass
                 settings[row['setting_key']] = {
-                    'value': json.loads(row['setting_value']),
+                    'value': val,
                     'type': row['setting_type'],
                     'category': row['category'],
                     'description': row['description'],
@@ -1084,13 +1133,20 @@ class AdministratorSystem:
             return {}
     
     def update_system_setting(self, setting_key: str, setting_value: Any, 
-                             admin_user_id: int) -> bool:
+                              admin_user_id: int) -> bool:
         """Update a system setting"""
         try:
             # Get current value for logging
             current_query = "SELECT setting_value FROM admin_settings WHERE setting_key = %s"
             current_result = self._execute_query(current_query, (setting_key,))
-            current_value = json.loads(current_result[0]['setting_value']) if current_result else None
+            current_value = None
+            if current_result and current_result[0]['setting_value'] is not None:
+                current_value = current_result[0]['setting_value']
+                if isinstance(current_value, str):
+                    try:
+                        current_value = json.loads(current_value)
+                    except Exception:
+                        pass
             
             # Update setting
             query = """
@@ -1175,7 +1231,7 @@ class AdministratorSystem:
                 day_name = days[day_index]
                 # Try to match real data, else random
                 match = next((r for r in growth_results if r['day_name'].strip()[:3] == day_name), None)
-                count = match['count'] if match else random.randint(100, 500)
+                count = match['count'] if match else 0
                 trend_data.append({'name': day_name, 'count': count})
                 
             analytics['visitorTrends'] = trend_data

@@ -1,7 +1,7 @@
 // src/utils/api.ts
 import axios, { type AxiosInstance } from 'axios'
 import type { CV } from '@/types/cv'
-import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils'
+import { getAuthToken, clearAuthTokens, getCookie } from '@/utils/tokenUtils'
 
 /**
  * Base URLs (configure via Vite env):
@@ -25,12 +25,23 @@ export const restClient: AxiosInstance = axios.create({
   withCredentials: true,
 })
 
-// Add request interceptor to inject token
-// Request interceptor to inject token
+// Add request interceptor to inject token and CSRF token
 restClient.interceptors.request.use((config) => {
   const token = getAuthToken();
-  if (token) {
+  if (token && token !== 'cookie_authenticated') {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Ensure no legacy/inline headers send the placeholder or null/undefined values
+  if (config.headers.Authorization) {
+    const authHeader = String(config.headers.Authorization);
+    if (authHeader.includes('cookie_authenticated') || authHeader.includes('null') || authHeader.includes('undefined')) {
+      delete config.headers.Authorization;
+    }
+  }
+  // Add CSRF Token if present in cookies
+  const csrfToken = getCookie('csrf_access_token');
+  if (csrfToken) {
+    config.headers['X-CSRF-TOKEN'] = csrfToken;
   }
   return config;
 }, (error) => {
@@ -49,8 +60,25 @@ restClient.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
+        // Cookie-based sessions (UAE Pass) have no refresh token. A single 401
+        // (often a stray call still using the 'cookie_authenticated' placeholder)
+        // must NOT clear auth and bounce to /auth — the httpOnly cookie stays the
+        // source of truth. Fail just this request and let the caller handle it.
         if (!refreshToken) {
-          throw new Error('No refresh token available');
+          // Cookie session (UAE Pass): the refresh token lives in an httpOnly
+          // cookie. Refresh via cookie + CSRF header, then retry the request.
+          // Never force-logout on failure (the request just fails).
+          try {
+            const csrf = getCookie('csrf_refresh_token');
+            await axios.post(
+              `${API_BASE_URL}/api/auth/refresh`,
+              {},
+              { withCredentials: true, headers: csrf ? { 'X-CSRF-TOKEN': csrf } : {} }
+            );
+            return restClient(originalRequest);
+          } catch (cookieRefreshError) {
+            return Promise.reject(error);
+          }
         }
 
         // Perform refresh using a fresh axios instance to avoid interceptors

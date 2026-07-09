@@ -191,11 +191,11 @@ class RealTimeNotificationSystem:
                 
                 # Decode JWT token (simplified - in production, use proper JWT verification)
                 try:
-                    # For demo purposes, we'll extract user_id from token
-                    # In production, properly verify the JWT signature
-                    payload = jwt.decode(token, options={"verify_signature": False})
-                    user_id = payload.get('user_id')
-                    user_type = payload.get('user_type', 'job_seeker')
+                    import os as _os
+                    _jwt_secret = _os.environ.get('JWT_SECRET_KEY', '')
+                    payload = jwt.decode(token, _jwt_secret, algorithms=['HS256'])
+                    user_id = payload.get('sub') or payload.get('user_id')
+                    user_type = payload.get('role') or payload.get('user_type', 'candidate')
                     
                     if not user_id:
                         disconnect()
@@ -470,7 +470,7 @@ class NotificationHelpers:
                 )
         else:
             # Broadcast to all persona types
-            for persona_type in ['job_seeker', 'hr_recruiter', 'mentor', 'educator']:
+            for persona_type in ['candidate', 'recruiter', 'mentor', 'training_provider']:
                 self.notification_system.broadcast_to_persona(
                     persona_type=persona_type,
                     notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,

@@ -267,6 +267,26 @@ def create_jd_enhanced():
     try:
         data = request.get_json() or {}
         jd_id = f"jd_{uuid.uuid4().hex[:8]}"
+        
+        # Save draft placeholder to database so it exists when frontend queries it
+        recruiter_id = data.get('recruiter_id') or 'recruiter_default'
+        company_id = data.get('company_id') or 'company_default'
+        
+        insert_query = """
+            INSERT INTO job_postings (
+                jd_id, recruiter_id, company_id, title, status, created_at, updated_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+        """
+        execute_query(insert_query, (
+            jd_id,
+            recruiter_id,
+            company_id,
+            data.get('title', 'New Position'),
+            'draft'
+        ), fetch_all=False)
+        
         return jsonify({
             'success': True,
             'message': 'Job description created successfully',
@@ -319,7 +339,7 @@ def get_jd_list_enhanced():
                 
                 # Get user's company_id and role details
                 user_company_id = None
-                is_admin = user_role in ('admin', 'administrator', 'super_admin')
+                is_admin = user_role in ('admin', 'admin', 'super_admin')
                 
                 if current_user_id and not is_admin:
                     try:
@@ -351,7 +371,7 @@ def get_jd_list_enhanced():
                 if is_admin:
                     # Admin sees all jobs
                     pass
-                elif user_role in ('hr_manager', 'hr') and user_company_id:
+                elif user_role in ('employer_admin', 'employer_admin') and user_company_id:
                      # HR Manager with Company: See all jobs for that company OR created by them
                      # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
                      filter_sql_new = " AND (jp.company_id = %s OR jp.recruiter_id = %s)"
@@ -382,10 +402,12 @@ def get_jd_list_enhanced():
                             jp.jd_id,
                             jp.title,
                             COALESCE(
+                                NULLIF(NULLIF(c.name, 'company_default'), 'unknown'),
+                                NULLIF(NULLIF(hp_c.name, 'company_default'), 'unknown'),
+                                NULLIF(NULLIF(ctm_c.name, 'company_default'), 'unknown'),
                                 NULLIF(u.company, ''),
                                 NULLIF(u.profile_data->>'companyName', ''),
-                                NULLIF(jp.company_id, 'company_default'),
-                                NULLIF(jp.company_id, 'unknown'),
+                                NULLIF(NULLIF(jp.company_id, 'company_default'), 'unknown'),
                                 'Company'
                             ) as company,
                             COALESCE(
@@ -393,13 +415,18 @@ def get_jd_list_enhanced():
                                 CASE 
                                     WHEN jp.city IS NOT NULL AND jp.emirate IS NOT NULL 
                                         THEN jp.city || ', ' || jp.emirate
-                                    WHEN jp.emirate IS NOT NULL THEN jp.emirate
+                                     WHEN jp.emirate IS NOT NULL THEN jp.emirate
                                     WHEN jp.city IS NOT NULL THEN jp.city
                                     ELSE NULL
                                 END
                             ) as location,
                             jp.status,
-                            COALESCE(jp.applications_count, 0) as applications,
+                            (
+                                SELECT COUNT(*) 
+                                FROM job_applications ja 
+                                WHERE ja.job_id::text = jp.jd_id::text 
+                                   OR ja.job_id::text = jp.id::text
+                            ) as applications,
                             jp.created_at,
                             jp.description,
                             jp.requirements,
@@ -412,6 +439,11 @@ def get_jd_list_enhanced():
                             jp.id::text as pk
                         FROM job_postings jp
                         LEFT JOIN users u ON jp.recruiter_id = u.id::text
+                        LEFT JOIN companies c ON jp.company_id::text = c.id::text
+                        LEFT JOIN hr_profiles hp ON jp.recruiter_id = hp.user_id::text
+                        LEFT JOIN companies hp_c ON hp.company_id::text = hp_c.id::text
+                        LEFT JOIN company_team_members ctm ON jp.recruiter_id = ctm.user_id::text
+                        LEFT JOIN companies ctm_c ON ctm.company_id::text = ctm_c.id::text
                         WHERE jp.status != 'deleted' {filter_sql_new}
                         ORDER BY jp.created_at DESC
                         LIMIT 50
@@ -433,7 +465,11 @@ def get_jd_list_enhanced():
                             COALESCE(company, 'Company') as company,
                             location,
                             CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status,
-                            0 as applications,
+                            (
+                                SELECT COUNT(*) 
+                                FROM job_applications ja 
+                                WHERE ja.job_id::text = id::text
+                            ) as applications,
                             created_at,
                             NULL as description,
                             NULL as requirements,
@@ -1156,7 +1192,20 @@ def get_recruiter_dashboard():
     - Recent activity
     """
     try:
-        recruiter_id = request.args.get('recruiter_id', type=int)
+        # Get recruiter ID from JWT or query params
+        recruiter_id = None
+        try:
+            from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+            verify_jwt_in_request(optional=True)
+            recruiter_id = get_jwt_identity()
+        except Exception:
+            pass
+            
+        if not recruiter_id:
+            recruiter_id = request.args.get('recruiter_id')
+        
+        if recruiter_id:
+            recruiter_id = str(recruiter_id)
         
         dashboard = {
             'overview': {
@@ -1173,31 +1222,65 @@ def get_recruiter_dashboard():
         }
         
         # Get vacancy counts from both job_postings and job_descriptions
-        vacancy_query = """
-            SELECT 
-                COUNT(*) as total,
-                COUNT(*) FILTER (WHERE status = 'active' OR status = 'published') as active
-            FROM (
-                SELECT id, status FROM job_postings WHERE status != 'deleted'
-                UNION ALL
-                SELECT id, CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status FROM job_descriptions
-            ) all_jobs
-        """
+        if recruiter_id:
+            vacancy_query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE status = 'active' OR status = 'published') as active
+                FROM (
+                    SELECT id, status FROM job_postings WHERE status != 'deleted' AND recruiter_id::text = %s
+                    UNION ALL
+                    SELECT id, CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status FROM job_descriptions WHERE user_id::text = %s
+                ) all_jobs
+            """
+            vacancy_stats = execute_query(vacancy_query, (recruiter_id, recruiter_id), fetch_one=True)
+        else:
+            vacancy_query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE status = 'active' OR status = 'published') as active
+                FROM (
+                    SELECT id, status FROM job_postings WHERE status != 'deleted'
+                    UNION ALL
+                    SELECT id, CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status FROM job_descriptions
+                ) all_jobs
+            """
+            vacancy_stats = execute_query(vacancy_query, fetch_one=True)
         
-        vacancy_stats = execute_query(vacancy_query, fetch_one=True)
         if vacancy_stats:
             dashboard['overview']['active_vacancies'] = vacancy_stats.get('active', 0) or 0
         
         # Get application counts
-        apps_query = """
-            SELECT 
-                COUNT(*) as total,
-                COUNT(*) FILTER (WHERE status = 'interview' OR status = 'interviewing') as interviewing,
-                COUNT(*) FILTER (WHERE status = 'shortlisted') as shortlisted,
-                COUNT(*) FILTER (WHERE status = 'hired') as hired
-            FROM job_applications
-        """
-        apps_stats = execute_query(apps_query, fetch_one=True)
+        if recruiter_id:
+            apps_query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE ja.status = 'interview' OR ja.status = 'interviewing') as interviewing,
+                    COUNT(*) FILTER (WHERE ja.status = 'shortlisted') as shortlisted,
+                    COUNT(*) FILTER (WHERE ja.status = 'hired') as hired
+                FROM job_applications ja
+                WHERE EXISTS (
+                    SELECT 1 FROM job_postings jp 
+                    WHERE (ja.job_id::text = jp.jd_id::text OR ja.job_id::text = jp.id::text)
+                      AND jp.recruiter_id::text = %s
+                ) OR EXISTS (
+                    SELECT 1 FROM job_descriptions jd 
+                    WHERE ja.job_id::text = jd.id::text 
+                      AND jd.user_id::text = %s
+                )
+            """
+            apps_stats = execute_query(apps_query, (recruiter_id, recruiter_id), fetch_one=True)
+        else:
+            apps_query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE status = 'interview' OR status = 'interviewing') as interviewing,
+                    COUNT(*) FILTER (WHERE status = 'shortlisted') as shortlisted,
+                    COUNT(*) FILTER (WHERE status = 'hired') as hired
+                FROM job_applications
+            """
+            apps_stats = execute_query(apps_query, fetch_one=True)
+            
         if apps_stats:
             dashboard['overview']['total_applications'] = apps_stats.get('total', 0) or 0
             dashboard['overview']['interviews_scheduled'] = apps_stats.get('interviewing', 0) or 0
@@ -1205,29 +1288,55 @@ def get_recruiter_dashboard():
             dashboard['overview']['positions_filled'] = apps_stats.get('hired', 0) or 0
         
         # Get pending offers
-        offers_query = """
-            SELECT COUNT(*) as pending
-            FROM job_offers
-            WHERE status = 'pending'
-        """
-        offers_stats = execute_query(offers_query, fetch_one=True)
+        if recruiter_id:
+            offers_query = """
+                SELECT COUNT(*) as pending
+                FROM job_offers
+                WHERE status = 'pending' AND recruiter_id::text = %s
+            """
+            offers_stats = execute_query(offers_query, (recruiter_id,), fetch_one=True)
+        else:
+            offers_query = """
+                SELECT COUNT(*) as pending
+                FROM job_offers
+                WHERE status = 'pending'
+            """
+            offers_stats = execute_query(offers_query, fetch_one=True)
+            
         if offers_stats:
             dashboard['overview']['offers_pending'] = offers_stats.get('pending', 0) or 0
         
         # Get recent activity
-        activity_query = """
-            SELECT 
-                id::text,
-                action,
-                resource_type,
-                resource_id,
-                details,
-                created_at
-            FROM recruiter_activity_log
-            ORDER BY created_at DESC
-            LIMIT 10
-        """
-        activities = execute_query(activity_query)
+        if recruiter_id:
+            activity_query = """
+                SELECT 
+                    id::text,
+                    action,
+                    resource_type,
+                    resource_id,
+                    details,
+                    created_at
+                FROM recruiter_activity_log
+                WHERE recruiter_id::text = %s
+                ORDER BY created_at DESC
+                LIMIT 10
+            """
+            activities = execute_query(activity_query, (recruiter_id,))
+        else:
+            activity_query = """
+                SELECT 
+                    id::text,
+                    action,
+                    resource_type,
+                    resource_id,
+                    details,
+                    created_at
+                FROM recruiter_activity_log
+                ORDER BY created_at DESC
+                LIMIT 10
+            """
+            activities = execute_query(activity_query)
+            
         if activities:
             dashboard['recent_activity'] = [
                 {
@@ -1242,22 +1351,43 @@ def get_recruiter_dashboard():
             ]
         
         # Get upcoming interviews
-        interviews_query = """
-            SELECT 
-                s.id,
-                s.scheduled_at,
-                s.interview_type,
-                u.full_name as candidate_name,
-                j.title as job_title
-            FROM interview_sessions s
-            LEFT JOIN users u ON s.candidate_id = u.id
-            LEFT JOIN job_descriptions j ON s.job_id = j.id
-            WHERE s.scheduled_at >= CURRENT_TIMESTAMP
-            AND s.status = 'scheduled'
-            ORDER BY s.scheduled_at ASC
-            LIMIT 5
-        """
-        interviews = execute_query(interviews_query)
+        if recruiter_id:
+            interviews_query = """
+                SELECT 
+                    s.id,
+                    s.scheduled_at,
+                    s.interview_type,
+                    u.full_name as candidate_name,
+                    COALESCE(jp.title, jd.title, 'Interview') as job_title
+                FROM interview_sessions s
+                LEFT JOIN users u ON s.candidate_id = u.id
+                LEFT JOIN job_postings jp ON s.job_id::text = jp.jd_id::text OR s.job_id::text = jp.id::text
+                LEFT JOIN job_descriptions jd ON s.job_id::text = jd.id::text
+                WHERE s.scheduled_at >= CURRENT_TIMESTAMP
+                AND s.status = 'scheduled'
+                AND (jp.recruiter_id::text = %s OR jd.user_id::text = %s)
+                ORDER BY s.scheduled_at ASC
+                LIMIT 5
+            """
+            interviews = execute_query(interviews_query, (recruiter_id, recruiter_id))
+        else:
+            interviews_query = """
+                SELECT 
+                    s.id,
+                    s.scheduled_at,
+                    s.interview_type,
+                    u.full_name as candidate_name,
+                    j.title as job_title
+                FROM interview_sessions s
+                LEFT JOIN users u ON s.candidate_id = u.id
+                LEFT JOIN job_descriptions j ON s.job_id = j.id
+                WHERE s.scheduled_at >= CURRENT_TIMESTAMP
+                AND s.status = 'scheduled'
+                ORDER BY s.scheduled_at ASC
+                LIMIT 5
+            """
+            interviews = execute_query(interviews_query)
+            
         if interviews:
             dashboard['upcoming_interviews'] = [
                 {
@@ -1332,7 +1462,7 @@ def get_recent_applicants():
                 ja.cover_letter,
                 jp.title as job_title,
                 COALESCE(jp.company_id, 'Unknown Company') as company_name,
-                COALESCE(u.email, CONCAT('Candidate ', SUBSTRING(CAST(ja.candidate_id AS TEXT), 1, 8))) as candidate_name,
+                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), u.email, CONCAT('Candidate ', SUBSTRING(CAST(ja.candidate_id AS TEXT), 1, 8))) as candidate_name,
                 u.email as candidate_email
             FROM job_applications ja
             LEFT JOIN job_postings jp ON (ja.job_id::text = jp.id::text OR ja.job_id::text = jp.jd_id)
@@ -1423,17 +1553,11 @@ def get_job_applicants_count():
         filter_new = "WHERE jp.recruiter_id::text = %s"
         params_new = [recruiter_id]
         
-        # FIX: job_descriptions uses 'user_id' (int), not 'recruiter_id' or 'created_by'
-        filter_legacy = "WHERE jp.user_id = %s"
-        params_legacy = []
-        try:
-            params_legacy = [int(recruiter_id)]
-        except:
-            # If recruiter_id is not integer, legacy query (using int column) should fail gracefully
-            filter_legacy = "WHERE 1=0" 
-            params_legacy = []
+        # Cast jp.user_id to text to match character type representing the National ID string
+        filter_legacy = "WHERE jp.user_id::text = %s"
+        params_legacy = [recruiter_id]
 
-        if user_role in ('hr_manager', 'admin', 'administrator', 'super_admin'):
+        if user_role in ('employer_admin', 'admin', 'admin', 'super_admin'):
              filter_new = "WHERE 1=1"
              filter_legacy = "WHERE 1=1"
              params_new = []
@@ -2660,11 +2784,33 @@ def get_candidate_profile_full(candidate_id):
                     try: return _json.loads(val)
                     except: return []
                 return val or []
+            
+            # Load parsed_data if available
+            parsed_data = cv_data.get('parsed_data')
+            if parsed_data:
+                if isinstance(parsed_data, str):
+                    try: parsed_data = _json.loads(parsed_data)
+                    except: parsed_data = {}
+            else:
+                parsed_data = {}
+
             cv_technical_skills = _parse_json(cv_data.get('technical_skills'))
             cv_soft_skills = _parse_json(cv_data.get('soft_skills'))
             cv_work_experience = _parse_json(cv_data.get('work_experience'))
             cv_education = _parse_json(cv_data.get('education'))
             cv_summary = cv_data.get('professional_summary')
+
+            # Fallbacks to parsed_data if direct columns are empty
+            if not cv_work_experience and parsed_data:
+                cv_work_experience = _parse_json(parsed_data.get('work_experience') or parsed_data.get('experience'))
+            if not cv_education and parsed_data:
+                cv_education = _parse_json(parsed_data.get('education'))
+            if not cv_technical_skills and parsed_data:
+                cv_technical_skills = _parse_json(parsed_data.get('technical_skills') or parsed_data.get('skills'))
+            if not cv_soft_skills and parsed_data:
+                cv_soft_skills = _parse_json(parsed_data.get('soft_skills'))
+            if not cv_summary and parsed_data:
+                cv_summary = parsed_data.get('professional_summary') or parsed_data.get('summary')
 
         # Build final skills lists (prefer candidate_skills table, fallback to CV)
         tech_skills = [s.get('name') for s in skills if s.get('category') == 'technical'] if skills else []

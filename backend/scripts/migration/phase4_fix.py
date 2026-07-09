@@ -56,8 +56,8 @@ for conname, condef in constraints:
 try_sql("Add updated role constraint", """
     ALTER TABLE users ADD CONSTRAINT users_role_check 
     CHECK (role IN (
-        'job_seeker', 'student', 'guardian', 'educator', 'assessor',
-        'mentor', 'recruiter', 'hr_manager', 'retiree', 'operator', 'administrator'
+        'candidate', 'candidate', 'parent', 'training_provider', 'assessor',
+        'mentor', 'recruiter', 'employer_admin', 'candidate', 'operator', 'admin'
     ))
 """)
 

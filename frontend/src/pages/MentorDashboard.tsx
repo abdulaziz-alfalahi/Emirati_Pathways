@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import toast from 'react-hot-toast';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import Messages from '@/components/recruiter/Messages';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
@@ -81,6 +82,29 @@ interface MentorData {
   }>;
 }
 
+interface IncentiveHistoryItem {
+  id: number;
+  action_type: string;
+  points_awarded: number;
+  reference_id: string;
+  created_at: string;
+}
+
+interface PendingVerification {
+  skill_id: number;
+  candidate_user_id: string;
+  skill_name: string;
+  skill_level: string;
+  skill_category: string;
+  candidate_name: string;
+  candidate_email: string;
+  project_id: number | null;
+  project_title: string | null;
+  project_description: string | null;
+  project_url: string | null;
+  completion_date: string | null;
+}
+
 
 
 const MentorDashboard: React.FC = () => {
@@ -100,6 +124,144 @@ const MentorDashboard: React.FC = () => {
   });
 
   const API_BASE = import.meta.env.VITE_API_URL || '';
+
+  const [incentivePoints, setIncentivePoints] = useState<number>(0);
+  const [incentiveTier, setIncentiveTier] = useState<string>('bronze');
+  const [incentiveHistory, setIncentiveHistory] = useState<IncentiveHistoryItem[]>([]);
+  const [pendingVerifications, setPendingVerifications] = useState<PendingVerification[]>([]);
+  const [loadingIncentives, setLoadingIncentives] = useState<boolean>(true);
+  const [loadingVerifications, setLoadingVerifications] = useState<boolean>(true);
+  const [processingVerificationId, setProcessingVerificationId] = useState<number | null>(null);
+
+  const fetchIncentives = async () => {
+    try {
+      setLoadingIncentives(true);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/progress/incentives`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.success) {
+          setIncentivePoints(result.incentive_points);
+          setIncentiveTier(result.incentive_tier);
+          setIncentiveHistory(result.history || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching incentives:', err);
+    } finally {
+      setLoadingIncentives(false);
+    }
+  };
+
+  const fetchVerifications = async () => {
+    try {
+      setLoadingVerifications(true);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/progress/pending-verifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.success) {
+          setPendingVerifications(result.pending || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching pending verifications:', err);
+    } finally {
+      setLoadingVerifications(false);
+    }
+  };
+
+  const handleVerifySkill = async (skillId: number, isApproved: boolean) => {
+    try {
+      setProcessingVerificationId(skillId);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/progress/verify-skill`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ skill_id: skillId, is_approved: isApproved })
+      });
+      const result = await resp.json();
+      if (resp.ok && result.success) {
+        toast.success(result.message || (isApproved ? t('Skill verified successfully!', 'تم التحقق من المهارة بنجاح!') : t('Skill verification rejected.', 'تم رفض التحقق من المهارة.')));
+        fetchIncentives();
+        fetchVerifications();
+      } else {
+        toast.error(result.error || t('Failed to process verification', 'فشل في معالجة التحقق'));
+      }
+    } catch (err) {
+      console.error('Error verifying skill:', err);
+      toast.error(t('An error occurred during verification', 'حدث خطأ أثناء عملية التحقق'));
+    } finally {
+      setProcessingVerificationId(null);
+    }
+  };
+
+  const getTierDetails = (points: number, tier: string) => {
+    const currentPoints = points || 0;
+    const currentTier = (tier || 'bronze').toLowerCase();
+    
+    let nextTier = '';
+    let minPoints = 0;
+    let maxPoints = 0;
+    let badgeColor = '';
+    let nextPoints = 0;
+    
+    if (currentTier === 'bronze') {
+      nextTier = 'Silver';
+      minPoints = 0;
+      maxPoints = 1000;
+      badgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
+      nextPoints = 1000;
+    } else if (currentTier === 'silver') {
+      nextTier = 'Gold';
+      minPoints = 1000;
+      maxPoints = 3500;
+      badgeColor = 'bg-slate-200 text-slate-800 border-slate-400';
+      nextPoints = 3500;
+    } else if (currentTier === 'gold') {
+      nextTier = 'Platinum';
+      minPoints = 3500;
+      maxPoints = 8000;
+      badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-400';
+      nextPoints = 8000;
+    } else {
+      nextTier = '';
+      minPoints = 8000;
+      maxPoints = 8000;
+      badgeColor = 'bg-teal-100 text-teal-800 border-teal-400';
+      nextPoints = 0;
+    }
+    
+    const pointsInCurrentRange = currentPoints - minPoints;
+    const rangeTotal = maxPoints - minPoints;
+    const progress = rangeTotal > 0 ? Math.min(100, Math.max(0, (pointsInCurrentRange / rangeTotal) * 100)) : 100;
+    const remaining = nextPoints > 0 ? nextPoints - currentPoints : 0;
+    
+    return {
+      nextTier,
+      progress,
+      remaining,
+      badgeColor,
+      maxPoints,
+      minPoints
+    };
+  };
+
+  const getTierNameTranslation = (tierName: string) => {
+    const lower = (tierName || 'bronze').toLowerCase();
+    if (lower === 'bronze') return t('Bronze', 'برونزي');
+    if (lower === 'silver') return t('Silver', 'فضي');
+    if (lower === 'gold') return t('Gold', 'ذهبي');
+    if (lower === 'platinum') return t('Platinum', 'بلاتيني');
+    return tierName;
+  };
 
   // Get authenticated user info
   const getUserInfo = () => {
@@ -158,6 +320,8 @@ const MentorDashboard: React.FC = () => {
         console.error('Failed to load mentor dashboard:', err);
       }
     })();
+    fetchIncentives();
+    fetchVerifications();
     return () => { cancelled = true; };
   }, []);
 
@@ -221,13 +385,24 @@ const MentorDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-card shadow-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-              <TabsTrigger value="overview" className="font-dubai-medium">{t('Overview', 'نظرة عامة')}</TabsTrigger>
-              <TabsTrigger value="mentees" className="font-dubai-medium">{t('Mentees', 'المتدربين')}</TabsTrigger>
-              <TabsTrigger value="sessions" className="font-dubai-medium">{t('Sessions', 'الجلسات')}</TabsTrigger>
-              <TabsTrigger value="impact" className="font-dubai-medium">{t('Impact', 'التأثير')}</TabsTrigger>
-              <TabsTrigger value="resources" className="font-dubai-medium">{t('Resources', 'الموارد')}</TabsTrigger>
-              <TabsTrigger value="messages" className="font-dubai-medium">
+            <TabsList className="flex flex-wrap w-full bg-card shadow-sm p-1 gap-1 h-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+              <TabsTrigger value="overview" className="flex-grow md:flex-none font-dubai-medium">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="mentees" className="flex-grow md:flex-none font-dubai-medium">{t('Mentees', 'المتدربين')}</TabsTrigger>
+              <TabsTrigger value="sessions" className="flex-grow md:flex-none font-dubai-medium">{t('Sessions', 'الجلسات')}</TabsTrigger>
+              <TabsTrigger value="verifications" className="flex-grow md:flex-none font-dubai-medium relative flex items-center justify-center gap-1.5">
+                {t('Skill Verifications', 'التحقق من المهارات')}
+                {pendingVerifications.length > 0 && (
+                  <Badge variant="destructive" className="px-1.5 py-0.5 text-[10px] h-4 min-w-4 flex items-center justify-center rounded-full">
+                    {pendingVerifications.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="incentives" className="flex-grow md:flex-none font-dubai-medium">
+                {t('Incentives & Tiers', 'الحوافز والمستويات')}
+              </TabsTrigger>
+              <TabsTrigger value="impact" className="flex-grow md:flex-none font-dubai-medium">{t('Impact', 'التأثير')}</TabsTrigger>
+              <TabsTrigger value="resources" className="flex-grow md:flex-none font-dubai-medium">{t('Resources', 'الموارد')}</TabsTrigger>
+              <TabsTrigger value="messages" className="flex-grow md:flex-none font-dubai-medium">
                 <MessageSquare className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
                 {t('Messages', 'الرسائل')}
               </TabsTrigger>
@@ -517,6 +692,269 @@ const MentorDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Skill Verifications Tab */}
+            <TabsContent value="verifications" className="space-y-6">
+              <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-right' : ''}`}>
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900 flex items-center gap-2">
+                    <UserCheck className="h-5 w-5 text-teal-600" />
+                    {t('Skill Verification Queue', 'طابور التحقق من المهارات')}
+                  </CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-500">
+                    {t('Review and approve skills demonstrated in candidate portfolio projects. Approving a skill awards you +20 points.', 'قم بمراجعة واعتماد المهارات الموضحة في مشاريع المتدربين. اعتماد المهارة يمنحك +20 نقطة.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingVerifications ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                    </div>
+                  ) : pendingVerifications.length === 0 ? (
+                    <div className="text-center py-12">
+                      <CheckCircle className="h-16 w-16 text-teal-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-dubai-bold text-slate-800 mb-1">
+                        {t('All Caught Up!', 'لقد انتهيت من كل المراجعات!')}
+                      </h3>
+                      <p className="text-slate-500 font-dubai-medium max-w-md mx-auto">
+                        {t('There are no pending skill verifications at the moment. Excellent job keeping the queue clean!', 'لا توجد مهارات معلقة للتحقق منها حالياً. عمل رائع في إبقاء القائمة مكتملة!')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {pendingVerifications.map((item) => (
+                        <div
+                          key={item.skill_id}
+                          className={`p-5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col md:flex-row justify-between items-start gap-4 ${isRTL ? 'md:flex-row-reverse text-right' : ''}`}
+                        >
+                          <div className="space-y-3 flex-1">
+                            {/* Candidate Info */}
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-dubai-bold">
+                                {item.candidate_name?.charAt(0) || 'C'}
+                              </div>
+                              <div>
+                                <h4 className="font-dubai-bold text-slate-900 leading-tight">{item.candidate_name}</h4>
+                                <p className="text-xs text-slate-500 font-dubai">{item.candidate_email}</p>
+                              </div>
+                            </div>
+
+                            {/* Skill Details */}
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              <Badge className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                                {item.skill_name}
+                              </Badge>
+                              <Badge variant="outline" className="bg-slate-100 text-slate-700 font-dubai">
+                                {item.skill_level}
+                              </Badge>
+                              <Badge variant="outline" className="bg-slate-100 text-slate-700 font-dubai">
+                                {item.skill_category}
+                              </Badge>
+                            </div>
+
+                            {/* Project Details */}
+                            {item.project_title ? (
+                              <div className="p-3 bg-white rounded-lg border border-slate-200/60 mt-2 space-y-1">
+                                <p className="text-xs font-dubai-bold text-teal-800 uppercase tracking-wider">{t('Demonstrated in Project', 'موضح في مشروع')}</p>
+                                <h5 className="font-dubai-bold text-sm text-slate-900">{item.project_title}</h5>
+                                <p className="text-xs text-slate-600 font-dubai leading-relaxed">{item.project_description}</p>
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-2">
+                                  {item.project_url && (
+                                    <a
+                                      href={item.project_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-teal-600 hover:text-teal-700 font-dubai-bold underline"
+                                    >
+                                      {t('View Project Code/Link ↗', 'عرض رابط/رمز المشروع ↗')}
+                                    </a>
+                                  )}
+                                  {item.completion_date && (
+                                    <span className="text-[10px] text-slate-400 font-dubai">
+                                      {t('Completed:', 'اكتمل في:')} {new Date(item.completion_date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-500 italic pt-1">
+                                {t('No linked portfolio project found for this skill.', 'لا يوجد مشروع محفظة مرتبط بهذه المهارة.')}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className={`flex flex-row md:flex-col gap-2 w-full md:w-auto justify-end ${isRTL ? 'md:items-start' : 'md:items-end'}`}>
+                            <Button
+                              onClick={() => handleVerifySkill(item.skill_id, true)}
+                              disabled={processingVerificationId !== null}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium flex-1 md:flex-initial"
+                            >
+                              {processingVerificationId === item.skill_id ? (
+                                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 me-2" />
+                                  {t('Approve Skill', 'اعتماد المهارة')}
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleVerifySkill(item.skill_id, false)}
+                              disabled={processingVerificationId !== null}
+                              className="border-red-200 hover:bg-red-50 text-red-600 font-dubai-medium flex-1 md:flex-initial"
+                            >
+                              {t('Reject', 'رفض')}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Incentives & Tiers Tab */}
+            <TabsContent value="incentives" className="space-y-6">
+              {loadingIncentives ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary & Progress Card */}
+                  <Card className={`bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md border-0 ${isRTL ? 'text-right' : ''}`}>
+                    <CardContent className="p-6 md:p-8">
+                      <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
+                        <div className="space-y-2">
+                          <p className="text-teal-400 font-dubai-bold uppercase tracking-wider text-sm">
+                            {t('MENTOR INCENTIVE PROGRAM', 'برنامج تحفيز المرشدين')}
+                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-5xl font-dubai-bold">{incentivePoints}</span>
+                            <span className="text-slate-400 font-dubai-medium text-lg">{t('Points', 'نقطة')}</span>
+                          </div>
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="text-slate-300 font-dubai-medium text-sm">{t('Current Tier:', 'المستوى الحالي:')}</span>
+                            <Badge className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-bold text-xs px-2.5 py-1">
+                              {getTierNameTranslation(incentiveTier)}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Tier Details Card */}
+                        <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/50 w-full md:w-auto md:min-w-[300px] space-y-3">
+                          {(() => {
+                            const details = getTierDetails(incentivePoints, incentiveTier);
+                            return (
+                              <>
+                                <div className="flex justify-between items-center text-sm font-dubai-medium">
+                                  <span className="text-slate-400">{t('Next Tier:', 'المستوى القادم:')}</span>
+                                  <span className="text-teal-400 font-dubai-bold">
+                                    {details.nextTier ? getTierNameTranslation(details.nextTier) : t('Max Tier Reached!', 'تم الوصول للحد الأقصى!')}
+                                  </span>
+                                </div>
+                                <Progress value={details.progress} className="h-2 bg-slate-700" />
+                                <div className="flex justify-between items-center text-xs font-dubai text-slate-400">
+                                  <span>{details.minPoints} {t('pts', 'نقطة')}</span>
+                                  {details.remaining > 0 ? (
+                                    <span className="text-slate-300 font-dubai-bold">
+                                      {t(`${details.remaining} points to upgrade`, `متبقي ${details.remaining} نقطة للترقية`)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-teal-400 font-dubai-bold">{t('Ultimate Tier', 'المستوى الأسمى')}</span>
+                                  )}
+                                  <span>{details.maxPoints} {t('pts', 'نقطة')}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Tier Rules Description */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {[
+                      { name: 'Bronze', range: '< 1,000 pts', color: 'border-amber-400 bg-amber-500/10 text-amber-600' },
+                      { name: 'Silver', range: '1,000 - 3,499 pts', color: 'border-slate-300 bg-slate-500/10 text-slate-500' },
+                      { name: 'Gold', range: '3,500 - 7,999 pts', color: 'border-yellow-400 bg-yellow-500/10 text-yellow-600' },
+                      { name: 'Platinum', range: '≥ 8,000 pts', color: 'border-teal-400 bg-teal-500/10 text-teal-600' }
+                    ].map((tierItem, index) => {
+                      const isCurrent = incentiveTier.toLowerCase() === tierItem.name.toLowerCase();
+
+                      return (
+                        <div
+                          key={index}
+                          className={`p-4 rounded-xl border text-center relative ${tierItem.color} ${isCurrent ? 'ring-2 ring-teal-500 bg-white opacity-100 font-dubai-bold' : 'opacity-70 bg-white'}`}
+                        >
+                          {isCurrent && (
+                            <span className="absolute top-2 right-2 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                            </span>
+                          )}
+                          <h4 className="font-dubai-bold text-lg mb-1 text-slate-900">{getTierNameTranslation(tierItem.name)}</h4>
+                          <p className="text-xs font-dubai-medium text-slate-600">{tierItem.range}</p>
+                          {isCurrent && (
+                            <Badge className="mt-2 bg-teal-600 text-white text-[10px] font-dubai">
+                              {t('Active Level', 'المستوى الحالي')}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* History Logs */}
+                  <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-right' : ''}`}>
+                    <CardHeader>
+                      <CardTitle className="font-dubai-bold text-slate-900 flex items-center gap-2">
+                        <Award className="h-5 w-5 text-teal-600" />
+                        {t('Points Earning History', 'سجل كسب النقاط')}
+                      </CardTitle>
+                      <CardDescription className="font-dubai-medium text-slate-500">
+                        {t('Recent logs of points awarded for sessions completed and skills verified.', 'السجلات الأخيرة للنقاط الممنوحة للجلسات المكتملة والمهارات التي تم التحقق منها.')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {incentiveHistory.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-slate-500 font-dubai-medium">
+                            {t('No points awarded yet. Complete mentoring sessions or verify skills to earn points!', 'لم يتم منح نقاط بعد. أكمل جلسات الإرشاد أو تحقق من المهارات لكسب النقاط!')}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto pr-2">
+                          {incentiveHistory.map((log) => (
+                            <div key={log.id} className="py-3 flex justify-between items-center gap-4 text-sm font-dubai">
+                              <div>
+                                <p className="font-dubai-bold text-slate-900">
+                                  {log.action_type === 'session_completed'
+                                    ? t('Session Completed', 'جلسة إرشادية مكتملة')
+                                    : log.action_type === 'skill_verified'
+                                    ? t('Portfolio Skill Verified', 'تم التحقق من مهارة المحفظة')
+                                    : log.action_type}
+                                </p>
+                                <span className="text-xs text-slate-400 font-dubai">
+                                  {new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <span className="text-emerald-600 font-dubai-bold text-base">
+                                +{log.points_awarded} {t('pts', 'نقطة')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
 
             {/* Messages Tab */}

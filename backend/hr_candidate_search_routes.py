@@ -63,7 +63,7 @@ class CandidateSearchEngine:
             LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
         """
         
-        where_conditions = ["u.role = 'job_seeker'"]
+        where_conditions = ["u.role IN ('candidate', 'job_seeker')"]
         params = []
         joins = []
         
@@ -194,7 +194,12 @@ class CandidateSearchEngine:
             'last_application': 'last_application_date'
         }
         
-        order_by = f"ORDER BY {sort_mapping.get(sort_by, 'u.created_at')} {sort_order}"
+        # Whitelist sort direction to prevent SQL injection
+        ALLOWED_SORT_ORDERS = {'ASC', 'DESC'}
+        safe_sort_column = sort_mapping.get(sort_by, 'u.created_at')
+        safe_sort_order = sort_order if sort_order in ALLOWED_SORT_ORDERS else 'DESC'
+        
+        order_by = f"ORDER BY {safe_sort_column} {safe_sort_order}"
         
         # Pagination
         limit = min(int(filters.get('limit', 20)), 100)  # Max 100 results per page
@@ -231,7 +236,11 @@ class CandidateSearchEngine:
         # Experience matching (25 points)
         max_score += 25
         required_experience = job_requirements.get('min_experience', 0)
+        if required_experience is None:
+            required_experience = 0
         candidate_experience = candidate.get('experience_years', 0)
+        if candidate_experience is None:
+            candidate_experience = 0
         
         if candidate_experience >= required_experience:
             if candidate_experience >= required_experience + 2:
@@ -272,9 +281,23 @@ class CandidateSearchEngine:
         
         # Location matching (15 points)
         max_score += 15
-        job_location = job_requirements.get('location', '').lower()
-        candidate_location = candidate.get('preferred_location', '').lower()
-        candidate_emirate = candidate.get('emirate', '').lower()
+        job_location = job_requirements.get('location')
+        if job_location is None:
+            job_location = ''
+        else:
+            job_location = str(job_location).lower()
+
+        candidate_location = candidate.get('preferred_location')
+        if candidate_location is None:
+            candidate_location = ''
+        else:
+            candidate_location = str(candidate_location).lower()
+
+        candidate_emirate = candidate.get('emirate')
+        if candidate_emirate is None:
+            candidate_emirate = ''
+        else:
+            candidate_emirate = str(candidate_emirate).lower()
         
         if job_location in candidate_location or candidate_emirate in job_location:
             match_details['location_match'] = 15
@@ -287,13 +310,13 @@ class CandidateSearchEngine:
         
         # Skills matching (25 points)
         max_score += 25
-        required_skills = job_requirements.get('skills', [])
-        candidate_skills = candidate.get('skills', [])
+        required_skills = job_requirements.get('skills') or []
+        candidate_skills = candidate.get('skills') or []
         
         if required_skills and candidate_skills:
-            # Convert to lowercase for comparison
-            req_skills_lower = [skill.lower() for skill in required_skills]
-            cand_skills_lower = [skill.lower() for skill in candidate_skills]
+            # Convert to lowercase for comparison, ignoring None values
+            req_skills_lower = [str(skill).lower() for skill in required_skills if skill is not None]
+            cand_skills_lower = [str(skill).lower() for skill in candidate_skills if skill is not None]
             
             matched_skills = 0
             for req_skill in req_skills_lower:
@@ -315,7 +338,11 @@ class CandidateSearchEngine:
         # Salary expectations matching (10 points)
         max_score += 10
         job_salary_max = job_requirements.get('salary_max', 0)
+        if job_salary_max is None:
+            job_salary_max = 0
         candidate_salary_min = candidate.get('preferred_salary_min', 0)
+        if candidate_salary_min is None:
+            candidate_salary_min = 0
         
         if job_salary_max and candidate_salary_min:
             if candidate_salary_min <= job_salary_max:
@@ -406,37 +433,21 @@ if os.getenv('FLASK_ENV', 'production') != 'production':
 def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
-        # Check for mock token (development mode) - check before JWT validation
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
+        # JWT authentication
+        try:
+            from flask_jwt_extended import verify_jwt_in_request
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            user_role = claims.get('role', '') if claims else ''
+            user_type = claims.get('user_type', '') if claims else ''
+            logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
+        except Exception as jwt_error:
+            logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
         
-        if is_mock_token:
-            # Extract user ID from mock token (format: "Bearer mock_token_3")
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            
-            # Get mock user data from request or use default recruiter role
-            # For mock tokens, we'll allow access and use a default recruiter role
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'  # Default to recruiter for mock users
-            user_type = 'recruiter'
-            current_user_id = user_id
-        else:
-            # Normal JWT authentication - try to get JWT claims
-            try:
-                from flask_jwt_extended import verify_jwt_in_request
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-                claims = get_jwt()
-                user_role = claims.get('role', '') if claims else ''
-                user_type = claims.get('user_type', '') if claims else ''
-                logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
-            except Exception as jwt_error:
-                logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
-        
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
@@ -566,7 +577,7 @@ def get_candidate_details(candidate_id):
         user_role = claims.get('role', '') if claims else ''
         
         # Accept multiple role names for HR/Recruiter access
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({
                 'success': False, 
@@ -587,7 +598,7 @@ def get_candidate_details(candidate_id):
                     MAX(u.last_login) as last_activity
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.id = %s AND u.role = 'job_seeker'
+                WHERE u.id::text = %s AND u.role IN ('candidate', 'job_seeker')
                 GROUP BY u.id
             """, (candidate_id,))
             
@@ -616,7 +627,7 @@ def get_candidate_details(candidate_id):
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
-                WHERE ja.candidate_id = %s
+                WHERE ja.candidate_id::text = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5
             """, (candidate_id,))
@@ -681,7 +692,7 @@ def match_candidates_to_job(job_id):
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
@@ -694,7 +705,7 @@ def match_candidates_to_job(job_id):
                 SELECT jp.*, hp.id as hr_profile_id
                 FROM job_postings jp
                 INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
+                WHERE jp.id::text = %s AND hp.user_id::text = %s
             """, (job_id, current_user_id))
             
             job = cursor.fetchone()
@@ -736,7 +747,7 @@ def match_candidates_to_job(job_id):
                     COUNT(DISTINCT ja.id) as total_applications
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.role = 'job_seeker' AND u.is_active = true
+                WHERE u.role IN ('candidate', 'job_seeker') AND u.is_active = true
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST
                 LIMIT 100
@@ -821,7 +832,7 @@ def get_filter_options():
         user_role = claims.get('role', '') if claims else ''
         
         # Accept multiple role names for HR/Recruiter access
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({
                 'success': False, 
@@ -836,19 +847,19 @@ def get_filter_options():
             filter_options = {}
             
             # Emirates
-            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role = 'job_seeker' AND emirate IS NOT NULL ORDER BY emirate")
+            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role IN ('candidate', 'job_seeker') AND emirate IS NOT NULL ORDER BY emirate")
             filter_options['emirates'] = [row['emirate'] for row in cursor.fetchall()]
             
             # Nationalities
-            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role = 'job_seeker' AND nationality IS NOT NULL ORDER BY nationality")
+            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role IN ('candidate', 'job_seeker') AND nationality IS NOT NULL ORDER BY nationality")
             filter_options['nationalities'] = [row['nationality'] for row in cursor.fetchall()]
             
             # Education levels
-            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role = 'job_seeker' AND education_level IS NOT NULL ORDER BY education_level")
+            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role IN ('candidate', 'job_seeker') AND education_level IS NOT NULL ORDER BY education_level")
             filter_options['education_levels'] = [row['education_level'] for row in cursor.fetchall()]
             
             # Experience ranges
-            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role = 'job_seeker'")
+            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role IN ('candidate', 'job_seeker')")
             exp_range = cursor.fetchone()
             filter_options['experience_range'] = {
                 'min': exp_range['min_exp'] or 0,
@@ -859,7 +870,7 @@ def get_filter_options():
             cursor.execute("""
                 SELECT unnest(skills) as skill, COUNT(*) as skill_count
                 FROM users 
-                WHERE role = 'job_seeker' AND skills IS NOT NULL
+                WHERE role IN ('candidate', 'job_seeker') AND skills IS NOT NULL
                 GROUP BY skill
                 ORDER BY skill_count DESC
                 LIMIT 20
@@ -874,7 +885,7 @@ def get_filter_options():
                     AVG(preferred_salary_min) as avg_min_salary,
                     AVG(preferred_salary_max) as avg_max_salary
                 FROM users 
-                WHERE role = 'job_seeker' AND preferred_salary_min IS NOT NULL
+                WHERE role IN ('candidate', 'job_seeker') AND preferred_salary_min IS NOT NULL
             """)
             salary_stats = cursor.fetchone()
             filter_options['salary_ranges'] = {

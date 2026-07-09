@@ -80,7 +80,7 @@ def get_career_dial():
             "dial_level": dial_level,
             "is_visible": is_visible,
             "available_for_recruitment": available,
-            "employment_status": row.get('employment_status') or 'job_seeker'
+            "employment_status": row.get('employment_status') or 'candidate'
         }), 200
     except Exception as e:
         conn.close()
@@ -282,7 +282,7 @@ def set_career_dial():
 
 # ─── SET EMPLOYMENT STATUS ──────────────────────────────────────────────────
 
-VALID_EMPLOYMENT_STATUSES = {'job_seeker', 'employed_open', 'employed_not_looking', 'freelancer'}
+VALID_EMPLOYMENT_STATUSES = {'candidate', 'employed_open', 'employed_not_looking', 'freelancer'}
 
 
 @career_dial_bp.route('/career-dial/employment-status', methods=['PUT'])
@@ -290,7 +290,7 @@ VALID_EMPLOYMENT_STATUSES = {'job_seeker', 'employed_open', 'employed_not_lookin
 def update_employment_status():
     """Update employment status for the authenticated user.
 
-    Body: { employment_status: "job_seeker"|"employed_open"|"employed_not_looking"|"freelancer" }
+    Body: { employment_status: 'candidate'|"employed_open"|"employed_not_looking"|"freelancer" }
     G22/G23: Controls passive talent visibility for recruiters.
     """
     current_user_id = get_jwt_identity()
@@ -366,7 +366,7 @@ def get_employment_status():
             return jsonify({"error": "User not found"}), 404
 
         return jsonify({
-            "employment_status": row['employment_status'] or 'job_seeker'
+            "employment_status": row['employment_status'] or 'candidate'
         }), 200
     except Exception as e:
         conn.close()

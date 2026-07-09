@@ -1,19 +1,15 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { ResumeData } from '@/components/resume/types';
-import { Json } from '@/integrations/supabase/types';
-
 /**
- * Safely converts ResumeData to Json type for storage
+ * Safely converts ResumeData to any type for storage
  */
-function serializeResumeData(resumeData: Partial<ResumeData>): Json {
-  return JSON.parse(JSON.stringify(resumeData)) as Json;
+function serializeResumeData(resumeData: Partial<ResumeData>): any {
+  return JSON.parse(JSON.stringify(resumeData)) as any;
 }
 
 /**
- * Safely converts Json to ResumeData
+ * Safely converts any to ResumeData
  */
-function deserializeResumeData(jsonData: Json): ResumeData | null {
+function deserializeResumeData(jsonData: any): ResumeData | null {
   try {
     // Basic validation of required structure
     const data = jsonData as any;

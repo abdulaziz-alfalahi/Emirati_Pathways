@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { AssessmentReport, SectionScore, CriterionScore, CollaboratorInsight, CollaboratorRole } from '@/types/collaborativeAssessments';
 
 export const generateAssessmentReport = async (assessmentId: string): Promise<AssessmentReport> => {

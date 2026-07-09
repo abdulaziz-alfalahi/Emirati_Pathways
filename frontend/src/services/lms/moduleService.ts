@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { BaseLMSService } from './baseLMSService';
 import type { CourseModule, CreateModuleData, Lesson, CreateLessonData } from '@/types/lms';
 

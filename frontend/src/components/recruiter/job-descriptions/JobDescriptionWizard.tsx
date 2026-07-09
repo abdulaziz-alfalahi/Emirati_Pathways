@@ -106,6 +106,25 @@ const SMART_DEFAULTS: Record<string, any> = {
       { category: 'compensation', description: 'Performance Bonuses' },
       { category: 'time_off', description: 'Flexible Hours' }
     ]
+  },
+  'analyst': {
+    description: 'We are seeking a detail-oriented Analyst to turn data into actionable insights. You will gather, clean, and analyze data, build reports and dashboards, and support data-driven decision-making across the business.',
+    requirements: [
+      { category: 'skills', description: 'SQL', is_required: true },
+      { category: 'skills', description: 'Excel / Google Sheets', is_required: true },
+      { category: 'skills', description: 'Data visualization (Power BI / Tableau)', is_required: true },
+      { category: 'experience', description: '2+ years in a data/analytics role', is_required: true }
+    ],
+    responsibilities: [
+      { category: 'core', description: 'Collect, clean, and validate data from multiple sources' },
+      { category: 'core', description: 'Build dashboards and reports to track key metrics' },
+      { category: 'core', description: 'Identify trends and present actionable insights to stakeholders' }
+    ],
+    benefits: [
+      { category: 'compensation', description: 'Competitive Salary' },
+      { category: 'health', description: 'Health Insurance' },
+      { category: 'time_off', description: 'Annual Leave & Flexible Hours' }
+    ]
   }
 };
 
@@ -137,6 +156,29 @@ const JOB_LEVELS = [
   { value: 'executive', label: 'Executive' },
   { value: 'manager', label: 'Manager' },
   { value: 'director', label: 'Director' }
+];
+
+// Comprehensive industry list (UAE market) for the JD builder + AI Smart Fill
+const INDUSTRIES = [
+  'Technology & IT', 'Software & Internet', 'Telecommunications',
+  'Banking & Financial Services', 'Insurance', 'Fintech',
+  'Oil & Gas', 'Energy & Utilities', 'Renewable Energy & Sustainability',
+  'Construction & Contracting', 'Real Estate & Property', 'Architecture & Engineering',
+  'Healthcare & Medical', 'Pharmaceuticals & Life Sciences',
+  'Education & Training', 'Higher Education & Research',
+  'Government & Public Sector', 'Defense & Security',
+  'Retail & E-commerce', 'Consumer Goods (FMCG)',
+  'Hospitality & Tourism', 'Food & Beverage',
+  'Aviation & Aerospace', 'Logistics & Supply Chain', 'Automotive',
+  'Manufacturing & Industrial', 'Chemicals',
+  'Media, Advertising & Entertainment', 'Marketing & PR',
+  'Legal Services', 'Consulting & Professional Services', 'Accounting & Audit',
+  'Human Resources & Recruitment',
+  'Agriculture & Environment', 'Mining & Metals',
+  'Non-Profit & NGO', 'Sports & Recreation',
+  'Fashion & Luxury', 'Arts & Culture',
+  'Maritime & Shipping', 'Transportation',
+  'Other'
 ];
 
 // Requirement categories
@@ -174,6 +216,7 @@ interface JDData {
     title: string;
     title_arabic?: string;
     department: string;
+    industry?: string;
     job_type: string;
     job_level: string;
     emirate: string;
@@ -181,6 +224,7 @@ interface JDData {
     latitude?: number | null;
     longitude?: number | null;
     remote_option: boolean;
+    application_deadline?: string;
   };
   description: string;
   description_arabic?: string;
@@ -231,26 +275,44 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
 
-  // Helper to normalize generic list data
-  const normalizeList = (data: any) => {
+  // Helper to normalize generic list data into objects
+  const normalizeList = (data: any, defaultCategory: string = 'core') => {
     if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (typeof data === 'string') {
-      // Try to string split if it looks like a pipe-separated list (common in this app)
-      if (data.includes('|')) return data.split('|').filter(Boolean);
-      return [data];
+    
+    let rawList: any[] = [];
+    if (Array.isArray(data)) {
+      rawList = data;
+    } else if (typeof data === 'string') {
+      if (data.includes('|')) {
+        rawList = data.split('|').filter(Boolean);
+      } else {
+        rawList = [data];
+      }
     }
-    return [];
+    
+    // Map list items to objects
+    return rawList.map(item => {
+      if (item && typeof item === 'object') {
+        return {
+          description: item.description || '',
+          category: item.category || defaultCategory
+        };
+      }
+      return {
+        description: String(item || ''),
+        category: defaultCategory
+      };
+    });
   };
 
   // Helper to normalize requirements data
   const normalizeRequirements = (reqs: any) => {
     if (!reqs) return [];
-    if (Array.isArray(reqs)) return reqs;
-    if (typeof reqs === 'string') return []; // Invalid for requirements array
-
-    // Convert object format to array
-    if (typeof reqs === 'object') {
+    
+    let rawReqs: any[] = [];
+    if (Array.isArray(reqs)) {
+      rawReqs = reqs;
+    } else if (typeof reqs === 'object') {
       const normalized: any[] = [];
       const r = reqs as any;
       if (r.skills && Array.isArray(r.skills)) {
@@ -266,7 +328,21 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
       if (normalized.length > 0) return normalized;
     }
-    return [];
+    
+    return rawReqs.map(item => {
+      if (item && typeof item === 'object') {
+        return {
+          category: item.category || 'skills',
+          description: item.description || '',
+          is_required: item.is_required !== undefined ? !!item.is_required : true
+        };
+      }
+      return {
+        category: 'skills',
+        description: String(item || ''),
+        is_required: true
+      };
+    });
   };
 
   const [jdData, setJDData] = useState<JDData>(() => {
@@ -274,24 +350,36 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       console.log('Loading initial data:', initialData);
       console.log('Requirements from initial data:', initialData.requirements);
       return {
-        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
-        basic_info: initialData.basic_info || {
+        jd_id: (initialJdId && initialJdId !== 'undefined') ? initialJdId : ((initialData.metadata?.jd_id && initialData.metadata?.jd_id !== 'undefined') ? initialData.metadata.jd_id : ((initialData.jd_id && initialData.jd_id !== 'undefined') ? initialData.jd_id : undefined)),
+        basic_info: initialData.basic_info ? {
+          title: initialData.basic_info.title || '',
+          title_arabic: initialData.basic_info.title_arabic || '',
+          department: initialData.basic_info.department || '',
+          job_type: initialData.basic_info.job_type || 'full_time',
+          job_level: initialData.basic_info.job_level || 'mid',
+          emirate: initialData.basic_info.emirate || '',
+          city: initialData.basic_info.city || '',
+          latitude: initialData.basic_info.latitude ?? null,
+          longitude: initialData.basic_info.longitude ?? null,
+          remote_option: !!initialData.basic_info.remote_option,
+          application_deadline: initialData.basic_info.application_deadline || ''
+        } : {
           title: '',
           department: '',
           job_type: 'full_time',
           job_level: 'mid',
           emirate: '',
-
           city: '',
           latitude: null,
           longitude: null,
-          remote_option: false
+          remote_option: false,
+          application_deadline: ''
         },
         description: initialData.description || '',
         description_arabic: initialData.description_arabic || '',
         requirements: normalizeRequirements(initialData.requirements),
-        responsibilities: normalizeList(initialData.responsibilities),
-        benefits: normalizeList(initialData.benefits),
+        responsibilities: normalizeList(initialData.responsibilities, 'core'),
+        benefits: normalizeList(initialData.benefits, 'perks'),
         compensation: initialData.compensation || {
           salary_currency: 'AED'
         }
@@ -304,11 +392,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         job_type: 'full_time',
         job_level: 'mid',
         emirate: '',
-
         city: '',
         latitude: null,
         longitude: null,
-        remote_option: false
+        remote_option: false,
+        application_deadline: ''
       },
       description: '',
       requirements: [],
@@ -331,15 +419,31 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     if (initialData) {
       console.log('Updating with loaded data:', initialData);
 
+      const cleanInitialJdId = initialJdId && initialJdId !== 'undefined' ? initialJdId : undefined;
+      const cleanDataJdId = initialData.jd_id && initialData.jd_id !== 'undefined' ? initialData.jd_id : undefined;
+      const cleanMetadataJdId = initialData.metadata?.jd_id && initialData.metadata?.jd_id !== 'undefined' ? initialData.metadata?.jd_id : undefined;
+
       setJDData(prev => ({
         ...prev,
-        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
-        basic_info: initialData.basic_info || prev.basic_info,
+        jd_id: cleanInitialJdId || cleanMetadataJdId || cleanDataJdId || prev.jd_id,
+        basic_info: initialData.basic_info ? {
+          title: initialData.basic_info.title || prev.basic_info.title || '',
+          title_arabic: initialData.basic_info.title_arabic || prev.basic_info.title_arabic || '',
+          department: initialData.basic_info.department || prev.basic_info.department || '',
+          job_type: initialData.basic_info.job_type || prev.basic_info.job_type || 'full_time',
+          job_level: initialData.basic_info.job_level || prev.basic_info.job_level || 'mid',
+          emirate: initialData.basic_info.emirate || prev.basic_info.emirate || '',
+          city: initialData.basic_info.city || prev.basic_info.city || '',
+          latitude: initialData.basic_info.latitude ?? prev.basic_info.latitude ?? null,
+          longitude: initialData.basic_info.longitude ?? prev.basic_info.longitude ?? null,
+          remote_option: initialData.basic_info.remote_option !== undefined ? !!initialData.basic_info.remote_option : prev.basic_info.remote_option,
+          application_deadline: initialData.basic_info.application_deadline || prev.basic_info.application_deadline || ''
+        } : prev.basic_info,
         description: initialData.description || prev.description,
         description_arabic: initialData.description_arabic || prev.description_arabic,
         requirements: normalizeRequirements(initialData.requirements),
-        responsibilities: normalizeList(initialData.responsibilities),
-        benefits: normalizeList(initialData.benefits),
+        responsibilities: normalizeList(initialData.responsibilities, 'core'),
+        benefits: normalizeList(initialData.benefits, 'perks'),
         compensation: initialData.compensation || prev.compensation
       }));
     }
@@ -364,7 +468,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
 
       // Determine effective JD ID (Prop > URL > State)
-      const effectiveId = initialJdId || urlJdId || jdData.jd_id;
+      const cleanUrlJdId = urlJdId && urlJdId !== 'undefined' ? urlJdId : undefined;
+      const cleanInitialJdId = initialJdId && initialJdId !== 'undefined' ? initialJdId : undefined;
+      const cleanStateJdId = jdData.jd_id && jdData.jd_id !== 'undefined' ? jdData.jd_id : undefined;
+      const effectiveId = cleanInitialJdId || cleanUrlJdId || cleanStateJdId;
 
       if (effectiveId) {
         // If we have an ID but no data (and it's different from current), fetch it
@@ -377,23 +484,35 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               console.log('Fetched JD Data:', fetchedData);
               setJDData({
                 jd_id: effectiveId,
-                basic_info: fetchedData.basic_info || {
+                basic_info: fetchedData.basic_info ? {
+                  title: fetchedData.basic_info.title || '',
+                  title_arabic: fetchedData.basic_info.title_arabic || '',
+                  department: fetchedData.basic_info.department || '',
+                  job_type: fetchedData.basic_info.job_type || 'full_time',
+                  job_level: fetchedData.basic_info.job_level || 'mid',
+                  emirate: fetchedData.basic_info.emirate || '',
+                  city: fetchedData.basic_info.city || '',
+                  latitude: fetchedData.basic_info.latitude ?? null,
+                  longitude: fetchedData.basic_info.longitude ?? null,
+                  remote_option: !!fetchedData.basic_info.remote_option,
+                  application_deadline: fetchedData.basic_info.application_deadline || ''
+                } : {
                   title: '',
                   department: '',
                   job_type: 'full_time',
                   job_level: 'mid',
                   emirate: '',
-
                   city: '',
                   latitude: null,
                   longitude: null,
-                  remote_option: false
+                  remote_option: false,
+                  application_deadline: ''
                 },
                 description: fetchedData.description || '',
                 description_arabic: fetchedData.description_arabic || '',
-                requirements: fetchedData.requirements || [],
-                responsibilities: fetchedData.responsibilities || [],
-                benefits: fetchedData.benefits || [],
+                requirements: normalizeRequirements(fetchedData.requirements),
+                responsibilities: normalizeList(fetchedData.responsibilities, 'core'),
+                benefits: normalizeList(fetchedData.benefits, 'perks'),
                 compensation: fetchedData.compensation || { salary_currency: 'AED' },
                 metadata: fetchedData.metadata
               });
@@ -409,7 +528,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
 
       // If no ID found anywhere, Create a new JD
-      if (!initialData && !urlJdId) {
+      if (!initialData && !cleanUrlJdId) {
         try {
           const response = await restClient.post('/api/recruiter/jd/create', {
             recruiter_id: recruiterId,
@@ -417,11 +536,15 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             template: 'standard'
           });
 
-          if (response.data && response.data.success && response.data.jd_id) {
-            setJDData(prev => ({
-              ...prev,
-              jd_id: response.data.jd_id
-            }));
+          if (response.data && response.data.success) {
+            const newJdId = response.data.jd_id || response.data.data?.id;
+            if (newJdId && newJdId !== 'undefined') {
+              setJDData(prev => ({
+                ...prev,
+                jd_id: newJdId
+              }));
+              navigate(`/recruiter/jd-builder?jd_id=${newJdId}`, { replace: true });
+            }
           }
         } catch (error) {
           console.error('Failed to create JD:', error);
@@ -495,6 +618,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       return;
     }
 
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("Job description ID is missing or invalid. Please refresh and try again.");
+      return;
+    }
+
     if (mode === 'public') {
       handleAIGenerate('description');
       return;
@@ -537,8 +665,8 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleSaveDraft = async () => {
-    if (!jdData.jd_id) {
-      toast.error("JD ID is missing. Please refresh the page and try again.");
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
       return;
     }
 
@@ -596,6 +724,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       return;
     }
 
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
+      return;
+    }
+
     setLoading(true);
     try {
       // Validate completion score
@@ -630,7 +763,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   const handleShortlistCandidate = async (candidateId: string, matchScore: number, matchDetails: any) => {
     try {
-      const response = await restClient.post(`/api/recruiter/shortlist/add`, {
+      const response = await restClient.post(`/api/recruiter/jd/shortlist/add`, {
         jd_id: jdData.jd_id,
         candidate_id: candidateId,
         recruiter_id: recruiterId,
@@ -652,8 +785,38 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleMatchCandidates = async () => {
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
+      return;
+    }
+
     setMatchingLoading(true);
     try {
+      // Auto-save prior to matching to ensure JD is up-to-date in database
+      const jdDataToSave = {
+        ...jdData,
+        metadata: {
+          ...jdData.metadata,
+          jd_id: jdData.jd_id,
+          recruiter_id: recruiterId || 'unknown',
+          company_id: companyId || 'unknown',
+          status: 'draft',
+          completion_score: completionScore,
+          current_step: steps[currentStep].id,
+          last_modified: new Date().toISOString()
+        }
+      };
+
+      try {
+        await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+          jd_data: jdDataToSave,
+          recruiter_id: recruiterId || 'unknown',
+          company_id: companyId || 'unknown'
+        });
+      } catch (saveError) {
+        console.warn("Auto-save prior to matching failed", saveError);
+      }
+
       // Call match candidates API
       const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/match-candidates`, {
         employment_status_filter: employmentStatusFilter === 'all' ? null : employmentStatusFilter,
@@ -663,7 +826,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = response.data;
       setMatchedCandidates(result.top_matches || []);
 
-      toast.success(`Found ${result.match_count} matching candidates`);
+      toast.success("Successfully matched candidates");
     } catch (error) {
       toast.error("Failed to match candidates");
     } finally {
@@ -673,11 +836,42 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   // --- Smart Features ---
 
-  const handleSmartFill = () => {
+  const handleSmartFill = async () => {
     if (!jdData.basic_info.title) {
       toast.error('Enter a job title first');
       return;
     }
+    const title = jdData.basic_info.title.trim();
+
+    // AI-powered full auto-fill — works for ANY job title (DashScope). Falls back
+    // to the built-in templates / generic fill below if the AI call fails.
+    const toastId = toast.loading('Generating job description with AI…');
+    try {
+      const resp = await restClient.post(`/api/recruiter/jd/${jdData.jd_id || 'new'}/smart-fill`, {
+        title,
+        department: jdData.basic_info.department,
+        job_level: jdData.basic_info.job_level,
+        emirate: jdData.basic_info.emirate,
+        industry: jdData.basic_info.industry || 'General',
+      });
+      const d = resp.data;
+      if (d?.success && d.data?.description) {
+        setJDData(prev => ({
+          ...prev,
+          description: d.data.description,
+          requirements: (Array.isArray(d.data.requirements) && d.data.requirements.length) ? d.data.requirements : prev.requirements,
+          responsibilities: (Array.isArray(d.data.responsibilities) && d.data.responsibilities.length) ? d.data.responsibilities : prev.responsibilities,
+          benefits: (Array.isArray(d.data.benefits) && d.data.benefits.length) ? d.data.benefits : prev.benefits,
+        }));
+        toast.success('Smart Fill: AI-generated fields applied.', { id: toastId });
+        return;
+      }
+      toast.dismiss(toastId);
+    } catch (err) {
+      toast.dismiss(toastId);
+      console.warn('AI Smart Fill failed; using template fallback', err);
+    }
+
     const lowerTitle = jdData.basic_info.title.toLowerCase();
     let match = null;
 
@@ -698,7 +892,30 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }));
       toast.success('Smart Fill Applied: Fields populated based on job title.');
     } else {
-      toast.error('No match found. Try "Python", "Manager", or "Marketing".');
+      // Generic fallback so Smart Fill works for ANY job title, not just the
+      // few hardcoded ones. Produces a reasonable starter template from the title.
+      const t = jdData.basic_info.title.trim();
+      setJDData(prev => ({
+        ...prev,
+        description: `We are seeking a skilled ${t} to join our team. The ideal candidate will contribute to key initiatives, collaborate across functions, and deliver high-quality outcomes in the ${t} role.`,
+        requirements: [
+          { category: 'experience', description: `Proven experience as a ${t} or in a closely related role`, is_required: true },
+          { category: 'skills', description: 'Strong analytical and problem-solving skills', is_required: true },
+          { category: 'skills', description: 'Excellent communication and collaboration skills', is_required: true },
+          { category: 'education', description: "Bachelor's degree in a relevant field", is_required: false }
+        ],
+        responsibilities: [
+          { category: 'core', description: `Perform the core duties associated with the ${t} role` },
+          { category: 'core', description: 'Collaborate with cross-functional teams to achieve objectives' },
+          { category: 'core', description: 'Contribute to continuous improvement and best practices' }
+        ],
+        benefits: [
+          { category: 'compensation', description: 'Competitive Salary' },
+          { category: 'health', description: 'Health Insurance' },
+          { category: 'time_off', description: 'Annual Leave & Flexible Hours' }
+        ]
+      }));
+      toast.success('Smart Fill applied a general template. Refine the fields as needed.');
     }
   };
 
@@ -717,38 +934,68 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           ...prev,
           description: (prev.description || '') + (prev.description ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${jdData.basic_info.title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`
         }));
+        toast.dismiss();
+        toast.success('Content Generated');
       } else if (field === 'responsibilities') {
+        const newItems = [
+          { category: 'core', description: `[AI] Lead key initiatives for ${jdData.basic_info.title}` },
+          { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
+          { category: 'core', description: `[AI] Ensure high-quality deliverables` }
+        ];
+        const current = Array.isArray(jdData.responsibilities) ? jdData.responsibilities : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Responsibilities already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
         setJDData(prev => ({
           ...prev,
-          responsibilities: [
-            ...(Array.isArray(prev.responsibilities) ? prev.responsibilities : []),
-            { category: 'core', description: `[AI] Lead key initiatives for ${jdData.basic_info.title}` },
-            { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
-            { category: 'core', description: `[AI] Ensure high-quality deliverables` }
-          ]
+          responsibilities: [...(Array.isArray(prev.responsibilities) ? prev.responsibilities : []), ...filteredNew]
         }));
       } else if (field === 'benefits') {
+        const newItems = [
+          { category: 'compensation', description: `[AI] Competitive compensation package` },
+          { category: 'development', description: `[AI] Professional growth opportunities` },
+          { category: 'perks', description: `[AI] Modern work environment` }
+        ];
+        const current = Array.isArray(jdData.benefits) ? jdData.benefits : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Benefits already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
         setJDData(prev => ({
           ...prev,
-          benefits: [
-            ...(Array.isArray(prev.benefits) ? prev.benefits : []),
-            { category: 'compensation', description: `[AI] Competitive compensation package` },
-            { category: 'development', description: `[AI] Professional growth opportunities` },
-            { category: 'perks', description: `[AI] Modern work environment` }
-          ]
+          benefits: [...(Array.isArray(prev.benefits) ? prev.benefits : []), ...filteredNew]
         }));
       } else if (field === 'requirements') {
+        const newItems = [
+          { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
+          { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
+        ];
+        const current = Array.isArray(jdData.requirements) ? jdData.requirements : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Requirements already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
         setJDData(prev => ({
           ...prev,
-          requirements: [
-            ...(Array.isArray(prev.requirements) ? prev.requirements : []),
-            { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
-            { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
-          ]
+          requirements: [...(Array.isArray(prev.requirements) ? prev.requirements : []), ...filteredNew]
         }));
       }
-      toast.dismiss();
-      toast.success('Content Generated');
     }, 1000);
   };
 
@@ -791,6 +1038,26 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           })}
           placeholder="e.g., Engineering"
         />
+      </div>
+
+      <div>
+        <Label htmlFor="industry">Industry</Label>
+        <Select
+          value={jdData.basic_info.industry || ''}
+          onValueChange={(value) => setJDData({
+            ...jdData,
+            basic_info: { ...jdData.basic_info, industry: value }
+          })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select industry (improves AI Smart Fill)" />
+          </SelectTrigger>
+          <SelectContent className="z-[1000] max-h-72">
+            {INDUSTRIES.map(ind => (
+              <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -891,6 +1158,19 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           })}
           label="Pin exact location on map"
           height="250px"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="application_deadline">Closing Date / Application Deadline</Label>
+        <Input
+          id="application_deadline"
+          type="date"
+          value={jdData.basic_info.application_deadline || ''}
+          onChange={(e) => setJDData({
+            ...jdData,
+            basic_info: { ...jdData.basic_info, application_deadline: e.target.value }
+          })}
         />
       </div>
 
@@ -1217,7 +1497,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="salary_min">Minimum Salary (AED)</Label>
+          <Label htmlFor="salary_min">Minimum Monthly Salary (AED)</Label>
           <Input
             id="salary_min"
             type="number"
@@ -1226,12 +1506,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               ...jdData,
               compensation: { ...jdData.compensation, salary_min: parseFloat(e.target.value) }
             })}
-            placeholder="e.g., 10000"
+            placeholder="e.g., 10000 (Monthly)"
           />
         </div>
 
         <div>
-          <Label htmlFor="salary_max">Maximum Salary (AED)</Label>
+          <Label htmlFor="salary_max">Maximum Monthly Salary (AED)</Label>
           <Input
             id="salary_max"
             type="number"
@@ -1240,14 +1520,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               ...jdData,
               compensation: { ...jdData.compensation, salary_max: parseFloat(e.target.value) }
             })}
-            placeholder="e.g., 15000"
+            placeholder="e.g., 15000 (Monthly)"
           />
         </div>
       </div>
 
       <Alert>
         <AlertDescription>
-          Providing a salary range helps attract qualified candidates and sets clear expectations.
+          Providing a monthly salary range helps attract qualified candidates and sets clear expectations.
         </AlertDescription>
       </Alert>
     </div>
@@ -1308,7 +1588,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               </SelectTrigger>
               <SelectContent className="z-[1000]">
                 <SelectItem value="all">All Candidates</SelectItem>
-                <SelectItem value="job_seeker">Job Seekers Only</SelectItem>
+                <SelectItem value='candidate'>Job Seekers Only</SelectItem>
                 <SelectItem value="employed">Currently Employed</SelectItem>
                 <SelectItem value="open_to_opportunities">Open to Opportunities</SelectItem>
               </SelectContent>
@@ -1533,9 +1813,19 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-4 flex gap-2">
-                    <Button size="sm" variant="outline">
-                      View Profile
+                   <div className="mt-4 flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      asChild
+                    >
+                      <a 
+                        href={`/candidate-profile/${match.candidate.candidate_id || match.candidate.user_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View Profile
+                      </a>
                     </Button>
                     <Button
                       size="sm"

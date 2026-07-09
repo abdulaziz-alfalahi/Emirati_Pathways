@@ -32,7 +32,7 @@ try:
     for user in users:
         user_id = user['id']
         full_name = user['full_name']
-        position = 'HR Manager' if user['role'] == 'hr_manager' else 'Recruiter'
+        position = 'HR Manager' if user['role'] == 'employer_admin' else 'Recruiter'
         
         # Check if profile exists
         cursor.execute("SELECT id FROM hr_profiles WHERE user_id = %s", (user_id,))

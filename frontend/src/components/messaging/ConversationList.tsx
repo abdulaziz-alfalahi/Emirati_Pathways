@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Search, MessageSquare } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 interface Conversation {
   id: string;
   participantId: string;
@@ -111,7 +109,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
       .subscribe();
       
     return () => {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
     };
   }, [user]);
   

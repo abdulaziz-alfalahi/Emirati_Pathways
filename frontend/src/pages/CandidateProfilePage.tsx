@@ -195,7 +195,16 @@ const CandidateProfilePage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // Fallback if opened in a new tab
+      window.close();
+      // If window.close() is not allowed by the browser, fallback to home
+      setTimeout(() => {
+        navigate('/');
+      }, 100);
+    }
   };
 
   const handleMessage = async () => {

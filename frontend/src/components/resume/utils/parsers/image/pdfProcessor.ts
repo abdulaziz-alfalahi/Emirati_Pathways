@@ -1,6 +1,5 @@
 
 import { ResumeData } from '../../../types';
-import { supabase } from '@/integrations/supabase/client';
 import { ParsingError } from '../../resumeParser';
 import { toast } from 'sonner';
 import { isEmptyResumeData, sanitizeResumeData } from '../../helpers/validation';
@@ -61,7 +60,7 @@ export const processPdfWithTextFallback = async (
     console.log(`Extracted ${pdfText.length} characters of text from PDF, first 100 chars: ${pdfText.substring(0, 100)}...`);
     
     // Create a timeout promise to handle long-running processes
-    const apiPromise = supabase.functions.invoke('extract-resume-data', {
+    // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke('extract-resume-data', {
       body: { fileContent: pdfText },
     });
     

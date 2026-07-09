@@ -43,7 +43,7 @@ TABLES = {
         CREATE TABLE IF NOT EXISTS internship_applications (
             id SERIAL PRIMARY KEY,
             internship_id INTEGER REFERENCES internships(id),
-            user_id INTEGER,
+            user_id VARCHAR(50),
             status VARCHAR(50) DEFAULT 'pending',
             applied_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW()
@@ -79,7 +79,7 @@ TABLES = {
         CREATE TABLE IF NOT EXISTS gig_applications (
             id SERIAL PRIMARY KEY,
             gig_id INTEGER REFERENCES gigs(id),
-            user_id INTEGER,
+            user_id VARCHAR(50),
             status VARCHAR(50) DEFAULT 'pending',
             applied_at TIMESTAMP DEFAULT NOW(),
             updated_at TIMESTAMP DEFAULT NOW(),
@@ -92,7 +92,7 @@ TABLES = {
     "career_plans": """
         CREATE TABLE IF NOT EXISTS career_plans (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
+            user_id VARCHAR(50) NOT NULL,
             target_role VARCHAR(255),
             target_role_ar VARCHAR(255),
             current_stage VARCHAR(50),
@@ -125,7 +125,7 @@ TABLES = {
     "portfolio_projects": """
         CREATE TABLE IF NOT EXISTS portfolio_projects (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL,
+            user_id VARCHAR(50) NOT NULL,
             title VARCHAR(255) NOT NULL,
             title_ar VARCHAR(255),
             description TEXT,

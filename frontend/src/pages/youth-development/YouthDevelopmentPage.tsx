@@ -51,7 +51,7 @@ const YouthDevelopmentPage2: React.FC = () => {
     useEffect(() => {
         const fetchPrograms = async () => {
             try {
-                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+                const API_BASE = import.meta.env.VITE_API_URL || '';
                 const res = await fetch(`${API_BASE}/api/education/content/youth-programs`);
                 if (res.ok) {
                     const data = await res.json();

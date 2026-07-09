@@ -826,3 +826,178 @@ def upload_photo():
             'success': False,
             'message': 'Failed to upload photo'
         }), 500
+
+@candidate_profile_bp.route('/crm-candidates', methods=['GET'])
+@jwt_required()
+def get_crm_candidates():
+    """Get all candidates for Career Services CRM"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        try:
+            cursor.execute("""
+                SELECT 
+                    u.id,
+                    u.emirates_id_enc as national_id,
+                    u.full_name,
+                    u.first_name,
+                    u.last_name,
+                    u.phone,
+                    cp.call_status,
+                    cp.work_status,
+                    cp.job_seeker_type,
+                    cp.counseling_remarks,
+                    cp.assigned_to,
+                    cp.preferred_locations,
+                    cp.preferred_sector,
+                    cp.preferred_work_setup,
+                    cp.preferred_schedule,
+                    cp.alternative_phone,
+                    cp.unavailability_reason,
+                    cp.role_preferences
+                FROM users u
+                LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+                WHERE u.role = 'candidate' OR u.user_type = 'candidate'
+                ORDER BY u.created_at DESC
+                LIMIT 100000
+             """)
+            
+            candidates = cursor.fetchall()
+            
+            # Format the output for the frontend
+            formatted = []
+            for c in candidates:
+                full_name = c['full_name']
+                if not full_name:
+                    first = c['first_name'] or ''
+                    last = c['last_name'] or ''
+                    full_name = f"{first} {last}".strip() or 'Unnamed Candidate'
+                    
+                formatted.append({
+                    'id': c['id'],
+                    'national_id': c['national_id'],
+                    'full_name': full_name,
+                    'first_name': c['first_name'],
+                    'last_name': c['last_name'],
+                    'phone': c['phone'],
+                    'profile': {
+                        'call_status': c['call_status'],
+                        'work_status': c['work_status'],
+                        'job_seeker_type': c['job_seeker_type'],
+                        'counseling_remarks': c['counseling_remarks'],
+                        'assigned_to': c['assigned_to'],
+                        'preferred_locations': c['preferred_locations'],
+                        'preferred_sector': c['preferred_sector'],
+                        'preferred_work_setup': c['preferred_work_setup'],
+                        'preferred_schedule': c['preferred_schedule'],
+                        'alternative_phone': c['alternative_phone'],
+                        'unavailability_reason': c['unavailability_reason'],
+                        'role_preferences': c['role_preferences']
+                    }
+                })
+                
+            return jsonify({
+                'success': True,
+                'data': formatted
+            })
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error getting CRM candidates: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get CRM candidates'
+        }), 500
+
+@candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
+@jwt_required()
+def update_crm_candidate(user_id):
+    """Update CRM specific fields for a candidate"""
+    try:
+        data = request.get_json()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        try:
+            cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (user_id,))
+            exists = cursor.fetchone()
+            
+            import json
+            preferred_locations = data.get('preferredLocations')
+            if preferred_locations is not None:
+                preferred_locations = json.dumps(preferred_locations)
+
+            if exists:
+                cursor.execute("""
+                    UPDATE candidate_profiles SET
+                        call_status = %s,
+                        work_status = %s,
+                        counseling_remarks = %s,
+                        assigned_to = %s,
+                        preferred_locations = %s,
+                        preferred_sector = %s,
+                        preferred_work_setup = %s,
+                        preferred_schedule = %s,
+                        alternative_phone = %s,
+                        unavailability_reason = %s,
+                        role_preferences = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                """, (
+                    data.get('callStatus'),
+                    data.get('workStatus'),
+                    data.get('remarks'),
+                    data.get('assignedTo'),
+                    preferred_locations,
+                    data.get('preferredSector'),
+                    data.get('preferredWorkSetup'),
+                    data.get('preferredSchedule'),
+                    data.get('alternativePhone'),
+                    data.get('unavailabilityReason'),
+                    data.get('rolePreferences'),
+                    user_id
+                ))
+            else:
+                cursor.execute("""
+                    INSERT INTO candidate_profiles (
+                        user_id, call_status, work_status, counseling_remarks, assigned_to,
+                        preferred_locations, preferred_sector, preferred_work_setup, preferred_schedule, alternative_phone, unavailability_reason, role_preferences
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    user_id,
+                    data.get('callStatus'),
+                    data.get('workStatus'),
+                    data.get('remarks'),
+                    data.get('assignedTo'),
+                    preferred_locations,
+                    data.get('preferredSector'),
+                    data.get('preferredWorkSetup'),
+                    data.get('preferredSchedule'),
+                    data.get('alternativePhone'),
+                    data.get('unavailabilityReason'),
+                    data.get('rolePreferences')
+                ))
+                
+            conn.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Candidate updated successfully'
+            })
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error updating CRM candidate: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update CRM candidate'
+        }), 500
+

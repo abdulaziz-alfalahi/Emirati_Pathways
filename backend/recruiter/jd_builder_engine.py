@@ -318,31 +318,112 @@ class JDBuilderEngine:
             Please write a compelling 3-4 paragraph introduction and role overview.
             Focus on the opportunity, company culture (professional, innovative), and impact of the role.
             Keep it under 400 words. Use professional business English suitable for the UAE market.
+            
+            Your response must be a JSON object with a single key "description" containing the generated job description text. Example:
+            {{
+                "description": "We are seeking a talented..."
+            }}
             """
             
             messages = [
-
-            
-                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
-
-            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON matching the requested schema. No markdown, no code fences."},
                 {"role": "user", "content": prompt},
-
-            
             ]
 
-            
             response = chat_completion(task_type="generate", messages=messages, response_format={"type": "json_object"})
             
-            if response:
+            if response and isinstance(response, dict):
                 self.logger.info(f"Generated AI description for JD {jd_data['metadata']['jd_id']}")
-                return response.text
+                desc = response.get('description') or response.get('job_description') or response.get('text')
+                if not desc:
+                    for val in response.values():
+                        if isinstance(val, str):
+                            desc = val
+                            break
+                return desc or self._generate_placeholder_description(jd_data)
             else:
                 return self._generate_placeholder_description(jd_data)
             
         except Exception as e:
             self.logger.error(f"Error generating AI description: {str(e)}")
             return self._generate_placeholder_description(jd_data)
+
+    def generate_full_jd_ai(self, title, department=None, level="mid", industry=None, emirate="UAE"):
+        """AI-generate a full JD (description + requirements + responsibilities + benefits) from a job title."""
+        try:
+            from backend.services.qwen_client import chat_completion
+            from backend.config.qwen_config import DASHSCOPE_API_KEY as _KEY
+            if not _KEY:
+                self.logger.warning("DASHSCOPE_API_KEY not set; smart-fill AI unavailable")
+                return None
+            prompt = (
+                "You are writing a job description for the UAE job market.\n"
+                "Generate a complete, professional job description for this role:\n"
+                f"- Job Title: {title}\n"
+                f"- Department: {department or 'N/A'}\n"
+                f"- Level: {level}\n"
+                f"- Industry: {industry or 'General'}\n"
+                f"- Location: {emirate}, UAE\n\n"
+                "Return ONLY a valid JSON object with EXACTLY this schema:\n"
+                "{\n"
+                '  "description": "3-4 paragraph role overview, under 350 words, professional UAE business English",\n'
+                '  "requirements": [{"category": "skills|experience|education|certification", "description": "short", "is_required": true}],\n'
+                '  "responsibilities": [{"category": "core", "description": "short"}],\n'
+                '  "benefits": [{"category": "compensation|health|time_off|perks", "description": "short"}]\n'
+                "}\n"
+                f"Provide 6-8 requirements (mix of required and preferred), 5-7 responsibilities, and 4-6 benefits, all specific and realistic for a {title}."
+            )
+            messages = [
+                {"role": "system", "content": "You are an expert HR job-description writer for the UAE market. Return ONLY raw, valid JSON matching the requested schema. No markdown, no code fences."},
+                {"role": "user", "content": prompt},
+            ]
+            response = chat_completion(task_type="generate", messages=messages, response_format={"type": "json_object"})
+            if response and isinstance(response, dict):
+                return self._normalize_full_jd(response)
+            return None
+        except Exception as e:
+            self.logger.error(f"generate_full_jd_ai error: {e}")
+            return None
+
+    def _normalize_full_jd(self, r):
+        """Coerce an AI response into the exact shape the JD wizard expects."""
+        def reqs(items):
+            out = []
+            for it in (items or []):
+                if isinstance(it, dict):
+                    d = str(it.get('description') or it.get('text') or '').strip()
+                    if not d:
+                        continue
+                    cat = str(it.get('category') or 'skills').strip().lower()
+                    if cat not in ('skills', 'experience', 'education', 'certification'):
+                        cat = 'skills'
+                    out.append({'category': cat, 'description': d, 'is_required': bool(it.get('is_required', True))})
+                elif isinstance(it, str) and it.strip():
+                    out.append({'category': 'skills', 'description': it.strip(), 'is_required': True})
+            return out
+        def lst(items, valid, default):
+            out = []
+            for it in (items or []):
+                if isinstance(it, dict):
+                    d = str(it.get('description') or it.get('text') or '').strip()
+                    if not d:
+                        continue
+                    cat = str(it.get('category') or default).strip().lower()
+                    if cat not in valid:
+                        cat = default
+                    out.append({'category': cat, 'description': d})
+                elif isinstance(it, str) and it.strip():
+                    out.append({'category': default, 'description': it.strip()})
+            return out
+        desc = r.get('description') or r.get('job_description') or r.get('overview') or ''
+        if not isinstance(desc, str):
+            desc = str(desc)
+        return {
+            'description': desc.strip(),
+            'requirements': reqs(r.get('requirements')),
+            'responsibilities': lst(r.get('responsibilities'), {'core', 'preferred', 'nice_to_have'}, 'core'),
+            'benefits': lst(r.get('benefits'), {'compensation', 'health', 'time_off', 'perks'}, 'perks'),
+        }
 
     def _generate_placeholder_description(self, jd_data: Dict[str, Any]) -> str:
         """Fallback placeholder description"""

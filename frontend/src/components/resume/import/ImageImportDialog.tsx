@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ResumeData } from '../types';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface ImageImportDialogProps {
@@ -44,7 +43,7 @@ export const ImageImportDialog: React.FC<ImageImportDialogProps> = ({
       console.log('Calling parse-resume edge function with file:', file.name, file.type);
       
       // Call the Edge Function for processing
-      const response = await supabase.functions.invoke('parse-resume', {
+      // TODO: Connect to Flask API - const response = await supabase.functions.invoke('parse-resume', {
         body: {
           fileData,
           fileName: file.name,

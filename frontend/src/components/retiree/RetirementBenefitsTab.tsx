@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Shield, DollarSign, Heart } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { DirhamSign } from '@/components/icons/DirhamSign';
 
 interface RetireeResource {

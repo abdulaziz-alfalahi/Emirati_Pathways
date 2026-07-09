@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import ProgramCard from './ProgramCard';
 import { Card, CardContent } from '@/components/ui/card';

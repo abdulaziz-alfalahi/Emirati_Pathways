@@ -57,15 +57,15 @@ class ProfileV2Service:
             
             # 3. Clear existing entries to avoid duplication (Simplest sync strategy)
             # In a more advanced version, we might try to merge, but for "Import CV" replace is standard.
-            CandidateExperience.query.filter_by(profile_id=profile.id).delete()
-            CandidateEducation.query.filter_by(profile_id=profile.id).delete()
-            CandidateSkill.query.filter_by(profile_id=profile.id).delete()
-            CandidateCertification.query.filter_by(profile_id=profile.id).delete()
+            CandidateExperience.query.filter_by(user_id=user_id).delete()
+            CandidateEducation.query.filter_by(user_id=user_id).delete()
+            CandidateSkill.query.filter_by(user_id=user_id).delete()
+            CandidateCertification.query.filter_by(user_id=user_id).delete()
             
             # 4. Add Experience
             for exp in data.get('experience', []):
                 new_exp = CandidateExperience(
-                    profile_id=profile.id,
+                    user_id=user_id,
                     job_title=exp.get('position', 'Unknown Role'),
                     company=exp.get('company', 'Unknown Company'),
                     location=exp.get('location', ''),
@@ -79,7 +79,7 @@ class ProfileV2Service:
             # 5. Add Education
             for edu in data.get('education', []):
                 new_edu = CandidateEducation(
-                    profile_id=profile.id,
+                    user_id=user_id,
                     institution=edu.get('institution', 'Unknown Institution'),
                     degree=edu.get('degree', 'Unknown Degree'),
                     field_of_study=edu.get('field_of_study', ''),
@@ -94,12 +94,22 @@ class ProfileV2Service:
                 skill_name = skill.get('name') if isinstance(skill, dict) else str(skill)
                 if skill_name:
                     new_skill = CandidateSkill(
-                        profile_id=profile.id,
+                        user_id=user_id,
                         name=skill_name,
                         category=skill.get('category', 'General') if isinstance(skill, dict) else 'General',
                         level=skill.get('level', 'Intermediate') if isinstance(skill, dict) else 'Intermediate'
                     )
                     db.session.add(new_skill)
+
+            # 7. Add Certifications
+            for cert in data.get('certifications', []):
+                new_cert = CandidateCertification(
+                    user_id=user_id,
+                    name=cert.get('name', 'Unknown Certification'),
+                    issuing_organization=cert.get('issuer') or cert.get('issuing_organization', 'Unknown Issuer'),
+                    issue_date=ProfileV2Service._parse_date(cert.get('date') or cert.get('issue_date'))
+                )
+                db.session.add(new_cert)
 
             db.session.commit()
             logger.info(f"✅ Profile V2 populated for user {user_id} from CV data")
@@ -251,7 +261,7 @@ class ProfileV2Service:
                 'Healthcare': ['medical', 'nurse', 'doctor', 'health', 'clinic', 'pharmacy'],
                 'Education': ['teacher', 'professor', 'school', 'university', 'academic', 'training'],
                 'Construction': ['construction', 'civil', 'architect', 'site', 'engineering'],
-                'Government': ['government', 'public', 'ministry', 'municipality', 'federal'],
+                'Government': ['compliance_auditor', 'public', 'ministry', 'municipality', 'federal'],
                 'Tourism': ['hotel', 'tourism', 'hospitality', 'travel', 'events']
             }
             
