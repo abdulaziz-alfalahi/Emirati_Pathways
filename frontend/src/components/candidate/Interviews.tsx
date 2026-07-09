@@ -59,12 +59,25 @@ export default function CandidateInterviews() {
         return () => clearInterval(interval);
     }, []);
 
+    // How long after the scheduled start a session can still be joined / stays "active".
+    const sessionGraceMinutes = (session: any) => (Number(session.duration_minutes) || 45) + 30;
+
+    // True once the join window has fully passed (ended more than duration + grace ago).
+    const isPastWindow = (session: any) => {
+        const scheduledTime = new Date(session.scheduled_time || session.scheduled_at);
+        if (isNaN(scheduledTime.getTime())) return false;
+        const diffMinutes = (scheduledTime.getTime() - currentTime) / (1000 * 60);
+        return diffMinutes < -sessionGraceMinutes(session);
+    };
+
     const isJoinable = (session: any) => {
         if (session.status === 'completed' || session.status === 'cancelled') return false;
         const scheduledTime = new Date(session.scheduled_time || session.scheduled_at);
-        if (isNaN(scheduledTime.getTime())) return true; // fallback
+        if (isNaN(scheduledTime.getTime())) return false; // no valid time -> not joinable
         const diffMinutes = (scheduledTime.getTime() - currentTime) / (1000 * 60);
-        return diffMinutes <= 10;
+        // Joinable from 10 min before the start until duration + grace after the start
+        // (previously only had the upper bound, so any past session stayed joinable).
+        return diffMinutes <= 10 && diffMinutes >= -sessionGraceMinutes(session);
     };
 
     // Get user data from localStorage
@@ -210,14 +223,21 @@ export default function CandidateInterviews() {
                                         <Badge variant={
                                             session.status === 'cancelled' ? 'destructive' :
                                                 session.status === 'completed' ? 'secondary' :
-                                                    'default'
+                                                    (isPastWindow(session) ? 'outline' : 'default')
                                         }>
                                             {(() => {
+                                                // A past-window session that never completed/cancelled reads as
+                                                // "Expired" regardless of a stale stored status (accepted/in_progress).
+                                                if (isPastWindow(session) && session.status !== 'completed' && session.status !== 'cancelled') {
+                                                    return t('Expired', 'منتهية');
+                                                }
                                                 const statusMap: Record<string, string> = {
                                                     scheduled: t('Scheduled', 'مجدولة'),
                                                     completed: t('Completed', 'مكتملة'),
                                                     cancelled: t('Cancelled', 'ملغاة'),
                                                     confirmed: t('Confirmed', 'مؤكدة'),
+                                                    accepted: t('In Progress', 'جارية'),
+                                                    in_progress: t('In Progress', 'جارية'),
                                                 };
                                                 return statusMap[session.status] || session.status;
                                             })()}
@@ -242,7 +262,7 @@ export default function CandidateInterviews() {
                                             </div>
                                         )}
 
-                                        {session.status === 'scheduled' && (
+                                        {session.status === 'scheduled' && !isPastWindow(session) && (
                                             <Button variant="outline" className="w-full mb-2 bg-green-50 text-green-700 hover:bg-green-100 border-green-200" onClick={() => handleConfirm(session)}>
                                                 <CheckCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
                                                 {t('Confirm Attendance', 'تأكيد الحضور')}
@@ -257,10 +277,10 @@ export default function CandidateInterviews() {
                                                 {t('View AI Career Guidance', 'عرض الإرشاد المهني بالذكاء الاصطناعي')}
                                             </Button>
                                         )}
-                                        {session.status !== 'completed' && session.status !== 'cancelled' && (
-                                            <Button 
-                                                className="w-full" 
-                                                onClick={() => handleJoin(session)} 
+                                        {session.status !== 'completed' && session.status !== 'cancelled' && !isPastWindow(session) && (
+                                            <Button
+                                                className="w-full"
+                                                onClick={() => handleJoin(session)}
                                                 disabled={!isJoinable(session)}
                                             >
                                                 <Video className="h-4 w-4" style={{ marginInlineEnd: 8 }} />

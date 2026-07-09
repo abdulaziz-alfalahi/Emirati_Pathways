@@ -24,6 +24,85 @@ video_interview_bp = Blueprint('video_interview', __name__, url_prefix='/api/vid
 # REMOVED: interview_sessions_api.schedule_interview (registered first via blueprint).
 
 
+import time as _time
+
+# Debounce recruiter "candidate joined" notifications per interview (candidates
+# reconnect/retry many times). interview_id -> last-notified epoch.
+_join_notify_cache = {}
+_JOIN_NOTIFY_TTL = 600  # seconds (10 min)
+
+
+def _notify_recruiter_candidate_joined(session_id, joining_user_id, role):
+    """When a candidate joins a scheduled interview, notify that interview's recruiter.
+    Best-effort and debounced; never raises into the request path."""
+    now = _time.time()
+    if now - _join_notify_cache.get(session_id, 0) < _JOIN_NOTIFY_TTL:
+        return
+    try:
+        from backend.db import get_db_connection
+        import psycopg2.extras
+    except Exception:
+        return
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT isched.recruiter_id, isched.candidate_id,
+                       c.full_name AS candidate_name,
+                       jp.title AS job_title
+                FROM interview_schedules isched
+                LEFT JOIN users c ON isched.candidate_id::text = c.id::text
+                LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
+                WHERE isched.interview_id = %s
+                """,
+                (session_id,),
+            )
+            row = cur.fetchone()
+    except Exception as e:
+        logger.warning(f"Join-notify lookup failed for {session_id}: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    if not row:
+        return
+    recruiter_id = row.get('recruiter_id')
+    candidate_id = row.get('candidate_id')
+    # Only fire when the CANDIDATE is the one joining, and there's a distinct recruiter.
+    is_candidate = (role == 'candidate') or (str(joining_user_id) == str(candidate_id))
+    if not recruiter_id or not is_candidate or str(joining_user_id) == str(recruiter_id):
+        return
+    candidate_name = row.get('candidate_name') or 'The candidate'
+    job_title = row.get('job_title') or 'the scheduled interview'
+    try:
+        from services.communication_service import communication_service, NotificationType
+        communication_service.create_notification(
+            user_id=str(recruiter_id),
+            notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
+            metadata={
+                'title': 'Candidate joined the interview',
+                'message': f"{candidate_name} has joined the scheduled interview for {job_title}.",
+                'interview_id': session_id,
+                'priority': 'high',
+                'link': '/recruiter?tab=interviews',
+            },
+        )
+        _join_notify_cache[session_id] = now
+        logger.info(f"Notified recruiter {recruiter_id}: candidate joined interview {session_id}")
+    except Exception as e:
+        logger.warning(f"Failed to create recruiter join notification: {e}")
+
+
 @video_interview_bp.route('/sessions/<session_id>/start', methods=['POST'])
 @jwt_required()
 def start_interview_session(session_id):
@@ -35,6 +114,13 @@ def start_interview_session(session_id):
         logger.info(f"Starting interview session {session_id} for user {user_id}")
         
         session_config = video_interview_engine.start_interview_session(session_id, user_id)
+
+        # Notify the recruiter that the candidate has joined (best-effort, debounced).
+        try:
+            _role = (request.get_json(silent=True) or {}).get('role')
+            _notify_recruiter_candidate_joined(session_id, user_id, _role)
+        except Exception as _notif_err:
+            logger.warning(f"Recruiter join-notification skipped: {_notif_err}")
         
         return jsonify({
             'success': True,
