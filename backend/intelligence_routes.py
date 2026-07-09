@@ -43,33 +43,43 @@ def get_user_id_from_token():
 
 
 def require_auth(f):
-    """Simple auth decorator — reuses existing auth middleware."""
+    """Auth decorator that accepts a Bearer JWT or the httpOnly JWT cookie (UAE Pass
+    cookie sessions). Sets g.user_id / g.user_role for the handler."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        if not token:
-            return jsonify({"error": "Authentication required"}), 401
-        try:
-            from auth.auth_manager import AuthManager
-            auth = AuthManager()
-            user_data = auth.verify_token(token)
-            if not user_data:
-                return jsonify({"error": "Invalid token"}), 401
-            from flask import g
-            g.user_id = user_data.get('user_id') or user_data.get('id')
-            g.user_role = user_data.get('role', 'candidate')
-        except Exception as e:
-            logger.warning(f"Auth error (AuthManager): {e}")
-            # Fallback: verify token using app's JWT secret
+        from flask import g, current_app
+        resolved_id = None
+        resolved_role = 'candidate'
+
+        # 1) Bearer header (ignore the 'cookie_authenticated' placeholder).
+        auth_header = request.headers.get('Authorization', '') or ''
+        token = auth_header[7:].strip() if auth_header.startswith('Bearer ') else ''
+        if token and token != 'cookie_authenticated':
             try:
                 import jwt as pyjwt
-                from flask import g, current_app
                 payload = pyjwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
-                g.user_id = payload.get('sub') or payload.get('user_id')
-                g.user_role = payload.get('role', 'candidate')
+                resolved_id = payload.get('sub') or payload.get('user_id')
+                resolved_role = payload.get('role', 'candidate')
             except Exception as jwt_err:
-                logger.warning(f"JWT verification failed: {jwt_err}")
-                return jsonify({"error": "Invalid token"}), 401
+                logger.warning(f"Intelligence auth: bearer decode failed: {jwt_err}")
+
+        # 2) Cookie-based session (UAE Pass): verify the JWT cookie.
+        if not resolved_id:
+            try:
+                from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
+                verify_jwt_in_request(locations=['cookies'])
+                resolved_id = get_jwt_identity()
+                try:
+                    resolved_role = (get_jwt() or {}).get('role', 'candidate')
+                except Exception:
+                    pass
+            except Exception:
+                resolved_id = None
+
+        if not resolved_id:
+            return jsonify({"error": "Authentication required"}), 401
+        g.user_id = resolved_id
+        g.user_role = resolved_role
         return f(*args, **kwargs)
     return decorated
 
