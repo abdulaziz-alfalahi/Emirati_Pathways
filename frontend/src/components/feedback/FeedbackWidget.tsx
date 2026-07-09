@@ -527,8 +527,11 @@ export const FeedbackWidget = () => {
 
     return (
         <>
-            {/* Floating Trigger Button */}
-            <div className="fixed bottom-24 right-6 z-50 group feedback-trigger-btn">
+            {/* Floating Trigger Button — sits clearly above the Support-chat FAB (which is
+                a 60px circle at bottom:24px right:24px). bottom-40 (10rem) keeps a comfortable
+                gap so the two don't crowd/overlap on short viewports, where the button was
+                otherwise hard to reach. */}
+            <div className="fixed bottom-40 right-6 z-50 group feedback-trigger-btn">
                 {/* Pulse effect ring */}
                 <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
 
