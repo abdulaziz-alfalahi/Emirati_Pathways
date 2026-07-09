@@ -223,6 +223,34 @@ def list_sessions():
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Self-healing auto-complete: settle this user's interviews whose window
+                # has fully passed (scheduled start + duration + 30m grace < now, UAE local
+                # time). Engaged sessions -> 'completed'; never-engaged -> 'expired'.
+                # Runs on read (no cron needed); idempotent and non-fatal.
+                try:
+                    cur.execute("""
+                        UPDATE interview_schedules
+                        SET status = CASE
+                                WHEN status IN ('in_progress','accepted','joined','started') THEN 'completed'
+                                ELSE 'expired'
+                            END,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE (candidate_id::text = %s OR recruiter_id::text = %s)
+                          AND status NOT IN ('completed','cancelled','expired','no_show','declined')
+                          AND (scheduled_date + COALESCE(scheduled_time, TIME '09:00')
+                               + ((COALESCE(duration_minutes, 45) + 30) * INTERVAL '1 minute'))
+                              < (NOW() AT TIME ZONE 'Asia/Dubai')
+                    """, (user_id_str, user_id_str))
+                    if cur.rowcount:
+                        logger.info("Auto-settled %d past-window interview(s) for %s" % (cur.rowcount, user_id_str))
+                    conn.commit()
+                except Exception as _sweep_err:
+                    logger.warning("Interview auto-complete sweep skipped: %s" % _sweep_err)
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
+
                 # Query interview_schedules — the ONLY table where interviews are written
                 if role == 'candidate':
                     cur.execute("""
