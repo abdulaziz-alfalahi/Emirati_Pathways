@@ -2,6 +2,32 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { execSync } from 'child_process';
+import fs from 'fs';
+
+// Resolve a build/version marker for the feedback report's "App Version" field:
+//   1) VITE_APP_VERSION env (CI / prod builds)
+//   2) git short SHA (local repo or CI checkout)
+//   3) a VERSION file (dev-server deploys where the dir isn't a git repo, e.g. APPQA)
+//   4) 'unknown'
+function resolveAppVersion(): string {
+  if (process.env.VITE_APP_VERSION) return process.env.VITE_APP_VERSION as string;
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname }).toString().trim();
+  } catch { /* not a git repo here */ }
+  try {
+    return fs.readFileSync(path.resolve(__dirname, 'VERSION'), 'utf8').trim();
+  } catch { /* no VERSION file */ }
+  return 'unknown';
+}
+const APP_VERSION = resolveAppVersion();
+const BUILD_TIME = new Date().toISOString();
+
+// Expose to the client via import.meta.env (Vite statically replaces VITE_* references).
+// Any value already set in the environment (e.g. the dev-server launch command or CI)
+// takes precedence over the git/VERSION-derived value.
+process.env.VITE_APP_VERSION = process.env.VITE_APP_VERSION || APP_VERSION;
+process.env.VITE_BUILD_TIME = process.env.VITE_BUILD_TIME || BUILD_TIME;
 
 export default defineConfig({
   plugins: [react()],
@@ -10,6 +36,8 @@ export default defineConfig({
   define: {
     'process.env': 'import.meta.env',
     global: 'globalThis',
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
   },
 
 

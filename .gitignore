@@ -227,3 +227,4 @@ __pycache__/
 *.log
 *.patch
 =
+frontend/VERSION

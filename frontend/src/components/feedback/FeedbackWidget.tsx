@@ -172,11 +172,18 @@ const fbSessionHints = () => {
 };
 
 const fbAppVersion = () => {
-    const v = (import.meta as any).env?.VITE_APP_VERSION || 'staging-dev';
-    const mode = (import.meta as any).env?.MODE || 'unknown';
+    // VITE_APP_VERSION / VITE_BUILD_TIME are statically replaced by Vite (dev + build);
+    // __APP_VERSION__ / __BUILD_TIME__ come from vite.config `define` as a build fallback.
+    const v = import.meta.env.VITE_APP_VERSION
+        || (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '')
+        || 'unknown';
+    const built = import.meta.env.VITE_BUILD_TIME
+        || (typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '')
+        || '';
+    const mode = import.meta.env.MODE || 'unknown';
     let loadedAt = '';
     try { loadedAt = new Date(performance.timeOrigin).toISOString(); } catch { /* ignore */ }
-    return `${v} (${mode}, page loaded ${loadedAt})`;
+    return `${v} (${mode}${built ? `, built ${built}` : ''}, page loaded ${loadedAt})`;
 };
 
 // Install as soon as this module is imported (the widget mounts app-wide).
