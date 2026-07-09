@@ -557,6 +557,24 @@ def ensure_feedback_table_exist():
                     logger.info("Adding missing column 'screenshot' to feedback table")
                     cursor.execute("ALTER TABLE feedback ADD COLUMN screenshot TEXT;")
                     conn.commit()
+
+                # Diagnostics columns: screenshot file path + network/session/breadcrumb capture + app version
+                for _col, _type in [
+                    ('screenshot_path', 'TEXT'),
+                    ('network_logs', 'JSONB'),
+                    ('session_state', 'JSONB'),
+                    ('breadcrumbs', 'JSONB'),
+                    ('app_version', 'TEXT'),
+                ]:
+                    cursor.execute(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name='feedback' AND column_name=%s",
+                        (_col,),
+                    )
+                    if not cursor.fetchone():
+                        logger.info(f"Adding missing column '{_col}' to feedback table")
+                        cursor.execute(f"ALTER TABLE feedback ADD COLUMN {_col} {_type};")
+                        conn.commit()
             conn.close()
 
         if int(count) == 0:
@@ -768,6 +786,87 @@ def get_feedback_stats():
             'stats': {'total': 0, 'open': 0, 'bugs': 0, 'features': 0, 'today': 0}
         })
 
+def _save_feedback_screenshot(feedback_id, data_url):
+    """Decode a base64 data-URL screenshot to a file; return the relative path (or None)."""
+    if not data_url or not isinstance(data_url, str) or ',' not in data_url:
+        return None
+    try:
+        import os, base64
+        header, b64 = data_url.split(',', 1)
+        ext = 'jpg' if ('jpeg' in header or 'jpg' in header) else ('png' if 'png' in header else 'img')
+        base = os.path.dirname(os.path.dirname(__file__))
+        out_dir = os.path.join(base, 'data', 'feedback_screenshots')
+        os.makedirs(out_dir, exist_ok=True)
+        fname = f"{feedback_id}.{ext}"
+        with open(os.path.join(out_dir, fname), 'wb') as fh:
+            fh.write(base64.b64decode(b64))
+        return f"data/feedback_screenshots/{fname}"
+    except Exception as e:
+        logger.error(f"Failed to save feedback screenshot for {feedback_id}: {e}")
+        return None
+
+
+def _compute_session_state(data):
+    """Authoritatively derive the user's auth/session state at submit time. Works for
+    cookie AND bearer sessions, including EXPIRED tokens (decoded without verification)."""
+    import time as _t
+    state = {'authMode': 'none', 'hasRefreshCookie': bool(request.cookies.get('refresh_token_cookie'))}
+    token = None
+    ah = request.headers.get('Authorization', '')
+    if ah.startswith('Bearer '):
+        cand = ah.split(' ', 1)[1]
+        if cand and cand != 'cookie_authenticated':
+            token = cand
+            state['authMode'] = 'bearer'
+    if not token:
+        ck = request.cookies.get('access_token_cookie')
+        if ck:
+            token = ck
+            state['authMode'] = 'cookie'
+    if token:
+        try:
+            import jwt as _jwt
+            claims = _jwt.decode(token, options={'verify_signature': False, 'verify_exp': False})
+            exp = claims.get('exp')
+            if exp:
+                secs = int(exp) - int(_t.time())
+                state['tokenStatus'] = (f"valid, {secs // 60}m left" if secs > 0
+                                        else f"EXPIRED {(-secs) // 60}m ago")
+            state['identity'] = str(claims.get('sub'))
+        except Exception as e:
+            state['tokenStatus'] = f"undecodable: {e}"
+    else:
+        state['tokenStatus'] = 'no token'
+    client = data.get('sessionState') or {}
+    if isinstance(client, dict):
+        for k, v in client.items():
+            state.setdefault(k, v)
+    return state
+
+
+@feedback_bp.route('/<feedback_id>/screenshot', methods=['GET'])
+@optional_auth
+def get_feedback_screenshot(feedback_id):
+    """Serve a feedback screenshot file by feedback id."""
+    try:
+        import os
+        from flask import send_file
+        row = execute_query("SELECT screenshot_path FROM feedback WHERE id = %s", (feedback_id,), fetch_one=True)
+        rel = None
+        if row:
+            rel = row.get('screenshot_path') if isinstance(row, dict) else (row[0] if row else None)
+        if not rel:
+            return jsonify({'success': False, 'message': 'No screenshot for this feedback'}), 404
+        base = os.path.dirname(os.path.dirname(__file__))
+        full = os.path.join(base, rel)
+        if not os.path.exists(full):
+            return jsonify({'success': False, 'message': 'Screenshot file missing'}), 404
+        return send_file(full)
+    except Exception as e:
+        logger.error(f"Error serving feedback screenshot {feedback_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @feedback_bp.route('/submit', methods=['POST'])
 @jwt_required(optional=True)
 def submit_feedback():
@@ -789,10 +888,16 @@ def submit_feedback():
         # If still no user_id, it is truly anonymous or issue with auth
         # We proceed but user_id might be NULL in DB
         
+        # Save the screenshot to a file (path stored in DB) instead of inlining base64.
+        screenshot_path = _save_feedback_screenshot(feedback_id, data.get('screenshot'))
+
         execute_query(
             """
-            INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs, created_at, screenshot)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP, %s)
+            INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs,
+                                  network_logs, session_state, breadcrumbs, app_version, screenshot_path,
+                                  created_at, screenshot)
+            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s,
+                    CURRENT_TIMESTAMP, NULL)
             """,
             (
                 feedback_id,
@@ -803,7 +908,11 @@ def submit_feedback():
                 data.get('message'),
                 json.dumps(data.get('metadata', {})),
                 json.dumps(data.get('consoleLogs', [])),
-                data.get('screenshot')
+                json.dumps(data.get('networkLogs', [])),
+                json.dumps(_compute_session_state(data)),
+                json.dumps(data.get('breadcrumbs', [])),
+                data.get('appVersion'),
+                screenshot_path,
             ),
             fetch_all=False
         )

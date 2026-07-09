@@ -156,17 +156,25 @@ def get_user_id_from_token():
     """Extract user ID from JWT token (simplified)"""
     # In production, this would properly decode and validate JWT
     auth_header = request.headers.get('Authorization')
-    # Validates JWT and returns identity
+    # Header-based (Bearer) auth
     try:
-        if not auth_header:
-            return None
-        from flask_jwt_extended import decode_token
-        token = auth_header.split(" ")[1]
-        decoded = decode_token(token)
-        return str(decoded['sub'])
+        if auth_header and auth_header.startswith('Bearer '):
+            from flask_jwt_extended import decode_token
+            token = auth_header.split(" ")[1]
+            decoded = decode_token(token)
+            return str(decoded['sub'])
     except Exception as e:
-        logger.error(f"Token validation error: {e}")
-        return None
+        logger.error(f"Token validation error (header): {e}")
+    # Cookie-based session (UAE Pass): verify the JWT cookie
+    try:
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        verify_jwt_in_request(locations=['cookies'])
+        uid = get_jwt_identity()
+        if uid:
+            return str(uid)
+    except Exception:
+        pass
+    return None
 
 @enhanced_cv_bp.route('/debug-qwen', methods=['GET'])
 def debug_qwen_status():

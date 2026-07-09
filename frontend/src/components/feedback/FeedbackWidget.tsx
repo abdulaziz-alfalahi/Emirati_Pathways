@@ -39,6 +39,149 @@ import { format } from 'date-fns';
 
 import { useSearchParams } from 'react-router-dom';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Diagnostics capture (module-level, installed once on import). Feeds richer data
+// into the feedback report: FAILED network calls, a breadcrumb trail (clicks +
+// route changes), redaction of secrets, session hints, and app version.
+// Console capture stays in the component (it needs React state).
+// ─────────────────────────────────────────────────────────────────────────────
+const FB_MAX_NET = 25;
+const FB_MAX_CRUMBS = 40;
+const fbNetworkLog: Array<Record<string, any>> = [];
+const fbBreadcrumbs: Array<Record<string, any>> = [];
+
+const fbNow = () => new Date().toISOString();
+
+// Strip secrets (tokens, Emirates ID) from any captured string before it leaves the browser.
+export const fbRedact = (input: any): string => {
+    let s = typeof input === 'string'
+        ? input
+        : (() => { try { return JSON.stringify(input); } catch { return String(input); } })();
+    if (!s) return s;
+    return s
+        .replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, '$1<redacted>')
+        .replace(/("?(?:authorization|access_token|refresh_token|token|password|csrf[_-]?token|x-csrf-token)"?\s*[:=]\s*"?)[^"'`,}\s]+/gi, '$1<redacted>')
+        .replace(/\b784[-\s]?\d{4}[-\s]?\d{7}[-\s]?\d\b/g, '<redacted-eid>')
+        .replace(/\b\d{15}\b/g, '<redacted-15d>');
+};
+
+const fbPushNet = (method: string, url: string, status: number, ms: number, body: string) => {
+    fbNetworkLog.unshift({ t: fbNow(), method, url: fbRedact(url), status, ms: Math.round(ms), body: fbRedact(body).slice(0, 500) });
+    if (fbNetworkLog.length > FB_MAX_NET) fbNetworkLog.length = FB_MAX_NET;
+};
+
+const fbPushCrumb = (kind: string, detail: string) => {
+    fbBreadcrumbs.unshift({ t: fbNow(), kind, detail: fbRedact(detail).slice(0, 120) });
+    if (fbBreadcrumbs.length > FB_MAX_CRUMBS) fbBreadcrumbs.length = FB_MAX_CRUMBS;
+};
+
+let fbInstalled = false;
+const fbInstallCapture = () => {
+    if (fbInstalled || typeof window === 'undefined') return;
+    fbInstalled = true;
+
+    // Intercept fetch — record only FAILED calls (non-2xx or network error).
+    const origFetch = window.fetch ? window.fetch.bind(window) : null;
+    if (origFetch) {
+        window.fetch = async (...args: any[]) => {
+            const start = performance.now();
+            const req = args[0];
+            const method = (args[1]?.method || (req && req.method) || 'GET').toString().toUpperCase();
+            const url = typeof req === 'string' ? req : (req?.url || String(req));
+            try {
+                const res = await origFetch(...args);
+                if (!res.ok) {
+                    let body = '';
+                    try { body = await res.clone().text(); } catch { /* opaque/streamed */ }
+                    fbPushNet(method, url, res.status, performance.now() - start, body);
+                }
+                return res;
+            } catch (err: any) {
+                fbPushNet(method, url, 0, performance.now() - start, err?.message || String(err));
+                throw err;
+            }
+        };
+    }
+
+    // Intercept XHR (axios uses XHR) — record only FAILED calls.
+    try {
+        const XHR = window.XMLHttpRequest;
+        const origOpen = XHR.prototype.open;
+        const origSend = XHR.prototype.send;
+        XHR.prototype.open = function (method: string, url: string, ...rest: any[]) {
+            (this as any).__fb = { method: (method || 'GET').toUpperCase(), url: String(url), start: 0 };
+            // @ts-ignore
+            return origOpen.call(this, method, url, ...rest);
+        };
+        XHR.prototype.send = function (...sendArgs: any[]) {
+            const meta = (this as any).__fb;
+            if (meta) {
+                meta.start = performance.now();
+                this.addEventListener('loadend', () => {
+                    if (this.status === 0 || this.status >= 400) {
+                        let body = '';
+                        try { body = String(this.responseText || ''); } catch { /* non-text */ }
+                        fbPushNet(meta.method, meta.url, this.status, performance.now() - meta.start, body);
+                    }
+                });
+            }
+            // @ts-ignore
+            return origSend.apply(this, sendArgs);
+        };
+    } catch { /* XHR not patchable */ }
+
+    // Breadcrumbs: user clicks (nearest interactive ancestor).
+    document.addEventListener('click', (e) => {
+        try {
+            const t = e.target as HTMLElement;
+            const el = (t?.closest?.('button,a,[role="button"],input,select,[data-testid]') as HTMLElement) || t;
+            if (!el) return;
+            const tag = el.tagName ? el.tagName.toLowerCase() : '';
+            const id = el.id ? `#${el.id}` : '';
+            const txt = (el.textContent || (el as HTMLInputElement).value || el.getAttribute?.('aria-label') || '')
+                .trim().replace(/\s+/g, ' ').slice(0, 40);
+            fbPushCrumb('click', `${tag}${id} ${txt}`.trim());
+        } catch { /* ignore */ }
+    }, true);
+
+    // Breadcrumbs: SPA route changes (patch history + popstate).
+    const recordNav = () => fbPushCrumb('nav', window.location.pathname + window.location.search);
+    window.addEventListener('popstate', recordNav);
+    (['pushState', 'replaceState'] as const).forEach((fn) => {
+        const orig = (history as any)[fn];
+        (history as any)[fn] = function (...a: any[]) { const r = orig.apply(this, a); recordNav(); return r; };
+    });
+    recordNav();
+};
+
+// Best-effort client session hints (the httpOnly access cookie can't be read in JS;
+// the authoritative token status is computed server-side at submit time).
+const fbSessionHints = () => {
+    let hasCsrf = false, hasRefreshCsrf = false;
+    try {
+        hasCsrf = document.cookie.includes('csrf_access_token');
+        hasRefreshCsrf = document.cookie.includes('csrf_refresh_token');
+    } catch { /* ignore */ }
+    const token = (() => { try { return localStorage.getItem('token') || localStorage.getItem('access_token') || ''; } catch { return ''; } })();
+    return {
+        clientAuthMode: (!token || token === 'cookie_authenticated') ? 'cookie' : 'bearer',
+        hasLocalRefreshToken: (() => { try { return !!localStorage.getItem('refresh_token'); } catch { return false; } })(),
+        hasCsrfAccessCookie: hasCsrf,
+        hasCsrfRefreshCookie: hasRefreshCsrf,
+    };
+};
+
+const fbAppVersion = () => {
+    const v = (import.meta as any).env?.VITE_APP_VERSION || 'staging-dev';
+    const mode = (import.meta as any).env?.MODE || 'unknown';
+    let loadedAt = '';
+    try { loadedAt = new Date(performance.timeOrigin).toISOString(); } catch { /* ignore */ }
+    return `${v} (${mode}, page loaded ${loadedAt})`;
+};
+
+// Install as soon as this module is imported (the widget mounts app-wide).
+fbInstallCapture();
+
 const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string; onSuccess: () => void }) => {
     const [reply, setReply] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,9 +279,22 @@ export const FeedbackWidget = () => {
         const originalLog = console.log;
 
         const captureLog = (level: string, messageStr: string) => {
-            // Use setTimeout to avoid state updates during render
+            // Redact secrets, timestamp each line, and collapse consecutive duplicates
+            // (e.g. repeated "Socket timeout") into a single "(xN)" entry so the noise
+            // doesn't evict useful logs from the buffer.
+            const core = `[${level}] ${fbRedact(messageStr)}`;
+            const ts = new Date().toISOString().slice(11, 19);
             setTimeout(() => {
-                setConsoleLogs(prev => [`[${level}] ${messageStr}`, ...prev].slice(0, 50));
+                setConsoleLogs(prev => {
+                    const top = prev[0] || '';
+                    const topCore = top.replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '').replace(/\s*\(x\d+\)$/, '');
+                    if (topCore === core) {
+                        const m = top.match(/\(x(\d+)\)$/);
+                        const n = m ? parseInt(m[1], 10) + 1 : 2;
+                        return [`[${ts}] ${core} (x${n})`, ...prev.slice(1)];
+                    }
+                    return [`[${ts}] ${core}`, ...prev].slice(0, 60);
+                });
             }, 0);
         };
 
@@ -199,13 +355,24 @@ export const FeedbackWidget = () => {
         setIsCapturingScreenshot(true);
         setScreenshot(null);
         
-        const dialogContent = document.querySelector('[role="dialog"]');
-        const overlayEl = document.querySelector('.fixed.inset-0.z-50'); 
-        
+        // Hide the entire feedback UI so the shot shows only the page underneath:
+        // the dialog content ([role="dialog"]), its dark/blur overlay, the floating
+        // trigger button, and any toasts. The overlay is `fixed inset-0` with a
+        // theme-dependent z-index (currently z-[90]); the old selector `.fixed.inset-0.z-50`
+        // never matched it, which is why the darkened/blurred backdrop leaked into
+        // the screenshot. Match the overlay z-index-agnostically instead.
         const elementsToHide: HTMLElement[] = [];
-        if (dialogContent) elementsToHide.push(dialogContent as HTMLElement);
-        if (overlayEl) elementsToHide.push(overlayEl as HTMLElement);
-        
+        [
+            '[role="dialog"]',
+            '.fixed.inset-0',
+            '.feedback-trigger-btn',
+            '[data-radix-toast-viewport]',
+            '[data-sonner-toaster]',
+        ].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => elementsToHide.push(el as HTMLElement));
+        });
+
+        const prevVisibility = elementsToHide.map(el => el.style.visibility);
         elementsToHide.forEach(el => {
             el.style.visibility = 'hidden';
         });
@@ -227,8 +394,8 @@ export const FeedbackWidget = () => {
         } catch (err) {
             console.error('Failed to capture page screenshot', err);
         } finally {
-            elementsToHide.forEach(el => {
-                el.style.visibility = 'visible';
+            elementsToHide.forEach((el, i) => {
+                el.style.visibility = prevVisibility[i] || '';
             });
             setIsCapturingScreenshot(false);
         }
@@ -303,6 +470,10 @@ export const FeedbackWidget = () => {
                 type,
                 pageUrl: window.location.href,
                 consoleLogs,
+                networkLogs: fbNetworkLog,
+                breadcrumbs: fbBreadcrumbs,
+                sessionState: fbSessionHints(),
+                appVersion: fbAppVersion(),
                 metadata,
                 screenshot: includeScreenshot ? screenshot : null
             });

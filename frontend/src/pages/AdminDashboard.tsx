@@ -837,6 +837,13 @@ const AdminDashboard = () => {
                                       variant="secondary"
                                       className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium"
                                       onClick={() => {
+                                        const fmtNet = Array.isArray(item.network_logs) && item.network_logs.length
+                                          ? item.network_logs.map((n: any) => `[${n.t || ''}] ${n.method} ${n.url} -> ${n.status} (${n.ms}ms)${n.body ? `\n    ${String(n.body).slice(0, 300)}` : ''}`).join('\n')
+                                          : '(none captured)';
+                                        const fmtCrumbs = Array.isArray(item.breadcrumbs) && item.breadcrumbs.length
+                                          ? item.breadcrumbs.slice(0, 20).map((b: any) => `[${b.t || ''}] ${b.kind}: ${b.detail}`).join('\n')
+                                          : '(none captured)';
+                                        const screenshotUrl = item.screenshot_path ? `${window.location.origin}/api/feedback/${item.id}/screenshot` : null;
                                         const text = `
 **Feedback Report**
 ID: ${item.id}
@@ -844,17 +851,32 @@ User: ${item.role} (ID: ${item.user_id})
 Type: ${item.type}
 Page: ${item.metadata?.path || item.pageUrl || 'N/A'}
 Date: ${new Date(item.created_at).toLocaleString()}
+App Version: ${item.app_version || 'N/A'}
 
 **Message:**
 ${item.message}
+
+**Session / Auth (server-computed at submit):**
+${item.session_state ? JSON.stringify(item.session_state, null, 2) : '(not captured)'}
+
+**Network Errors (failed requests, newest first):**
+\`\`\`
+${fmtNet}
+\`\`\`
 
 **Console Logs:**
 \`\`\`
 ${Array.isArray(item.console_logs) ? item.console_logs.join('\n') : JSON.stringify(item.console_logs || [])}
 \`\`\`
 
+**Breadcrumbs (recent actions, newest first):**
+${fmtCrumbs}
+
 **Metadata:**
 ${JSON.stringify(item.metadata, null, 2)}
+
+**Screenshot:**
+${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screenshot_path}` : '(none)'}
                                                         `.trim();
                                         navigator.clipboard.writeText(text);
                                         toast({
