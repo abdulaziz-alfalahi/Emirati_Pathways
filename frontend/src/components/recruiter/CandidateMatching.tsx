@@ -1308,14 +1308,8 @@ const CandidateMatching = () => {
                 <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
                   Close
                 </Button>
-                 <Button 
-                   variant="outline"
-                   onClick={() => handleDownloadCV(selectedCandidate.candidate_id, selectedCandidate.candidate_name)}
-                   disabled={isDownloadingCV}
-                 >
-                   <Download className="h-4 w-4 mr-2" />
-                   {isDownloadingCV ? "Downloading..." : "Download CV"}
-                 </Button>
+                {/* CV download removed — recruiters review the parsed profile without
+                    contact details and cannot download candidates' CVs. */}
                 <Button onClick={() => {
                   setIsDetailOpen(false);
                   handleCandidateAction(selectedCandidate.candidate_id, 'shortlist');

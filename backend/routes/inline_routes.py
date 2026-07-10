@@ -2171,6 +2171,15 @@ Return only the JSON object, no additional text."""
                 
             verify_jwt_in_request()
 
+            # Only the CV owner (or an administrator) may download/export a CV.
+            # Recruiters review the parsed profile in-app (no contact details) and
+            # cannot download candidates' CVs.
+            from flask_jwt_extended import get_jwt_identity, get_jwt
+            _requester = str(get_jwt_identity() or '')
+            _role = (get_jwt() or {}).get('role', '') or ''
+            if _requester != str(user_id) and _role not in ('admin', 'super_admin', 'platform_administrator', 'administrator'):
+                return jsonify({'error': 'Not authorized to download this CV'}), 403
+
             # Find the most recently updated CV for this user
             cv = execute_query(
                 "SELECT * FROM user_cvs WHERE user_id::text = %s ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1",

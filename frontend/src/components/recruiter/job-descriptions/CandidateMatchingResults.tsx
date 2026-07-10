@@ -365,19 +365,8 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                       <UserPlus className="h-4 w-4 mr-2" />
                       Shortlist
                     </Button>
-                    {match.candidate.cv_url && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        asChild
-                        className="flex-1 md:flex-none"
-                      >
-                        <a href={match.candidate.cv_url} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4 mr-2" />
-                          CV
-                        </a>
-                      </Button>
-                    )}
+                    {/* Original-CV link removed — recruiters view the parsed profile
+                        (no contact details) and cannot download candidates' CVs. */}
                   </div>
                 </div>
               </CardContent>

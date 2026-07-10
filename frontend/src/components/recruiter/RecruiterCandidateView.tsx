@@ -51,39 +51,11 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
 }) => {
     // State for discussion modal
     const [showDiscussionModal, setShowDiscussionModal] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
     const { user } = useAuth();
 
-    const handleDownloadCV = async () => {
-        const candidateId = displayApplicant.candidate_id || applicant.candidate_id;
-        if (!candidateId) {
-            toast.error("No candidate ID found");
-            return;
-        }
-
-        setIsDownloading(true);
-        const toastId = toast.loading("Generating CV PDF, please wait...");
-        try {
-            const response = await restClient.get(`/api/cv/user/${candidateId}/export/pdf`, {
-                responseType: 'blob'
-            });
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `cv_${displayApplicant.candidate_name || candidateId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            toast.success("CV downloaded successfully", { id: toastId });
-        } catch (error) {
-            console.error("Failed to download CV:", error);
-            toast.error("Failed to download CV", { id: toastId });
-        } finally {
-            setIsDownloading(false);
-        }
-    };
+    // CV download is intentionally not available to recruiters. They review the parsed
+    // profile below (without contact details); the backend also blocks CV export for
+    // non-owners. Candidates' original CVs are never downloadable by recruiters.
 
     // Fetch full profile details
     const { data: fullProfile, isLoading } = useQuery({
@@ -271,55 +243,29 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
 
                     {/* Sidebar (Contact & Skills) */}
                     <div className="space-y-6">
-                        {/* Contact Card */}
+                        {/* Location (candidate contact details are withheld for privacy;
+                            they are shared with the recruiter once an interview is scheduled) */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Contact Details</CardTitle>
+                                <CardTitle className="text-lg">Location</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {displayApplicant.candidate_email && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                            <Mail className="h-4 w-4 text-blue-600" />
-                                        </div>
-                                        <div className="overflow-hidden">
-                                            <p className="text-xs text-muted-foreground">Email</p>
-                                            <p className="truncate font-medium">{displayApplicant.candidate_email}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {displayApplicant.candidate_phone && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                            <Phone className="h-4 w-4 text-blue-600" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Phone</p>
-                                            <p className="font-medium">{displayApplicant.candidate_phone}</p>
-                                        </div>
-                                    </div>
-                                )}
-                                {displayApplicant.location && (
+                            <CardContent className="space-y-3">
+                                {displayApplicant.location ? (
                                     <div className="flex items-center gap-3 text-sm">
                                         <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
                                             <MapPin className="h-4 w-4 text-blue-600" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-muted-foreground">Location</p>
+                                            <p className="text-xs text-muted-foreground">Based in</p>
                                             <p className="font-medium">{displayApplicant.location}</p>
                                         </div>
                                     </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Not specified</p>
                                 )}
-
-                                <Button 
-                                    variant="outline" 
-                                    className="w-full mt-4"
-                                    onClick={handleDownloadCV}
-                                    disabled={isDownloading}
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    {isDownloading ? "Downloading..." : "Download CV"}
-                                </Button>
+                                <p className="text-xs text-muted-foreground pt-1">
+                                    Contact details are shared with you once an interview is scheduled.
+                                </p>
                             </CardContent>
                         </Card>
 

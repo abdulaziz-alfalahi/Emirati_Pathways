@@ -2831,12 +2831,14 @@ def get_candidate_profile_full(candidate_id):
         raw_location = profile.get('location') or ''
         location = raw_location if raw_location else None
 
-        # Construct Response — include contact info for recruiter decision-making
+        # Construct Response — contact details (email/phone) are REDACTED. Recruiters
+        # review the parsed profile and shortlist/schedule interviews without direct
+        # contact info; the platform brokers contact through interview scheduling.
         data = {
             'candidate_id': candidate_id,
             'full_name': profile.get('full_name') or f"{profile.get('first_name','')} {profile.get('last_name','')}".strip(),
-            'email': profile.get('email'),
-            'phone': profile.get('phone') or profile.get('user_phone'),
+            'email': None,
+            'phone': None,
             'location': location,
             'headline': profile.get('headline'),
             'bio': profile.get('bio'),
