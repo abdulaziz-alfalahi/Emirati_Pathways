@@ -123,10 +123,184 @@ class CareerLifecycleEngine:
                     "next_stage": self._get_next_stage(stage),
                     "all_stages": self._get_all_stages()
                 }
-            return self._default_stage(user_id)
+            return self._infer_and_persist(user_id)
         except Exception as e:
             logger.error(f"Error getting user stage: {e}")
             return self._default_stage(user_id)
+
+    def _infer_signals(self, user_id) -> Dict[str, Any]:
+        """Best-effort profile signals for stage inference. Each query is isolated so a
+        missing table/column never breaks inference."""
+        sig = {'work_status': None, 'job_seeker_type': None, 'has_profile': False,
+               'has_cv': False, 'apps': 0, 'assessments': 0}
+        if not self.db:
+            return sig
+        uid = str(user_id)
+
+        def scalar(sql, default=None):
+            try:
+                cur = self.db.cursor()
+                cur.execute(sql, (uid,))
+                r = cur.fetchone()
+                cur.close()
+                return r[0] if r and r[0] is not None else default
+            except Exception:
+                try:
+                    self.db.rollback()
+                except Exception:
+                    pass
+                return default
+
+        sig['work_status'] = scalar("SELECT work_status FROM candidate_profiles WHERE user_id::text = %s")
+        sig['job_seeker_type'] = scalar("SELECT job_seeker_type FROM candidate_profiles WHERE user_id::text = %s")
+        try:
+            cur = self.db.cursor()
+            cur.execute("SELECT headline, bio FROM candidate_profiles WHERE user_id::text = %s", (uid,))
+            hb = cur.fetchone()
+            cur.close()
+            if hb:
+                sig['has_profile'] = bool((hb[0] and str(hb[0]).strip()) or (hb[1] and str(hb[1]).strip()))
+        except Exception:
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+        sig['has_cv'] = (scalar("SELECT count(*) FROM user_cvs WHERE user_id::text = %s", 0) or 0) > 0
+        sig['apps'] = scalar("SELECT count(*) FROM job_applications WHERE candidate_id::text = %s", 0) or 0
+        sig['assessments'] = scalar("SELECT count(*) FROM assessments WHERE candidate_id::text = %s", 0) or 0
+        return sig
+
+    def _milestone_done(self, milestone_id: str, sig: Dict[str, Any]) -> bool:
+        """Whether a specific milestone is clearly evidenced by the profile signals."""
+        ws = (sig.get('work_status') or '').strip().lower()
+        m = milestone_id
+        if m == 'build_cv':
+            return bool(sig.get('has_cv'))
+        if m in ('profile_complete', 'set_career_goal', 'explore_industries'):
+            return bool(sig.get('has_profile'))
+        if m == 'complete_assessment':
+            return (sig.get('assessments') or 0) >= 1
+        if m == 'apply_jobs':
+            return (sig.get('apps') or 0) >= 5
+        if m == 'get_hired':
+            return ws == 'working'
+        return False
+
+    def infer_stage(self, user_id):
+        """Infer a user's lifecycle stage from profile signals.
+        Returns (LifecycleStage, [completed_milestone_ids])."""
+        sig = self._infer_signals(user_id)
+        ws = (sig.get('work_status') or '').strip().lower()
+        apps = sig.get('apps') or 0
+        has_cv = bool(sig.get('has_cv'))
+        assess = sig.get('assessments') or 0
+        has_profile = bool(sig.get('has_profile'))
+
+        if ws == 'retired':
+            stage = LifecycleStage.LEGACY
+        elif ws == 'working':
+            stage = LifecycleStage.GROWTH
+        elif ws == 'not working' or apps >= 1 or has_cv:
+            # Explicitly job-seeking, or showing job-search activity -> Career Entry.
+            stage = LifecycleStage.ENTRY
+        elif assess >= 1:
+            stage = LifecycleStage.UPSKILLING
+        elif has_profile:
+            stage = LifecycleStage.ASSESSMENT
+        else:
+            stage = LifecycleStage.DISCOVERY
+
+        done_ids = [m['id'] for m in STAGE_MILESTONES.get(stage, []) if self._milestone_done(m['id'], sig)]
+        return stage, done_ids
+
+    def _stage_payload(self, user_id, stage, done, total, progress, entered_at=None):
+        return {
+            "user_id": user_id,
+            "current_stage": stage.value,
+            "stage_label": stage.name.replace('_', ' ').title(),
+            "stage_label_ar": stage.label_ar,
+            "stage_order": stage.order,
+            "entered_at": entered_at,
+            "milestones_completed": done,
+            "total_milestones": total,
+            "progress_pct": progress,
+            "milestones": self._get_milestones(user_id, stage),
+            "next_stage": self._get_next_stage(stage),
+            "all_stages": self._get_all_stages(),
+        }
+
+    def _infer_and_persist(self, user_id):
+        """Infer a user's stage from profile data and persist it (used when no lifecycle
+        row exists yet). Falls back to the static default if inference/persist fails."""
+        try:
+            stage, done_ids = self.infer_stage(user_id)
+        except Exception as e:
+            logger.warning(f"Stage inference failed for user {user_id}: {e}")
+            return self._default_stage(user_id)
+        total = len(STAGE_MILESTONES.get(stage, []))
+        done = len(done_ids)
+        progress = round(done / max(total, 1) * 100)
+        if self.db:
+            try:
+                cur = self.db.cursor()
+                cur.execute("""
+                    INSERT INTO user_lifecycle_stage (user_id, stage, entered_at,
+                        milestones_completed, total_milestones, progress_pct)
+                    VALUES (%s, %s, NOW(), %s, %s, %s)
+                    ON CONFLICT (user_id) DO NOTHING
+                """, (str(user_id), stage.value, done, total, progress))
+                for mid in done_ids:
+                    cur.execute("""
+                        INSERT INTO lifecycle_milestones (user_id, milestone_id, completed_at)
+                        VALUES (%s, %s, NOW())
+                        ON CONFLICT (user_id, milestone_id) DO NOTHING
+                    """, (str(user_id), mid))
+                self.db.commit()
+            except Exception as e:
+                logger.warning(f"Stage persist failed for user {user_id}: {e}")
+                try:
+                    self.db.rollback()
+                except Exception:
+                    pass
+        return self._stage_payload(user_id, stage, done, total, progress)
+
+    def backfill_stages(self, limit=None):
+        """One-time backfill: infer + persist a lifecycle stage for every candidate user
+        that has no lifecycle row yet. Returns a summary dict."""
+        if not self.db:
+            return {"error": "no_db"}
+        try:
+            cur = self.db.cursor()
+            sql = ("SELECT u.id FROM users u "
+                   "WHERE (u.role = 'candidate' OR u.user_type = 'candidate') "
+                   "AND NOT EXISTS (SELECT 1 FROM user_lifecycle_stage l "
+                   "WHERE l.user_id::text = u.id::text) ORDER BY u.id")
+            if limit:
+                sql += " LIMIT %d" % int(limit)
+            cur.execute(sql)
+            ids = [r[0] for r in cur.fetchall()]
+        except Exception as e:
+            logger.error(f"Backfill query failed: {e}")
+            try:
+                self.db.rollback()
+            except Exception:
+                pass
+            return {"error": str(e)}
+        by_stage = {}
+        processed = 0
+        for uid in ids:
+            try:
+                payload = self._infer_and_persist(uid)
+                st = payload.get('current_stage', 'unknown')
+                by_stage[st] = by_stage.get(st, 0) + 1
+                processed += 1
+            except Exception as e:
+                logger.warning(f"Backfill failed for user {uid}: {e}")
+                try:
+                    self.db.rollback()
+                except Exception:
+                    pass
+        return {"processed": processed, "candidates_without_row": len(ids), "by_stage": by_stage}
 
     def initialize_user_stage(self, user_id: int, role: str = "candidate") -> Dict[str, Any]:
         """Initialize lifecycle stage for a new user based on role."""
