@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import CareerJourney from '@/components/candidate/CareerJourney';
 import {
   User,
   Users,
@@ -390,6 +391,9 @@ const CandidateDashboard: React.FC = () => {
                               ENHANCED OVERVIEW TAB
                ════════════════════════════════════════════════════════════ */}
             <TabsContent value="overview" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+              {/* ─── Your Journey — lifecycle stage indicator ─── */}
+              <CareerJourney readinessScore={readinessScore} isRTL={isRTL} t={t} />
 
               {/* ─── 3-Column Layout: Sidebar + Main + Right Panel ─── */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
