@@ -597,7 +597,7 @@ def get_candidate_details(candidate_id):
                     MAX(ja.submitted_at) as last_application_date,
                     MAX(u.last_login) as last_activity
                 FROM users u
-                LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
+                LEFT JOIN job_applications ja ON u.id::text = ja.candidate_id::text
                 WHERE u.id::text = %s AND u.role IN ('candidate', 'job_seeker')
                 GROUP BY u.id
             """, (candidate_id,))
@@ -704,7 +704,7 @@ def match_candidates_to_job(job_id):
             cursor.execute("""
                 SELECT jp.*, hp.id as hr_profile_id
                 FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE jp.id::text = %s AND hp.user_id::text = %s
             """, (job_id, current_user_id))
             
@@ -746,7 +746,7 @@ def match_candidates_to_job(job_id):
                     u.is_uae_national, u.skills, u.created_at, u.last_login,
                     COUNT(DISTINCT ja.id) as total_applications
                 FROM users u
-                LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
+                LEFT JOIN job_applications ja ON u.id::text = ja.candidate_id::text
                 WHERE u.role IN ('candidate', 'job_seeker') AND u.is_active = true
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST

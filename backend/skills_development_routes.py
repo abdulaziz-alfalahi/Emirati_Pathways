@@ -41,6 +41,73 @@ def parse_json_field(val):
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# TABLE BOOTSTRAP (idempotent; runs once per process)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+_tables_ready = False
+
+
+def ensure_tables():
+    """Create the skills-development tables if they are missing.
+
+    Prevents 500s such as `relation "training_programs" does not exist` on
+    environments where the schema has drifted. (Proper fix is a migration; this
+    mirrors the runtime-DDL pattern used elsewhere in the codebase.)
+    """
+    global _tables_ready
+    if _tables_ready:
+        return
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS training_programs (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                title_ar VARCHAR(255) DEFAULT '',
+                provider VARCHAR(255) DEFAULT '',
+                category VARCHAR(100) DEFAULT '',
+                duration VARCHAR(100) DEFAULT '',
+                level VARCHAR(50) DEFAULT '',
+                url VARCHAR(500) DEFAULT '',
+                skills_covered JSONB DEFAULT '[]',
+                relevance_score INTEGER DEFAULT 0,
+                certification_offered BOOLEAN DEFAULT false,
+                active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS lms_courses (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                title_ar VARCHAR(255) DEFAULT '',
+                provider VARCHAR(255) DEFAULT '',
+                category VARCHAR(100) DEFAULT '',
+                description TEXT DEFAULT '',
+                description_ar TEXT DEFAULT '',
+                duration_hours INTEGER DEFAULT 0,
+                level VARCHAR(50) DEFAULT '',
+                skills_covered JSONB DEFAULT '[]',
+                rating NUMERIC(3,2) DEFAULT 0,
+                enrollments INTEGER DEFAULT 0,
+                certification_offered BOOLEAN DEFAULT false,
+                active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        _tables_ready = True
+    except Exception as e:
+        logger.warning(f"skills_development ensure_tables failed: {e}")
+
+
+@skills_dev_bp.before_request
+def _init_skills_tables():
+    ensure_tables()
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 1. TRAINING PROGRAMS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -50,7 +117,7 @@ def get_training_programs():
     """Returns training programs from training_programs + lms_courses."""
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Get training programs
         cur.execute("""
@@ -132,7 +199,7 @@ def get_courses():
     """Returns digital skills courses from the courses table."""
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
             SELECT id, course_code, course_name, course_description,
@@ -208,7 +275,7 @@ def get_assessments():
     """Returns assessment catalog and skill taxonomy for discovery."""
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Skill taxonomy — grouped by domain
         cur.execute("""
@@ -285,7 +352,7 @@ def get_certifications():
        and the logged-in user's earned certs."""
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Certification programs available
         cur.execute("""
@@ -355,7 +422,7 @@ def get_user_progress():
     """Returns the current user's skills, assessments, and certifications."""
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Get user_id from JWT or use first candidate
         user_identity = get_jwt_identity()

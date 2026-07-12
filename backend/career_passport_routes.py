@@ -145,6 +145,28 @@ def init_tables():
 # GET PASSPORT
 # ═══════════════════════════════════════════════════════════
 
+@career_passport_bp.route('/passport', methods=['GET'])
+@career_passport_bp.route('/stamps', methods=['GET'])
+def get_passport_by_query():
+    """Frontend-facing accessors: /passport?user_id= and /stamps?user_id=.
+
+    Without these, GET /passport and GET /stamps fall through to the /<user_id>
+    rule and treat the literal segment ("passport"/"stamps") as a user_id, which
+    triggers a FK-violation 500. Both return the full passport payload (which
+    includes the stamps list) — exactly what the Career Passport page consumes
+    (res.data.passport and res.data.stamps).
+    """
+    user_id = request.args.get('user_id')
+    if not user_id:
+        try:
+            user_id = get_jwt_identity()
+        except Exception:
+            user_id = None
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    return get_passport(str(user_id))
+
+
 @career_passport_bp.route('/<user_id>', methods=['GET'])
 def get_passport(user_id):
     """Get full passport with all stamps for a user."""
@@ -158,6 +180,13 @@ def get_passport(user_id):
         cur.execute("SELECT * FROM career_passports WHERE user_id = %s", (user_id,))
         passport = cur.fetchone()
         if not passport:
+            # Only auto-create for a real user; a stray path segment (e.g. a
+            # reserved word) would otherwise FK-violate on insert -> 500.
+            cur.execute("SELECT 1 FROM users WHERE id::text = %s", (str(user_id),))
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return jsonify({"error": "User not found"}), 404
             cur.execute("""
                 INSERT INTO career_passports (user_id) VALUES (%s)
                 RETURNING *
