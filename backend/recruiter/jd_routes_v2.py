@@ -17,6 +17,31 @@ import psycopg2.extras
 
 from .jd_builder_engine import get_jd_builder_engine
 from .ai_candidate_matching_final import get_ai_matching_engine_final as get_ai_matching_engine
+
+
+def _resolve_company_uuid(cur, user_id):
+    """Return the recruiter's company UUID from hr_profiles (or None).
+
+    job_postings.company_id must align with hr_profiles.company_id (a UUID) for
+    the recruiter candidate-match join to work. Preferring the UUID here — over a
+    company *name* — is what keeps newly created jobs matchable. Best-effort and
+    non-breaking: returns None if there's no hr_profile or on any error, and
+    callers keep their existing fallback.
+    """
+    if not user_id or str(user_id) in ('unknown', ''):
+        return None
+    try:
+        cur.execute(
+            "SELECT company_id FROM hr_profiles WHERE user_id = %s AND company_id IS NOT NULL LIMIT 1",
+            (str(user_id),),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        val = row.get('company_id') if hasattr(row, 'get') else row[0]
+        return str(val) if val else None
+    except Exception:
+        return None
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from backend.db import get_db_connection
 from backend.user_helpers import user_display_name
@@ -253,7 +278,14 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
         # Get recruiter_id and company_id from metadata
         recruiter_id = metadata.get('recruiter_id', 'unknown')
         company_id = metadata.get('company_id', 'unknown')
-        
+
+        # Prefer the recruiter's company UUID (from hr_profiles) so the job is
+        # matchable; keep the placeholder fallback if there is no hr_profile.
+        if company_id in (None, '', 'unknown', 'company_default'):
+            resolved = _resolve_company_uuid(cur, recruiter_id)
+            if resolved:
+                company_id = resolved
+
         # Parse and normalize application_deadline
         deadline_str = basic_info.get('application_deadline')
         deadline_val = None
@@ -1336,7 +1368,8 @@ def save_jd(jd_id):
                 # 2. users.profile_data->>'companyName' (JSONB from Settings)
                 # 3. hr_profiles -> companies (relational)
                 cur.execute("""
-                    SELECT 
+                    SELECT
+                        hp.company_id as hr_company_id,
                         u.company,
                         u.profile_data->>'companyName' as profile_company,
                         COALESCE(c.company_name, c.name) as hr_company
@@ -1347,9 +1380,13 @@ def save_jd(jd_id):
                 """, (current_user_id,))
                 row = cur.fetchone()
                 if row:
+                    # Prefer the company UUID (aligns with hr_profiles.company_id,
+                    # which the recruiter match join uses); fall back to a name so
+                    # recruiters without an hr_profile keep working unchanged.
                     resolved = (
-                        row.get('company') or 
-                        row.get('profile_company') or 
+                        row.get('hr_company_id') or
+                        row.get('company') or
+                        row.get('profile_company') or
                         row.get('hr_company')
                     )
                     if resolved:
