@@ -11,6 +11,7 @@ New endpoints for:
 
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend.workspace_middleware import require_workspace_access
 import psycopg2
 import psycopg2.extras
 import os
@@ -56,7 +57,7 @@ def serialize_row(row):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @workspace_phase2_bp.route('/<company_id>/emiratization', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def get_emiratization_dashboard(company_id):
     """Get full Emiratisation compliance dashboard data."""
     conn = get_db()
@@ -162,7 +163,7 @@ def get_emiratization_dashboard(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/emiratization/targets', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def set_emiratization_target(company_id):
     """Set or update a quarterly Emiratisation target."""
     data = request.get_json(silent=True) or {}
@@ -207,7 +208,7 @@ def set_emiratization_target(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/emiratization/targets/<target_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def update_emiratization_target(company_id, target_id):
     """Update actuals for a quarterly target."""
     data = request.get_json(silent=True) or {}
@@ -250,7 +251,7 @@ def update_emiratization_target(company_id, target_id):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @workspace_phase2_bp.route('/<company_id>/documents/templates', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def list_document_templates(company_id):
     """List available document templates (global defaults + company custom)."""
     conn = get_db()
@@ -273,7 +274,7 @@ def list_document_templates(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/documents/templates', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def create_document_template(company_id):
     """Create a custom document template for the company."""
     data = request.get_json(silent=True) or {}
@@ -315,7 +316,7 @@ def create_document_template(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/documents/generate', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def generate_document(company_id):
     """Generate a document from a template + employee data.
 
@@ -429,7 +430,7 @@ def generate_document(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/documents/history', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def document_history(company_id):
     """List previously generated documents."""
     conn = get_db()
@@ -497,7 +498,7 @@ def auto_detect_columns(headers, upload_type):
 
 
 @workspace_phase2_bp.route('/<company_id>/csv/upload', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def csv_upload(company_id):
     """Upload a CSV file and auto-detect column mappings.
 
@@ -573,7 +574,7 @@ def csv_upload(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/csv/map', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def csv_process(company_id):
     """Accept column mapping and process the CSV import.
 
@@ -714,7 +715,7 @@ def csv_process(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/csv/history', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def csv_history(company_id):
     """List past CSV upload sessions."""
     conn = get_db()
@@ -743,7 +744,7 @@ def csv_history(company_id):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @workspace_phase2_bp.route('/<company_id>/analytics/engagement', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def engagement_analytics(company_id):
     """Get aggregated engagement analytics for the workspace."""
     conn = get_db()
@@ -835,7 +836,7 @@ def engagement_analytics(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/analytics/retention-risks', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def retention_risks(company_id):
     """Get employees flagged as flight risks."""
     conn = get_db()
@@ -871,7 +872,7 @@ def retention_risks(company_id):
 # ─── Mentor Reports ─────────────────────────────────────────────────────────
 
 @workspace_phase2_bp.route('/<company_id>/mentor-reports', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def list_mentor_reports(company_id):
     """List mentor/coach progress reports."""
     employee_id = request.args.get('employee_id')
@@ -903,7 +904,7 @@ def list_mentor_reports(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/mentor-reports', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def submit_mentor_report(company_id):
     """Submit a mentor/coach progress report."""
     data = request.get_json(silent=True) or {}
@@ -959,7 +960,7 @@ def submit_mentor_report(company_id):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @workspace_phase2_bp.route('/<company_id>/branding', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def get_branding(company_id):
     """Get workspace branding configuration."""
     conn = get_db()
@@ -979,7 +980,7 @@ def get_branding(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/branding', methods=['PUT'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def update_branding(company_id):
     """Update workspace branding (logo, colors, tagline)."""
     data = request.get_json(silent=True) or {}
@@ -1004,7 +1005,7 @@ def update_branding(company_id):
 # ─── Resource Vault ──────────────────────────────────────────────────────────
 
 @workspace_phase2_bp.route('/<company_id>/vault', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view')
 def list_vault_files(company_id):
     """List files in the workspace resource vault."""
     category = request.args.get('category')
@@ -1035,7 +1036,7 @@ def list_vault_files(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/vault', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def upload_vault_file(company_id):
     """Upload a file to the workspace resource vault."""
     if 'file' not in request.files:
@@ -1090,7 +1091,7 @@ def upload_vault_file(company_id):
 
 
 @workspace_phase2_bp.route('/<company_id>/vault/<file_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def delete_vault_file(company_id, file_id):
     """Delete a file from the resource vault."""
     conn = get_db()

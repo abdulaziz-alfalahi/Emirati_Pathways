@@ -153,7 +153,7 @@ def provision_workspace():
 # ─── WORKSPACE DETAILS ───────────────────────────────────────────────────────
 
 @workspace_bp.route('/<company_id>', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def get_workspace(company_id):
     """Get workspace details for a company."""
     conn = get_db()
@@ -191,7 +191,7 @@ def get_workspace(company_id):
 # Actors: HR Manager, Recruiter
 
 @workspace_bp.route('/<company_id>/employees', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def list_employees(company_id):
     """List employees of a company workspace."""
     status_filter = request.args.get('status', 'active')
@@ -427,7 +427,7 @@ def remove_employee(company_id, user_id):
 # Actors: HR Manager, Recruiter
 
 @workspace_bp.route('/<company_id>/resources', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def list_resources(company_id):
     """List all resource assignments for a company workspace."""
     resource_type = request.args.get('type')
@@ -590,20 +590,13 @@ def update_resource(company_id, resource_id):
 # Actor: Recruited Emirati (dual access)
 
 @workspace_bp.route('/me/company-view', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def my_company_view():
     """Get the logged-in Emirati's company workspace data —
     their assigned resources, company info, and team contacts.
     """
-    user_id = None
-    try:
-        user_id = get_jwt_identity()
-    except Exception:
-        pass
-    if not user_id:
-        user_id = request.args.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Authentication required"}), 401
+    # Always the authenticated caller's own view (no client-supplied ?user_id).
+    user_id = get_jwt_identity()
 
     conn = get_db()
     if not conn:
@@ -675,7 +668,7 @@ def my_company_view():
 # ─── WORKSPACE DASHBOARD STATS ───────────────────────────────────────────────
 
 @workspace_bp.route('/<company_id>/stats', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def workspace_stats(company_id):
     """Get dashboard statistics for a company workspace."""
     conn = get_db()
@@ -789,7 +782,7 @@ def list_workspaces():
 # ─── SEARCH EMIRATIS TO ADD AS EMPLOYEES ─────────────────────────────────────
 
 @workspace_bp.route('/<company_id>/search-candidates', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def search_candidates(company_id):
     """Search for Emirati candidates that can be added as employees."""
     q = request.args.get('q', '')
@@ -827,7 +820,7 @@ def search_candidates(company_id):
 # ─── WORKSPACE CAREER PROGRESSION ────────────────────────────────────────────
 
 @workspace_bp.route('/<company_id>/progression', methods=['GET'])
-@require_workspace_access('workspace.view', jwt_optional=True)
+@require_workspace_access('workspace.view')
 def get_workspace_progression(company_id):
     """Get career progression details for a company workspace."""
     conn = get_db()
