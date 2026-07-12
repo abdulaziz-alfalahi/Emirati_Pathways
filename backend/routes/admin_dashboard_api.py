@@ -13,7 +13,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from backend.db import get_db_connection
 from functools import wraps
-from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,18 +49,33 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True):
     finally:
         conn.close()
 
-def optional_auth(f):
-    """Decorator that allows requests with or without authentication"""
+# Admin roles (matches the role check already used in this module, ~L924).
+_ADMIN_ROLES = {'admin', 'super_user', 'platform_administrator'}
+
+
+def admin_required(f):
+    """Require a valid JWT belonging to an admin role.
+
+    Replaces the former no-op ``optional_auth`` decorator, which only inspected
+    the Authorization header and let every admin endpoint (audit log, security
+    stats, interview candidate PII, all-user feedback, and the feedback-status
+    mutation) be called completely unauthenticated.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # For development, we allow requests without strict auth
-        # In production, this should verify JWT tokens
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            # Token present - could verify here
-            pass
+        try:
+            verify_jwt_in_request()
+        except Exception:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        role = (get_jwt() or {}).get('role', '')
+        if role not in _ADMIN_ROLES:
+            return jsonify({'success': False, 'message': 'Forbidden - admin access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+
+# Backwards-compatible alias (the decorator used to be named optional_auth).
+optional_auth = admin_required
 
 
 # =====================================================
@@ -69,7 +84,7 @@ def optional_auth(f):
 
 @admin_dashboard_bp.route('/dashboard', methods=['GET'])
 @admin_dashboard_bp.route('/dashboard/stats', methods=['GET'])
-@optional_auth
+@admin_required
 def get_dashboard_stats():
     """
     Get dashboard statistics for admin overview
@@ -197,7 +212,7 @@ def get_dashboard_stats():
 # =====================================================
 
 @admin_dashboard_bp.route('/alerts', methods=['GET'])
-@optional_auth
+@admin_required
 def get_alerts():
     """
     Get system alerts for admin dashboard
@@ -289,7 +304,7 @@ def get_alerts():
 # =====================================================
 
 @admin_dashboard_bp.route('/activity/recent', methods=['GET'])
-@optional_auth
+@admin_required
 def get_recent_activity():
     """
     Get recent activity for admin dashboard
@@ -418,7 +433,7 @@ def get_recent_activity():
 # =====================================================
 
 @admin_dashboard_bp.route('/interviews/sessions/admin/all', methods=['GET'])
-@optional_auth
+@admin_required
 def get_all_interview_sessions():
     """
     Get all interview sessions for admin view
@@ -695,7 +710,7 @@ def ensure_feedback_table_exist():
 
 
 @feedback_bp.route('/', methods=['GET'])
-@optional_auth
+@admin_required
 def get_all_feedback():
     """Get all feedback submissions"""
     try:
@@ -721,7 +736,7 @@ def get_all_feedback():
         }), 500
 
 @feedback_bp.route('/my-feedback', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_my_feedback():
     """Get feedback submitted by current user"""
     try:
@@ -751,7 +766,7 @@ def get_my_feedback():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @feedback_bp.route('/stats', methods=['GET'])
-@optional_auth
+@admin_required
 def get_feedback_stats():
     """Get feedback statistics"""
     try:
@@ -845,7 +860,7 @@ def _compute_session_state(data):
 
 
 @feedback_bp.route('/<feedback_id>/screenshot', methods=['GET'])
-@optional_auth
+@admin_required
 def get_feedback_screenshot(feedback_id):
     """Serve a feedback screenshot file by feedback id."""
     try:
@@ -878,11 +893,10 @@ def submit_feedback():
         
         feedback_id = f"fb_{int(time.time())}_{str(uuid.uuid4())[:8]}"
         
-        # Priority: JWT Identity > Body userId > None
+        # Actor is always the authenticated caller. Never accept a body userId —
+        # that let feedback be attributed to an arbitrary victim (impersonation).
         user_id = get_jwt_identity()
-        if not user_id:
-            user_id = data.get('userId')
-            
+
         role = data.get('role', 'user')
         
         # If still no user_id, it is truly anonymous or issue with auth
@@ -959,7 +973,7 @@ def submit_feedback():
         return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
 
 @feedback_bp.route('/<feedback_id>/status', methods=['PUT'])
-@optional_auth
+@admin_required
 def update_feedback_status(feedback_id):
     """Update feedback status"""
     try:
@@ -1101,7 +1115,7 @@ def update_feedback_status(feedback_id):
         return jsonify({'success': False, 'message': 'Failed to update feedback status'}), 500
 
 @feedback_bp.route('/<feedback_id>/clarify', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def clarify_feedback(feedback_id):
     """Submit clarification reply for feedback"""
     try:
@@ -1122,7 +1136,14 @@ def clarify_feedback(feedback_id):
             cursor.close()
             conn.close()
             return jsonify({'success': False, 'message': 'Feedback not found'}), 404
-            
+
+        # Ownership check — only the feedback's owner (or an admin) may clarify it
+        _role = (get_jwt() or {}).get('role', '')
+        if str(feedback_item.get('user_id')) != str(get_jwt_identity()) and _role not in _ADMIN_ROLES:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Forbidden - you do not own this feedback'}), 403
+
         # 2. Append reply to message
         updated_message = f"{feedback_item['message']}\n\n[Clarification Reply]:\n{reply_msg}"
         
@@ -1146,7 +1167,7 @@ def clarify_feedback(feedback_id):
 # =====================================================
 
 @admin_dashboard_bp.route('/invitations/stats', methods=['GET'])
-@optional_auth
+@admin_required
 def get_invitation_stats():
     """Return invitation pipeline stats for the admin dashboard."""
     try:
@@ -1170,7 +1191,7 @@ def get_invitation_stats():
 # =====================================================
 
 @admin_dashboard_bp.route('/security/stats', methods=['GET'])
-@optional_auth
+@admin_required
 def get_security_stats():
     """Return real security metrics for the admin dashboard Security tab."""
     try:
@@ -1234,7 +1255,7 @@ def get_security_stats():
 # =====================================================
 
 @admin_dashboard_bp.route('/audit-log', methods=['GET'])
-@optional_auth
+@admin_required
 def get_audit_log():
     """
     Get paginated, filterable audit log entries.
@@ -1335,7 +1356,7 @@ def get_audit_log():
 
 
 @admin_dashboard_bp.route('/audit-log/stats', methods=['GET'])
-@optional_auth
+@admin_required
 def get_audit_log_stats():
     """
     Return summary statistics for the audit log.
