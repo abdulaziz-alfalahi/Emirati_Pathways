@@ -5,7 +5,7 @@ Blueprint prefix: /api/career-services
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import os
@@ -15,6 +15,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 career_services_bp = Blueprint('career_services', __name__, url_prefix='/api/career-services')
+
+# Roles permitted to manage operator/recruiter-owned content (BOLA hardening).
+# internships/gigs/salary_benchmarks/startup_programs have no per-row owner column,
+# so these are gated by role rather than ownership.
+_MANAGER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'career_services_operator',
+                  'internship_coordinator', 'talent_operator', 'education_operator',
+                  'training_provider', 'coach', 'advisor', 'admin', 'super_admin'}
+
+
+def _require_manager():
+    """Return a (response, 403) tuple if the caller lacks a manager role, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _MANAGER_ROLES:
+        return jsonify({'success': False, 'message': 'Forbidden - manager access required'}), 403
+    return None
 
 def get_db():
     try:
@@ -88,7 +106,7 @@ def get_internship(internship_id):
 
 
 @career_services_bp.route('/internships/<int:internship_id>/apply', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def apply_internship(internship_id):
     """Apply for internship."""
     user_id = None
@@ -124,7 +142,7 @@ def apply_internship(internship_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/internships/<int:internship_id>/applicants', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_internship_applicants(internship_id):
     """List applicants for a specific internship."""
     conn = get_db()
@@ -150,9 +168,12 @@ def list_internship_applicants(internship_id):
 
 
 @career_services_bp.route('/internship-applications/<int:application_id>/status', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_internship_application_status(application_id):
     """Update internship application status (accept/reject/shortlist)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     new_status = data.get('status', 'pending')
     if new_status not in ('pending', 'accepted', 'rejected', 'shortlisted', 'withdrawn'):
@@ -208,7 +229,7 @@ def update_internship_application_status(application_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/gigs/<int:gig_id>/applicants', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_gig_applicants(gig_id):
     """List applicants for a specific gig."""
     conn = get_db()
@@ -234,9 +255,12 @@ def list_gig_applicants(gig_id):
 
 
 @career_services_bp.route('/gig-applications/<int:application_id>/status', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_gig_application_status(application_id):
     """Update gig application status (accept/reject/shortlist)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     new_status = data.get('status', 'pending')
     if new_status not in ('pending', 'accepted', 'rejected', 'shortlisted', 'withdrawn'):
@@ -292,7 +316,7 @@ def update_gig_application_status(application_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/my-applications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_my_applications():
     """Return the current user's internship + gig applications."""
     user_id = None
@@ -460,7 +484,7 @@ def get_gig(gig_id):
 
 
 @career_services_bp.route('/gigs/<int:gig_id>/apply', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def apply_gig(gig_id):
     """Apply for gig."""
     user_id = None
@@ -497,7 +521,7 @@ def apply_gig(gig_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/career-plans', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_career_plans():
     """Get user's career plans."""
     user_id = None
@@ -524,7 +548,7 @@ def get_career_plans():
 
 
 @career_services_bp.route('/career-plans', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_career_plan():
     """Create or update a career plan."""
     user_id = None
@@ -846,7 +870,7 @@ def get_portfolio(user_id):
 
 
 @career_services_bp.route('/portfolio/projects', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def add_portfolio_project():
     """Add portfolio project."""
     user_id = None
@@ -935,7 +959,7 @@ def add_portfolio_project():
 
 
 @career_services_bp.route('/portfolio/projects/<int:project_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_portfolio_project(project_id):
     """Update portfolio project."""
     data = request.get_json(silent=True) or {}
@@ -957,7 +981,9 @@ def update_portfolio_project(project_id):
             return jsonify({"error": "No fields to update"}), 400
         fields.append("updated_at = NOW()")
         params.append(project_id)
-        cur.execute(f"UPDATE portfolio_projects SET {', '.join(fields)} WHERE id = %s", params)
+        params.append(get_jwt_identity())
+        # Ownership check — only the owner may update their portfolio project
+        cur.execute(f"UPDATE portfolio_projects SET {', '.join(fields)} WHERE id = %s AND user_id = %s", params)
         conn.commit()
         cur.close()
         conn.close()
@@ -998,7 +1024,7 @@ def list_startup_resources():
 
 
 @career_services_bp.route('/startups/register', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def register_startup():
     """Register a startup idea."""
     data = request.get_json(silent=True) or {}
@@ -1014,7 +1040,7 @@ def register_startup():
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/internships', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_internship():
     """Create a new internship (Recruiter)."""
     user_id = None
@@ -1062,9 +1088,12 @@ def create_internship():
 
 
 @career_services_bp.route('/internships/<int:internship_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_internship(internship_id):
     """Update internship (Recruiter)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1099,9 +1128,12 @@ def update_internship(internship_id):
 
 
 @career_services_bp.route('/internships/<int:internship_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_internship(internship_id):
     """Deactivate internship (soft delete)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
@@ -1119,7 +1151,7 @@ def delete_internship(internship_id):
 
 
 @career_services_bp.route('/internships/<int:internship_id>/applications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_internship_applications(internship_id):
     """List applications for an internship (Recruiter view)."""
     conn = get_db()
@@ -1148,7 +1180,7 @@ def list_internship_applications(internship_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/gigs', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_gig():
     """Create a new gig (Recruiter)."""
     user_id = None
@@ -1196,9 +1228,12 @@ def create_gig():
 
 
 @career_services_bp.route('/gigs/<int:gig_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_gig(gig_id):
     """Update gig (Recruiter)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1233,9 +1268,12 @@ def update_gig(gig_id):
 
 
 @career_services_bp.route('/gigs/<int:gig_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_gig(gig_id):
     """Deactivate gig (soft delete)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
@@ -1253,7 +1291,7 @@ def delete_gig(gig_id):
 
 
 @career_services_bp.route('/gigs/<int:gig_id>/applications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_gig_applications(gig_id):
     """List applications for a gig (Recruiter view)."""
     conn = get_db()
@@ -1282,9 +1320,12 @@ def list_gig_applications(gig_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/applications/pending-approval', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_pending_approvals():
     """Get all pending student applications for educator review."""
+    guard = _require_manager()
+    if guard:
+        return guard
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
@@ -1349,9 +1390,12 @@ def get_pending_approvals():
 
 
 @career_services_bp.route('/applications/<int:application_id>/approve', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def approve_application(application_id):
     """Educator approves an application."""
+    guard = _require_manager()
+    if guard:
+        return guard
     educator_id = None
     try:
         educator_id = get_jwt_identity()
@@ -1386,9 +1430,12 @@ def approve_application(application_id):
 
 
 @career_services_bp.route('/applications/<int:application_id>/reject', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def reject_application(application_id):
     """Educator rejects an application."""
+    guard = _require_manager()
+    if guard:
+        return guard
     educator_id = None
     try:
         educator_id = get_jwt_identity()
@@ -1427,9 +1474,12 @@ def reject_application(application_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/salary-benchmarks', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_salary_benchmark():
     """Create salary benchmark (Operator)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1459,9 +1509,12 @@ def create_salary_benchmark():
 
 
 @career_services_bp.route('/salary-benchmarks/<int:benchmark_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_salary_benchmark(benchmark_id):
     """Update salary benchmark (Operator)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1489,9 +1542,12 @@ def update_salary_benchmark(benchmark_id):
 
 
 @career_services_bp.route('/salary-benchmarks/<int:benchmark_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_salary_benchmark(benchmark_id):
     """Delete salary benchmark (Operator)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
@@ -1513,9 +1569,12 @@ def delete_salary_benchmark(benchmark_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/startups', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_startup_program():
     """Create startup program (Operator)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1546,9 +1605,12 @@ def create_startup_program():
 
 
 @career_services_bp.route('/startups/<int:program_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_startup_program(program_id):
     """Update startup program (Operator)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -1580,9 +1642,12 @@ def update_startup_program(program_id):
 
 
 @career_services_bp.route('/startups/<int:program_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_startup_program(program_id):
     """Deactivate startup program (soft delete)."""
+    guard = _require_manager()
+    if guard:
+        return guard
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
@@ -1604,7 +1669,7 @@ def delete_startup_program(program_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/parent/child-applications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_child_applications():
     """Get all applications for a parent's child(ren)."""
     parent_id = None
@@ -1670,7 +1735,7 @@ def get_child_applications():
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/parent/dashboard', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_parent_dashboard():
     """Get comprehensive parent dashboard with children data from real DB."""
     parent_user_id = None
@@ -1859,7 +1924,7 @@ def get_parent_dashboard():
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/my-postings', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_my_postings():
     """Get all internships and gigs posted by the current recruiter."""
     user_id = None
@@ -1940,7 +2005,7 @@ def health_check():
 # ═══════════════════════════════════════════════════════════
 
 @career_services_bp.route('/analytics/candidate', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_candidate_analytics():
     """Return aggregated analytics for the currently logged-in candidate.
     Pulls real data from: users, user_data, job_postings applications,
@@ -2120,7 +2185,7 @@ def get_candidate_analytics():
 # ─── FINANCIAL PROFILE (Candidate) ───────────────────────────────────────────
 
 @career_services_bp.route('/financial-profile', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_financial_profile():
     """Get candidate financial profile with salary estimate, budget, and savings."""
     user_id = None
