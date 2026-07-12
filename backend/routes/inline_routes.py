@@ -2041,14 +2041,18 @@ Return only the JSON object, no additional text."""
     # enhanced_cv.delete_cv (registered first via enhanced_cv_routes blueprint).
 
     @_app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
+    @jwt_required()
     def duplicate_cv_fixed(cv_id):
         try:
-            user_eid = get_current_user_eid_inline()
+            user_eid = str(get_jwt_identity())
 
             # Get original
             original = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
             if not original:
                  return jsonify({'success': False, 'message': 'CV not found'}), 404
+            # Ownership check — only the owner may duplicate their CV
+            if str(original.get('user_id')) != user_eid:
+                 return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
 
             new_cv_id = str(uuidlib.uuid4())
             new_title = f"{original['title']} (Copy)"
@@ -2089,13 +2093,17 @@ Return only the JSON object, no additional text."""
     # enhanced_cv.update_cv_visibility (registered first via enhanced_cv_routes blueprint).
 
     @_app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
+    @jwt_required()
     def export_cv_fixed(cv_id, format):
         try:
-            user_eid = get_current_user_eid_inline()
+            user_eid = str(get_jwt_identity())
 
             cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
             if not cv:
                 return jsonify({'error': 'CV not found'}), 404
+            # Ownership check — only the owner may export/download their CV
+            if str(cv.get('user_id')) != user_eid:
+                return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
 
             # Load parsed_data if available
             parsed_data = cv.get('parsed_data')
@@ -2170,12 +2178,15 @@ Return only the JSON object, no additional text."""
             return jsonify({'error': f"Export failed: {str(e)}"}), 500
 
     @_app.route('/api/cv/user/<user_id>/export/<format>', methods=['GET'])
+    @jwt_required()
     def export_user_cv_fixed(user_id, format):
         try:
             if format not in ['pdf', 'docx', 'json']:
                 return jsonify({'error': 'Invalid export format. Supported: pdf, docx, json'}), 400
-                
-            verify_jwt_in_request()
+
+            # Ownership check — a user may only export their own CV (admins excepted)
+            if str(get_jwt_identity()) != str(user_id) and get_jwt().get('role', '') not in ('admin', 'super_admin'):
+                return jsonify({'error': 'Unauthorized - you can only export your own CV'}), 403
 
             # Find the most recently updated CV for this user
             cv = execute_query(
