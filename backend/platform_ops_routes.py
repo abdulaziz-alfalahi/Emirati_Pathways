@@ -8,11 +8,28 @@ Combined routes for Phase 4:
 - Call center ticket system
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2, psycopg2.extras, os, json, logging, random
 
 logger = logging.getLogger(__name__)
 platform_ops_bp = Blueprint('platform_ops', __name__, url_prefix='/api/platform-ops')
+
+_STAFF_ROLES = {'call_center_agent', 'admin', 'super_user', 'super_admin',
+                'platform_administrator', 'platform_operator', 'operator'}
+
+
+def _is_staff():
+    try:
+        return (get_jwt() or {}).get('role', '') in _STAFF_ROLES
+    except Exception:
+        return False
+
+
+def _require_staff():
+    if not _is_staff():
+        return jsonify({"error": "Forbidden - staff access required"}), 403
+    return None
+
 
 
 def get_db():
@@ -315,7 +332,11 @@ def workforce_forecast():
 
 # ═══════ CONTENT MANAGEMENT ═══════
 @platform_ops_bp.route('/content/queue', methods=['GET'])
+@jwt_required()
 def content_queue():
+    guard = _require_staff()
+    if guard:
+        return guard
     status = request.args.get('status', 'pending')
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -338,8 +359,11 @@ def content_queue():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/content/<int:content_id>/approve', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def approve_content(content_id):
+    guard = _require_staff()
+    if guard:
+        return guard
     admin_id = None
     try: admin_id = get_jwt_identity()
     except: pass
@@ -356,8 +380,11 @@ def approve_content(content_id):
         return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/content/<int:content_id>/reject', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def reject_content(content_id):
+    guard = _require_staff()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     admin_id = None
     try: admin_id = get_jwt_identity()
@@ -377,8 +404,11 @@ def reject_content(content_id):
 
 # ═══════ CALL CENTER / SUPPORT TICKETS ═══════
 @platform_ops_bp.route('/tickets', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_tickets():
+    guard = _require_staff()
+    if guard:
+        return guard
     status = request.args.get('status')
     priority = request.args.get('priority')
     agent_id = None
@@ -407,13 +437,13 @@ def list_tickets():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/tickets', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_ticket():
     data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    if not user_id:
-        try: user_id = get_jwt_identity()
-        except: pass
+    # Ticket owner is always the authenticated caller — no body user_id spoofing.
+    user_id = get_jwt_identity()
+    # created_by_agent may only be set by staff (agents filing on a user's behalf).
+    created_by_agent = data.get('agent_id') if _is_staff() else None
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -421,7 +451,7 @@ def create_ticket():
         cur.execute("""
             INSERT INTO support_tickets (user_id, created_by_agent, subject, description, category, priority, source)
             VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id
-        """, (user_id, data.get('agent_id'), data.get('subject',''),
+        """, (user_id, created_by_agent, data.get('subject',''),
               data.get('description',''), data.get('category','general'),
               data.get('priority','medium'), data.get('source','in_app')))
         tid = cur.fetchone()[0]
@@ -432,8 +462,11 @@ def create_ticket():
         return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/tickets/<int:ticket_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_ticket(ticket_id):
+    guard = _require_staff()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -478,11 +511,22 @@ def update_ticket(ticket_id):
         return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/tickets/<int:ticket_id>/messages', methods=['GET'])
+@jwt_required()
 def get_ticket_messages(ticket_id):
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    caller_is_staff = _is_staff()
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        # Only the ticket owner or staff may read the thread.
+        cur.execute("SELECT user_id FROM support_tickets WHERE id = %s", (ticket_id,))
+        owner = cur.fetchone()
+        if not owner:
+            cur.close(); conn.close()
+            return jsonify({"error": "Ticket not found"}), 404
+        if not caller_is_staff and str(owner['user_id']) != str(get_jwt_identity()):
+            cur.close(); conn.close()
+            return jsonify({"error": "Forbidden"}), 403
         cur.execute("""
             SELECT tm.*, u.full_name as sender_name FROM ticket_messages tm
             LEFT JOIN users u ON u.id = tm.sender_id
@@ -493,6 +537,9 @@ def get_ticket_messages(ticket_id):
         msgs = []
         for r in rows:
             d = dict(r)
+            # Internal notes are staff-only; hide from the ticket owner.
+            if d.get('is_internal_note') and not caller_is_staff:
+                continue
             if d.get('created_at'): d['created_at'] = d['created_at'].isoformat()
             msgs.append(d)
         return jsonify({"messages": msgs}), 200
@@ -500,21 +547,31 @@ def get_ticket_messages(ticket_id):
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/tickets/<int:ticket_id>/messages', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def add_ticket_message(ticket_id):
     data = request.get_json(silent=True) or {}
-    sender_id = None
-    try: sender_id = get_jwt_identity()
-    except: pass
-    if not sender_id: sender_id = data.get('sender_id')
+    # Sender is always the authenticated caller — no body sender_id spoofing.
+    sender_id = get_jwt_identity()
+    caller_is_staff = _is_staff()
+    # Only staff may post internal notes.
+    is_internal = bool(data.get('is_internal_note', False)) and caller_is_staff
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Only the ticket owner or staff may post to the thread.
+        cur.execute("SELECT user_id FROM support_tickets WHERE id = %s", (ticket_id,))
+        owner = cur.fetchone()
+        if not owner:
+            cur.close(); conn.close()
+            return jsonify({"error": "Ticket not found"}), 404
+        if not caller_is_staff and str(owner[0]) != str(sender_id):
+            cur.close(); conn.close()
+            return jsonify({"error": "Forbidden"}), 403
         cur.execute("""
             INSERT INTO ticket_messages (ticket_id, sender_id, message, is_internal_note)
             VALUES (%s,%s,%s,%s) RETURNING id
-        """, (ticket_id, sender_id, data.get('message',''), data.get('is_internal_note', False)))
+        """, (ticket_id, sender_id, data.get('message',''), is_internal))
         mid = cur.fetchone()[0]
         conn.commit(); cur.close(); conn.close()
         return jsonify({"message_id": mid}), 201
@@ -523,8 +580,11 @@ def add_ticket_message(ticket_id):
         return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/user-lookup', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def user_lookup():
+    guard = _require_staff()
+    if guard:
+        return guard
     q = request.args.get('q', '')
     if not q or len(q) < 2: return jsonify({"users": []}), 200
     conn = get_db()
@@ -574,7 +634,11 @@ def search_knowledge_base():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/tickets/analytics', methods=['GET'])
+@jwt_required()
 def ticket_analytics():
+    guard = _require_staff()
+    if guard:
+        return guard
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -598,15 +662,12 @@ def ticket_analytics():
 # ═══════ LIVE CHAT ═══════
 
 @platform_ops_bp.route('/live-chat/start', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def start_live_chat():
     """User initiates a live chat session."""
-    user_id = None
-    try: user_id = get_jwt_identity()
-    except: pass
+    # Initiator is always the authenticated caller — no body user_id spoofing.
+    user_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not user_id:
-        user_id = data.get('user_id')
     if not user_id:
         return jsonify({"error": "Authentication required"}), 401
 
@@ -720,7 +781,7 @@ def start_live_chat():
 
 
 @platform_ops_bp.route('/live-chat/session/<int:session_id>', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_live_chat_session(session_id):
     """Get details of a live chat session."""
     conn = get_db()
@@ -738,6 +799,10 @@ def get_live_chat_session(session_id):
         cur.close(); conn.close()
         if not row:
             return jsonify({"error": "Session not found"}), 404
+        # Only the session's user, its agent, or staff may view it.
+        caller = str(get_jwt_identity())
+        if not _is_staff() and caller not in (str(row.get('user_id')), str(row.get('agent_id'))):
+            return jsonify({"error": "Forbidden"}), 403
         d = dict(row)
         for k in ('started_at', 'accepted_at', 'ended_at'):
             if d.get(k): d[k] = d[k].isoformat()
@@ -747,15 +812,15 @@ def get_live_chat_session(session_id):
 
 
 @platform_ops_bp.route('/live-chat/session/<int:session_id>/accept', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def accept_live_chat(session_id):
     """Agent accepts a waiting live chat session."""
-    agent_id = None
-    try: agent_id = get_jwt_identity()
-    except: pass
+    guard = _require_staff()
+    if guard:
+        return guard
+    # Accepting agent is always the authenticated caller — no body agent_id spoofing.
+    agent_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not agent_id:
-        agent_id = data.get('agent_id')
 
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -836,12 +901,10 @@ def accept_live_chat(session_id):
 
 
 @platform_ops_bp.route('/live-chat/session/<int:session_id>/end', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def end_live_chat(session_id):
     """End a live chat session."""
-    user_id = None
-    try: user_id = get_jwt_identity()
-    except: pass
+    user_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
     ended_by = data.get('ended_by', 'user')
     rating = data.get('rating', 0)
@@ -856,6 +919,10 @@ def end_live_chat(session_id):
         if not session:
             cur.close(); conn.close()
             return jsonify({"error": "Session not found"}), 404
+        # Only the session's user, its agent, or staff may end it.
+        if not _is_staff() and str(user_id) not in (str(session.get('user_id')), str(session.get('agent_id'))):
+            cur.close(); conn.close()
+            return jsonify({"error": "Forbidden"}), 403
 
         ticket_id = None
         if create_ticket:
@@ -920,8 +987,11 @@ def end_live_chat(session_id):
 
 
 @platform_ops_bp.route('/live-chat/agent/sessions', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def agent_live_chats():
+    guard = _require_staff()
+    if guard:
+        return guard
     """Get all live chat sessions for the call center (waiting + active)."""
     status_filter = request.args.get('status')  # 'waiting', 'active', 'ended'
     conn = get_db()
@@ -957,7 +1027,7 @@ def agent_live_chats():
 
 
 @platform_ops_bp.route('/live-chat/session/<int:session_id>/rate', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def rate_live_chat(session_id):
     """Rate a completed live chat session."""
     data = request.get_json(silent=True) or {}
@@ -966,6 +1036,15 @@ def rate_live_chat(session_id):
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Only the session's user (or staff) may rate it.
+        cur.execute("SELECT user_id FROM live_chat_sessions WHERE id = %s", (session_id,))
+        owner = cur.fetchone()
+        if not owner:
+            cur.close(); conn.close()
+            return jsonify({"error": "Session not found"}), 404
+        if not _is_staff() and str(owner[0]) != str(get_jwt_identity()):
+            cur.close(); conn.close()
+            return jsonify({"error": "Forbidden"}), 403
         cur.execute("UPDATE live_chat_sessions SET rating = %s WHERE id = %s", (rating, session_id))
         conn.commit(); cur.close(); conn.close()
         return jsonify({"status": "rated", "rating": rating}), 200
