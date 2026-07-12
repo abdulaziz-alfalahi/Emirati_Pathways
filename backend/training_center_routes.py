@@ -4,11 +4,26 @@ Blueprint prefix: /api/training-center
 Self-management portal for training center reps to list programs, track enrollments, issue certificates.
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2, psycopg2.extras, os, json, logging
 
 logger = logging.getLogger(__name__)
 training_center_bp = Blueprint('training_center', __name__, url_prefix='/api/training-center')
+
+# Roles permitted to operate a training center (manage courses, issue certificates).
+_TRAINING_ROLES = {'training_provider', 'training_center_rep', 'educator',
+                   'education_operator', 'admin', 'super_admin'}
+
+
+def _require_training_role():
+    """Return a (response, 403) if the caller isn't a training provider, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _TRAINING_ROLES:
+        return jsonify({"error": "Forbidden - training provider access required"}), 403
+    return None
 
 def get_db():
     try:
@@ -45,12 +60,10 @@ def init():
         finally: conn.close()
 
 @training_center_bp.route('/profile', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_profile():
-    user_id = None
-    try: user_id = get_jwt_identity()
-    except: pass
-    if not user_id: user_id = request.args.get('user_id', 1)
+    # Owner is always the authenticated caller (no client-supplied ?user_id).
+    user_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -68,12 +81,10 @@ def get_profile():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @training_center_bp.route('/programs', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_programs():
-    user_id = None
-    try: user_id = get_jwt_identity()
-    except: pass
-    if not user_id: user_id = request.args.get('user_id', 1)
+    # Owner is always the authenticated caller (no client-supplied ?user_id).
+    user_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -103,8 +114,11 @@ def list_programs():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @training_center_bp.route('/programs', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_program():
+    guard = _require_training_role()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -127,18 +141,24 @@ def create_program():
         return jsonify({"error": str(e)}), 500
 
 @training_center_bp.route('/certificates', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def issue_certificate():
-    """Issue certificate → auto-create passport stamp."""
+    """Issue certificate → auto-create passport stamp. Training-provider only."""
+    guard = _require_training_role()
+    if guard:
+        return guard
     data = request.get_json(silent=True) or {}
     student_id = data.get('student_id')
     course_title = data.get('course_title', '')
-    issuer = data.get('issuer', '')
     if not student_id: return jsonify({"error": "student_id required"}), 400
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        # Attribute the issuer to the authenticated training center, not a spoofable body value
+        cur.execute("SELECT center_name FROM training_center_profiles WHERE user_id = %s", (get_jwt_identity(),))
+        _prof = cur.fetchone()
+        issuer = (_prof or {}).get('center_name') or data.get('issuer', '')
         # Auto-create passport stamp
         cur.execute("SELECT id FROM career_passports WHERE user_id = %s", (student_id,))
         passport = cur.fetchone()
@@ -162,12 +182,10 @@ def issue_certificate():
         return jsonify({"error": str(e)}), 500
 
 @training_center_bp.route('/analytics', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def center_analytics():
-    user_id = None
-    try: user_id = get_jwt_identity()
-    except: pass
-    if not user_id: user_id = request.args.get('user_id', 1)
+    # Owner is always the authenticated caller (no client-supplied ?user_id).
+    user_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
