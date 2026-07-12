@@ -6,6 +6,8 @@ seeker listing, dashboard statistics, and magic link invitations.
 """
 
 from flask import Blueprint, request, jsonify
+from functools import wraps
+from flask_jwt_extended import verify_jwt_in_request, get_jwt
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,10 +29,33 @@ def _get_system():
     return _system
 
 
+# Roles permitted to operate NAFIS talent tooling (Cluster-1 authz hardening).
+_OPERATOR_ROLES = {'talent_operator', 'employer_relations', 'growth_operator',
+                   'platform_operator', 'platform_administrator', 'admin', 'super_admin'}
+
+
+def _operator_required(fn):
+    """Require a valid JWT with an operator/admin role.
+
+    NAFIS seeker data is citizen PII (Emirates IDs, names, emails, phones), so
+    every internal route must be authenticated + authorized. The /public/invitation/*
+    routes are intentionally NOT decorated with this (token-gated onboarding).
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        role = (get_jwt() or {}).get('role', '')
+        if role not in _OPERATOR_ROLES:
+            return jsonify({'success': False, 'message': 'Forbidden - operator access required'}), 403
+        return fn(*args, **kwargs)
+    return wrapper
+
+
 # ─────────────────────────────────────────────
 # POST /api/nafis-talent/import
 # ─────────────────────────────────────────────
 @nafis_talent_bp.route('/import', methods=['POST'])
+@_operator_required
 def import_csv():
     """Upload a NAFIS job-seeker CSV and import records."""
     try:
@@ -70,6 +95,7 @@ def import_csv():
 # GET /api/nafis-talent/batches
 # ─────────────────────────────────────────────
 @nafis_talent_bp.route('/batches', methods=['GET'])
+@_operator_required
 def list_batches():
     """Return all import batches."""
     try:
@@ -88,6 +114,7 @@ def list_batches():
 # GET /api/nafis-talent/seekers
 # ─────────────────────────────────────────────
 @nafis_talent_bp.route('/seekers', methods=['GET'])
+@_operator_required
 def list_seekers():
     """Return paginated job seekers with advanced filters."""
     try:
@@ -131,6 +158,7 @@ def list_seekers():
 # GET /api/nafis-talent/filter-options
 # ─────────────────────────────────────────────
 @nafis_talent_bp.route('/filter-options', methods=['GET'])
+@_operator_required
 def filter_options():
     """Return distinct values for filter dropdowns."""
     try:
@@ -146,6 +174,7 @@ def filter_options():
 # GET /api/nafis-talent/stats
 # ─────────────────────────────────────────────
 @nafis_talent_bp.route('/stats', methods=['GET'])
+@_operator_required
 def get_stats():
     """Return dashboard statistics."""
     try:
@@ -162,6 +191,7 @@ def get_stats():
 # ═════════════════════════════════════════════
 
 @nafis_talent_bp.route('/invite', methods=['POST'])
+@_operator_required
 def invite_seekers():
     """
     Send magic link invitations to selected seekers.

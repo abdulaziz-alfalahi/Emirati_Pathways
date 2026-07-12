@@ -22,11 +22,14 @@ from functools import wraps
 
 from flask import Flask, request, jsonify, g, send_file
 from flask_jwt_extended import (
-    jwt_required, get_jwt_identity, verify_jwt_in_request,
+    jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request,
     create_access_token, create_refresh_token
 )
 
 logger = logging.getLogger(__name__)
+
+# Roles permitted to access recruiter endpoints (Cluster-1 authz hardening)
+_RECRUITER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'admin', 'super_admin'}
 
 from backend.db_utils import get_db, execute_query, DATABASE_CONFIG
 
@@ -63,8 +66,11 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
     # =====================================================
 
     @_app.route('/api/recruiter/vacancies', methods=['GET'])
+    @jwt_required()
     def list_vacancies():
         """List recruiter-uploaded vacancies (Using job_postings source of truth)."""
+        if get_jwt().get('role') not in _RECRUITER_ROLES:
+            return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             print("DEBUG: list_vacancies called")
             # Query job_postings instead of legacy recruiter_vacancies
@@ -2925,8 +2931,11 @@ Return only the JSON object, no additional text."""
     # REMOVED: get_recent_applicants was dead code ΓÇö shadowed by
     # recruiter_dashboard_api.get_recent_applicants (registered first via blueprint).
     @_app.route('/api/recruiter/job-shortlist-count', methods=['GET'])
+    @jwt_required()
     def get_job_shortlist_count():
         """Get shortlist counts for all jobs"""
+        if get_jwt().get('role') not in _RECRUITER_ROLES:
+            return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             query = """
                 SELECT
@@ -2978,8 +2987,11 @@ Return only the JSON object, no additional text."""
     # ============================================================================
 
     @_app.route('/api/recruiter/offers/jd/<jd_id>', methods=['GET'])
+    @jwt_required()
     def get_offers_for_job(jd_id):
         """Get all offers for a specific job description"""
+        if get_jwt().get('role') not in _RECRUITER_ROLES:
+            return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             # Query the offers table using job_posting_id (existing schema)
             # The existing schema uses: job_posting_id (UUID), candidate_id (INTEGER), offer_data (JSONB)

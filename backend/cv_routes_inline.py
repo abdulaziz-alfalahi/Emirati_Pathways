@@ -58,9 +58,16 @@ def get_cv_fixed(cv_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/cv/<cv_id>', methods=['PUT'])
+@jwt_required()
 def update_cv_fixed(cv_id):
     try:
-        user_eid = get_current_user_eid_inline()
+        user_eid = str(get_jwt_identity())
+        # Ownership check — only the owner may modify their CV
+        owner = execute_query("SELECT user_id FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not owner:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+        if owner['user_id'] != user_eid:
+            return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
         data = request.get_json()
         
         cv_data = data.get('cvData', {})
@@ -108,8 +115,9 @@ def update_cv_fixed(cv_id):
                 
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         params.append(cv_id)
-        
-        query = f"UPDATE user_cvs SET {', '.join(update_fields)} WHERE id = %s::uuid"
+        params.append(user_eid)
+
+        query = f"UPDATE user_cvs SET {', '.join(update_fields)} WHERE id = %s::uuid AND user_id = %s"
         
         execute_query(query, tuple(params), fetch_all=False)
         
@@ -119,25 +127,36 @@ def update_cv_fixed(cv_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/cv/<cv_id>', methods=['DELETE'])
+@jwt_required()
 def delete_cv_fixed(cv_id):
     try:
-        user_eid = get_current_user_eid_inline()
-        execute_query("DELETE FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_all=False)
+        user_eid = str(get_jwt_identity())
+        # Ownership check — only the owner may delete their CV
+        owner = execute_query("SELECT user_id FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not owner:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+        if owner['user_id'] != user_eid:
+            return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
+        execute_query("DELETE FROM user_cvs WHERE id = %s::uuid AND user_id = %s", (cv_id, user_eid), fetch_all=False)
         return jsonify({'success': True, 'message': 'CV deleted successfully'})
     except Exception as e:
         logger.error(f"Delete CV error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
+@jwt_required()
 def duplicate_cv_fixed(cv_id):
     try:
-        user_eid = get_current_user_eid_inline()
-        
+        user_eid = str(get_jwt_identity())
+
         # Get original
         original = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
         if not original:
              return jsonify({'success': False, 'message': 'CV not found'}), 404
-             
+        # Ownership check — only the owner may duplicate their CV
+        if original['user_id'] != user_eid:
+             return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
+
         new_cv_id = str(uuidlib.uuid4())
         new_title = f"{original['title']} (Copy)"
         
@@ -171,14 +190,21 @@ def duplicate_cv_fixed(cv_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
+@jwt_required()
 def set_visible_fixed(cv_id):
     try:
-        user_eid = get_current_user_eid_inline()
-        
+        user_eid = str(get_jwt_identity())
+        # Ownership check — only the owner may change their CV visibility
+        owner = execute_query("SELECT user_id FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not owner:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+        if owner['user_id'] != user_eid:
+            return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
+
         # Set all to false
         execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s", (user_eid,), fetch_all=False)
         # Set specific to true
-        execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid", (cv_id,), fetch_all=False)
+        execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid AND user_id = %s", (cv_id, user_eid), fetch_all=False)
         
         return jsonify({'success': True, 'message': 'CV set as visible'})
     except Exception as e:
@@ -186,14 +212,18 @@ def set_visible_fixed(cv_id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
+@jwt_required()
 def export_cv_fixed(cv_id, format):
     try:
-        user_eid = get_current_user_eid_inline()
-        
+        user_eid = str(get_jwt_identity())
+
         cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
         if not cv:
             return jsonify({'error': 'CV not found'}), 404
-            
+        # Ownership check — only the owner may export/download their CV
+        if cv['user_id'] != user_eid:
+            return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
+
         cv_data = {
             'metadata': {'title': cv['title'], 'cv_id': cv['id']},
             'data': {
