@@ -465,29 +465,10 @@ class AICandidateMatchingEngineFinal:
                 except ValueError:
                     pass
             
-            # Location & Relocation matching (10 points)
-            jd_emirate = (jd_data.get('basic_info', {}).get('emirate') or '').lower()
-            candidate_emirate = (candidate.get('emirate') or '').lower()
-            preferred_loc = str(candidate.get('compass_preferred_location') or '').lower()
-            willing_relocate = bool(candidate.get('compass_willing_to_relocate'))
-            
-            location_score = 5
-            if jd_emirate:
-                if candidate_emirate and jd_emirate == candidate_emirate:
-                    location_score = 10
-                    strengths.append("Located in same emirate")
-                elif preferred_loc and jd_emirate in preferred_loc:
-                    location_score = 10
-                    strengths.append("Vacancy matches preferred work city")
-                elif willing_relocate:
-                    location_score = 10
-                    strengths.append("Willing to relocate")
-                else:
-                    concerns.append("Location mismatch (different emirate and unwilling to relocate)")
-            
-            score += location_score
-            breakdown['location'] = location_score
-            
+            # (Location/emirate intentionally NOT scored — geography is informational
+            # only; residence must not change the score. See issue #12. Commute/
+            # distance is surfaced in the UI for humans to weigh, never a score input.)
+
             # Career Compass Preferences (Salary, Target Roles)
             # 1. Salary Check
             expected_salary = candidate.get('compass_expected_salary_range')
@@ -531,12 +512,10 @@ class AICandidateMatchingEngineFinal:
                     score += 5  # Bonus points for aligned target role
                     strengths.append(f"Target role aligns with vacancy ({matched_role})")
             
-            # UAE National preference (5 points)
-            if candidate.get('is_uae_national', False):
-                score += 5
-                breakdown['uae_national'] = 5
-                strengths.append("UAE National")
-            
+            # (No flat UAE-national bonus — the pool is all-Emirati, so a constant
+            # bonus doesn't differentiate and only inflates scores. National-
+            # development priority is a separate, disclosed axis. See issue #12.)
+
             return {
                 'overall_score': max(0.0, min(score, 100)),
                 'breakdown': breakdown,

@@ -224,13 +224,15 @@ class CandidateSearchEngine:
         
         score = 0
         max_score = 0
+        # Job Fit = genuine suitability only. Geography (location/emirate) and a
+        # flat UAE-national bonus are intentionally excluded — see issue #12:
+        # residence must never change the score, and a constant national bonus is
+        # a no-op on an all-Emirati pool. Commute is informational (UI only).
         match_details = {
             'experience_match': 0,
             'education_match': 0,
-            'location_match': 0,
             'skills_match': 0,
-            'salary_match': 0,
-            'nationality_bonus': 0
+            'salary_match': 0
         }
         
         # Experience matching (25 points)
@@ -278,36 +280,9 @@ class CandidateSearchEngine:
             match_details['education_match'] = 10
         
         score += match_details['education_match']
-        
-        # Location matching (15 points)
-        max_score += 15
-        job_location = job_requirements.get('location')
-        if job_location is None:
-            job_location = ''
-        else:
-            job_location = str(job_location).lower()
 
-        candidate_location = candidate.get('preferred_location')
-        if candidate_location is None:
-            candidate_location = ''
-        else:
-            candidate_location = str(candidate_location).lower()
+        # (Location/geography intentionally NOT scored — informational only, #12.)
 
-        candidate_emirate = candidate.get('emirate')
-        if candidate_emirate is None:
-            candidate_emirate = ''
-        else:
-            candidate_emirate = str(candidate_emirate).lower()
-        
-        if job_location in candidate_location or candidate_emirate in job_location:
-            match_details['location_match'] = 15
-        elif 'remote' in job_location or 'uae' in job_location:
-            match_details['location_match'] = 12
-        else:
-            match_details['location_match'] = 8
-        
-        score += match_details['location_match']
-        
         # Skills matching (25 points)
         max_score += 25
         required_skills = job_requirements.get('skills') or []
@@ -355,13 +330,9 @@ class CandidateSearchEngine:
             match_details['salary_match'] = 5  # Neutral if no data
         
         score += match_details['salary_match']
-        
-        # UAE National bonus (5 points)
-        max_score += 5
-        if candidate.get('is_uae_national', False):
-            match_details['nationality_bonus'] = 5
-            score += 5
-        
+
+        # (No flat UAE-national bonus — Emiratisation belongs at the job layer, #12.)
+
         # Calculate final percentage
         match_percentage = (score / max_score) * 100 if max_score > 0 else 0
         
