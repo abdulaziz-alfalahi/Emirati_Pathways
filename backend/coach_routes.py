@@ -58,8 +58,8 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS coaching_sessions (
             id SERIAL PRIMARY KEY,
-            client_id INTEGER REFERENCES users(id),
-            coach_id INTEGER REFERENCES users(id),
+            client_id VARCHAR(20) REFERENCES users(id),
+            coach_id VARCHAR(20) REFERENCES users(id),
             session_type VARCHAR(50) DEFAULT 'one_on_one',
             notes TEXT DEFAULT '',
             action_items JSONB DEFAULT '[]',
@@ -69,8 +69,8 @@ def ensure_tables(conn):
         );
         CREATE TABLE IF NOT EXISTS development_plans (
             id SERIAL PRIMARY KEY,
-            client_id INTEGER REFERENCES users(id),
-            coach_id INTEGER REFERENCES users(id),
+            client_id VARCHAR(20) REFERENCES users(id),
+            coach_id VARCHAR(20) REFERENCES users(id),
             title VARCHAR(255) NOT NULL,
             description TEXT DEFAULT '',
             milestones JSONB DEFAULT '[]',
@@ -80,8 +80,8 @@ def ensure_tables(conn):
         );
         CREATE TABLE IF NOT EXISTS coach_client_assignments (
             id SERIAL PRIMARY KEY,
-            coach_id INTEGER REFERENCES users(id),
-            client_id INTEGER REFERENCES users(id),
+            coach_id VARCHAR(20) REFERENCES users(id),
+            client_id VARCHAR(20) REFERENCES users(id),
             assigned_at TIMESTAMP DEFAULT NOW(),
             status VARCHAR(20) DEFAULT 'active',
             UNIQUE(coach_id, client_id)
@@ -137,7 +137,7 @@ def list_clients():
 
 
 # ─── DEVELOPMENT PLANS ───────────────────────────────────
-@coach_bp.route('/clients/<int:client_id>/development-plan', methods=['POST'])
+@coach_bp.route('/clients/<client_id>/development-plan', methods=['POST'])
 @jwt_required()
 def create_development_plan(client_id):
     guard = _require_coach_role()
@@ -216,7 +216,7 @@ def log_session():
 
 
 # ─── SKILL GAPS ───────────────────────────────────────────
-@coach_bp.route('/clients/<int:client_id>/skill-gaps', methods=['GET'])
+@coach_bp.route('/clients/<client_id>/skill-gaps', methods=['GET'])
 @jwt_required()
 def get_skill_gaps(client_id):
     """Analyze skill gaps for a client using skill taxonomy data."""

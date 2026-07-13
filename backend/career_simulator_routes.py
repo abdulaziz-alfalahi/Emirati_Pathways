@@ -56,7 +56,7 @@ def ensure_tables(conn):
 
         CREATE TABLE IF NOT EXISTS career_simulations (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            user_id INTEGER REFERENCES users(id),
+            user_id VARCHAR(20) REFERENCES users(id),
             source_role VARCHAR(255) NOT NULL,
             target_role VARCHAR(255) NOT NULL,
             career_path_id UUID REFERENCES career_paths(id),
