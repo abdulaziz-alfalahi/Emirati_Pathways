@@ -270,7 +270,10 @@ def create_jd_enhanced():
         
         # Save draft placeholder to database so it exists when frontend queries it
         recruiter_id = data.get('recruiter_id') or 'recruiter_default'
-        company_id = data.get('company_id') or 'company_default'
+        # Store a clean company UUID (or NULL) — never a placeholder string, so
+        # company_id stays a clean company reference for the recruiter-match join.
+        _cid = str(data.get('company_id')).strip() if data.get('company_id') else ''
+        company_id = _cid if (len(_cid) == 36 and _cid.count('-') == 4) else None
         
         insert_query = """
             INSERT INTO job_postings (

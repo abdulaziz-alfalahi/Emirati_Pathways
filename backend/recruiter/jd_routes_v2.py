@@ -42,6 +42,21 @@ def _resolve_company_uuid(cur, user_id):
         return str(val) if val else None
     except Exception:
         return None
+
+
+def _normalize_company_id_for_storage(cur, company_id, recruiter_id):
+    """Return a clean value for job_postings.company_id: keep it if it is already
+    a company UUID; otherwise resolve the recruiter's hr_profiles company UUID;
+    otherwise None. Never persists placeholder strings ('unknown',
+    'company_default') or free-text company names — company_id must stay a clean
+    company reference so the recruiter-match ownership join can work.
+    """
+    v = str(company_id).strip() if company_id else ''
+    if len(v) == 36 and v.count('-') == 4:  # already a UUID
+        return v
+    return _resolve_company_uuid(cur, recruiter_id) or None
+
+
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from backend.db import get_db_connection
 from backend.user_helpers import user_display_name
@@ -277,14 +292,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
         
         # Get recruiter_id and company_id from metadata
         recruiter_id = metadata.get('recruiter_id', 'unknown')
-        company_id = metadata.get('company_id', 'unknown')
-
-        # Prefer the recruiter's company UUID (from hr_profiles) so the job is
-        # matchable; keep the placeholder fallback if there is no hr_profile.
-        if company_id in (None, '', 'unknown', 'company_default'):
-            resolved = _resolve_company_uuid(cur, recruiter_id)
-            if resolved:
-                company_id = resolved
+        # Store a clean company UUID (or NULL) — never a placeholder/name string.
+        company_id = _normalize_company_id_for_storage(cur, metadata.get('company_id'), recruiter_id)
 
         # Parse and normalize application_deadline
         deadline_str = basic_info.get('application_deadline')
@@ -1399,9 +1408,9 @@ def save_jd(jd_id):
                  except:
                      pass
 
-        # Fallback to unknown if still missing
+        # Store a clean company UUID (or NULL) — never a placeholder/name string.
         recruiter_id = recruiter_id or 'unknown'
-        company_id = company_id if (company_id and company_id not in ('company_default', 'unknown', '')) else 'unknown'
+        company_id = _normalize_company_id_for_storage(cur, company_id, recruiter_id)
         
         logger.info(f"Save JD {jd_id}: recruiter_id={recruiter_id}, company_id={company_id}, jwt_user={current_user_id}")
         
