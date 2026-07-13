@@ -151,8 +151,45 @@ def init_tables():
 # GET PASSPORT
 # ═══════════════════════════════════════════════════════════
 
+# Roles that may view ANOTHER user's Career Passport (professional / mentor context).
+_PASSPORT_VIEWER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'admin',
+                          'super_admin', 'super_user', 'platform_administrator',
+                          'advisor', 'coach', 'educator', 'education_operator',
+                          'internship_coordinator'}
+
+
+def _can_view_passport(conn, target_user_id):
+    """True if the authenticated caller may view target_user_id's passport:
+    the owner, a professional/mentor role, or a verified linked parent."""
+    caller = str(get_jwt_identity())
+    if caller == str(target_user_id):
+        return True
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role in _PASSPORT_VIEWER_ROLES:
+        return True
+    # Verified parent -> child link (table may be absent -> fail closed).
+    try:
+        cur = conn.cursor()
+        cur.execute("""SELECT 1 FROM parent_child_links
+                       WHERE parent_user_id = %s AND child_user_id = %s AND verified = true""",
+                    (caller, str(target_user_id)))
+        ok = cur.fetchone() is not None
+        cur.close()
+        return ok
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+
+
 @career_passport_bp.route('/passport', methods=['GET'])
 @career_passport_bp.route('/stamps', methods=['GET'])
+@jwt_required()
 def get_passport_by_query():
     """Frontend-facing accessors: /passport?user_id= and /stamps?user_id=.
 
@@ -174,11 +211,15 @@ def get_passport_by_query():
 
 
 @career_passport_bp.route('/<user_id>', methods=['GET'])
+@jwt_required()
 def get_passport(user_id):
     """Get full passport with all stamps for a user."""
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
+    if not _can_view_passport(conn, user_id):
+        conn.close()
+        return jsonify({"error": "Forbidden"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -265,11 +306,15 @@ def get_passport(user_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_passport_bp.route('/<user_id>/summary', methods=['GET'])
+@jwt_required()
 def get_passport_summary(user_id):
     """Quick stats for a user's passport (for dashboard widgets)."""
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
+    if not _can_view_passport(conn, user_id):
+        conn.close()
+        return jsonify({"error": "Forbidden"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT id FROM career_passports WHERE user_id = %s", (user_id,))
