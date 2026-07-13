@@ -599,6 +599,12 @@ class VideoInterviewEngine:
                 sg = SkillGraphEngine(db_connection=conn)
                 re_engine = RecommendationEngine(db_connection=conn, skill_graph=sg)
                 gap = sg.analyze_skill_gaps(candidate_id)
+                # Clear any aborted-transaction state from the gap query (e.g. an
+                # EID/int type mismatch) so the recommendation queries run clean.
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 result = re_engine.generate_recommendations(candidate_id, gap_analysis=gap)
                 for rec in (result.get("recommendations") or []):
                     rtype = rec.get("type")
