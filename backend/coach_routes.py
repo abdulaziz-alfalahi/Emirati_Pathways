@@ -7,7 +7,7 @@ coaching sessions, and skill gap analysis.
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import os
@@ -25,6 +25,32 @@ def get_db():
     except Exception as e:
         logger.error(f"DB connection error: {e}")
         return None
+
+
+# Roles permitted to act as a career coach (view client PII, manage plans/sessions).
+_COACH_ROLES = {'coach', 'advisor', 'admin', 'super_admin'}
+
+
+def _require_coach_role():
+    """Return a (response, 403) if the caller lacks a coach role, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _COACH_ROLES:
+        return jsonify({"error": "Forbidden - coach access required"}), 403
+    return None
+
+
+def _coach_owns_client(conn, coach_id, client_id):
+    """True if an active coach->client assignment links this coach to the client."""
+    cur = conn.cursor()
+    cur.execute("""SELECT 1 FROM coach_client_assignments
+                   WHERE coach_id = %s AND client_id = %s AND status = 'active'""",
+                (coach_id, client_id))
+    ok = cur.fetchone() is not None
+    cur.close()
+    return ok
 
 
 def ensure_tables(conn):
@@ -80,12 +106,11 @@ def init():
 
 # ─── CLIENTS ──────────────────────────────────────────────
 @coach_bp.route('/clients', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_clients():
-    coach_id = None
-    try: coach_id = get_jwt_identity()
-    except: pass
-    if not coach_id: coach_id = request.args.get('coach_id', 1)
+    guard = _require_coach_role()
+    if guard: return guard
+    coach_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -113,15 +138,16 @@ def list_clients():
 
 # ─── DEVELOPMENT PLANS ───────────────────────────────────
 @coach_bp.route('/clients/<int:client_id>/development-plan', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_development_plan(client_id):
-    coach_id = None
-    try: coach_id = get_jwt_identity()
-    except: pass
+    guard = _require_coach_role()
+    if guard: return guard
+    coach_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not coach_id: coach_id = data.get('coach_id', 1)
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    if not _coach_owns_client(conn, coach_id, client_id):
+        conn.close(); return jsonify({"error": "Forbidden - not your client"}), 403
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -138,12 +164,16 @@ def create_development_plan(client_id):
 
 
 @coach_bp.route('/development-plans/<int:plan_id>', methods=['GET'])
+@jwt_required()
 def get_development_plan(plan_id):
+    guard = _require_coach_role()
+    if guard: return guard
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM development_plans WHERE id = %s", (plan_id,))
+        # Scope to the calling coach's own plan.
+        cur.execute("SELECT * FROM development_plans WHERE id = %s AND coach_id = %s", (plan_id, get_jwt_identity()))
         row = cur.fetchone()
         cur.close(); conn.close()
         if not row: return jsonify({"error": "Not found"}), 404
@@ -158,21 +188,23 @@ def get_development_plan(plan_id):
 
 # ─── SESSIONS ─────────────────────────────────────────────
 @coach_bp.route('/sessions', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def log_session():
+    guard = _require_coach_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
-    coach_id = None
-    try: coach_id = get_jwt_identity()
-    except: pass
-    if not coach_id: coach_id = data.get('coach_id', 1)
+    coach_id = get_jwt_identity()
+    client_id = data.get('client_id')
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    if not _coach_owns_client(conn, coach_id, client_id):
+        conn.close(); return jsonify({"error": "Forbidden - not your client"}), 403
     try:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO coaching_sessions (client_id, coach_id, session_type, notes, action_items, duration_minutes)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
-        """, (data.get('client_id'), coach_id, data.get('session_type', 'one_on_one'),
+        """, (client_id, coach_id, data.get('session_type', 'one_on_one'),
               data.get('notes', ''), json.dumps(data.get('action_items', [])),
               data.get('duration_minutes', 60)))
         session_id = cur.fetchone()[0]
@@ -185,10 +217,15 @@ def log_session():
 
 # ─── SKILL GAPS ───────────────────────────────────────────
 @coach_bp.route('/clients/<int:client_id>/skill-gaps', methods=['GET'])
+@jwt_required()
 def get_skill_gaps(client_id):
     """Analyze skill gaps for a client using skill taxonomy data."""
+    guard = _require_coach_role()
+    if guard: return guard
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    if not _coach_owns_client(conn, get_jwt_identity(), client_id):
+        conn.close(); return jsonify({"error": "Forbidden - not your client"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         # Get client's current skills
@@ -217,12 +254,11 @@ def get_skill_gaps(client_id):
 
 # ─── ANALYTICS ────────────────────────────────────────────
 @coach_bp.route('/analytics', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def coach_analytics():
-    coach_id = None
-    try: coach_id = get_jwt_identity()
-    except: pass
-    if not coach_id: coach_id = request.args.get('coach_id', 1)
+    guard = _require_coach_role()
+    if guard: return guard
+    coach_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:

@@ -112,7 +112,7 @@ def _init_skills_tables():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @skills_dev_bp.route('/training-programs', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_training_programs():
     """Returns training programs from training_programs + lms_courses."""
     try:
@@ -194,7 +194,7 @@ def get_training_programs():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @skills_dev_bp.route('/courses', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_courses():
     """Returns digital skills courses from the courses table."""
     try:
@@ -270,7 +270,7 @@ def get_courses():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @skills_dev_bp.route('/assessments', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_assessments():
     """Returns assessment catalog and skill taxonomy for discovery."""
     try:
@@ -346,11 +346,12 @@ def get_assessments():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @skills_dev_bp.route('/certifications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_certifications():
     """Returns certification programs (from training_programs that offer certs)
        and the logged-in user's earned certs."""
     try:
+        user_id = get_jwt_identity()
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -373,14 +374,15 @@ def get_certifications():
                 'level': safe_str(row['level']),
             })
 
-        # All earned certifications (for demo — in production filter by user)
+        # The authenticated user's earned certifications only.
         cur.execute("""
             SELECT cc.id, cc.name, cc.issuing_organization, cc.issue_date,
                    cc.expiry_date, cc.credential_id, cc.credential_url,
                    cc.user_id
             FROM candidate_certifications cc
+            WHERE cc.user_id = %s
             ORDER BY cc.issue_date DESC
-        """)
+        """, (user_id,))
         earned_certs = []
         for row in cur.fetchall():
             issue_date = row['issue_date']
@@ -417,29 +419,15 @@ def get_certifications():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @skills_dev_bp.route('/user-progress', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_user_progress():
     """Returns the current user's skills, assessments, and certifications."""
     try:
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Get user_id from JWT or use first candidate
-        user_identity = get_jwt_identity()
-        user_id = None
-
-        if user_identity:
-            if isinstance(user_identity, dict):
-                user_id = user_identity.get('id')
-            else:
-                user_id = str(user_identity).strip()
-
-        # If no user found, use first available for demo
-        if not user_id:
-            cur.execute("SELECT user_id FROM candidate_profiles LIMIT 1")
-            row = cur.fetchone()
-            if row:
-                user_id = row['user_id']
+        # Always the authenticated caller — no demo fallback to another user.
+        user_id = get_jwt_identity()
 
         skills = []
         assessments = []

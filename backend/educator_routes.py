@@ -4,7 +4,7 @@ Blueprint prefix: /api/educator
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import os
@@ -28,6 +28,22 @@ def get_db():
     except Exception as e:
         logger.error(f"Educator DB connection error: {e}")
         return None
+
+
+# Roles permitted to operate the educator dashboard (student PII, grades, alerts).
+_EDUCATOR_ROLES = {'training_provider', 'training_center_rep', 'educator',
+                   'education_operator', 'admin', 'super_admin'}
+
+
+def _require_educator_role():
+    """Return a (response, 403) if the caller isn't an educator/provider, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _EDUCATOR_ROLES:
+        return jsonify({"error": "Forbidden - educator access required"}), 403
+    return None
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
@@ -58,14 +74,12 @@ def health_check():
 
 # ── Dashboard ────────────────────────────────────────────────────────────────
 @educator_bp.route('/dashboard', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_educator_dashboard():
     """Get comprehensive educator dashboard — real DB data."""
-    user_id = None
-    try:
-        user_id = get_jwt_identity()
-    except:
-        pass
+    guard = _require_educator_role()
+    if guard: return guard
+    user_id = get_jwt_identity()
 
     conn = get_db()
     if not conn:
@@ -238,14 +252,11 @@ def _fallback_dashboard():
 
 # ── Students list ────────────────────────────────────────────────────────────
 @educator_bp.route('/students', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_students_list():
     """Get paginated list of students from real DB."""
-    user_id = None
-    try:
-        user_id = get_jwt_identity()
-    except:
-        pass
+    guard = _require_educator_role()
+    if guard: return guard
 
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 20))
@@ -341,9 +352,11 @@ def get_students_list():
 
 # ── Students POST (create) — keep existing ───────────────────────────────────
 @educator_bp.route('/students', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_student():
     """Create a new student record."""
+    guard = _require_educator_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -381,9 +394,11 @@ def create_student():
 
 # ── Student detail ───────────────────────────────────────────────────────────
 @educator_bp.route('/students/<student_id>', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_student_detail(student_id):
     """Get detailed information about a specific student."""
+    guard = _require_educator_role()
+    if guard: return guard
     conn = get_db()
     if not conn:
         return jsonify({"success": False, "error": "Database unavailable"}), 503
@@ -440,9 +455,11 @@ def get_student_detail(student_id):
 
 # ── Academic record (POST) ───────────────────────────────────────────────────
 @educator_bp.route('/students/<student_id>/academic-record', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def add_academic_record(student_id):
     """Add academic performance record for a student."""
+    guard = _require_educator_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn:
@@ -477,9 +494,11 @@ def add_academic_record(student_id):
 
 # ── Performance analytics ────────────────────────────────────────────────────
 @educator_bp.route('/analytics/performance', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_performance_analytics():
     """Get performance analytics from real DB."""
+    guard = _require_educator_role()
+    if guard: return guard
     conn = get_db()
     if not conn:
         return jsonify({"success": True, "analytics": _fallback_analytics()}), 200
@@ -612,9 +631,11 @@ def _fallback_analytics():
 
 # ── Alerts ───────────────────────────────────────────────────────────────────
 @educator_bp.route('/alerts', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_student_alerts():
     """Generate alerts from real student data."""
+    guard = _require_educator_role()
+    if guard: return guard
     conn = get_db()
     if not conn:
         return jsonify({"success": True, "alerts": [], "summary": {}}), 200
@@ -714,9 +735,11 @@ def get_student_alerts():
 
 # ── Scholarships POST ────────────────────────────────────────────────────────
 @educator_bp.route('/scholarships', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_scholarship_route():
     """Create new scholarship (passed through to educator_system for backward compat)."""
+    guard = _require_educator_role()
+    if guard: return guard
     try:
         from educator_system import educator_system
         data = request.get_json(silent=True) or {}
@@ -730,13 +753,17 @@ def create_scholarship_route():
 
 # ── Career guidance (keep existing) ──────────────────────────────────────────
 @educator_bp.route('/students/<student_id>/career-guidance', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def conduct_career_guidance(student_id):
     """Conduct career guidance session."""
+    guard = _require_educator_role()
+    if guard: return guard
     try:
         from educator_system import educator_system
         data = request.get_json(silent=True) or {}
         data['student_id'] = student_id
+        # Attribute the session to the authenticated educator, not a spoofable body value.
+        data['educator_id'] = get_jwt_identity()
         result = educator_system.conduct_career_guidance_session(data)
         return jsonify(result), 200
     except Exception as e:
@@ -745,12 +772,16 @@ def conduct_career_guidance(student_id):
 
 # ── Profile POST ─────────────────────────────────────────────────────────────
 @educator_bp.route('/profile', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_educator_profile():
     """Create educator profile (backward compat)."""
+    guard = _require_educator_role()
+    if guard: return guard
     try:
         from educator_system import educator_system
         data = request.get_json(silent=True) or {}
+        # Bind the profile to the authenticated user, not a spoofable body value.
+        data['user_id'] = get_jwt_identity()
         result = educator_system.create_educator_profile(data)
         if result.get("success"):
             return jsonify(result), 201

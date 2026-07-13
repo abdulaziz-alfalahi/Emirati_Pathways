@@ -911,13 +911,9 @@ def submit_mentor_report(company_id):
     if not data.get('employee_id') or not data.get('summary'):
         return jsonify({"error": "employee_id and summary are required"}), 400
 
-    mentor_id = None
-    try:
-        mentor_id = get_jwt_identity()
-    except Exception:
-        pass
-    if not mentor_id:
-        mentor_id = data.get('mentor_id')
+    # Author is always the authenticated caller — never a spoofable body mentor_id.
+    # require_workspace_access already enforced a valid JWT, so identity is present.
+    mentor_id = get_jwt_identity()
 
     conn = get_db()
     if not conn:

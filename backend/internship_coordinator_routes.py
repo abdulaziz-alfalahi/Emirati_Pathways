@@ -4,11 +4,25 @@ Blueprint prefix: /api/internship-coord
 Full internship lifecycle: programs, matching, placements, evaluations.
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2, psycopg2.extras, os, json, logging
 
 logger = logging.getLogger(__name__)
 internship_coord_bp = Blueprint('internship_coord', __name__, url_prefix='/api/internship-coord')
+
+# Roles permitted to manage internship programs / placements / evaluations.
+_COORDINATOR_ROLES = {'internship_coordinator', 'education_operator', 'admin', 'super_admin'}
+
+
+def _require_coordinator_role():
+    """Return a (response, 403) if the caller isn't an internship coordinator, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _COORDINATOR_ROLES:
+        return jsonify({"error": "Forbidden - internship coordinator access required"}), 403
+    return None
 
 def get_db():
     try:
@@ -69,12 +83,11 @@ def init():
         finally: conn.close()
 
 @internship_coord_bp.route('/programs', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_programs():
-    coord_id = None
-    try: coord_id = get_jwt_identity()
-    except: pass
-    if not coord_id: coord_id = request.args.get('coordinator_id', 1)
+    guard = _require_coordinator_role()
+    if guard: return guard
+    coord_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -98,13 +111,12 @@ def list_programs():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @internship_coord_bp.route('/programs', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_program():
-    coord_id = None
-    try: coord_id = get_jwt_identity()
-    except: pass
+    guard = _require_coordinator_role()
+    if guard: return guard
+    coord_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not coord_id: coord_id = data.get('coordinator_id', 1)
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -123,12 +135,11 @@ def create_program():
         return jsonify({"error": str(e)}), 500
 
 @internship_coord_bp.route('/placements', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_placements():
-    coord_id = None
-    try: coord_id = get_jwt_identity()
-    except: pass
-    if not coord_id: coord_id = request.args.get('coordinator_id', 1)
+    guard = _require_coordinator_role()
+    if guard: return guard
+    coord_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -153,17 +164,29 @@ def list_placements():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @internship_coord_bp.route('/evaluations', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def submit_evaluation():
+    guard = _require_coordinator_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
+    placement_id = data.get('placement_id')
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Only allow evaluating placements under a program this coordinator owns.
+        cur.execute("""
+            SELECT 1 FROM internship_placements ipl
+            JOIN internship_programs ip ON ip.id = ipl.program_id
+            WHERE ipl.id = %s AND ip.coordinator_id = %s
+        """, (placement_id, get_jwt_identity()))
+        if not cur.fetchone():
+            cur.close(); conn.close()
+            return jsonify({"error": "Forbidden - placement not in your program"}), 403
         cur.execute("""
             INSERT INTO internship_evaluations (placement_id, evaluator_type, competencies, rating, feedback)
             VALUES (%s,%s,%s,%s,%s) RETURNING id
-        """, (data.get('placement_id'), data.get('evaluator_type', 'coordinator'),
+        """, (placement_id, data.get('evaluator_type', 'coordinator'),
               json.dumps(data.get('competencies', {})), data.get('rating', 0), data.get('feedback', '')))
         eid = cur.fetchone()[0]
         conn.commit(); cur.close(); conn.close()
@@ -173,12 +196,11 @@ def submit_evaluation():
         return jsonify({"error": str(e)}), 500
 
 @internship_coord_bp.route('/analytics', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def coord_analytics():
-    coord_id = None
-    try: coord_id = get_jwt_identity()
-    except: pass
-    if not coord_id: coord_id = request.args.get('coordinator_id', 1)
+    guard = _require_coordinator_role()
+    if guard: return guard
+    coord_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:

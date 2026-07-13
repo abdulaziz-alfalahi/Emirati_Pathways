@@ -468,7 +468,7 @@ def get_sectors():
 # ═══════════════════════════════════════════════════════════
 
 @career_simulator_bp.route('/simulate', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def simulate_career():
     """
     Given current skills + target role, compute:
@@ -476,11 +476,7 @@ def simulate_career():
     - Estimated time to reach target
     - Recommended training
     """
-    user_id = None
-    try:
-        user_id = get_jwt_identity()
-    except:
-        pass
+    user_id = get_jwt_identity()
 
     data = request.get_json(silent=True) or {}
     source_role = data.get('source_role', '').strip()
@@ -630,18 +626,10 @@ def simulate_career():
 # ═══════════════════════════════════════════════════════════
 
 @career_simulator_bp.route('/my-simulations', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_my_simulations():
     """Get user's saved career simulations."""
-    user_id = None
-    try:
-        user_id = get_jwt_identity()
-    except:
-        pass
-    if not user_id:
-        user_id = request.args.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Authentication required"}), 401
+    user_id = get_jwt_identity()
 
     conn = get_db()
     if not conn:

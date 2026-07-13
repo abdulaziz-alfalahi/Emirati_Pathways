@@ -17,6 +17,17 @@ def get_db():
     except Exception as e:
         logger.error(f"DB error: {e}"); return None
 
+
+def _verify_parent_of_child(conn, parent_id, child_id):
+    """True if a VERIFIED parent->child link exists for this parent."""
+    cur = conn.cursor()
+    cur.execute("""SELECT 1 FROM parent_child_links
+                   WHERE parent_user_id = %s AND child_user_id = %s AND verified = true""",
+                (parent_id, child_id))
+    ok = cur.fetchone() is not None
+    cur.close()
+    return ok
+
 def ensure_tables(conn):
     cur = conn.cursor()
     cur.execute("""
@@ -46,12 +57,9 @@ def init():
         finally: conn.close()
 
 @parent_bp.route('/children', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_children():
-    parent_id = None
-    try: parent_id = get_jwt_identity()
-    except: pass
-    if not parent_id: parent_id = request.args.get('parent_id', 1)
+    parent_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -76,9 +84,12 @@ def get_children():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @parent_bp.route('/children/<int:child_id>/academic', methods=['GET'])
+@jwt_required()
 def get_child_academic(child_id):
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    if not _verify_parent_of_child(conn, get_jwt_identity(), child_id):
+        conn.close(); return jsonify({"error": "Forbidden - not your child"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         # Get enrolled courses
@@ -97,10 +108,13 @@ def get_child_academic(child_id):
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @parent_bp.route('/children/<int:child_id>/career-passport', methods=['GET'])
+@jwt_required()
 def get_child_passport(child_id):
     """Read-only view of child's career passport."""
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
+    if not _verify_parent_of_child(conn, get_jwt_identity(), child_id):
+        conn.close(); return jsonify({"error": "Forbidden - not your child"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT id FROM career_passports WHERE user_id = %s", (child_id,))
@@ -121,13 +135,10 @@ def get_child_passport(child_id):
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @parent_bp.route('/link-child', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def link_child():
-    parent_id = None
-    try: parent_id = get_jwt_identity()
-    except: pass
+    parent_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not parent_id: parent_id = data.get('parent_id')
     child_email = data.get('child_email')
     if not child_email: return jsonify({"error": "child_email required"}), 400
     conn = get_db()

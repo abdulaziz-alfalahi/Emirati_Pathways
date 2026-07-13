@@ -7,7 +7,7 @@ risk monitoring, and intervention logging.
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import os
@@ -25,6 +25,21 @@ def get_db():
     except Exception as e:
         logger.error(f"DB connection error: {e}")
         return None
+
+
+# Roles permitted to act as an academic/career advisor.
+_ADVISOR_ROLES = {'advisor', 'admin', 'super_admin'}
+
+
+def _require_advisor_role():
+    """Return a (response, 403) if the caller isn't an advisor, else None."""
+    try:
+        role = (get_jwt() or {}).get('role', '')
+    except Exception:
+        role = ''
+    if role not in _ADVISOR_ROLES:
+        return jsonify({"error": "Forbidden - advisor access required"}), 403
+    return None
 
 
 def ensure_tables(conn):
@@ -83,12 +98,11 @@ def init():
 
 # ─── STUDENTS ─────────────────────────────────────────────
 @advisor_bp.route('/students', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_students():
-    advisor_id = None
-    try: advisor_id = get_jwt_identity()
-    except: pass
-    if not advisor_id: advisor_id = request.args.get('advisor_id', 1)
+    guard = _require_advisor_role()
+    if guard: return guard
+    advisor_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -118,12 +132,17 @@ def list_students():
 
 # ─── GOALS ────────────────────────────────────────────────
 @advisor_bp.route('/students/<int:student_id>/goals', methods=['GET'])
+@jwt_required()
 def get_student_goals(student_id):
+    guard = _require_advisor_role()
+    if guard: return guard
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM student_goals WHERE student_id = %s ORDER BY created_at DESC", (student_id,))
+        # Scope to the calling advisor's own goals for this student.
+        cur.execute("SELECT * FROM student_goals WHERE student_id = %s AND advisor_id = %s ORDER BY created_at DESC",
+                    (student_id, get_jwt_identity()))
         rows = cur.fetchall()
         cur.close(); conn.close()
         goals = []
@@ -138,13 +157,12 @@ def get_student_goals(student_id):
 
 
 @advisor_bp.route('/students/<int:student_id>/goals', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_goal(student_id):
-    advisor_id = None
-    try: advisor_id = get_jwt_identity()
-    except: pass
+    guard = _require_advisor_role()
+    if guard: return guard
+    advisor_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
-    if not advisor_id: advisor_id = data.get('advisor_id', 1)
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -163,8 +181,10 @@ def create_goal(student_id):
 
 
 @advisor_bp.route('/goals/<int:goal_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_goal(goal_id):
+    guard = _require_advisor_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -178,7 +198,8 @@ def update_goal(goal_id):
         if not fields: return jsonify({"error": "No fields to update"}), 400
         fields.append("updated_at = NOW()")
         params.append(goal_id)
-        cur.execute(f"UPDATE student_goals SET {', '.join(fields)} WHERE id = %s", params)
+        params.append(get_jwt_identity())
+        cur.execute(f"UPDATE student_goals SET {', '.join(fields)} WHERE id = %s AND advisor_id = %s", params)
         conn.commit(); cur.close(); conn.close()
         return jsonify({"status": "updated"}), 200
     except Exception as e:
@@ -188,12 +209,11 @@ def update_goal(goal_id):
 
 # ─── AT-RISK ──────────────────────────────────────────────
 @advisor_bp.route('/at-risk', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_at_risk_students():
-    advisor_id = None
-    try: advisor_id = get_jwt_identity()
-    except: pass
-    if not advisor_id: advisor_id = request.args.get('advisor_id', 1)
+    guard = _require_advisor_role()
+    if guard: return guard
+    advisor_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -220,13 +240,12 @@ def get_at_risk_students():
 
 # ─── INTERVENTIONS ────────────────────────────────────────
 @advisor_bp.route('/interventions', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_intervention():
+    guard = _require_advisor_role()
+    if guard: return guard
     data = request.get_json(silent=True) or {}
-    advisor_id = None
-    try: advisor_id = get_jwt_identity()
-    except: pass
-    if not advisor_id: advisor_id = data.get('advisor_id', 1)
+    advisor_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -246,12 +265,11 @@ def create_intervention():
 
 # ─── ANALYTICS ────────────────────────────────────────────
 @advisor_bp.route('/analytics', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def advisor_analytics():
-    advisor_id = None
-    try: advisor_id = get_jwt_identity()
-    except: pass
-    if not advisor_id: advisor_id = request.args.get('advisor_id', 1)
+    guard = _require_advisor_role()
+    if guard: return guard
+    advisor_id = get_jwt_identity()
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
