@@ -52,7 +52,13 @@ class AdvancedAnalyticsEngine:
         self.data_source_path = data_source_path
         self.insights_cache = {}
         self.setup_database()
-        self.generate_sample_data()
+        # These analytics run on SYNTHETIC (np.random) data in a local SQLite file —
+        # they are NOT wired to real platform data. Only seed when explicitly enabled,
+        # so production never presents fabricated figures as real. (#26)
+        self.demo_mode = os.getenv('ENABLE_DEMO_ANALYTICS', 'false').lower() == 'true'
+        if self.demo_mode:
+            logger.warning("AdvancedAnalyticsEngine: DEMO mode — using synthetic sample data (NOT real).")
+            self.generate_sample_data()
     
     def setup_database(self):
         """Setup SQLite database for analytics data"""
@@ -344,6 +350,15 @@ class AdvancedAnalyticsEngine:
     
     def get_emiratization_progress_analysis(self) -> Dict[str, Any]:
         """Analyze Emiratization progress and targets"""
+        if not getattr(self, 'demo_mode', False):
+            # No real data source is wired — return an explicit "not available"
+            # rather than synthetic figures presented as real. (#26)
+            return {
+                "data_source": "unavailable",
+                "note": "Advanced analytics is not connected to a real data source; demo data is disabled.",
+                "summary": {},
+                "sectors": [],
+            }
         try:
             conn = sqlite3.connect(self.data_source_path)
             

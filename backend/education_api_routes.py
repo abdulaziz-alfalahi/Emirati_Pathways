@@ -1419,6 +1419,19 @@ def employer_dashboard():
         except Exception:
             db.rollback()
 
+        # Real count of Emirati applicants (authoritative is_uae_national flag).
+        emirati_candidates = 0
+        try:
+            cursor.execute("""
+                SELECT COUNT(DISTINCT ja.candidate_id)
+                FROM job_applications ja
+                JOIN users u ON u.id::text = ja.candidate_id::text
+                WHERE u.is_uae_national IS TRUE
+            """)
+            emirati_candidates = cursor.fetchone()[0] or 0
+        except Exception:
+            db.rollback()
+
         # Recent jobs for activity feed
         recent_jobs = query_all(
             "SELECT title, status, created_at FROM job_postings ORDER BY created_at DESC LIMIT 5"
@@ -1438,7 +1451,8 @@ def employer_dashboard():
                 'activeJobs': active_jobs,
                 'totalApplications': total_apps,
                 'shortlistedCandidates': shortlisted,
-                'interviewsScheduled': max(0, shortlisted // 2),
+                # Was a fabricated shortlisted//2 proxy — null until a real interview count exists.
+                'interviewsScheduled': None,
                 'hiredCandidates': hired,
                 'pendingOffers': pending_offers,
             },
@@ -1446,13 +1460,15 @@ def employer_dashboard():
                 'applicationRate': round(total_apps / max(total_jobs, 1), 1),
                 'responseRate': round(min(100, (shortlisted + hired) / max(total_apps, 1) * 100), 1),
                 'hireRate': round(hired / max(total_apps, 1) * 100, 1),
-                'timeToHire': 18,
+                # Not derivable from platform data (no hire-date tracking) — null, not fabricated.
+                'timeToHire': None,
             },
             'candidates': {
                 'newApplications': max(0, total_apps - shortlisted - hired),
                 'qualifiedCandidates': shortlisted,
-                'emiratiCandidates': 85,
-                'diversityScore': 80,
+                # Real Emirati-applicant count; diversityScore isn't derivable -> null.
+                'emiratiCandidates': emirati_candidates,
+                'diversityScore': None,
             },
             'activity': activity,
         })

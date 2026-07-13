@@ -432,17 +432,18 @@ class EmiratiJourneyAnalytics:
         companies_with_data = [c for c in self.companies_db.values() if c.emiratization]
         
         if not companies_with_data:
-            return {'overall_rate': 67.3, 'compliant_companies': 0, 'total_companies': 0}
-        
+            # No data -> "not available", never a fabricated figure. (#26)
+            return {'overall_rate': None, 'compliant_companies': 0, 'total_companies': 0}
+
         # Calculate weighted average
         total_employees = sum([c.emiratization.total_employees for c in companies_with_data if c.emiratization.total_employees])
         total_emirati = sum([c.emiratization.emirati_employees for c in companies_with_data if c.emiratization.emirati_employees])
-        
-        overall_rate = (total_emirati / total_employees) * 100 if total_employees > 0 else 67.3
+
+        overall_rate = (total_emirati / total_employees) * 100 if total_employees > 0 else None
         compliant = len([c for c in companies_with_data if c.is_emiratization_compliant()])
-        
+
         return {
-            'overall_rate': round(overall_rate, 1),
+            'overall_rate': round(overall_rate, 1) if overall_rate is not None else None,
             'compliant_companies': compliant,
             'total_companies': len(companies_with_data),
             'compliance_percentage': round((compliant / len(companies_with_data)) * 100, 1)
@@ -571,12 +572,8 @@ class EmiratiJourneyAnalytics:
         """Generate Emiratization trend data"""
         # Mock trend data - in production, would be calculated from historical data
         return {
-            'quarterly_progress': [
-                {'quarter': 'Q1 2024', 'rate': 64.2},
-                {'quarter': 'Q2 2024', 'rate': 65.8},
-                {'quarter': 'Q3 2024', 'rate': 67.3},
-                {'quarter': 'Q4 2024', 'rate': 68.1}
-            ],
+            # Mock quarterly trend removed — no real historical data source. (#26)
+            'quarterly_progress': [],
             'projection_2025': 72.5,
             'vision_2071_target': 75.0
         }
