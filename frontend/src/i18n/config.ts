@@ -190,7 +190,11 @@ i18n
     interpolation: {
       escapeValue: false,
     },
-    lng: 'en',
+    // NOTE: do NOT hardcode `lng` here — it overrides LanguageDetector and makes
+    // every full page load force English (dropping a persisted Arabic choice and
+    // causing an English/LTR flash before the provider re-applies it). Detection
+    // order (localStorage 'preferred-language' -> sessionStorage -> navigator)
+    // with fallbackLng 'en' gives the right default + honors the saved choice. (#27)
     defaultNS: 'translation',
     ns: allNamespaces,
     keySeparator: false,
