@@ -16,7 +16,7 @@ def get_db():
     return get_db_connection()
 
 @demographics_bp.route('/demographics/main', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_main_demographics():
     """
     Returns data for the Main JS Dashboard: Gender, Age Group, Education, Employment Status
@@ -59,7 +59,7 @@ def get_main_demographics():
 
 
 @demographics_bp.route('/demographics/priority', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_priority_demographics():
     """
     Returns data for 2nd/3rd Priority JS Dashboards: Military, Marital, Emirate
@@ -97,7 +97,7 @@ def get_priority_demographics():
 
 
 @demographics_bp.route('/executive', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_executive_impact():
     """
     Returns data for the Executive Impact Dashboard.

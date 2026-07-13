@@ -27,7 +27,7 @@ def safe_int(val):
 
 
 @operations_bp.route('/stats', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_operations_stats():
     """
     Returns all metrics for the Operations Monitoring Center.

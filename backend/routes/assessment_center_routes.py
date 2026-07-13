@@ -13,7 +13,7 @@ def get_db():
     return get_db_connection()
 
 @assessment_center_bp.route('', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_assessment_centers():
     """List all registered Assessment Centers and their available assessment templates."""
     try:

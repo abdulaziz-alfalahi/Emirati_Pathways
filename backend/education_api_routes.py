@@ -4,7 +4,11 @@ Blueprint prefix: /api/education
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+
+# Roles permitted to review scholarship applicants' PII.
+_SCHOLARSHIP_REVIEWER_ROLES = {'educator', 'education_operator', 'operator',
+                               'admin', 'super_admin', 'platform_administrator'}
 import psycopg2
 import os
 import logging
@@ -386,9 +390,11 @@ def create_scholarship():
 
 
 @education_bp.route('/scholarships/<int:scholarship_id>/applications', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_scholarship_applications(scholarship_id):
     """Get applications for a specific scholarship (educator / operator view)."""
+    if (get_jwt() or {}).get('role', '') not in _SCHOLARSHIP_REVIEWER_ROLES:
+        return jsonify({"error": "Forbidden - educator/operator access required"}), 403
     applications = query_all("""
         SELECT sa.id, sa.user_id, sa.scholarship_id, sa.status,
                sa.ai_match_score, sa.submitted_at, sa.application_data,

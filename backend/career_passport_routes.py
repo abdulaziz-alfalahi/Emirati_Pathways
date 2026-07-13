@@ -8,7 +8,13 @@ Used by: Student, Jobseeker, Parent (read-only).
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+
+# Roles permitted to award (issue) passport stamps to a user. A stamp is a
+# verified credential, so self-service awarding by arbitrary users is forbidden.
+_STAMP_ISSUER_ROLES = {'training_provider', 'training_center_rep', 'educator',
+                       'education_operator', 'operator', 'admin', 'super_admin',
+                       'platform_administrator'}
 import psycopg2
 import psycopg2.extras
 import os
@@ -306,19 +312,18 @@ def get_passport_summary(user_id):
 # ═══════════════════════════════════════════════════════════
 
 @career_passport_bp.route('/stamps', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def award_stamp():
     """
     Award a digital stamp to a user's passport.
     Triggered by: course completion, certification, internship end, project milestone, etc.
+    Only issuer roles may award stamps (a stamp is a verified credential).
     """
+    if (get_jwt() or {}).get('role', '') not in _STAMP_ISSUER_ROLES:
+        return jsonify({"error": "Forbidden - stamp issuer access required"}), 403
     data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    if not user_id:
-        try:
-            user_id = get_jwt_identity()
-        except:
-            pass
+    # user_id is the recipient the issuer is awarding to.
+    user_id = data.get('user_id') or get_jwt_identity()
     if not user_id:
         return jsonify({"error": "user_id required"}), 400
 
