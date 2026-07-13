@@ -36,7 +36,7 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS internship_programs (
             id SERIAL PRIMARY KEY,
-            coordinator_id INTEGER REFERENCES users(id),
+            coordinator_id VARCHAR(20) REFERENCES users(id),
             title VARCHAR(255) NOT NULL,
             institution VARCHAR(255) DEFAULT '',
             season VARCHAR(50) DEFAULT 'summer',
@@ -50,7 +50,7 @@ def ensure_tables(conn):
         CREATE TABLE IF NOT EXISTS internship_placements (
             id SERIAL PRIMARY KEY,
             program_id INTEGER REFERENCES internship_programs(id),
-            student_id INTEGER REFERENCES users(id),
+            student_id VARCHAR(20) REFERENCES users(id),
             company_id INTEGER,
             position_title VARCHAR(255) DEFAULT '',
             start_date DATE, end_date DATE,

@@ -33,8 +33,8 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS parent_child_links (
             id SERIAL PRIMARY KEY,
-            parent_user_id INTEGER REFERENCES users(id),
-            child_user_id INTEGER REFERENCES users(id),
+            parent_user_id VARCHAR(20) REFERENCES users(id),
+            child_user_id VARCHAR(20) REFERENCES users(id),
             relationship VARCHAR(20) DEFAULT 'parent',
             verified BOOLEAN DEFAULT false,
             verification_code VARCHAR(10),
@@ -83,7 +83,7 @@ def get_children():
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
 
-@parent_bp.route('/children/<int:child_id>/academic', methods=['GET'])
+@parent_bp.route('/children/<child_id>/academic', methods=['GET'])
 @jwt_required()
 def get_child_academic(child_id):
     conn = get_db()
@@ -107,7 +107,7 @@ def get_child_academic(child_id):
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
 
-@parent_bp.route('/children/<int:child_id>/career-passport', methods=['GET'])
+@parent_bp.route('/children/<child_id>/career-passport', methods=['GET'])
 @jwt_required()
 def get_child_passport(child_id):
     """Read-only view of child's career passport."""

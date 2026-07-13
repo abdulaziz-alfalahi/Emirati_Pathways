@@ -47,8 +47,8 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS student_goals (
             id SERIAL PRIMARY KEY,
-            student_id INTEGER REFERENCES users(id),
-            advisor_id INTEGER REFERENCES users(id),
+            student_id VARCHAR(20) REFERENCES users(id),
+            advisor_id VARCHAR(20) REFERENCES users(id),
             title VARCHAR(255) NOT NULL,
             description TEXT DEFAULT '',
             target_date DATE,
@@ -61,8 +61,8 @@ def ensure_tables(conn):
         );
         CREATE TABLE IF NOT EXISTS advisor_interventions (
             id SERIAL PRIMARY KEY,
-            student_id INTEGER REFERENCES users(id),
-            advisor_id INTEGER REFERENCES users(id),
+            student_id VARCHAR(20) REFERENCES users(id),
+            advisor_id VARCHAR(20) REFERENCES users(id),
             type VARCHAR(50) NOT NULL DEFAULT 'career',
             notes TEXT DEFAULT '',
             outcome TEXT DEFAULT '',
@@ -71,8 +71,8 @@ def ensure_tables(conn):
         );
         CREATE TABLE IF NOT EXISTS advisor_student_assignments (
             id SERIAL PRIMARY KEY,
-            advisor_id INTEGER REFERENCES users(id),
-            student_id INTEGER REFERENCES users(id),
+            advisor_id VARCHAR(20) REFERENCES users(id),
+            student_id VARCHAR(20) REFERENCES users(id),
             assigned_at TIMESTAMP DEFAULT NOW(),
             status VARCHAR(20) DEFAULT 'active',
             UNIQUE(advisor_id, student_id)
@@ -131,7 +131,7 @@ def list_students():
 
 
 # ─── GOALS ────────────────────────────────────────────────
-@advisor_bp.route('/students/<int:student_id>/goals', methods=['GET'])
+@advisor_bp.route('/students/<student_id>/goals', methods=['GET'])
 @jwt_required()
 def get_student_goals(student_id):
     guard = _require_advisor_role()
@@ -156,7 +156,7 @@ def get_student_goals(student_id):
         conn.close(); return jsonify({"error": str(e)}), 500
 
 
-@advisor_bp.route('/students/<int:student_id>/goals', methods=['POST'])
+@advisor_bp.route('/students/<student_id>/goals', methods=['POST'])
 @jwt_required()
 def create_goal(student_id):
     guard = _require_advisor_role()
