@@ -1503,39 +1503,68 @@ def government_dashboard():
         except Exception:
             db.rollback()
 
-        sector_breakdown = [
-            {'sector': 'Banking & Finance', 'rate': 78.5},
-            {'sector': 'Government', 'rate': 89.2},
-            {'sector': 'Healthcare', 'rate': 45.7},
-            {'sector': 'Technology', 'rate': 52.3},
-            {'sector': 'Energy', 'rate': 68.1},
-        ]
+        # Real count of registered Emirati users — keyed off the authoritative
+        # is_uae_national flag (NOT users.nationality, which defaults to 'UAE').
+        emirati_users = 0
+        try:
+            cursor.execute("SELECT COUNT(*) FROM users WHERE is_uae_national IS TRUE")
+            emirati_users = cursor.fetchone()[0] or 0
+        except Exception:
+            db.rollback()
+
+        # Placement-based Emiratisation rate: share of hired/accepted applications
+        # whose candidate is a verified UAE national. A REAL DB figure — or None
+        # when there are no placements yet. We never fabricate a number here.
+        # (A true per-company workforce ratio is not computable: no headcount data.)
+        emiratization_rate = None
+        total_placements = 0
+        emirati_placements = 0
+        try:
+            cursor.execute("""
+                SELECT
+                    COUNT(*) FILTER (WHERE ja.status IN ('hired','accepted'))                              AS total_placements,
+                    COUNT(*) FILTER (WHERE ja.status IN ('hired','accepted') AND u.is_uae_national IS TRUE) AS emirati_placements
+                FROM job_applications ja
+                JOIN users u ON u.id::text = ja.candidate_id::text
+            """)
+            row = cursor.fetchone()
+            total_placements = row[0] or 0
+            emirati_placements = row[1] or 0
+            if total_placements > 0:
+                emiratization_rate = round(emirati_placements / total_placements * 100, 1)
+        except Exception:
+            db.rollback()
 
         return jsonify({
             'emiratization': {
-                'totalEmiratiEmployees': total_users,
-                'emiratizationRate': 67.3,
-                'targetRate': 75.0,
-                'monthlyGrowth': 2.1,
-                'sectorBreakdown': sector_breakdown,
+                # Real registered-Emirati count (authoritative flag).
+                'totalEmiratiEmployees': emirati_users,
+                # Real placement-based rate, or null = "not available" (never faked).
+                'emiratizationRate': emiratization_rate,
+                'emiratizationBasis': 'placements' if emiratization_rate is not None else 'not_available',
+                'placements': {'total': total_placements, 'emirati': emirati_placements},
+                # Not derivable from current data (no published target / no per-sector
+                # workforce data) — null / empty instead of a fabricated figure.
+                'targetRate': None,
+                'monthlyGrowth': None,
+                'sectorBreakdown': [],
             },
             'workforce': {
-                'totalWorkforce': total_users + total_jobs * 3,
-                'unemploymentRate': 3.2,
-                'skillsGapIndex': 23.4,
+                'totalWorkforce': total_users,
                 'trainingPrograms': training_count + edu_programs,
+                # Not derivable from platform data — null, not a fabricated figure.
+                'unemploymentRate': None,
+                'skillsGapIndex': None,
             },
             'initiatives': {
                 'activePrograms': training_count + edu_programs,
                 'beneficiaries': total_users,
-                'completionRate': 84.7,
-                'successStories': min(total_users // 5, 200),
+                'completionRate': None,
             },
             'activity': [
-                {'type': 'policy', 'message': 'New Emiratization policy approved for tech sector', 'time': '2h ago'},
-                {'type': 'program', 'message': f'{training_count} training programs active on platform', 'time': '1d ago'},
-                {'type': 'milestone', 'message': f'{total_jobs} job postings tracked across sectors', 'time': '2d ago'},
-                {'type': 'report', 'message': f'{total_users} registered users on the platform', 'time': '3d ago'},
+                {'type': 'program', 'message': f'{training_count + edu_programs} training/education programs active on platform'},
+                {'type': 'milestone', 'message': f'{total_jobs} job postings tracked across sectors'},
+                {'type': 'report', 'message': f'{total_users} registered users on the platform'},
             ],
         })
     except Exception as e:

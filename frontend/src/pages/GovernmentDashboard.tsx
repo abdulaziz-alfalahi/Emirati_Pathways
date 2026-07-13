@@ -64,10 +64,10 @@ interface ActivityItem {
 
 interface GovernmentData {
   emiratization: {
-    overallRate: number;
-    targetRate: number;
+    overallRate: number | null;   // null = "Not available" (never a fabricated figure)
+    targetRate: number | null;
     totalEmiratiEmployees: number;
-    monthlyGrowth: number;
+    monthlyGrowth: number | null;
     sectorBreakdown: SectorData[];
   };
   workforce: {
@@ -151,10 +151,12 @@ const GovernmentDashboard: React.FC = () => {
         const apiData = response.data;
         setDashboardData(prev => ({
           emiratization: {
-            overallRate: apiData.emiratization?.overallRate ?? apiData.emiratization?.emiratizationRate ?? prev.emiratization.overallRate,
-            targetRate: apiData.emiratization?.targetRate ?? prev.emiratization.targetRate,
-            totalEmiratiEmployees: apiData.emiratization?.totalEmiratiEmployees ?? prev.emiratization.totalEmiratiEmployees,
-            monthlyGrowth: apiData.emiratization?.monthlyGrowth ?? prev.emiratization.monthlyGrowth,
+            // Honest values straight from the API — null stays null and renders as
+            // "Not available", never falling back to a mock default.
+            overallRate: apiData.emiratization?.emiratizationRate ?? null,
+            targetRate: apiData.emiratization?.targetRate ?? null,
+            totalEmiratiEmployees: apiData.emiratization?.totalEmiratiEmployees ?? 0,
+            monthlyGrowth: apiData.emiratization?.monthlyGrowth ?? null,
             sectorBreakdown: (apiData.emiratization?.sectorBreakdown || prev.emiratization.sectorBreakdown).map((s: any) => ({
               sector: s.sector || '',
               sectorAr: s.sectorAr || '',
@@ -179,18 +181,12 @@ const GovernmentDashboard: React.FC = () => {
   const setMockData = () => {
     setDashboardData({
       emiratization: {
-        overallRate: 67.3,
-        targetRate: 75.0,
-        totalEmiratiEmployees: 45678,
-        monthlyGrowth: 2.1,
-        sectorBreakdown: [
-          { sector: 'Banking & Finance', sectorAr: 'المصارف والمالية', rate: 78.5, target: 80, employees: 12450 },
-          { sector: 'Government', sectorAr: 'القطاع الحكومي', rate: 89.2, target: 90, employees: 18930 },
-          { sector: 'Healthcare', sectorAr: 'الرعاية الصحية', rate: 45.7, target: 60, employees: 5670 },
-          { sector: 'Technology', sectorAr: 'التكنولوجيا', rate: 52.3, target: 65, employees: 4230 },
-          { sector: 'Energy', sectorAr: 'الطاقة', rate: 71.8, target: 75, employees: 8920 },
-          { sector: 'Hospitality', sectorAr: 'الضيافة', rate: 38.4, target: 50, employees: 3120 },
-        ]
+        // On API failure, show "Not available" — never fabricated compliance figures.
+        overallRate: null,
+        targetRate: null,
+        totalEmiratiEmployees: 0,
+        monthlyGrowth: null,
+        sectorBreakdown: []
       },
       workforce: {
         totalWorkforce: 156789,
@@ -237,12 +233,16 @@ const GovernmentDashboard: React.FC = () => {
   const statCards = [
     {
       label: b('Emiratization Rate', 'نسبة التوطين'),
-      value: `${dashboardData.emiratization.overallRate}%`,
+      value: dashboardData.emiratization.overallRate == null
+        ? b('Not available', 'غير متاح')
+        : `${dashboardData.emiratization.overallRate}%`,
       icon: Target,
       color: 'text-green-600',
       bg: 'bg-green-50',
       border: 'border-green-100',
-      sub: `${b('Target', 'الهدف')}: ${dashboardData.emiratization.targetRate}%`
+      sub: dashboardData.emiratization.targetRate == null
+        ? ''
+        : `${b('Target', 'الهدف')}: ${dashboardData.emiratization.targetRate}%`
     },
     {
       label: b('Total Workforce', 'إجمالي القوى العاملة'),
@@ -255,7 +255,9 @@ const GovernmentDashboard: React.FC = () => {
     },
     {
       label: b('Monthly Growth', 'النمو الشهري'),
-      value: `+${dashboardData.emiratization.monthlyGrowth}%`,
+      value: dashboardData.emiratization.monthlyGrowth == null
+        ? b('Not available', 'غير متاح')
+        : `+${dashboardData.emiratization.monthlyGrowth}%`,
       icon: TrendingUp,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
@@ -456,9 +458,11 @@ const GovernmentDashboard: React.FC = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-dubai-bold text-emerald-700">{dashboardData.emiratization.targetRate}%</p>
+                          <p className="text-2xl font-dubai-bold text-emerald-700">
+                            {dashboardData.emiratization.targetRate == null ? b('N/A', 'غير متاح') : `${dashboardData.emiratization.targetRate}%`}
+                          </p>
                           <p className="text-[10px] text-emerald-600 font-dubai-medium">
-                            {b('Current', 'الحالي')}: {dashboardData.emiratization.overallRate}%
+                            {b('Current', 'الحالي')}: {dashboardData.emiratization.overallRate == null ? b('N/A', 'غير متاح') : `${dashboardData.emiratization.overallRate}%`}
                           </p>
                         </div>
                       </div>
