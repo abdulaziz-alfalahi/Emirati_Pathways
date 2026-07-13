@@ -12,6 +12,9 @@ import traceback
 from datetime import datetime, timedelta
 import uuid
 from backend.db import get_db_connection
+from backend.national_priority_engine import (
+    ensure_weights_table, load_weights, compute_national_priority,
+)
 import json
 import re
 from typing import Dict, List, Any
@@ -725,7 +728,47 @@ def match_candidates_to_job(job_id):
             """)
             
             candidates = cursor.fetchall()
-            
+
+            # ── National Development Priority axis (separate from Job Fit; #12) ──
+            # Batch-load the signal inputs for the fetched candidates (constant
+            # number of queries, not one-per-candidate). Everything is
+            # fail-neutral: a missing table/column just yields no priority points.
+            cand_ids = [str(dict(c).get('id')) for c in candidates]
+            stage_map, cert_map, training_map, np_weights = {}, {}, {}, {}
+            if cand_ids:
+                try:
+                    ensure_weights_table(conn)
+                except Exception as e:
+                    logger.warning(f"national_priority weights init failed: {e}")
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
+                np_weights = load_weights(conn)
+                pcur = conn.cursor()
+                for sql, target in (
+                    ("SELECT user_id, stage FROM user_lifecycle_stage WHERE user_id = ANY(%s)", 'stage'),
+                    ("SELECT user_id, COUNT(*) FROM candidate_certifications WHERE user_id = ANY(%s) GROUP BY user_id", 'cert'),
+                    ("SELECT user_id, COUNT(*) FROM course_enrollments WHERE user_id = ANY(%s) AND completion_date IS NOT NULL GROUP BY user_id", 'train'),
+                ):
+                    try:
+                        pcur.execute(sql, (cand_ids,))
+                        for row in pcur.fetchall():
+                            key = str(row[0])
+                            if target == 'stage':
+                                stage_map[key] = row[1]
+                            elif target == 'cert':
+                                cert_map[key] = row[1]
+                            else:
+                                training_map[key] = row[1]
+                    except Exception as e:
+                        logger.warning(f"national_priority signal '{target}' unavailable: {e}")
+                        try:
+                            conn.rollback()
+                        except Exception:
+                            pass
+                pcur.close()
+
             # Calculate match scores for each candidate
             matched_candidates = []
             for candidate in candidates:
@@ -743,7 +786,16 @@ def match_candidates_to_job(job_id):
                 # Only include candidates with reasonable match (>30%)
                 if match_result['match_percentage'] >= 30:
                     candidate_data['match_score'] = match_result
-                    
+
+                    # National Development Priority — a separate, disclosed axis (#12).
+                    _cid = str(candidate_data.get('id'))
+                    candidate_data['national_priority'] = compute_national_priority(
+                        candidate_data, np_weights,
+                        stage=stage_map.get(_cid),
+                        cert_count=cert_map.get(_cid, 0),
+                        training_count=training_map.get(_cid, 0),
+                    )
+
                     # Format dates
                     if candidate_data.get('created_at'):
                         candidate_data['created_at'] = candidate_data['created_at'].isoformat()
@@ -755,8 +807,12 @@ def match_candidates_to_job(job_id):
                     
                     matched_candidates.append(candidate_data)
             
-            # Sort by match score
-            matched_candidates.sort(key=lambda x: x['match_score']['match_percentage'], reverse=True)
+            # Fit-first; National Priority is a secondary sort / tiebreaker only,
+            # so a poor fit is never surfaced purely for priority (issue #12).
+            matched_candidates.sort(
+                key=lambda x: (x['match_score']['match_percentage'],
+                               x.get('national_priority', {}).get('score', 0)),
+                reverse=True)
             
             # Limit results
             limit = min(int(request.args.get('limit', 20)), 50)
