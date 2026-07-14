@@ -320,7 +320,7 @@ class InterviewService:
                     cur.execute("""
                         SELECT it.text, it.speaker, it.start_time_s
                         FROM interview_transcripts it
-                        JOIN interview_recordings_lk ir ON it.recording_id = ir.id
+                        JOIN interview_recordings ir ON it.recording_id = ir.id
                         WHERE ir.interview_id = %s
                         ORDER BY it.segment_index ASC
                     """, (session_id,))

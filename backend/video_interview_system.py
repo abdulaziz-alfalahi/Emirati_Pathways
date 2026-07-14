@@ -580,92 +580,55 @@ class VideoInterviewEngine:
             logger.error(f"Error seeding recommendation resources: {e}")
 
     def generate_ai_recommendations(self, session_id: str, candidate_id: str, session: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate AI matched recommendations for the candidate"""
-        self.seed_recommendation_resources()
-        
-        articles = []
-        courses = []
-        mentors = []
-        
+        """Recommend REAL, gap-driven resources to bridge the candidate's skill gaps.
+
+        Uses the platform's SkillGraphEngine (skill-gap analysis) -> RecommendationEngine
+        (real training/mentor/certification matches from training_programs / mentor
+        tables). Honest-empty if nothing matches or data is sparse — never the old
+        "first 10 rows + LLM guess". Grounded in the candidate's actual skill gaps.
+        """
+        recs_out = {"recommended_articles": [], "recommended_trainings": [], "recommended_mentors": []}
         try:
+            try:
+                from backend.skill_graph_engine import SkillGraphEngine
+                from backend.recommendation_engine import RecommendationEngine
+            except ImportError:
+                from skill_graph_engine import SkillGraphEngine
+                from recommendation_engine import RecommendationEngine
             with self.get_db_connection() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("SELECT id, title_en, title_ar, category FROM knowledge_base_articles LIMIT 10")
-                    articles = [dict(r) for r in cur.fetchall()]
-                    
-                    cur.execute("SELECT id, course_name, course_description FROM courses WHERE is_active = true LIMIT 10")
-                    courses = [dict(r) for r in cur.fetchall()]
-                    
-                    cur.execute("""
-                        SELECT mp.id, mp.user_id, u.full_name, mp.professional_title, mp.expertise_areas 
-                        FROM mentor_profiles mp 
-                        JOIN users u ON mp.user_id::text = u.id::text
-                        WHERE mp.is_available = true LIMIT 10
-                    """)
-                    mentors = [dict(r) for r in cur.fetchall()]
-        except Exception as db_err:
-            logger.error(f"Error fetching resources for recommendations: {db_err}")
-            
-        articles_str = json.dumps(articles, indent=2)
-        courses_str = json.dumps(courses, indent=2)
-        mentors_str = json.dumps(mentors, indent=2)
-        
-        fallback_recs = {
-            "recommended_articles": [{"id": articles[0]["id"], "title": articles[0]["title_en"]} if articles else {}],
-            "recommended_trainings": [{"id": str(courses[0]["id"]), "course_name": courses[0]["course_name"]} if courses else {}],
-            "recommended_mentors": [{"id": mentors[0]["user_id"], "full_name": mentors[0]["full_name"], "title": mentors[0]["professional_title"]} if mentors else {}]
-        }
-        
-        if not _qwen_available:
-            logger.info("Qwen not available, returning fallback recommendations")
-            self._save_recommendations(session_id, candidate_id, fallback_recs)
-            return fallback_recs
-            
-        try:
-            prompt = f"""
-            You are an AI-powered Career Placement Advisor in the UAE. 
-            A candidate has just finished a video interview for the position: {session.get('job_title', 'Software Engineer')}.
-            
-            Select the most relevant growth resources for this candidate from the platform databases below.
-            You must choose ONLY from the resources provided. Match them based on the candidate's potential weaknesses or preparation needs.
-            
-            AVAILABLE ARTICLES:
-            {articles_str}
-            
-            AVAILABLE TRAINING COURSES:
-            {courses_str}
-            
-            AVAILABLE MENTORS:
-            {mentors_str}
-            
-            Return a JSON object containing selected resources. Match the schema exactly:
-            {{
-                "recommended_articles": [
-                    {{ "id": <selected article id>, "title": "<selected article title>" }}
-                ],
-                "recommended_trainings": [
-                    {{ "id": "<selected course id>", "course_name": "<selected course name>" }}
-                ],
-                "recommended_mentors": [
-                    {{ "id": "<selected mentor user_id>", "full_name": "<selected mentor name>", "title": "<selected mentor title>" }}
-                ]
-            }}
-            """
-            
-            messages = [
-                {"role": "system", "content": "You are a professional career guidance assistant. Return ONLY raw, valid JSON matching the requested schema. Do not write text outside the JSON."},
-                {"role": "user", "content": prompt}
-            ]
-            
-            response = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
-            
-            self._save_recommendations(session_id, candidate_id, response)
-            return response
-            
+                sg = SkillGraphEngine(db_connection=conn)
+                re_engine = RecommendationEngine(db_connection=conn, skill_graph=sg)
+                gap = sg.analyze_skill_gaps(candidate_id)
+                # Clear any aborted-transaction state from the gap query (e.g. an
+                # EID/int type mismatch) so the recommendation queries run clean.
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                result = re_engine.generate_recommendations(candidate_id, gap_analysis=gap)
+                for rec in (result.get("recommendations") or []):
+                    rtype = rec.get("type")
+                    item = {
+                        "title": rec.get("title"),
+                        "title_ar": rec.get("title_ar"),
+                        "description": rec.get("description"),
+                        "action_url": rec.get("action_url"),
+                        "gap_skill": rec.get("gap_skill"),
+                        "priority": rec.get("priority"),
+                    }
+                    if rtype in ("training", "certification"):
+                        recs_out["recommended_trainings"].append(item)
+                    elif rtype == "mentor":
+                        recs_out["recommended_mentors"].append({**item, "full_name": rec.get("title")})
+                    elif rtype == "advisory":
+                        recs_out["recommended_articles"].append(item)
         except Exception as e:
-            logger.error(f"Error generating AI recommendations: {e}")
-            self._save_recommendations(session_id, candidate_id, fallback_recs)
-            return fallback_recs
+            logger.error(f"Gap-based recommendation error: {e}")
+        # Bound each list to a sensible number.
+        for k in recs_out:
+            recs_out[k] = recs_out[k][:5]
+        self._save_recommendations(session_id, candidate_id, recs_out)
+        return recs_out
 
     def _save_recommendations(self, session_id: str, candidate_id: str, recs: Dict[str, Any]):
         """Save recommendations to candidate_interview_recommendations table"""
