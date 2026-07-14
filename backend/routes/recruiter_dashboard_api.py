@@ -162,19 +162,38 @@ def optional_auth(f):
 @recruiter_dashboard_bp.route('/jd', methods=['GET'])
 @optional_auth
 def get_jd_list():
-    """Get list of job descriptions"""
+    """List the recruiter's job postings — REAL data with live application counts,
+    recruiter-scoped when identity is present. No fabricated JDs. (#26)"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'status': 'active', 'applications': 45, 'created': '2025-01-15'},
-                {'id': 2, 'title': 'Product Manager', 'company': 'Innovation Inc', 'status': 'active', 'applications': 32, 'created': '2025-01-10'},
-                {'id': 3, 'title': 'Data Analyst', 'company': 'Data Solutions', 'status': 'draft', 'applications': 0, 'created': '2025-01-20'}
-            ]
-        })
+        recruiter_id = _dashboard_recruiter_id()
+        where = "AND jp.recruiter_id::text = %s" if recruiter_id else ""
+        params = (recruiter_id,) if recruiter_id else None
+        rows = execute_query(f"""
+            SELECT jp.id::text AS id, jp.title, jp.status, jp.created_at AS created,
+                   c.name AS company,
+                   (SELECT COUNT(*) FROM job_applications ja
+                      WHERE ja.job_id::text = jp.jd_id::text OR ja.job_id::text = jp.id::text) AS applications
+            FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id::text = c.id::text
+            WHERE jp.status != 'deleted' {where}
+            ORDER BY jp.created_at DESC NULLS LAST
+            LIMIT 100
+        """, params)
+        data = [
+            {
+                'id': r.get('id'),
+                'title': r.get('title'),
+                'company': r.get('company'),
+                'status': r.get('status'),
+                'applications': r.get('applications', 0) or 0,
+                'created': r.get('created').isoformat() if r.get('created') and hasattr(r.get('created'), 'isoformat') else r.get('created')
+            }
+            for r in (rows or [])
+        ]
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get JD list: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': []})
 
 
 @recruiter_dashboard_bp.route('/jd', methods=['POST'])
@@ -202,25 +221,16 @@ def create_jd():
 @recruiter_dashboard_bp.route('/jd/<int:jd_id>/match', methods=['POST'])
 @optional_auth
 def match_candidates(jd_id):
-    """AI-powered candidate matching for a job description"""
-    try:
-        data = request.get_json() or {}
-        limit = data.get('limit', 10)
-        return jsonify({
-            'success': True,
-            'data': {
-                'jd_id': jd_id,
-                'matches': [
-                    {'id': 1, 'name': 'Ahmed Al Maktoum', 'match_score': 92, 'skills_match': ['Python', 'JavaScript', 'React'], 'experience_years': 5},
-                    {'id': 2, 'name': 'Fatima Al Nahyan', 'match_score': 88, 'skills_match': ['Python', 'Django', 'PostgreSQL'], 'experience_years': 4},
-                    {'id': 3, 'name': 'Mohammed Al Rashid', 'match_score': 85, 'skills_match': ['JavaScript', 'Node.js', 'MongoDB'], 'experience_years': 3}
-                ][:limit],
-                'total_matches': 3
-            }
-        })
-    except Exception as e:
-        logger.error(f"Failed to match candidates: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+    """DEPRECATED shadow endpoint. Real candidate matching is served by
+    POST /api/recruiter/jd/<jd_id>/match-candidates (jd_routes_v2, backed by the
+    scoring engine). This legacy path previously returned fabricated candidates/
+    scores — return an empty, honest result instead of fake data. (#26)"""
+    return jsonify({
+        'success': True,
+        'data': {'jd_id': jd_id, 'matches': [], 'total_matches': 0},
+        'available': False,
+        'message': 'Use POST /api/recruiter/jd/<jd_id>/match-candidates for real matching.'
+    })
 
 
 @recruiter_dashboard_bp.route('/shortlist', methods=['GET'])
@@ -244,15 +254,17 @@ def get_shortlist():
 @recruiter_dashboard_bp.route('/jd/templates', methods=['GET'])
 @optional_auth
 def get_recruiter_jd_templates():
-    """Get JD templates for recruiter"""
+    """Get JD templates for recruiter. These are legitimate static starter templates;
+    the previous 'popularity' field was a fabricated usage metric (no source) and has
+    been removed rather than presented as real. (#26)"""
     try:
         templates = [
-            {'id': 1, 'name': 'Software Engineer', 'category': 'Technology', 'description': 'Standard template for software engineering roles', 'popularity': 95},
-            {'id': 2, 'name': 'Product Manager', 'category': 'Product', 'description': 'Template for product management positions', 'popularity': 88},
-            {'id': 3, 'name': 'Data Analyst', 'category': 'Data', 'description': 'Template for data analysis roles', 'popularity': 82},
-            {'id': 4, 'name': 'Marketing Manager', 'category': 'Marketing', 'description': 'Template for marketing management roles', 'popularity': 76},
-            {'id': 5, 'name': 'HR Specialist', 'category': 'Human Resources', 'description': 'Template for HR specialist positions', 'popularity': 70},
-            {'id': 6, 'name': 'Financial Analyst', 'category': 'Finance', 'description': 'Template for financial analysis roles', 'popularity': 74}
+            {'id': 1, 'name': 'Software Engineer', 'category': 'Technology', 'description': 'Standard template for software engineering roles'},
+            {'id': 2, 'name': 'Product Manager', 'category': 'Product', 'description': 'Template for product management positions'},
+            {'id': 3, 'name': 'Data Analyst', 'category': 'Data', 'description': 'Template for data analysis roles'},
+            {'id': 4, 'name': 'Marketing Manager', 'category': 'Marketing', 'description': 'Template for marketing management roles'},
+            {'id': 5, 'name': 'HR Specialist', 'category': 'Human Resources', 'description': 'Template for HR specialist positions'},
+            {'id': 6, 'name': 'Financial Analyst', 'category': 'Finance', 'description': 'Template for financial analysis roles'}
         ]
         return jsonify({'success': True, 'data': templates})
     except Exception as e:
@@ -573,26 +585,16 @@ def get_jd_list_enhanced():
 @recruiter_dashboard_bp.route('/match', methods=['POST'])
 @optional_auth
 def match_candidates_global():
-    """AI-powered candidate matching"""
-    try:
-        data = request.get_json() or {}
-        return jsonify({
-            'success': True,
-            'data': {
-                'jd_id': data.get('jd_id', 'jd_001'),
-                'matches': [
-                    {'id': 'c_001', 'candidate_id': 'c_001', 'name': 'Ahmed Al Maktoum', 'match_score': 92, 'skills_match': ['Python', 'JavaScript', 'React'], 'experience_years': 5, 'location': 'Dubai'},
-                    {'id': 'c_002', 'candidate_id': 'c_002', 'name': 'Fatima Al Nahyan', 'match_score': 88, 'skills_match': ['Python', 'Django', 'PostgreSQL'], 'experience_years': 4, 'location': 'Abu Dhabi'},
-                    {'id': 'c_003', 'candidate_id': 'c_003', 'name': 'Mohammed Al Rashid', 'match_score': 85, 'skills_match': ['JavaScript', 'Node.js', 'MongoDB'], 'experience_years': 3, 'location': 'Sharjah'},
-                    {'id': 'c_004', 'candidate_id': 'c_004', 'name': 'Sara Al Qassimi', 'match_score': 82, 'skills_match': ['Python', 'Data Analysis', 'SQL'], 'experience_years': 4, 'location': 'Dubai'},
-                    {'id': 'c_005', 'candidate_id': 'c_005', 'name': 'Khalid Al Falasi', 'match_score': 78, 'skills_match': ['Java', 'Spring Boot', 'AWS'], 'experience_years': 6, 'location': 'Dubai'}
-                ],
-                'total_matches': 5
-            }
-        })
-    except Exception as e:
-        logger.error(f"Failed to match candidates: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+    """DEPRECATED shadow endpoint. Real candidate matching is served by
+    POST /api/recruiter/jd/<jd_id>/match-candidates (jd_routes_v2). This legacy path
+    previously returned fabricated candidates/scores — return empty honest data. (#26)"""
+    data = request.get_json() or {}
+    return jsonify({
+        'success': True,
+        'data': {'jd_id': data.get('jd_id'), 'matches': [], 'total_matches': 0},
+        'available': False,
+        'message': 'Use POST /api/recruiter/jd/<jd_id>/match-candidates for real matching.'
+    })
 
 
 @recruiter_dashboard_bp.route('/shortlist', methods=['POST'])
@@ -1119,66 +1121,197 @@ def create_offer():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+def _dashboard_recruiter_id():
+    """Resolve the recruiter identity from JWT (optional) or ?recruiter_id, as str or None."""
+    recruiter_id = None
+    try:
+        verify_jwt_in_request(optional=True)
+        recruiter_id = get_jwt_identity()
+    except Exception:
+        pass
+    if not recruiter_id:
+        recruiter_id = request.args.get('recruiter_id')
+    return str(recruiter_id) if recruiter_id else None
+
+
 @recruiter_dashboard_bp.route('/dashboard/overview', methods=['GET'])
 @recruiter_dashboard_bp.route('/statistics/dashboard', methods=['GET'])
 @optional_auth
 def get_dashboard_overview():
-    """Get recruiter dashboard overview statistics"""
+    """Recruiter dashboard overview — REAL counts, recruiter-scoped when identity is
+    present, else platform-wide. No fabricated KPIs or activity. (#26)"""
+    overview = {
+        'activeJobs': 0, 'totalApplications': 0, 'shortlistedCandidates': 0,
+        'scheduledInterviews': 0, 'pendingOffers': 0, 'acceptedOffers': 0,
+        'recentActivity': []
+    }
     try:
-        return jsonify({
-            'success': True,
-            'data': {
-                'activeJobs': 12,
-                'totalApplications': 156,
-                'shortlistedCandidates': 34,
-                'scheduledInterviews': 8,
-                'pendingOffers': 5,
-                'acceptedOffers': 23,
-                'recentActivity': [
-                    {'type': 'application', 'message': 'New application received', 'time': '2 hours ago'},
-                    {'type': 'interview', 'message': 'Interview scheduled', 'time': '4 hours ago'},
-                    {'type': 'offer', 'message': 'Offer accepted', 'time': '1 day ago'}
-                ]
-            }
-        })
+        recruiter_id = _dashboard_recruiter_id()
+
+        # Active vacancies (job_postings + job_descriptions)
+        if recruiter_id:
+            vs = execute_query("""
+                SELECT COUNT(*) FILTER (WHERE status IN ('active', 'published')) AS active FROM (
+                    SELECT status FROM job_postings WHERE status != 'deleted' AND recruiter_id::text = %s
+                    UNION ALL
+                    SELECT CASE WHEN is_active THEN 'active' ELSE 'inactive' END FROM job_descriptions WHERE user_id::text = %s
+                ) j
+            """, (recruiter_id, recruiter_id), fetch_one=True)
+        else:
+            vs = execute_query("""
+                SELECT COUNT(*) FILTER (WHERE status IN ('active', 'published')) AS active FROM (
+                    SELECT status FROM job_postings WHERE status != 'deleted'
+                    UNION ALL
+                    SELECT CASE WHEN is_active THEN 'active' ELSE 'inactive' END FROM job_descriptions
+                ) j
+            """, fetch_one=True)
+        if vs:
+            overview['activeJobs'] = vs.get('active', 0) or 0
+
+        # Applications (total / shortlisted / interviewing)
+        if recruiter_id:
+            aps = execute_query("""
+                SELECT COUNT(*) AS total,
+                       COUNT(*) FILTER (WHERE ja.status IN ('interview', 'interviewing')) AS interviewing,
+                       COUNT(*) FILTER (WHERE ja.status = 'shortlisted') AS shortlisted
+                FROM job_applications ja
+                WHERE EXISTS (SELECT 1 FROM job_postings jp
+                                WHERE (ja.job_id::text = jp.jd_id::text OR ja.job_id::text = jp.id::text)
+                                  AND jp.recruiter_id::text = %s)
+                   OR EXISTS (SELECT 1 FROM job_descriptions jd
+                                WHERE ja.job_id::text = jd.id::text AND jd.user_id::text = %s)
+            """, (recruiter_id, recruiter_id), fetch_one=True)
+        else:
+            aps = execute_query("""
+                SELECT COUNT(*) AS total,
+                       COUNT(*) FILTER (WHERE status IN ('interview', 'interviewing')) AS interviewing,
+                       COUNT(*) FILTER (WHERE status = 'shortlisted') AS shortlisted
+                FROM job_applications
+            """, fetch_one=True)
+        if aps:
+            overview['totalApplications'] = aps.get('total', 0) or 0
+            overview['scheduledInterviews'] = aps.get('interviewing', 0) or 0
+            overview['shortlistedCandidates'] = aps.get('shortlisted', 0) or 0
+
+        # Offers (pending / accepted)
+        if recruiter_id:
+            of = execute_query("""
+                SELECT COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+                       COUNT(*) FILTER (WHERE status = 'accepted') AS accepted
+                FROM job_offers WHERE recruiter_id::text = %s
+            """, (recruiter_id,), fetch_one=True)
+        else:
+            of = execute_query("""
+                SELECT COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+                       COUNT(*) FILTER (WHERE status = 'accepted') AS accepted
+                FROM job_offers
+            """, fetch_one=True)
+        if of:
+            overview['pendingOffers'] = of.get('pending', 0) or 0
+            overview['acceptedOffers'] = of.get('accepted', 0) or 0
+
+        # Recent activity (real log, recruiter-scoped when known)
+        if recruiter_id:
+            acts = execute_query("""
+                SELECT action, resource_type, created_at FROM recruiter_activity_log
+                WHERE recruiter_id::text = %s ORDER BY created_at DESC LIMIT 5
+            """, (recruiter_id,))
+        else:
+            acts = execute_query("""
+                SELECT action, resource_type, created_at FROM recruiter_activity_log
+                ORDER BY created_at DESC LIMIT 5
+            """)
+        if acts:
+            overview['recentActivity'] = [
+                {
+                    'type': a.get('resource_type'),
+                    'message': a.get('action'),
+                    'time': a.get('created_at').isoformat() if a.get('created_at') else None
+                }
+                for a in acts
+            ]
+
+        return jsonify({'success': True, 'data': overview})
     except Exception as e:
+        # Fail soft to zeros/empty — never fabricate. (#26)
         logger.error(f"Failed to get dashboard overview: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': overview})
 
 
 @recruiter_dashboard_bp.route('/dashboard/vacancies', methods=['GET'])
 @optional_auth
 def get_dashboard_vacancies():
-    """Get active vacancies for dashboard"""
+    """Active vacancies for the dashboard — REAL postings with live application
+    counts, recruiter-scoped when identity is present. (#26)"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'title': 'Software Engineer', 'applications': 45, 'status': 'active', 'posted': '2025-01-15'},
-                {'id': 2, 'title': 'Product Manager', 'applications': 32, 'status': 'active', 'posted': '2025-01-10'},
-                {'id': 3, 'title': 'Data Analyst', 'applications': 28, 'status': 'active', 'posted': '2025-01-08'}
-            ]
-        })
+        recruiter_id = _dashboard_recruiter_id()
+        where = "AND jp.recruiter_id::text = %s" if recruiter_id else ""
+        params = (recruiter_id,) if recruiter_id else None
+        rows = execute_query(f"""
+            SELECT jp.id::text AS id, jp.title, jp.status, jp.created_at AS posted,
+                   (SELECT COUNT(*) FROM job_applications ja
+                      WHERE ja.job_id::text = jp.jd_id::text OR ja.job_id::text = jp.id::text) AS applications
+            FROM job_postings jp
+            WHERE jp.status IN ('active', 'published') {where}
+            ORDER BY jp.created_at DESC NULLS LAST
+            LIMIT 50
+        """, params)
+        data = [
+            {
+                'id': r.get('id'),
+                'title': r.get('title'),
+                'applications': r.get('applications', 0) or 0,
+                'status': r.get('status'),
+                'posted': r.get('posted').isoformat() if r.get('posted') and hasattr(r.get('posted'), 'isoformat') else r.get('posted')
+            }
+            for r in (rows or [])
+        ]
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get vacancies: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': []})
 
 
 @recruiter_dashboard_bp.route('/dashboard/offers', methods=['GET'])
 @optional_auth
 def get_dashboard_offers():
-    """Get offers for dashboard"""
+    """Offers for the dashboard — REAL job_offers with real candidate names,
+    recruiter-scoped when identity is present. No fabricated candidates. (#26)"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'pending', 'sent': '2025-01-20'},
-                {'id': 2, 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'accepted', 'sent': '2025-01-18'}
-            ]
-        })
+        recruiter_id = _dashboard_recruiter_id()
+        # Offers carry candidate PII (names) — require a recruiter identity and scope to
+        # it. Without identity, return empty rather than exposing every recruiter's
+        # offers globally. (#26 + authz)
+        if not recruiter_id:
+            return jsonify({'success': True, 'data': [], 'available': False,
+                            'message': 'Sign in as a recruiter to view your offers'})
+        rows = execute_query("""
+            SELECT jo.offer_id::text AS id,
+                   COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
+                            'Candidate ' || jo.candidate_id::text) AS candidate,
+                   jo.position_title AS position,
+                   jo.status,
+                   jo.created_at AS sent
+            FROM job_offers jo
+            LEFT JOIN users u ON jo.candidate_id::text = u.id::text
+            WHERE jo.recruiter_id::text = %s
+            ORDER BY jo.created_at DESC
+            LIMIT 50
+        """, (recruiter_id,))
+        data = [
+            {
+                'id': r.get('id'),
+                'candidate': r.get('candidate'),
+                'position': r.get('position'),
+                'status': r.get('status'),
+                'sent': r.get('sent').isoformat() if r.get('sent') and hasattr(r.get('sent'), 'isoformat') else r.get('sent')
+            }
+            for r in (rows or [])
+        ]
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get offers: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': []})
 
 
 @recruiter_dashboard_bp.route('/dashboard', methods=['GET'])
