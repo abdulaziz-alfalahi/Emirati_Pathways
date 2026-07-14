@@ -653,6 +653,7 @@ _additional_blueprints = [
     ('backend.routes.career_dial_routes', 'career_dial_bp', None, 'Career Dial'),
     ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
     ('backend.routes.company_routes', 'company_bp', None, 'Companies'),
+    ('backend.national_priority_monitoring_routes', 'national_priority_monitoring_bp', None, 'National Priority Monitoring'),
     # --- Blueprints migrated from recruiter_server.py ---
     ('backend.routes.profile.profile_readiness', 'profile_readiness_bp', None, 'Profile Readiness'),
     ('backend.hr_approval_routes', 'hr_approval_bp', None, 'HR Approval Workflow'),
@@ -667,7 +668,6 @@ _additional_blueprints = [
     ('backend.routes.user_activity_api', 'user_activity_bp', None, 'User Activity'),
     ('backend.recruiter.analytics_routes', 'analytics_bp', '/api/recruiter', 'Recruiter Analytics'),
     ('backend.routes.strategic_metrics_api', 'strategic_metrics_bp', None, 'Strategic Metrics'),
-    ('backend.national_priority_monitoring_routes', 'national_priority_monitoring_bp', None, 'National Priority Monitoring'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
