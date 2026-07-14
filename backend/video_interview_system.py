@@ -106,7 +106,13 @@ class VideoInterviewEngine:
         self.encryption_key = os.getenv('VIDEO_ENCRYPTION_KEY', 'default_key_change_in_production')
         
         # Granite Speech Server (sidecar)
-        self.granite_speech_url = os.getenv('GRANITE_SPEECH_URL', 'http://localhost:8001')
+        # ASR endpoints (Granite Speech). Comma-separated for HA failover across
+        # the GPU VMs (e.g. http://10.228.145.194:8001,http://10.228.145.195:8001).
+        # Defaults to localhost for local dev.
+        self.granite_speech_urls = [
+            u.strip() for u in os.getenv('GRANITE_SPEECH_URL', 'http://localhost:8001').split(',') if u.strip()
+        ]
+        self.granite_speech_url = self.granite_speech_urls[0] if self.granite_speech_urls else 'http://localhost:8001'
         
         logger.info("Video Interview Engine initialized (Granite @ %s)", self.granite_speech_url)
 
@@ -274,47 +280,41 @@ class VideoInterviewEngine:
         except Exception as e:
             logger.error(f"Error in post-interview processing: {e}")
 
-    def process_real_time_audio(self, session_id: str, audio_data: bytes) -> RealTimeAnalysis:
-        """Process real-time audio for AI analysis via Granite Speech Server."""
-        try:
-            # Attempt to call the Granite speech sidecar for real transcription
-            health_url = f"{self.granite_speech_url}/health"
+    def _healthy_asr_url(self):
+        """Return the first reachable Granite ASR endpoint (HA failover), or None."""
+        for url in self.granite_speech_urls:
             try:
-                health = requests.get(health_url, timeout=2)
-                if health.status_code == 200 and health.json().get('engine', {}).get('loaded'):
-                    logger.debug("Granite speech server available — audio handled via WebSocket")
-                    # NOTE: Real-time audio flows through the WebSocket at
-                    # ws://<granite>/ws/transcribe/<session_id>, not this REST method.
-                    # This endpoint is kept for backward-compat with the existing
-                    # REST-based flow; the WebSocket path is preferred.
+                h = requests.get(f"{url}/health", timeout=2)
+                if h.status_code == 200 and h.json().get('engine', {}).get('loaded'):
+                    return url
             except requests.RequestException:
-                logger.debug("Granite speech server not reachable — using mock analysis")
+                continue
+        return None
 
-            return self._get_mock_analysis(session_id)
-            
+    def process_real_time_audio(self, session_id: str, audio_data: bytes) -> RealTimeAnalysis:
+        """Real-time audio flows through the Granite ASR WebSocket
+        (ws://<granite>/ws/transcribe/<session_id>). This REST shim only reports
+        availability; it never fabricates metrics."""
+        try:
+            if self._healthy_asr_url():
+                logger.debug("Granite ASR available — audio handled via WebSocket")
+            else:
+                logger.debug("Granite ASR not reachable")
+            return self._unavailable_realtime_analysis(session_id)
         except Exception as e:
             logger.error(f"Error processing real-time audio: {e}")
-            return self._get_mock_analysis(session_id)
+            return self._unavailable_realtime_analysis(session_id)
 
-    def _get_mock_analysis(self, session_id: str) -> RealTimeAnalysis:
-        """Generate mock real-time analysis for demonstration"""
-        import random
-        
+    def _unavailable_realtime_analysis(self, session_id: str) -> RealTimeAnalysis:
+        """Neutral placeholder when live analysis isn't connected — NEVER fabricated
+        scores. Real metrics come from the Granite ASR WebSocket path."""
         return RealTimeAnalysis(
             session_id=session_id,
             timestamp=datetime.now(),
-            speech_quality=random.uniform(0.7, 1.0),
-            sentiment_score=random.uniform(0.6, 0.9),
-            engagement_level=random.uniform(0.8, 1.0),
-            technical_accuracy=random.uniform(0.7, 0.95),
-            communication_clarity=random.uniform(0.75, 1.0),
-            confidence_level=random.uniform(0.6, 0.9),
+            speech_quality=0.0, sentiment_score=0.0, engagement_level=0.0,
+            technical_accuracy=0.0, communication_clarity=0.0, confidence_level=0.0,
             bias_indicators=[],
-            key_insights=[
-                "Candidate demonstrates strong technical knowledge",
-                "Clear communication style",
-                "Shows enthusiasm for the role"
-            ]
+            key_insights=["Real-time analysis unavailable — speech-to-text (Granite ASR) is not connected."],
         )
 
     def generate_interview_report(self, session_id: str) -> Dict[str, Any]:
@@ -367,14 +367,17 @@ class VideoInterviewEngine:
                     if session.get('status') != 'completed':
                         raise ValueError("Interview has not been completed yet")
                     
-                    # Generate AI report using Qwen / DashScope
-                    if _qwen_available:
-                        report = self._generate_ai_report(session)
-                    else:
-                        report = self._generate_mock_report(session)
-                    
-                    # Store report in database
+                    # Honest analysis: only score a REAL transcript. Until speech-to-text
+                    # produces one, return an explicit "pending" report — never fabricate
+                    # scores from the job title alone.
                     actual_session_id = session.get('interview_id') or session.get('id') or session_id
+                    transcript = self._fetch_transcript(cur, actual_session_id)
+                    if transcript and _qwen_available:
+                        report = self._generate_ai_report(session, transcript)
+                    else:
+                        report = self._pending_report(session, has_transcript=bool(transcript))
+
+                    # Store report in database
                     cur.execute("SELECT id FROM interview_reports WHERE session_id = %s", (actual_session_id,))
                     if cur.fetchone():
                         cur.execute("""
@@ -401,147 +404,117 @@ class VideoInterviewEngine:
             logger.error(f"Error generating interview report: {e}")
             return {'error': 'Failed to generate report'}
 
-    def _generate_ai_report(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate AI-powered interview report using Qwen / DashScope"""
+    def _fetch_transcript(self, cur, interview_id):
+        """Return the REAL interview transcript for a session, or None.
+
+        Reads the per-segment rows the LiveKit agent writes to interview_transcripts
+        (joined to interview_recordings by interview_id). Fail-neutral: any missing
+        table/column yields None (-> honest 'pending' report), and a SAVEPOINT keeps
+        a missing-table error from aborting the outer transaction.
+        """
         try:
-            prompt = f"""
-            Generate a comprehensive interview report for this UAE job interview:
-            
-            INTERVIEW DETAILS:
-            - Position: {session['job_title']}
-            - Candidate: {session['candidate_first_name']} {session['candidate_last_name']}
-            - Interviewer: {session['interviewer_first_name']} {session['interviewer_last_name']}
-            - Duration: {session['duration_minutes']} minutes
-            - Type: {session['interview_type']}
-            - Date: {session['scheduled_time']}
-            
-            Based on typical interview patterns, provide a comprehensive analysis:
-            
-            {{
-                "overall_assessment": {{
-                    "recommendation": "hire/no-hire/maybe",
-                    "confidence_score": 0.0-1.0,
-                    "overall_rating": 1-10,
-                    "summary": "brief overall assessment"
-                }},
-                "technical_evaluation": {{
-                    "technical_skills": 1-10,
-                    "problem_solving": 1-10,
-                    "experience_relevance": 1-10,
-                    "technical_communication": 1-10,
-                    "strengths": ["strength1", "strength2"],
-                    "areas_for_improvement": ["area1", "area2"]
-                }},
-                "soft_skills_assessment": {{
-                    "communication": 1-10,
-                    "leadership_potential": 1-10,
-                    "cultural_fit": 1-10,
-                    "adaptability": 1-10,
-                    "teamwork": 1-10,
-                    "motivation": 1-10
-                }},
-                "uae_specific_evaluation": {{
-                    "cultural_awareness": 1-10,
-                    "emiratization_value": 1-10,
-                    "local_market_understanding": 1-10,
-                    "arabic_proficiency": "excellent/good/basic/none",
-                    "uae_experience": 1-10
-                }},
-                "interview_quality": {{
-                    "question_quality": 1-10,
-                    "interviewer_bias_indicators": ["indicator1", "indicator2"],
-                    "process_fairness": 1-10,
-                    "improvement_suggestions": ["suggestion1", "suggestion2"]
-                }},
-                "next_steps": {{
-                    "recommended_actions": ["action1", "action2"],
-                    "additional_assessments": ["assessment1", "assessment2"],
-                    "timeline_suggestions": "immediate/within_week/needs_discussion"
-                }},
-                "development_insights": {{
-                    "career_growth_potential": 1-10,
-                    "mentorship_needs": ["need1", "need2"],
-                    "skill_development_priorities": ["skill1", "skill2"],
-                    "leadership_trajectory": "high/medium/low"
-                }}
-            }}
-            
-            Focus on UAE market context, Emiratization benefits, and objective assessment.
-            """
-            
-            messages = [
-
-            
-                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
-
-            
-                {"role": "user", "content": prompt},
-
-            
-            ]
-
-            
-            response = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
-            
+            cur.execute("SAVEPOINT sp_transcript")
+            cur.execute("""
+                SELECT t.speaker, t.text, t.competencies_detected
+                FROM interview_transcripts t
+                JOIN interview_recordings r ON r.id = t.recording_id
+                WHERE r.interview_id = %s
+                ORDER BY t.segment_index
+            """, (str(interview_id),))
+            rows = cur.fetchall()
+            cur.execute("RELEASE SAVEPOINT sp_transcript")
+        except Exception:
             try:
-                return response  # chat_completion returns parsed JSON directly
-            except json.JSONDecodeError:
-                return self._generate_mock_report(session)
-                
-        except Exception as e:
-            logger.error(f"Error generating AI report: {e}")
-            return self._generate_mock_report(session)
+                cur.execute("ROLLBACK TO SAVEPOINT sp_transcript")
+            except Exception:
+                pass
+            return None
+        if not rows:
+            return None
+        lines, competencies = [], set()
+        for r in rows:
+            speaker = r.get('speaker') or 'Speaker'
+            text = (r.get('text') or '').strip()
+            if text:
+                lines.append(f"{speaker}: {text}")
+            comp = r.get('competencies_detected')
+            if isinstance(comp, list):
+                competencies.update(c for c in comp if isinstance(c, str))
+        if not lines:
+            return None
+        return {"text": "\n".join(lines), "segments": len(rows), "competencies": sorted(competencies)}
 
-    def _generate_mock_report(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate mock interview report for demonstration"""
+    def _pending_report(self, session: Dict[str, Any], has_transcript: bool = False) -> Dict[str, Any]:
+        """Honest report when automated analysis can't be produced yet — contains
+        NO fabricated scores. Used when there is no transcript (speech-to-text has
+        not run) or the AI analyzer is unavailable."""
+        reason = ("The interview transcript is available but the AI analyzer is offline."
+                  if has_transcript else
+                  "No interview transcript is available yet — automated analysis runs "
+                  "after the recording is transcribed by speech-to-text (Granite ASR).")
         return {
+            "status": "analysis_pending",
+            "analysis_source": "none",
+            "summary": f"Automated analysis pending. {reason} Please review the recording directly.",
+            "strengths": [],
+            "improvements": [],
+            "recommendations": [],
             "overall_assessment": {
-                "recommendation": "hire",
-                "confidence_score": 0.85,
-                "overall_rating": 8,
-                "summary": "Strong candidate with excellent technical skills and good cultural fit"
+                "recommendation": None,
+                "confidence_score": None,
+                "overall_rating": None,
+                "summary": "Pending automated analysis.",
             },
-            "technical_evaluation": {
-                "technical_skills": 8,
-                "problem_solving": 9,
-                "experience_relevance": 7,
-                "technical_communication": 8,
-                "strengths": ["Strong problem-solving abilities", "Clear technical communication"],
-                "areas_for_improvement": ["Could benefit from more UAE market experience"]
-            },
-            "soft_skills_assessment": {
-                "communication": 8,
-                "leadership_potential": 7,
-                "cultural_fit": 9,
-                "adaptability": 8,
-                "teamwork": 8,
-                "motivation": 9
-            },
-            "uae_specific_evaluation": {
-                "cultural_awareness": 8,
-                "emiratization_value": 10,
-                "local_market_understanding": 7,
-                "arabic_proficiency": "good",
-                "uae_experience": 6
-            },
-            "interview_quality": {
-                "question_quality": 8,
-                "interviewer_bias_indicators": [],
-                "process_fairness": 9,
-                "improvement_suggestions": ["Consider adding more technical deep-dive questions"]
-            },
-            "next_steps": {
-                "recommended_actions": ["Proceed to final interview", "Check references"],
-                "additional_assessments": ["Technical coding assessment"],
-                "timeline_suggestions": "within_week"
-            },
-            "development_insights": {
-                "career_growth_potential": 8,
-                "mentorship_needs": ["UAE market orientation", "Leadership development"],
-                "skill_development_priorities": ["Advanced technical skills", "Project management"],
-                "leadership_trajectory": "high"
-            }
         }
+
+    def _generate_ai_report(self, session: Dict[str, Any], transcript: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze the REAL interview transcript with Qwen and produce a report
+        grounded in transcript evidence. Falls back to an honest 'pending' report
+        on any error — never fabricates from the job title."""
+        try:
+            transcript_text = (transcript.get("text") or "")[:12000]
+            detected = ", ".join(transcript.get("competencies") or []) or "none detected"
+            prompt = f"""
+            You are assessing a REAL UAE job interview from its transcript. Base every
+            judgement ONLY on what the transcript actually shows — do not invent facts.
+
+            Position: {session.get('job_title')}
+            Competencies auto-detected in the transcript: {detected}
+
+            TRANSCRIPT:
+            {transcript_text}
+
+            Return ONLY valid JSON with this exact shape:
+            {{
+              "summary": "2-3 sentence evidence-based summary grounded in the transcript",
+              "strengths": ["evidence-based strength", "..."],
+              "improvements": ["evidence-based gap / area to improve", "..."],
+              "recommendations": ["specific next step or platform resource to bridge a gap", "..."],
+              "overall_assessment": {{
+                "recommendation": "hire" | "maybe" | "no-hire",
+                "confidence_score": 0.0,
+                "overall_rating": 1,
+                "summary": "one-line rationale grounded in the transcript"
+              }},
+              "competency_evaluation": {{"competency": 1}}
+            }}
+            If the transcript is too short or empty to judge fairly, say so in "summary"
+            and use null for the ratings. Never guess.
+            """
+            messages = [
+                {"role": "system", "content": "You assess interviews strictly from transcript evidence. Return ONLY raw, valid JSON. No markdown, no code fences."},
+                {"role": "user", "content": prompt},
+            ]
+            report = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
+            if not isinstance(report, dict) or not report.get("summary"):
+                return self._pending_report(session, has_transcript=True)
+            report["status"] = "analyzed"
+            report["analysis_source"] = "transcript"
+            report["transcript_segments"] = transcript.get("segments")
+            return report
+        except Exception as e:
+            logger.error(f"Error generating transcript-grounded AI report: {e}")
+            return self._pending_report(session, has_transcript=True)
 
 # REMOVED: get_interview_sessions was dead code — shadowed by
 # REMOVED: interview_sessions_api.list_sessions (registered first via blueprint).
