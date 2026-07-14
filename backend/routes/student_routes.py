@@ -45,12 +45,12 @@ def get_student_stats():
                     'name': 'Job Seeker',
                     'completionPercentage': 0,
                     'cvUploaded': False,
-                    'ats_score': 0
+                    'ats_score': None
                 },
                 'stats': {
                     'applications_submitted': 0,
                     'upcoming_interviews': 0,
-                    'profile_views': 0,
+                    'profile_views': None,
                     'saved_programs': 0
                 }
             }
@@ -93,29 +93,29 @@ def get_student_stats():
                 cv_data = cv_storage_manager.get_user_cvs(raw_user_id)
                 cv_count = cv_data.get('total_count', 0)
                 
-                # 3. Calculate Mock Stats (for now, until real systems are connected)
-                # Ensure we at least show some profile views if they have activity
-                # NOTE: job_applications table uses 'candidate_id' which maps to the user's UUID
+                # 3. Real stats. NOTE: job_applications table uses 'candidate_id'
+                # which maps to the user's UUID.
                 cursor.execute("SELECT COUNT(*) as count FROM job_applications WHERE candidate_id = %s", (user_id,))
                 app_count = cursor.fetchone()['count']
-                
-                # ATS Score Calculation (Mock based on profile data existence)
-                # In future: Fetch from user_cv_analysis table
-                ats_score = 0
-                if cv_count > 0:
-                    ats_score = 65 + (app_count * 2) # Base score + activity bonus
-                    if ats_score > 95: ats_score = 95
-                
+
+                # ATS score is not sourced by this dashboard's CV store (user_cvs holds
+                # file metadata only; the analysed score lives in the CV-analysis table
+                # and isn't wired here yet). Show null "not available" rather than the
+                # previous fabricated `65 + app_count*2`. (#26)
+                ats_score = None
+
                 stats_data['data']['profile']['name'] = full_name
                 if photo_url:
                     stats_data['data']['profile']['profile_photo_url'] = photo_url
                 stats_data['data']['profile']['cvUploaded'] = cv_count > 0
                 stats_data['data']['profile']['ats_score'] = ats_score
-                # Completion percentage logic (simplified)
+                # Completion percentage derived from actual profile state (CV + activity).
                 stats_data['data']['profile']['completionPercentage'] = 40 + (20 if cv_count > 0 else 0) + (10 if app_count > 0 else 0)
-                
+
                 stats_data['data']['stats']['applications_submitted'] = app_count
-                stats_data['data']['stats']['profile_views'] = 12 + (app_count * 3) # Mock engagement
+                # No profile-view tracking exists — do not fabricate an engagement
+                # count (was `12 + app_count*3`). Null = "not available". (#26)
+                stats_data['data']['stats']['profile_views'] = None
                 
                 return jsonify(stats_data)
                 
