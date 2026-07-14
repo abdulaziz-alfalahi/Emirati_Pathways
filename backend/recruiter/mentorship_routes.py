@@ -115,37 +115,11 @@ def recommend_mentors():
 
     except Exception as e:
         logger.error(f"Error recommending mentors: {e}")
-        # Return mock data if DB fails (for demo purposes)
+        # Do not fabricate mentors on failure (was mock 'Fatima Al Kaabi'/'Ahmed Al
+        # Mansoori' with 95/88 scores) — return an honest empty result. (#26)
         return jsonify({
             'success': True,
-            'recommendations': [
-                {
-                    'mentor': {
-                        'id': 'm1',
-                        'name': 'Fatima Al Kaabi',
-                        'industry': 'Technology',
-                        'expertise': ['Python', 'AI', 'Leadership'],
-                        'company': 'Tech Future UAE',
-                        'job_title': 'Senior AI Engineer',
-                        'image_url': ''
-                    },
-                    'match_score': 95,
-                    'match_reasons': ['Perfect skill match', 'Industry alignment'],
-                    'skill_match_score': 98
-                },
-                {
-                    'mentor': {
-                        'id': 'm2',
-                        'name': 'Ahmed Al Mansoori',
-                        'industry': 'Finance',
-                        'expertise': ['Financial Analysis', 'Strategy'],
-                        'company': 'First Abu Dhabi Bank',
-                        'job_title': 'Investment Manager',
-                        'image_url': ''
-                    },
-                    'match_score': 88,
-                    'match_reasons': ['Strong industry experience'],
-                    'skill_match_score': 85
-                }
-            ]
+            'recommendations': [],
+            'available': False,
+            'message': 'Mentor recommendations are temporarily unavailable.'
         }), 200
