@@ -50,7 +50,48 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True):
         conn.close()
 
 # Admin roles (matches the role check already used in this module, ~L924).
-_ADMIN_ROLES = {'admin', 'super_user', 'platform_administrator'}
+_ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+
+
+def _identity_has_admin_role():
+    """True if the current JWT identity holds an admin role — as the primary 'role'
+    claim OR as one of the user's secondary_roles.
+
+    Multi-role users on this platform carry admin as a SECONDARY role and switch into
+    it in the UI, while the JWT only carries the primary 'role' claim (e.g.
+    'job_seeker'). Checking the claim alone therefore 403s legitimate admins on every
+    @admin_required endpoint. We fall back to a DB lookup of the user's roles so
+    existing tokens keep working without re-login. (#26 admin-access regression)
+    """
+    claims = get_jwt() or {}
+    if claims.get('role') in _ADMIN_ROLES:
+        return True
+    sec_claim = claims.get('secondary_roles')
+    if isinstance(sec_claim, (list, tuple)) and (set(sec_claim) & _ADMIN_ROLES):
+        return True
+    try:
+        uid = get_jwt_identity()
+        if uid is None:
+            return False
+        row = execute_query(
+            "SELECT role, secondary_roles FROM users WHERE id::text = %s",
+            (str(uid),), fetch_one=True
+        )
+        if row:
+            roles = set()
+            if row.get('role'):
+                roles.add(row['role'])
+            sec = row.get('secondary_roles') or []
+            if isinstance(sec, str):
+                try:
+                    sec = json.loads(sec)
+                except Exception:
+                    sec = [sec]
+            roles.update(sec or [])
+            return bool(roles & _ADMIN_ROLES)
+    except Exception as e:
+        logger.warning(f"admin role lookup failed: {e}")
+    return False
 
 
 def admin_required(f):
@@ -67,8 +108,7 @@ def admin_required(f):
             verify_jwt_in_request()
         except Exception:
             return jsonify({'success': False, 'message': 'Authentication required'}), 401
-        role = (get_jwt() or {}).get('role', '')
-        if role not in _ADMIN_ROLES:
+        if not _identity_has_admin_role():
             return jsonify({'success': False, 'message': 'Forbidden - admin access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -1138,8 +1178,7 @@ def clarify_feedback(feedback_id):
             return jsonify({'success': False, 'message': 'Feedback not found'}), 404
 
         # Ownership check — only the feedback's owner (or an admin) may clarify it
-        _role = (get_jwt() or {}).get('role', '')
-        if str(feedback_item.get('user_id')) != str(get_jwt_identity()) and _role not in _ADMIN_ROLES:
+        if str(feedback_item.get('user_id')) != str(get_jwt_identity()) and not _identity_has_admin_role():
             cursor.close()
             conn.close()
             return jsonify({'success': False, 'message': 'Forbidden - you do not own this feedback'}), 403
