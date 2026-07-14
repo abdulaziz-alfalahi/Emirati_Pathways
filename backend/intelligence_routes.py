@@ -720,7 +720,18 @@ def recommended_jobs():
                     if job_id in matches_dict:
                         match_score = int(matches_dict[job_id])
                     else:
-                        match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
+                        # Heuristic fallback — used only when the validated matching engine
+                        # didn't score this job. Tuned (#26): reward ACTUAL skill overlap
+                        # with diminishing returns, rather than the old
+                        # `max(60, 60 + ratio*38)` which (a) put a misleading 60% floor on
+                        # weakly-related jobs and (b) divided by the candidate's TOTAL skill
+                        # count, penalising multi-skilled candidates who match all a job
+                        # needs. Capped at 90 (keyword overlap is coarser than the engine);
+                        # 0 when nothing overlaps.
+                        if skill_hits > 0:
+                            match_score = min(90, int(round(90 * (1 - 0.6 ** skill_hits))))
+                        else:
+                            match_score = 0
 
                     if skill_hits > 0 or len(user_skill_names) == 0 or job_id in matches_dict:
                         company = job.get('company_id') or 'UAE Employer'
