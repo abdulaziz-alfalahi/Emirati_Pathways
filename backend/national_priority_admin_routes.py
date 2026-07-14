@@ -119,16 +119,23 @@ def update_weights():
             if cur.rowcount:
                 changed.append(code)
 
-        # Audit the change (best-effort).
+        # Persist the weight changes FIRST — the audit must never affect them.
+        conn.commit()
+
+        # Audit the change (best-effort, isolated: a failure here — e.g. an FK on
+        # the actor id — must not roll back the already-committed weight update).
         try:
             cur.execute("""
                 INSERT INTO admin_audit_log (user_id, action, details, created_at)
                 VALUES (%s, 'national_priority_weights_update', %s, NOW())
             """, (get_jwt_identity(), json.dumps({"changed": changed, "payload": updates})))
+            conn.commit()
         except Exception:
-            pass
+            try:
+                conn.rollback()
+            except Exception:
+                pass
 
-        conn.commit()
         cur.close()
         conn.close()
         return jsonify({"status": "updated", "changed": changed}), 200
