@@ -5,7 +5,6 @@ import { Award, Shield, Stamp, BookOpen, Users, TrendingUp, Loader2 } from 'luci
 
 // Lazy load the three credential sub-pages
 const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));
-const BlockchainCredentialsPage = lazy(() => import('@/pages/blockchain-credentials/BlockchainCredentialsPage'));
 const CareerPassportPage = lazy(() => import('@/pages/career-passport/CareerPassportPage'));
 
 const brand = {
@@ -47,10 +46,22 @@ const CredentialsCenterPage: React.FC = () => {
       id: 'blockchain',
       label: t('Blockchain Credentials', 'شهادات البلوك تشين'),
       icon: <Shield className="h-4 w-4" />,
+      // Dimmed until certificate-issuer partner integrations are in place — the
+      // previous UI presented Math.random() hashes as real "on-chain" verification.
+      // Scaffolding is preserved; only the entry point is gated. (#26)
       content: (
-        <Suspense fallback={<FallbackLoader />}>
-          <BlockchainCredentialsPage embedded />
-        </Suspense>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Shield className="h-12 w-12 text-slate-400 mb-4" />
+          <h3 className="text-xl font-semibold text-slate-700">
+            {t('Blockchain Credentials — Coming Soon', 'شهادات البلوك تشين — قريباً')}
+          </h3>
+          <p className="mt-2 max-w-md text-slate-500">
+            {t(
+              'On-chain credential verification is being developed in partnership with accredited certificate-issuing entities. It will be enabled once those integrations are in place.',
+              'يجري تطوير التحقق من الشهادات عبر البلوك تشين بالشراكة مع الجهات المعتمدة لإصدار الشهادات، وسيتم تفعيله بمجرد اكتمال عمليات التكامل.'
+            )}
+          </p>
+        </div>
       ),
     },
     {
