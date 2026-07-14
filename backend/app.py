@@ -15,7 +15,6 @@ extracted to dedicated modules — see backend/routes/ and backend/db_utils.py.
 import os
 import sys
 import json
-import time
 import logging
 import secrets
 import traceback
@@ -23,17 +22,15 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Flask, request, jsonify, g, send_file, send_from_directory
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import psycopg2
-import psycopg2.extras
 
 # Ensure parent directory is on path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 # Load environment variables
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -42,17 +39,17 @@ load_dotenv(env_path)
 
 # Automatically compile DATABASE_URL from individual DB_ connection details
 # to prevent connection failures in endpoints using the DATABASE_URL environment fallback.
-import urllib.parse
+import urllib.parse  # noqa: E402
 if not os.environ.get('DATABASE_URL'):
     db_user = os.environ.get('DB_USER', 'emirati_user')
     db_pass = os.environ.get('DB_PASSWORD', 'emirati_secure_password')
     db_host = os.environ.get('DB_HOST', 'localhost')
     db_port = os.environ.get('DB_PORT', '5432')
     db_name = os.environ.get('DB_NAME', 'emirati_journey')
-    
+
     encoded_user = urllib.parse.quote_plus(db_user)
     encoded_pass = urllib.parse.quote_plus(db_pass)
-    
+
     database_url = f"postgresql://{encoded_user}:{encoded_pass}@{db_host}:{db_port}/{db_name}"
     os.environ['DATABASE_URL'] = database_url
 
@@ -63,8 +60,11 @@ logger = logging.getLogger(__name__)
 # =====================================================
 # OBSERVABILITY (T4.4): request-id correlation, JSON logs, Sentry
 # =====================================================
+
+
 class _RequestIdFilter(logging.Filter):
     """Inject the current request id into every log record (best-effort)."""
+
     def filter(self, record):
         try:
             from flask import g, has_request_context
@@ -76,6 +76,7 @@ class _RequestIdFilter(logging.Filter):
 
 class _JsonLogFormatter(logging.Formatter):
     """Structured JSON log lines for centralized aggregation."""
+
     def format(self, record):
         payload = {
             'ts': datetime.utcnow().isoformat() + 'Z',
@@ -171,7 +172,7 @@ def safe_json_load(value, default=None):
 # DATABASE UTILITIES (delegated to db_utils, re-exported here)
 # =====================================================
 
-from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
+from backend.db_utils import DATABASE_CONFIG, close_db, execute_query  # noqa: E402
 
 # =====================================================
 # FLASK APP INITIALIZATION
@@ -295,8 +296,8 @@ CORS(app, resources={
 # =====================================================
 # RATE LIMITING (OWASP: Brute-Force Protection)
 # =====================================================
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter  # noqa: E402
+from flask_limiter.util import get_remote_address  # noqa: E402
 
 limiter = Limiter(
     app=app,
@@ -306,6 +307,8 @@ limiter = Limiter(
 )
 
 # Apply strict rate limits to authentication endpoints
+
+
 @app.before_request
 def rate_limit_auth():
     """Apply strict rate limits to sensitive endpoints."""
@@ -320,6 +323,8 @@ def _assign_request_id():
 # =====================================================
 # SECURITY HEADERS (OWASP: Security Misconfiguration)
 # =====================================================
+
+
 @app.after_request
 def add_security_headers(response):
     """Inject security headers on every response."""
@@ -359,13 +364,17 @@ def add_security_headers(response):
 # =====================================================
 # GLOBAL ERROR HANDLERS (prevent stack trace leaks)
 # =====================================================
+
+
 @app.errorhandler(404)
 def not_found_error(error):
     return jsonify({'success': False, 'error': 'Resource not found'}), 404
 
+
 @app.errorhandler(405)
 def method_not_allowed_error(error):
     return jsonify({'success': False, 'error': 'Method not allowed'}), 405
+
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -374,18 +383,23 @@ def internal_error(error):
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
     return jsonify({'success': False, 'error': str(error)}), 500
 
+
 @app.errorhandler(429)
 def rate_limit_exceeded(error):
     return jsonify({'success': False, 'error': 'Rate limit exceeded. Try again later.'}), 429
 
+
 # SQLAlchemy Configuration
 # URL-encode password to handle special chars (#, $, @) in Moro credentials
-from urllib.parse import quote_plus as _url_quote
+from urllib.parse import quote_plus as _url_quote  # noqa: E402
 _db_password_encoded = _url_quote(str(DATABASE_CONFIG['password']))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DATABASE_CONFIG['user']}:{_db_password_encoded}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f"postgresql://{DATABASE_CONFIG['user']}:{_db_password_encoded}"
+    f"@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-from backend.extensions import db
+from backend.extensions import db  # noqa: E402
 db.init_app(app)
 
 # Auto-create SQLAlchemy ORM tables (Profile V2, etc.) on startup.
@@ -393,7 +407,7 @@ db.init_app(app)
 # This runs at import time so it works with both Gunicorn and direct execution.
 with app.app_context():
     try:
-        from backend.models.profile.candidate_profile_models import (
+        from backend.models.profile.candidate_profile_models import (  # noqa: F401
             CandidateProfile, CandidateExperience, CandidateEducation,
             CandidateSkill, CandidateCertification, CandidateAssessment
         )
@@ -405,6 +419,7 @@ with app.app_context():
 # =====================================================
 # SOCKETIO EVENT HANDLERS
 # =====================================================
+
 
 @socketio.on('connect')
 def on_connect(auth=None):
@@ -428,6 +443,7 @@ def on_connect(auth=None):
     except Exception as e:
         print(f"[Presence] connect error: {e}")
 
+
 @socketio.on('join')
 def on_join(data):
     room = data['room']
@@ -435,25 +451,30 @@ def on_join(data):
     logger.debug(f"User joined room: {room} (Socket: {request.sid})")
     emit('peer-joined', {'sid': request.sid}, room=room, include_self=False)
 
+
 @socketio.on('leave')
 def on_leave(data):
     room = data['room']
     leave_room(room)
+
 
 @socketio.on('offer')
 def on_offer(data):
     room = data.get('room')
     emit('offer', data, room=room, include_self=False)
 
+
 @socketio.on('answer')
 def on_answer(data):
     room = data.get('room')
     emit('answer', data, room=room, include_self=False)
 
+
 @socketio.on('ice-candidate')
 def on_ice_candidate(data):
     room = data.get('room')
     emit('ice-candidate', data, room=room, include_self=False)
+
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -467,12 +488,15 @@ def on_disconnect():
         print(f"[Presence] User {user_id} disconnected. Online: {list(online_users.keys())}")
         socketio.emit('user_offline', {'user_id': user_id})
 
+
 @socketio.on('get_online_users')
 def on_get_online_users():
     print(f"[Presence] get_online_users requested. Online: {list(online_users.keys())}")
     emit('online_users', {'users': list(online_users.keys())})
 
 # G12: Real-time notification push infrastructure
+
+
 @socketio.on('join_notification_room')
 def on_join_notification_room(data):
     """Join notification room — uses verified token identity, not client data."""
@@ -493,12 +517,13 @@ def on_join_notification_room(data):
         emit('notification_room_joined', {'room': room, 'user_id': user_id})
         logger.info(f"[G12] User {user_id} joined notification room {room}")
 
+
 def push_notification_to_user(user_id, event_type, payload):
     """Push a real-time notification to a specific user via SocketIO.
-    
+
     G12: This is the canonical way to push events to Recruiter/HR/Candidate.
     Called from notification_helper.py and route handlers.
-    
+
     Args:
         user_id: The target user's ID (str or int)
         event_type: Event name (e.g. 'new_notification', 'offer_approved', 'new_application')
@@ -514,6 +539,7 @@ def push_notification_to_user(user_id, event_type, payload):
         logger.info(f"[G12] Pushed {event_type} to user {user_id}")
     except Exception as e:
         logger.warning(f"[G12] Failed to push notification: {e}")
+
 
 # Make push_notification accessible to other modules
 app.push_notification_to_user = push_notification_to_user
@@ -570,8 +596,10 @@ UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 ADMIN_ROLES = ['platform_administrator', 'super_user']
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def require_admin_auth(f):
     """Decorator to require admin authentication via JWT verification."""
@@ -617,7 +645,7 @@ def require_admin_auth(f):
 # =====================================================
 
 # 1. Core blueprints via the unified registry
-from backend.blueprint_registry import register_all_blueprints
+from backend.blueprint_registry import register_all_blueprints  # noqa: E402
 register_all_blueprints(app)
 
 # 2. Additional blueprints registered directly (recruiter, education, etc.)
@@ -777,6 +805,7 @@ def _log_security_warnings():
     else:
         logger.info("🔒 Production mode — dev-login is DISABLED")
         logger.info("🔒 Authentication uses UAEPass integration")
+
 
 _log_security_warnings()
 
