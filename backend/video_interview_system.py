@@ -391,8 +391,12 @@ class VideoInterviewEngine:
                             VALUES (%s, %s, %s)
                         """, (actual_session_id, json.dumps(report), datetime.now()))
                     
-                    # Generate AI recommendations for candidate
-                    self.generate_ai_recommendations(actual_session_id, session['candidate_id'], session)
+                    # Generate AI recommendations — seeded by the interview's detected
+                    # competencies when a transcript exists (interview-specific gaps).
+                    self.generate_ai_recommendations(
+                        actual_session_id, session['candidate_id'], session,
+                        target_competencies=(transcript.get('competencies') if transcript else None),
+                    )
                     
                     conn.commit()
                     return report
@@ -579,13 +583,16 @@ class VideoInterviewEngine:
         except Exception as e:
             logger.error(f"Error seeding recommendation resources: {e}")
 
-    def generate_ai_recommendations(self, session_id: str, candidate_id: str, session: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_ai_recommendations(self, session_id: str, candidate_id: str, session: Dict[str, Any],
+                                     target_competencies: Optional[List[str]] = None) -> Dict[str, Any]:
         """Recommend REAL, gap-driven resources to bridge the candidate's skill gaps.
 
         Uses the platform's SkillGraphEngine (skill-gap analysis) -> RecommendationEngine
         (real training/mentor/certification matches from training_programs / mentor
-        tables). Honest-empty if nothing matches or data is sparse — never the old
-        "first 10 rows + LLM guess". Grounded in the candidate's actual skill gaps.
+        tables). When the interview transcript detected competencies, the gap analysis
+        is seeded from THOSE — so recommendations bridge the gaps IDENTIFIED IN the
+        interview; otherwise it falls back to market-demand skills. Honest-empty if
+        nothing matches — never the old "first 10 rows + LLM guess".
         """
         recs_out = {"recommended_articles": [], "recommended_trainings": [], "recommended_mentors": []}
         try:
@@ -598,7 +605,15 @@ class VideoInterviewEngine:
             with self.get_db_connection() as conn:
                 sg = SkillGraphEngine(db_connection=conn)
                 re_engine = RecommendationEngine(db_connection=conn, skill_graph=sg)
-                gap = sg.analyze_skill_gaps(candidate_id)
+                # Seed the gap analysis from the interview's detected competencies when
+                # available, so recommendations bridge the gaps IDENTIFIED in the interview.
+                target_skills = None
+                if target_competencies:
+                    target_skills = [
+                        {"skill_id": c, "skill_name": c, "required_level": "intermediate", "domain": ""}
+                        for c in target_competencies if c
+                    ]
+                gap = sg.analyze_skill_gaps(candidate_id, target_skills=target_skills)
                 # Clear any aborted-transaction state from the gap query (e.g. an
                 # EID/int type mismatch) so the recommendation queries run clean.
                 try:
