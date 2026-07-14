@@ -24,8 +24,10 @@ except ImportError:
         get_cached_demographics = None
 
 def get_db_counts():
+    # On unavailability, return None (surfaced as null "not available") rather than
+    # fabricated counts that look like real data. (#26)
     if not get_db_connection:
-        return 3336, 12, 1
+        return None, None, None
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
@@ -37,7 +39,7 @@ def get_db_counts():
             db_offers = cursor.fetchone()[0]
             return db_candidates, db_companies, db_offers
     except Exception:
-        return 3336, 12, 1
+        return None, None, None
 
 @strategic_metrics_bp.route('/demographics', methods=['GET'])
 # @jwt_required()
@@ -95,7 +97,7 @@ def get_executive_impact_metrics():
     if excel_data:
         registered_cnt = excel_data.get('registered', {}).get('total', 3054)
         active_cnt = excel_data.get('active', {}).get('total', 1514)
-        total_placed = max(0, registered_cnt - active_cnt) + db_offers
+        total_placed = max(0, registered_cnt - active_cnt) + (db_offers or 0)
         active_partners = db_companies
         
         # Map monthly rapid nomination data if available
@@ -138,8 +140,10 @@ def get_executive_impact_metrics():
             'sector_distribution_source': 'placeholder'
         }
     else:
-        total_placed = 24500 + db_offers
-        active_partners = 1250 + (db_companies - 12)
+        # Real counts only — no inflation baselines (was +24500/+1250). None
+        # surfaces as null "not available" when the DB read failed. (#26)
+        total_placed = db_offers
+        active_partners = db_companies
         
         data = {
             'kpis': {
@@ -178,11 +182,13 @@ def get_operations_live_metrics():
     """
     data = {
         'system_health': {
-            'nafis_sync_status': 'Operational',
-            'last_sync': datetime.utcnow().isoformat(),
+            # No probe is connected — do not assert a health status or uptime we
+            # haven't measured. Surfaced as null "not implemented" like the peers. (#26)
+            'nafis_sync_status': {'value': None, 'source': 'not_implemented', 'message': 'Real NAFIS sync-status probe not yet connected'},
+            'last_sync': None,
             'db_latency_ms': {'value': None, 'source': 'not_implemented', 'message': 'Real latency probe not yet connected'},
             'active_sessions': {'value': None, 'source': 'not_implemented', 'message': 'Real session count not yet connected'},
-            'uptime_percent': 99.98
+            'uptime_percent': {'value': None, 'source': 'not_implemented', 'message': 'Real uptime probe not yet connected'}
         },
         'live_activity': [
             {'time': '10:00', 'logins': 120, 'applications': 45},

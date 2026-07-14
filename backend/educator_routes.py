@@ -506,8 +506,10 @@ def get_performance_analytics():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         # Overview
+        # placement_success_rate has no source query — leave null ("not available")
+        # rather than assert a fabricated 85. (#26)
         overview = {"total_students": 0, "average_gpa": 0, "attendance_rate": 0,
-                     "career_sessions_conducted": 0, "placement_success_rate": 85}
+                     "career_sessions_conducted": 0, "placement_success_rate": None}
         try:
             cur.execute("SELECT COUNT(*) AS cnt FROM students WHERE status = 'active'")
             overview["total_students"] = (cur.fetchone() or {}).get("cnt", 0) or 0
@@ -584,8 +586,10 @@ def get_performance_analytics():
             conn.rollback()
 
         # Emiratization
-        emiratization = {"emirati_students": 0, "emirati_placement_rate": 88,
-                          "government_sector_placements": 0, "private_sector_placements": 0}
+        # Only emirati_students is computed below; the placement/sector figures have
+        # no source query — leave null instead of fabricating 88/0/0. (#26)
+        emiratization = {"emirati_students": 0, "emirati_placement_rate": None,
+                          "government_sector_placements": None, "private_sector_placements": None}
         try:
             cur.execute("""
                 SELECT COUNT(*) AS cnt FROM students
@@ -619,13 +623,16 @@ def get_performance_analytics():
 
 
 def _fallback_analytics():
+    # Error fallback must not fabricate a student cohort — return empty/null values
+    # with an availability flag instead of the previous invented figures. (#26)
     return {
-        "overview": {"total_students": 45, "average_gpa": 3.2,
-                      "attendance_rate": 92.5, "placement_success_rate": 85},
-        "performance_distribution": {"excellent": 12, "good": 18,
-                                      "satisfactory": 10, "needs_improvement": 4, "critical": 1},
+        "available": False,
+        "overview": {"total_students": None, "average_gpa": None,
+                      "attendance_rate": None, "placement_success_rate": None},
+        "performance_distribution": {"excellent": 0, "good": 0,
+                                      "satisfactory": 0, "needs_improvement": 0, "critical": 0},
         "subject_performance": [],
-        "emiratization_metrics": {"emirati_students": 35, "emirati_placement_rate": 88}
+        "emiratization_metrics": {"emirati_students": None, "emirati_placement_rate": None}
     }
 
 
