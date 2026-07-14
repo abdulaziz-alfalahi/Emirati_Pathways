@@ -761,9 +761,11 @@ def _generate_career_insight(top_gaps, top_skills, readiness_score):
         gap = top_gaps[0]
         skill_name = gap.get('skill_name', 'in-demand skills')
         gap_score = gap.get('gap_score', 0)
+        # No fabricated statistic — the previous "{X}% more top-tier roles" figure was
+        # invented from gap_score, not measured. Keep the message qualitative. (#26)
         return {
-            "en": f"{skill_name} is in high demand in the UAE market — developing this skill could unlock {int(gap_score * 30 + 20)}% more top-tier roles matching your profile.",
-            "ar": f"مهارة {skill_name} مطلوبة بشدة في سوق الإمارات — تطوير هذه المهارة يمكن أن يفتح لك {int(gap_score * 30 + 20)}٪ من الوظائف المتميزة الإضافية.",
+            "en": f"{skill_name} is in high demand in the UAE market — developing it could strengthen your match with top-tier roles.",
+            "ar": f"مهارة {skill_name} مطلوبة بشدة في سوق الإمارات — تطويرها يمكن أن يعزز تطابقك مع الوظائف المتميزة.",
         }
     elif top_skills:
         skill_name = top_skills[0].get('skill_name', 'your skills')
@@ -790,18 +792,8 @@ def _group_recs_by_type(recommendations):
 
 
 def _get_fallback_recommendations(user_skill_names):
-    """Return curated job recommendations when no live data available."""
-    jobs = [
-        {"title": "Senior Project Manager", "title_ar": "مدير مشاريع أول", "company": "Emirates Group", "company_ar": "مجموعة الإمارات", "location": "Dubai", "salary": "AED 35k–45k", "match_score": 94, "type": "Full-time"},
-        {"title": "Cloud Infrastructure Architect", "title_ar": "مهندس بنية سحابية", "company": "Digital Dubai", "company_ar": "دبي الرقمية", "location": "Dubai", "salary": "AED 40k–55k", "match_score": 89, "type": "Hybrid"},
-        {"title": "Data Scientist", "title_ar": "عالم بيانات", "company": "Abu Dhabi Investment Authority", "company_ar": "جهاز أبوظبي للاستثمار", "location": "Abu Dhabi", "salary": "AED 30k–45k", "match_score": 86, "type": "Full-time"},
-        {"title": "Cybersecurity Analyst", "title_ar": "محلل أمن سيبراني", "company": "ADNOC", "company_ar": "أدنوك", "location": "Abu Dhabi", "salary": "AED 28k–38k", "match_score": 82, "type": "Full-time"},
-        {"title": "AI/ML Engineer", "title_ar": "مهندس ذكاء اصطناعي", "company": "G42", "company_ar": "جي 42", "location": "Abu Dhabi", "salary": "AED 35k–50k", "match_score": 78, "type": "Full-time"},
-    ]
-    # Slightly personalize match scores based on user skills
-    for j in jobs:
-        title_lower = j['title'].lower()
-        if any(sk in title_lower for sk in user_skill_names):
-            j['match_score'] = min(98, j['match_score'] + 5)
-        j['source'] = 'curated'
-    return jobs[:5]
+    """No live job matches available. Return an empty list rather than fabricated
+    listings — the previous version invented specific jobs at real employers
+    ('Emirates Group', 'G42', ADNOC...) with invented match_scores, presented to the
+    candidate as recommendations. Real recommendations come from live job_postings. (#26)"""
+    return []

@@ -90,13 +90,13 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         """, params)
         
         time_to_fill_data = cursor.fetchone()
-        avg_time_to_fill = int(time_to_fill_data['avg_days'] or 21)  # Default to 21 if no data
-        
-        # Client Satisfaction (placeholder - would come from feedback table)
-        client_satisfaction = 4.6
-        
-        # Candidate Quality (placeholder - would come from ratings)
-        candidate_quality = 4.4
+        # Null when there's no data rather than a fabricated 21-day default. (#26)
+        avg_time_to_fill = int(time_to_fill_data['avg_days']) if time_to_fill_data and time_to_fill_data['avg_days'] is not None else None
+
+        # Client Satisfaction / Candidate Quality have no source (no feedback/ratings
+        # table wired) — return null instead of fabricated 4.6 / 4.4. (#26)
+        client_satisfaction = None
+        candidate_quality = None
         
         # 4. Recent Activity
         cursor.execute(f"""
@@ -275,13 +275,14 @@ def get_performance_metrics(recruiter_id: Optional[str] = None) -> Dict[str, flo
         """, params)
         
         time_to_fill_data = cursor.fetchone()
-        avg_time_to_fill = time_to_fill_data['avg_days'] or 21
-        
+        # Null when no data (was fabricated 21); satisfaction/quality have no source. (#26)
+        avg_time_to_fill = time_to_fill_data['avg_days'] if time_to_fill_data and time_to_fill_data['avg_days'] is not None else None
+
         return {
             'placement_rate': round(placement_rate, 1),
-            'average_time_to_fill': int(avg_time_to_fill),
-            'client_satisfaction': 4.6,  # Placeholder
-            'candidate_quality': 4.4  # Placeholder
+            'average_time_to_fill': int(avg_time_to_fill) if avg_time_to_fill is not None else None,
+            'client_satisfaction': None,
+            'candidate_quality': None
         }
         
     finally:

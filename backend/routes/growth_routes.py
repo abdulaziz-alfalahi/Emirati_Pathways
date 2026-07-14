@@ -409,18 +409,22 @@ def get_recruiter_performance():
             total_apps = app_stats['total']
             reviewed_apps = app_stats['reviewed']
             
-            # Calculate rates
-            response_rate = round((reviewed_apps / total_apps) * 100, 1) if total_apps > 0 else 100.0
-            avg_response_days = app_stats['avg_days'] if app_stats['avg_days'] is not None else 4.2
-            
-            chat_responsiveness = 92.0 if avg_chat_hours is None else round(max(100.0 - (avg_chat_hours * 2), 60.0), 1)
-            
-            # Recruiter name fallback
+            # Calculate rates. Null (not fabricated defaults) when there's no data —
+            # was 100.0 / 4.2 / 92.0 presented as real. (#26)
+            response_rate = round((reviewed_apps / total_apps) * 100, 1) if total_apps > 0 else None
+            avg_response_days = app_stats['avg_days'] if app_stats['avg_days'] is not None else None
+
+            chat_responsiveness = None if avg_chat_hours is None else round(max(100.0 - (avg_chat_hours * 2), 60.0), 1)
+
+            # Recruiter name from real recruiters or the company contact email — never a
+            # fabricated name (was falling back to 'Salem Al Ali'). None if unknown. (#26)
             rec_names = [r['recruiter_name'] for r in recruiters if recruiter_to_company.get(r['recruiter_id']) == comp_id]
-            recruiter_name = rec_names[0] if rec_names else (comp.get('contact_email') or '').split('@')[0].replace('.', ' ').title() or 'Salem Al Ali'
-            
-            # Flagged status: response rate < 50% or avg response time > 5 days or chat responsiveness < 70%
-            flagged = (response_rate < 50.0) or (avg_response_days > 5.0) or (chat_responsiveness < 70.0)
+            recruiter_name = rec_names[0] if rec_names else ((comp.get('contact_email') or '').split('@')[0].replace('.', ' ').title() or None)
+
+            # Flagged only on metrics we actually have (None never flags).
+            flagged = ((response_rate is not None and response_rate < 50.0)
+                       or (avg_response_days is not None and avg_response_days > 5.0)
+                       or (chat_responsiveness is not None and chat_responsiveness < 70.0))
             
             status = 'verified' if comp['is_verified'] else 'pending'
             
@@ -435,7 +439,7 @@ def get_recruiter_performance():
                 'response_rate': response_rate,
                 'avg_response_days': avg_response_days,
                 'chat_responsiveness': chat_responsiveness,
-                'avg_chat_hours': avg_chat_hours or 2.5,
+                'avg_chat_hours': avg_chat_hours,
                 'flagged': flagged,
                 'status': status
             })

@@ -1867,7 +1867,8 @@ def get_parent_dashboard():
                 conn.rollback()
             child['activities'] = activities
 
-            child['trend'] = 'up'
+            # No trend computation is wired — do not assert 'up' for every child. (#26)
+            child['trend'] = None
             child['campsEnrolled'] = 0
 
             # Serialize dates
