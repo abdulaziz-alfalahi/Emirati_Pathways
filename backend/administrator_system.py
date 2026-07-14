@@ -1176,7 +1176,8 @@ class AdministratorSystem:
                 'userGrowthRate': 0,
                 'applicationSuccessRate': 0,
                 'averageMatchScore': 0,
-                'systemUptime': 99.9,
+                # No uptime probe is connected — null instead of a fabricated 99.9. (#26)
+                'systemUptime': None,
                 'visitorTrends': [],
                 'userActivity': []
             }

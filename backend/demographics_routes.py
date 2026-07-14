@@ -115,9 +115,10 @@ def get_executive_impact():
         
         active_js = total_seekers - total_placements if total_seekers > total_placements else total_seekers
         
-        # 2. EHRDC Initiatives (Mocking for now as it's a specific internal metric, we can base it on offers)
-        fast_track_nominations = int(total_placements * 1.5)
-        proactive_hiring = int(total_placements * 0.8)
+        # 2. EHRDC Initiatives — no real source for these internal metrics; do not
+        # fabricate them from arbitrary multipliers of placements (was *1.5 / *0.8). (#26)
+        fast_track_nominations = None
+        proactive_hiring = None
 
         # 3. Employer Participation
         cur.execute("SELECT COUNT(*) as c FROM companies")
