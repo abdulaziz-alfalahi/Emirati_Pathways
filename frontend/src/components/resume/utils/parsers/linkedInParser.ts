@@ -55,49 +55,16 @@ export function parseLinkedInData(jsonData: any): Partial<ResumeData> {
  * @returns Promise resolving to parsed resume data
  */
 export async function extractFromLinkedIn(linkedInUrl: string): Promise<Partial<ResumeData>> {
-  try {
-    console.log(`Extracting data from LinkedIn URL: ${linkedInUrl}`);
-    
-    // Mock implementation for local development
-    // In a real app, this would call a server function to scrape LinkedIn
-    const mockData = {
-      profile: {
-        firstName: "LinkedIn",
-        lastName: "User",
-        headline: "Software Developer",
-        email: "linkedin@example.com",
-        location: "San Francisco Bay Area",
-        profileUrl: linkedInUrl
-      },
-      experience: [
-        {
-          title: "Software Developer",
-          companyName: "Tech Company",
-          location: "San Francisco, CA",
-          startDate: { month: 1, year: 2020 },
-          description: "Developing amazing software"
-        }
-      ],
-      education: [
-        {
-          schoolName: "University of Technology",
-          degree: "Bachelor's Degree",
-          fieldOfStudy: "Computer Science",
-          startDate: { year: 2016 },
-          endDate: { year: 2020 }
-        }
-      ],
-      skills: ["JavaScript", "React", "Node.js", "TypeScript"]
-    };
-    
-    // Parse the mock data using our parser
-    const parsedData = parseLinkedInData(mockData);
-    
-    return parsedData;
-  } catch (error) {
-    console.error('LinkedIn extraction error:', error);
-    throw error;
-  }
+  // There is no real LinkedIn profile import: LinkedIn's API does not permit
+  // arbitrary profile reads and scraping violates their Terms of Service. The
+  // previous implementation returned a hardcoded placeholder profile ("LinkedIn
+  // User" at "Tech Company"), which is misleading — so fail explicitly instead
+  // of fabricating data. The supported path is to paste your profile text or
+  // upload your CV / LinkedIn data export, which is parsed by the CV parser. (#26)
+  console.warn(`LinkedIn URL import is not available (requested: ${linkedInUrl}).`);
+  throw new Error(
+    'LinkedIn import is not available. Please paste your profile text or upload your CV / LinkedIn data export instead.'
+  );
 }
 
 // Helper function to extract experience data
