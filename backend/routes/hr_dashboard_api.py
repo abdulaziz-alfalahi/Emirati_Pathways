@@ -118,20 +118,24 @@ def optional_auth(f):
 def get_hr_dashboard():
     """Get HR dashboard overview"""
     try:
+        # Real counts where derivable; non-derivable metrics null; no fabricated
+        # activity feed. (#26)
+        def _count(sql):
+            try:
+                row = execute_query(sql, fetch_one=True)
+                return (row or {}).get('count', 0) or 0
+            except Exception:
+                return None
         return jsonify({
             'success': True,
             'data': {
-                'totalJobs': 24,
-                'activeJobs': 18,
-                'totalCandidates': 456,
-                'shortlistedCandidates': 89,
-                'scheduledInterviews': 12,
-                'pendingApprovals': 5,
-                'recentActivity': [
-                    {'type': 'shortlist', 'message': 'Candidate shortlisted for Software Engineer', 'time': '1 hour ago'},
-                    {'type': 'interview', 'message': 'Interview completed', 'time': '3 hours ago'},
-                    {'type': 'approval', 'message': 'Offer approved', 'time': '1 day ago'}
-                ]
+                'totalJobs': _count("SELECT COUNT(*) as count FROM job_postings"),
+                'activeJobs': _count("SELECT COUNT(*) as count FROM job_postings WHERE status = 'active'"),
+                'totalCandidates': _count("SELECT COUNT(*) as count FROM users WHERE role IN ('candidate','job_seeker')"),
+                'shortlistedCandidates': _count("SELECT COUNT(*) as count FROM job_applications WHERE status = 'shortlisted'"),
+                'scheduledInterviews': None,
+                'pendingApprovals': _count("SELECT COUNT(*) as count FROM offer_approval_requests WHERE status = 'pending'"),
+                'recentActivity': []
             }
         })
     except Exception as e:
@@ -144,14 +148,9 @@ def get_hr_dashboard():
 def get_shortlisted_candidates_dashboard():
     """Get shortlisted candidates for dashboard"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'name': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'interview_scheduled', 'score': 92},
-                {'id': 2, 'name': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'shortlisted', 'score': 88},
-                {'id': 3, 'name': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'offer_pending', 'score': 85}
-            ]
-        })
+        # Not yet wired to real shortlist data — return empty rather than fabricated
+        # candidates with invented match scores. (#26)
+        return jsonify({'success': True, 'available': False, 'data': []})
     except Exception as e:
         logger.error(f"Failed to get shortlisted candidates: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -162,14 +161,8 @@ def get_shortlisted_candidates_dashboard():
 def get_team_members_dashboard():
     """Get team members for dashboard"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'name': 'Sara Al Ketbi', 'role': 'Senior Recruiter', 'activeJobs': 8, 'status': 'online'},
-                {'id': 2, 'name': 'Omar Al Suwaidi', 'role': 'Recruiter', 'activeJobs': 5, 'status': 'online'},
-                {'id': 3, 'name': 'Layla Al Shamsi', 'role': 'HR Coordinator', 'activeJobs': 3, 'status': 'away'}
-            ]
-        })
+        # Not yet wired to a real team roster — return empty, not fabricated members. (#26)
+        return jsonify({'success': True, 'available': False, 'data': []})
     except Exception as e:
         logger.error(f"Failed to get team members: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -181,15 +174,9 @@ def search_candidates_dashboard():
     """Search candidates from dashboard"""
     try:
         query = request.args.get('query', '')
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'name': 'Ahmed Al Maktoum', 'skills': ['Python', 'JavaScript'], 'experience': '5 years', 'match_score': 92},
-                {'id': 2, 'name': 'Fatima Al Nahyan', 'skills': ['Product Management', 'Agile'], 'experience': '7 years', 'match_score': 88}
-            ],
-            'query': query,
-            'total': 2
-        })
+        # Not yet wired to real candidate search — return empty rather than
+        # fabricated candidates with invented match scores. (#26)
+        return jsonify({'success': True, 'available': False, 'data': [], 'query': query, 'total': 0})
     except Exception as e:
         logger.error(f"Failed to search candidates: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -200,20 +187,27 @@ def search_candidates_dashboard():
 def get_hr_metrics_dashboard():
     """Get HR metrics for dashboard"""
     try:
+        # Real counts where derivable; non-derivable metrics are null, not fabricated. (#26)
+        def _count(sql):
+            try:
+                row = execute_query(sql, fetch_one=True)
+                return (row or {}).get('count', 0) or 0
+            except Exception:
+                return None
         return jsonify({
             'success': True,
             'metrics': {
                 'overview': {
-                    'total_applications': 456,
-                    'new_applications': 45,
-                    'interviews_scheduled': 12,
-                    'positions_filled': 12,
-                    'active_jobs': 18,
-                    'total_jobs': 24
+                    'total_applications': _count("SELECT COUNT(*) as count FROM job_applications"),
+                    'new_applications': None,
+                    'interviews_scheduled': None,
+                    'positions_filled': _count("SELECT COUNT(*) as count FROM job_applications WHERE status = 'hired'"),
+                    'active_jobs': _count("SELECT COUNT(*) as count FROM job_postings WHERE status = 'active'"),
+                    'total_jobs': _count("SELECT COUNT(*) as count FROM job_postings")
                 },
                 'performance': {
-                    'avg_time_to_hire': 28,
-                    'success_rate': 78
+                    'avg_time_to_hire': None,
+                    'success_rate': None
                 }
             }
         })
@@ -227,14 +221,8 @@ def get_hr_metrics_dashboard():
 def get_approval_workflows():
     """Get approval workflows"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'pending', 'submitted': '2025-01-20'},
-                {'id': 2, 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'approved', 'submitted': '2025-01-18'},
-                {'id': 3, 'type': 'offer_approval', 'candidate': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'pending', 'submitted': '2025-01-22'}
-            ]
-        })
+        # Not yet wired to a real workflow store — return empty, not fabricated. (#26)
+        return jsonify({'success': True, 'available': False, 'data': []})
     except Exception as e:
         logger.error(f"Failed to get approval workflows: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -305,12 +293,7 @@ def get_all_approvals():
                     'submitted': apr.get('submitted_at').strftime('%Y-%m-%d') if apr.get('submitted_at') else datetime.now().strftime('%Y-%m-%d'),
                     'submitted_by': apr.get('recruiter_name', 'Unknown Recruiter')
                 })
-        else:
-            # Fallback/Mock for demo if table is empty, so UI isn't broken
-            data = [
-                {'id': 'mock_1', 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'salary': 35000, 'status': 'pending', 'submitted': '2025-01-20', 'submitted_by': 'Sarah Recruiter'},
-                {'id': 'mock_2', 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'salary': 42000, 'status': 'approved', 'submitted': '2025-01-18', 'submitted_by': 'John Recruiter'}
-            ]
+        # No mock fallback — an empty table yields an empty list, not fake approvals. (#26)
 
         return jsonify({
             'success': True,
@@ -324,16 +307,38 @@ def get_all_approvals():
 @hr_dashboard_api_bp.route('/approvals/pending', methods=['GET'])
 @optional_auth
 def get_pending_approvals():
-    """Get all pending approvals"""
+    """Get all pending approvals — real rows from offer_approval_requests. (#26)"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 'apr_001', 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'salary': 30000, 'status': 'pending', 'submitted_by': 'Recruiter 1', 'submitted_at': '2025-01-20'},
-                {'id': 'apr_002', 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'salary': 40000, 'status': 'pending', 'submitted_by': 'Recruiter 2', 'submitted_at': '2025-01-21'},
-                {'id': 'apr_003', 'type': 'interview_approval', 'candidate': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'pending', 'submitted_by': 'Recruiter 1', 'submitted_at': '2025-01-22'}
-            ]
-        })
+        query = """
+            SELECT
+                oar.id,
+                oar.status,
+                oar.submitted_at,
+                o.position_title,
+                o.salary_amount,
+                u.full_name as recruiter_name,
+                c.full_name as candidate_name
+            FROM offer_approval_requests oar
+            LEFT JOIN offers o ON oar.offer_id = o.id
+            LEFT JOIN users u ON oar.recruiter_id = u.id
+            LEFT JOIN users c ON o.candidate_id = c.id
+            WHERE oar.status = 'pending'
+            ORDER BY oar.submitted_at DESC
+        """
+        approvals = execute_query(query) or []
+        data = []
+        for apr in approvals:
+            data.append({
+                'id': apr.get('id'),
+                'type': 'offer_approval',
+                'candidate': apr.get('candidate_name', 'Unknown Candidate'),
+                'position': apr.get('position_title', 'Unknown Position'),
+                'salary': apr.get('salary_amount'),
+                'status': apr.get('status', 'pending'),
+                'submitted_by': apr.get('recruiter_name', 'Unknown Recruiter'),
+                'submitted_at': apr.get('submitted_at').strftime('%Y-%m-%d') if apr.get('submitted_at') else None,
+            })
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get pending approvals: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -359,10 +364,8 @@ def get_approval_stats():
                 count = row.get('count', 0)
                 if status in stats:
                     stats[status] = count
-        else:
-            # Fallback mock if table empty/missing
-            stats['pending'] = 5 
-        
+        # No fallback: an empty/missing table means zero pending, not a fake 5. (#26)
+
         return jsonify({
             'success': True,
             'data': stats

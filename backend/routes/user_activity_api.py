@@ -109,16 +109,16 @@ def get_user_activity(user_id):
     try:
         limit = request.args.get('limit', 20, type=int)
         
-        activities = generate_mock_activity(user_id, limit)
-        sessions = generate_mock_sessions(user_id)
-        
+        # Activity/session logging is not wired to a real store — return empty
+        # rather than randomly-generated fake login history / sessions. (#26)
         return jsonify({
             'success': True,
+            'activity_logging_enabled': False,
             'data': {
-                'activities': activities,
-                'sessions': sessions,
-                'total_activities': len(activities),
-                'active_sessions': len(sessions)
+                'activities': [],
+                'sessions': [],
+                'total_activities': 0,
+                'active_sessions': 0
             }
         })
     except Exception as e:
@@ -182,11 +182,12 @@ def terminate_session(session_id):
         - success: Boolean indicating if session was terminated
     """
     try:
-        # In a real implementation, invalidate the session in the database/cache
+        # Session tracking is not implemented — do not claim to have terminated a
+        # session that isn't tracked. (#26)
         return jsonify({
-            'success': True,
-            'message': f'Session {session_id} terminated successfully'
-        })
+            'success': False,
+            'message': 'Session termination is not available (session tracking not enabled).'
+        }), 501
     except Exception as e:
         return jsonify({
             'success': False,
@@ -200,11 +201,11 @@ def get_user_sessions(user_id):
     Get all active sessions for a specific user.
     """
     try:
-        sessions = generate_mock_sessions(user_id)
-        
+        # No real session store — return empty, not fabricated sessions. (#26)
         return jsonify({
             'success': True,
-            'data': sessions
+            'activity_logging_enabled': False,
+            'data': []
         })
     except Exception as e:
         return jsonify({
@@ -219,13 +220,12 @@ def terminate_all_sessions(user_id):
     Terminate all sessions for a specific user except the current one.
     """
     try:
-        current_session_id = request.json.get('except_session_id') if request.json else None
-        
+        # Session tracking is not implemented — do not claim to have terminated
+        # sessions that aren't tracked. (#26)
         return jsonify({
-            'success': True,
-            'message': f'All sessions for user {user_id} terminated',
-            'sessions_terminated': 2  # Mock count
-        })
+            'success': False,
+            'message': 'Session termination is not available (session tracking not enabled).'
+        }), 501
     except Exception as e:
         return jsonify({
             'success': False,
@@ -241,37 +241,12 @@ def get_recent_platform_activity():
     try:
         limit = request.args.get('limit', 50, type=int)
         
-        # Generate platform-wide activity
-        activities = []
-        user_names = [
-            'Ahmed Al Maktoum', 'Fatima Al Nahyan', 'Mohammed Al Qasimi',
-            'Sara Al Falasi', 'Khalid Al Mazrouei', 'Noura Al Shamsi'
-        ]
-        
-        actions = [
-            ('user_registered', 'New user registered'),
-            ('job_posted', 'New job posted'),
-            ('application_submitted', 'Job application submitted'),
-            ('cv_uploaded', 'CV uploaded'),
-            ('interview_scheduled', 'Interview scheduled'),
-            ('offer_extended', 'Job offer extended'),
-            ('profile_completed', 'Profile completed')
-        ]
-        
-        for i in range(limit):
-            action, details = random.choice(actions)
-            user = random.choice(user_names)
-            activities.append({
-                'id': i + 1,
-                'user_name': user,
-                'action': action,
-                'details': f'{user} - {details}',
-                'created_at': (datetime.utcnow() - timedelta(minutes=i * 15)).isoformat()
-            })
-        
+        # No real platform activity log is wired — return empty rather than random
+        # fabricated activity with invented user names. (#26)
         return jsonify({
             'success': True,
-            'data': activities
+            'activity_logging_enabled': False,
+            'data': []
         })
     except Exception as e:
         return jsonify({
@@ -375,52 +350,6 @@ def get_user_statistics():
             'data': stats
         })
     except Exception as e:
-        # Fallback mock statistics in case of database connectivity issues
-        stats = {
-            'total_users': 1247,
-            'active_users': 1089,
-            'inactive_users': 158,
-            'new_users_today': 12,
-            'new_users_this_week': 67,
-            'new_users_this_month': 234,
-            'users_by_role': {
-                'candidate': 850,
-                'recruiter': 120,
-                'employer_admin': 45,
-                'growth_operator': 15,
-                'platform_administrator': 5,
-                'mentor': 42,
-                'assessor': 25,
-                'other': 145
-            },
-            'users_by_status': {
-                'active': 1089,
-                'inactive': 98,
-                'suspended': 35,
-                'pending_verification': 25
-            },
-            'users_by_department': {
-                'Engineering': 234,
-                'Human Resources': 156,
-                'Marketing': 98,
-                'Sales': 187,
-                'Finance': 112,
-                'Operations': 145,
-                'Other': 315
-            },
-            'login_activity': {
-                'today': 456,
-                'this_week': 2134,
-                'this_month': 8567
-            },
-            'growth_rate': {
-                'daily': 2.3,
-                'weekly': 5.8,
-                'monthly': 18.7
-            }
-        }
-        return jsonify({
-            'success': True,
-            'data': stats,
-            'warning': f'Database query failed, returning fallback statistics: {str(e)}'
-        })
+        # No fabricated fallback — surface an honest error instead of fake stats. (#26)
+        logger.error(f"Failed to get user statistics: {e}")
+        return jsonify({'success': False, 'message': 'User statistics are temporarily unavailable.'}), 503

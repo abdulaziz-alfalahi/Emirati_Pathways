@@ -51,47 +51,30 @@ def get_scorecards():
         total_offers_query = "SELECT COUNT(*) as count FROM job_offers"
         total_offers = execute_query(total_offers_query, fetch_one=True)['count']
 
-        # Apply same baselines as strategic_metrics_api.py for consistency
-        total_candidates_scaled = 120000 + total_candidates
-        total_offers_scaled = 24500 + total_offers
-        total_companies_scaled = 1250 + (total_companies - 12)
+        # Report REAL counts — no inflation baselines (was +120000/+24500/+1250) and
+        # no fabricated trends. Values not derivable from platform data are null
+        # ("not available"), never faked. Targets are retained as stated goals. (#26)
+        placement_rate = round(total_offers / total_candidates * 100, 1) if total_candidates else None
 
         scorecards = {
             'placement_rate': {
-                'value': f"{(total_offers_scaled / total_candidates_scaled * 100):.1f}%",
-                'trend': '+2.4%',
-                'target': '20.0%',
-                'status': 'good'
+                'value': f"{placement_rate}%" if placement_rate is not None else None,
+                'trend': None, 'target': '20.0%', 'status': None
             },
             'time_to_hire': {
-                'value': '24 days',
-                'trend': '-3 days',
-                'target': '30 days',
-                'status': 'excellent'
+                'value': None, 'trend': None, 'target': '30 days', 'status': None
             },
             'pipeline_health': {
-                'value': f"{total_candidates}",
-                'trend': '+12%',
-                'target': '1000',
-                'status': 'good'
+                'value': total_candidates, 'trend': None, 'target': 1000, 'status': None
             },
             'emiratisation_progress': {
-                'value': '4.2%',
-                'trend': '+0.5%',
-                'target': '5.0%',
-                'status': 'warning'
+                'value': None, 'trend': None, 'target': '5.0%', 'status': None
             },
             'active_companies': {
-                'value': f"{total_companies_scaled}",
-                'trend': '+5%',
-                'target': '1300',
-                'status': 'good'
+                'value': total_companies, 'trend': None, 'target': 1300, 'status': None
             },
             'total_offers': {
-                'value': f"{total_offers_scaled}",
-                'trend': '+18%',
-                'target': '25000',
-                'status': 'excellent'
+                'value': total_offers, 'trend': None, 'target': 25000, 'status': None
             }
         }
         return jsonify(scorecards), 200
@@ -103,30 +86,10 @@ def get_scorecards():
 @optional_auth
 def get_insights():
     try:
-        # Generate AI-like insights based on simple rules or mock data for the sprint
-        insights = [
-            {
-                'id': 1,
-                'title': 'Placement Rate Growth',
-                'description': 'Abu Dhabi placement rate increased by 12%, driven primarily by the technology sector.',
-                'severity': 'info',
-                'theme': 'talent_supply'
-            },
-            {
-                'id': 2,
-                'title': 'Company Inactivity',
-                'description': '3 major enterprise companies have not posted new roles in the last 30 days.',
-                'severity': 'warning',
-                'theme': 'company_demand'
-            },
-            {
-                'id': 3,
-                'title': 'Candidate Registration Surge',
-                'description': '45 candidates completed their profile this week vs. 28 last week.',
-                'severity': 'info',
-                'theme': 'platform_health'
-            }
-        ]
+        # No fabricated insights — data-driven board insights are not computed yet,
+        # so return an empty list instead of invented narratives (previously claimed
+        # specific % changes and company counts that weren't derived from data). (#26)
+        insights = []
         return jsonify(insights), 200
     except Exception as e:
         logger.error(f"Error getting insights: {str(e)}")
@@ -213,10 +176,8 @@ def get_briefing_pack():
         total_companies = execute_query("SELECT COUNT(*) as count FROM companies", fetch_one=True)['count']
         total_offers = execute_query("SELECT COUNT(*) as count FROM job_offers", fetch_one=True)['count']
         
-        total_candidates_scaled = 120000 + total_candidates
-        total_offers_scaled = 24500 + total_offers
-        total_companies_scaled = 1250 + (total_companies - 12)
-        placement_rate = f"{(total_offers_scaled / total_candidates_scaled * 100):.1f}%"
+        # Real counts, no inflation baselines. (#26)
+        placement_rate = f"{(total_offers / total_candidates * 100):.1f}%" if total_candidates else 'N/A'
         
         # 2. Fetch directives
         directives = execute_query("SELECT title, body, category, priority, status, created_at FROM board_directives ORDER BY created_at DESC", fetch_all=True)
@@ -227,11 +188,11 @@ def get_briefing_pack():
         md.append(f"**Generated on:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (UAE Time)")
         md.append("\n## 1. Executive Performance Scorecard")
         md.append(f"- **Talent Placement Rate:** {placement_rate} (Target: 20.0%)")
-        md.append("- **Average Time to Hire:** 24 Days (Target: 30 Days)")
-        md.append(f"- **Active Partner Companies:** {total_companies_scaled} (Target: 1,300)")
-        md.append(f"- **Total Placed Candidates:** {total_offers_scaled} (Target: 25,000)")
+        md.append("- **Average Time to Hire:** N/A (Target: 30 Days)")
+        md.append(f"- **Active Partner Companies:** {total_companies} (Target: 1,300)")
+        md.append(f"- **Total Offers:** {total_offers} (Target: 25,000)")
         md.append(f"- **Active Talent Pipeline:** {total_candidates} candidates")
-        md.append("- **Emiratisation Average Growth:** 4.2% (Target: 5.0%)")
+        md.append("- **Emiratisation Average Growth:** N/A (Target: 5.0%)")
         
         md.append("\n## 2. Active Board Directives")
         if directives:
@@ -284,31 +245,20 @@ def export_dashboard_data():
         
         # Write CSV Header
         writer.writerow(['Metric Category', 'Metric Name', 'Current Value', 'Target', 'Status'])
-        writer.writerow(['Scorecard', 'Placement Rate', f"{(24500 + total_offers) / (120000 + total_candidates) * 100:.1f}%", '20.0%', 'good'])
-        writer.writerow(['Scorecard', 'Time to Hire', '24 days', '30 days', 'excellent'])
-        writer.writerow(['Scorecard', 'Pipeline Health', f"{total_candidates}", '1000', 'good'])
-        writer.writerow(['Scorecard', 'Emiratisation Progress', '4.2%', '5.0%', 'warning'])
-        writer.writerow(['Scorecard', 'Active Companies', f"{1250 + (total_companies - 12)}", '1300', 'good'])
-        writer.writerow(['Scorecard', 'Total Offers', f"{24500 + total_offers}", '25000', 'excellent'])
-        
-        # Add demographics info
+        # Real counts, no inflation; non-derivable metrics exported as N/A. (#26)
+        _placement = f"{(total_offers / total_candidates * 100):.1f}%" if total_candidates else 'N/A'
+        writer.writerow(['Scorecard', 'Placement Rate', _placement, '20.0%', ''])
+        writer.writerow(['Scorecard', 'Time to Hire', 'N/A', '30 days', ''])
+        writer.writerow(['Scorecard', 'Pipeline Health', f"{total_candidates}", '1000', ''])
+        writer.writerow(['Scorecard', 'Emiratisation Progress', 'N/A', '5.0%', ''])
+        writer.writerow(['Scorecard', 'Active Companies', f"{total_companies}", '1300', ''])
+        writer.writerow(['Scorecard', 'Total Offers', f"{total_offers}", '25000', ''])
+
+        # Demographic breakdowns are not sourced from real data — omitted rather than
+        # exporting fabricated age/geographic figures in a board deliverable. (#26)
         writer.writerow([])
-        writer.writerow(['Demographics Segment', 'Age Group', 'Male Placements', 'Female Placements'])
-        writer.writerow(['Age Distribution', '18-25', '4500', '5200'])
-        writer.writerow(['Age Distribution', '26-35', '8200', '7800'])
-        writer.writerow(['Age Distribution', '36-45', '3100', '2900'])
-        writer.writerow(['Age Distribution', '46+', '1200', '800'])
-        
-        writer.writerow([])
-        writer.writerow(['Demographics Segment', 'Emirate', 'Candidates Count'])
-        writer.writerow(['Geographic spread', 'Abu Dhabi', '12500'])
-        writer.writerow(['Geographic spread', 'Dubai', '10200'])
-        writer.writerow(['Geographic spread', 'Sharjah', '6800'])
-        writer.writerow(['Geographic spread', 'Ajman', '1500'])
-        writer.writerow(['Geographic spread', 'Fujairah', '1100'])
-        writer.writerow(['Geographic spread', 'Ras Al Khaimah', '1300'])
-        writer.writerow(['Geographic spread', 'Umm Al Quwain', '300'])
-        
+        writer.writerow(['Demographics', 'Not available', 'Demographic breakdowns are not yet sourced from real data'])
+
         csv_content = output.getvalue()
         return Response(
             csv_content,
