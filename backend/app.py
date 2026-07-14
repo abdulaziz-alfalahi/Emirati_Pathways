@@ -667,6 +667,7 @@ _additional_blueprints = [
     ('backend.routes.user_activity_api', 'user_activity_bp', None, 'User Activity'),
     ('backend.recruiter.analytics_routes', 'analytics_bp', '/api/recruiter', 'Recruiter Analytics'),
     ('backend.routes.strategic_metrics_api', 'strategic_metrics_bp', None, 'Strategic Metrics'),
+    ('backend.national_priority_admin_routes', 'national_priority_admin_bp', None, 'National Priority Weights Admin'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
