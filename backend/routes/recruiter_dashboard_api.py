@@ -236,19 +236,42 @@ def match_candidates(jd_id):
 @recruiter_dashboard_bp.route('/shortlist', methods=['GET'])
 @optional_auth
 def get_shortlist():
-    """Get shortlisted candidates"""
+    """Shortlisted candidates — REAL data from candidate_shortlist, scoped to the
+    recruiter. Requires a recruiter identity (candidate PII); without it returns empty
+    rather than exposing other recruiters' shortlists. No fabricated names. (#26)"""
     try:
-        return jsonify({
-            'success': True,
-            'data': [
-                {'id': 1, 'candidate_id': 1, 'name': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'interview_scheduled', 'added': '2025-01-18'},
-                {'id': 2, 'candidate_id': 2, 'name': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'shortlisted', 'added': '2025-01-19'},
-                {'id': 3, 'candidate_id': 3, 'name': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'offer_sent', 'added': '2025-01-15'}
-            ]
-        })
+        recruiter_id = _dashboard_recruiter_id()
+        if not recruiter_id:
+            return jsonify({'success': True, 'data': [], 'available': False,
+                            'message': 'Sign in as a recruiter to view your shortlist'})
+        rows = execute_query("""
+            SELECT cs.id, cs.candidate_id::text AS candidate_id,
+                   COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
+                            'Candidate ' || cs.candidate_id::text) AS name,
+                   COALESCE(jp.title, 'N/A') AS position,
+                   cs.status, cs.created_at AS added
+            FROM candidate_shortlist cs
+            LEFT JOIN users u ON cs.candidate_id::text = u.id::text
+            LEFT JOIN job_postings jp ON cs.jd_id::text = jp.jd_id::text
+            WHERE cs.recruiter_id::text = %s
+            ORDER BY cs.created_at DESC
+            LIMIT 100
+        """, (recruiter_id,))
+        data = [
+            {
+                'id': r.get('id'),
+                'candidate_id': r.get('candidate_id'),
+                'name': r.get('name'),
+                'position': r.get('position'),
+                'status': r.get('status'),
+                'added': r.get('added').isoformat() if r.get('added') and hasattr(r.get('added'), 'isoformat') else r.get('added')
+            }
+            for r in (rows or [])
+        ]
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get shortlist: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': []})
 
 
 @recruiter_dashboard_bp.route('/jd/templates', methods=['GET'])
@@ -625,18 +648,65 @@ def add_to_shortlist():
 @recruiter_dashboard_bp.route('/candidates/<candidate_id>', methods=['GET'])
 @optional_auth
 def get_candidate_details(candidate_id):
-    """Get detailed candidate information"""
+    """Detailed candidate profile — REAL data (profile, skills, current role, education,
+    ATS score). Requires a recruiter identity (candidate PII). No fabricated profiles. (#26)"""
     try:
-        candidates = {
-            'c_001': {'id': 'c_001', 'name': 'Ahmed Al Maktoum', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'},
-            'c_002': {'id': 'c_002', 'name': 'Fatima Al Nahyan', 'location': 'Abu Dhabi', 'experience_years': 4, 'skills': ['Python', 'Django', 'PostgreSQL'], 'education': 'MSc Data Science', 'current_role': 'Backend Developer'},
-            '1': {'id': '1', 'name': 'Ahmed Al Maktoum', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'}
+        recruiter_id = _dashboard_recruiter_id()
+        if not recruiter_id:
+            return jsonify({'success': True, 'data': None, 'available': False,
+                            'message': 'Sign in as a recruiter to view candidate details'})
+        cid = str(candidate_id)
+        prof = execute_query("""
+            SELECT COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), cp.full_name) AS name,
+                   cp.location, cp.nationality, cp.headline, cp.ats_score
+            FROM users u
+            LEFT JOIN candidate_profiles cp ON cp.user_id::text = u.id::text
+            WHERE u.id::text = %s
+        """, (cid,), fetch_one=True)
+        if not prof:
+            return jsonify({'success': True, 'data': None, 'available': False,
+                            'message': 'Candidate not found'})
+        skills = execute_query("""
+            SELECT name FROM candidate_skills WHERE user_id::text = %s
+            ORDER BY is_verified DESC NULLS LAST, name LIMIT 50
+        """, (cid,))
+        cur_exp = execute_query("""
+            SELECT job_title, company FROM candidate_experience_entries WHERE user_id::text = %s
+            ORDER BY is_current DESC NULLS LAST, start_date DESC NULLS LAST LIMIT 1
+        """, (cid,), fetch_one=True)
+        edu = execute_query("""
+            SELECT degree, field_of_study, institution FROM candidate_education_entries WHERE user_id::text = %s
+            ORDER BY end_date DESC NULLS LAST LIMIT 1
+        """, (cid,), fetch_one=True)
+        yrs = execute_query("""
+            SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, MIN(start_date)))::int AS years
+            FROM candidate_experience_entries WHERE user_id::text = %s AND start_date IS NOT NULL
+        """, (cid,), fetch_one=True)
+
+        edu_str = None
+        if edu:
+            edu_str = ' '.join(filter(None, [edu.get('degree'), edu.get('field_of_study')])).strip() or None
+            if edu_str and edu.get('institution'):
+                edu_str = f"{edu_str} — {edu.get('institution')}"
+            elif not edu_str:
+                edu_str = edu.get('institution')
+
+        data = {
+            'id': cid,
+            'name': prof.get('name') or f'Candidate {cid}',
+            'location': prof.get('location'),
+            'nationality': prof.get('nationality'),
+            'current_role': (cur_exp.get('job_title') if cur_exp else None) or prof.get('headline'),
+            'current_company': cur_exp.get('company') if cur_exp else None,
+            'skills': [s.get('name') for s in (skills or []) if s.get('name')],
+            'education': edu_str,
+            'experience_years': yrs.get('years') if yrs else None,
+            'ats_score': prof.get('ats_score')
         }
-        candidate = candidates.get(candidate_id, candidates.get('1'))
-        return jsonify({'success': True, 'data': candidate})
+        return jsonify({'success': True, 'data': data})
     except Exception as e:
         logger.error(f"Failed to get candidate details: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'data': None, 'available': False})
 
 
 @recruiter_dashboard_bp.route('/offers', methods=['GET'])
