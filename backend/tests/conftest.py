@@ -30,3 +30,20 @@ if _url and not os.getenv("DB_HOST"):
     if _p.password:
         # DATABASE_URL percent-encodes special characters in the password; decode it back.
         os.environ["DB_PASSWORD"] = unquote(_p.password)
+
+    # Enable uuid-ossp so uuid_generate_v4() DEFAULTs in the app's table-creation DDL
+    # work against the fresh CI database (best-effort — a no-op if it already exists or
+    # the DB is unreachable).
+    try:
+        import psycopg2
+        _c = psycopg2.connect(
+            host=os.environ.get("DB_HOST"), port=os.environ.get("DB_PORT"),
+            dbname=os.environ.get("DB_NAME"), user=os.environ.get("DB_USER"),
+            password=os.environ.get("DB_PASSWORD"),
+        )
+        _c.autocommit = True
+        with _c.cursor() as _cur:
+            _cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+        _c.close()
+    except Exception:
+        pass
