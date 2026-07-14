@@ -10,16 +10,17 @@ def get_analytics():
     Get recruiter analytics data
     """
     try:
-        # Mock data for now
+        # Recruiter analytics are not yet wired to real data — return an explicit
+        # "not available" instead of the previous fabricated figures
+        # (150 matches / 75.5 avg score / 45 CVs). (#26)
         data = {
-            'total_matches': 150,
-            'average_score': 75.5,
-            'qualification_rate': 60.0,
-            'stored_data': {
-                'cvs': 45
-            }
+            'total_matches': None,
+            'average_score': None,
+            'qualification_rate': None,
+            'stored_data': {'cvs': None},
+            'available': False,
         }
-        
+
         return jsonify({
             'success': True,
             'data': data
