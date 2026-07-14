@@ -61,6 +61,7 @@ class VideoQuality(Enum):
     ACCEPTABLE = "acceptable"
     POOR = "poor"
     UNACCEPTABLE = "unacceptable"
+    PENDING = "pending_review"  # not auto-assessed — awaiting manual QA
 
 @dataclass
 class VideoMetadata:
@@ -285,11 +286,14 @@ class SecureVideoStorageSystem:
         """Upload encrypted file to secure storage"""
         try:
             if not self.s3_client:
-                # Mock storage for demo
-                storage_path = f"mock_storage/{file_id}.encrypted"
-                logger.info(f"Mock upload to {storage_path}")
-                return storage_path
-            
+                # No storage backend configured (no AWS credentials). Do NOT pretend to
+                # store the file at a fake mock_storage/ path — fail honestly so callers
+                # know the recording was not persisted. (#26)
+                raise RuntimeError(
+                    "Video storage backend not configured (no AWS S3 credentials). "
+                    "Set AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/VIDEO_STORAGE_BUCKET to enable."
+                )
+
             # Generate storage path
             storage_path = f"interview-recordings/{datetime.now().year}/{datetime.now().month}/{file_id}.encrypted"
             
@@ -408,39 +412,32 @@ class SecureVideoStorageSystem:
             self._update_video_status(item['file_id'], StorageStatus.ERROR)
 
     def _analyze_video_quality(self, session_id: str, file_id: str) -> QualityAssessment:
-        """Analyze video quality using AI"""
-        try:
-            if _qwen_available:
-                # In production, this would analyze the actual video
-                # For demo, return mock assessment
-                return self._generate_mock_quality_assessment(session_id)
-            else:
-                return self._generate_mock_quality_assessment(session_id)
-                
-        except Exception as e:
-            logger.error(f"Error analyzing video quality: {e}")
-            return self._generate_mock_quality_assessment(session_id)
+        """Return an HONEST automated quality assessment.
 
-    def _generate_mock_quality_assessment(self, session_id: str) -> QualityAssessment:
-        """Generate mock quality assessment"""
-        import random
-        
+        Automated deep video/audio analysis is NOT wired here — it requires a
+        video-processing backend (ffprobe/ffmpeg + frame/audio analysis) that is not
+        configured, and an LLM cannot inspect a raw video file. So instead of fabricating
+        scores (the previous version used random.uniform), we return a PENDING assessment
+        with null scores that flags the recording for manual QA review. (#26)
+        """
+        return self._pending_quality_assessment(session_id)
+
+    def _pending_quality_assessment(self, session_id: str) -> QualityAssessment:
+        """Honest 'not auto-assessed' placeholder — null scores, awaiting manual review."""
         return QualityAssessment(
             session_id=session_id,
-            video_quality=random.choice(list(VideoQuality)),
-            audio_quality=random.uniform(0.7, 1.0),
-            technical_score=random.uniform(0.8, 1.0),
-            content_appropriateness=random.uniform(0.9, 1.0),
+            video_quality=VideoQuality.PENDING,
+            audio_quality=None,
+            technical_score=None,
+            content_appropriateness=None,
             bias_indicators=[],
             flagged_content=[],
             recommendations=[
-                "Video quality is acceptable for archival",
-                "Audio clarity is good throughout the interview",
-                "No content issues detected"
+                "Automated deep video/audio analysis is not configured — manual QA review required."
             ],
-            reviewer_notes="Automated quality assessment completed",
+            reviewer_notes="Automated analysis unavailable (no video-processing backend). Awaiting manual QA review.",
             assessed_at=datetime.now(),
-            assessed_by="ai_system"
+            assessed_by="system_pending"
         )
 
     def _store_quality_assessment(self, assessment: QualityAssessment):
