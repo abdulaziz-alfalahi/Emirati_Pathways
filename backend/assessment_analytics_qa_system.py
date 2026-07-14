@@ -483,7 +483,8 @@ class AssessmentAnalyticsQASystem:
                 'critical_alerts_last_7_days': critical_alerts,
                 'unresolved_alerts': len([a for a in self.quality_alerts.values() if not a.resolved]),
                 'quality_score_average': self._calculate_average_quality_score(),
-                'uptime_percentage': 99.8,  # This would be calculated from actual system monitoring
+                # No system-monitoring probe wired — null instead of a fabricated 99.8. (#26)
+                'uptime_percentage': None,
                 'last_updated': datetime.now().isoformat()
             }
             
@@ -865,45 +866,37 @@ class AssessmentAnalyticsQASystem:
         engagement_scores = [m.engagement_score for m in recent_metrics]
         cultural_scores = [m.cultural_relevance_score for m in recent_metrics]
         
-        # Calculate quality scores
+        # Calculate quality scores. fairness/consistency/bias have no real computation
+        # (no bias-detection pipeline / score-variation analysis is wired) — return null
+        # rather than the previous fabricated 85/90/92, and average only over the
+        # components we actually compute. (#26)
         reliability_score = 100 - (len([m for m in recent_metrics if m.technical_issues]) / len(recent_metrics) * 100)
         validity_score = statistics.mean(accuracy_scores) if accuracy_scores else 0
-        fairness_score = 85.0  # This would be calculated from actual bias detection
-        consistency_score = 90.0  # This would be calculated from score variations
+        fairness_score = None
+        consistency_score = None
         cultural_sensitivity_score = statistics.mean(cultural_scores) if cultural_scores else 0
-        bias_detection_score = 92.0  # This would be calculated from bias detection algorithms
-        
-        average_quality_score = (reliability_score + validity_score + fairness_score + 
-                               consistency_score + cultural_sensitivity_score + bias_detection_score) / 6
-        
+        bias_detection_score = None
+
+        _computed = [reliability_score, validity_score, cultural_sensitivity_score]
+        average_quality_score = statistics.mean(_computed) if _computed else None
+
         return {
-            'average_quality_score': round(average_quality_score, 2),
+            'average_quality_score': round(average_quality_score, 2) if average_quality_score is not None else None,
             'system_reliability_score': round(reliability_score, 2),
             'reliability_score': round(reliability_score, 2),
             'validity_score': round(validity_score, 2),
-            'fairness_score': round(fairness_score, 2),
-            'consistency_score': round(consistency_score, 2),
+            'fairness_score': None,
+            'consistency_score': None,
             'cultural_sensitivity_score': round(cultural_sensitivity_score, 2),
-            'bias_detection_score': round(bias_detection_score, 2)
+            'bias_detection_score': None
         }
     
     def _calculate_quality_trends(self) -> Dict[str, List[Dict[str, Any]]]:
-        """Calculate quality trends over time"""
-        # This would calculate trends based on historical data
-        # For now, returning sample trend data
+        """Quality trends over time. Historical trend computation is not wired yet —
+        return empty series instead of the previous fabricated sample data. (#26)"""
         return {
-            'quality_score_trend': [
-                {'period': '2024-01', 'value': 85.2},
-                {'period': '2024-02', 'value': 87.1},
-                {'period': '2024-03', 'value': 88.5},
-                {'period': '2024-04', 'value': 89.2}
-            ],
-            'reliability_trend': [
-                {'period': '2024-01', 'value': 92.1},
-                {'period': '2024-02', 'value': 93.5},
-                {'period': '2024-03', 'value': 94.2},
-                {'period': '2024-04', 'value': 95.1}
-            ]
+            'quality_score_trend': [],
+            'reliability_trend': []
         }
     
     def _calculate_performance_statistics(self) -> Dict[str, Any]:

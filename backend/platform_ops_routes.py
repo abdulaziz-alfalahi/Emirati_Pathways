@@ -275,7 +275,10 @@ def simulate_policy():
     incentive_amount = data.get('incentive_amount', 0)  # AED
     sector_focus = data.get('sector_focus', 'all')
 
-    # Baseline metrics (simulated from current platform data)
+    # Illustrative baseline ASSUMPTIONS for the what-if model — NOT measured platform
+    # data. Several of these (employer_satisfaction, skill_gap_index) have no real source
+    # on the platform, so the baseline is disclosed as illustrative rather than presented
+    # as current data (was labelled "simulated from current platform data"). (#26)
     baseline = {
         "employment_rate": 68.5,
         "avg_time_to_employment_months": 4.2,
@@ -299,6 +302,8 @@ def simulate_policy():
 
     return jsonify({
         "baseline": baseline,
+        "baseline_source": "illustrative_assumptions",
+        "disclaimer": "Baseline and projected values are illustrative what-if assumptions, not measured platform data or a validated forecast.",
         "projected": projected,
         "parameters": {
             "training_budget_change": training_budget_change,
@@ -315,8 +320,13 @@ def simulate_policy():
 
 @platform_ops_bp.route('/policy/workforce-forecast', methods=['GET'])
 def workforce_forecast():
-    """Predictive analytics for workforce supply/demand."""
+    """Illustrative workforce supply/demand scenario. NOTE: this is NOT a data-driven
+    forecast — no predictive model is wired. The series below are illustrative sample
+    figures, explicitly disclosed as such rather than presented as real predictions. (#26)"""
     return jsonify({
+        "available": False,
+        "source": "illustrative",
+        "disclaimer": "Illustrative scenario only — not a data-driven forecast. No predictive model is connected.",
         "forecast_years": [2026, 2027, 2028, 2029, 2030],
         "supply_projection": [45000, 48000, 52000, 55000, 58000],
         "demand_projection": [50000, 54000, 57000, 60000, 63000],

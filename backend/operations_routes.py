@@ -54,8 +54,10 @@ def get_operations_stats():
             'total_users': total_users,
             'registrations_today': registrations_today,
             'registrations_week': registrations_week,
-            'uptime': '99.97%',       # System constant
-            'response_time': '142ms',  # System constant
+            # No real uptime/latency probe is connected — return null instead of
+            # asserting measured values we haven't measured. (#26)
+            'uptime': None,
+            'response_time': None,
         }
 
         # ─── 2. Talent Pipeline ───────────────────────────────────────────
@@ -111,11 +113,12 @@ def get_operations_stats():
                 WHERE status IS NOT NULL AND LOWER(status) != 'pending' AND submitted_at IS NOT NULL
             """)
             avg_resp_row = cur.fetchone()
-            avg_response_days = round(float(avg_resp_row['avg_days']), 1) if avg_resp_row and avg_resp_row['avg_days'] is not None else 4.2
+            # Null when there's no data — do not substitute a fabricated 4.2. (#26)
+            avg_response_days = round(float(avg_resp_row['avg_days']), 1) if avg_resp_row and avg_resp_row['avg_days'] is not None else None
         except Exception as e:
             logger.warning(f"Error calculating avg response days: {e}")
             conn.rollback()
-            avg_response_days = 4.2
+            avg_response_days = None
 
         try:
             # 2. Response rate (%)
@@ -129,11 +132,12 @@ def get_operations_stats():
             if rate_row and rate_row['total'] > 0:
                 response_rate = round((rate_row['reviewed'] / rate_row['total']) * 100, 1)
             else:
-                response_rate = 82.0
+                # No applications yet — null, not a fabricated 82.0. (#26)
+                response_rate = None
         except Exception as e:
             logger.warning(f"Error calculating response rate: {e}")
             conn.rollback()
-            response_rate = 82.0
+            response_rate = None
 
         employer_activity = {
             'total_companies': total_companies,
