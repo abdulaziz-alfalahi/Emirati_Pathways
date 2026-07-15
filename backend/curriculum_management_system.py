@@ -219,8 +219,99 @@ class CurriculumManagementSystem:
         except Exception as e:
             logger.error(f"Error creating AI-enhanced curriculum: {e}")
             return self._generate_fallback_curriculum(curriculum_requirements)
-    
-    def generate_adaptive_assessment(self, module: CurriculumModule, 
+
+    def generate_curriculum(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate a REAL AI curriculum from Qwen and parse the actual response.
+
+        The legacy create_ai_enhanced_curriculum path discarded the model output and
+        returned hardcoded module titles with fabricated relevance/employer scores
+        (_parse_ai_curriculum_response ignored the AI response entirely). This method
+        returns the genuine model-generated modules instead, and falls back to a clearly
+        flagged result when Qwen is unavailable — never fabricated-as-real. (#26)
+        """
+        import time
+        start = time.time()
+        if not _qwen_available:
+            return {
+                'success': True, 'available': False, 'fallback_mode': True, 'modules': [],
+                'message': 'AI curriculum generation unavailable (DASHSCOPE_API_KEY not set).',
+                'metadata': {'program_name': requirements.get('program_name')},
+            }
+        try:
+            prompt = (
+                "Create a comprehensive curriculum as JSON for:\n"
+                f"Program: {requirements.get('program_name')}\n"
+                f"Duration (weeks): {requirements.get('duration_weeks')}\n"
+                f"Target level: {requirements.get('target_level')}\n"
+                f"Industry focus: {requirements.get('industry_focus')}\n"
+                f"Learning outcomes: {requirements.get('learning_outcomes', [])}\n\n"
+                'Return a JSON object of the form {"modules": [{"title": str, "description": str, '
+                '"duration_weeks": int, "learning_objectives": [str], "topics": [str], '
+                '"assessment_strategy": str, "practical_components": [str], "uae_customizations": [str]}]}. '
+                "Align with UAE Vision 2071, support Emiratisation, include Arabic-language components where "
+                "appropriate, and focus on UAE market needs. Produce 4-6 modules."
+            )
+            messages = [
+                {"role": "system", "content": "You are an expert curriculum designer for the UAE. Return ONLY raw valid JSON. No markdown, no code fences."},
+                {"role": "user", "content": prompt},
+            ]
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            modules = self._parse_curriculum_modules(response)
+            return {
+                'success': True,
+                'available': True,
+                'modules': modules,
+                'metadata': {
+                    'program_name': requirements.get('program_name'),
+                    'duration_weeks': requirements.get('duration_weeks'),
+                    'target_level': requirements.get('target_level'),
+                    'industry_focus': requirements.get('industry_focus'),
+                    'module_count': len(modules),
+                    'processing_time_seconds': round(time.time() - start, 2),
+                    'generated_at': datetime.now().isoformat(),
+                },
+            }
+        except Exception as e:
+            logger.error(f"Curriculum generation error: {e}")
+            return {'success': False, 'available': False, 'modules': [], 'message': str(e)}
+
+    def _parse_curriculum_modules(self, response) -> List[Dict[str, Any]]:
+        """Parse the real Qwen response (dict or JSON string) into a list of module dicts.
+
+        Handles the dict returned by chat_completion directly (the old code assumed a
+        Gemini-style .text attribute and crashed). No fabricated scores are added —
+        only what the model actually returns.
+        """
+        data = response
+        if isinstance(response, str):
+            try:
+                s, e = response.find('{'), response.rfind('}') + 1
+                data = json.loads(response[s:e]) if s != -1 and e > s else {}
+            except Exception:
+                data = {}
+        if not isinstance(data, dict):
+            data = {}
+        raw = data.get('modules') or data.get('curriculum') or data.get('curriculum_modules') or []
+        if isinstance(raw, dict):
+            raw = raw.get('modules') or list(raw.values())
+        modules = []
+        for i, m in enumerate(raw if isinstance(raw, list) else []):
+            if not isinstance(m, dict):
+                continue
+            modules.append({
+                'module_number': i + 1,
+                'title': m.get('title') or m.get('name') or f'Module {i + 1}',
+                'description': m.get('description') or '',
+                'duration_weeks': m.get('duration_weeks') or m.get('duration'),
+                'learning_objectives': m.get('learning_objectives') or m.get('objectives') or [],
+                'topics': m.get('topics') or m.get('content_topics') or [],
+                'assessment_strategy': m.get('assessment_strategy') or m.get('assessment') or '',
+                'practical_components': m.get('practical_components') or [],
+                'uae_customizations': m.get('uae_customizations') or m.get('uae_context') or [],
+            })
+        return modules
+
+    def generate_adaptive_assessment(self, module: CurriculumModule,
                                    student_profile: Dict[str, Any] = None,
                                    assessment_type: AssessmentType = AssessmentType.QUIZ) -> Assessment:
         """Generate adaptive assessment based on module and student profile"""
