@@ -101,12 +101,15 @@ def ensure_tables_exist():
 # Initialize tables
 ensure_tables_exist()
 
-def optional_auth(f):
-    """Decorator that allows requests with or without authentication"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        return f(*args, **kwargs)
-    return decorated_function
+# SECURITY (was a no-op that let anyone read candidate data and approve/reject offers and
+# delegate approval authority): require an authenticated HR/recruiter/admin caller. Per-
+# resource ownership is still enforced in the handlers that need it.
+try:
+    from backend.auth.access_control import require_roles, HR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, HR_ROLES
+
+optional_auth = require_roles(*HR_ROLES)
 
 
 # =====================================================

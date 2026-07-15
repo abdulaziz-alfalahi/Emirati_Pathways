@@ -5,12 +5,15 @@ from psycopg2.extras import RealDictCursor
 from db import get_db_connection
 from functools import wraps
 
-def optional_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Allow requests without auth to proceed
-        return f(*args, **kwargs)
-    return decorated_function
+# SECURITY (was a no-op that made the executive board portal fully public — anyone could
+# read briefing packs/exports and create/edit board directives with a forged audit trail):
+# require an authenticated board/admin caller.
+try:
+    from backend.auth.access_control import require_roles, BOARD_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, BOARD_ROLES
+
+optional_auth = require_roles(*BOARD_ROLES)
 logger = logging.getLogger(__name__)
 
 board_portal_bp = Blueprint('board_portal', __name__, url_prefix='/api/board')
