@@ -5,7 +5,7 @@ This module provides API endpoints for administrators to assign Growth Operators
 to specific domains (Candidate, Company, Education, Assessment, Mentorship, Community).
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 import json
 import logging
@@ -170,12 +170,15 @@ try:
 except Exception as _init_err:
     logger.warning(f"Could not ensure growth_operator tables at import time: {_init_err}")
 
-def optional_auth(f):
-    """Decorator that allows requests with or without authentication"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        return f(*args, **kwargs)
-    return decorated_function
+# SECURITY (was a no-op that let anyone rewrite users.role and enumerate operator PII):
+# every endpoint here manages Growth-Operator privileges under /api/admin/*, so require
+# an authenticated ADMIN caller (role resolved across primary + secondary_roles).
+try:
+    from backend.auth.access_control import require_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, ADMIN_ROLES
+
+optional_auth = require_roles(*ADMIN_ROLES)
 
 
 # =====================================================
@@ -483,7 +486,8 @@ def assign_domains(user_id):
         domains = data.get('domains', [])
         primary_domain = data.get('primary_domain', data.get('primaryDomain'))
         notes = data.get('notes', '')
-        assigned_by = data.get('assigned_by', 1)  # Should come from auth
+        # Use the verified identity (set by require_roles), not a client-supplied value.
+        assigned_by = getattr(g, 'user_id', None) or data.get('assigned_by')
         
         logger.info(f"assign_domains called: user_id={user_id}, domains={domains}, primary={primary_domain}")
         
