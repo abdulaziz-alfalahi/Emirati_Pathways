@@ -17,6 +17,10 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
 
 from backend.db import get_db_connection
 from backend.user_helpers import user_display_name
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -996,7 +1000,7 @@ def recruiter_respond_to_offer(offer_id):
 
 
 @recruiter_dashboard_bp.route('/offers/<offer_id>/letter', methods=['GET'])
-@optional_auth
+@require_auth  # was @optional_auth (no-op) — offer letter exposes candidate email + comp
 def generate_offer_letter(offer_id):
     """Generate a downloadable offer letter for an accepted/hired offer"""
     try:
@@ -2892,7 +2896,7 @@ def send_offer_to_candidate(offer_id):
 
 
 @recruiter_dashboard_bp.route('/candidates/<candidate_id>/full-profile', methods=['GET'])
-@optional_auth
+@require_roles(*RECRUITER_ROLES)  # was @optional_auth (no-op) — returns candidate PII
 def get_candidate_profile_full(candidate_id):
     """Get full profile details for a candidate with robust ID handling"""
     try:
