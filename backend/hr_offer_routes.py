@@ -44,11 +44,10 @@ def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:
 
 
 @hr_offer_bp.route("/", methods=["GET"])
+@jwt_required()
 def list_offers():
     """List offers for recruiter's company, with optional filters."""
     try:
-        from flask_jwt_extended import verify_jwt_in_request
-        verify_jwt_in_request()
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
@@ -162,11 +161,10 @@ def list_offers():
 
 
 @hr_offer_bp.route("/", methods=["POST"])
+@jwt_required()
 def create_offer():
     """Create a new offer. Optionally send immediately."""
     try:
-        from flask_jwt_extended import verify_jwt_in_request
-        verify_jwt_in_request()
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
@@ -251,11 +249,10 @@ def create_offer():
 
 
 @hr_offer_bp.route("/<offer_id>", methods=["GET"])
+@jwt_required()
 def get_offer(offer_id):
     """Get offer details if recruiter has access."""
     try:
-        from flask_jwt_extended import verify_jwt_in_request
-        verify_jwt_in_request()
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
@@ -305,11 +302,10 @@ def get_offer(offer_id):
 
 
 @hr_offer_bp.route("/<offer_id>/send", methods=["POST"])
+@jwt_required()
 def send_offer(offer_id):
     """Generate a signature token and mark offer as sent."""
     try:
-        from flask_jwt_extended import verify_jwt_in_request
-        verify_jwt_in_request()
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''

@@ -2,11 +2,56 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.interview_service import interview_service
+import json
 import logging
 from datetime import datetime
 
+try:
+    from backend.auth.access_control import resolve_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, ADMIN_ROLES
+
 interview_bp = Blueprint('interview', __name__, url_prefix='/api/interviews')
 logger = logging.getLogger(__name__)
+
+
+def _is_participant(session, user_id):
+    """True if user_id is the candidate, the recruiter, or a listed attendee of the session."""
+    if not session or user_id is None:
+        return False
+    uid = str(user_id)
+    for key in ('candidate_id', 'recruiter_id'):
+        val = session.get(key)
+        if val is not None and str(val) == uid:
+            return True
+    attendees = session.get('attendees')
+    if isinstance(attendees, str):
+        try:
+            attendees = json.loads(attendees)
+        except Exception:
+            attendees = []
+    if isinstance(attendees, (list, tuple)) and uid in [str(a) for a in attendees]:
+        return True
+    return False
+
+
+def _authorize_session(session_id):
+    """Fetch a session and authorize the current caller (BOLA guard).
+
+    Access is limited to session participants (candidate / recruiter / attendee) and
+    admins — any other authenticated user must not read or mutate another user's
+    interview session. (audit BAC/BOLA — session endpoints were auth-only, not owner-checked)
+
+    Returns (session, None) when allowed, or (None, (response, status)) to return.
+    """
+    session = interview_service.get_session(session_id)
+    if not session:
+        return None, (jsonify({'success': False, 'message': 'Not found'}), 404)
+    user_id = get_jwt_identity()
+    if _is_participant(session, user_id) or (resolve_roles() & ADMIN_ROLES):
+        return session, None
+    logger.warning("Blocked non-participant access to interview session %s by user %s", session_id, user_id)
+    return None, (jsonify({'success': False, 'message': 'Forbidden'}), 403)
 
 @interview_bp.route('/sessions', methods=['POST'])
 @jwt_required()
@@ -48,7 +93,10 @@ def get_my_sessions():
 @jwt_required()
 def get_all_sessions_admin():
     try:
-        # Ideally check admin role here
+        # Admin-only: this dumps EVERY session's PII, so gate it to admins rather than
+        # any authenticated user. (audit BAC — was auth-only despite the "all sessions" scope)
+        if not (resolve_roles() & ADMIN_ROLES):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
         sessions = interview_service.get_all_sessions()
         return jsonify({'success': True, 'data': sessions}), 200
     except Exception as e:
@@ -59,9 +107,9 @@ def get_all_sessions_admin():
 @jwt_required()
 def get_session(session_id):
     try:
-        session = interview_service.get_session(session_id)
-        if not session:
-            return jsonify({'success': False, 'message': 'Not found'}), 404
+        session, err = _authorize_session(session_id)
+        if err:
+            return err
         return jsonify({'success': True, 'data': session}), 200
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -70,6 +118,9 @@ def get_session(session_id):
 @jwt_required()
 def upload_chunk(session_id):
     try:
+        _, err = _authorize_session(session_id)
+        if err:
+            return err
         user_id = get_jwt_identity()
         file = request.files['chunk']
         chunk_index = int(request.form.get('index', 0))
@@ -87,6 +138,9 @@ def upload_chunk(session_id):
 @jwt_required()
 def update_session(session_id):
     try:
+        _, err = _authorize_session(session_id)
+        if err:
+            return err
         data = request.get_json()
         result = interview_service.update_session(session_id, data)
         if result:
@@ -99,6 +153,9 @@ def update_session(session_id):
 @jwt_required()
 def cancel_session(session_id):
     try:
+        _, err = _authorize_session(session_id)
+        if err:
+            return err
         data = request.get_json() or {}
         reason = data.get('reason', 'Cancelled by user')
         result = interview_service.cancel_session(session_id, reason)
@@ -113,6 +170,9 @@ def cancel_session(session_id):
 @jwt_required()
 def trigger_analysis(session_id):
     try:
+        _, err = _authorize_session(session_id)
+        if err:
+            return err
         # Manually trigger AI analysis
         interview_service.analyze_interview(session_id)
         return jsonify({'success': True, 'message': 'Analysis started'}), 200
@@ -145,9 +205,8 @@ def get_assessors_for_panel():
 @interview_bp.route('/monitor/active', methods=['GET'])
 @jwt_required()
 def get_active_sessions():
-    # TODO: Verify admin role
-    # For now, return active status from DB
-    # Note: Real-time "Currently in call" usually comes from SocketIO room state, 
-    # but we can filter DB by status='active' if we update it correctly.
-    # We will implement logic in the service if needed, or query directly.
+    # Admin-only monitoring surface. Real-time "Currently in call" usually comes from
+    # SocketIO room state; this DB-backed view is gated to admins. (audit BAC)
+    if not (resolve_roles() & ADMIN_ROLES):
+        return jsonify({'success': False, 'message': 'Forbidden'}), 403
     return jsonify({'success': True, 'data': []}), 200 # Stub
