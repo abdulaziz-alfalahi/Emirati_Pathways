@@ -24,6 +24,32 @@ INJECTION_GUARD = (
 )
 
 
+# Direct-contact / national-identifier PII that the matching engines do NOT need to score a
+# candidate, and which should not be sent to the (cross-border) LLM. (audit AI-03 / PDPL)
+_PII_KEYS = {
+    'email', 'emails', 'phone', 'phone_number', 'mobile', 'mobile_number', 'contact',
+    'contact_email', 'contact_number', 'contact_info', 'contact_details',
+    'dob', 'date_of_birth', 'birth_date', 'birthdate',
+    'address', 'home_address', 'street', 'street_address', 'postal_code', 'zip', 'zipcode',
+    'national_id', 'nationalid', 'emirates_id', 'emirates_id_number', 'eid', 'id_number',
+    'passport', 'passport_number', 'passport_no',
+    'linkedin', 'linkedin_url', 'personal_website', 'website', 'latitude', 'longitude',
+    'profile_photo_url', 'avatar_url', 'photo', 'photo_url',
+}
+
+
+def minimise_pii(obj):
+    """Recursively drop direct-contact / national-identifier PII from a resume/profile before
+    it is embedded in a matching prompt sent to the external (cross-border) LLM. Matching does
+    not need this data; keeps name, skills, experience, education, nationality, city location.
+    (audit AI-03 — data minimisation for PDPL.)"""
+    if isinstance(obj, dict):
+        return {k: minimise_pii(v) for k, v in obj.items() if str(k).lower() not in _PII_KEYS}
+    if isinstance(obj, list):
+        return [minimise_pii(v) for v in obj]
+    return obj
+
+
 def wrap_untrusted(label: str, content) -> str:
     """Delimit untrusted content with a labeled fence and neutralise break-out attempts."""
     text = str(content) if content is not None else ""

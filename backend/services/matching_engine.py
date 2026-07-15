@@ -194,13 +194,15 @@ def _create_matching_prompt(
     """Build the scoring prompt sent to qwen-plus."""
     import json as _json
     try:
-        from backend.services.prompt_safety import INJECTION_GUARD, wrap_untrusted
+        from backend.services.prompt_safety import INJECTION_GUARD, wrap_untrusted, minimise_pii
     except ImportError:  # pragma: no cover
-        from services.prompt_safety import INJECTION_GUARD, wrap_untrusted
+        from services.prompt_safety import INJECTION_GUARD, wrap_untrusted, minimise_pii
 
-    # Delimit the untrusted resume/JD so embedded instructions can't hijack the score. (audit AI-02)
-    resume_str = wrap_untrusted("CANDIDATE PROFILE", _json.dumps(resume, ensure_ascii=False, default=str)[:8000])
-    jd_str = wrap_untrusted("JOB DESCRIPTION", _json.dumps(jd, ensure_ascii=False, default=str)[:8000])
+    # Strip direct-contact/identifier PII (email, phone, DOB, EID, address) before sending to
+    # the external LLM — matching doesn't need it (audit AI-03) — and delimit the untrusted
+    # resume/JD so embedded instructions can't hijack the score (audit AI-02).
+    resume_str = wrap_untrusted("CANDIDATE PROFILE", _json.dumps(minimise_pii(resume), ensure_ascii=False, default=str)[:8000])
+    jd_str = wrap_untrusted("JOB DESCRIPTION", _json.dumps(minimise_pii(jd), ensure_ascii=False, default=str)[:8000])
 
     return f"""{INJECTION_GUARD}
 
