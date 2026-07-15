@@ -193,11 +193,18 @@ def _create_matching_prompt(
 ) -> str:
     """Build the scoring prompt sent to qwen-plus."""
     import json as _json
+    try:
+        from backend.services.prompt_safety import INJECTION_GUARD, wrap_untrusted
+    except ImportError:  # pragma: no cover
+        from services.prompt_safety import INJECTION_GUARD, wrap_untrusted
 
-    resume_str = _json.dumps(resume, ensure_ascii=False, default=str)[:8000]
-    jd_str = _json.dumps(jd, ensure_ascii=False, default=str)[:8000]
+    # Delimit the untrusted resume/JD so embedded instructions can't hijack the score. (audit AI-02)
+    resume_str = wrap_untrusted("CANDIDATE PROFILE", _json.dumps(resume, ensure_ascii=False, default=str)[:8000])
+    jd_str = wrap_untrusted("JOB DESCRIPTION", _json.dumps(jd, ensure_ascii=False, default=str)[:8000])
 
-    return f"""Score this candidate against the job description.
+    return f"""{INJECTION_GUARD}
+
+Score this candidate against the job description.
 
 ═══════════════════════════════════════════
 SCORING CRITERIA (total = 100%)

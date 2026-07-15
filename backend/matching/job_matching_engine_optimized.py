@@ -361,7 +361,14 @@ class EnhancedJobMatchingEngine:
             comp_str = f"""
 - Monthly Salary Range: {compensation.get('salary_min', 'N/A')} - {compensation.get('salary_max', 'N/A')} {compensation.get('salary_currency', 'AED')}
 """
-        return f"""
+        try:
+            from backend.services.prompt_safety import INJECTION_GUARD
+        except ImportError:  # pragma: no cover
+            from services.prompt_safety import INJECTION_GUARD
+        # The CV/JD fields below are untrusted user data — guard against embedded
+        # instructions manipulating the match score. (audit AI-02)
+        return f"""{INJECTION_GUARD}
+
 Analyze this CV-Job match for the UAE job market with cultural and professional context. You must evaluate the candidate's career preferences and salary expectations against the job budget and location constraints:
 
 CV CANDIDATE:
