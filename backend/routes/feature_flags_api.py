@@ -1,6 +1,11 @@
 from flask import Blueprint, request, jsonify
 from backend.db import get_db_connection
 
+try:
+    from backend.auth.access_control import require_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, ADMIN_ROLES
+
 feature_flags_bp = Blueprint('feature_flags', __name__, url_prefix='/api/feature-flags')
 
 def optional_auth(f):
@@ -52,11 +57,10 @@ def get_all_flags():
         conn.close()
 
 @feature_flags_bp.route('/<key_name>', methods=['PUT'])
+@require_roles(*ADMIN_ROLES)
 def toggle_flag(key_name):
-    """
-    Toggles a specific feature flag.
-    In a real app, this should be protected by an @admin_required decorator.
-    """
+    """Toggle a feature flag. Admin-only (was unauthenticated — audit BAC). GET remains
+    public so the frontend can read flags on boot."""
     data = request.json
     is_enabled = data.get('is_enabled')
     

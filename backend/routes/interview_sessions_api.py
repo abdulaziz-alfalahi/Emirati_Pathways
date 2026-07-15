@@ -156,12 +156,16 @@ def ensure_tables_exist():
 # Initialize tables on module load
 ensure_tables_exist()
 
-def optional_auth(f):
-    """Decorator that allows requests with or without authentication"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        return f(*args, **kwargs)
-    return decorated_function
+# SECURITY (was a no-op that let anyone read interview-session PII and cancel/alter/
+# record sessions, and dump every session via /sessions/admin/all): require an
+# authenticated user on every session endpoint. The admin "all sessions" view is
+# additionally gated to admins below. (audit BAC)
+try:
+    from backend.auth.access_control import require_auth, require_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_auth, require_roles, ADMIN_ROLES
+
+optional_auth = require_auth
 
 
 # =====================================================
@@ -869,7 +873,7 @@ def upload_recording_chunk(session_id):
 
 
 @interview_sessions_bp.route('/sessions/admin/all', methods=['GET'])
-@optional_auth
+@require_roles(*ADMIN_ROLES)
 def get_all_sessions_admin():
     """Get all interview sessions for admin view"""
     try:
