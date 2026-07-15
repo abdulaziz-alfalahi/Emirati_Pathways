@@ -512,12 +512,15 @@ class UAEMatchingCriteria:
     def calculate_uae_bonuses(self, cv_info: Dict, jd_info: Dict) -> Dict[str, float]:
         """Calculate UAE-specific bonuses"""
         bonuses = {}
-        
-        # 1. UAE National Bonus
-        if cv_info.get('nationality', '').lower() in ['uae', 'emirati', 'united arab emirates']:
-            bonuses['cultural_fit_score'] = 20
-            bonuses['overall_score'] = 15
-        
+
+        # 1. UAE National Bonus — REMOVED (audit AI-01). Per the platform's matching
+        # principle, nationality must NOT add a flat bonus to the fit/overall score; the
+        # UAE national-development priority is a SEPARATE, disclosed axis
+        # (national_priority_engine), never folded into the match score. GH #12 removed
+        # this from two scorers but missed THIS engine (EnhancedJobMatchingEngine →
+        # calculate_uae_bonuses), which was still applying +15 overall / +20 cultural.
+        # (no nationality-based bonus is applied)
+
         # 2. English Language Bonus (Prioritized for private sector vacancies since candidates are native Arabic speakers)
         languages_raw = cv_info.get('languages', [])
         languages = []
