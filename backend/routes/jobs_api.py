@@ -536,7 +536,7 @@ def apply_to_specific_job(job_id):
         }), 500
 
 
-@jobs_bp.route('/applications/<int:application_id>', methods=['GET'])
+@jobs_bp.route('/applications/<application_id>', methods=['GET'])
 @require_auth
 def get_application(application_id):
     """Get details of a specific application. Owner (candidate) or recruiter/admin only
@@ -584,7 +584,7 @@ def get_application(application_id):
         }), 500
 
 
-@jobs_bp.route('/applications/<int:application_id>/withdraw', methods=['POST'])
+@jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
 @require_auth
 def withdraw_application(application_id):
     """Withdraw a job application — the owner (candidate) only. Was @optional_auth (no-op)
@@ -925,7 +925,7 @@ def submit_application():
 
 
 @candidate_jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
-@optional_auth
+@require_auth
 def withdraw_candidate_application(application_id):
     """
     Withdraw a job application
@@ -942,7 +942,21 @@ def withdraw_candidate_application(application_id):
     try:
         data = request.get_json() or {}
         reason = data.get('reason', '')
-        
+
+        # Ownership: only the application's own candidate may withdraw it (was @optional_auth
+        # no-op + UPDATE WHERE id=%s — anyone could withdraw anyone's application). (audit IDOR)
+        caller = getattr(g, 'user_id', None)
+        try:
+            _own = execute_query(
+                "SELECT candidate_id FROM job_applications WHERE id::text = %s",
+                (str(application_id),), fetch_one=True
+            )
+        except Exception:
+            _own = None
+        if _own and str(_own.get('candidate_id')) != str(caller):
+            if not (resolve_roles() & (RECRUITER_ROLES | ADMIN_ROLES)):
+                return jsonify({'success': False, 'message': 'Forbidden - not your application'}), 403
+
         # Try to update in database
         conn = get_db_connection()
         if conn:
