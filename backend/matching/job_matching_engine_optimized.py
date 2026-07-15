@@ -551,11 +551,13 @@ Provide analysis in JSON format:
     
     def _calculate_weighted_score(self, scores: Dict) -> float:
         """Calculate weighted overall score"""
+        # Location/emirate is INFORMATIONAL ONLY — excluded from the overall score so
+        # candidates are not penalised for their emirate of residence. The remaining
+        # weights are renormalised by total_weight below. (audit AI-07)
         weights = {
             'skills_match_score': 0.25,
             'experience_match_score': 0.20,
             'cultural_fit_score': 0.15,
-            'location_preference_score': 0.15,
             'language_compatibility_score': 0.10,
             'education_match_score': 0.15
         }

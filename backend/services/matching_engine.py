@@ -211,16 +211,19 @@ Score this candidate against the job description.
 ═══════════════════════════════════════════
 SCORING CRITERIA (total = 100%)
 ═══════════════════════════════════════════
-1. **Skills Match (30%)**: % of required skills the candidate has.
-2. **Experience Relevance (25%)**: Role similarity, industry overlap, seniority fit.
+1. **Skills Match (35%)**: % of required skills the candidate has.
+2. **Experience Relevance (30%)**: Role similarity, industry overlap, seniority fit.
 3. **Education & NQF Alignment (15%)**: Does education level meet/exceed JD requirements?
    - Compare candidate's highest_nqf_level to jd's nqf_level_required.
 4. **Language Fit (10%)**: Arabic/English proficiency match.
-5. **Location & Logistics (10%)**: Emirate match, remote eligibility.
-6. **Emiratisation Priority (10% × weight={emir_weight})**: Is the candidate a UAE national?
+5. **Emiratisation Priority (10% × weight={emir_weight})**: Is the candidate a UAE national?
    - "High" if UAE national AND emiratisation_preferred is true.
    - "Medium" if one condition met.
    - "Low" if neither.
+
+NOTE: Location / emirate / commute is INFORMATIONAL ONLY (audit AI-07). You may report
+`location_score` for reference, but DO NOT include it in `overall_score`, and NEVER penalise
+a candidate for their emirate of residence.
 
 ═══════════════════════════════════════════
 CANDIDATE PROFILE
