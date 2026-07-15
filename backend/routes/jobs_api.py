@@ -5,7 +5,7 @@ This module provides API endpoints for job listings and applications,
 supporting both candidate and public-facing job search features.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from datetime import datetime, timedelta
 import json
 import logging
@@ -14,6 +14,10 @@ from psycopg2.extras import RealDictCursor
 from functools import wraps
 
 from backend.db import get_db_connection
+try:
+    from backend.auth.access_control import require_auth, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_auth, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -532,10 +536,11 @@ def apply_to_specific_job(job_id):
         }), 500
 
 
-@jobs_bp.route('/applications/<int:application_id>', methods=['GET'])
-@optional_auth
+@jobs_bp.route('/applications/<application_id>', methods=['GET'])
+@require_auth
 def get_application(application_id):
-    """Get details of a specific application"""
+    """Get details of a specific application. Owner (candidate) or recruiter/admin only
+    — was @optional_auth (no-op), an IDOR exposing any applicant's data."""
     try:
         # NOTE: Using job_postings for application details (candidates apply to published jobs)
         # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
@@ -559,7 +564,13 @@ def get_application(application_id):
                 'success': False,
                 'message': 'Application not found'
             }), 404
-        
+
+        # Ownership: only the application's own candidate — or a recruiter/admin — may view it.
+        caller = getattr(g, 'user_id', None)
+        if str(application.get('candidate_id')) != str(caller):
+            if not (resolve_roles() & (RECRUITER_ROLES | ADMIN_ROLES)):
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
+
         return jsonify({
             'success': True,
             'data': application
@@ -573,18 +584,22 @@ def get_application(application_id):
         }), 500
 
 
-@jobs_bp.route('/applications/<int:application_id>/withdraw', methods=['POST'])
-@optional_auth
+@jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
+@require_auth
 def withdraw_application(application_id):
-    """Withdraw a job application"""
+    """Withdraw a job application — the owner (candidate) only. Was @optional_auth (no-op)
+    with no ownership check, so anyone could withdraw anyone's application."""
     try:
-        query = """
-            UPDATE job_applications 
-            SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """
-        execute_query(query, (application_id,), fetch_all=False)
-        
+        caller = getattr(g, 'user_id', None)
+        # Scope the update to the caller's OWN application — a non-owner matches no row.
+        res = execute_query(
+            "UPDATE job_applications SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP "
+            "WHERE id = %s AND candidate_id::text = %s RETURNING id",
+            (application_id, str(caller)), fetch_one=True
+        )
+        if not res:
+            return jsonify({'success': False, 'message': 'Application not found or not yours'}), 404
+
         return jsonify({
             'success': True,
             'message': 'Application withdrawn'
@@ -910,7 +925,7 @@ def submit_application():
 
 
 @candidate_jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
-@optional_auth
+@require_auth
 def withdraw_candidate_application(application_id):
     """
     Withdraw a job application
@@ -927,7 +942,21 @@ def withdraw_candidate_application(application_id):
     try:
         data = request.get_json() or {}
         reason = data.get('reason', '')
-        
+
+        # Ownership: only the application's own candidate may withdraw it (was @optional_auth
+        # no-op + UPDATE WHERE id=%s — anyone could withdraw anyone's application). (audit IDOR)
+        caller = getattr(g, 'user_id', None)
+        try:
+            _own = execute_query(
+                "SELECT candidate_id FROM job_applications WHERE id::text = %s",
+                (str(application_id),), fetch_one=True
+            )
+        except Exception:
+            _own = None
+        if _own and str(_own.get('candidate_id')) != str(caller):
+            if not (resolve_roles() & (RECRUITER_ROLES | ADMIN_ROLES)):
+                return jsonify({'success': False, 'message': 'Forbidden - not your application'}), 403
+
         # Try to update in database
         conn = get_db_connection()
         if conn:
