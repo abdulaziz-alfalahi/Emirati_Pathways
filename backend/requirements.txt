@@ -39,6 +39,12 @@ httpx==0.27.0
 # Data Processing
 pandas==2.2.1
 numpy==1.26.4
+# scipy / scikit-learn power mentor_matching_engine (TF-IDF + cosine similarity),
+# quality_assurance_system (scipy.stats + cohen_kappa_score) and the optimized job
+# matching engine. Without them those blueprints fail to register at startup. Versions
+# pinned for compatibility with numpy 1.26.4 on Python 3.11.
+scipy==1.11.4
+scikit-learn==1.3.2
 python-dateutil==2.8.2
 pytz==2024.1
 
