@@ -140,7 +140,7 @@ class AIAssessmentIntelligence:
             response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse and structure the response
-            questions_data = self._parse_question_response(str(response) if isinstance(response, dict) else response)
+            questions_data = self._parse_question_response(json.dumps(response) if isinstance(response, dict) else response)
             
             # Add UAE-specific enhancements
             if uae_context:
@@ -206,7 +206,7 @@ class AIAssessmentIntelligence:
             response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse evaluation response
-            evaluation_data = self._parse_evaluation_response(str(response) if isinstance(response, dict) else response)
+            evaluation_data = self._parse_evaluation_response(json.dumps(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -256,7 +256,7 @@ class AIAssessmentIntelligence:
             response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse analysis response
-            analysis_data = self._parse_performance_response(str(response) if isinstance(response, dict) else response)
+            analysis_data = self._parse_performance_response(json.dumps(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -306,7 +306,7 @@ class AIAssessmentIntelligence:
             response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse skill gap response
-            gap_data = self._parse_skill_gap_response(str(response) if isinstance(response, dict) else response)
+            gap_data = self._parse_skill_gap_response(json.dumps(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -357,7 +357,7 @@ class AIAssessmentIntelligence:
             response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse bias analysis response
-            bias_data = self._parse_bias_response(str(response) if isinstance(response, dict) else response)
+            bias_data = self._parse_bias_response(json.dumps(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
