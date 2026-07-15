@@ -698,6 +698,7 @@ _additional_blueprints = [
     ('backend.routes.strategic_metrics_api', 'strategic_metrics_bp', None, 'Strategic Metrics'),
     ('backend.national_priority_admin_routes', 'national_priority_admin_bp', None, 'National Priority Weights Admin'),
     ('backend.routes.ai_assessment_intelligence_routes', 'ai_assessment_intelligence_bp', None, 'AI Assessment Intelligence'),
+    ('backend.routes.video_qa_routes', 'video_qa_bp', None, 'Video QA'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
