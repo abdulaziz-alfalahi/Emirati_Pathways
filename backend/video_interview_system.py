@@ -103,7 +103,8 @@ class VideoInterviewEngine:
         
         # Storage configuration
         self.video_storage_bucket = os.getenv('VIDEO_STORAGE_BUCKET', 'emirati-interviews')
-        self.encryption_key = os.getenv('VIDEO_ENCRYPTION_KEY', 'default_key_change_in_production')
+        # No hardcoded default key (was the publicly-known 'default_key_change_in_production'). (audit SEC-04)
+        self.encryption_key = os.getenv('VIDEO_ENCRYPTION_KEY')
         
         # Granite Speech Server (sidecar)
         # ASR endpoints (Granite Speech). Comma-separated for HA failover across
