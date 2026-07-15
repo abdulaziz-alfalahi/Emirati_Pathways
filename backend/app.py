@@ -700,6 +700,7 @@ _additional_blueprints = [
     ('backend.routes.ai_assessment_intelligence_routes', 'ai_assessment_intelligence_bp', None, 'AI Assessment Intelligence'),
     ('backend.routes.video_qa_routes', 'video_qa_bp', None, 'Video QA'),
     ('backend.routes.curriculum_routes', 'curriculum_bp', None, 'Curriculum Management'),
+    ('backend.routes.public_stats_api', 'public_stats_bp', None, 'Public Platform Stats'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
