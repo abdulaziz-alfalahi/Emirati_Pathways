@@ -146,6 +146,19 @@ const BilingualHomePage: React.FC = () => {
     setTranslations(contextLanguage === 'ar' ? arTranslations : enTranslations);
   }, [contextLanguage]);
 
+  // Real platform stats for the hero counters — was hardcoded 10,000/500/2,500/15,000
+  // marketing figures. Fetch actual aggregate counts from the public stats endpoint. (audit INT-01)
+  const [realStats, setRealStats] = useState<{
+    active_users: number; partner_companies: number; expert_mentors: number; successful_placements: number;
+  } | null>(null);
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    fetch(`${base}/api/public/platform-stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j?.success && j.data) setRealStats(j.data); })
+      .catch(() => { /* homepage still renders without stats */ });
+  }, []);
+
   /* ---- data ---- */
   const personas = [
     {
@@ -286,11 +299,13 @@ const BilingualHomePage: React.FC = () => {
     },
   ];
 
+  // Values come from the real /api/public/platform-stats counts (0 until loaded), not
+  // hardcoded marketing numbers. (audit INT-01)
   const stats = [
-    { value: 10000, label: translations.stats?.users?.label || 'Active Users' },
-    { value: 500, label: translations.stats?.partners?.label || 'Partner Companies' },
-    { value: 2500, label: translations.stats?.mentors?.label || 'Expert Mentors' },
-    { value: 15000, label: translations.stats?.placements?.label || 'Successful Placements' },
+    { value: realStats?.active_users ?? 0, label: translations.stats?.users?.label || 'Active Users' },
+    { value: realStats?.partner_companies ?? 0, label: translations.stats?.partners?.label || 'Partner Companies' },
+    { value: realStats?.expert_mentors ?? 0, label: translations.stats?.mentors?.label || 'Expert Mentors' },
+    { value: realStats?.successful_placements ?? 0, label: translations.stats?.placements?.label || 'Successful Placements' },
   ];
 
   const testimonials = translations.testimonials?.items || [
