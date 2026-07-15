@@ -5,6 +5,10 @@ Create, send e-sign token, list/get offers; accept/decline by token.
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 import psycopg2
 import psycopg2.extras
 import logging
@@ -49,8 +53,12 @@ def list_offers():
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
-        if user_role not in allowed_roles:
+        allowed_roles = {'employer_admin', 'recruiter', 'admin', 'hr', 'hr_manager', 'talent_operator',
+                         'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just
+        # the primary JWT claim — otherwise legit recruiters/HR who hold the role as a SECONDARY
+        # role are wrongly 403'd. (audit — same defect the admin-access fix addressed)
+        if not (resolve_roles() & allowed_roles):
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         job_id = request.args.get("job_id")
@@ -163,8 +171,12 @@ def create_offer():
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
-        if user_role not in allowed_roles:
+        allowed_roles = {'employer_admin', 'recruiter', 'admin', 'hr', 'hr_manager', 'talent_operator',
+                         'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just
+        # the primary JWT claim — otherwise legit recruiters/HR who hold the role as a SECONDARY
+        # role are wrongly 403'd. (audit — same defect the admin-access fix addressed)
+        if not (resolve_roles() & allowed_roles):
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         data = request.get_json() or {}
@@ -248,8 +260,12 @@ def get_offer(offer_id):
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
-        if user_role not in allowed_roles:
+        allowed_roles = {'employer_admin', 'recruiter', 'admin', 'hr', 'hr_manager', 'talent_operator',
+                         'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just
+        # the primary JWT claim — otherwise legit recruiters/HR who hold the role as a SECONDARY
+        # role are wrongly 403'd. (audit — same defect the admin-access fix addressed)
+        if not (resolve_roles() & allowed_roles):
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -298,8 +314,12 @@ def send_offer(offer_id):
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
-        if user_role not in allowed_roles:
+        allowed_roles = {'employer_admin', 'recruiter', 'admin', 'hr', 'hr_manager', 'talent_operator',
+                         'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just
+        # the primary JWT claim — otherwise legit recruiters/HR who hold the role as a SECONDARY
+        # role are wrongly 403'd. (audit — same defect the admin-access fix addressed)
+        if not (resolve_roles() & allowed_roles):
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         data = request.get_json() or {}
