@@ -33,6 +33,10 @@ except ImportError:  # pragma: no cover
     from db_utils import execute_query
 
 ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_administrator'}
+# Convenience role sets for common privileged surfaces (admin always included).
+BOARD_ROLES = ADMIN_ROLES | {'board_member'}
+HR_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'hr', 'hr_manager', 'talent_operator', 'employer_relations'}
+RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator', 'employer_relations'}
 
 
 def _verify_any_jwt():
