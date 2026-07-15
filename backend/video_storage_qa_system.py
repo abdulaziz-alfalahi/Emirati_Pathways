@@ -135,8 +135,18 @@ class SecureVideoStorageSystem:
             self.s3_client = None
         
         # Encryption configuration
-        self.master_key = os.getenv('VIDEO_ENCRYPTION_KEY', 'default_key_change_in_production')
-        self.encryption_suite = Fernet(base64.urlsafe_b64encode(self.master_key.encode().ljust(32)[:32]))
+        # Video-recording encryption key. No hardcoded fallback (was the publicly-known
+        # 'default_key_change_in_production'), and derive a proper 32-byte Fernet key via
+        # SHA-256 rather than space-pad/truncate. Required in production; ephemeral dev key
+        # (with a loud warning) otherwise. (audit SEC-04)
+        _vk = os.getenv('VIDEO_ENCRYPTION_KEY')
+        if not _vk:
+            if os.getenv('FLASK_ENV') == 'production':
+                raise RuntimeError("VIDEO_ENCRYPTION_KEY is required in production to encrypt interview recordings")
+            logger.warning("VIDEO_ENCRYPTION_KEY not set — using an ephemeral dev key; recordings will not be decryptable after a restart")
+            _vk = base64.urlsafe_b64encode(os.urandom(32)).decode()
+        self.master_key = _vk
+        self.encryption_suite = Fernet(base64.urlsafe_b64encode(hashlib.sha256(_vk.encode()).digest()))
         
         # Qwen AI (lazy-loaded via qwen_client module)
         if _qwen_available:
