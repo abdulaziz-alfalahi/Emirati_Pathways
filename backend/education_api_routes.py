@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 
 education_bp = Blueprint('education', __name__, url_prefix='/api/education')
 
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+except ImportError:
+    from auth.access_control import require_roles, OPERATOR_ROLES
+
 
 def get_db():
     """Get database connection."""
@@ -646,6 +651,7 @@ def get_my_progress():
 # ═══════════════════════════════════════════
 
 @education_bp.route('/operator/stats', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def education_operator_stats():
     """Aggregate statistics for the Education Operator Dashboard overview."""
     db = get_db()
@@ -680,6 +686,7 @@ def education_operator_stats():
 
 
 @education_bp.route('/operator/institutions', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def education_operator_institutions():
     """List institutions with program/student counts for the operator."""
     rows = query_all("""
@@ -696,6 +703,7 @@ def education_operator_institutions():
 
 
 @education_bp.route('/operator/enrollments/recent', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def education_operator_recent_enrollments():
     """Recent enrollments across all programs (latest 20)."""
     rows = query_all("""
@@ -713,6 +721,7 @@ def education_operator_recent_enrollments():
 
 
 @education_bp.route('/operator/programs/pending', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def education_operator_pending_programs():
     """Programs pending approval."""
     rows = query_all("""
@@ -1085,6 +1094,7 @@ def ensure_community_tables():
 
 
 @education_bp.route('/community/operator/stats', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def community_operator_stats():
     """Aggregate statistics for the Community Operator Dashboard."""
     ensure_community_tables()
@@ -1198,6 +1208,7 @@ def ensure_profdev_tables():
 
 
 @education_bp.route('/profdev/operator/stats', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def profdev_operator_stats():
     """Aggregate statistics for the Professional Development Operator Dashboard."""
     ensure_profdev_tables()
@@ -1386,6 +1397,7 @@ def toggle_certification_body(body_id):
 # ═══════════════════════════════════════════════════════════════════
 
 @education_bp.route('/employer/dashboard', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def employer_dashboard():
     """Aggregate employer dashboard data from job_postings and job_applications tables."""
     db = get_db()
@@ -1482,6 +1494,7 @@ def employer_dashboard():
 # ═══════════════════════════════════════════════════════════════════
 
 @education_bp.route('/government/dashboard', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def government_dashboard():
     """Aggregate government dashboard: emiratization tracker + platform stats."""
     db = get_db()

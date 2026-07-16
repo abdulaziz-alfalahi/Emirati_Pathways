@@ -26,6 +26,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 jd_upload_routes = Blueprint('jd_upload', __name__)
 
 # Allowed file extensions
@@ -41,6 +46,7 @@ def allowed_file(filename: str) -> bool:
 
 
 @jd_upload_routes.route('/api/recruiter/jd/upload/parse', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def upload_and_parse():
     """
     Upload a job description file and parse it
@@ -145,6 +151,7 @@ def upload_and_parse():
 
 
 @jd_upload_routes.route('/api/recruiter/jd/upload/batch', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def upload_batch():
     """
     Upload multiple job description files for batch processing
@@ -276,6 +283,7 @@ def upload_batch():
 
 
 @jd_upload_routes.route('/api/recruiter/jd/parse/text', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def parse_text():
     """
     Parse job description from raw text

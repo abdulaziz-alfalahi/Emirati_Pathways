@@ -20,6 +20,11 @@ import re
 from typing import Dict, List, Any
 import os
 
+try:
+    from backend.auth.access_control import require_roles, HR_ROLES
+except ImportError:
+    from auth.access_control import require_roles, HR_ROLES
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -378,32 +383,8 @@ def health_check():
         ]
     })
 
-if os.getenv('FLASK_ENV', 'production') != 'production':
-    @hr_candidate_search_bp.route('/debug/token', methods=['GET'])
-    @jwt_required()
-    def debug_token():
-        """Debug endpoint to check JWT token information (dev only)"""
-        try:
-            current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            return jsonify({
-                'success': True,
-                'data': {
-                    'user_id': current_user_id,
-                    'claims': claims,
-                    'role': claims.get('role', ''),
-                    'user_type': claims.get('user_type', ''),
-                    'all_claims': dict(claims) if claims else {}
-                }
-            })
-        except Exception as e:
-            logger.error(f"Debug token error: {str(e)}")
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
-
 @hr_candidate_search_bp.route('/search', methods=['GET'])
+@require_roles(*HR_ROLES)
 def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
@@ -542,7 +523,7 @@ def search_candidates():
         }), 500
 
 @hr_candidate_search_bp.route('/<candidate_id>', methods=['GET'])
-@jwt_required()
+@require_roles(*HR_ROLES)
 def get_candidate_details(candidate_id):
     """Get detailed candidate profile"""
     try:
@@ -659,7 +640,7 @@ def get_candidate_details(candidate_id):
         }), 500
 
 @hr_candidate_search_bp.route('/match/<job_id>', methods=['GET'])
-@jwt_required()
+@require_roles(*HR_ROLES)
 def match_candidates_to_job(job_id):
     """Find candidates that match a specific job posting"""
     try:
@@ -850,7 +831,7 @@ def match_candidates_to_job(job_id):
         }), 500
 
 @hr_candidate_search_bp.route('/filters/options', methods=['GET'])
-@jwt_required()
+@require_roles(*HR_ROLES)
 def get_filter_options():
     """Get available filter options for candidate search"""
     try:

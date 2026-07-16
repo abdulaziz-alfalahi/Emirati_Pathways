@@ -176,14 +176,6 @@ def get_user_id_from_token():
         pass
     return None
 
-@enhanced_cv_bp.route('/debug-qwen', methods=['GET'])
-def debug_qwen_status():
-    """Check if Qwen pipeline is active (no auth required)."""
-    return jsonify({
-        'qwen_available': QWEN_AVAILABLE,
-        'engine': 'Qwen' if QWEN_AVAILABLE else 'Gemini (fallback)',
-    }), 200
-
 @enhanced_cv_bp.route('/upload', methods=['POST'])
 def upload_cv():
     """Upload and parse CV file"""

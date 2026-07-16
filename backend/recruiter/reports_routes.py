@@ -15,9 +15,15 @@ from .reports_engine import (
 )
 
 # Create blueprint without url_prefix (will be added in app.py)
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 reports_bp = Blueprint('reports', __name__)
 
 @reports_bp.route('/pipeline', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_pipeline_report():
     """
     Generate recruitment pipeline report
@@ -61,6 +67,7 @@ def get_pipeline_report():
         }), 500
 
 @reports_bp.route('/candidates', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_candidate_status_report():
     """
     Generate candidate status report
@@ -104,6 +111,7 @@ def get_candidate_status_report():
         }), 500
 
 @reports_bp.route('/interviews', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_interview_feedback_report():
     """
     Generate interview feedback report
@@ -147,6 +155,7 @@ def get_interview_feedback_report():
         }), 500
 
 @reports_bp.route('/offers', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_offer_statistics_report():
     """
     Generate offer statistics report
@@ -190,6 +199,7 @@ def get_offer_statistics_report():
         }), 500
 
 @reports_bp.route('/performance', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_performance_metrics_report():
     """
     Generate performance metrics report

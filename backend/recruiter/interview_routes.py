@@ -21,6 +21,11 @@ from .interview_engine import (
     Recommendation
 )
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 logger = logging.getLogger(__name__)
 
 # Create blueprint
@@ -61,7 +66,7 @@ def health_check():
 
 
 @interview_bp.route('/all', methods=['GET'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def get_all_recruiter_interviews():
     """
     Get all interviews for the current recruiter.
@@ -109,7 +114,7 @@ def get_all_recruiter_interviews():
 
 
 @interview_bp.route('/create', methods=['POST'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def create_interview():
     """
     Create a new interview
@@ -176,6 +181,7 @@ def create_interview():
 
 
 @interview_bp.route('/jd/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_interviews_by_jd(jd_id):
     """
     Get all interviews for a job description
@@ -221,6 +227,7 @@ def get_interviews_by_jd(jd_id):
 
 
 @interview_bp.route('/<interview_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_interview_details(interview_id):
     """Get detailed information about a specific interview"""
     try:
@@ -259,6 +266,7 @@ def get_interview_details(interview_id):
 
 
 @interview_bp.route('/<interview_id>', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_interview(interview_id):
     """
     Update interview details
@@ -292,6 +300,7 @@ def update_interview(interview_id):
 
 
 @interview_bp.route('/<interview_id>/cancel', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def cancel_interview(interview_id):
     """
     Cancel an interview
@@ -371,6 +380,7 @@ def cancel_interview(interview_id):
 
 
 @interview_bp.route('/<interview_id>/reschedule', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def reschedule_interview(interview_id):
     """
     Reschedule an interview
@@ -486,6 +496,7 @@ def reschedule_interview(interview_id):
 
 
 @interview_bp.route('/<interview_id>/complete', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def complete_interview(interview_id):
     """
     Mark interview as completed and add feedback
@@ -525,6 +536,7 @@ def complete_interview(interview_id):
 
 
 @interview_bp.route('/<interview_id>/confirm', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def confirm_interview(interview_id):
     """
     Update interview confirmation status
@@ -577,6 +589,7 @@ def confirm_interview(interview_id):
 
 
 @interview_bp.route('/<interview_id>/remind', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def send_interview_reminder(interview_id):
     """
     Send interview reminder to candidate
@@ -629,6 +642,7 @@ def send_interview_reminder(interview_id):
 
 
 @interview_bp.route('/stats/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_interview_statistics(jd_id):
     """Get interview statistics for a job description"""
     try:
@@ -650,6 +664,7 @@ def get_interview_statistics(jd_id):
 
 
 @interview_bp.route('/shortlist/<shortlist_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_interviews_by_shortlist(shortlist_id):
     """Get all interviews for a specific shortlisted candidate"""
     try:
@@ -685,7 +700,7 @@ def get_interviews_by_shortlist(shortlist_id):
 
 
 @interview_bp.route('/my-panels', methods=['GET'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def get_my_panels():
     """
     Get all interviews where the current user is listed as a panelist
@@ -734,7 +749,7 @@ def get_my_panels():
 
 
 @interview_bp.route('/<interview_id>/scorecard', methods=['POST'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def submit_scorecard(interview_id):
     """
     Submit or update a panelist's scorecard for an interview.
@@ -850,7 +865,7 @@ def submit_scorecard(interview_id):
 
 
 @interview_bp.route('/<interview_id>/scorecards', methods=['GET'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def get_scorecards(interview_id):
     """
     Get all scorecards for an interview, with aggregated averages.

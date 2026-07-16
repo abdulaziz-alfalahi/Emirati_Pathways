@@ -4,6 +4,10 @@ Serves data for the Demographics Analytics and Executive Dashboard.
 """
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
+try:
+    from backend.auth.access_control import require_roles, GOVERNANCE_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, GOVERNANCE_ROLES
 from psycopg2.extras import RealDictCursor
 from backend.db import get_db_connection
 import logging
@@ -16,7 +20,7 @@ def get_db():
     return get_db_connection()
 
 @demographics_bp.route('/demographics/main', methods=['GET'])
-@jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_main_demographics():
     """
     Returns data for the Main JS Dashboard: Gender, Age Group, Education, Employment Status
@@ -59,7 +63,7 @@ def get_main_demographics():
 
 
 @demographics_bp.route('/demographics/priority', methods=['GET'])
-@jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_priority_demographics():
     """
     Returns data for 2nd/3rd Priority JS Dashboards: Military, Marital, Emirate
@@ -97,7 +101,7 @@ def get_priority_demographics():
 
 
 @demographics_bp.route('/executive', methods=['GET'])
-@jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_executive_impact():
     """
     Returns data for the Executive Impact Dashboard.

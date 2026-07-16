@@ -13,6 +13,10 @@ import json
 import logging
 
 from backend.db import get_db_connection
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, OPERATOR_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +96,7 @@ except Exception:
 # GET /api/nafis/demand-signals
 # ─────────────────────────────────────────────
 @demand_signal_bp.route('/demand-signals', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_demand_signals():
     """
     Query companies with published jobs and matching candidate counts.
@@ -239,6 +244,7 @@ def get_demand_signals():
 # GET /api/nafis/demand-signals/filter-options
 # ─────────────────────────────────────────────
 @demand_signal_bp.route('/demand-signals/filter-options', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_filter_options():
     """Return distinct values for emirate and sector filter dropdowns."""
     try:
@@ -277,6 +283,7 @@ def get_filter_options():
 # POST /api/nafis/demand-signals/<company_id>/bulk-invite
 # ─────────────────────────────────────────────
 @demand_signal_bp.route('/demand-signals/<company_id>/bulk-invite', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def bulk_invite(company_id):
     """
     Bulk invite matching candidates for a company's open positions.
@@ -372,6 +379,7 @@ def bulk_invite(company_id):
 # GET /api/nafis/demand-signals/<company_id>/candidates
 # ─────────────────────────────────────────────
 @demand_signal_bp.route('/demand-signals/<company_id>/candidates', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_matching_candidates(company_id):
     """
     Get matching candidates for a company's job requirements.

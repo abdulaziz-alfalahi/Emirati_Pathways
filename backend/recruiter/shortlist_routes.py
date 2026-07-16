@@ -17,6 +17,11 @@ from .shortlist_engine import ShortlistEngine, ShortlistStatus
 logger = logging.getLogger(__name__)
 
 # Create blueprint
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 shortlist_bp = Blueprint('shortlist', __name__)
 
 
@@ -32,6 +37,7 @@ def health_check():
 
 
 @shortlist_bp.route('/add', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_to_shortlist():
     """
     Add a candidate to shortlist
@@ -152,6 +158,7 @@ def add_to_shortlist():
 
 
 @shortlist_bp.route('/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_shortlist(jd_id):
     """
     Get shortlisted candidates for a job description
@@ -246,6 +253,7 @@ def get_shortlist(jd_id):
 
 
 @shortlist_bp.route('/<shortlist_id>/status', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_shortlist_status(shortlist_id):
     """
     Update shortlist candidate status
@@ -327,6 +335,7 @@ def update_shortlist_status(shortlist_id):
 
 
 @shortlist_bp.route('/<shortlist_id>', methods=['DELETE'])
+@require_roles(*RECRUITER_ROLES)
 def remove_from_shortlist(shortlist_id):
     """Remove a candidate from shortlist"""
     try:
@@ -354,6 +363,7 @@ def remove_from_shortlist(shortlist_id):
 
 
 @shortlist_bp.route('/<shortlist_id>/notes', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_note(shortlist_id):
     """
     Add a note to shortlist entry
@@ -400,6 +410,7 @@ def add_note(shortlist_id):
 
 
 @shortlist_bp.route('/<jd_id>/stats', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_shortlist_stats(jd_id):
     """Get statistics for a job description's shortlist"""
     try:

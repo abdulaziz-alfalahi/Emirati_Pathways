@@ -12,6 +12,11 @@ import os
 import json
 from backend.db import get_db_connection
 
+try:
+    from backend.auth.access_control import require_roles, HR_ROLES
+except ImportError:
+    from auth.access_control import require_roles, HR_ROLES
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,7 @@ hr_candidate_bp = Blueprint('hr_candidate', __name__, url_prefix='/api/hr/candid
 
 
 @hr_candidate_bp.route('/<candidate_id>', methods=['GET'])
-@jwt_required()
+@require_roles(*HR_ROLES)
 def get_candidate_profile_hr(candidate_id):
     """
     Get full candidate profile for HR view

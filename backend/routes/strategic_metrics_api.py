@@ -1,5 +1,9 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
+try:
+    from backend.auth.access_control import require_roles, GOVERNANCE_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, GOVERNANCE_ROLES
 from datetime import datetime
 import logging
 
@@ -42,7 +46,7 @@ def get_db_counts():
         return None, None, None
 
 @strategic_metrics_bp.route('/demographics', methods=['GET'])
-# @jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_demographics_metrics():
     """
     Serves structured demographic data (age distribution, education levels, geographic spread) 
@@ -82,7 +86,7 @@ def get_demographics_metrics():
     return jsonify({'success': True, 'data': data})
 
 @strategic_metrics_bp.route('/executive-impact', methods=['GET'])
-# @jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_executive_impact_metrics():
     """
     Serves high-level KPIs (total placements, economic value generated, target vs. actuals) 
@@ -175,7 +179,7 @@ def get_executive_impact_metrics():
     return jsonify({'success': True, 'data': data})
 
 @strategic_metrics_bp.route('/operations-live', methods=['GET'])
-# @jwt_required()
+@require_roles(*GOVERNANCE_ROLES)
 def get_operations_live_metrics():
     """
     Serves real-time system health, NAFIS sync status, and active user metrics.

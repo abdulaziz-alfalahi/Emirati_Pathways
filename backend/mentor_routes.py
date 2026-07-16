@@ -17,6 +17,11 @@ from mentor_system import (
     AvailabilityStatus
 )
 
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+except ImportError:
+    from auth.access_control import require_roles, OPERATOR_ROLES
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -255,6 +260,7 @@ def get_uae_national_mentors():
         }), 500
 
 @mentor_bp.route('/statistics', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_mentor_statistics():
     """Get comprehensive mentor statistics"""
     try:
@@ -559,6 +565,7 @@ def list_mentors():
 # ═══════════════════════════════════════════
 
 @mentor_bp.route('/operator/stats', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def mentorship_operator_stats():
     """Aggregate statistics for the Mentorship Operator Dashboard."""
     try:

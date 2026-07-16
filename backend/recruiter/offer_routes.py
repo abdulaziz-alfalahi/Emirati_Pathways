@@ -12,6 +12,11 @@ from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 offer_bp = Blueprint('offers', __name__)
 
 def serialize_offer(offer):
@@ -40,6 +45,7 @@ def serialize_offer(offer):
     return serialized
 
 @offer_bp.route('/create', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def create_offer():
     """Create a new job offer"""
     try:
@@ -56,6 +62,7 @@ def create_offer():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/jd/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_offers_by_jd(jd_id):
     """Get all offers for a job description"""
     try:
@@ -73,6 +80,7 @@ def get_offers_by_jd(jd_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_offer_details(offer_id):
     """Get detailed information about an offer"""
     try:
@@ -89,6 +97,7 @@ def get_offer_details(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_offer(offer_id):
     """Update offer details"""
     try:
@@ -105,6 +114,7 @@ def update_offer(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/send', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def send_offer(offer_id):
     """Send offer to candidate"""
     try:
@@ -124,6 +134,7 @@ def send_offer(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/withdraw', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def withdraw_offer(offer_id):
     """Withdraw an offer"""
     try:
@@ -142,6 +153,7 @@ def withdraw_offer(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/response', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def record_candidate_response(offer_id):
     """Record candidate's response to offer"""
     try:
@@ -164,6 +176,7 @@ def record_candidate_response(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/negotiate', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def start_negotiation(offer_id):
     """Start negotiation process and add negotiation entry"""
     try:
@@ -183,6 +196,7 @@ def start_negotiation(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/statistics/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_offer_statistics(jd_id):
     """Get offer statistics for a job description"""
     try:
@@ -198,6 +212,7 @@ def get_offer_statistics(jd_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/approve', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def approve_offer(offer_id):
     """Approve an offer"""
     try:
@@ -220,6 +235,7 @@ def approve_offer(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/<offer_id>/reject', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def reject_offer(offer_id):
     """Reject an offer"""
     try:
@@ -242,6 +258,7 @@ def reject_offer(offer_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @offer_bp.route('/approval-stats', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_approval_stats():
     """Get approval statistics"""
     # Mock response to silence 404

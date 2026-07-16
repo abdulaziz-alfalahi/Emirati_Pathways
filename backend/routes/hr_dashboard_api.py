@@ -896,7 +896,7 @@ def get_team_members():
 # =====================================================
 
 @hr_dashboard_api_bp.route('/candidates/search', methods=['GET', 'POST'])
-@jwt_required()
+@require_roles(*HR_ROLES)
 def search_candidates():
     """
     Search for candidates with various filters

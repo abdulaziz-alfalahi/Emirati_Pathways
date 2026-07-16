@@ -9,11 +9,16 @@ from backend.db import get_db_connection
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 training_bp = Blueprint('training_recommendations', __name__, url_prefix='/api/recruiter/training')
 
 
 @training_bp.route('/recommend', methods=['POST'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def recommend_training():
     """
     Recommend training programs based on missing skills.
