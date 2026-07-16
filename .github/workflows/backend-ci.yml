@@ -47,6 +47,35 @@ jobs:
           pip install flake8
           flake8 app.py --max-line-length=150 --count --statistics
 
+      - name: Provision database schema
+        # The Postgres service starts empty. Tests exercise raw-SQL tables (offers,
+        # job_postings, hr_profiles, interview/video sessions, …) that db.create_all()
+        # does NOT create — only the ORM subset. migrate.py is the declarative,
+        # idempotent provisioner: it reads DATABASE_SCHEMA.md (the single source of
+        # truth) and converges the DB. Its uuid_generate_v4() DEFAULTs need uuid-ossp.
+        env:
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: test_emirati
+          DB_USER: test_user
+          DB_PASSWORD: test_pass
+        run: |
+          cd backend
+          python - <<'PY'
+          import os, psycopg2
+          conn = psycopg2.connect(
+              host=os.environ["DB_HOST"], port=os.environ["DB_PORT"],
+              dbname=os.environ["DB_NAME"], user=os.environ["DB_USER"],
+              password=os.environ["DB_PASSWORD"],
+          )
+          conn.autocommit = True
+          with conn.cursor() as cur:
+              cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+          conn.close()
+          print("uuid-ossp extension ready")
+          PY
+          python migrate.py
+
       - name: Run tests
         env:
           DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_emirati
