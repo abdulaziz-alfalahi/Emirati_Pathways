@@ -18,6 +18,10 @@ import psycopg2
 import psycopg2.extras
 from pathlib import Path
 from datetime import datetime
+try:
+    from backend.auth.access_control import require_roles, ADMIN_ROLES, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, ADMIN_ROLES, RECRUITER_ROLES
 from functools import wraps
 
 from flask import Flask, request, jsonify, g, send_file
@@ -2798,6 +2802,7 @@ Return only the JSON object, no additional text."""
             return jsonify({'error': 'Internal server error'}), 500
 
     @_app.route('/api/admin/dashboard-stats', methods=['GET'])
+    @require_roles(*ADMIN_ROLES)
     def get_dashboard_stats():
         """Get dashboard statistics for admin interface"""
         try:
@@ -3274,6 +3279,7 @@ Return only the JSON object, no additional text."""
     # ============================================================================
 
     @_app.route('/api/recruiter/communication/templates', methods=['GET'])
+    @require_roles(*RECRUITER_ROLES)
     def get_communication_templates():
         """Get communication templates for recruiters"""
         try:

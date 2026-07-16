@@ -23,6 +23,33 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 assessment_analytics_qa_bp = Blueprint('assessment_analytics_qa', __name__, url_prefix='/api/assessment-analytics-qa')
 
+# SECURITY (audit BAC-2 follow-up): this whole blueprint was unauthenticated, exposing
+# assessment quality/analytics data. Gate every route (except /health) to the assessment
+# oversight roles via a single before_request guard.
+from flask_jwt_extended import verify_jwt_in_request
+try:
+    from backend.auth.access_control import resolve_roles, OPERATOR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, OPERATOR_ROLES
+_QA_ALLOWED = OPERATOR_ROLES | {'assessor'}
+
+
+@assessment_analytics_qa_bp.before_request
+def _require_qa_role():
+    if request.method == 'OPTIONS' or request.path.rstrip('/').endswith('/health'):
+        return None
+    try:
+        verify_jwt_in_request()
+    except Exception:
+        try:
+            verify_jwt_in_request(locations=['cookies'])
+        except Exception:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+    if not (resolve_roles() & _QA_ALLOWED):
+        return jsonify({'success': False, 'message': 'Forbidden - insufficient role'}), 403
+    return None
+
+
 @assessment_analytics_qa_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
