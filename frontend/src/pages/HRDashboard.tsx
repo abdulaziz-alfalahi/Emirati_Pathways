@@ -533,18 +533,17 @@ const HRDashboard: React.FC = () => {
                         <circle cx={70} cy={70} r={55} fill="none" stroke="#E5E7EB" strokeWidth={12} />
                         <circle cx={70} cy={70} r={55} fill="none" stroke="#006E6D" strokeWidth={12}
                           strokeDasharray={`${2 * Math.PI * 55}`}
-                          strokeDashoffset={`${2 * Math.PI * 55 - (78 / 100) * 2 * Math.PI * 55}`}
+                          strokeDashoffset={`${2 * Math.PI * 55}`}
                           strokeLinecap="round" className="transition-all duration-1000 ease-out" />
                         <text x={70} y={70} textAnchor="middle" dominantBaseline="central"
-                          className="fill-slate-900 text-2xl font-bold" transform={`rotate(90, 70, 70)`}>
-                          78%
+                          className="fill-slate-400 text-2xl font-bold" transform={`rotate(90, 70, 70)`}>
+                          N/A
                         </text>
                       </svg>
                     </div>
                     <span className="text-xs text-slate-500 mt-2 text-center font-dubai-medium">{b('Current Emiratization Rate', 'معدل التوطين الحالي')}</span>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">{b('Target: 80%', 'الهدف: ٨٠٪')}</Badge>
-                      <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]">{b('+3% this quarter', '+٣٪ هذا الربع')}</Badge>
                     </div>
                     <Button variant="link" size="sm" className="text-xs text-teal-600 mt-3 font-dubai-medium">
                       {b('View Detailed Report →', 'عرض التقرير المفصل ←')}
@@ -563,11 +562,11 @@ const HRDashboard: React.FC = () => {
                   <CardContent className="pt-5">
                     <div className="space-y-4">
                       {[
-                        { stage: b('Total Candidates', 'إجمالي المرشحين'), count: dashboardData.candidates.total || 156, color: 'bg-gradient-to-r from-teal-400 to-teal-500', pct: 100 },
-                        { stage: b('Screening', 'الفرز'), count: dashboardData.candidates.active || 89, color: 'bg-gradient-to-r from-teal-500 to-teal-600', pct: 57 },
-                        { stage: b('Shortlisted', 'القائمة المختصرة'), count: dashboardData.candidates.shortlisted || 23, color: 'bg-gradient-to-r from-teal-600 to-teal-700', pct: 15 },
-                        { stage: b('Interviewed', 'تمت المقابلة'), count: dashboardData.candidates.interviewed || 12, color: 'bg-gradient-to-r from-teal-700 to-teal-800', pct: 8 },
-                        { stage: b('Hired', 'تم التوظيف'), count: dashboardData.candidates.hired || 5, color: 'bg-gradient-to-r from-slate-700 to-slate-800', pct: 3 },
+                        { stage: b('Total Candidates', 'إجمالي المرشحين'), count: dashboardData.candidates.total || 0, color: 'bg-gradient-to-r from-teal-400 to-teal-500', pct: 100 },
+                        { stage: b('Screening', 'الفرز'), count: dashboardData.candidates.active || 0, color: 'bg-gradient-to-r from-teal-500 to-teal-600', pct: 57 },
+                        { stage: b('Shortlisted', 'القائمة المختصرة'), count: dashboardData.candidates.shortlisted || 0, color: 'bg-gradient-to-r from-teal-600 to-teal-700', pct: 15 },
+                        { stage: b('Interviewed', 'تمت المقابلة'), count: dashboardData.candidates.interviewed || 0, color: 'bg-gradient-to-r from-teal-700 to-teal-800', pct: 8 },
+                        { stage: b('Hired', 'تم التوظيف'), count: dashboardData.candidates.hired || 0, color: 'bg-gradient-to-r from-slate-700 to-slate-800', pct: 3 },
                       ].map((ps, i) => (
                         <div key={i} className="space-y-1.5">
                           <div className="flex items-center justify-between">
@@ -656,24 +655,24 @@ const HRDashboard: React.FC = () => {
                       {/* Simple bar chart representation */}
                       <div className="flex-1 space-y-3">
                         {[
-                          { label: b('UAE Nationals', 'مواطنون إماراتيون'), value: 78, color: 'bg-teal-500' },
-                          { label: b('GCC Nationals', 'مواطنون خليجيون'), value: 12, color: 'bg-blue-500' },
-                          { label: b('International', 'دوليون'), value: 10, color: 'bg-slate-400' },
+                          { label: b('UAE Nationals', 'مواطنون إماراتيون'), value: null as number | null, color: 'bg-teal-500' },
+                          { label: b('GCC Nationals', 'مواطنون خليجيون'), value: null as number | null, color: 'bg-blue-500' },
+                          { label: b('International', 'دوليون'), value: null as number | null, color: 'bg-slate-400' },
                         ].map((item, i) => (
                           <div key={i} className="space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-dubai-medium text-slate-600">{item.label}</span>
-                              <span className="text-xs font-dubai-bold text-slate-800">{item.value}%</span>
+                              <span className="text-xs font-dubai-bold text-slate-800">{item.value !== null ? `${item.value}%` : '—'}</span>
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                               <div className={`h-full rounded-full ${item.color} transition-all duration-1000`}
-                                style={{ width: `${item.value}%` }} />
+                                style={{ width: `${item.value ?? 0}%` }} />
                             </div>
                           </div>
                         ))}
                       </div>
                       <div className="text-center">
-                        <div className="text-4xl font-dubai-bold text-teal-700">342</div>
+                        <div className="text-4xl font-dubai-bold text-teal-700">—</div>
                         <div className="text-xs text-slate-500 font-dubai-medium">{b('Total Employees', 'إجمالي الموظفين')}</div>
                       </div>
                     </div>
@@ -689,7 +688,7 @@ const HRDashboard: React.FC = () => {
                         {b('Recent Hires', 'التعيينات الأخيرة')}
                       </CardTitle>
                       <Badge className="bg-teal-50 text-teal-700 border-teal-200 text-[10px]">
-                        {dashboardData.candidates.hired || 5} {b('this month', 'هذا الشهر')}
+                        {dashboardData.candidates.hired || 0} {b('this month', 'هذا الشهر')}
                       </Badge>
                     </div>
                   </CardHeader>

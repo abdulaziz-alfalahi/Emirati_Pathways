@@ -262,15 +262,15 @@ const AdminDashboard = () => {
             totalUsers: apiData.users?.total || 0,
             activeUsers: apiData.health?.components?.users?.active_users || 0,
             newRegistrations: apiData.health?.components?.users?.new_users_24h || 0,
-            totalJobs: apiData.health?.components?.content?.total_content || 0, // Placeholder
-            totalApplications: 0, // Placeholder
-            successfulMatches: 0 // Placeholder
+            totalJobs: 0, // No dedicated jobs metric from backend; not shown as real
+            totalApplications: 0, // No applications metric from backend
+            successfulMatches: 0 // No matches metric from backend
           },
           analytics: {
             userGrowthRate: apiData.analytics?.userGrowthRate || 0,
             applicationSuccessRate: apiData.analytics?.applicationSuccessRate || 0,
             averageMatchScore: apiData.analytics?.averageMatchScore || 0,
-            systemUptime: apiData.analytics?.systemUptime || 99.9,
+            systemUptime: apiData.analytics?.systemUptime || 0,
             visitorTrends: apiData.analytics?.visitorTrends || [],
             userActivity: apiData.analytics?.userActivity || [
               { name: 'Active', value: 0 },
@@ -278,9 +278,9 @@ const AdminDashboard = () => {
             ]
           },
           moderation: {
-            pendingReviews: apiData.notifications?.unread_count || 0, // Map notifications to reviews as proxy
-            reportedContent: 0,
-            flaggedUsers: 0,
+            pendingReviews: 0, // No moderation-review metric from backend
+            reportedContent: 0, // No reported-content metric from backend
+            flaggedUsers: 0, // No flagged-users metric from backend
             systemAlerts: apiData.notifications?.recent?.length || 0
           },
           feedback: feedbackStats,
@@ -301,80 +301,57 @@ const AdminDashboard = () => {
           }
         });
       } else {
-        console.log('API call returned no data, using mock data');
-        setMockData();
+        console.warn('Admin dashboard API returned no data; showing unavailable state');
+        setEmptyData();
       }
     } catch (error) {
       console.error('Error loading admin dashboard data:', error);
-      setMockData();
+      setEmptyData();
     } finally {
       setInitialLoading(false);
     }
   };
 
-  const setMockData = () => {
+  // Honest-empty state shown when the dashboard API fails or returns no data.
+  // Never fabricate numbers: admins see zeros / empty feeds, not invented metrics.
+  const setEmptyData = () => {
     setDashboardData({
       platform: {
-        totalUsers: 2847,
-        activeUsers: 1923,
-        newRegistrations: 156,
-        totalJobs: 342,
-        totalApplications: 8934,
-        successfulMatches: 1247
+        totalUsers: 0,
+        activeUsers: 0,
+        newRegistrations: 0,
+        totalJobs: 0,
+        totalApplications: 0,
+        successfulMatches: 0
       },
       analytics: {
-        userGrowthRate: 15.3,
-        applicationSuccessRate: 68.2,
-        averageMatchScore: 8.7,
-        systemUptime: 99.8,
+        userGrowthRate: 0,
+        applicationSuccessRate: 0,
+        averageMatchScore: 0,
+        systemUptime: 0,
         visitorTrends: [],
         userActivity: []
       },
       moderation: {
-        pendingReviews: 23,
-        reportedContent: 5,
-        flaggedUsers: 2,
-        systemAlerts: 1
+        pendingReviews: 0,
+        reportedContent: 0,
+        flaggedUsers: 0,
+        systemAlerts: 0
       },
-      activity: [
-        {
-          id: 1,
-          type: 'system_alert',
-          title: 'System Maintenance Scheduled',
-          description: 'Scheduled maintenance window for database optimization',
-          timestamp: new Date().toISOString(),
-          severity: 'info'
-        },
-        {
-          id: 2,
-          type: 'user_registration',
-          title: 'New User Registration Spike',
-          description: '50+ new registrations in the last hour',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          severity: 'success'
-        },
-        {
-          id: 3,
-          type: 'security_alert',
-          title: 'Security Scan Completed',
-          description: 'Weekly security scan completed successfully',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          severity: 'success'
-        }
-      ],
+      activity: [],
       feedback: {
-        total: 12,
-        open: 5,
-        bugs: 2,
-        features: 3,
-        today: 1
+        total: 0,
+        open: 0,
+        bugs: 0,
+        features: 0,
+        today: 0
       },
       system: {
-        cpu_percent: 45,
-        memory_percent: 62,
-        disk_percent: 28,
-        disk_total: 512,
-        disk_free: 368
+        cpu_percent: 0,
+        memory_percent: 0,
+        disk_percent: 0,
+        disk_total: 0,
+        disk_free: 0
       }
     });
   };
@@ -496,9 +473,9 @@ const AdminDashboard = () => {
                       <Briefcase className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{dashboardData.platform.totalJobs.toLocaleString()}</div>
+                      <div className="text-2xl font-bold">{dashboardData.platform.totalJobs > 0 ? dashboardData.platform.totalJobs.toLocaleString() : '—'}</div>
                       <p className="text-xs text-muted-foreground">
-                        Across all categories
+                        Not available
                       </p>
                     </CardContent>
                   </Card>
@@ -509,9 +486,9 @@ const AdminDashboard = () => {
                       <FileText className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{dashboardData.platform.totalApplications.toLocaleString()}</div>
+                      <div className="text-2xl font-bold">{dashboardData.platform.totalApplications > 0 ? dashboardData.platform.totalApplications.toLocaleString() : '—'}</div>
                       <p className="text-xs text-muted-foreground">
-                        Total submitted
+                        Not available
                       </p>
                     </CardContent>
                   </Card>
@@ -522,9 +499,9 @@ const AdminDashboard = () => {
                       <CheckCircle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{dashboardData.platform.successfulMatches.toLocaleString()}</div>
+                      <div className="text-2xl font-bold">{dashboardData.platform.successfulMatches > 0 ? dashboardData.platform.successfulMatches.toLocaleString() : '—'}</div>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData.platform.totalApplications > 0 ? Math.round((dashboardData.platform.successfulMatches / dashboardData.platform.totalApplications) * 100) : 0}% {b('success rate', 'معدل النجاح')}
+                        {dashboardData.platform.totalApplications > 0 ? `${Math.round((dashboardData.platform.successfulMatches / dashboardData.platform.totalApplications) * 100)}% ${b('success rate', 'معدل النجاح')}` : b('success rate not available', 'معدل النجاح غير متوفر')}
                       </p>
                     </CardContent>
                   </Card>
@@ -535,7 +512,7 @@ const AdminDashboard = () => {
                       <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{dashboardData.analytics.systemUptime}%</div>
+                      <div className="text-2xl font-bold">{dashboardData.analytics.systemUptime > 0 ? `${dashboardData.analytics.systemUptime}%` : '—'}</div>
                       <p className="text-xs text-muted-foreground">
                         Last 30 days
                       </p>
@@ -587,19 +564,19 @@ const AdminDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Pending Reviews</span>
                           <Badge variant={dashboardData.moderation.pendingReviews > 20 ? "destructive" : "secondary"}>
-                            {dashboardData.moderation.pendingReviews}
+                            {dashboardData.moderation.pendingReviews > 0 ? dashboardData.moderation.pendingReviews : '—'}
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Reported Content</span>
                           <Badge variant={dashboardData.moderation.reportedContent > 10 ? "destructive" : "secondary"}>
-                            {dashboardData.moderation.reportedContent}
+                            {dashboardData.moderation.reportedContent > 0 ? dashboardData.moderation.reportedContent : '—'}
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Flagged Users</span>
                           <Badge variant={dashboardData.moderation.flaggedUsers > 5 ? "destructive" : "secondary"}>
-                            {dashboardData.moderation.flaggedUsers}
+                            {dashboardData.moderation.flaggedUsers > 0 ? dashboardData.moderation.flaggedUsers : '—'}
                           </Badge>
                         </div>
                         <div className="flex justify-between items-center">
