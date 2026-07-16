@@ -166,6 +166,13 @@ def parse_schema_doc(filepath: str) -> dict:
                         default_clause = 'DEFAULT CURRENT_TIMESTAMP'
                     elif 'now()' in default_raw:
                         default_clause = 'DEFAULT now()'
+                    elif default_raw.strip().upper() in (
+                        'CURRENT_DATE', 'CURRENT_TIME', 'LOCALTIMESTAMP', 'LOCALTIME',
+                        'TRUE', 'FALSE', 'NULL',
+                    ):
+                        # SQL keyword defaults must be emitted unquoted; quoting them
+                        # (e.g. DEFAULT 'CURRENT_DATE') is invalid for date/bool columns.
+                        default_clause = f'DEFAULT {default_raw.strip().upper()}'
                     elif default_raw.startswith("'") or '::' in default_raw:
                         default_clause = f'DEFAULT {default_raw}'
                     else:
