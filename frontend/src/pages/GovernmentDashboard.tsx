@@ -188,31 +188,23 @@ const GovernmentDashboard: React.FC = () => {
         monthlyGrowth: null,
         sectorBreakdown: []
       },
+      // On API failure, show honest-empty values — never fabricated national
+      // workforce figures, initiatives, or activity. Empty lists render as
+      // "Data not available" empty states rather than a fake national picture.
       workforce: {
-        totalWorkforce: 156789,
-        unemploymentRate: 3.2,
-        skillsGapIndex: 23.4,
-        trainingPrograms: 47
+        totalWorkforce: 0,
+        unemploymentRate: 0,
+        skillsGapIndex: 0,
+        trainingPrograms: 0
       },
       initiatives: {
-        activePrograms: 23,
-        beneficiaries: 8934,
-        completionRate: 84.7,
-        successStories: 156,
-        list: [
-          { id: 1, name: 'Digital Skills Accelerator', nameAr: 'مسرّع المهارات الرقمية', status: 'active', beneficiaries: 2340, completionRate: 72 },
-          { id: 2, name: 'STEM Talent Pipeline', nameAr: 'مسار مواهب العلوم والتكنولوجيا', status: 'active', beneficiaries: 1890, completionRate: 58 },
-          { id: 3, name: 'Leadership Development', nameAr: 'تطوير القيادة', status: 'active', beneficiaries: 890, completionRate: 91 },
-          { id: 4, name: 'Green Economy Training', nameAr: 'تدريب الاقتصاد الأخضر', status: 'planned', beneficiaries: 0, completionRate: 0 },
-          { id: 5, name: 'Financial Sector Upskill', nameAr: 'تطوير مهارات القطاع المالي', status: 'completed', beneficiaries: 1560, completionRate: 100 },
-        ]
+        activePrograms: 0,
+        beneficiaries: 0,
+        completionRate: 0,
+        successStories: 0,
+        list: []
       },
-      activity: [
-        { id: 1, type: 'policy', message: 'New Emiratization policy approved for tech sector', messageAr: 'اعتماد سياسة توطين جديدة لقطاع التكنولوجيا', time: '2h ago', timeAr: 'منذ ساعتين' },
-        { id: 2, type: 'program', message: 'Digital Skills Program launched in Abu Dhabi', messageAr: 'إطلاق برنامج المهارات الرقمية في أبوظبي', time: '1d ago', timeAr: 'منذ يوم' },
-        { id: 3, type: 'milestone', message: 'Banking sector reached 78% Emiratization', messageAr: 'قطاع المصارف يصل إلى 78% في التوطين', time: '2d ago', timeAr: 'منذ يومين' },
-        { id: 4, type: 'report', message: 'Q3 Workforce Development Report published', messageAr: 'نشر تقرير تطوير القوى العاملة للربع الثالث', time: '3d ago', timeAr: 'منذ 3 أيام' },
-      ]
+      activity: []
     });
   };
 
