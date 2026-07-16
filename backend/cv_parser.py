@@ -144,6 +144,50 @@ class CVParser:
                 'message': f'File parsing failed: {str(e)}'
             }
     
+    def _extract_identity(self, text: str) -> Dict[str, str]:
+        """Extract direct identifiers LOCALLY so they are NEVER sent to the external
+        (cross-border) LLM. Re-attached to the parsed result afterwards. (audit AI-03 / PDPL)"""
+        import re
+        ident: Dict[str, str] = {}
+        m = re.search(r'[\w.+-]+@[\w-]+\.[\w.-]+', text)
+        if m:
+            ident['email'] = m.group(0)
+        m = re.search(r'(?:\+?971[\s\-]?|00971[\s\-]?|0)?5\d(?:[\s\-]?\d){7}\b', text)
+        if m:
+            ident['phone'] = m.group(0).strip()
+        m = re.search(r'\b784[\-\s]?\d{4}[\-\s]?\d{7}[\-\s]?\d\b|\b\d{15}\b', text)
+        if m:
+            ident['emirates_id'] = re.sub(r'[\s\-]', '', m.group(0))
+        for line in text.splitlines():
+            s = re.sub(r'(?i)^\s*(curriculum vitae|cv|resume|r[eé]sum[eé])\s*[:\-–—]?\s*', '', line).strip()
+            if not s:
+                continue
+            words = s.split()
+            if 1 < len(words) <= 5 and len(s) < 60 and not any(c.isdigit() or c == '@' for c in s):
+                ident['full_name'] = s
+            break
+        return ident
+
+    def _redact_identifiers(self, text: str) -> str:
+        """Replace direct identifiers (name, email, phone, Emirates ID, DOB, address) with
+        placeholders before the cross-border LLM call. Skills/experience/education extraction
+        is unaffected — measured lossless in an A/B test. (audit AI-03 / PDPL)"""
+        import re
+        red = re.sub(r'[\w.+-]+@[\w-]+\.[\w.-]+', '[EMAIL]', text)
+        red = re.sub(r'(?:\+?971[\s\-]?|00971[\s\-]?|0)?5\d(?:[\s\-]?\d){7}\b', '[PHONE]', red)
+        red = re.sub(r'\b784[\-\s]?\d{4}[\-\s]?\d{7}[\-\s]?\d\b|\b\d{15}\b', '[ID]', red)
+        red = re.sub(r'(?i)(date of birth|dob|birth date)\s*[:\-]?\s*\d{1,4}[/\-.]\d{1,2}[/\-.]\d{1,4}',
+                     r'\1: [DOB]', red)
+        name = self._extract_identity(text).get('full_name')
+        lines = []
+        for line in red.splitlines():
+            s = line
+            if name and name in s:
+                s = s.replace(name, '[NAME]')
+            s = re.sub(r'(?i)^\s*(address|location)\s*[:\-].*', r'\1: [ADDRESS]', s)
+            lines.append(s)
+        return "\n".join(lines)
+
     def parse_cv_text(self, text: str, user_id: str = None, filename: str = None) -> Dict[str, Any]:
         """Parse CV from text content using Qwen via DashScope"""
         try:
@@ -166,6 +210,12 @@ class CVParser:
             import time
             start_time = time.time()
 
+            # PDPL / audit AI-03: pull direct identifiers out LOCALLY and send only redacted
+            # text across the border; the real identity is re-attached after parsing below.
+            # (A/B measured: skills/experience/education extraction is unaffected by redaction.)
+            local_identity = self._extract_identity(cleaned_text)
+            redacted_text = self._redact_identifiers(cleaned_text)
+
             messages = [
                 {
                     "role": "system",
@@ -179,7 +229,7 @@ class CVParser:
                 },
                 {
                     "role": "user",
-                    "content": self._create_parsing_prompt(cleaned_text),
+                    "content": self._create_parsing_prompt(redacted_text),
                 },
             ]
 
@@ -201,6 +251,24 @@ class CVParser:
             
             # Enhance with UAE-specific analysis
             enhanced_data = self._enhance_with_uae_analysis(parsed_data, cleaned_text)
+
+            # Re-attach the locally-extracted identity. The LLM saw only redacted text, so its
+            # personal_info identity fields are unreliable (may echo the prompt's example). We
+            # trust ONLY the local extraction for direct identifiers. (audit AI-03 / PDPL)
+            _pi = enhanced_data.get('personal_info') or {}
+            if local_identity.get('full_name'):
+                _pi['full_name'] = local_identity['full_name']
+                _parts = local_identity['full_name'].split()
+                _pi['first_name'] = _parts[0]
+                _pi['last_name'] = " ".join(_parts[1:])
+            else:
+                # No name found locally — never keep an LLM-fabricated example name.
+                for _k in ('full_name', 'first_name', 'last_name', 'full_name_ar'):
+                    if _pi.get(_k):
+                        _pi[_k] = ''
+            for _local_k, _pi_k in (('email', 'email'), ('phone', 'phone'), ('emirates_id', 'emirates_id')):
+                _pi[_pi_k] = local_identity.get(_local_k, '') or ''
+            enhanced_data['personal_info'] = _pi
             
             # Calculate scores and insights
             analysis_results = self._calculate_cv_scores(enhanced_data, cleaned_text)
@@ -547,15 +615,15 @@ OUTPUT (return ONLY this JSON, no markdown, no explanation)
 ═══════════════════════════════════════════
 {{
     "personal_info": {{
-        "full_name": "Abdulaziz Al Falahi",
-        "full_name_ar": "عبدالعزيز الفلاحي",
-        "first_name": "Abdulaziz",
-        "last_name": "Al Falahi",
-        "email": "user@example.com",
-        "phone": "+971501234567",
-        "nationality": "UAE National",
-        "location": "Dubai, UAE",
-        "address": "Dubai, UAE",
+        "full_name": "",
+        "full_name_ar": "",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "phone": "",
+        "nationality": "",
+        "location": "",
+        "address": "",
         "linkedin": ""
     }},
     "professional_summary": "Concise 2-sentence summary here.",
