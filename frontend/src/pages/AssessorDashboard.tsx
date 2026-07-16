@@ -12,6 +12,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import Messages from '@/components/recruiter/Messages';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   ClipboardCheck,
   Users,
@@ -96,6 +97,18 @@ const AssessorDashboard: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
   const { language, toggleLanguage } = useLanguage();
+  // Resolve the logged-in user's name from localStorage (no hardcoded identity)
+  const getUserData = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : {};
+    } catch {
+      return {};
+    }
+  };
+  const userData = getUserData();
+  const rawName = getDisplayName(userData, '');
+  const assessorName = (rawName && rawName !== 'None None' && rawName !== 'None') ? rawName : t('Assessor', 'المُقيّم');
   const [dashboardData, setDashboardData] = useState<AssessorData>({
     assessments: {
       totalAssessments: 0,
@@ -124,44 +137,38 @@ const AssessorDashboard: React.FC = () => {
     activity: []
   });
 
-  // Fetch from API, fall back to mock data
+  // Fetch from API. On error, show an honest-empty state (no fabricated data).
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || '';
-        const response = await fetch(`${API_BASE}/api/assessor/dashboard`);
-        if (response.ok) {
-          const data = await response.json();
-          setDashboardData({
-            assessments: data.assessments || dashboardData.assessments,
-            candidates: data.candidates || dashboardData.candidates,
-            performance: data.performance || dashboardData.performance,
-            specializations: data.specializations || dashboardData.specializations,
-            activity: data.activity || [],
-          });
-          return;
-        }
+        // restClient injects the Authorization bearer token + CSRF header and
+        // sends credentials, so the protected endpoint is called authenticated.
+        const res = await restClient.get('/api/assessor/dashboard');
+        const data = res.data || {};
+        setDashboardData({
+          assessments: data.assessments || dashboardData.assessments,
+          candidates: data.candidates || dashboardData.candidates,
+          performance: data.performance || dashboardData.performance,
+          specializations: data.specializations || dashboardData.specializations,
+          activity: data.activity || [],
+        });
       } catch (error) {
         console.error('Error loading assessor dashboard:', error);
+        // Honest-empty fallback: zeros and empty lists so the assessor sees
+        // "unavailable"/empty states instead of fabricated numbers.
+        setDashboardData({
+          assessments: { totalAssessments: 0, completedThisMonth: 0, pendingReview: 0, averageRating: 0 },
+          candidates: { totalCandidates: 0, passedAssessments: 0, failedAssessments: 0, awaitingResults: 0 },
+          performance: { accuracyRate: 0, averageCompletionTime: 0, qualityScore: 0, feedbackRating: 0 },
+          specializations: {
+            primaryAreas: [],
+            certifications: [],
+            yearsExperience: 0,
+            assessmentTypes: [],
+          },
+          activity: [],
+        });
       }
-      // Fallback mock data
-      setDashboardData({
-        assessments: { totalAssessments: 1250, completedThisMonth: 89, pendingReview: 12, averageRating: 4.8 },
-        candidates: { totalCandidates: 856, passedAssessments: 672, failedAssessments: 184, awaitingResults: 45 },
-        performance: { accuracyRate: 96, averageCompletionTime: 45, qualityScore: 4.7, feedbackRating: 4.8 },
-        specializations: {
-          primaryAreas: ['Software Development', 'Project Management', 'Communication Skills', 'Technical Writing'],
-          certifications: ['Certified Professional Assessor', 'Technical Skills Evaluator', 'Soft Skills Assessment'],
-          yearsExperience: 8,
-          assessmentTypes: ['Technical Skills', 'Soft Skills', 'Leadership', 'Communication'],
-        },
-        activity: [
-          { id: 1, type: 'assessment_completed', title: 'Assessment Completed', description: 'Technical assessment for Senior Developer position at ADNOC Digital', timestamp: new Date().toISOString(), priority: 'high' },
-          { id: 2, type: 'candidate_passed', title: 'Candidate Assessment Passed', description: 'Ahmed Al Emirati successfully passed blockchain development assessment', timestamp: new Date(Date.now() - 86400000).toISOString(), priority: 'medium' },
-          { id: 3, type: 'quality_review', title: 'Quality Review Completed', description: 'Peer review completed for communication skills assessment framework', timestamp: new Date(Date.now() - 172800000).toISOString(), priority: 'medium' },
-          { id: 4, type: 'new_assignment', title: 'New Assessment Assignment', description: 'Assigned to evaluate leadership skills for Emirates NBD management role', timestamp: new Date(Date.now() - 259200000).toISOString(), priority: 'high' },
-        ],
-      });
     };
     fetchData();
   }, []);
@@ -270,7 +277,7 @@ const AssessorDashboard: React.FC = () => {
                   {t('Assessor Dashboard', 'لوحة تحكم المُقيّم')}
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  {t('Welcome back, Mariam Al Nuaimi - Certified Skills Assessment Specialist', 'مرحباً بعودتك، مريم النعيمي - أخصائية تقييم المهارات المعتمدة')}
+                  {t('Welcome back', 'مرحباً بعودتك')}, {assessorName} - {t('Certified Skills Assessment Specialist', 'أخصائي تقييم المهارات المعتمد')}
                 </p>
               </div>
               <div className="flex items-center gap-3">

@@ -98,18 +98,13 @@ const EducatorDashboard: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [studentsSearch, setStudentsSearch] = useState('');
 
-  // Default data — used as fallback if API doesn't return all fields
+  // Default data — honest zeros/empty so any field the API omits renders as 0/—, never a fabricated number
   const defaultData: EducatorData = {
-    students: { totalEnrolled: 245, activeStudents: 198, graduatingStudents: 47, placementRate: 89 },
-    programs: { totalPrograms: 8, activePrograms: 6, industryPartnerships: 12, certificationPrograms: 4 },
-    outcomes: { employmentRate: 92, averageSalary: 85000, skillsMatchRate: 87, industryReadiness: 91 },
-    research: { publications: 45, ongoingProjects: 8, grants: 3, collaborations: 15 },
-    activity: [
-      { id: 1, type: 'student_placement', title: 'Student Placement Success', description: 'Fatima Al Zahra secured position as AI Engineer at ADNOC Digital', timestamp: new Date().toISOString(), priority: 'high' },
-      { id: 2, type: 'industry_partnership', title: 'New Industry Partnership', description: 'Signed collaboration agreement with Emirates NBD for fintech program', timestamp: new Date(Date.now() - 86400000).toISOString(), priority: 'high' },
-      { id: 3, type: 'research_publication', title: 'Research Publication', description: 'Paper on "AI in UAE Education" accepted by IEEE Conference', timestamp: new Date(Date.now() - 172800000).toISOString(), priority: 'medium' },
-      { id: 4, type: 'curriculum_update', title: 'Curriculum Enhancement', description: 'Updated Machine Learning course with latest industry requirements', timestamp: new Date(Date.now() - 259200000).toISOString(), priority: 'medium' },
-    ]
+    students: { totalEnrolled: 0, activeStudents: 0, graduatingStudents: 0, placementRate: 0 },
+    programs: { totalPrograms: 0, activePrograms: 0, industryPartnerships: 0, certificationPrograms: 0 },
+    outcomes: { employmentRate: 0, averageSalary: 0, skillsMatchRate: 0, industryReadiness: 0 },
+    research: { publications: 0, ongoingProjects: 0, grants: 0, collaborations: 0 },
+    activity: []
   };
 
   const [dashboardData, setDashboardData] = useState<EducatorData>(defaultData);
@@ -302,9 +297,6 @@ const EducatorDashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.outcomes.employmentRate}%</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      {t('+3% from last year', '+3% عن العام الماضي')}
-                    </p>
                   </CardContent>
                 </Card>
 
@@ -314,10 +306,7 @@ const EducatorDashboard: React.FC = () => {
                     <FileText className="h-4 w-4 text-orange-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.research.publications}</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      {t('+8 this year', '+8 هذا العام')}
-                    </p>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.research.publications || '—'}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -337,7 +326,7 @@ const EducatorDashboard: React.FC = () => {
                       <p className="text-sm text-slate-600 font-dubai-medium">{t('Employment Rate', 'نسبة التوظيف')}</p>
                     </div>
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-blue-600">AED {dashboardData.outcomes.averageSalary.toLocaleString()}</div>
+                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.outcomes.averageSalary ? `AED ${dashboardData.outcomes.averageSalary.toLocaleString()}` : '—'}</div>
                       <p className="text-sm text-slate-600 font-dubai-medium">{t('Average Salary', 'متوسط الراتب')}</p>
                     </div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
@@ -365,15 +354,15 @@ const EducatorDashboard: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-dubai-medium text-slate-600">{t('Ongoing Projects', 'المشاريع الجارية')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.ongoingProjects}</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.ongoingProjects || '—'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-dubai-medium text-slate-600">{t('Active Grants', 'المنح النشطة')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.grants}</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.grants || '—'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-dubai-medium text-slate-600">{t('Collaborations', 'التعاونات')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.collaborations}</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.collaborations || '—'}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -627,7 +616,7 @@ const EducatorDashboard: React.FC = () => {
                           <p className="text-sm text-slate-600 font-dubai-medium">{t('Attendance Rate', 'نسبة الحضور')}</p>
                         </div>
                         <div className="text-center p-4 bg-orange-50 rounded-lg">
-                          <div className="text-2xl font-dubai-bold text-orange-600">{analyticsData.overview?.placement_success_rate || 85}%</div>
+                          <div className="text-2xl font-dubai-bold text-orange-600">{analyticsData.overview?.placement_success_rate || 0}%</div>
                           <p className="text-sm text-slate-600 font-dubai-medium">{t('Placement Rate', 'نسبة التوظيف')}</p>
                         </div>
                       </div>
