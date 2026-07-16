@@ -151,12 +151,18 @@ def ensure_tables_exist():
 # Initialize tables
 ensure_tables_exist()
 
-def optional_auth(f):
-    """Decorator that allows requests with or without authentication"""
+def _optional_auth_noop(f):
+    """Legacy no-op decorator (kept for reference). Superseded by the gated reassignment below."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         return f(*args, **kwargs)
     return decorated_function
+
+# SECURITY: recruiter dashboard endpoints expose candidate PII, offers, and pipeline
+# data. The former no-op ``optional_auth`` let every handler run fully unauthenticated.
+# Reassign it to a real role gate so all ``@optional_auth`` handlers require a recruiter
+# role at once. Handlers using explicit ``@require_auth``/``@require_roles`` are unaffected.
+optional_auth = require_roles(*RECRUITER_ROLES)
 
 
 # =====================================================

@@ -1,10 +1,16 @@
 from flask import Blueprint, jsonify
 import logging
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 analytics_bp = Blueprint('analytics_bp', __name__)
 logger = logging.getLogger(__name__)
 
 @analytics_bp.route('/analytics', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_analytics():
     """
     Get recruiter analytics data

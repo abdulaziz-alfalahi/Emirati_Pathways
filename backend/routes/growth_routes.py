@@ -3,6 +3,10 @@ from growth_system import GrowthSystem
 import logging
 
 growth_bp = Blueprint('growth', __name__)
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, OPERATOR_ROLES
 logger = logging.getLogger(__name__)
 
 # Initialize system
@@ -14,6 +18,7 @@ growth_sys = GrowthSystem()
 # =====================================================
 
 @growth_bp.route('/api/growth/dashboard-stats', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def dashboard_stats():
     """
     Returns live funnel data for the Growth Operator dashboard.
@@ -27,6 +32,7 @@ def dashboard_stats():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @growth_bp.route('/api/growth/import', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def import_vacancies():
     try:
         if 'file' not in request.files:
@@ -91,6 +97,7 @@ def confirm_verification(token):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @growth_bp.route('/api/growth/candidates', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_candidates():
     try:
         min_vacancies = int(request.args.get('min_vacancies', 5))
@@ -101,6 +108,7 @@ def get_candidates():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @growth_bp.route('/api/growth/send-emails', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def send_emails():
     try:
         data = request.json
@@ -115,6 +123,7 @@ def send_emails():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @growth_bp.route('/api/growth/check-companies', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def check_companies():
     """
     Check if a list of companies already exists in the system.
@@ -139,6 +148,7 @@ def check_companies():
 # =====================================================
 
 @growth_bp.route('/api/growth/invite-companies', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def invite_companies():
     """
     Send magic link invitations to selected companies.
@@ -275,6 +285,7 @@ def accept_invitation(token):
 
 
 @growth_bp.route('/api/growth/recruiter-performance', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def get_recruiter_performance():
     """
     Returns responsiveness metrics for registered companies and recruiters.
@@ -455,6 +466,7 @@ def get_recruiter_performance():
 
 
 @growth_bp.route('/api/growth/nudge-company', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def nudge_company():
     """
     Nudges the recruiters of a company to process their pending applications.

@@ -9,6 +9,11 @@ from mentor_matching_engine import MentorMatchingEngine, MenteeProfile
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 mentorship_bp = Blueprint('recruiter_mentorship', __name__, url_prefix='/api/recruiter/mentorship')
 
 def get_db_config():
@@ -21,7 +26,7 @@ def get_db_config():
     }
 
 @mentorship_bp.route('/recommend', methods=['POST'])
-@jwt_required()
+@require_roles(*RECRUITER_ROLES)
 def recommend_mentors():
     """
     Recommend mentors for a candidate based on missing skills.

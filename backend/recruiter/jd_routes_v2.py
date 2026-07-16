@@ -61,6 +61,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from backend.db import get_db_connection
 from backend.user_helpers import user_display_name
 
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -456,21 +461,14 @@ def jd_health():
 
 
 
-@jd_bp.route('/test_probe_123', methods=['GET'])
-def test_probe():
-    print("!!! PROBE HIT !!!", flush=True)
-    try:
-        log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'debug_trace.txt'))
-        with open(log_path, "a") as f: f.write(f"\n[{datetime.now()}] PROBE HIT\n")
-        return jsonify({'status': 'alive', 'file': 'jd_routes_v2.py', 'log_path': log_path}), 200
-    except Exception as e:
-        return jsonify({'status': 'error', 'error': str(e)}), 500
+# REMOVED: /test_probe_123 debug/test route (deleted — was a leftover liveness probe artifact).
 
 # REMOVED: list_jds was dead code — shadowed by
 # REMOVED: recruiter_dashboard_api.get_jd_list_enhanced (registered first via blueprint).
 
 
 @jd_bp.route('/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_jd(jd_id):
     """Get full job description details"""
     try:
@@ -493,6 +491,7 @@ def get_jd(jd_id):
 
             
 @jd_bp.route('/<jd_id>/basic-info', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_basic_info(jd_id):
     """Update basic information (Step 1 of wizard)"""
     try:
@@ -548,6 +547,7 @@ def update_basic_info(jd_id):
 
 
 @jd_bp.route('/<jd_id>/description', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_description(jd_id):
     """Update job description (Step 2 of wizard)"""
     try:
@@ -584,6 +584,7 @@ def update_description(jd_id):
 
 
 @jd_bp.route('/<jd_id>/requirements', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_requirement(jd_id):
     """Add job requirement (Step 3 of wizard)"""
     try:
@@ -618,6 +619,7 @@ def add_requirement(jd_id):
 
 
 @jd_bp.route('/<jd_id>/responsibilities', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_responsibility(jd_id):
     """Add job responsibility (Step 4 of wizard)"""
     try:
@@ -652,6 +654,7 @@ def add_responsibility(jd_id):
 
 
 @jd_bp.route('/<jd_id>/benefits', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_benefit(jd_id):
     """Add job benefit (Step 5 of wizard)"""
     try:
@@ -686,6 +689,7 @@ def add_benefit(jd_id):
 
 
 @jd_bp.route('/<jd_id>/compensation', methods=['PUT'])
+@require_roles(*RECRUITER_ROLES)
 def update_compensation(jd_id):
     """Update compensation information (Step 6 of wizard)"""
     try:
@@ -720,6 +724,7 @@ def update_compensation(jd_id):
 
 
 @jd_bp.route('/<jd_id>/smart-fill', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def smart_fill_jd(jd_id):
     """AI-generate a complete JD from a job title (description + requirements + responsibilities + benefits)."""
     try:
@@ -743,6 +748,7 @@ def smart_fill_jd(jd_id):
 
 
 @jd_bp.route('/<jd_id>/generate-description', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def generate_description(jd_id):
     """Generate AI-powered job description"""
     try:
@@ -776,6 +782,7 @@ def generate_description(jd_id):
 
 
 @jd_bp.route('/<jd_id>/completion-score', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_completion_score(jd_id):
     """Get JD completion score and recommendations"""
     try:
@@ -800,6 +807,7 @@ def get_completion_score(jd_id):
 
 
 @jd_bp.route('/<jd_id>/match-candidates', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def match_candidates(jd_id):
     """
     Match top 10 candidates to job description with employment status filtering.
@@ -1094,6 +1102,7 @@ def match_candidates(jd_id):
 
 
 @jd_bp.route('/shortlist/add', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def add_to_shortlist():
     """Add a candidate to the shortlist for a JD.
     
@@ -1224,6 +1233,7 @@ def add_to_shortlist():
 
 
 @jd_bp.route('/shortlist/<jd_id>', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_shortlist(jd_id):
     """Get shortlisted candidates for a JD.
     
@@ -1281,6 +1291,7 @@ def get_shortlist(jd_id):
 
 
 @jd_bp.route('/<jd_id>/validate', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def validate_jd(jd_id):
     """Validate JD before publishing"""
     try:
@@ -1322,6 +1333,7 @@ def internal_error(error):
 
 
 @jd_bp.route('/<jd_id>/save', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def save_jd(jd_id):
     """
     Save job description (as draft or published)
@@ -1613,6 +1625,7 @@ def save_jd(jd_id):
 
 
 @jd_bp.route('/<jd_id>/publish', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
 def publish_jd(jd_id):
     """
     Publish a job description (change status from draft to published)
@@ -1641,6 +1654,7 @@ def publish_jd(jd_id):
 
 
 @jd_bp.route('/<jd_id>', methods=['DELETE'])
+@require_roles(*RECRUITER_ROLES)
 def delete_jd(jd_id):
     """
     Delete a job description

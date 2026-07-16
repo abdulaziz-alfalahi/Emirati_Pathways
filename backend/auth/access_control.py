@@ -37,6 +37,14 @@ ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_
 BOARD_ROLES = ADMIN_ROLES | {'board_member'}
 HR_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'hr', 'hr_manager', 'talent_operator', 'employer_relations'}
 RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator', 'employer_relations'}
+# The full operator family (growth/education/assessment/mentorship/community/platform/etc.) plus admin.
+OPERATOR_ROLES = ADMIN_ROLES | {
+    'operator', 'growth_operator', 'talent_operator', 'employer_relations',
+    'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator',
+    'platform_operator', 'professional_dev_operator', 'career_services_operator',
+}
+# Governance / oversight surfaces (metrics, demographics, executive analytics).
+GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 
 
 def _verify_any_jwt():

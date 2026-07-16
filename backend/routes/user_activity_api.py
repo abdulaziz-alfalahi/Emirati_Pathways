@@ -19,6 +19,10 @@ import psycopg2.extras
 from backend.db import get_db_connection
 
 user_activity_bp = Blueprint('user_activity', __name__)
+try:
+    from backend.auth.access_control import require_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, ADMIN_ROLES
 
 
 def generate_mock_activity(user_id, count: int = 20):
@@ -98,6 +102,7 @@ def generate_mock_sessions(user_id):
 
 
 @user_activity_bp.route('/api/admin/users/<user_id>/activity', methods=['GET'])
+@require_roles(*ADMIN_ROLES)
 def get_user_activity(user_id):
     """
     Get activity logs and sessions for a specific user.
@@ -129,6 +134,7 @@ def get_user_activity(user_id):
 
 
 @user_activity_bp.route('/api/admin/users/check-email', methods=['GET'])
+@require_roles(*ADMIN_ROLES)
 def check_email_availability():
     """
     Check if an email address is available for registration.
@@ -171,6 +177,7 @@ def check_email_availability():
 
 
 @user_activity_bp.route('/api/admin/sessions/<session_id>', methods=['DELETE'])
+@require_roles(*ADMIN_ROLES)
 def terminate_session(session_id):
     """
     Terminate a specific user session.
@@ -196,6 +203,7 @@ def terminate_session(session_id):
 
 
 @user_activity_bp.route('/api/admin/users/<user_id>/sessions', methods=['GET'])
+@require_roles(*ADMIN_ROLES)
 def get_user_sessions(user_id):
     """
     Get all active sessions for a specific user.
@@ -215,6 +223,7 @@ def get_user_sessions(user_id):
 
 
 @user_activity_bp.route('/api/admin/users/<user_id>/sessions/terminate-all', methods=['POST'])
+@require_roles(*ADMIN_ROLES)
 def terminate_all_sessions(user_id):
     """
     Terminate all sessions for a specific user except the current one.
@@ -234,6 +243,7 @@ def terminate_all_sessions(user_id):
 
 
 @user_activity_bp.route('/api/admin/activity/recent', methods=['GET'])
+@require_roles(*ADMIN_ROLES)
 def get_recent_platform_activity():
     """
     Get recent activity across the entire platform.
@@ -256,6 +266,7 @@ def get_recent_platform_activity():
 
 
 @user_activity_bp.route('/api/admin/users/statistics', methods=['GET'])
+@require_roles(*ADMIN_ROLES)
 def get_user_statistics():
     """
     Get comprehensive user statistics for the admin dashboard.

@@ -12,9 +12,15 @@ from .statistics_engine import (
 )
 
 # Create blueprint without url_prefix (will be added in app.py)
+try:
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+
 statistics_bp = Blueprint('statistics', __name__)
 
 @statistics_bp.route('/dashboard', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_dashboard_stats():
     """
     Get comprehensive dashboard statistics
@@ -43,6 +49,7 @@ def get_dashboard_stats():
         }), 500
 
 @statistics_bp.route('/placements', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_placements():
     """
     Get placement statistics
@@ -68,6 +75,7 @@ def get_placements():
         }), 500
 
 @statistics_bp.route('/pipeline', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_pipeline():
     """
     Get pipeline statistics
@@ -93,6 +101,7 @@ def get_pipeline():
         }), 500
 
 @statistics_bp.route('/performance', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
 def get_performance():
     """
     Get performance metrics

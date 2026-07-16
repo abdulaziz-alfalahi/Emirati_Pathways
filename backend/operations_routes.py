@@ -4,6 +4,10 @@ Provides real-time platform metrics from the database.
 """
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, OPERATOR_ROLES
 from datetime import datetime, timedelta, date
 import logging
 from psycopg2.extras import RealDictCursor
@@ -27,7 +31,7 @@ def safe_int(val):
 
 
 @operations_bp.route('/stats', methods=['GET'])
-@jwt_required()
+@require_roles(*OPERATOR_ROLES)
 def get_operations_stats():
     """
     Returns all metrics for the Operations Monitoring Center.

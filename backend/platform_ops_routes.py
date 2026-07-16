@@ -9,6 +9,10 @@ Combined routes for Phase 4:
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+try:
+    from backend.auth.access_control import require_roles, require_auth, OPERATOR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, require_auth, OPERATOR_ROLES
 import psycopg2, psycopg2.extras, os, json, logging, random
 
 logger = logging.getLogger(__name__)
@@ -266,6 +270,7 @@ def init():
 
 # ═══════ POLICY SIMULATION ═══════
 @platform_ops_bp.route('/policy/simulate', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
 def simulate_policy():
     """Run a policy simulation with adjustable parameters."""
     data = request.get_json(silent=True) or {}
@@ -319,6 +324,7 @@ def simulate_policy():
     }), 200
 
 @platform_ops_bp.route('/policy/workforce-forecast', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
 def workforce_forecast():
     """Illustrative workforce supply/demand scenario. NOTE: this is NOT a data-driven
     forecast — no predictive model is wired. The series below are illustrative sample
@@ -618,6 +624,7 @@ def user_lookup():
         conn.close(); return jsonify({"error": str(e)}), 500
 
 @platform_ops_bp.route('/knowledge-base', methods=['GET'])
+@require_auth
 def search_knowledge_base():
     q = request.args.get('q', '')
     category = request.args.get('category')
