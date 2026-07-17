@@ -28,6 +28,65 @@ except ImportError:  # pragma: no cover
     from auth.access_control import resolve_roles, HR_ROLES
 
 
+def _ensure_interview_tables():
+    """Create the tables this blueprint queries. They were never created, so every endpoint
+    500'd with `relation "interviews" does not exist` once a caller passed the role check.
+    (Note: interviews here are this blueprint's own store; other blueprints use
+    interview_schedules / interview_sessions.)"""
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS interviews (
+                    id VARCHAR(64) PRIMARY KEY,
+                    application_id VARCHAR(64),
+                    job_posting_id VARCHAR(64),
+                    candidate_id VARCHAR(64),
+                    interviewer_id VARCHAR(64),
+                    scheduled_date TIMESTAMP,
+                    duration_minutes INTEGER DEFAULT 60,
+                    interview_type VARCHAR(50) DEFAULT 'in-person',
+                    status VARCHAR(50) DEFAULT 'scheduled',
+                    interview_details JSONB,
+                    reschedule_reason TEXT,
+                    cancellation_reason TEXT,
+                    created_by VARCHAR(64),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS interview_feedback (
+                    id VARCHAR(64) PRIMARY KEY,
+                    interview_id VARCHAR(64) REFERENCES interviews(id) ON DELETE CASCADE,
+                    feedback_by VARCHAR(64),
+                    overall_rating INTEGER,
+                    technical_assessment JSONB,
+                    soft_skills_assessment JSONB,
+                    cultural_fit_rating INTEGER,
+                    recommendation VARCHAR(100),
+                    overall_notes TEXT,
+                    strengths TEXT,
+                    areas_for_improvement TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interviews_candidate ON interviews(candidate_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interviews_job ON interviews(job_posting_id)")
+        conn.commit()
+        logger.info("✅ Interview scheduling tables ensured (interviews, interview_feedback)")
+    except Exception as e:
+        conn.rollback()
+        logger.warning(f"Could not ensure interview tables: {e}")
+    finally:
+        conn.close()
+
+
+_ensure_interview_tables()
+
+
 
 class InterviewScheduler:
     """Interview scheduling and calendar management system"""
@@ -329,10 +388,10 @@ def get_interviews():
                     u_candidate.email as candidate_email,
                     u_candidate.phone as candidate_phone,
                     {user_display_name('interviewer_name', 'u_interviewer')},
-                    ja.application_status
+                    ja.status AS application_status
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN companies c ON jp.company_id = c.id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 LEFT JOIN job_applications ja ON i.application_id = ja.id
@@ -347,7 +406,7 @@ def get_interviews():
             cursor.execute(f"""
                 SELECT COUNT(DISTINCT i.id)
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
                 WHERE {where_clause}
             """, params)
             
@@ -424,7 +483,7 @@ def schedule_interview():
         
         try:
             # Verify HR access and application ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     ja.*,
                     jp.title as job_title,
@@ -433,7 +492,7 @@ def schedule_interview():
                     u.email as candidate_email
                 FROM job_applications ja
                 INNER JOIN job_postings jp ON ja.job_id = jp.id::text
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 INNER JOIN users u ON ja.user_id = u.id
                 WHERE ja.id = %s AND hp.user_id = %s
             """, (data['application_id'], current_user_id))
@@ -517,7 +576,7 @@ def schedule_interview():
             # Update application status
             cursor.execute("""
                 UPDATE job_applications 
-                SET application_status = 'interview_scheduled'
+                SET status = 'interview_scheduled'
                 WHERE id = %s
             """, (data['application_id'],))
             
@@ -585,7 +644,7 @@ def get_interview_details(interview_id):
         
         try:
             # Get interview with company verification
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
@@ -595,12 +654,12 @@ def get_interview_details(interview_id):
                     u_candidate.phone as candidate_phone,
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email,
-                    ja.application_status,
+                    ja.status AS application_status,
                     {user_display_name('created_by_name', 'u_created')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN companies c ON jp.company_id = c.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 LEFT JOIN users u_created ON i.created_by = u_created.id
@@ -633,7 +692,7 @@ def get_interview_details(interview_id):
                     interview_data['interview_details'] = {}
             
             # Get interview feedback
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     if_.*,
                     {user_display_name('feedback_by_name')}
@@ -709,14 +768,14 @@ def reschedule_interview(interview_id):
         
         try:
             # Verify interview ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
                     {user_display_name('candidate_name')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u ON i.candidate_id = u.id
                 WHERE i.id = %s AND hp.user_id = %s
             """, (interview_id, current_user_id))
@@ -821,14 +880,14 @@ def cancel_interview(interview_id):
         
         try:
             # Verify interview ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
                     {user_display_name('candidate_name')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u ON i.candidate_id = u.id
                 WHERE i.id = %s AND hp.user_id = %s
             """, (interview_id, current_user_id))
@@ -858,7 +917,7 @@ def cancel_interview(interview_id):
             # Update application status back to under review
             cursor.execute("""
                 UPDATE job_applications 
-                SET application_status = 'under_review'
+                SET status = 'under_review'
                 WHERE id = %s
             """, (interview['application_id'],))
             
@@ -1007,8 +1066,8 @@ def submit_interview_feedback(interview_id):
             cursor.execute("""
                 SELECT i.id
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE i.id = %s AND (hp.user_id = %s OR i.interviewer_id = %s)
             """, (interview_id, current_user_id, current_user_id))
             
@@ -1110,15 +1169,15 @@ def get_interview_calendar():
         
         try:
             # Get company interviews
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
                     {user_display_name('candidate_name', 'u_candidate')},
                     {user_display_name('interviewer_name', 'u_interviewer')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE hp.user_id = %s
@@ -1187,8 +1246,8 @@ def download_interview_ics(interview_id):
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE i.id = %s AND hp.user_id = %s
@@ -1224,8 +1283,8 @@ def send_interview_invites(interview_id):
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE i.id = %s AND hp.user_id = %s
@@ -1291,8 +1350,8 @@ def run_interview_reminders():
                 """
                 SELECT i.*, jp.company_id
                 FROM interviews i
-                INNER JOIN job_postings jp ON i.job_posting_id = jp.id
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE hp.user_id = %s
                   AND i.status IN ('scheduled','rescheduled')
                   AND i.scheduled_date BETWEEN %s AND %s
