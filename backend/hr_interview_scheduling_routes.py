@@ -28,6 +28,65 @@ except ImportError:  # pragma: no cover
     from auth.access_control import resolve_roles, HR_ROLES
 
 
+def _ensure_interview_tables():
+    """Create the tables this blueprint queries. They were never created, so every endpoint
+    500'd with `relation "interviews" does not exist` once a caller passed the role check.
+    (Note: interviews here are this blueprint's own store; other blueprints use
+    interview_schedules / interview_sessions.)"""
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS interviews (
+                    id VARCHAR(64) PRIMARY KEY,
+                    application_id VARCHAR(64),
+                    job_posting_id VARCHAR(64),
+                    candidate_id VARCHAR(64),
+                    interviewer_id VARCHAR(64),
+                    scheduled_date TIMESTAMP,
+                    duration_minutes INTEGER DEFAULT 60,
+                    interview_type VARCHAR(50) DEFAULT 'in-person',
+                    status VARCHAR(50) DEFAULT 'scheduled',
+                    interview_details JSONB,
+                    reschedule_reason TEXT,
+                    cancellation_reason TEXT,
+                    created_by VARCHAR(64),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS interview_feedback (
+                    id VARCHAR(64) PRIMARY KEY,
+                    interview_id VARCHAR(64) REFERENCES interviews(id) ON DELETE CASCADE,
+                    feedback_by VARCHAR(64),
+                    overall_rating INTEGER,
+                    technical_assessment JSONB,
+                    soft_skills_assessment JSONB,
+                    cultural_fit_rating INTEGER,
+                    recommendation VARCHAR(100),
+                    overall_notes TEXT,
+                    strengths TEXT,
+                    areas_for_improvement TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interviews_candidate ON interviews(candidate_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_interviews_job ON interviews(job_posting_id)")
+        conn.commit()
+        logger.info("✅ Interview scheduling tables ensured (interviews, interview_feedback)")
+    except Exception as e:
+        conn.rollback()
+        logger.warning(f"Could not ensure interview tables: {e}")
+    finally:
+        conn.close()
+
+
+_ensure_interview_tables()
+
+
 
 class InterviewScheduler:
     """Interview scheduling and calendar management system"""
@@ -424,7 +483,7 @@ def schedule_interview():
         
         try:
             # Verify HR access and application ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     ja.*,
                     jp.title as job_title,
@@ -585,7 +644,7 @@ def get_interview_details(interview_id):
         
         try:
             # Get interview with company verification
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
@@ -633,7 +692,7 @@ def get_interview_details(interview_id):
                     interview_data['interview_details'] = {}
             
             # Get interview feedback
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     if_.*,
                     {user_display_name('feedback_by_name')}
@@ -709,7 +768,7 @@ def reschedule_interview(interview_id):
         
         try:
             # Verify interview ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
@@ -821,7 +880,7 @@ def cancel_interview(interview_id):
         
         try:
             # Verify interview ownership
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
@@ -1110,7 +1169,7 @@ def get_interview_calendar():
         
         try:
             # Get company interviews
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     i.*,
                     jp.title as job_title,
