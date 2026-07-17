@@ -89,7 +89,7 @@ def get_educator_dashboard():
 
         # ── Students overview ────────────────────────────────────────────
         students = {"totalEnrolled": 0, "activeStudents": 0,
-                     "graduatingStudents": 0, "placementRate": 89}
+                     "graduatingStudents": 0, "placementRate": 0}
         try:
             # If educator, scope to their classes; otherwise show all
             if user_id:
@@ -119,7 +119,7 @@ def get_educator_dashboard():
 
         # ── Programs overview ────────────────────────────────────────────
         programs = {"totalPrograms": 0, "activePrograms": 0,
-                     "industryPartnerships": 12, "certificationPrograms": 4}
+                     "industryPartnerships": 0, "certificationPrograms": 0}
         try:
             if user_id:
                 cur.execute("""
@@ -137,8 +137,8 @@ def get_educator_dashboard():
             conn.rollback()
 
         # ── Outcomes ─────────────────────────────────────────────────────
-        outcomes = {"employmentRate": 92, "averageSalary": 85000,
-                     "skillsMatchRate": 87, "industryReadiness": 91}
+        outcomes = {"employmentRate": 0, "averageSalary": 0,
+                     "skillsMatchRate": 0, "industryReadiness": 0}
         try:
             cur.execute("""
                 SELECT ROUND(AVG(CASE WHEN max_score > 0
@@ -152,8 +152,8 @@ def get_educator_dashboard():
             conn.rollback()
 
         # ── Research (aggregated from achievements) ──────────────────────
-        research = {"publications": 0, "ongoingProjects": 8,
-                     "grants": 3, "collaborations": 15}
+        research = {"publications": 0, "ongoingProjects": 0,
+                     "grants": 0, "collaborations": 0}
         try:
             cur.execute("SELECT COUNT(*) AS cnt FROM student_achievements")
             row = cur.fetchone()
@@ -214,7 +214,7 @@ def get_educator_dashboard():
             "programs": programs,
             "outcomes": outcomes,
             "research": research,
-            "activity": activity if activity else _fallback_dashboard().get("activity", [])
+            "activity": activity
         }
         return jsonify({"success": True, "data": data}), 200
 
@@ -228,25 +228,18 @@ def get_educator_dashboard():
 
 
 def _fallback_dashboard():
+    # Honest-empty fallback (audit INT-01 / Track B): never fabricate educator metrics or
+    # a fake activity feed. Zeros/empty so the UI shows an honest "no data" state on error.
     return {
-        "students": {"totalEnrolled": 245, "activeStudents": 198,
-                      "graduatingStudents": 47, "placementRate": 89},
-        "programs": {"totalPrograms": 8, "activePrograms": 6,
-                      "industryPartnerships": 12, "certificationPrograms": 4},
-        "outcomes": {"employmentRate": 92, "averageSalary": 85000,
-                      "skillsMatchRate": 87, "industryReadiness": 91},
-        "research": {"publications": 45, "ongoingProjects": 8,
-                      "grants": 3, "collaborations": 15},
-        "activity": [
-            {"id": 1, "type": "student_placement",
-             "title": "Student Placement Success",
-             "description": "Fatima Al Zahra secured AI Engineer position at ADNOC Digital",
-             "timestamp": datetime.now().isoformat(), "priority": "high"},
-            {"id": 2, "type": "industry_partnership",
-             "title": "New Industry Partnership",
-             "description": "Collaboration agreement signed with Emirates NBD for fintech program",
-             "timestamp": datetime.now().isoformat(), "priority": "high"},
-        ]
+        "students": {"totalEnrolled": 0, "activeStudents": 0,
+                      "graduatingStudents": 0, "placementRate": 0},
+        "programs": {"totalPrograms": 0, "activePrograms": 0,
+                      "industryPartnerships": 0, "certificationPrograms": 0},
+        "outcomes": {"employmentRate": 0, "averageSalary": 0,
+                      "skillsMatchRate": 0, "industryReadiness": 0},
+        "research": {"publications": 0, "ongoingProjects": 0,
+                      "grants": 0, "collaborations": 0},
+        "activity": []
     }
 
 

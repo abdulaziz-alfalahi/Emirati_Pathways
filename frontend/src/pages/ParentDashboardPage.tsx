@@ -77,85 +77,32 @@ const ParentDashboardPage: React.FC = () => {
 
     /* ─────────────────────────── DATA ─────────────────────────── */
 
-    const defaultChildren = [
-        {
-            id: 'child-1', name: t('Ahmed', 'أحمد'), age: 16, grade: '11',
-            gpa: 3.8, attendance: 98, trend: 'up' as const,
-            subjects: [
-                { name: t('Mathematics', 'الرياضيات'), grade: 'A', progress: 92 },
-                { name: t('Physics', 'الفيزياء'), grade: 'A-', progress: 88 },
-                { name: t('Arabic', 'اللغة العربية'), grade: 'B+', progress: 85 },
-                { name: t('English', 'اللغة الإنجليزية'), grade: 'A', progress: 91 },
-            ],
-            activities: [t('Robotics Club', 'نادي الروبوتات'), t('Debate Team', 'فريق المناظرات')],
-            campsEnrolled: 1,
-        },
-        {
-            id: 'child-2', name: t('Fatima', 'فاطمة'), age: 14, grade: '9',
-            gpa: 3.9, attendance: 99, trend: 'up' as const,
-            subjects: [
-                { name: t('Mathematics', 'الرياضيات'), grade: 'A', progress: 95 },
-                { name: t('Biology', 'الأحياء'), grade: 'A+', progress: 97 },
-                { name: t('Arabic', 'اللغة العربية'), grade: 'A', progress: 93 },
-                { name: t('English', 'اللغة الإنجليزية'), grade: 'A-', progress: 89 },
-            ],
-            activities: [t('Science Olympiad', 'أولمبياد العلوم'), t('Art Club', 'نادي الفنون')],
-            campsEnrolled: 1,
-        },
-    ];
+    // Only show real children returned by the API. No fabricated academic
+    // records — when the API returns none, the UI shows an honest empty state.
+    const childrenData = apiChildren ?? [];
 
-    // Use API data if available, otherwise hardcoded fallback
-    const childrenData = apiChildren || defaultChildren;
+    // Knowledge camps and upcoming events have no API backing yet. Rather than
+    // fabricate specific camps, spot counts, and events, present honest empty
+    // states until a real data source is wired up.
+    const knowledgeCamps: {
+        id: string;
+        title: string;
+        category: string;
+        categoryLabel: string;
+        dates: string;
+        location: string;
+        ages: string;
+        spotsLeft: number;
+        children: { name: string; status: 'enrolled' | 'eligible' | 'not-eligible' }[];
+    }[] = [];
 
-
-    const knowledgeCamps = [
-        {
-            id: '1',
-            title: t('STEM Innovation Camp', 'معسكر الابتكار في العلوم والتكنولوجيا'),
-            category: 'Technology', categoryLabel: t('Technology', 'التكنولوجيا'),
-            dates: t('Jun 15 – Jul 10, 2025', '15 يونيو – 10 يوليو 2025'),
-            location: t('Dubai Knowledge Park', 'مجمع دبي المعرفي'),
-            ages: '14–17',
-            spotsLeft: 12,
-            children: [
-                { name: t('Ahmed', 'أحمد'), status: 'enrolled' as const },
-                { name: t('Fatima', 'فاطمة'), status: 'eligible' as const },
-            ],
-        },
-        {
-            id: '2',
-            title: t('Arabic Heritage & Poetry Workshop', 'ورشة التراث العربي والشعر'),
-            category: 'Language', categoryLabel: t('Language', 'اللغة'),
-            dates: t('Jul 5 – Jul 25, 2025', '5 يوليو – 25 يوليو 2025'),
-            location: t('Sharjah Cultural Centre', 'المركز الثقافي في الشارقة'),
-            ages: '12–16',
-            spotsLeft: 24,
-            children: [
-                { name: t('Ahmed', 'أحمد'), status: 'eligible' as const },
-                { name: t('Fatima', 'فاطمة'), status: 'enrolled' as const },
-            ],
-        },
-        {
-            id: '3',
-            title: t('Future Leaders Programme', 'برنامج قادة المستقبل'),
-            category: 'Leadership', categoryLabel: t('Leadership', 'القيادة'),
-            dates: t('Aug 1 – Aug 20, 2025', '1 أغسطس – 20 أغسطس 2025'),
-            location: t('Abu Dhabi Youth Hub', 'مركز شباب أبوظبي'),
-            ages: '15–18',
-            spotsLeft: 8,
-            children: [
-                { name: t('Ahmed', 'أحمد'), status: 'eligible' as const },
-                { name: t('Fatima', 'فاطمة'), status: 'not-eligible' as const },
-            ],
-        },
-    ];
-
-    const upcomingEvents = [
-        { id: 1, title: t('Parent-Teacher Meeting — Grade 11', 'اجتماع أولياء الأمور — الصف 11'), date: t('Feb 20, 2026', '20 فبراير 2026'), time: t('3:00 PM', '3:00 مساءً'), type: 'meeting' },
-        { id: 2, title: t('Science Fair — Fatima presenting', 'معرض العلوم — فاطمة مشاركة'), date: t('Feb 25, 2026', '25 فبراير 2026'), time: t('10:00 AM', '10:00 صباحاً'), type: 'event' },
-        { id: 3, title: t('Career Day — STEM Panel', 'يوم المهن — جلسة العلوم والتكنولوجيا'), date: t('Mar 5, 2026', '5 مارس 2026'), time: t('9:00 AM', '9:00 صباحاً'), type: 'event' },
-        { id: 4, title: t('STEM Camp Registration Deadline', 'الموعد النهائي للتسجيل في معسكر العلوم'), date: t('Mar 15, 2026', '15 مارس 2026'), time: t('11:59 PM', '11:59 مساءً'), type: 'deadline' },
-    ];
+    const upcomingEvents: {
+        id: number;
+        title: string;
+        date: string;
+        time: string;
+        type: string;
+    }[] = [];
 
     /* ─────────────────────────── HELPERS ─────────────────────────── */
 
@@ -312,6 +259,15 @@ const ParentDashboardPage: React.FC = () => {
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
                                     <GraduationCap className="h-5 w-5 text-teal-600" /> {t('Academic Overview', 'النظرة الأكاديمية')}
                                 </h3>
+                                {childrenData.length === 0 ? (
+                                    <Card className="border-dashed border-2">
+                                        <CardContent className="py-12 text-center">
+                                            <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                            <p className="text-muted-foreground font-medium">{t('No children linked to this account', 'لا يوجد أبناء مرتبطون بهذا الحساب')}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{t("Once children are linked, their academic overview will appear here", 'بمجرد ربط الأبناء، ستظهر نظرتهم الأكاديمية هنا')}</p>
+                                        </CardContent>
+                                    </Card>
+                                ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {childrenData.map(child => (
                                         <Card key={child.id} className="hover:shadow-md transition-shadow duration-200">
@@ -352,6 +308,7 @@ const ParentDashboardPage: React.FC = () => {
                                         </Card>
                                     ))}
                                 </div>
+                                )}
                             </div>
 
                             {/* Upcoming Events Sidebar */}
@@ -361,18 +318,25 @@ const ParentDashboardPage: React.FC = () => {
                                 </h3>
                                 <Card>
                                     <CardContent className="pt-4 divide-y">
-                                        {upcomingEvents.map(evt => (
-                                            <div key={evt.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-                                                <div className="mt-0.5 p-2 rounded-lg bg-muted">
-                                                    {eventIcon(evt.type)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{evt.title}</p>
-                                                    <p className="text-xs text-muted-foreground">{evt.date} · {evt.time}</p>
-                                                </div>
-                                                <ChevronIcon className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                                        {upcomingEvents.length === 0 ? (
+                                            <div className="py-8 text-center">
+                                                <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                                                <p className="text-sm text-muted-foreground font-medium">{t('No upcoming events', 'لا توجد فعاليات قادمة')}</p>
                                             </div>
-                                        ))}
+                                        ) : (
+                                            upcomingEvents.map(evt => (
+                                                <div key={evt.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                                                    <div className="mt-0.5 p-2 rounded-lg bg-muted">
+                                                        {eventIcon(evt.type)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium truncate">{evt.title}</p>
+                                                        <p className="text-xs text-muted-foreground">{evt.date} · {evt.time}</p>
+                                                    </div>
+                                                    <ChevronIcon className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                                                </div>
+                                            ))
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
@@ -381,6 +345,15 @@ const ParentDashboardPage: React.FC = () => {
 
                     {/* ────── CHILDREN TAB ────── */}
                     <TabsContent value="children" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {childrenData.length === 0 && (
+                            <Card className="border-dashed border-2">
+                                <CardContent className="py-12 text-center">
+                                    <Users className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-muted-foreground font-medium">{t('No children linked to this account', 'لا يوجد أبناء مرتبطون بهذا الحساب')}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{t("Once children are linked, their academic records will appear here", 'بمجرد ربط الأبناء، ستظهر سجلاتهم الأكاديمية هنا')}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                         {childrenData.map(child => (
                             <Card key={child.id} className="hover:shadow-md transition-shadow duration-200">
                                 <CardHeader className="pb-4">
@@ -463,6 +436,20 @@ const ParentDashboardPage: React.FC = () => {
                             </Link>
                         </div>
 
+                        {knowledgeCamps.length === 0 ? (
+                            <Card className="border-dashed border-2">
+                                <CardContent className="py-12 text-center">
+                                    <School className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-muted-foreground font-medium">{t('No camp enrolments available', 'لا تتوفر تسجيلات في المعسكرات')}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{t('Browse available knowledge camps to get started', 'تصفّح المعسكرات المعرفية المتاحة للبدء')}</p>
+                                    <Link to="/knowledge-camps">
+                                        <Button variant="outline" size="sm" className="mt-4 gap-1">
+                                            {t('Browse All Camps', 'تصفّح جميع المعسكرات')} <ArrowIcon className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                </CardContent>
+                            </Card>
+                        ) : (
                         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                             {knowledgeCamps.map(camp => (
                                 <Card key={camp.id} className="hover:shadow-lg transition-all duration-200 overflow-hidden group">
@@ -504,18 +491,29 @@ const ParentDashboardPage: React.FC = () => {
                                 </Card>
                             ))}
                         </div>
+                        )}
                     </TabsContent>
 
                     {/* ────── ASSESSMENTS TAB ────── */}
                     <TabsContent value="assessments" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-1 gap-6">
-                            {childrenData.map(child => (
-                                <ParentAssessmentOverview
-                                    key={child.id}
-                                    childId={child.id}
-                                    childName={child.name}
-                                />
-                            ))}
+                            {childrenData.length === 0 ? (
+                                <Card className="border-dashed border-2">
+                                    <CardContent className="py-12 text-center">
+                                        <BarChart3 className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                        <p className="text-muted-foreground font-medium">{t('No assessments available', 'لا تتوفر تقييمات')}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">{t("Assessment results appear once children are linked to this account", 'تظهر نتائج التقييم بمجرد ربط الأبناء بهذا الحساب')}</p>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                childrenData.map(child => (
+                                    <ParentAssessmentOverview
+                                        key={child.id}
+                                        childId={child.id}
+                                        childName={child.name}
+                                    />
+                                ))
+                            )}
                         </div>
                     </TabsContent>
 

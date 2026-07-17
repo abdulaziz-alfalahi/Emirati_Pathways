@@ -75,13 +75,13 @@ export default function CareerServicesDashboard() {
             rolePreferences: profile.role_preferences || '',
           };
         });
-        setCandidates(mapped.length > 0 ? mapped : getMockCandidates());
+        setCandidates(mapped);
       } else {
-        setCandidates(getMockCandidates());
+        setCandidates([]);
       }
     } catch (e) {
       console.error(e);
-      setCandidates(getMockCandidates());
+      setCandidates([]);
     } finally {
       setLoading(false);
     }
@@ -89,25 +89,14 @@ export default function CareerServicesDashboard() {
 
   const fetchOperators = async () => {
     try {
-      // In a real scenario, this would fetch from an operators endpoint
-      // Mocking operators for the dropdown based on common roles
-      setOperators([
-        { id: '1', name: 'Abdulaziz Alfalahi' },
-        { id: '2', name: 'Fatima Al Mansoori' },
-        { id: '3', name: 'Khalid Saeed' },
-        { id: '4', name: 'Career Services Op' },
-      ]);
+      // No operators endpoint is available yet. Show an empty list rather than
+      // fabricating operator names. Bind to a real endpoint when one exists.
+      setOperators([]);
     } catch (e) {
       console.error("Failed to fetch operators", e);
+      setOperators([]);
     }
   };
-
-  const getMockCandidates = () => [
-    { id: 1, eid: '784197354932622', name: 'AFRA ALSAYAH', phone: '0501112222', jobSeekerType: 'Fresh Graduate', callStatus: 'Answered', workStatus: 'Working', remarks: 'Works at Private School', assignedTo: 'Career Services Op' },
-    { id: 2, eid: '784197706590581', name: 'AZIZA ALJASMI', phone: '0503334444', jobSeekerType: 'Experienced', callStatus: 'Answered', workStatus: 'Retired', remarks: 'Looking at AED 15K minimum. Lives in Al Warqa.', assignedTo: 'Unassigned' },
-    { id: 3, eid: '784200421903020', name: 'HAMAD BULGHUZOOZ', phone: '0505556666', jobSeekerType: 'Experienced', callStatus: 'Answered', workStatus: 'Not Working', remarks: 'Received updated CV', assignedTo: 'Fatima Al Mansoori' },
-    { id: 4, eid: '784200542824071', name: 'NOORA ALBLOOSHI', phone: '0507778888', jobSeekerType: 'Fresh Graduate', callStatus: 'No Answer', workStatus: 'Not Working', remarks: 'Contacted on 06 April 2026 - No Answer', assignedTo: 'Unassigned' },
-  ];
 
   const handleEditClick = (candidate: any) => {
     setEditingCandidate(candidate);
