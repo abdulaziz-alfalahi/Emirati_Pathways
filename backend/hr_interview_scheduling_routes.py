@@ -388,7 +388,7 @@ def get_interviews():
                     u_candidate.email as candidate_email,
                     u_candidate.phone as candidate_phone,
                     {user_display_name('interviewer_name', 'u_interviewer')},
-                    ja.application_status
+                    ja.status AS application_status
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
@@ -576,7 +576,7 @@ def schedule_interview():
             # Update application status
             cursor.execute("""
                 UPDATE job_applications 
-                SET application_status = 'interview_scheduled'
+                SET status = 'interview_scheduled'
                 WHERE id = %s
             """, (data['application_id'],))
             
@@ -654,7 +654,7 @@ def get_interview_details(interview_id):
                     u_candidate.phone as candidate_phone,
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email,
-                    ja.application_status,
+                    ja.status AS application_status,
                     {user_display_name('created_by_name', 'u_created')}
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
@@ -917,7 +917,7 @@ def cancel_interview(interview_id):
             # Update application status back to under review
             cursor.execute("""
                 UPDATE job_applications 
-                SET application_status = 'under_review'
+                SET status = 'under_review'
                 WHERE id = %s
             """, (interview['application_id'],))
             
