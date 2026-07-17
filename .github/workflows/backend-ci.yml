@@ -75,6 +75,31 @@ jobs:
           print("uuid-ossp extension ready")
           PY
           python migrate.py
+          # migrate.py builds ~130 tables from DATABASE_SCHEMA.md, but that doc is the
+          # PRE-EID schema (users.id integer, no FKs/indexes, no consents/audit-trigger
+          # tables). Apply the additive provisioning the Tier-4 (PDPL) + EID suites need,
+          # in order: EID/PK/FK/seed convergence, then the consents table, then the
+          # append-only audit triggers. Run via psycopg2 so no psql client is required.
+          python - <<'PY'
+          import os, psycopg2
+          conn = psycopg2.connect(
+              host=os.environ["DB_HOST"], port=os.environ["DB_PORT"],
+              dbname=os.environ["DB_NAME"], user=os.environ["DB_USER"],
+              password=os.environ["DB_PASSWORD"],
+          )
+          conn.autocommit = True
+          for sql_file in (
+              "migrations/ci_provision.sql",
+              "migrations/003_consents_table.sql",
+              "migrations/002_audit_log_append_only.sql",
+          ):
+              with open(sql_file, "r", encoding="utf-8") as fh:
+                  sql = fh.read()
+              with conn.cursor() as cur:
+                  cur.execute(sql)
+              print(f"applied {sql_file}")
+          conn.close()
+          PY
 
       - name: Run tests
         env:

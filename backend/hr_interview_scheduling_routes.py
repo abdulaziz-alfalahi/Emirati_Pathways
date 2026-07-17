@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 hr_interview_bp = Blueprint('hr_interview', __name__, url_prefix='/api/hr/interviews')
+try:
+    from backend.auth.access_control import resolve_roles, HR_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, HR_ROLES
 
 
 
@@ -268,7 +272,11 @@ def get_interviews():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -394,7 +402,11 @@ def schedule_interview():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -561,7 +573,11 @@ def get_interview_details(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -674,7 +690,11 @@ def reschedule_interview(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -788,7 +808,11 @@ def cancel_interview(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -883,7 +907,11 @@ def get_interviewer_availability(interviewer_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -963,7 +991,11 @@ def submit_interview_feedback(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -1061,7 +1093,11 @@ def get_interview_calendar():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -1237,7 +1273,11 @@ def run_interview_reminders():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        # Resolve the caller's FULL role set (primary claim + secondary_roles + DB), not just the
+        # primary claim on a too-narrow allowlist — an HR manager (employer_admin) or a
+        # secondary-role recruiter manages interviews too. (audit — primary-claim-only role check,
+        # same class as the BAC fixes; this is why HR managers got a spurious 403)
+        if not (resolve_roles() & HR_ROLES):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         body = request.get_json() or {}
         window_hours = int(body.get('window_hours', 24))
