@@ -486,21 +486,21 @@ def get_all_interview_sessions():
         
         # Query interview sessions
         sessions_query = """
-            SELECT 
-                s.id::text,
+            SELECT
+                s.interview_id::text AS id,
                 s.candidate_id,
-                s.job_id,
-                s.scheduled_at,
+                s.jd_id AS job_id,
+                (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                 s.status,
                 s.interview_type,
                 s.notes,
                 s.created_at,
                 COALESCE(u.username, 'Unknown') as candidate_name,
                 COALESCE(j.title, 'Unknown Position') as job_title
-            FROM interview_sessions s
+            FROM interview_schedules s
             LEFT JOIN users u ON s.candidate_id = u.id
-            LEFT JOIN job_descriptions j ON s.job_id = j.id
-            ORDER BY s.scheduled_at DESC
+            LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
+            ORDER BY (s.scheduled_date + s.scheduled_time) DESC
             LIMIT 100
         """
         

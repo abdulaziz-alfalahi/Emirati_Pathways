@@ -58,6 +58,32 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id
     finally:
         conn.close()
 
+def _split_scheduled_at(scheduled_at):
+    """Split an incoming datetime/ISO string into (date, time) for interview_schedules.
+
+    interview_schedules stores the timestamp as separate scheduled_date (DATE) +
+    scheduled_time (TIME) columns (both NOT NULL). Returns (None, None) if unparseable.
+    """
+    if not scheduled_at:
+        return None, None
+    if isinstance(scheduled_at, datetime):
+        return scheduled_at.date(), scheduled_at.time()
+    s = str(scheduled_at).strip()
+    if s.endswith('Z'):
+        s = s[:-1]
+    s = s.replace('T', ' ')
+    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+        try:
+            dt = datetime.strptime(s, fmt)
+            return dt.date(), dt.time()
+        except ValueError:
+            continue
+    try:
+        dt = datetime.fromisoformat(s)
+        return dt.date(), dt.time()
+    except Exception:
+        return None, None
+
 def ensure_tables_exist():
     """Ensure interview tables exist and columns support UUID IDs"""
     conn = get_db_connection()
@@ -66,30 +92,13 @@ def ensure_tables_exist():
     
     try:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS interview_sessions (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    candidate_id TEXT NOT NULL,
-                    job_id TEXT,
-                    recruiter_id TEXT,
-                    scheduled_at TIMESTAMP,
-                    duration_minutes INTEGER DEFAULT 60,
-                    status VARCHAR(50) DEFAULT 'scheduled',
-                    interview_type VARCHAR(50) DEFAULT 'video',
-                    meeting_link VARCHAR(500),
-                    notes TEXT,
-                    feedback TEXT,
-                    rating INTEGER,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
+            # interview_sessions consolidated into interview_schedules (migration 004/005)
+
             # Create interview recordings table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_recordings (
                     id SERIAL PRIMARY KEY,
-                    session_id UUID REFERENCES interview_sessions(id),
+                    session_id VARCHAR(100),
                     chunk_number INTEGER,
                     file_path VARCHAR(500),
                     duration_seconds INTEGER,
@@ -101,7 +110,7 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_participants (
                     id SERIAL PRIMARY KEY,
-                    session_id UUID REFERENCES interview_sessions(id),
+                    session_id VARCHAR(100),
                     user_id TEXT NOT NULL,
                     role VARCHAR(50),
                     status VARCHAR(50) DEFAULT 'invited',
@@ -127,7 +136,6 @@ def ensure_tables_exist():
             
             # Migrate existing INTEGER columns to TEXT for UUID compatibility
             for tbl, cols in [
-                ('interview_sessions', ['candidate_id', 'recruiter_id', 'job_id']),
                 ('interview_participants', ['user_id']),
             ]:
                 for col in cols:
@@ -387,10 +395,10 @@ def get_my_sessions():
         
         if role == 'candidate':
             query = """
-                SELECT 
-                    s.id,
-                    s.job_id,
-                    s.scheduled_at,
+                SELECT
+                    s.interview_id AS id,
+                    s.jd_id AS job_id,
+                    (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                     s.duration_minutes,
                     s.status,
                     s.interview_type,
@@ -399,20 +407,20 @@ def get_my_sessions():
                     j.title as job_title,
                     j.company as company_name,
                     r.username as recruiter_name
-                FROM interview_sessions s
-                LEFT JOIN job_descriptions j ON s.job_id = j.id
+                FROM interview_schedules s
+                LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
                 LEFT JOIN users r ON s.recruiter_id = r.id
                 WHERE s.candidate_id = %s
                 AND s.status != 'cancelled'
-                ORDER BY s.scheduled_at DESC
+                ORDER BY (s.scheduled_date + s.scheduled_time) DESC
             """
         else:
             query = """
-                SELECT 
-                    s.id,
+                SELECT
+                    s.interview_id AS id,
                     s.candidate_id,
-                    s.job_id,
-                    s.scheduled_at,
+                    s.jd_id AS job_id,
+                    (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                     s.duration_minutes,
                     s.status,
                     s.interview_type,
@@ -421,12 +429,12 @@ def get_my_sessions():
                     c.username as candidate_name,
                     c.email as candidate_email,
                     j.title as job_title
-                FROM interview_sessions s
+                FROM interview_schedules s
                 LEFT JOIN users c ON s.candidate_id = c.id
-                LEFT JOIN job_descriptions j ON s.job_id = j.id
+                LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
                 WHERE s.recruiter_id = %s
                 AND s.status != 'cancelled'
-                ORDER BY s.scheduled_at DESC
+                ORDER BY (s.scheduled_date + s.scheduled_time) DESC
             """
         
         sessions = execute_query(query, (user_id,)) if user_id else []
@@ -475,18 +483,20 @@ def schedule_interview():
         
         # Try database insert
         try:
+            interview_id = str(uuid.uuid4())
+            scheduled_date, scheduled_time = _split_scheduled_at(scheduled_at)
             query = """
-                INSERT INTO interview_sessions 
-                (candidate_id, job_id, recruiter_id, scheduled_at, duration_minutes, 
+                INSERT INTO interview_schedules
+                (interview_id, candidate_id, jd_id, recruiter_id, scheduled_date, scheduled_time, duration_minutes,
                  interview_type, meeting_link, notes, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'scheduled')
-                RETURNING id
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scheduled')
+                RETURNING interview_id AS id
             """
-            
+
             session_id = execute_query(
                 query,
-                (candidate_id, job_id, recruiter_id, scheduled_at, duration_minutes,
-                 interview_type, meeting_link, notes),
+                (interview_id, candidate_id, job_id, recruiter_id, scheduled_date, scheduled_time,
+                 duration_minutes, interview_type, meeting_link, notes),
                 return_id=True
             )
         except:
@@ -559,18 +569,20 @@ def create_session():
         if interview_type == 'video':
             meeting_link = f"/interview/room/{uuid.uuid4()}"
         
+        interview_id = str(uuid.uuid4())
+        scheduled_date, scheduled_time = _split_scheduled_at(scheduled_at)
         query = """
-            INSERT INTO interview_sessions 
-            (candidate_id, job_id, recruiter_id, scheduled_at, duration_minutes, 
+            INSERT INTO interview_schedules
+            (interview_id, candidate_id, jd_id, recruiter_id, scheduled_date, scheduled_time, duration_minutes,
              interview_type, meeting_link, notes, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'scheduled')
-            RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'scheduled')
+            RETURNING interview_id AS id
         """
-        
+
         session_id = execute_query(
             query,
-            (candidate_id, job_id, recruiter_id, scheduled_at, duration_minutes,
-             interview_type, meeting_link, notes),
+            (interview_id, candidate_id, job_id, recruiter_id, scheduled_date, scheduled_time,
+             duration_minutes, interview_type, meeting_link, notes),
             return_id=True
         )
         
@@ -640,24 +652,25 @@ def create_session():
         }), 201
 
 
-@interview_sessions_bp.route('/sessions/<int:session_id>', methods=['GET'])
+@interview_sessions_bp.route('/sessions/<session_id>', methods=['GET'])
 @optional_auth
 def get_session(session_id):
     """Get details of a specific interview session"""
     try:
         query = """
-            SELECT 
+            SELECT
                 s.*,
+                (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                 c.username as candidate_name,
                 c.email as candidate_email,
                 r.username as recruiter_name,
                 j.title as job_title,
                 j.company as company_name
-            FROM interview_sessions s
+            FROM interview_schedules s
             LEFT JOIN users c ON s.candidate_id = c.id
             LEFT JOIN users r ON s.recruiter_id = r.id
-            LEFT JOIN job_descriptions j ON s.job_id = j.id
-            WHERE s.id = %s
+            LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
+            WHERE s.interview_id = %s
         """
         
         session = execute_query(query, (session_id,), fetch_one=True)
@@ -700,9 +713,9 @@ def update_session_status(session_id):
         # Try database update first
         try:
             query = """
-                UPDATE interview_sessions 
+                UPDATE interview_schedules
                 SET status = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
+                WHERE interview_id = %s
             """
             execute_query(query, (status, session_id), fetch_all=False)
         except:
@@ -733,20 +746,20 @@ def update_session_status(session_id):
         })
 
 
-@interview_sessions_bp.route('/sessions/<int:session_id>/cancel', methods=['POST'])
+@interview_sessions_bp.route('/sessions/<session_id>/cancel', methods=['POST'])
 @optional_auth
 def cancel_session(session_id):
     """Cancel an interview session"""
     try:
         data = request.get_json() or {}
         reason = data.get('reason', '')
-        
+
         query = """
-            UPDATE interview_sessions 
-            SET status = 'cancelled', 
+            UPDATE interview_schedules
+            SET status = 'cancelled',
                 notes = COALESCE(notes, '') || %s,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
+            WHERE interview_id = %s
         """
         cancel_note = f"\n[Cancelled: {reason}]" if reason else "\n[Cancelled]"
         execute_query(query, (cancel_note, session_id), fetch_all=False)
@@ -764,7 +777,7 @@ def cancel_session(session_id):
         }), 500
 
 
-@interview_sessions_bp.route('/sessions/<int:session_id>/feedback', methods=['POST'])
+@interview_sessions_bp.route('/sessions/<session_id>/feedback', methods=['POST'])
 @optional_auth
 def submit_feedback(session_id):
     """Submit feedback for an interview session"""
@@ -772,14 +785,14 @@ def submit_feedback(session_id):
         data = request.get_json()
         feedback = data.get('feedback', '')
         rating = data.get('rating')
-        
+
         query = """
-            UPDATE interview_sessions 
-            SET feedback = %s, 
+            UPDATE interview_schedules
+            SET feedback = %s,
                 rating = %s,
                 status = 'completed',
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
+            WHERE interview_id = %s
         """
         execute_query(query, (feedback, rating, session_id), fetch_all=False)
         
@@ -796,7 +809,7 @@ def submit_feedback(session_id):
         }), 500
 
 
-@interview_sessions_bp.route('/sessions/<int:session_id>/analyze', methods=['POST'])
+@interview_sessions_bp.route('/sessions/<session_id>/analyze', methods=['POST'])
 @optional_auth
 def analyze_session(session_id):
     """
@@ -838,7 +851,7 @@ def analyze_session(session_id):
         }), 500
 
 
-@interview_sessions_bp.route('/sessions/<int:session_id>/record/chunk', methods=['POST'])
+@interview_sessions_bp.route('/sessions/<session_id>/record/chunk', methods=['POST'])
 @optional_auth
 def upload_recording_chunk(session_id):
     """Upload a recording chunk for an interview session"""
@@ -878,18 +891,17 @@ def get_all_sessions_admin():
     """Get all interview sessions for admin view"""
     try:
         query = f"""
-            SELECT 
-                s.id,
+            SELECT
+                s.interview_id AS id,
                 s.candidate_id,
-                s.job_id,
+                s.jd_id AS job_id,
                 s.recruiter_id,
-                s.scheduled_at,
+                (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                 s.status,
                 s.interview_type,
                 s.created_at,
                 s.ai_analysis,
                 s.duration_minutes,
-                s.ended_at,
                 c.username as candidate_name,
                 c.email as candidate_email,
                 c.first_name as candidate_first_name,
@@ -901,11 +913,11 @@ def get_all_sessions_admin():
                 {user_display_name('recruiter_display_name', 'r')},
                 j.title as job_title,
                 j.company as company_name
-            FROM interview_sessions s
+            FROM interview_schedules s
             LEFT JOIN users c ON s.candidate_id = c.id
             LEFT JOIN users r ON s.recruiter_id = r.id
-            LEFT JOIN job_descriptions j ON s.job_id = j.id
-            ORDER BY s.scheduled_at DESC
+            LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
+            ORDER BY (s.scheduled_date + s.scheduled_time) DESC
             LIMIT 500
         """
 
@@ -933,26 +945,26 @@ def get_upcoming_interviews():
         user_id = request.args.get('user_id', type=int)
         
         query = """
-            SELECT 
-                s.id,
-                s.scheduled_at,
+            SELECT
+                s.interview_id AS id,
+                (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                 s.status,
                 s.interview_type,
                 s.meeting_link,
                 j.title as job_title,
                 j.company as company_name
-            FROM interview_sessions s
-            LEFT JOIN job_descriptions j ON s.job_id = j.id
-            WHERE s.scheduled_at >= CURRENT_TIMESTAMP
+            FROM interview_schedules s
+            LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
+            WHERE (s.scheduled_date + s.scheduled_time) >= CURRENT_TIMESTAMP
             AND s.status = 'scheduled'
         """
         params = []
-        
+
         if user_id:
             query += " AND (s.candidate_id = %s OR s.recruiter_id = %s)"
             params.extend([user_id, user_id])
-        
-        query += " ORDER BY s.scheduled_at ASC LIMIT 10"
+
+        query += " ORDER BY (s.scheduled_date + s.scheduled_time) ASC LIMIT 10"
         
         interviews = execute_query(query, tuple(params) if params else None)
         

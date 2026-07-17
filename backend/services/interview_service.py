@@ -48,40 +48,14 @@ class InterviewService:
         conn = self._get_db_connection()
         try:
             with conn.cursor() as cur:
-                # Interview Sessions Table
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS interview_sessions (
-                        id UUID PRIMARY KEY,
-                        application_id TEXT, 
-                        recruiter_id INTEGER, 
-                        candidate_id TEXT, 
-                        scheduled_at TIMESTAMPTZ,
-                        status TEXT DEFAULT 'scheduled', 
-                        ai_analysis JSONB,
-                        guest_token TEXT UNIQUE, -- For public access
-                        title TEXT,              -- Custom title (optional)
-                        cancellation_reason TEXT,
-                        attendees JSONB,         -- List of additional attendees (User IDs)
-                        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-                    );
-                """)
-                
-                # Manual Migration for existing tables (Idempotent)
-                try:
-                    cur.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS guest_token TEXT UNIQUE;")
-                    cur.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS title TEXT;")
-                    cur.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;")
-                    cur.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS attendees JSONB;")
-                except Exception:
-                    conn.rollback() 
-                    pass
+                # interview_sessions consolidated into interview_schedules (migration 004/005)
 
                 # Recordings Metadata Table
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS interview_recordings (
                         id UUID PRIMARY KEY,
-                        session_id UUID REFERENCES interview_sessions(id) ON DELETE CASCADE,
-                        user_id INTEGER, 
+                        session_id VARCHAR(100),
+                        user_id INTEGER,
                         file_path TEXT,
                         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
                     );
@@ -102,12 +76,18 @@ class InterviewService:
                 guest_token = secrets.token_urlsafe(16) # Secure random token
                 if attendees is None:
                     attendees = []
-                
+
+                # scheduled_at (timestamp) -> scheduled_date (DATE) + scheduled_time (TIME)
+                scheduled_dt = datetime.fromisoformat(scheduled_at) if isinstance(scheduled_at, str) else scheduled_at
+                scheduled_date = scheduled_dt.date() if scheduled_dt else None
+                scheduled_time = scheduled_dt.time() if scheduled_dt else None
+                interview_type = 'video'  # NOT NULL on interview_schedules; default
+
                 cur.execute("""
-                    INSERT INTO interview_sessions (id, application_id, recruiter_id, candidate_id, scheduled_at, status, guest_token, title, attendees)
-                    VALUES (%s, %s, %s, %s, %s, 'scheduled', %s, %s, %s)
-                    RETURNING *
-                """, (session_id, str(application_id) if application_id else None, recruiter_id, str(candidate_id) if candidate_id else None, scheduled_at, guest_token, title, json.dumps(attendees)))
+                    INSERT INTO interview_schedules (interview_id, application_id, recruiter_id, candidate_id, interview_type, scheduled_date, scheduled_time, status, guest_token, interview_title, interviewers)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'scheduled', %s, %s, %s)
+                    RETURNING *, (scheduled_date + scheduled_time) AS scheduled_at
+                """, (session_id, str(application_id) if application_id else None, recruiter_id, str(candidate_id) if candidate_id else None, interview_type, scheduled_date, scheduled_time, guest_token, title, json.dumps(attendees)))
                 session = cur.fetchone()
                 conn.commit()
                 return self._serialize_session(session)
@@ -118,7 +98,7 @@ class InterviewService:
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM interview_sessions WHERE id = %s", (session_id,))
+                cur.execute("SELECT *, (scheduled_date + scheduled_time) AS scheduled_at FROM interview_schedules WHERE interview_id = %s", (session_id,))
                 session = cur.fetchone()
                 if session:
                     return self._serialize_session(session)
@@ -132,10 +112,10 @@ class InterviewService:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(f"""
-                    SELECT s.*, 
+                    SELECT s.*, (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                            u_rec.first_name as recruiter_first_name, u_rec.last_name as recruiter_last_name,
                            {user_display_name('recruiter_display_name', 'u_rec')}
-                    FROM interview_sessions s
+                    FROM interview_schedules s
                     LEFT JOIN users u_rec ON s.recruiter_id = u_rec.id
                     WHERE s.guest_token = %s
                 """, (token,))
@@ -153,17 +133,21 @@ class InterviewService:
                 fields = []
                 values = []
                 if 'scheduled_at' in data:
-                    fields.append("scheduled_at = %s")
-                    values.append(data['scheduled_at'])
+                    sched = data['scheduled_at']
+                    sched_dt = datetime.fromisoformat(sched) if isinstance(sched, str) else sched
+                    fields.append("scheduled_date = %s")
+                    values.append(sched_dt.date() if sched_dt else None)
+                    fields.append("scheduled_time = %s")
+                    values.append(sched_dt.time() if sched_dt else None)
                 if 'title' in data:
-                    fields.append("title = %s")
+                    fields.append("interview_title = %s")
                     values.append(data['title'])
-                
+
                 if not fields:
                     return None
-                    
+
                 values.append(session_id)
-                query = f"UPDATE interview_sessions SET {', '.join(fields)} WHERE id = %s RETURNING *"
+                query = f"UPDATE interview_schedules SET {', '.join(fields)} WHERE interview_id = %s RETURNING *, (scheduled_date + scheduled_time) AS scheduled_at"
                 cur.execute(query, tuple(values))
                 session = cur.fetchone()
                 conn.commit()
@@ -176,9 +160,9 @@ class InterviewService:
         try:
             with conn.cursor() as cur:
                 cur.execute("""
-                    UPDATE interview_sessions 
-                    SET status = 'cancelled', cancellation_reason = %s 
-                    WHERE id = %s
+                    UPDATE interview_schedules
+                    SET status = 'cancelled', cancellation_reason = %s
+                    WHERE interview_id = %s
                 """, (reason, session_id))
                 conn.commit()
                 return True
@@ -191,27 +175,27 @@ class InterviewService:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 if role == 'recruiter':
                     cur.execute(f"""
-                        SELECT s.*, 
-                               u.first_name as candidate_first_name, 
+                        SELECT s.*, (s.scheduled_date + s.scheduled_time) AS scheduled_at,
+                               u.first_name as candidate_first_name,
                                u.last_name as candidate_last_name,
                                {user_display_name('candidate_display_name')},
                                u.email as candidate_email
-                        FROM interview_sessions s
+                        FROM interview_schedules s
                         LEFT JOIN users u ON s.candidate_id = u.id::text
                         WHERE s.recruiter_id = %s
-                        ORDER BY s.scheduled_at DESC
+                        ORDER BY (s.scheduled_date + s.scheduled_time) DESC
                     """, (user_id,))
                 else:
                     cur.execute(f"""
-                        SELECT s.*, 
-                               u.first_name as recruiter_first_name, 
+                        SELECT s.*, (s.scheduled_date + s.scheduled_time) AS scheduled_at,
+                               u.first_name as recruiter_first_name,
                                u.last_name as recruiter_last_name,
                                {user_display_name('recruiter_display_name')},
                                u.email as recruiter_email
-                        FROM interview_sessions s
+                        FROM interview_schedules s
                         LEFT JOIN users u ON s.recruiter_id = u.id
                         WHERE s.candidate_id = %s
-                        ORDER BY s.scheduled_at DESC
+                        ORDER BY (s.scheduled_date + s.scheduled_time) DESC
                     """, (user_id,))
                 
                 sessions = cur.fetchall()
@@ -225,15 +209,15 @@ class InterviewService:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(f"""
-                    SELECT s.*, 
+                    SELECT s.*, (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                            u_rec.first_name as recruiter_first_name, u_rec.last_name as recruiter_last_name,
                            {user_display_name('recruiter_display_name', 'u_rec')},
                            u_can.first_name as candidate_first_name, u_can.last_name as candidate_last_name,
                            {user_display_name('candidate_display_name', 'u_can')}
-                    FROM interview_sessions s
+                    FROM interview_schedules s
                     LEFT JOIN users u_rec ON s.recruiter_id = u_rec.id
-                    LEFT JOIN users u_can ON s.candidate_id::text = u_can.id::text 
-                    ORDER BY s.scheduled_at DESC
+                    LEFT JOIN users u_can ON s.candidate_id::text = u_can.id::text
+                    ORDER BY (s.scheduled_date + s.scheduled_time) DESC
                 """)
                 sessions = cur.fetchall()
                 return [self._serialize_session(dict(s)) for s in sessions]
@@ -244,7 +228,7 @@ class InterviewService:
         conn = self._get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("UPDATE interview_sessions SET status = %s WHERE id = %s", (status, session_id))
+                cur.execute("UPDATE interview_schedules SET status = %s WHERE interview_id = %s", (status, session_id))
                 conn.commit()
         finally:
             conn.close()
@@ -459,7 +443,7 @@ Return a JSON object with:
         conn = self._get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("UPDATE interview_sessions SET ai_analysis = %s WHERE id = %s", 
+                cur.execute("UPDATE interview_schedules SET ai_analysis = %s WHERE interview_id = %s",
                            (json.dumps(analysis_data), session_id))
                 conn.commit()
         finally:

@@ -1001,10 +1001,10 @@ def get_dashboard_stats():
                 
                 # 2. Fetch interviews
                 cur.execute("""
-                    SELECT iv.created_at as timestamp, iv.title, iv.status, jp.title as job_title 
-                    FROM interview_sessions iv 
-                    LEFT JOIN job_postings jp ON iv.job_id::text = jp.id::text 
-                    WHERE iv.candidate_id = %s 
+                    SELECT iv.created_at as timestamp, iv.interview_title AS title, iv.status, jp.title as job_title
+                    FROM interview_schedules iv
+                    LEFT JOIN job_postings jp ON iv.jd_id::text = jp.jd_id::text
+                    WHERE iv.candidate_id = %s
                     ORDER BY iv.created_at DESC LIMIT 5
                 """, (search_id,))
                 for row in cur.fetchall():
