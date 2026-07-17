@@ -390,8 +390,8 @@ def get_interviews():
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     ja.application_status
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN companies c ON jp.company_id = c.id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 LEFT JOIN job_applications ja ON i.application_id = ja.id
@@ -406,7 +406,7 @@ def get_interviews():
             cursor.execute(f"""
                 SELECT COUNT(DISTINCT i.id)
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
                 WHERE {where_clause}
             """, params)
             
@@ -492,7 +492,7 @@ def schedule_interview():
                     u.email as candidate_email
                 FROM job_applications ja
                 INNER JOIN job_postings jp ON ja.job_id = jp.id::text
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 INNER JOIN users u ON ja.user_id = u.id
                 WHERE ja.id = %s AND hp.user_id = %s
             """, (data['application_id'], current_user_id))
@@ -657,9 +657,9 @@ def get_interview_details(interview_id):
                     ja.application_status,
                     {user_display_name('created_by_name', 'u_created')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN companies c ON jp.company_id = c.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 LEFT JOIN users u_created ON i.created_by = u_created.id
@@ -774,8 +774,8 @@ def reschedule_interview(interview_id):
                     jp.title as job_title,
                     {user_display_name('candidate_name')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u ON i.candidate_id = u.id
                 WHERE i.id = %s AND hp.user_id = %s
             """, (interview_id, current_user_id))
@@ -886,8 +886,8 @@ def cancel_interview(interview_id):
                     jp.title as job_title,
                     {user_display_name('candidate_name')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u ON i.candidate_id = u.id
                 WHERE i.id = %s AND hp.user_id = %s
             """, (interview_id, current_user_id))
@@ -1066,8 +1066,8 @@ def submit_interview_feedback(interview_id):
             cursor.execute("""
                 SELECT i.id
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE i.id = %s AND (hp.user_id = %s OR i.interviewer_id = %s)
             """, (interview_id, current_user_id, current_user_id))
             
@@ -1176,8 +1176,8 @@ def get_interview_calendar():
                     {user_display_name('candidate_name', 'u_candidate')},
                     {user_display_name('interviewer_name', 'u_interviewer')}
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE hp.user_id = %s
@@ -1246,8 +1246,8 @@ def download_interview_ics(interview_id):
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE i.id = %s AND hp.user_id = %s
@@ -1283,8 +1283,8 @@ def send_interview_invites(interview_id):
                     {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
                 LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
                 WHERE i.id = %s AND hp.user_id = %s
@@ -1350,8 +1350,8 @@ def run_interview_reminders():
                 """
                 SELECT i.*, jp.company_id
                 FROM interviews i
-                INNER JOIN job_postings jp ON i.job_posting_id = jp.id
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN job_postings jp ON i.job_posting_id = jp.id::text
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE hp.user_id = %s
                   AND i.status IN ('scheduled','rescheduled')
                   AND i.scheduled_date BETWEEN %s AND %s
