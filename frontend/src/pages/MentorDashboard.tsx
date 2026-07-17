@@ -54,22 +54,11 @@ interface MentorData {
     successfulPlacements: number;
     averageSessionRating: number;
   };
-  sessions: {
-    totalSessions: number;
-    thisMonth: number;
-    upcomingSessions: number;
-    completedGoals: number;
-  };
   impact: {
     careerAdvancement: number;
-    skillImprovement: number;
-    networkGrowth: number;
-    confidenceBoost: number;
   };
   expertise: {
     primaryAreas: string[];
-    yearsExperience: number;
-    industryConnections: number;
     successStories: number;
   };
   activity: Array<{
@@ -117,9 +106,8 @@ const MentorDashboard: React.FC = () => {
   const { language, toggleLanguage } = useLanguage();
   const [dashboardData, setDashboardData] = useState<MentorData>({
     mentees: { totalMentees: 0, activeMentees: 0, successfulPlacements: 0, averageSessionRating: 0 },
-    sessions: { totalSessions: 0, thisMonth: 0, upcomingSessions: 0, completedGoals: 0 },
-    impact: { careerAdvancement: 0, skillImprovement: 0, networkGrowth: 0, confidenceBoost: 0 },
-    expertise: { primaryAreas: [], yearsExperience: 0, industryConnections: 0, successStories: 0 },
+    impact: { careerAdvancement: 0 },
+    expertise: { primaryAreas: [], successStories: 0 },
     activity: []
   });
 
@@ -295,22 +283,11 @@ const MentorDashboard: React.FC = () => {
               successfulPlacements: d.mentor_info?.successful_placements || 0,
               averageSessionRating: d.mentor_info?.rating || d.performance_metrics?.rating || 0
             },
-            sessions: {
-              totalSessions: d.performance_metrics?.testimonials_count || 0,
-              thisMonth: 0,
-              upcomingSessions: 0,
-              completedGoals: 0
-            },
             impact: {
-              careerAdvancement: Math.round((d.performance_metrics?.session_completion_rate || 0) * 100),
-              skillImprovement: 0,
-              networkGrowth: 0,
-              confidenceBoost: 0
+              careerAdvancement: Math.round((d.performance_metrics?.session_completion_rate || 0) * 100)
             },
             expertise: {
               primaryAreas: d.expertise_areas || [],
-              yearsExperience: 0,
-              industryConnections: 0,
               successStories: d.mentor_info?.successful_placements || 0
             },
             activity: []
@@ -347,12 +324,6 @@ const MentorDashboard: React.FC = () => {
                 </p>
               </div>
               <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-dubai-medium">
-                  {t('Senior Mentor', 'مرشد أول')}
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  {t('Tech Leader', 'قائد تقني')}
-                </Badge>
                 <Button variant="outline" size="sm">
                   <Settings className={`h-4 w-4 me-2`} />
                   {t('Settings', 'الإعدادات')}
@@ -427,19 +398,6 @@ const MentorDashboard: React.FC = () => {
 
                 <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-right' : ''}`}>
                   <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Sessions This Month', 'جلسات هذا الشهر')}</CardTitle>
-                    <Calendar className="h-4 w-4 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.sessions.thisMonth}</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      {dashboardData.sessions.upcomingSessions} {t('upcoming', 'قادمة')}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-right' : ''}`}>
-                  <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Success Stories', 'قصص النجاح')}</CardTitle>
                     <Award className="h-4 w-4 text-green-600" />
                   </CardHeader>
@@ -479,29 +437,17 @@ const MentorDashboard: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-green-50 rounded-lg">
                       <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.impact.careerAdvancement}%</div>
                       <p className="text-sm text-slate-600 font-dubai-medium">{t('Career Advancement', 'التقدم المهني')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.impact.skillImprovement}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Skill Improvement', 'تحسين المهارات')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.impact.networkGrowth}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Network Growth', 'نمو الشبكة')}</p>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.impact.confidenceBoost}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Confidence Boost', 'تعزيز الثقة')}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Expertise & Experience */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Expertise Areas */}
+              <div className="grid grid-cols-1 gap-6">
                 <Card className={`bg-card shadow-sm ${isRTL ? 'text-right' : ''}`}>
                   <CardHeader>
                     <CardTitle className="font-dubai-bold text-slate-900">{t('Expertise Areas', 'مجالات الخبرة')}</CardTitle>
@@ -517,31 +463,6 @@ const MentorDashboard: React.FC = () => {
                           <Badge variant="secondary" className="text-xs">{t('Expert', 'خبير')}</Badge>
                         </div>
                       ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className={`bg-card shadow-sm ${isRTL ? 'text-right' : ''}`}>
-                  <CardHeader>
-                    <CardTitle className="font-dubai-bold text-slate-900">{t('Professional Profile', 'الملف المهني')}</CardTitle>
-                    <CardDescription className="font-dubai-medium text-slate-600">
-                      {t('Your mentoring credentials and experience', 'مؤهلاتك وخبراتك في الإرشاد')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">{t('Years of Experience', 'سنوات الخبرة')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.expertise.yearsExperience}+</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">{t('Industry Connections', 'روابط القطاع')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.expertise.industryConnections}+</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">{t('Completed Goals', 'الأهداف المكتملة')}</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.sessions.completedGoals}</span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

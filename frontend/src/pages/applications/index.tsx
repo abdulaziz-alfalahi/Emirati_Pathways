@@ -47,79 +47,6 @@ const ApplicationsPage: React.FC = () => {
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<Application | null>(null);
   const { toast } = useToast();
 
-  // Mock data for demonstration
-  const mockApplications: Application[] = [
-    {
-      id: '1',
-      job_id: 'job-1',
-      candidate_id: 'user-1',
-      status: 'interview_scheduled',
-      cover_letter: 'I am excited to apply for this position...',
-      expected_salary: 25000,
-      salary_currency: 'AED',
-      available_from: '2024-10-01',
-      notice_period: '1 month',
-      source: 'direct',
-      match_score: 92,
-      skills_match_percentage: 88,
-      experience_match_percentage: 95,
-      created_at: '2024-09-13T10:00:00Z',
-      updated_at: '2024-09-14T15:30:00Z',
-      reviewed_at: '2024-09-13T14:00:00Z',
-      shortlisted_at: '2024-09-14T09:00:00Z',
-      job_title: 'Senior AI Engineer - D33 and Talent33',
-      company_name: 'Dubai Future Foundation',
-      candidate_name: 'Ahmed Al Mansouri',
-      candidate_email: 'ahmed.almansouri@email.com'
-    },
-    {
-      id: '2',
-      job_id: 'job-2',
-      candidate_id: 'user-2',
-      status: 'reviewed',
-      cover_letter: 'With my background in digital marketing...',
-      expected_salary: 18000,
-      salary_currency: 'AED',
-      available_from: '2024-09-20',
-      notice_period: '2 weeks',
-      source: 'linkedin',
-      match_score: 78,
-      skills_match_percentage: 82,
-      experience_match_percentage: 74,
-      created_at: '2024-09-12T14:30:00Z',
-      updated_at: '2024-09-13T11:15:00Z',
-      reviewed_at: '2024-09-13T11:15:00Z',
-      job_title: 'Digital Marketing Manager',
-      company_name: 'Emirates Airlines',
-      candidate_name: 'Fatima Al Zahra',
-      candidate_email: 'fatima.alzahra@email.com'
-    },
-    {
-      id: '3',
-      job_id: 'job-3',
-      candidate_id: 'user-3',
-      status: 'offer_made',
-      cover_letter: 'As a recent graduate, I am eager to start my career...',
-      expected_salary: 6000,
-      salary_currency: 'AED',
-      available_from: '2024-09-15',
-      notice_period: 'Immediate',
-      source: 'career_fair',
-      match_score: 85,
-      skills_match_percentage: 90,
-      experience_match_percentage: 80,
-      created_at: '2024-09-11T09:15:00Z',
-      updated_at: '2024-09-15T16:45:00Z',
-      reviewed_at: '2024-09-11T16:00:00Z',
-      shortlisted_at: '2024-09-12T10:30:00Z',
-      offer_made_at: '2024-09-15T16:45:00Z',
-      job_title: 'Software Engineer Intern',
-      company_name: 'ADNOC',
-      candidate_name: 'Omar Al Rashid',
-      candidate_email: 'omar.alrashid@email.com'
-    }
-  ];
-
   useEffect(() => {
     loadApplications();
   }, []);
@@ -132,14 +59,13 @@ const ApplicationsPage: React.FC = () => {
       if (response.success) {
         setApplications(response.data || []);
       } else {
-        // Use mock data if API fails
-        setApplications(mockApplications);
-        console.log('Using mock data for applications');
+        // API failed: show honest empty state rather than fabricated data
+        setApplications([]);
       }
     } catch (error) {
       console.error('Error loading applications:', error);
-      // Use mock data as fallback
-      setApplications(mockApplications);
+      // On error: show honest empty state rather than fabricated data
+      setApplications([]);
     } finally {
       setIsLoading(false);
     }
