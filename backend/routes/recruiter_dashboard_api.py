@@ -1569,37 +1569,37 @@ def get_recruiter_dashboard():
         # Get upcoming interviews
         if recruiter_id:
             interviews_query = """
-                SELECT 
-                    s.id,
-                    s.scheduled_at,
+                SELECT
+                    s.interview_id AS id,
+                    (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                     s.interview_type,
                     u.full_name as candidate_name,
                     COALESCE(jp.title, jd.title, 'Interview') as job_title
-                FROM interview_sessions s
+                FROM interview_schedules s
                 LEFT JOIN users u ON s.candidate_id = u.id
-                LEFT JOIN job_postings jp ON s.job_id::text = jp.jd_id::text OR s.job_id::text = jp.id::text
-                LEFT JOIN job_descriptions jd ON s.job_id::text = jd.id::text
-                WHERE s.scheduled_at >= CURRENT_TIMESTAMP
+                LEFT JOIN job_postings jp ON s.jd_id::text = jp.jd_id::text
+                LEFT JOIN job_descriptions jd ON s.jd_id::text = jd.id::text
+                WHERE (s.scheduled_date + s.scheduled_time) >= CURRENT_TIMESTAMP
                 AND s.status = 'scheduled'
                 AND (jp.recruiter_id::text = %s OR jd.user_id::text = %s)
-                ORDER BY s.scheduled_at ASC
+                ORDER BY (s.scheduled_date + s.scheduled_time) ASC
                 LIMIT 5
             """
             interviews = execute_query(interviews_query, (recruiter_id, recruiter_id))
         else:
             interviews_query = """
-                SELECT 
-                    s.id,
-                    s.scheduled_at,
+                SELECT
+                    s.interview_id AS id,
+                    (s.scheduled_date + s.scheduled_time) AS scheduled_at,
                     s.interview_type,
                     u.full_name as candidate_name,
                     j.title as job_title
-                FROM interview_sessions s
+                FROM interview_schedules s
                 LEFT JOIN users u ON s.candidate_id = u.id
-                LEFT JOIN job_descriptions j ON s.job_id = j.id
-                WHERE s.scheduled_at >= CURRENT_TIMESTAMP
+                LEFT JOIN job_descriptions j ON s.jd_id::text = j.id::text
+                WHERE (s.scheduled_date + s.scheduled_time) >= CURRENT_TIMESTAMP
                 AND s.status = 'scheduled'
-                ORDER BY s.scheduled_at ASC
+                ORDER BY (s.scheduled_date + s.scheduled_time) ASC
                 LIMIT 5
             """
             interviews = execute_query(interviews_query)

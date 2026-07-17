@@ -67,7 +67,7 @@ def generate_recruitment_pipeline_report(
                 jd.status as job_status
             FROM job_descriptions jd
             LEFT JOIN shortlist s ON jd.id = s.jd_id
-            LEFT JOIN interviews i ON jd.id = i.jd_id
+            LEFT JOIN interview_schedules i ON jd.id = i.jd_id
             LEFT JOIN job_offers o ON jd.id = o.jd_id
             {where_clause}
             GROUP BY jd.id, jd.title, jd.company_name, jd.location, jd.created_at, jd.status
@@ -139,7 +139,7 @@ def generate_candidate_status_report(
             FROM shortlist s
             JOIN candidates c ON s.candidate_id = c.id
             JOIN job_descriptions jd ON s.jd_id = jd.id
-            LEFT JOIN interviews i ON s.candidate_id = i.candidate_id AND s.jd_id = i.jd_id
+            LEFT JOIN interview_schedules i ON s.candidate_id = i.candidate_id AND s.jd_id = i.jd_id
             LEFT JOIN job_offers o ON s.candidate_id = o.candidate_id AND s.jd_id = o.jd_id
             {where_clause}
             GROUP BY c.id, c.first_name, c.last_name, c.email, c.phone, 
@@ -209,7 +209,7 @@ def generate_interview_feedback_report(
                 i.recommendation,
                 i.created_at as interview_created,
                 i.updated_at as last_updated
-            FROM interviews i
+            FROM interview_schedules i
             JOIN candidates c ON i.candidate_id = c.id
             JOIN job_descriptions jd ON i.jd_id = jd.id
             {where_clause}
@@ -396,7 +396,7 @@ def generate_performance_metrics_report(
         # Interview to hire ratio
         cursor.execute(f"""
             SELECT 
-                (SELECT COUNT(*) FROM interviews {where_clause}) as total_interviews,
+                (SELECT COUNT(*) FROM interview_schedules {where_clause}) as total_interviews,
                 (SELECT COUNT(*) FROM job_offers {where_clause} {'AND' if where_clause else 'WHERE'} status = 'accepted') as total_hires
         """, params)
         interview_data = cursor.fetchone()

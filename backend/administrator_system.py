@@ -880,7 +880,7 @@ class AdministratorSystem:
             # Special Cleanup: Delete interviews for job postings created by this user (to prevent FK violation on job_postings delete)
             try:
                 self._execute_query("""
-                    DELETE FROM interviews 
+                    DELETE FROM interview_schedules
                     WHERE job_posting_id IN (
                         SELECT id FROM job_postings WHERE created_by = %s
                     )
@@ -918,8 +918,8 @@ class AdministratorSystem:
                 # HR/Recruiter Cleanup
                 ('interview_notifications', 'recipient_id'),
                 ('interview_feedback', 'interviewer_id'),
-                ('interviews', 'interviewer_id'),
-                ('interviews', 'candidate_id'),
+                ('interview_schedules', 'interviewer_id'),
+                ('interview_schedules', 'candidate_id'),
                 ('job_templates', 'created_by'),
                 ('job_postings', 'created_by')
             ]
