@@ -221,6 +221,26 @@ const ServiceCatalog: React.FC = () => {
       {/* ─── Tab Content ─── */}
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 28px' }}>
 
+        {/* ─── Reference-data notice (data is illustrative, not live platform metrics) ─── */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12,
+          padding: '12px 16px', marginBottom: 20,
+        }}>
+          <IconAlert color="#d97706" size={20} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>
+              {t('Reference data — not live platform metrics', 'بيانات مرجعية — ليست مقاييس مباشرة للمنصة')}
+            </div>
+            <div style={{ fontSize: 12, color: '#b45309', marginTop: 2, lineHeight: 1.6 }}>
+              {t(
+                'This catalog reflects a curated service inventory. The counts, coverage rates, gauges and matrices shown here are illustrative reference figures, not real-time platform measurements.',
+                'يعكس هذا الدليل مخزوناً منسّقاً للخدمات. الأعداد ومعدلات التغطية والمقاييس والمصفوفات المعروضة هنا هي أرقام مرجعية توضيحية وليست قياسات مباشرة للمنصة.'
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* ═══════════════ TAB 1: OVERVIEW ═══════════════ */}
         {activeTab === 'overview' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>

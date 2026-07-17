@@ -596,11 +596,11 @@ const HRDashboard: React.FC = () => {
                     <CardContent className="pt-3 space-y-3">
                       <div className="p-3 rounded-lg bg-red-50 border border-red-100">
                         <p className="text-sm font-dubai-medium text-red-800">{b('MOHRE Deadline', 'موعد وزارة الموارد البشرية')}</p>
-                        <p className="text-xs text-red-600 mt-0.5">{b('Emiratization report due in 12 days', 'تقرير التوطين مستحق خلال ١٢ يوماً')}</p>
+                        <p className="text-xs text-red-600 mt-0.5">{b('Emiratization compliance report pending', 'تقرير الامتثال للتوطين قيد الإعداد')}</p>
                       </div>
                       <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
                         <p className="text-sm font-dubai-medium text-amber-800">{b('Quota Target', 'هدف الحصة')}</p>
-                        <p className="text-xs text-amber-600 mt-0.5">{b('2% gap to achieve 80% target by Q4', 'فجوة ٢٪ لتحقيق هدف ٨٠٪ بحلول الربع الرابع')}</p>
+                        <p className="text-xs text-amber-600 mt-0.5">{b('Emiratization quota target: 80%', 'هدف حصة التوطين: ٨٠٪')}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -693,22 +693,7 @@ const HRDashboard: React.FC = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-3 space-y-3">
-                    {[
-                      { name: b('Fatima Al Nuaimi', 'فاطمة النعيمي'), role: b('Senior Data Analyst', 'محللة بيانات أولى'), dept: b('Technology', 'التكنولوجيا'), initials: isRTL ? 'فن' : 'FN', bg: 'bg-teal-100 text-teal-700' },
-                      { name: b('Ahmed Al Dhaheri', 'أحمد الظاهري'), role: b('Marketing Manager', 'مدير التسويق'), dept: b('Marketing', 'التسويق'), initials: isRTL ? 'أظ' : 'AD', bg: 'bg-indigo-100 text-indigo-700' },
-                      { name: b('Mariam Al Suwaidi', 'مريم السويدي'), role: b('HR Coordinator', 'منسقة موارد بشرية'), dept: b('Human Resources', 'الموارد البشرية'), initials: isRTL ? 'مس' : 'MS', bg: 'bg-purple-100 text-purple-700' },
-                    ].map((hire, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${hire.bg}`}>
-                          {hire.initials}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-dubai-medium text-slate-800">{hire.name}</p>
-                          <p className="text-xs text-slate-400 font-dubai">{hire.role} • {hire.dept}</p>
-                        </div>
-                        <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]">{b('Onboarded', 'تم التعيين')}</Badge>
-                      </div>
-                    ))}
+                    <p className="text-sm text-slate-500 font-dubai-medium py-6 text-center">{b('No recent hires', 'لا توجد تعيينات حديثة')}</p>
                   </CardContent>
                 </Card>
               </div>

@@ -189,14 +189,10 @@ const GrowthOperatorDashboard: React.FC = () => {
         locations: [{ emirate: newCompany.emirate, is_headquarters: true }],
         contact: { primary_email: newCompany.primary_email, phone: newCompany.phone, website: newCompany.website }
       };
-      const res = await restClient.post('/api/companies/create', payload);
-      
-      const mockNewCompany: Company = {
-        id: `comp-${Date.now()}`, name: newCompany.name, industry: newCompany.industry, emirate: newCompany.emirate,
-        status: 'lead', jobsPosted: 0, emiratizationRate: 0, emiratizationTarget: 0,
-        contactName: newCompany.contact_name, contactEmail: newCompany.primary_email,
-      };
-      setCompanies(prev => [mockNewCompany, ...prev]);
+      await restClient.post('/api/companies/create', payload);
+      // Refetch so the list reflects the actually persisted company —
+      // no optimistic fabricated row that may not have saved.
+      await fetchDashboardStats();
       setShowOnboardDialog(false);
       setNewCompany({ name: '', name_arabic: '', industry: 'Technology', company_size: 'medium', company_type: 'private', emirate: 'Dubai', trade_license_number: '', contact_name: '', primary_email: '', phone: '', website: '' });
     } catch (err) {
@@ -208,28 +204,27 @@ const GrowthOperatorDashboard: React.FC = () => {
   };
 
   // ─── Fetch live data ───
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await restClient.get('/api/growth/dashboard-stats');
+      const d = (res as any).data || res;
+      if (d.companies) setCompanies(d.companies.map(toCompany));
+      if (d.funnel) setFunnelCounts(d.funnel);
+      if (d.kpis) setKpis(d.kpis);
+      if (d.recentActivity) setRecentActivity(d.recentActivity.map((a: any) => ({
+        type: a.type || 'contact',
+        text: a.text || '',
+        time: timeAgo(a.time),
+      })));
+    } catch (err) {
+      console.error('Failed to load dashboard stats:', err);
+    } finally {
+      setDashLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await restClient.get('/api/growth/dashboard-stats');
-        const d = (res as any).data || res;
-        if (cancelled) return;
-        if (d.companies) setCompanies(d.companies.map(toCompany));
-        if (d.funnel) setFunnelCounts(d.funnel);
-        if (d.kpis) setKpis(d.kpis);
-        if (d.recentActivity) setRecentActivity(d.recentActivity.map((a: any) => ({
-          type: a.type || 'contact',
-          text: a.text || '',
-          time: timeAgo(a.time),
-        })));
-      } catch (err) {
-        console.error('Failed to load dashboard stats:', err);
-      } finally {
-        if (!cancelled) setDashLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+    fetchDashboardStats();
   }, []);
 
   // ─── Computed Metrics ───
@@ -331,9 +326,9 @@ const GrowthOperatorDashboard: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* KPI Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} trend={8} />
+          <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} />
           <KPICard icon={Target} label={t('In Pipeline', 'في خط الإلحاق')} value={inPipeline} color={colors.blueText} subtext={t(`${pipelineStages[0].count} leads`, `${pipelineStages[0].count} عملاء محتملين`)} />
-          <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} trend={12} />
+          <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} />
           <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
             subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
         </div>
@@ -613,10 +608,10 @@ const GrowthOperatorDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {/* Health Score */}
+              {/* Onboarding indicator — derived heuristic from verification/status, not a measured metric */}
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: getHealthColor(company.healthScore) }}>{company.healthScore}</div>
-                <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Health', 'الصحة')}</div>
+                <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Onboarding (est.)', 'الإلحاق (تقديري)')}</div>
               </div>
             </div>
 
@@ -939,19 +934,19 @@ const GrowthOperatorDashboard: React.FC = () => {
           <KPICard 
             icon={TrendingUp} 
             label={t('Avg. Platform Response Rate', 'معدل الاستجابة للمنصة')} 
-            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.response_rate, 0) / perfData.length).toFixed(1)}%` : '82.0%'} 
+            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.response_rate, 0) / perfData.length).toFixed(1)}%` : '—'}
             color={colors.primary} 
           />
           <KPICard 
             icon={Clock} 
             label={t('Avg. Application Review Days', 'متوسط أيام مراجعة الطلبات')} 
-            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.avg_response_days, 0) / perfData.length).toFixed(1)} days` : '4.2 days'} 
+            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.avg_response_days, 0) / perfData.length).toFixed(1)} days` : '—'}
             color={colors.blueText} 
           />
           <KPICard 
             icon={MessageSquare} 
             label={t('Chat Responsiveness Score', 'درجة التفاعل في المحادثات')} 
-            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.chat_responsiveness, 0) / perfData.length).toFixed(1)}%` : '92.0%'} 
+            value={perfData.length > 0 ? `${(perfData.reduce((sum, c) => sum + c.chat_responsiveness, 0) / perfData.length).toFixed(1)}%` : '—'}
             color={colors.purpleText} 
           />
           <KPICard 

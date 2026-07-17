@@ -166,7 +166,7 @@ const RecruiterDashboard: React.FC = () => {
             thisMonth: apiData.overview?.positions_filled || 0, // Approx
             thisQuarter: apiData.overview?.positions_filled || 0, // Approx
             thisYear: apiData.overview?.positions_filled || 0,
-            target: 100 // Hardcoded target for now
+            target: apiData.overview?.placement_target || 0 // Real target if provided, else hidden
           },
           pipeline: {
             activeSearches: apiData.overview?.active_vacancies || 0,
@@ -175,10 +175,10 @@ const RecruiterDashboard: React.FC = () => {
             offersExtended: apiData.overview?.offers_pending || 0
           },
           performance: {
-            placementRate: 0, // Not available in API yet
-            averageTimeToFill: 0, // Not available in API yet
-            clientSatisfaction: 5.0, // Mock
-            candidateQuality: 5.0 // Mock
+            placementRate: apiData.overview?.placement_rate || 0, // Not available in API yet → 0 renders as "N/A"
+            averageTimeToFill: apiData.overview?.avg_time_to_fill || 0, // Not available in API yet → 0 renders as "N/A"
+            clientSatisfaction: apiData.overview?.client_satisfaction || 0,
+            candidateQuality: apiData.overview?.candidate_quality || 0
           },
           activity: apiData.recent_activity ? apiData.recent_activity.map((a: any) => ({
             id: a.id || Math.random(),
@@ -201,60 +201,28 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
+  // Honest empty state on API failure — no fabricated placements/pipeline/activity.
   const setMockData = () => {
     setDashboardData({
       placements: {
-        thisMonth: 12,
-        thisQuarter: 34,
-        thisYear: 156,
-        target: 180
+        thisMonth: 0,
+        thisQuarter: 0,
+        thisYear: 0,
+        target: 0
       },
       pipeline: {
-        activeSearches: 24,
-        candidatesInProcess: 89,
-        interviewsScheduled: 18,
-        offersExtended: 7
+        activeSearches: 0,
+        candidatesInProcess: 0,
+        interviewsScheduled: 0,
+        offersExtended: 0
       },
       performance: {
-        placementRate: 78,
-        averageTimeToFill: 21,
-        clientSatisfaction: 4.6,
-        candidateQuality: 4.4
+        placementRate: 0,
+        averageTimeToFill: 0,
+        clientSatisfaction: 0,
+        candidateQuality: 0
       },
-      activity: [
-        {
-          id: 1,
-          type: 'placement_success',
-          title: 'Successful Placement',
-          description: 'Ahmed Al Emirati placed as Senior Developer at ADNOC Digital',
-          timestamp: new Date().toISOString(),
-          priority: 'high'
-        },
-        {
-          id: 2,
-          type: 'interview_scheduled',
-          title: 'Interview Scheduled',
-          description: 'Technical interview for Blockchain Developer at Emirates NBD',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          priority: 'medium'
-        },
-        {
-          id: 3,
-          type: 'new_requirement',
-          title: 'New Vacancy',
-          description: 'AI Engineer position for Dubai Future Foundation',
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          priority: 'high'
-        },
-        {
-          id: 4,
-          type: 'candidate_sourced',
-          title: 'Candidate Sourced',
-          description: 'Found 5 qualified UAE National candidates for Fintech role',
-          timestamp: new Date(Date.now() - 259200000).toISOString(),
-          priority: 'medium'
-        }
-      ]
+      activity: []
     });
   };
 
@@ -272,12 +240,12 @@ const RecruiterDashboard: React.FC = () => {
   };
 
 
-  // Stat cards config
+  // Stat cards config — metrics not yet provided by the API render "N/A" instead of a misleading 0.
   const statCards = [
-    { label: b('Placements This Year', 'التوظيفات هذا العام'), value: dashboardData.placements.thisYear, icon: Target, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', sub: `${b('Target', 'الهدف')}: ${dashboardData.placements.target}` },
+    { label: b('Placements This Year', 'التوظيفات هذا العام'), value: dashboardData.placements.thisYear, icon: Target, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', sub: dashboardData.placements.target > 0 ? `${b('Target', 'الهدف')}: ${dashboardData.placements.target}` : b('Across all postings', 'عبر جميع الإعلانات') },
     { label: b('Active Searches', 'عمليات البحث النشطة'), value: dashboardData.pipeline.activeSearches, icon: Briefcase, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100', sub: b('Across all postings', 'عبر جميع الإعلانات') },
-    { label: b('Avg. Time to Fill', 'متوسط وقت الشغل'), value: `${dashboardData.performance.averageTimeToFill}${b('d', 'ي')}`, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', sub: b('Average across roles', 'المتوسط عبر الأدوار') },
-    { label: b('Placement Rate', 'معدل التوظيف'), value: `${dashboardData.performance.placementRate}%`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', sub: b('Of total positions', 'من إجمالي الوظائف') },
+    { label: b('Avg. Time to Fill', 'متوسط وقت الشغل'), value: dashboardData.performance.averageTimeToFill > 0 ? `${dashboardData.performance.averageTimeToFill}${b('d', 'ي')}` : b('N/A', 'غير متاح'), icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', sub: b('Average across roles', 'المتوسط عبر الأدوار') },
+    { label: b('Placement Rate', 'معدل التوظيف'), value: dashboardData.performance.placementRate > 0 ? `${dashboardData.performance.placementRate}%` : b('N/A', 'غير متاح'), icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', sub: b('Of total positions', 'من إجمالي الوظائف') },
   ];
 
   return (
@@ -461,28 +429,12 @@ const RecruiterDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-3">
-                      <div className="space-y-3">
-                        {[
-                          { name: b('Fatima Khalid', 'فاطمة خالد'), role: b('Financial Analyst', 'محللة مالية'), time: '10:00 AM', initials: isRTL ? 'فخ' : 'FK', bg: 'bg-teal-100 text-teal-700' },
-                          { name: b('Omar Saeed', 'عمر سعيد'), role: b('Project Manager', 'مدير مشاريع'), time: '2:30 PM', initials: isRTL ? 'عس' : 'OS', bg: 'bg-indigo-100 text-indigo-700' },
-                          { name: b('Aisha Al Suwaidi', 'عائشة السويدي'), role: b('Data Scientist', 'عالمة بيانات'), time: '4:00 PM', initials: isRTL ? 'عس' : 'AS', bg: 'bg-purple-100 text-purple-700' },
-                        ].map((interview, i) => (
-                          <div key={i} className="p-3 rounded-lg border border-slate-100 hover:border-teal-200 transition-colors" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${interview.bg}`}>
-                                {interview.initials}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-dubai-medium text-slate-800">{interview.name}</p>
-                                <p className="text-xs text-slate-400 font-dubai">{interview.role}</p>
-                              </div>
-                              <span className="text-xs text-teal-600 font-dubai-bold">{interview.time}</span>
-                            </div>
-                            <Button size="sm" variant="outline" className="w-full mt-2 text-xs font-dubai-medium text-teal-700 border-teal-200 hover:bg-teal-50">
-                              ▶ {b('Join Call', 'انضم للمكالمة')}
-                            </Button>
-                          </div>
-                        ))}
+                      <div className="py-6 text-center">
+                        <Calendar className="h-6 w-6 text-slate-300 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400 font-dubai-medium">{b('No upcoming interviews', 'لا توجد مقابلات قادمة')}</p>
+                        <Button variant="link" size="sm" className="text-xs text-teal-600 mt-1 font-dubai-medium" onClick={() => handleTabChange('interviews')}>
+                          {b('Go to Interviews', 'الذهاب إلى المقابلات')} →
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -496,22 +448,9 @@ const RecruiterDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-3">
-                      <div className="space-y-3">
-                        {[
-                          { name: b('Sultan Nayef', 'سلطان نايف'), msg: b('Thank you for the update. I\'ll prepare…', 'شكراً على التحديث. سأجهز…'), time: b('1 hr ago', 'منذ ساعة') },
-                          { name: b('Layla Mahmoud', 'ليلى محمود'), msg: b('Can you reschedule tomorrow\'s interview?', 'هل يمكنك إعادة جدولة مقابلة الغد؟'), time: b('3 hrs ago', 'منذ 3 ساعات') },
-                        ].map((m, i) => (
-                          <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{m.name.charAt(0)}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-dubai-medium text-slate-800">{m.name}</p>
-                                <span className="text-[10px] text-slate-400 font-dubai">{m.time}</span>
-                              </div>
-                              <p className="text-xs text-slate-500 font-dubai truncate">{m.msg}</p>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="py-6 text-center">
+                        <Bell className="h-6 w-6 text-slate-300 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400 font-dubai-medium">{b('No recent messages', 'لا توجد رسائل حديثة')}</p>
                       </div>
                       <Button variant="link" size="sm" className="text-xs text-teal-600 mt-2 font-dubai-medium w-full" onClick={() => handleTabChange('messages')}>
                         {b('View All Messages', 'عرض كل الرسائل')} →
