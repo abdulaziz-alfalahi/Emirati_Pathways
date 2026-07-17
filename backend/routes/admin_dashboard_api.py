@@ -880,8 +880,11 @@ def _compute_session_state(data):
             state['authMode'] = 'cookie'
     if token:
         try:
-            import jwt as _jwt
-            claims = _jwt.decode(token, options={'verify_signature': False, 'verify_exp': False})
+            # Use the already-verified JWT claims — this endpoint is admin-gated, so the
+            # request's token was verified by the auth decorator. Never decode a JWT
+            # without verifying it (that would be an unverified read). (audit SEC-01)
+            from flask_jwt_extended import get_jwt
+            claims = get_jwt() or {}
             exp = claims.get('exp')
             if exp:
                 secs = int(exp) - int(_t.time())

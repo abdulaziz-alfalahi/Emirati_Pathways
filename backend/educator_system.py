@@ -375,52 +375,27 @@ class EducatorSystem:
     def get_educator_dashboard(self, educator_id: str) -> Dict[str, Any]:
         """Get comprehensive educator dashboard data"""
         try:
-            # TODO: Fetch from database
+            # Honest-empty (audit INT-01 / Track B): this helper is not wired to the served
+            # /api/educator/dashboard (educator_routes.py provides the real DB-backed data).
+            # Never return fabricated students/activity/metrics.
             dashboard_data = {
                 "educator_info": self._get_educator_profile(educator_id),
                 "students_overview": {
-                    "total_students": 45,
-                    "active_students": 42,
-                    "graduated_students": 3,
-                    "at_risk_students": 5,
-                    "high_performers": 12
+                    "total_students": 0,
+                    "active_students": 0,
+                    "graduated_students": 0,
+                    "at_risk_students": 0,
+                    "high_performers": 0
                 },
-                "recent_activities": [
-                    {
-                        "type": "career_session",
-                        "student_name": "Ahmed Al Mansouri",
-                        "timestamp": datetime.now() - timedelta(hours=2),
-                        "description": "Career guidance session completed"
-                    },
-                    {
-                        "type": "academic_record",
-                        "student_name": "Fatima Al Zahra",
-                        "timestamp": datetime.now() - timedelta(hours=4),
-                        "description": "Mathematics grade updated"
-                    }
-                ],
+                "recent_activities": [],
                 "performance_metrics": {
-                    "average_gpa": 3.4,
-                    "attendance_rate": 92.5,
-                    "career_sessions_this_month": 18,
-                    "placement_success_rate": 85.2
+                    "average_gpa": 0,
+                    "attendance_rate": 0,
+                    "career_sessions_this_month": 0,
+                    "placement_success_rate": 0
                 },
-                "alerts": [
-                    {
-                        "type": "academic_concern",
-                        'candidate': "Omar Al Rashid",
-                        "message": "GPA dropped below 2.5",
-                        "severity": "high"
-                    }
-                ],
-                "upcoming_events": [
-                    {
-                        "type": "career_fair",
-                        "title": "UAE Tech Career Fair",
-                        "date": datetime.now() + timedelta(days=7),
-                        "location": "Dubai World Trade Centre"
-                    }
-                ]
+                "alerts": [],
+                "upcoming_events": []
             }
             
             return {

@@ -299,7 +299,7 @@ class UAEPassOAuth:
             decoded_claims = jwt.decode(
                 id_token,
                 options={
-                    "verify_signature": False,
+                    "verify_signature": False,  # SEC-01-ACCEPTED: UAE Pass exposes no JWKS (all keys endpoints 403); id_token arrives server-to-server over client-authenticated TLS, aud/iss/exp/nonce ARE verified. See docstring.
                     "verify_aud": True,
                     "verify_iss": False,   # validated by host below
                     "verify_exp": True,
