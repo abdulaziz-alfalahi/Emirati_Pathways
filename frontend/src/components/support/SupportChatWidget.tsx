@@ -131,7 +131,10 @@ const SupportChatWidget: React.FC = () => {
           </span>
         )}
         {/* Pulse ring */}
-        <span className="absolute inset-0 rounded-full animate-ping opacity-20" style={{ background: brand.primary }} />
+        {/* Attention pulse is gated behind motion-safe: it ran perpetually on every
+            page and ignored prefers-reduced-motion. Users who ask for reduced motion
+            now get a static FAB. */}
+        <span className="absolute inset-0 rounded-full motion-safe:animate-ping opacity-20" style={{ background: brand.primary }} />
       </button>
     );
   }

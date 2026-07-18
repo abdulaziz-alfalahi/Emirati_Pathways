@@ -527,21 +527,32 @@ export const FeedbackWidget = () => {
 
     return (
         <>
-            {/* Floating Trigger Button — sits clearly above the Support-chat FAB (which is
-                a 60px circle at bottom:24px right:24px). bottom-40 (10rem) keeps a comfortable
-                gap so the two don't crowd/overlap on short viewports, where the button was
-                otherwise hard to reach. */}
-            <div className="fixed bottom-40 right-6 z-50 group feedback-trigger-btn">
-                {/* Pulse effect ring */}
-                <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
+            {/* Floating trigger — sits in the corner column above the Support-chat FAB
+                (a 60px circle at bottom:24 right:24).
 
+                It previously sat at bottom-40 as a ~155px-wide pill, which pushed it into
+                the CONTENT column and covered page material (e.g. the Skill Gaps card and
+                its "View Full Analysis" link on the candidate dashboard). It is now a
+                circular icon button the same size as the chat FAB, so its footprint is
+                ~56px instead of ~155px, and it expands to reveal the label on hover/focus.
+
+                The permanent `animate-ping` ring and `animate-bounce-slow` icon were
+                removed: unmotivated perpetual motion on every page, and neither honoured
+                prefers-reduced-motion. Hover feedback is now a subtle scale, gated behind
+                `motion-safe`. */}
+            <div className="fixed bottom-24 end-6 z-50 group feedback-trigger-btn">
                 <Button
                     onClick={() => setIsOpen(true)}
-                    className="relative rounded-full h-14 pl-4 pr-6 shadow-xl bg-gradient-to-r from-primary to-primary/80 hover:to-primary text-white border-2 border-white/20 transition-all transform hover:scale-105"
-                    title="Report an Issue"
+                    aria-label="Send feedback or report an issue"
+                    title="Send feedback or report an issue"
+                    className="relative flex items-center justify-center rounded-full h-14 min-w-14 px-4 shadow-xl bg-primary hover:bg-primary/90 text-white border-2 border-white/20 transition-transform motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
                 >
-                    <MessageSquare className="h-6 w-6 mr-2 animate-bounce-slow" />
-                    <span className="font-semibold text-lg">Feedback</span>
+                    <MessageSquare className="h-6 w-6 shrink-0" />
+                    <span
+                        className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 font-semibold transition-all duration-200 group-hover:max-w-[7rem] group-hover:opacity-100 group-hover:ms-2 group-focus-within:max-w-[7rem] group-focus-within:opacity-100 group-focus-within:ms-2"
+                    >
+                        Feedback
+                    </span>
                 </Button>
             </div>
 
