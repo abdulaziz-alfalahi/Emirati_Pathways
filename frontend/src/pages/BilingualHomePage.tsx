@@ -84,20 +84,22 @@ const DashboardMockup: React.FC = () => (
     {/* Glassmorphism card */}
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-200/60 p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-slate-500 font-dubai">Career Dashboard</p>
           <p className="text-sm font-dubai-medium text-slate-900">Performance Overview</p>
         </div>
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
-          <div className="w-2.5 h-2.5 rounded-full bg-teal-300" />
-          <div className="w-2.5 h-2.5 rounded-full bg-teal-200" />
-        </div>
+        {/* INTEGRITY: the figures below are a product preview, NOT reported
+            platform outcomes. On a government service an unlabelled mock metric
+            reads as a real claim, so it is labelled explicitly. Real platform
+            numbers are shown in the stats bar, sourced from the API. */}
+        <span className="shrink-0 whitespace-nowrap rounded-pill border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+          {'Illustrative'}
+        </span>
       </div>
 
-      {/* Mini bar chart */}
-      <div className="flex items-end gap-2 h-28">
+      {/* Mini bar chart — decorative only, hidden from assistive tech */}
+      <div className="flex items-end gap-2 h-28" aria-hidden="true">
         {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
           <div
             key={i}
@@ -346,7 +348,7 @@ const BilingualHomePage: React.FC = () => {
             <div>
               {/* AI Badge */}
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal-100/80 text-teal-700 text-sm font-dubai-medium mb-8 border border-teal-200/50">
-                <Sparkles className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                <Sparkles className="w-4 h-4 me-2" />
                 {translations.hero?.poweredBy || 'Powered by Advanced AI Technology'}
               </div>
 
@@ -371,7 +373,24 @@ const BilingualHomePage: React.FC = () => {
                   'The comprehensive AI-powered platform connecting UAE professionals, employers, educators, mentors, and assessors in one unified ecosystem for career development and growth.'}
               </p>
 
-
+              {/* Primary conversion path. The hero previously rendered NO call to
+                  action at all — a visitor reached the value proposition with
+                  nowhere to go. `ms-2` is logical so the arrow flips in RTL. */}
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  to="/auth"
+                  className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill bg-brand-teal-600 px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-brand-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
+                >
+                  {translations.hero?.primaryCta || 'Get Started'}
+                  <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
+                </Link>
+                <Link
+                  to="/our-mission"
+                  className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill border border-slate-300 bg-white px-7 py-3.5 text-base font-medium text-slate-700 transition-colors hover:border-brand-teal-600 hover:text-brand-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
+                >
+                  {translations.hero?.secondaryCta || 'Explore the platform'}
+                </Link>
+              </div>
             </div>
 
             {/* Dashboard mockup — auto moves to left in RTL via grid */}
@@ -391,7 +410,16 @@ const BilingualHomePage: React.FC = () => {
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <p className="text-3xl md:text-4xl font-dubai-bold text-teal-600 mb-1">
-                  <AnimatedCounter target={stat.value} />
+                  {/* HONEST EMPTY STATE: these are real API figures, but the
+                      counter appended a "+" unconditionally — so a missing or
+                      zero value rendered as "0+", which reads as broken (or
+                      worse, as a real claim of zero). Show an em dash instead
+                      and only count up when there is something to report. */}
+                  {stat.value > 0 ? (
+                    <AnimatedCounter target={stat.value} />
+                  ) : (
+                    <span title="Not yet available">&mdash;</span>
+                  )}
                 </p>
                 <p className="text-sm text-slate-500 font-dubai-medium">{stat.label}</p>
               </div>
