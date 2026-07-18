@@ -335,7 +335,8 @@ const CandidateDashboard: React.FC = () => {
                   : (() => {
                     const hour = new Date().getHours();
                     const greeting = hour < 12 ? t('Good morning', 'صباح الخير') : hour < 17 ? t('Good afternoon', 'مساء الخير') : t('Good evening', 'مساء الخير');
-                    return `${greeting}, ${firstName}`;
+                    // Arabic uses its own comma (U+060C), not the Latin one.
+                    return `${greeting}${isRTL ? '، ' : ', '}${firstName}`;
                   })()}
               </h1>
               <div className="flex items-center gap-3 mt-1">
@@ -485,7 +486,9 @@ const CandidateDashboard: React.FC = () => {
                           {t('Recommended for You', 'موصى به لك')}
                         </CardTitle>
                         <Button variant="link" size="sm" className="text-xs text-teal-600" onClick={() => setActiveTab('jobs')}>
-                          {t('View All', 'عرض الكل')} →
+                          {/* Arrow must follow reading direction. Arrows written
+                              INSIDE t() already flip; these bare ones did not. */}
+                          {t('View All', 'عرض الكل')} {isRTL ? '←' : '→'}
                         </Button>
                       </div>
                     </CardHeader>
@@ -504,7 +507,7 @@ const CandidateDashboard: React.FC = () => {
                                   <span>📍 {job.location || 'UAE'}</span>
                                   <span>💰 {job.salary}</span>
                                   <span>🏢 {job.type}</span>
-                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">Live</Badge>}
+                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">{t('Live', 'مباشر')}</Badge>}
                                 </div>
                               </div>
                             </div>
@@ -529,7 +532,7 @@ const CandidateDashboard: React.FC = () => {
                         <div className="text-center py-6 text-slate-400">
                           <p className="text-sm">{t('Upload your CV to get personalized job recommendations', 'ارفع سيرتك الذاتية للحصول على توصيات وظيفية مخصصة')}</p>
                           <Button variant="link" size="sm" className="text-teal-600 mt-1" onClick={() => setActiveTab('jobs')}>
-                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} →
+                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} {isRTL ? '←' : '→'}
                           </Button>
                         </div>
                       )}
@@ -635,7 +638,7 @@ const CandidateDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1 text-[10px] text-slate-400">
                               <span>{gap.current_level || t('None', 'لا يوجد')}</span>
-                              <span>→</span>
+                              <span>{isRTL ? '←' : '→'}</span>
                               <span className="text-teal-600 font-medium">{gap.required_level}</span>
                             </div>
                           </div>
