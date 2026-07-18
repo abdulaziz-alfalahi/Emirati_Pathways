@@ -413,16 +413,17 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <>
                   <Link
                     to="/auth"
-                    className="hidden sm:block text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                    className="hidden sm:block shrink-0 whitespace-nowrap text-slate-600 hover:text-slate-900 font-medium transition-colors"
                   >
                     {t('sign_in', 'Sign In')}
                   </Link>
                   <Link
                     to="/auth"
-                    className="bg-[#006E6D] hover:bg-[#005A59] text-white px-6 py-2.5 rounded-full font-medium transition-all duration-200 flex items-center"
+                    className="shrink-0 whitespace-nowrap bg-brand-teal-600 hover:bg-brand-teal-700 text-white px-6 py-2.5 rounded-pill font-medium transition-colors duration-200 inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
                   >
                     {t('get_started', 'Get Started')}
-                    <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                    {/* ms-2 is a logical margin: it flips automatically in RTL. */}
+                    <ArrowRight className="w-4 h-4 ms-2 rtl:rotate-180" />
                   </Link>
                 </>
               ) : null}

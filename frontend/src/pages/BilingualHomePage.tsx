@@ -327,6 +327,11 @@ const BilingualHomePage: React.FC = () => {
         currentLanguage={currentLanguage}
       />
 
+      {/* Main landmark. The skip link targets #main-content; this page did not
+          render a <main> at all, so the skip link pointed at nothing (WCAG 2.4.1
+          bypass-blocks) and the page had no main landmark. */}
+      <main id="main-content" tabIndex={-1}>
+
       {/* ============================================================ */}
       {/*  HERO SECTION                                                 */}
       {/* ============================================================ */}
@@ -576,6 +581,7 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       {/*  FOOTER                                                       */}
       {/* ============================================================ */}
+      </main>
       <footer className="bg-slate-900 text-slate-400 pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
