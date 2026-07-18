@@ -40,6 +40,17 @@ import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 import { useAuth } from '@/context/AuthContext';
 import { profileSnapshotAPI, type RecommendedJob, type ProfileSnapshot } from '@/services/intelligenceAPI';
+import {
+  langOf,
+  employmentTypeLabel,
+  salaryLabel,
+  jobSourceLabel,
+  skillLevelLabel,
+  recommendationTypeLabel,
+  sessionTypeLabel,
+  activityTitleLabel,
+  activityDescriptionLabel,
+} from '@/utils/enumLabels';
 
 interface DashboardData {
   profile: {
@@ -127,6 +138,9 @@ const CandidateDashboard: React.FC = () => {
   // Bilingual helper
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
+  // Enum-like DATA values (job type, skill level, status …) are not UI copy and
+  // never reach t(); they go through the enumLabels lookups instead.
+  const lang = langOf(isRTL);
   const { unreadCount } = useUnreadMessageCount();
 
   useEffect(() => {
@@ -270,7 +284,7 @@ const CandidateDashboard: React.FC = () => {
       <HybridGovernmentNavFixed
         showAuthButtons={false}
         currentPage="dashboard"
-        userRole="job seeker"
+        userRole="candidate"
         currentLanguage={language}
         onLanguageToggle={toggleLanguage}
       />
@@ -330,7 +344,10 @@ const CandidateDashboard: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900 animate-in fade-in slide-in-from-left-4 duration-500">
-                {dashboardData.profile.name === 'New Member'
+                {/* 'Job Seeker' / 'New Member' are placeholder role tokens, not a
+                    person's name — greeting them by "first name" leaked "Job"
+                    into the Arabic header. */}
+                {['New Member', 'Job Seeker'].includes(dashboardData.profile.name)
                   ? t('Welcome!', '!مرحباً')
                   : (() => {
                     const hour = new Date().getHours();
@@ -360,7 +377,7 @@ const CandidateDashboard: React.FC = () => {
                   <strong>{t('Boost your profile!', 'عزّز ملفك الشخصي!')}</strong> {t('Upload your CV to get AI-powered job matches and a professional profile.', 'ارفع سيرتك الذاتية للحصول على مطابقات وظيفية ذكية وملف مهني احترافي.')}
                 </span>
                 <Button size="sm" className="bg-teal-600 hover:bg-teal-700" style={{ marginInlineStart: 16 }} onClick={() => navigate('/candidate/profile')}>
-                  {t('Upload CV Now', 'ارفع السيرة الذاتية')} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 8 }} />
+                  {t('Upload CV Now', 'ارفع السيرة الذاتية')} <ArrowRight className="h-4 w-4 rtl:rotate-180" style={{ marginInlineStart: 8 }} />
                 </Button>
               </AlertDescription>
             </Alert>
@@ -505,9 +522,9 @@ const CandidateDashboard: React.FC = () => {
                                 <p className="text-xs text-slate-500">{isRTL && (job as any).company_ar ? (job as any).company_ar : job.company}</p>
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
                                   <span>📍 {job.location || 'UAE'}</span>
-                                  <span>💰 {job.salary}</span>
-                                  <span>🏢 {job.type}</span>
-                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">{t('Live', 'مباشر')}</Badge>}
+                                  <span>💰 {salaryLabel(job.salary, lang)}</span>
+                                  <span>🏢 {employmentTypeLabel(job.type, lang)}</span>
+                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">{jobSourceLabel(job.source, lang)}</Badge>}
                                 </div>
                               </div>
                             </div>
@@ -556,8 +573,8 @@ const CandidateDashboard: React.FC = () => {
                                 {getActivityIcon(activity.type)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
-                                <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
+                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activityTitleLabel(activity.title, lang)}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{activityDescriptionLabel(activity.description, lang)}</p>
                               </div>
                               <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
                             </div>
@@ -637,9 +654,9 @@ const CandidateDashboard: React.FC = () => {
                               </Badge>
                             </div>
                             <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                              <span>{gap.current_level || t('None', 'لا يوجد')}</span>
+                              <span>{skillLevelLabel(gap.current_level, lang) || t('None', 'لا يوجد')}</span>
                               <span>{isRTL ? '←' : '→'}</span>
-                              <span className="text-teal-600 font-medium">{gap.required_level}</span>
+                              <span className="text-teal-600 font-medium">{skillLevelLabel(gap.required_level, lang)}</span>
                             </div>
                           </div>
                         ))}
@@ -672,8 +689,8 @@ const CandidateDashboard: React.FC = () => {
                               {isRTL && rec.title_ar ? rec.title_ar : rec.title}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge className="text-[9px] bg-green-50 text-green-600 border-green-200">{rec.type}</Badge>
-                              <span className="text-[10px] text-slate-400">{rec.effort}</span>
+                              <Badge className="text-[9px] bg-green-50 text-green-600 border-green-200">{recommendationTypeLabel(rec.type, lang)}</Badge>
+                              <span className="text-[10px] text-slate-400">{sessionTypeLabel(rec.effort, lang)}</span>
                             </div>
                           </div>
                         ))}

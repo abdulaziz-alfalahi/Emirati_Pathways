@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateFromString } from '@/utils/dateFormat';
+import { langOf, employmentTypeLabel, salaryLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 
 interface MatchBreakdown {
@@ -96,17 +97,11 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     { value: 'senior', label: t('Senior (5+ yrs)', 'خبير (5+ سنوات)'), icon: '⭐' },
   ];
 
-  const getJobTypeLabel = (type: string) => {
-    const typeMap: Record<string, string> = {
-      'full-time': t('Full Time', 'دوام كامل'),
-      'part-time': t('Part Time', 'دوام جزئي'),
-      'contract': t('Contract', 'عقد'),
-      'internship': t('Internship', 'تدريب'),
-      'temporary': t('Temporary', 'مؤقت'),
-      'freelance': t('Freelance', 'عمل حر'),
-    };
-    return typeMap[type] || type.replace('-', ' ');
-  };
+  // Employment type is an API enum, not UI copy — the shared lookup also
+  // absorbs the casing/underscore variants the job APIs emit ("Full-time",
+  // "full_time"), which the old local map missed.
+  const lang = langOf(isRTL);
+  const getJobTypeLabel = (type: string) => employmentTypeLabel(type, lang);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -752,7 +747,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           )}
                           <div className="flex items-center space-x-1">
                             <Coins className="h-4 w-4" />
-                            <span>{job.salary}</span>
+                            <span>{salaryLabel(job.salary, lang)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />

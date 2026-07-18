@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Video, Clock, Loader2, Sparkles, Building, CheckCircle, BookOpen, GraduationCap, Users, ChevronRight } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { VideoRoom } from '@/components/common/VideoRoom';
+import { langOf, interviewRoundLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 
 import { Switch } from '@/components/ui/switch';
@@ -210,7 +211,7 @@ export default function CandidateInterviews() {
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <CardTitle className="text-lg">{session.title || session.job_title || t('Interview', 'مقابلة')}</CardTitle>
+                                            <CardTitle className="text-lg">{interviewRoundLabel(session.title, langOf(isRTL)) || session.job_title || t('Interview', 'مقابلة')}</CardTitle>
                                             <div className="text-sm font-medium text-slate-700 mb-1">{session.job_title}</div>
                                             {(session.company_name || session.recruiter_name) && (
                                                 <div className="text-xs text-slate-500 mb-2 flex items-center gap-1">
@@ -386,7 +387,7 @@ export default function CandidateInterviews() {
                                                                 <p className="text-xs text-slate-400 mt-0.5">{t('Article • Platform Guide', 'مقال • دليل المنصة')}</p>
                                                             </div>
                                                         </div>
-                                                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 transition-colors rtl:rotate-180" />
                                                     </div>
                                                 ))
                                             ) : (
