@@ -10,7 +10,13 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      // Direction B (Soft Elevated): rounded-lg resolves to the canonical
+      // --radius (12px) token, and elevation is the teal-tinted --elev-1 rather
+      // than Tailwind's default grey/black shadow-sm. Tinting the shadow to the
+      // brand hue is what makes depth feel considered instead of generic.
+      // Changing the primitive applies the direction to every Card on the
+      // platform at once, rather than screen by screen.
+      "rounded-lg border bg-card text-card-foreground shadow-elev-1",
       className
     )}
     {...props}
