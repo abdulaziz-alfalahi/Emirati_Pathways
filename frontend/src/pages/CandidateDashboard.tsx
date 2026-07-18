@@ -248,7 +248,12 @@ const CandidateDashboard: React.FC = () => {
     );
   }
 
-  const firstName = dashboardData.profile.name.split(' ')[0];
+  // Names arrive from the Emirates-ID record in ALL CAPS ("ABDULAZIZ ESSA AHMAD
+  // ALFALAHI"), which reads as shouting in a greeting. Title-case for display
+  // only. No-op for Arabic (the script is caseless), so this is RTL-safe.
+  const toTitleCase = (s: string) =>
+    s.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const firstName = toTitleCase(dashboardData.profile.name.split(' ')[0]);
 
   const recentActivity = dashboardData.recentActivity;
 
@@ -595,7 +600,11 @@ const CandidateDashboard: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-white/30 text-white hover:bg-white/10 hover:text-white text-xs rounded-lg w-full"
+                      // CONTRAST FIX: variant="outline" sets bg-background (white);
+                      // combined with text-white the label was invisible and the
+                      // control rendered as a blank white box on the teal card.
+                      // Force a transparent ground so the white label is legible.
+                      className="bg-transparent border-white/40 text-white hover:bg-white/15 hover:text-white text-xs rounded-lg w-full focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0"
                       onClick={() => navigate('/career-advisory')}
                     >
                       {t('Explore Recommendations', 'استكشف التوصيات')}
