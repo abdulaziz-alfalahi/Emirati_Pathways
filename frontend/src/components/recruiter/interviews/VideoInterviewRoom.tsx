@@ -96,7 +96,7 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
                     <p className="text-slate-400">Session ID: {sessionId}</p>
                     {isObserver && (
                         <Badge variant="outline" className="mt-3 border-amber-500/50 text-amber-400 bg-amber-500/10">
-                            <Eye className="h-3 w-3 mr-1" /> Observer Mode — View Only
+                            <Eye className="h-3 w-3 me-1" /> Observer Mode — View Only
                         </Badge>
                     )}
                 </div>
@@ -128,13 +128,13 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
                             <User className="h-24 w-24 text-slate-600 mx-auto mb-4" />
                             <p className="text-slate-500">Candidate Video Stream</p>
                             <Badge variant="outline" className="mt-2 border-slate-700 text-slate-400">
-                                <ShieldCheck className="h-3 w-3 mr-1" /> Encrypted
+                                <ShieldCheck className="h-3 w-3 me-1" /> Encrypted
                             </Badge>
                         </div>
                     </div>
 
                     {/* Local Video Pip */}
-                    <div className="absolute bottom-4 right-4 w-48 h-36 bg-slate-800 rounded-lg border border-slate-700 shadow-lg flex items-center justify-center overflow-hidden">
+                    <div className="absolute bottom-4 end-4 w-48 h-36 bg-slate-800 rounded-lg border border-slate-700 shadow-lg flex items-center justify-center overflow-hidden">
                         {cameraOn ? (
                             <div className="bg-slate-700 w-full h-full flex items-center justify-center">
                                 <User className="h-8 w-8 text-slate-500" />
@@ -151,7 +151,7 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
                         {isObserver ? (
                             <>
                                 <Badge variant="outline" className="border-amber-500/50 text-amber-400 bg-amber-500/10 px-3 py-1">
-                                    <Eye className="h-3 w-3 mr-1.5" /> Observer Mode
+                                    <Eye className="h-3 w-3 me-1.5" /> Observer Mode
                                 </Badge>
                                 <Button variant="destructive" size="icon" onClick={handleEndCall} className="rounded-full">
                                     <PhoneOff />
@@ -173,7 +173,7 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
                     </div>
 
                     {/* Timer */}
-                    <div className="absolute top-4 left-4 bg-slate-900/80 px-3 py-1 rounded-full text-white font-mono text-sm border border-slate-700">
+                    <div className="absolute top-4 start-4 bg-slate-900/80 px-3 py-1 rounded-full text-white font-mono text-sm border border-slate-700">
                         {formatTime(elapsedTime)}
                     </div>
                 </div>

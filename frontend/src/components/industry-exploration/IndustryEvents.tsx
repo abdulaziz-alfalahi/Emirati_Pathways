@@ -191,7 +191,7 @@ export const IndustryEvents: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
               <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 me-2" />
                 <SelectValue placeholder="All Industries" />
               </SelectTrigger>
               <SelectContent>
@@ -205,7 +205,7 @@ export const IndustryEvents: React.FC = () => {
 
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger className="w-full sm:w-48">
-                <Ticket className="h-4 w-4 mr-2" />
+                <Ticket className="h-4 w-4 me-2" />
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -240,7 +240,7 @@ export const IndustryEvents: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-sm font-medium text-ehrdc-teal">{event.price}</p>
                     </div>
                   </div>
@@ -284,7 +284,7 @@ export const IndustryEvents: React.FC = () => {
                       View Details
                     </Button>
                     <Button variant="outline" className="flex-1">
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Register
                     </Button>
                   </div>
@@ -389,7 +389,7 @@ export const IndustryEvents: React.FC = () => {
                 </div>
 
                 <Button className="w-full mt-4 bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <ExternalLink className="h-4 w-4 me-2" />
                   Register Now
                 </Button>
               </div>

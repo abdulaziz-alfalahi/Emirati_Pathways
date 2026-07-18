@@ -383,7 +383,7 @@ export default function GrowthTools() {
                         {/* Import Section */}
                         <div className="bg-purple-50 p-6 rounded-lg border border-purple-100">
                             <h3 className="flex items-center font-semibold text-purple-900 mb-2">
-                                <Upload className="h-4 w-4 mr-2" />
+                                <Upload className="h-4 w-4 me-2" />
                                 Bulk Vacancy Import (Nafis)
                             </h3>
                             <p className="text-sm text-purple-700 mb-6 max-w-2xl">
@@ -418,7 +418,7 @@ export default function GrowthTools() {
                             <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="font-semibold text-gray-900 flex items-center">
-                                        <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                                        <Filter className="h-4 w-4 me-2 text-gray-500" />
                                         Filter & Target ({filteredRows.length} New Companies)
                                     </h4>
                                     <div className="flex gap-2">
@@ -523,11 +523,11 @@ export default function GrowthTools() {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sector</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Job Type</th>
+                                                <th className="px-4 py-2 text-start text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th className="px-4 py-2 text-start text-xs font-medium text-gray-500 uppercase">Company</th>
+                                                <th className="px-4 py-2 text-start text-xs font-medium text-gray-500 uppercase">Sector</th>
+                                                <th className="px-4 py-2 text-start text-xs font-medium text-gray-500 uppercase">Location</th>
+                                                <th className="px-4 py-2 text-start text-xs font-medium text-gray-500 uppercase">Job Type</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -536,7 +536,7 @@ export default function GrowthTools() {
                                                     <td className="px-4 py-2">
                                                         {row.isExisting ? (
                                                             <div className="flex items-center text-gray-500 text-xs font-medium border border-gray-200 rounded px-1.5 py-0.5 w-fit">
-                                                                <Building2 className="h-3 w-3 mr-1" /> Existing
+                                                                <Building2 className="h-3 w-3 me-1" /> Existing
                                                             </div>
                                                         ) : (
                                                             row.isValid ? <CheckCircle className="h-4 w-4 text-green-500" /> : <XCircle className="h-4 w-4 text-red-500" />
@@ -565,7 +565,7 @@ export default function GrowthTools() {
                                     >
                                         {loading ? 'Processing...' : (
                                             <>
-                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                <CheckCircle className="me-2 h-4 w-4" />
                                                 Import {filteredRows.length} New Companies
                                             </>
                                         )}
@@ -610,7 +610,7 @@ export default function GrowthTools() {
                                         {importReport.errors && importReport.errors.length > 0 && (
                                             <div className="mt-4 p-3 bg-red-50 rounded border border-red-100">
                                                 <div className="font-semibold text-red-800 flex items-center mb-2">
-                                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                                    <AlertTriangle className="h-3 w-3 me-1" />
                                                     Backend Errors ({importReport.errors.length})
                                                 </div>
                                                 <ul className="list-disc list-inside text-sm text-red-700 max-h-32 overflow-y-auto">

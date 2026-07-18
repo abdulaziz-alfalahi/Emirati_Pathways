@@ -255,7 +255,7 @@ export const AdminAnalyticsDashboard: React.FC = () => {
                 </SelectContent>
               </Select>
               <Button onClick={exportData} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Export
               </Button>
             </div>

@@ -171,7 +171,7 @@ export const IndustryComparison: React.FC = () => {
                   key={industry.id}
                   variant={selectedIndustries.includes(industry.id) ? "default" : "outline"}
                   onClick={() => handleIndustryToggle(industry.id)}
-                  className={`text-left justify-start ${
+                  className={`text-start justify-start ${
                     selectedIndustries.includes(industry.id)
                       ? 'bg-ehrdc-teal hover:bg-ehrdc-dark-teal'
                       : 'hover:border-ehrdc-teal'
@@ -277,9 +277,9 @@ export const IndustryComparison: React.FC = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left p-2">Metric</th>
+                        <th className="text-start p-2">Metric</th>
                         {selectedData.map(industry => (
-                          <th key={industry.id} className="text-left p-2">{industry.name}</th>
+                          <th key={industry.id} className="text-start p-2">{industry.name}</th>
                         ))}
                       </tr>
                     </thead>

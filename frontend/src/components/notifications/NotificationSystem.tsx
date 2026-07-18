@@ -482,7 +482,7 @@ export const NotificationBell: React.FC = () => {
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
+              className="absolute -top-1 -end-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -795,7 +795,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                className={`p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50 border-s-4 border-s-blue-500' : ''
                   }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -818,7 +818,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                         </p>
                       </div>
 
-                      <div className="flex items-center space-x-1 ml-2">
+                      <div className="flex items-center space-x-1 ms-2">
                         {!notification.read && (
                           <Button
                             variant="ghost"
@@ -880,7 +880,7 @@ const NotificationSettings: React.FC = () => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="w-full">
-          <Settings className="h-4 w-4 mr-2" />
+          <Settings className="h-4 w-4 me-2" />
           Notification Settings
         </Button>
       </DialogTrigger>
@@ -979,7 +979,7 @@ const NotificationSettings: React.FC = () => {
                 </div>
 
                 {localPreferences.quiet_hours && localPreferences.quiet_hours.enabled && (
-                  <div className="grid grid-cols-2 gap-2 ml-6">
+                  <div className="grid grid-cols-2 gap-2 ms-6">
                     <div>
                       <Label htmlFor="start_time" className="text-xs text-gray-500">From</Label>
                       <input

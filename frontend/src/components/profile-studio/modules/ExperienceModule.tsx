@@ -171,7 +171,7 @@ export const ExperienceModule = () => {
                             onChange={e => setNewEntry({ ...newEntry, is_current: e.target.checked })}
                             className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                         />
-                        <label htmlFor="current" className={`${isRTL ? 'mr-2' : 'ml-2'} text-gray-700`}>{t('I currently work here', 'أعمل هنا حالياً')}</label>
+                        <label htmlFor="current" className={`ms-2 text-gray-700`}>{t('I currently work here', 'أعمل هنا حالياً')}</label>
                     </div>
 
                     <textarea
@@ -202,7 +202,7 @@ export const ExperienceModule = () => {
             )}
 
             {/* Timeline View */}
-            <div className={`relative ${isRTL ? 'border-r-2 mr-3 pr-8' : 'border-l-2 ml-3 pl-8'} border-gray-200 space-y-8 py-2`}>
+            <div className={`relative border-s-2 ms-3 ps-8 border-gray-200 space-y-8 py-2`}>
                 {experiences.length === 0 && !showAddForm && (
                     <p className="text-gray-500 italic">{t('No experience added yet.', 'لم يتم إضافة خبرة بعد.')}</p>
                 )}
@@ -210,7 +210,7 @@ export const ExperienceModule = () => {
                 {experiences.map((exp, idx) => (
                     <div key={idx} className="relative bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
                         {/* Timeline Dot */}
-                        <div className={`absolute ${isRTL ? '-right-[41px]' : '-left-[41px]'} top-6 w-5 h-5 rounded-full border-4 border-white bg-teal-500 shadow-sm`}></div>
+                        <div className={`absolute -start-[41px] top-6 w-5 h-5 rounded-full border-4 border-white bg-teal-500 shadow-sm`}></div>
 
                         <div className="flex justify-between items-start">
                             <div>

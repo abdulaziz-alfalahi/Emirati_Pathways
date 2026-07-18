@@ -287,7 +287,7 @@ export const EvaluationInterface: React.FC<EvaluationInterfaceProps> = ({ assess
                 onClick={() => setShowActivityFeed(!showActivityFeed)}
                 className="lg:hidden"
               >
-                <Activity className="h-4 w-4 mr-2" />
+                <Activity className="h-4 w-4 me-2" />
                 Activity
               </Button>
               
@@ -296,7 +296,7 @@ export const EvaluationInterface: React.FC<EvaluationInterfaceProps> = ({ assess
                   variant="outline"
                   onClick={() => setShowCollaborators(true)}
                 >
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 me-2" />
                   Manage Collaborators
                 </Button>
               )}

@@ -83,7 +83,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                   {data.icon}
                   <span>{data.label}</span>
                   {storyCounts[value] && (
-                    <Badge variant="secondary" className="ml-auto text-xs">
+                    <Badge variant="secondary" className="ms-auto text-xs">
                       {storyCounts[value]}
                     </Badge>
                   )}
@@ -99,7 +99,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <button
             onClick={() => onCategoryChange('all')}
-            className={`p-3 rounded-lg border text-left transition-all ${
+            className={`p-3 rounded-lg border text-start transition-all ${
               selectedCategory === 'all'
                 ? 'border-primary bg-primary/5 shadow-sm'
                 : 'border-border hover:border-primary/50 hover:bg-muted/50'
@@ -120,7 +120,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
             <button
               key={value}
               onClick={() => onCategoryChange(value)}
-              className={`p-3 rounded-lg border text-left transition-all ${
+              className={`p-3 rounded-lg border text-start transition-all ${
                 selectedCategory === value
                   ? 'border-primary bg-primary/5 shadow-sm'
                   : 'border-border hover:border-primary/50 hover:bg-muted/50'

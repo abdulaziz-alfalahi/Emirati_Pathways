@@ -83,12 +83,12 @@ const ActiveVacancies: React.FC = () => {
                     Active Vacancies
                   </h1>
                 </div>
-                <p className="text-slate-600 font-dubai-medium ml-7">
+                <p className="text-slate-600 font-dubai-medium ms-7">
                   Published job postings actively seeking suitable candidates
                 </p>
               </div>
               <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium" onClick={() => navigate('/recruiter/jd-builder')}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Create New Vacancy
               </Button>
             </div>
@@ -140,7 +140,7 @@ const ActiveVacancies: React.FC = () => {
                         <TableHead className="font-dubai-bold text-slate-700">Recruitment Stage</TableHead>
                         <TableHead className="font-dubai-bold text-slate-700">Applications</TableHead>
                         <TableHead className="font-dubai-bold text-slate-700">Type</TableHead>
-                        <TableHead className="font-dubai-bold text-slate-700 text-right">Actions</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700 text-end">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -153,7 +153,7 @@ const ActiveVacancies: React.FC = () => {
                         return (
                           <TableRow
                             key={vacancy.jd_id || vacancy.id}
-                            className="hover:bg-teal-50/30 transition-colors cursor-pointer group border-l-4 border-l-transparent hover:border-l-teal-500"
+                            className="hover:bg-teal-50/30 transition-colors cursor-pointer group border-s-4 border-s-transparent hover:border-s-teal-500"
                           >
                             <TableCell className="font-dubai-bold text-slate-900">
                               <div>
@@ -194,7 +194,7 @@ const ActiveVacancies: React.FC = () => {
                                 {vacancy.job_type || vacancy.basic_info?.job_type || 'Full-time'}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-end">
                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   size="sm"

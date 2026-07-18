@@ -315,11 +315,11 @@ const CompetencyValidation: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             Preview Report
           </Button>
           <Button onClick={validateCompetency} disabled={loading}>
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <CheckCircle className="h-4 w-4 me-2" />
             {loading ? 'Validating...' : 'Validate Competency'}
           </Button>
         </div>
@@ -523,15 +523,15 @@ const CompetencyValidation: React.FC = () => {
                     {evidence.fileUrl && (
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline">
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 me-2" />
                           View Document
                         </Button>
                         <Button size="sm" variant="outline">
-                          <ThumbsUp className="h-4 w-4 mr-2" />
+                          <ThumbsUp className="h-4 w-4 me-2" />
                           Approve
                         </Button>
                         <Button size="sm" variant="outline">
-                          <ThumbsDown className="h-4 w-4 mr-2" />
+                          <ThumbsDown className="h-4 w-4 me-2" />
                           Request Revision
                         </Button>
                       </div>

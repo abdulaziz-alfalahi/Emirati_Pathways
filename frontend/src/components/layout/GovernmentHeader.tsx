@@ -55,7 +55,7 @@ const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
                   className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                 >
                   Get Started
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ms-2" />
                 </Link>
               </>
             ) : (

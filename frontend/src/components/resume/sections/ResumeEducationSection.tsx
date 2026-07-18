@@ -67,7 +67,7 @@ const ResumeEducationSection: React.FC<ResumeEducationSectionProps> = ({
             size="sm" 
             onClick={addEducation}
           >
-            <Plus size={16} className="mr-1" /> Add Education
+            <Plus size={16} className="me-1" /> Add Education
           </Button>
         </div>
 
@@ -82,7 +82,7 @@ const ResumeEducationSection: React.FC<ResumeEducationSectionProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                  className="absolute top-2 end-2 text-gray-500 hover:text-red-500"
                   onClick={() => removeEducation(index)}
                 >
                   <Trash2 size={16} />
@@ -158,7 +158,7 @@ const ResumeEducationSection: React.FC<ResumeEducationSectionProps> = ({
                     checked={education.current || false}
                     onCheckedChange={(checked) => handleCurrentChange(index, checked === true)}
                   />
-                  <Label htmlFor={`current-${index}`} className="ml-2">
+                  <Label htmlFor={`current-${index}`} className="ms-2">
                     Currently studying here
                   </Label>
                 </div>

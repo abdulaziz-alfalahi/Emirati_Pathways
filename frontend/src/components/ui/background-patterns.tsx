@@ -99,10 +99,10 @@ export const BackgroundPattern: React.FC<BackgroundPatternProps> = ({
         className={cn("absolute inset-0 pointer-events-none", className)}
         style={{ opacity }}
       >
-        <div className="absolute top-10 right-10 w-32 h-32 border-2 border-current rounded-full" />
-        <div className="absolute bottom-20 left-20 w-24 h-24 border-2 border-current rotate-45" />
-        <div className="absolute top-1/3 left-1/4 w-16 h-16 border-2 border-current rounded-lg rotate-12" />
-        <div className="absolute bottom-1/3 right-1/4 w-20 h-20 border-2 border-current" />
+        <div className="absolute top-10 end-10 w-32 h-32 border-2 border-current rounded-full" />
+        <div className="absolute bottom-20 start-20 w-24 h-24 border-2 border-current rotate-45" />
+        <div className="absolute top-1/3 start-1/4 w-16 h-16 border-2 border-current rounded-lg rotate-12" />
+        <div className="absolute bottom-1/3 end-1/4 w-20 h-20 border-2 border-current" />
       </div>
     );
   }

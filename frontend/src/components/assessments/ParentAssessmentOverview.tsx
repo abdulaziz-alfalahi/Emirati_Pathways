@@ -90,7 +90,7 @@ export const ParentAssessmentOverview: React.FC<ParentAssessmentOverviewProps> =
         {recommendedCoaching.length > 0 && (
           <div>
             <h3 className="text-lg font-medium mb-3 flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2 text-primary" />
+              <CheckCircle className="h-5 w-5 me-2 text-primary" />
               Coaching Recommendations
             </h3>
             <div className="space-y-3">
@@ -117,7 +117,7 @@ export const ParentAssessmentOverview: React.FC<ParentAssessmentOverviewProps> =
         {/* Upcoming Assessments */}
         <div>
           <h3 className="text-lg font-medium mb-3 flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+            <Calendar className="h-5 w-5 me-2 text-blue-500" />
             Upcoming Assessments
           </h3>
           {upcomingAssessments.length > 0 ? (
@@ -135,7 +135,7 @@ export const ParentAssessmentOverview: React.FC<ParentAssessmentOverviewProps> =
                   </div>
                   {session.scheduled_date && (
                     <div className="flex items-center mt-3 text-sm">
-                      <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
+                      <Clock className="h-4 w-4 me-1 text-muted-foreground" />
                       <span>{format(new Date(session.scheduled_date), 'PPP p')}</span>
                     </div>
                   )}
@@ -150,7 +150,7 @@ export const ParentAssessmentOverview: React.FC<ParentAssessmentOverviewProps> =
         {/* Completed Assessments */}
         <div>
           <h3 className="text-lg font-medium mb-3 flex items-center">
-            <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+            <CheckCircle className="h-5 w-5 me-2 text-green-500" />
             Completed Assessments
           </h3>
           {completedAssessments.length > 0 ? (
@@ -166,7 +166,7 @@ export const ParentAssessmentOverview: React.FC<ParentAssessmentOverviewProps> =
                         )}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       {session.score !== null ? (
                         <span className="text-lg font-bold">{session.score}/100</span>
                       ) : (

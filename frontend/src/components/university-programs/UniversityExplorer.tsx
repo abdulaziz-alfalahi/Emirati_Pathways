@@ -103,7 +103,7 @@ export const UniversityExplorer: React.FC = () => {
                 onClick={() => setSelectedView('map')}
                 className={selectedView === 'map' ? 'bg-blue-600' : ''}
               >
-                <MapPin className="h-4 w-4 mr-2" />
+                <MapPin className="h-4 w-4 me-2" />
                 Map View
               </Button>
               <Button
@@ -111,7 +111,7 @@ export const UniversityExplorer: React.FC = () => {
                 onClick={() => setSelectedView('grid')}
                 className={selectedView === 'grid' ? 'bg-blue-600' : ''}
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 me-2" />
                 Grid View
               </Button>
             </div>
@@ -171,7 +171,7 @@ export const UniversityExplorer: React.FC = () => {
                         {uni.name}
                         <button
                           onClick={() => toggleCompare(id)}
-                          className="ml-2 hover:text-red-600"
+                          className="ms-2 hover:text-red-600"
                         >
                           ×
                         </button>
@@ -214,15 +214,15 @@ export const UniversityExplorer: React.FC = () => {
                     alt={university.name}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 start-3">
                     <Badge className={university.type === 'Local' ? 'bg-green-600' : 'bg-blue-600'}>
                       {university.type}
                     </Badge>
                   </div>
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 end-3">
                     {university.scholarships && (
                       <Badge className="bg-yellow-600">
-                        <Award className="h-3 w-3 mr-1" />
+                        <Award className="h-3 w-3 me-1" />
                         Scholarships
                       </Badge>
                     )}

@@ -96,7 +96,7 @@ export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, S
                 This section couldn't load properly. Try refreshing or contact support if the issue persists.
               </p>
               <Button onClick={this.handleRetry} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 me-2" />
                 Try Again
               </Button>
             </div>
@@ -155,19 +155,19 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
     <div className="flex flex-wrap gap-3 justify-center">
       {onRetry && (
         <Button onClick={onRetry}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 me-2" />
           Try Again
         </Button>
       )}
       {onGoBack && (
         <Button variant="outline" onClick={onGoBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Go Back
         </Button>
       )}
       {onGoHome && (
         <Button variant="outline" onClick={onGoHome}>
-          <Home className="h-4 w-4 mr-2" />
+          <Home className="h-4 w-4 me-2" />
           Go Home
         </Button>
       )}
@@ -222,13 +222,13 @@ export const NotFoundError: React.FC<Omit<ErrorDisplayProps, 'title' | 'message'
     <div className="flex flex-wrap gap-3 justify-center">
       {props.onGoBack && (
         <Button variant="outline" onClick={props.onGoBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Go Back
         </Button>
       )}
       {props.onGoHome && (
         <Button onClick={props.onGoHome}>
-          <Home className="h-4 w-4 mr-2" />
+          <Home className="h-4 w-4 me-2" />
           Go Home
         </Button>
       )}
@@ -253,13 +253,13 @@ export const AccessDeniedError: React.FC<Omit<ErrorDisplayProps, 'title' | 'mess
     <div className="flex flex-wrap gap-3 justify-center">
       {props.onGoBack && (
         <Button variant="outline" onClick={props.onGoBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Go Back
         </Button>
       )}
       {props.onGoHome && (
         <Button onClick={props.onGoHome}>
-          <Home className="h-4 w-4 mr-2" />
+          <Home className="h-4 w-4 me-2" />
           Go Home
         </Button>
       )}
@@ -311,7 +311,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <div className="flex flex-wrap gap-3 justify-center">
       {action && (
         <Button onClick={action.onClick}>
-          {action.icon || <Plus className="h-4 w-4 mr-2" />}
+          {action.icon || <Plus className="h-4 w-4 me-2" />}
           {action.label}
         </Button>
       )}
@@ -342,7 +342,7 @@ export const NoResults: React.FC<{
     action={onClearSearch ? {
       label: 'Clear Search',
       onClick: onClearSearch,
-      icon: <XCircle className="h-4 w-4 mr-2" />
+      icon: <XCircle className="h-4 w-4 me-2" />
     } : undefined}
     className={className}
   />
@@ -371,7 +371,7 @@ export const NoData: React.FC<{
     action={onAdd ? {
       label: addLabel,
       onClick: onAdd,
-      icon: <Plus className="h-4 w-4 mr-2" />
+      icon: <Plus className="h-4 w-4 me-2" />
     } : undefined}
     className={className}
   />

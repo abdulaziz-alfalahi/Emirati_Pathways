@@ -18,7 +18,7 @@ export const SortButton: React.FC<SortButtonProps> = ({ field, onSort, children 
       className="h-auto p-0 font-semibold"
     >
       {children}
-      <ArrowUpDown className="ml-2 h-3 w-3" />
+      <ArrowUpDown className="ms-2 h-3 w-3" />
     </Button>
   );
 };

@@ -79,10 +79,10 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className={`text-xl font-bold text-slate-900 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <h1 className={`text-xl font-bold text-slate-900 text-start`}>
                     {t('platform_title', 'Emirati Human Development Platform')}
                   </h1>
-                  <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <p className={`text-sm text-slate-600 text-start`}>
                     {t('platform_subtitle', 'UAE Nationals Career Development')}
                   </p>
                 </Link>
@@ -114,7 +114,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                     className={`bg-[#006E6D] hover:bg-[#005A59] text-white px-6 py-2.5 rounded-full font-medium transition-all duration-200 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}
                   >
                     {t('get_started', 'Get Started')}
-                    <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                    <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
                   </Link>
                 </>
               ) : (
@@ -158,13 +158,13 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                   </button>
 
                   {activeDropdown === group.id && (
-                    <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                    <div className={`absolute top-full start-0 mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
                       <div className="p-4">
                         <div className="mb-3">
-                          <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <h3 className={`font-semibold text-slate-900 text-lg text-start`}>
                             {t(`nav_${group.id}`, group.name)}
                           </h3>
-                          <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <p className={`text-sm text-slate-600 text-start`}>
                             {t(`nav_${group.id}_desc`, group.description)}
                           </p>
                         </div>
@@ -176,7 +176,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                               className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group`}
                             >
                               <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
-                              <div className={isRTL ? 'text-right' : 'text-left'}>
+                              <div className="text-start">
                                 <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
                                   {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}`, item.name)}
                                 </div>
@@ -205,10 +205,10 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
               {navigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
-                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full me-2`}></span>
                     {t(`nav_${group.id}`, group.name)}
                   </h3>
-                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
+                  <div className={`grid grid-cols-1 gap-2 ms-5`}>
                     {group.items.map((item) => (
                       <Link
                         key={item.name}

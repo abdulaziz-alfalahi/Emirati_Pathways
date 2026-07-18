@@ -104,7 +104,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                     </div>
                   </div>
                   {progress && (
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-sm font-medium">
                         {progress.completionPercentage}%
                       </div>
@@ -196,7 +196,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
               onClick={() => setIsSearchOpen(true)}
               className="text-white hover:bg-white/20"
             >
-              <Search className="h-4 w-4 mr-2" />
+              <Search className="h-4 w-4 me-2" />
               Search
             </Button>
 
@@ -209,7 +209,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                     size="sm"
                     className="text-white hover:bg-white/20"
                   >
-                    <Navigation className="h-4 w-4 mr-2" />
+                    <Navigation className="h-4 w-4 me-2" />
                     Navigate Phases
                   </Button>
                 </SheetTrigger>

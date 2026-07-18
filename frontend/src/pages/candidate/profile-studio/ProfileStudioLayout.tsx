@@ -31,7 +31,7 @@ const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
         >
             <Icon size={20} />
             <span className="font-medium text-sm">{label}</span>
-            {active && <ChevronIcon size={16} className={`${isRTL ? 'mr-auto' : 'ml-auto'} opacity-50`} />}
+            {active && <ChevronIcon size={16} className={`ms-auto opacity-50`} />}
         </div>
     );
 };
@@ -87,7 +87,7 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
             <div className="flex flex-1 pt-20">
                 {/* Sidebar Navigation */}
                 <div
-                    className={`w-64 bg-card ${isRTL ? 'border-l' : 'border-r'} border-border h-[calc(100vh-5rem)] fixed top-20 overflow-y-auto px-4 pt-6`}
+                    className={`w-64 bg-card border-e border-border h-[calc(100vh-5rem)] fixed top-20 overflow-y-auto px-4 pt-6`}
                     style={isRTL ? { right: 0, left: 'auto' } : { left: 0, right: 'auto' }}
                 >
                     <div className="mb-8">

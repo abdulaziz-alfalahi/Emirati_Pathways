@@ -128,7 +128,7 @@ export const RetireeCommunityTab: React.FC = () => {
                     <Badge variant="outline">{group.category}</Badge>
                     {group.featured && (
                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="h-3 w-3 me-1" />
                         Featured
                       </Badge>
                     )}
@@ -144,7 +144,7 @@ export const RetireeCommunityTab: React.FC = () => {
                     <span>{group.meetingDay}</span>
                   </div>
                   <Button variant="outline" size="sm" className="w-full">
-                    <Users className="h-4 w-4 mr-2" />
+                    <Users className="h-4 w-4 me-2" />
                     Join Group
                   </Button>
                 </div>
@@ -187,7 +187,7 @@ export const RetireeCommunityTab: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <Button variant="outline" size="sm" className="w-full">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   Register
                 </Button>
               </CardContent>
@@ -218,7 +218,7 @@ export const RetireeCommunityTab: React.FC = () => {
                     {program.participants} active participants
                   </div>
                   <Button variant="outline" size="sm" className="w-full">
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 me-2" />
                     Learn More
                   </Button>
                 </div>
@@ -256,7 +256,7 @@ export const RetireeCommunityTab: React.FC = () => {
               </div>
             </div>
             <Button className="w-full">
-              <Heart className="h-4 w-4 mr-2" />
+              <Heart className="h-4 w-4 me-2" />
               Join a Community Initiative
             </Button>
           </div>

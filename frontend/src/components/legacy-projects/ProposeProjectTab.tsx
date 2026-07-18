@@ -268,7 +268,7 @@ export const ProposeProjectTab: React.FC = () => {
           </div>
 
           <Button type="submit" disabled={loading} className="w-full">
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
             Submit Project Proposal
           </Button>
         </form>

@@ -339,7 +339,7 @@ const EnhancedAuthPage: React.FC = () => {
                 onClick={handleBackToRoleSelection}
                 className="flex items-center"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Back to Role Selection
               </Button>
             </div>
@@ -430,12 +430,12 @@ const EnhancedAuthPage: React.FC = () => {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     Creating Account...
                   </>
                 ) : (
                   <>
-                    <UserPlus className="mr-2 h-4 w-4" />
+                    <UserPlus className="me-2 h-4 w-4" />
                     Create Account
                   </>
                 )}

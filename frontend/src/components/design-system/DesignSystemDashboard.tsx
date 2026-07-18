@@ -287,7 +287,7 @@ export const DesignSystemDashboard: React.FC = () => {
                       {item.name}
                     </h4>
                   </div>
-                  <div className="text-right text-sm text-ehrdc-neutral-dark/70">
+                  <div className="text-end text-sm text-ehrdc-neutral-dark/70">
                     <p>{item.size}</p>
                     <p className="capitalize">{item.weight}</p>
                   </div>
@@ -639,7 +639,7 @@ const phaseColors = {
                 }}
                 className="w-full"
               >
-                <TestTube className="h-4 w-4 mr-2" />
+                <TestTube className="h-4 w-4 me-2" />
                 Run Design System Validation
               </Button>
               

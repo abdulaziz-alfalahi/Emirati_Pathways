@@ -228,21 +228,21 @@ const JDAnalyticsDashboard: React.FC = () => {
               onClick={() => exportReport('pdf')}
               className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Export PDF
             </button>
             <button
               onClick={() => exportReport('excel')}
               className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Export Excel
             </button>
             <button
               onClick={fetchAnalyticsData}
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Refresh
             </button>
           </div>
@@ -312,7 +312,7 @@ const JDAnalyticsDashboard: React.FC = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <Icon className="h-4 w-4 mr-2" />
+                <Icon className="h-4 w-4 me-2" />
                 {tab.label}
               </button>
             );
@@ -348,7 +348,7 @@ const JDAnalyticsDashboard: React.FC = () => {
                   <Eye className="h-8 w-8 text-green-600" />
                 </div>
                 <p className="text-sm text-green-600 mt-2 flex items-center">
-                  <TrendingUp className="h-4 w-4 mr-1" />
+                  <TrendingUp className="h-4 w-4 me-1" />
                   +12% from last month
                 </p>
               </div>
@@ -407,25 +407,25 @@ const JDAnalyticsDashboard: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Job Title
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Views
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Applications
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Conversion Rate
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Quality Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         UAE Compliance
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -446,7 +446,7 @@ const JDAnalyticsDashboard: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="text-sm text-gray-900">{jd.conversionRate}%</div>
-                            <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                            <div className="ms-2 w-16 bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full"
                                 style={{ width: `${Math.min(jd.conversionRate, 100)}%` }}
@@ -456,13 +456,13 @@ const JDAnalyticsDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                            <Star className="h-4 w-4 text-yellow-400 me-1" />
                             <span className="text-sm text-gray-900">{jd.qualityScore}/100</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Award className="h-4 w-4 text-green-400 mr-1" />
+                            <Award className="h-4 w-4 text-green-400 me-1" />
                             <span className="text-sm text-gray-900">{jd.complianceScore}/100</span>
                           </div>
                         </td>
@@ -632,19 +632,19 @@ const JDAnalyticsDashboard: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Emirate
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Job Count
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Application Rate
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Avg. Salary (AED)
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Top Skills
                       </th>
                     </tr>
@@ -654,7 +654,7 @@ const JDAnalyticsDashboard: React.FC = () => {
                       <tr key={location.emirate} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                            <MapPin className="h-4 w-4 text-gray-400 me-2" />
                             <span className="text-sm font-medium text-gray-900">{location.emirate}</span>
                           </div>
                         </td>
@@ -714,22 +714,22 @@ const JDAnalyticsDashboard: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Industry
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Job Count
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Avg. Quality Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Avg. Compliance Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Avg. Time to Fill
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Conversion Rate
                       </th>
                     </tr>
@@ -739,7 +739,7 @@ const JDAnalyticsDashboard: React.FC = () => {
                       <tr key={industry.industry} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Briefcase className="h-4 w-4 text-gray-400 mr-2" />
+                            <Briefcase className="h-4 w-4 text-gray-400 me-2" />
                             <span className="text-sm font-medium text-gray-900 capitalize">{industry.industry}</span>
                           </div>
                         </td>
@@ -748,13 +748,13 @@ const JDAnalyticsDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                            <Star className="h-4 w-4 text-yellow-400 me-1" />
                             <span className="text-sm text-gray-900">{industry.avgQualityScore}/100</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Award className="h-4 w-4 text-green-400 mr-1" />
+                            <Award className="h-4 w-4 text-green-400 me-1" />
                             <span className="text-sm text-gray-900">{industry.avgComplianceScore}/100</span>
                           </div>
                         </td>

@@ -130,7 +130,7 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center p-4 border rounded-lg bg-slate-50">
-                            <FileText className="h-8 w-8 text-blue-500 mr-4" />
+                            <FileText className="h-8 w-8 text-blue-500 me-4" />
                             <div className="flex-1">
                                 <p className="font-medium text-sm">{vacancyData.jdFile || "No JD Uploaded"}</p>
                                 <p className="text-xs text-gray-500">Last updated: {vacancyData.lastUpdated}</p>

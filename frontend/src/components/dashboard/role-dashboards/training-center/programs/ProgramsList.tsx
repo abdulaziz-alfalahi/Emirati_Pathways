@@ -53,14 +53,14 @@ const ProgramsList: React.FC<ProgramsListProps> = ({
                   size="sm" 
                   onClick={() => onViewProgram(program)}
                 >
-                  <FolderOpen className="h-4 w-4 mr-1" /> View
+                  <FolderOpen className="h-4 w-4 me-1" /> View
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => onOpenUploadDialog(program)}
                 >
-                  <FileUp className="h-4 w-4 mr-1" /> Upload
+                  <FileUp className="h-4 w-4 me-1" /> Upload
                 </Button>
               </div>
             </TableCell>

@@ -160,7 +160,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-5 w-5 me-2" />
             {t('cv.builder.languages.addNew', 'Add New Language')}
           </CardTitle>
         </CardHeader>
@@ -216,7 +216,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
             </div>
             <div className="flex items-end">
               <Button onClick={handleAddLanguage} disabled={!newLanguageName.trim()}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 {t('cv.builder.languages.add', 'Add Language')}
               </Button>
             </div>
@@ -229,7 +229,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <LanguagesIcon className="h-5 w-5 mr-2" />
+              <LanguagesIcon className="h-5 w-5 me-2" />
               {t('cv.builder.languages.current', 'Your Languages')}
             </CardTitle>
           </CardHeader>
@@ -285,13 +285,13 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center">
-                        <Award className="h-4 w-4 mr-1" />
+                        <Award className="h-4 w-4 me-1" />
                         {t('cv.builder.languages.certifications', 'Certifications')}
                       </Label>
                       <Button
                         onClick={() => setEditingLanguage(editingLanguage === language.id ? null : language.id)}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
+                        <Plus className="h-3 w-3 me-1" />
                         {t('cv.builder.languages.addCertification', 'Add')}
                       </Button>
                     </div>
@@ -302,7 +302,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
                           <Badge key={index} className="cursor-pointer">
                             {cert}
                             <X
-                              className="h-3 w-3 ml-1"
+                              className="h-3 w-3 ms-1"
                               onClick={() => handleRemoveCertification(language.id, index)}
                             />
                           </Badge>
@@ -355,7 +355,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Globe className="h-5 w-5 mr-2" />
+            <Globe className="h-5 w-5 me-2" />
             {t('cv.builder.languages.suggestions', 'Common Languages in UAE')}
           </CardTitle>
         </CardHeader>
@@ -370,7 +370,7 @@ export const LanguagesStep: React.FC<LanguagesStepProps> = ({
                   onClick={() => handleAddPresetLanguage(languageName)}
                   className="text-xs"
                 >
-                  <Plus className="h-3 w-3 mr-1" />
+                  <Plus className="h-3 w-3 me-1" />
                   {languageName}
                 </Button>
               ))}

@@ -257,7 +257,7 @@ export const ParentPortal: React.FC = () => {
             </CardHeader>
             <CardContent>
               <Button className="w-full ehrdc-button-primary">
-                <MessageCircle className="h-4 w-4 mr-2" />
+                <MessageCircle className="h-4 w-4 me-2" />
                 Start Conversation
               </Button>
             </CardContent>

@@ -80,7 +80,7 @@ export const MatchReEvaluationNotification: React.FC<MatchReEvaluationNotificati
               onClick={onTriggerReEvaluation}
               className="flex-shrink-0"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Update Matches
             </Button>
           )}

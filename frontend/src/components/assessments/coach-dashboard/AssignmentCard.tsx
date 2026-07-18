@@ -38,14 +38,14 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
         {assignment.scheduled_date && (
           <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
+            <Calendar className="h-4 w-4 me-1" />
             <span>{format(new Date(assignment.scheduled_date), isPast ? 'PPP' : 'PPP p')}</span>
           </div>
         )}
         
         {!isPast && assignment.assessment_sessions?.assessments?.assessment_type && (
           <div className="flex items-center">
-            <Clock className="h-4 w-4 mr-1" />
+            <Clock className="h-4 w-4 me-1" />
             <span>Assessment Type: {assignment.assessment_sessions.assessments.assessment_type}</span>
           </div>
         )}
@@ -57,8 +57,8 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
           onOpenChange={(open) => onOpenChange(open ? assignment.id : null)}
         >
           <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="mr-2">
-              <FileText className="h-4 w-4 mr-2" />
+            <Button size="sm" variant="outline" className="me-2">
+              <FileText className="h-4 w-4 me-2" />
               View Details
             </Button>
           </DialogTrigger>

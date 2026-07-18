@@ -210,7 +210,7 @@ const PermissionMatrix: React.FC = () => {
     <table className="min-w-full border-collapse">
       <thead>
         <tr>
-          <th className="text-left p-3 border-b font-medium">Permission</th>
+          <th className="text-start p-3 border-b font-medium">Permission</th>
           {roles.map(role => (
             <th key={role} className="text-center p-3 border-b font-medium min-w-[80px]">
               {role}

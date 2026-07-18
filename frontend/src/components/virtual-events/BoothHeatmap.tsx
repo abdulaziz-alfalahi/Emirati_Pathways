@@ -152,7 +152,7 @@ const BoothHeatmap: React.FC<BoothHeatmapProps> = ({ eventId }) => {
             size="sm"
             onClick={() => setSortBy('interactions')}
           >
-            <Activity className="h-4 w-4 mr-1" />
+            <Activity className="h-4 w-4 me-1" />
             Interactions
           </Button>
           <Button
@@ -160,7 +160,7 @@ const BoothHeatmap: React.FC<BoothHeatmapProps> = ({ eventId }) => {
             size="sm"
             onClick={() => setSortBy('duration')}
           >
-            <Clock className="h-4 w-4 mr-1" />
+            <Clock className="h-4 w-4 me-1" />
             Duration
           </Button>
           <Button
@@ -168,7 +168,7 @@ const BoothHeatmap: React.FC<BoothHeatmapProps> = ({ eventId }) => {
             size="sm"
             onClick={() => setSortBy('engagement')}
           >
-            <TrendingUp className="h-4 w-4 mr-1" />
+            <TrendingUp className="h-4 w-4 me-1" />
             Engagement
           </Button>
         </div>
@@ -272,7 +272,7 @@ const BoothHeatmap: React.FC<BoothHeatmapProps> = ({ eventId }) => {
                         {Object.entries(heatmapData.interaction_types).map(([type, count]) => (
                           <Badge key={type} variant="outline" className="text-xs">
                             {getInteractionIcon(type)}
-                            <span className="ml-1">{count}</span>
+                            <span className="ms-1">{count}</span>
                           </Badge>
                         ))}
                       </div>

@@ -210,7 +210,7 @@ const ExperienceForm: React.FC = () => {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Work Experience</h3>
         <Button variant="outline" onClick={handleAddExperience}>
-          <PlusCircle className="mr-2 h-4 w-4" />
+          <PlusCircle className="me-2 h-4 w-4" />
           Add Experience
         </Button>
       </div>
@@ -243,7 +243,7 @@ const ExperienceForm: React.FC = () => {
         disabled={isSaving}
         className="w-full"
       >
-        <Save className="mr-2 h-4 w-4" />
+        <Save className="me-2 h-4 w-4" />
         Save All Experience
       </Button>
     </div>

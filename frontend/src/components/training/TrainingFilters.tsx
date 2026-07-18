@@ -69,7 +69,7 @@ export const TrainingFilters: React.FC<TrainingFiltersProps> = ({
               onClick={onClearFilters}
               className="text-[rgb(var(--pg-secondary))] hover:text-[rgb(var(--pg-secondary))] hover:bg-[rgb(var(--pg-secondary))/10]"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 me-1" />
               Clear
             </Button>
           )}
@@ -80,13 +80,13 @@ export const TrainingFilters: React.FC<TrainingFiltersProps> = ({
         <div className="space-y-2">
           <Label htmlFor="search">Search Programs</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="search"
               placeholder="Search by title or provider..."
               value={filters.search || ''}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10 focus:border-[rgb(var(--pg-primary))] focus:ring-[rgb(var(--pg-primary))]"
+              className="ps-10 focus:border-[rgb(var(--pg-primary))] focus:ring-[rgb(var(--pg-primary))]"
             />
           </div>
         </div>

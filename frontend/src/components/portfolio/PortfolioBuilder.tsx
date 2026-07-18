@@ -74,11 +74,11 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             Preview
           </Button>
           <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 me-2" />
             Settings
           </Button>
         </div>
@@ -144,7 +144,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Projects</h4>
                     <Button size="sm" onClick={() => handleAddContent('projects', 'project')}>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Add Project
                     </Button>
                   </div>
@@ -153,11 +153,11 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                     <Textarea placeholder="Project description" />
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">
-                        <Image className="h-4 w-4 mr-2" />
+                        <Image className="h-4 w-4 me-2" />
                         Add Images
                       </Button>
                       <Button variant="outline" size="sm">
-                        <Video className="h-4 w-4 mr-2" />
+                        <Video className="h-4 w-4 me-2" />
                         Add Video
                       </Button>
                     </div>
@@ -168,7 +168,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Media Gallery</h4>
                     <Button size="sm" onClick={() => handleAddContent('media', 'upload')}>
-                      <Upload className="h-4 w-4 mr-2" />
+                      <Upload className="h-4 w-4 me-2" />
                       Upload Media
                     </Button>
                   </div>
@@ -183,7 +183,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Achievements</h4>
                     <Button size="sm" onClick={() => handleAddContent('achievements', 'achievement')}>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Add Achievement
                     </Button>
                   </div>
@@ -199,7 +199,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Professional Timeline</h4>
                     <Button size="sm" onClick={() => handleAddContent('timeline', 'milestone')}>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Add Milestone
                     </Button>
                   </div>
@@ -215,7 +215,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Testimonials</h4>
                     <Button size="sm" onClick={() => handleAddContent('testimonials', 'testimonial')}>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Add Testimonial
                     </Button>
                   </div>
@@ -224,7 +224,7 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
                     <Input placeholder="Title and company" />
                     <Textarea placeholder="Testimonial text" />
                     <Button variant="outline" size="sm">
-                      <Upload className="h-4 w-4 mr-2" />
+                      <Upload className="h-4 w-4 me-2" />
                       Add Photo
                     </Button>
                   </div>
@@ -242,19 +242,19 @@ const PortfolioBuilder: React.FC<PortfolioBuilderProps> = ({ portfolio, onUpdate
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full" variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 me-2" />
                 Bulk Upload
               </Button>
               <Button className="w-full" variant="outline">
-                <FileText className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 me-2" />
                 Import Resume
               </Button>
               <Button className="w-full" variant="outline">
-                <Award className="h-4 w-4 mr-2" />
+                <Award className="h-4 w-4 me-2" />
                 Import Certifications
               </Button>
               <Button className="w-full" variant="outline">
-                <User className="h-4 w-4 mr-2" />
+                <User className="h-4 w-4 me-2" />
                 Connect LinkedIn
               </Button>
             </CardContent>

@@ -39,7 +39,7 @@ export const VacancyDashboard: React.FC<VacancyDashboardProps> = ({ job, onBack 
                     <div>
                         <h2 className="text-2xl font-bold flex items-center">
                             {job?.title || 'Untitled Vacancy'}
-                            <Badge variant="outline" className="ml-3 border-blue-200 text-blue-700 bg-blue-50">
+                            <Badge variant="outline" className="ms-3 border-blue-200 text-blue-700 bg-blue-50">
                                 {job?.status || 'Active'}
                             </Badge>
                         </h2>

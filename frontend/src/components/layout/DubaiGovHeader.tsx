@@ -124,18 +124,18 @@ const DubaiGovHeader: React.FC = () => {
                           placeholder="Search services..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-64 pl-10 pr-4 py-2 border border-ehrdc-neutral-light rounded-lg focus:ring-2 focus:ring-ehrdc-teal focus:border-ehrdc-teal"
+                          className="w-64 ps-10 pe-4 py-2 border border-ehrdc-neutral-light rounded-lg focus:ring-2 focus:ring-ehrdc-teal focus:border-ehrdc-teal"
                           autoFocus
                           aria-label="Search services"
                         />
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ehrdc-neutral-dark" />
+                        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ehrdc-neutral-dark" />
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsSearchOpen(false)}
-                        className="ml-2 text-ehrdc-neutral-dark hover:text-ehrdc-teal"
+                        className="ms-2 text-ehrdc-neutral-dark hover:text-ehrdc-teal"
                         aria-label="Close search"
                       >
                         <X className="h-4 w-4" />

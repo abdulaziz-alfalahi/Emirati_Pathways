@@ -113,7 +113,7 @@ const CareerPathSelector: React.FC = () => {
                   disabled={enrolling === path.id}
                 >
                   {enrolling === path.id ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enrolling...</>
+                    <><Loader2 className="me-2 h-4 w-4 animate-spin" /> Enrolling...</>
                   ) : (
                     "Enroll"
                   )}

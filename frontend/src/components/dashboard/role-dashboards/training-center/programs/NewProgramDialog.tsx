@@ -35,7 +35,7 @@ const NewProgramDialog: React.FC<NewProgramDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <BookOpen className="mr-2 h-4 w-4" /> Create New Program
+          <BookOpen className="me-2 h-4 w-4" /> Create New Program
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
@@ -47,7 +47,7 @@ const NewProgramDialog: React.FC<NewProgramDialogProps> = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
+            <Label htmlFor="title" className="text-end">
               Title*
             </Label>
             <Input
@@ -59,7 +59,7 @@ const NewProgramDialog: React.FC<NewProgramDialogProps> = ({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
+            <Label htmlFor="description" className="text-end">
               Description
             </Label>
             <Textarea
@@ -71,7 +71,7 @@ const NewProgramDialog: React.FC<NewProgramDialogProps> = ({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startDate" className="text-right">
+            <Label htmlFor="startDate" className="text-end">
               Start Date*
             </Label>
             <Input
@@ -83,7 +83,7 @@ const NewProgramDialog: React.FC<NewProgramDialogProps> = ({
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
+            <Label htmlFor="status" className="text-end">
               Status
             </Label>
             <select

@@ -272,7 +272,7 @@ const SystemAnalytics: React.FC = () => {
                 onClick={fetchAnalyticsData}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="w-4 h-4 me-2" />
                 Refresh
               </button>
             </div>
@@ -289,7 +289,7 @@ const SystemAnalytics: React.FC = () => {
                 <div className={`p-2 rounded-lg ${getMetricStatus(systemMetrics.cpu_usage, { warning: 70, critical: 90 }).color}`}>
                   <Cpu className="w-6 h-6" />
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-500">CPU Usage</p>
                   <p className="text-2xl font-bold text-gray-900">{systemMetrics.cpu_usage.toFixed(1)}%</p>
                 </div>
@@ -303,7 +303,7 @@ const SystemAnalytics: React.FC = () => {
                 <div className={`p-2 rounded-lg ${getMetricStatus(systemMetrics.memory_usage, { warning: 80, critical: 95 }).color}`}>
                   <HardDrive className="w-6 h-6" />
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-500">Memory Usage</p>
                   <p className="text-2xl font-bold text-gray-900">{systemMetrics.memory_usage.toFixed(1)}%</p>
                 </div>
@@ -317,7 +317,7 @@ const SystemAnalytics: React.FC = () => {
                 <div className={`p-2 rounded-lg ${getMetricStatus(systemMetrics.response_time, { warning: 200, critical: 500 }).color}`}>
                   <Activity className="w-6 h-6" />
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-500">Response Time</p>
                   <p className="text-2xl font-bold text-gray-900">{systemMetrics.response_time.toFixed(0)}ms</p>
                 </div>
@@ -331,7 +331,7 @@ const SystemAnalytics: React.FC = () => {
                 <div className={`p-2 rounded-lg ${getMetricStatus(100 - systemMetrics.uptime, { warning: 1, critical: 5 }).color}`}>
                   <Server className="w-6 h-6" />
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-500">Uptime</p>
                   <p className="text-2xl font-bold text-gray-900">{formatUptime(systemMetrics.uptime)}</p>
                 </div>

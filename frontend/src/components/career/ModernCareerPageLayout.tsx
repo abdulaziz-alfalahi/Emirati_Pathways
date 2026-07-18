@@ -88,7 +88,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
       {/* Hero Section */}
       <section className="relative py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center text-start md:text-center`}>
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl mb-8 shadow-lg">
               {heroIcon}
             </div>
@@ -105,7 +105,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
               <button className={`bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl hover:scale-105 flex items-center group ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
                 {primaryActionLabel}
                 {primaryActionIcon && (
-                  <span className={`${isRTL ? 'mr-2' : 'ml-2'} group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`}>
+                  <span className={`ms-2 group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`}>
                     {primaryActionIcon}
                   </span>
                 )}
@@ -114,7 +114,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
               {secondaryActionLabel && (
                 <button className={`text-slate-600 hover:text-slate-900 font-medium transition-colors flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
                   {secondaryActionLabel}
-                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
                 </button>
               )}
             </div>
@@ -133,7 +133,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
-                <div key={index} className={`text-center group ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+                <div key={index} className={`text-center group text-start md:text-center`}>
                   <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
                     <stat.icon className="w-8 h-8 text-white" />
                   </div>
@@ -154,7 +154,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
       {quote && (
         <section className="py-16 bg-gradient-to-r from-teal-600 to-emerald-600">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className={`text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+            <div className={`text-center text-start md:text-center`}>
               {quoteIcon && (
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
                   {quoteIcon}
@@ -203,7 +203,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
 
       {/* CTA Section */}
       <section className="py-20 bg-slate-900">
-        <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+        <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-start md:text-center`}>
           <h2 className={`text-3xl lg:text-4xl font-bold text-white mb-6 ${isRTL ? 'font-arabic' : ''}`}>
             {t('ready_to_start', 'Ready to Start Your Journey?')}
           </h2>
@@ -217,7 +217,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
               className={`bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl flex items-center justify-center group ${isRTL ? 'flex-row-reverse font-arabic' : ''}`}
             >
               {t('get_started_today', 'Get Started Today')}
-              <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'} group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
+              <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180 group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
             </Link>
           </div>
         </div>
@@ -226,7 +226,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`grid md:grid-cols-3 gap-8 ${isRTL ? 'text-right' : 'text-left'}`}>
+          <div className={`grid md:grid-cols-3 gap-8 text-start`}>
             <div>
               <div className={`flex items-center space-x-4 ${isRTL ? 'space-x-reverse flex-row-reverse' : ''} mb-4`}>
                 <img 
@@ -273,7 +273,7 @@ export const ModernCareerPageLayout: React.FC<ModernCareerPageLayoutProps> = ({
             </div>
           </div>
           
-          <div className={`mt-8 pt-8 border-t border-slate-800 text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`mt-8 pt-8 border-t border-slate-800 text-center text-start md:text-center`}>
             <p className={`text-slate-400 text-sm ${isRTL ? 'font-arabic' : ''}`}>
               {t('footer_copyright')}
             </p>

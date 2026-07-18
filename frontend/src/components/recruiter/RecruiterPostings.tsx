@@ -303,7 +303,7 @@ const RecruiterPostings: React.FC = () => {
                                         <option value="100% Remote / Hybrid">{b('100% Remote / Hybrid', 'عن بُعد / هجين')}</option>
                                         <option value="__custom__">{b('Custom location...', 'موقع مخصص...')}</option>
                                     </select>
-                                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-500 pointer-events-none" />
+                                    <MapPin className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-500 pointer-events-none" />
                                 </div>
                                 {/* Custom text input for custom location */}
                                 {!['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Al Ain', 'Remote', '100% Remote / Hybrid', ''].includes(form.location) && (
@@ -363,7 +363,7 @@ const RecruiterPostings: React.FC = () => {
                                 {b('Cancel', 'إلغاء')}
                             </Button>
                             <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleSave} disabled={saving}>
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin me-1" /> : null}
                                 {editingId ? b('Update', 'تحديث') : b('Publish', 'نشر')}
                             </Button>
                         </div>
@@ -378,7 +378,7 @@ const RecruiterPostings: React.FC = () => {
                         className={`font-dubai-medium text-xs ${activeFilter === f ? 'bg-teal-600 text-white' : 'text-slate-600'}`}
                         onClick={() => setActiveFilter(f)}>
                         {f === 'all' ? b('All', 'الكل') : f === 'internship' ? b('Internships', 'التدريب') : b('Gigs', 'العمل الحر')}
-                        <Badge className="ml-1.5 text-[10px] bg-white/20 text-inherit border-0">
+                        <Badge className="ms-1.5 text-[10px] bg-white/20 text-inherit border-0">
                             {f === 'all' ? postings.length : postings.filter(p => p.posting_type === f).length}
                         </Badge>
                     </Button>
@@ -404,9 +404,9 @@ const RecruiterPostings: React.FC = () => {
                         <table className="w-full text-sm" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50/50">
-                                    <th className={`px-5 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Title', 'العنوان')}</th>
-                                    <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Type', 'النوع')}</th>
-                                    <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Location', 'الموقع')}</th>
+                                    <th className={`px-5 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Title', 'العنوان')}</th>
+                                    <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Type', 'النوع')}</th>
+                                    <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Location', 'الموقع')}</th>
                                     <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-center`}>{b('Apps', 'طلبات')}</th>
                                     <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-center`}>{b('Status', 'الحالة')}</th>
                                     <th className={`px-3 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-center`}>{b('Actions', 'إجراءات')}</th>
@@ -450,14 +450,14 @@ const RecruiterPostings: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-3 text-center">
                                             {p.is_active
-                                                ? <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]"><Eye className="h-3 w-3 mr-0.5" />{b('Active', 'نشط')}</Badge>
-                                                : <Badge className="bg-red-50 text-red-600 border-red-200 text-[10px]"><EyeOff className="h-3 w-3 mr-0.5" />{b('Inactive', 'غير نشط')}</Badge>}
+                                                ? <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]"><Eye className="h-3 w-3 me-0.5" />{b('Active', 'نشط')}</Badge>
+                                                : <Badge className="bg-red-50 text-red-600 border-red-200 text-[10px]"><EyeOff className="h-3 w-3 me-0.5" />{b('Inactive', 'غير نشط')}</Badge>}
                                         </td>
                                         <td className="px-3 py-3 text-center">
                                             <div className="flex items-center justify-center gap-1">
                                                 {p.application_count > 0 && (
                                                     <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 font-dubai-medium" onClick={() => toggleApplicants(p)}>
-                                                        <Users className="h-3.5 w-3.5 mr-1" />{b('Applicants', 'المتقدمون')}
+                                                        <Users className="h-3.5 w-3.5 me-1" />{b('Applicants', 'المتقدمون')}
                                                     </Button>
                                                 )}
                                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-teal-600" onClick={() => handleEdit(p)}>
@@ -478,7 +478,7 @@ const RecruiterPostings: React.FC = () => {
                                                 {loadingApplicants === `${p.posting_type}-${p.id}` ? (
                                                     <div className="flex items-center justify-center py-4">
                                                         <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
-                                                        <span className="ml-2 text-sm text-slate-500 font-dubai">{b('Loading applicants...', 'جارٍ تحميل المتقدمين...')}</span>
+                                                        <span className="ms-2 text-sm text-slate-500 font-dubai">{b('Loading applicants...', 'جارٍ تحميل المتقدمين...')}</span>
                                                     </div>
                                                 ) : (applicants[`${p.posting_type}-${p.id}`] || []).length === 0 ? (
                                                     <p className="text-sm text-slate-500 font-dubai text-center py-4">{b('No applicants yet', 'لا يوجد متقدمون بعد')}</p>
@@ -539,17 +539,17 @@ const RecruiterPostings: React.FC = () => {
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'shortlisted', `${p.posting_type}-${p.id}`)}
                                                                                 disabled={updatingAppId === app.application_id}>
-                                                                                <Star className="h-3 w-3 mr-1" />{b('Shortlist', 'إدراج')}
+                                                                                <Star className="h-3 w-3 me-1" />{b('Shortlist', 'إدراج')}
                                                                             </Button>
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-green-600 hover:bg-green-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'accepted', `${p.posting_type}-${p.id}`)}
                                                                                 disabled={updatingAppId === app.application_id}>
-                                                                                <CheckCircle className="h-3 w-3 mr-1" />{b('Accept', 'قبول')}
+                                                                                <CheckCircle className="h-3 w-3 me-1" />{b('Accept', 'قبول')}
                                                                             </Button>
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-600 hover:bg-red-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'rejected', `${p.posting_type}-${p.id}`)}
                                                                                 disabled={updatingAppId === app.application_id}>
-                                                                                <XCircle className="h-3 w-3 mr-1" />{b('Reject', 'رفض')}
+                                                                                <XCircle className="h-3 w-3 me-1" />{b('Reject', 'رفض')}
                                                                             </Button>
                                                                         </div>
                                                                     )}
@@ -558,12 +558,12 @@ const RecruiterPostings: React.FC = () => {
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-green-600 hover:bg-green-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'accepted', `${p.posting_type}-${p.id}`)}
                                                                                 disabled={updatingAppId === app.application_id}>
-                                                                                <CheckCircle className="h-3 w-3 mr-1" />{b('Accept', 'قبول')}
+                                                                                <CheckCircle className="h-3 w-3 me-1" />{b('Accept', 'قبول')}
                                                                             </Button>
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-600 hover:bg-red-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'rejected', `${p.posting_type}-${p.id}`)}
                                                                                 disabled={updatingAppId === app.application_id}>
-                                                                                <XCircle className="h-3 w-3 mr-1" />{b('Reject', 'رفض')}
+                                                                                <XCircle className="h-3 w-3 me-1" />{b('Reject', 'رفض')}
                                                                             </Button>
                                                                         </div>
                                                                     )}

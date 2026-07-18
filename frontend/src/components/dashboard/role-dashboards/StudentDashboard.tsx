@@ -78,7 +78,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Clock className="mr-2 h-5 w-5" />
+                  <Clock className="me-2 h-5 w-5" />
                   Upcoming Deadlines
                 </CardTitle>
               </CardHeader>
@@ -102,7 +102,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="mr-2 h-5 w-5" />
+                  <TrendingUp className="me-2 h-5 w-5" />
                   Recent Activity
                 </CardTitle>
               </CardHeader>
@@ -134,7 +134,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Star className="mr-2 h-5 w-5" />
+                  <Star className="me-2 h-5 w-5" />
                   Skills Development
                 </CardTitle>
                 <CardDescription>Track your skill progression</CardDescription>
@@ -175,7 +175,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Award className="mr-2 h-5 w-5" />
+                  <Award className="me-2 h-5 w-5" />
                   Achievements
                 </CardTitle>
                 <CardDescription>Your recent accomplishments</CardDescription>
@@ -211,7 +211,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Briefcase className="mr-2 h-5 w-5" />
+                  <Briefcase className="me-2 h-5 w-5" />
                   Jobs
                 </CardTitle>
               </CardHeader>
@@ -227,7 +227,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <GraduationCap className="mr-2 h-5 w-5" />
+                  <GraduationCap className="me-2 h-5 w-5" />
                   Training
                 </CardTitle>
               </CardHeader>
@@ -243,7 +243,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ activeTab }) => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Award className="mr-2 h-5 w-5" />
+                  <Award className="me-2 h-5 w-5" />
                   Scholarships
                 </CardTitle>
               </CardHeader>

@@ -329,7 +329,7 @@ const ApplicationsPage: React.FC = () => {
                 <h3 className="text-xl font-semibold mb-2">No applications found</h3>
                 <p className="text-gray-600 mb-6">You haven't applied to any jobs yet or no applications match your filters.</p>
                 <Button onClick={() => window.location.href = '/jobs'}>
-                  <Briefcase className="h-4 w-4 mr-2" />
+                  <Briefcase className="h-4 w-4 me-2" />
                   Browse Jobs
                 </Button>
               </div>
@@ -418,7 +418,7 @@ const ApplicationsPage: React.FC = () => {
                           variant="outline"
                           onClick={() => setSelectedApplication(application)}
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 me-2" />
                           View Details
                         </Button>
 
@@ -429,7 +429,7 @@ const ApplicationsPage: React.FC = () => {
                               disabled={isUpdating}
                               className="bg-green-600 hover:bg-green-700"
                             >
-                              <CheckCircle className="h-4 w-4 mr-2" />
+                              <CheckCircle className="h-4 w-4 me-2" />
                               Accept Offer
                             </Button>
                             <Button
@@ -437,7 +437,7 @@ const ApplicationsPage: React.FC = () => {
                               onClick={() => handleStatusUpdate(application.id, 'offer_declined')}
                               disabled={isUpdating}
                             >
-                              <XCircle className="h-4 w-4 mr-2" />
+                              <XCircle className="h-4 w-4 me-2" />
                               Decline Offer
                             </Button>
                           </>
@@ -449,7 +449,7 @@ const ApplicationsPage: React.FC = () => {
                             onClick={() => handleWithdrawApplication(application.id)}
                             disabled={isUpdating}
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
+                            <Trash2 className="h-4 w-4 me-2" />
                             Withdraw
                           </Button>
                         )}
@@ -458,7 +458,7 @@ const ApplicationsPage: React.FC = () => {
                           variant="outline"
                           onClick={() => handleOpenMessageDialog(application)}
                         >
-                          <MessageSquare className="h-4 w-4 mr-2" />
+                          <MessageSquare className="h-4 w-4 me-2" />
                           Message
                         </Button>
                       </div>

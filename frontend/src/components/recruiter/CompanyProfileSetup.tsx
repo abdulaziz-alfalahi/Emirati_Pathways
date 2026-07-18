@@ -806,7 +806,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                 <div className="flex justify-between items-center mb-4">
                   <Label>Company Certifications</Label>
                   <Button onClick={addCertification} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Certification
                   </Button>
                 </div>
@@ -865,7 +865,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                 <div className="flex justify-between items-center mb-4">
                   <Label>Company Awards</Label>
                   <Button onClick={addAward} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Award
                   </Button>
                 </div>
@@ -992,7 +992,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
           </Button>
         ) : (
           <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <CheckCircle className="h-4 w-4 me-2" />
             Complete Setup
           </Button>
         )}

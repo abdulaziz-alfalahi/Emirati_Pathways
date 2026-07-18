@@ -101,7 +101,7 @@ export const UserAssessments = () => {
                   <TableCell>
                     {session.scheduled_date ? (
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Calendar className="h-4 w-4 me-2 text-muted-foreground" />
                         {format(new Date(session.scheduled_date), 'MMM d, yyyy')}
                       </div>
                     ) : 'Not scheduled'}
@@ -114,7 +114,7 @@ export const UserAssessments = () => {
                   <TableCell>
                     {session.score !== null ? (
                       <div className="flex items-center">
-                        <Award className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Award className="h-4 w-4 me-2 text-muted-foreground" />
                         {session.score}/100
                       </div>
                     ) : '-'}

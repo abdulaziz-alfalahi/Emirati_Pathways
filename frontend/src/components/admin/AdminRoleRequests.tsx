@@ -88,7 +88,7 @@ const AdminRoleRequests: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Manage user requests for additional persona access.</p>
                 </div>
                 <Button onClick={fetchRequests} variant="outline" size="sm">
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     Refresh
                 </Button>
             </div>
@@ -117,7 +117,7 @@ const AdminRoleRequests: React.FC = () => {
                                                 {req.requested_role}
                                             </Badge>
                                             <span className="text-xs text-gray-500 flex items-center">
-                                                <Clock className="h-3 w-3 mr-1" />
+                                                <Clock className="h-3 w-3 me-1" />
                                                 {new Date(req.created_at).toLocaleDateString()}
                                             </span>
                                         </div>
@@ -163,7 +163,7 @@ const AdminRoleRequests: React.FC = () => {
                                             }}
                                             className="w-full"
                                         >
-                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                            <RefreshCw className="h-4 w-4 me-2" />
                                             Message
                                         </Button>
                                         <div className="border-t my-1"></div>
@@ -172,7 +172,7 @@ const AdminRoleRequests: React.FC = () => {
                                             onClick={() => handleAction(req.id, 'approve')}
                                             disabled={!!processingId}
                                         >
-                                            {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                            {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 me-2" />}
                                             Approve
                                         </Button>
                                         <Button
@@ -181,7 +181,7 @@ const AdminRoleRequests: React.FC = () => {
                                             onClick={() => handleAction(req.id, 'reject')}
                                             disabled={!!processingId}
                                         >
-                                            <XCircle className="h-4 w-4 mr-2" />
+                                            <XCircle className="h-4 w-4 me-2" />
                                             Reject
                                         </Button>
                                     </div>

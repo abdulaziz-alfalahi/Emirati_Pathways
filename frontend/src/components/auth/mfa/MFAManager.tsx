@@ -207,7 +207,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
                 Set up multi-factor authentication to secure your account
               </p>
               <Button onClick={() => setShowSetupWizard(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Setup MFA
               </Button>
             </div>
@@ -220,7 +220,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
                   size="sm"
                   onClick={() => setShowSetupWizard(true)}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Add Method
                 </Button>
               </div>
@@ -244,7 +244,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
                         
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-green-600">
-                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <CheckCircle className="h-3 w-3 me-1" />
                             Verified
                           </Badge>
                           
@@ -274,7 +274,7 @@ export const MFAManager: React.FC<MFAManagerProps> = ({ className }) => {
                     </p>
                   </div>
                   <Button variant="outline" onClick={downloadBackupCodes}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download
                   </Button>
                 </div>

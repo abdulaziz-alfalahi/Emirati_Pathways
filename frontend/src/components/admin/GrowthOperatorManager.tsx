@@ -371,7 +371,7 @@ const GrowthOperatorManager: React.FC = () => {
           <p className="text-gray-600">Assign operators to specific domains and manage their responsibilities</p>
         </div>
         <Button onClick={loadData} variant="outline" disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 me-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -402,11 +402,11 @@ const GrowthOperatorManager: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="operators">
-            <Users className="h-4 w-4 mr-2" />
+            <Users className="h-4 w-4 me-2" />
             Operators
           </TabsTrigger>
           <TabsTrigger value="domains">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 me-2" />
             Domain Overview
           </TabsTrigger>
         </TabsList>
@@ -416,12 +416,12 @@ const GrowthOperatorManager: React.FC = () => {
           {/* Search and Filter */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search operators..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             <Select value={filterDomain} onValueChange={setFilterDomain}>
@@ -448,7 +448,7 @@ const GrowthOperatorManager: React.FC = () => {
                   <TableHead>Assigned Domains</TableHead>
                   <TableHead>Primary Domain</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -500,7 +500,7 @@ const GrowthOperatorManager: React.FC = () => {
                       <TableCell>
                         {operator.primaryDomain ? (
                           <Badge variant="secondary" className="capitalize">
-                            <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                            <Star className="h-3 w-3 me-1 fill-yellow-400 text-yellow-400" />
                             {operator.primaryDomain}
                           </Badge>
                         ) : (
@@ -512,13 +512,13 @@ const GrowthOperatorManager: React.FC = () => {
                           {operator.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleAssignDomains(operator)}
                         >
-                          <Edit className="h-4 w-4 mr-1" />
+                          <Edit className="h-4 w-4 me-1" />
                           Assign Domains
                         </Button>
                       </TableCell>
@@ -674,12 +674,12 @@ const GrowthOperatorManager: React.FC = () => {
             >
               {isSaving ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <RefreshCw className="h-4 w-4 me-2 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4 me-2" />
                   Save Assignment
                 </>
               )}

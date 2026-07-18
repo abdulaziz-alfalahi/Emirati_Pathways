@@ -239,13 +239,13 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
                   <div className="flex items-center space-x-1">
                     {template.is_premium && (
                       <Badge className="bg-yellow-100 text-yellow-800">
-                        <Crown className="h-3 w-3 mr-1" />
+                        <Crown className="h-3 w-3 me-1" />
                         Premium
                       </Badge>
                     )}
                     {isSelected && (
                       <Badge className="bg-green-100 text-green-800">
-                        <Check className="h-3 w-3 mr-1" />
+                        <Check className="h-3 w-3 me-1" />
                         Selected
                       </Badge>
                     )}
@@ -279,7 +279,7 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
                         setPreviewTemplate(template.id);
                       }}
                     >
-                      <Eye className="h-4 w-4 mr-1" />
+                      <Eye className="h-4 w-4 me-1" />
                       Preview
                     </Button>
                   </div>
@@ -313,7 +313,7 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
                     <ul className="text-xs text-gray-600 space-y-1">
                       {template.metadata.features.slice(0, 3).map((feature, index) => (
                         <li key={index} className="flex items-center">
-                          <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                          <Star className="h-3 w-3 me-1 text-yellow-500" />
                           {feature}
                         </li>
                       ))}
@@ -384,13 +384,13 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
         <Button onClick={handleNext} disabled={!selectedTemplate || loading.isLoading} className="min-w-[120px]">
           {loading.isLoading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 me-2 animate-spin" />
               Creating...
             </>
           ) : (
             <>
               Continue
-              <Zap className="h-4 w-4 ml-2" />
+              <Zap className="h-4 w-4 ms-2" />
             </>
           )}
         </Button>

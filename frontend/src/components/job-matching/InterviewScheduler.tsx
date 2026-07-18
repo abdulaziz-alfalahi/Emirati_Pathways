@@ -142,10 +142,10 @@ export const InterviewScheduler: React.FC = () => {
                   className="w-full justify-start"
                   disabled={!slot.available}
                 >
-                  <Clock className="h-4 w-4 mr-2" />
+                  <Clock className="h-4 w-4 me-2" />
                   {slot.time}
                   {!slot.available && (
-                    <Badge variant="secondary" className="ml-auto">
+                    <Badge variant="secondary" className="ms-auto">
                       Booked
                     </Badge>
                   )}

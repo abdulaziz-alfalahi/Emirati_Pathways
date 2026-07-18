@@ -64,7 +64,7 @@ const JobDetails = ({
     return (
       <div>
         <h3 className="font-medium mb-2">Requirements</h3>
-        <ul className="list-disc pl-5 text-sm space-y-1">
+        <ul className="list-disc ps-5 text-sm space-y-1">
           {requirements.map((req, index) => (
             <li key={index}>{req}</li>
           ))}
@@ -111,7 +111,7 @@ const JobDetails = ({
             >
               {isMatching ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white me-2"></div>
                   Finding...
                 </>
               ) : (

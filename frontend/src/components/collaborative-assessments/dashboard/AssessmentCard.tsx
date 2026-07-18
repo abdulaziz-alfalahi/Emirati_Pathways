@@ -55,18 +55,18 @@ const AssessmentCard: React.FC<AssessmentCardProps> = ({ assessment }) => {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="flex items-center">
-          <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+          <Users className="h-4 w-4 me-2 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {assessment.participants.length} Participants
           </span>
         </div>
         <div className="flex items-center">
           {assessment.status === 'completed' ? (
-            <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+            <CheckCircle className="h-4 w-4 me-2 text-green-500" />
           ) : assessment.status === 'pending' ? (
-            <AlertTriangle className="h-4 w-4 mr-2 text-yellow-500" />
+            <AlertTriangle className="h-4 w-4 me-2 text-yellow-500" />
           ) : (
-            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+            <Clock className="h-4 w-4 me-2 text-muted-foreground" />
           )}
           <span className="text-sm text-muted-foreground">
             Due: {assessment.dueDate}

@@ -204,7 +204,7 @@ export const EducationModule = () => {
                                 <div className="flex items-center text-sm text-gray-500 mt-1 gap-1">
                                     <Calendar size={14} />
                                     <span>{new Date(edu.start_date).getFullYear()} - {new Date(edu.end_date).getFullYear()}</span>
-                                    {edu.grade && <span className={`${isRTL ? 'mr-2' : 'ml-2'}`}>• {t('GPA:', 'المعدل:')} {edu.grade}</span>}
+                                    {edu.grade && <span className={`ms-2`}>• {t('GPA:', 'المعدل:')} {edu.grade}</span>}
                                 </div>
                             </div>
                         </div>

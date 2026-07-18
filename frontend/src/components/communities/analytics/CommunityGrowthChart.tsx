@@ -100,7 +100,7 @@ const CommunityGrowthChart: React.FC<CommunityGrowthChartProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2" />
+            <TrendingUp className="h-5 w-5 me-2" />
             Community Growth
           </CardTitle>
           <CardDescription>
@@ -111,7 +111,7 @@ const CommunityGrowthChart: React.FC<CommunityGrowthChartProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center">
-                <Users className="h-5 w-5 text-blue-600 mr-2" />
+                <Users className="h-5 w-5 text-blue-600 me-2" />
                 <h3 className="font-semibold text-gray-900">New Members</h3>
               </div>
               <div className="text-2xl font-bold text-blue-600 mt-2">+{totalGrowth}</div>
@@ -120,7 +120,7 @@ const CommunityGrowthChart: React.FC<CommunityGrowthChartProps> = ({
             
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="flex items-center">
-                <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
+                <TrendingUp className="h-5 w-5 text-green-600 me-2" />
                 <h3 className="font-semibold text-gray-900">Growth Rate</h3>
               </div>
               <div className="text-2xl font-bold text-green-600 mt-2">{growthRate.toFixed(1)}%</div>
@@ -129,7 +129,7 @@ const CommunityGrowthChart: React.FC<CommunityGrowthChartProps> = ({
             
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-purple-600 mr-2" />
+                <Calendar className="h-5 w-5 text-purple-600 me-2" />
                 <h3 className="font-semibold text-gray-900">Total Members</h3>
               </div>
               <div className="text-2xl font-bold text-purple-600 mt-2">

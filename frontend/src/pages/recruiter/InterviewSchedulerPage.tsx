@@ -12,7 +12,7 @@ const InterviewSchedulerPage: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+            <ArrowLeft className="me-2 h-4 w-4" /> Back
           </Button>
           <h1 className="text-2xl font-bold">Interview Management</h1>
         </div>

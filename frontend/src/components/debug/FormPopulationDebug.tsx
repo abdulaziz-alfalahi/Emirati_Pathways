@@ -191,7 +191,7 @@ const FormPopulationDebug: React.FC<FormPopulationDebugProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           🔧 Form Population Debug Tool
-          <Badge variant="outline" className="ml-auto bg-blue-100 text-blue-800">
+          <Badge variant="outline" className="ms-auto bg-blue-100 text-blue-800">
             Debug Mode
           </Badge>
         </CardTitle>

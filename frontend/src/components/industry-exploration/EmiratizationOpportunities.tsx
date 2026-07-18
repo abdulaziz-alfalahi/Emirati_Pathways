@@ -66,7 +66,7 @@ export const EmiratizationOpportunities: React.FC = () => {
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="font-semibold text-lg">{opportunity.title}</h3>
                     <Badge variant={opportunity.trend === 'up' ? 'default' : 'secondary'}>
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <TrendingUp className="h-3 w-3 me-1" />
                       {opportunity.trend}
                     </Badge>
                   </div>

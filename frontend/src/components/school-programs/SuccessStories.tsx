@@ -92,8 +92,8 @@ const SuccessStories: React.FC = () => {
               </div>
               
               <div className="relative">
-                <Quote className="absolute -top-2 -left-1 h-6 w-6 text-ehrdc-teal/20" />
-                <p className="text-sm text-muted-foreground italic pl-6 leading-relaxed">
+                <Quote className="absolute -top-2 -start-1 h-6 w-6 text-ehrdc-teal/20" />
+                <p className="text-sm text-muted-foreground italic ps-6 leading-relaxed">
                   "{story.story}"
                 </p>
               </div>

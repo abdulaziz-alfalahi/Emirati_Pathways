@@ -231,7 +231,7 @@ const UserMenu: React.FC = () => {
           onClick={() => navigate('/candidate/profile/identity')}
           className="cursor-pointer text-teal-600 focus:text-teal-700"
         >
-          <span className={`${isRTL ? 'ml-2' : 'mr-2'}`}>+</span> {t('Request New Role', 'طلب دور جديد')}
+          <span className={`me-2`}>+</span> {t('Request New Role', 'طلب دور جديد')}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

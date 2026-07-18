@@ -73,7 +73,7 @@ const PersonaSwitcher: React.FC = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 end-4 z-50">
       {/* Compact View */}
       {!isExpanded && (
         <Card className="w-64 shadow-lg border-2 border-dashed border-orange-300 bg-orange-50">
@@ -164,7 +164,7 @@ const PersonaSwitcher: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         {getRoleIcon(user.user_type)}
                         <span>{user.full_name}</span>
-                        <Badge variant="outline" className="text-xs ml-2">
+                        <Badge variant="outline" className="text-xs ms-2">
                           {formatRoleName(user.user_type)}
                         </Badge>
                       </div>

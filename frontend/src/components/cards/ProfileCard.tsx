@@ -130,7 +130,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             }}
           >
             {actionLabel}
-            <ExternalLink className="ml-2 h-4 w-4" />
+            <ExternalLink className="ms-2 h-4 w-4" />
           </Button>
         </DubaiCardFooter>
       )}

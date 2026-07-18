@@ -155,7 +155,7 @@ export const Leaderboard: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline">Level {entry.level}</Badge>
                     </div>
@@ -194,7 +194,7 @@ export const Leaderboard: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-lg font-bold text-primary">{entry.achievements_count} badges</p>
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export const Leaderboard: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-lg font-bold text-primary">{entry.courses_completed} courses</p>
                   </div>
                 </div>

@@ -113,7 +113,7 @@ const RoleRequestsPage: React.FC = () => {
                                                     {req.requested_role}
                                                 </Badge>
                                                 <span className="text-xs text-gray-500 flex items-center">
-                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    <Clock className="h-3 w-3 me-1" />
                                                     {new Date(req.created_at).toLocaleDateString()}
                                                 </span>
                                             </div>
@@ -130,7 +130,7 @@ const RoleRequestsPage: React.FC = () => {
                                                 onClick={() => handleAction(req.id, 'reject')}
                                                 disabled={!!processingId}
                                             >
-                                                {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
+                                                {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 me-2" />}
                                                 Reject
                                             </Button>
                                             <Button
@@ -138,7 +138,7 @@ const RoleRequestsPage: React.FC = () => {
                                                 onClick={() => handleAction(req.id, 'approve')}
                                                 disabled={!!processingId}
                                             >
-                                                {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                                {processingId === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 me-2" />}
                                                 Approve Access
                                             </Button>
                                         </div>

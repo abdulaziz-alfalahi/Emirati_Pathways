@@ -83,12 +83,12 @@ const AdvisorPortfolio: React.FC = () => {
           <div className="flex-1 space-y-1">
             <CardTitle className="text-2xl flex items-center justify-between">
               {advisorName}
-              <Badge variant="outline" className="ml-2">
+              <Badge variant="outline" className="ms-2">
                 {advisor.is_active ? 'Active' : 'Inactive'}
               </Badge>
             </CardTitle>
             <div className="flex items-center text-muted-foreground">
-              <Briefcase className="h-4 w-4 mr-1" />
+              <Briefcase className="h-4 w-4 me-1" />
               <span>{advisor.specialization}</span>
             </div>
             <div className="mt-1">
@@ -131,7 +131,7 @@ const AdvisorPortfolio: React.FC = () => {
                   <div>
                     <h4 className="font-medium">{session.topic}</h4>
                     <div className="flex items-center text-sm text-muted-foreground mt-1">
-                      <Calendar className="h-3 w-3 mr-1" />
+                      <Calendar className="h-3 w-3 me-1" />
                       <span>
                         {format(new Date(session.scheduled_date), 'PPP')}
                       </span>

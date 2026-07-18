@@ -16,14 +16,14 @@ const JobDescriptionHeader = ({ onOpenCreateDialog, onOpenUploadDialog }: JobDes
       </div>
       <div className="flex flex-wrap gap-3">
         <Button onClick={onOpenCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Create Job Manually
+          <Plus className="me-2 h-4 w-4" /> Create Job Manually
         </Button>
         <Button variant="outline" onClick={onOpenUploadDialog}>
-          <UploadCloud className="mr-2 h-4 w-4" /> 
+          <UploadCloud className="me-2 h-4 w-4" /> 
           Upload a JD
         </Button>
         <Button variant="outline" onClick={onOpenUploadDialog}> 
-          <UploadCloud className="mr-2 h-4 w-4" />
+          <UploadCloud className="me-2 h-4 w-4" />
           Upload a Batch of JDs
         </Button>
       </div>

@@ -107,7 +107,7 @@ export const MyLearningTab: React.FC = () => {
                 size="sm" 
                 className="flex-1 bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90] text-white"
               >
-                <Play className="h-4 w-4 mr-2" />
+                <Play className="h-4 w-4 me-2" />
                 Continue
               </Button>
               <Button size="sm" variant="outline" className="flex-1">

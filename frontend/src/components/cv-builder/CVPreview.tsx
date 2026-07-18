@@ -55,19 +55,19 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
         <div className="flex flex-wrap gap-4 justify-center text-sm text-gray-600">
           {personal.email && (
             <div className="flex items-center">
-              <Mail className="h-4 w-4 mr-1" />
+              <Mail className="h-4 w-4 me-1" />
               {personal.email}
             </div>
           )}
           {personal.phone && (
             <div className="flex items-center">
-              <Phone className="h-4 w-4 mr-1" />
+              <Phone className="h-4 w-4 me-1" />
               {personal.phone}
             </div>
           )}
           {location && (
             <div className="flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
+              <MapPin className="h-4 w-4 me-1" />
               {location}
             </div>
           )}
@@ -94,21 +94,21 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
           </h3>
           <div className="space-y-4">
             {data.experience.map((exp) => (
-              <div key={exp.id} className="border-l-2 border-gray-200 pl-4">
+              <div key={exp.id} className="border-s-2 border-gray-200 ps-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900">{exp.jobTitle ?? exp.position}</h4>
                     <p className="text-blue-600 font-medium">{exp.company}</p>
                   </div>
                   <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     {exp.startDate} - {exp.isCurrentJob || exp.isCurrentlyWorking ? 'Present' : exp.endDate}
                   </div>
                 </div>
                 
                 {exp.location && (
                   <p className="text-sm text-gray-600 mb-2 flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
+                    <MapPin className="h-4 w-4 me-1" />
                     {exp.location}
                   </p>
                 )}
@@ -152,7 +152,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
           </h3>
           <div className="space-y-3">
             {data.education.map((edu) => (
-              <div key={edu.id} className="border-l-2 border-gray-2 00 pl-4">
+              <div key={edu.id} className="border-s-2 border-gray-2 00 ps-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900">{edu.degree}</h4>
@@ -162,7 +162,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                     )}
                   </div>
                   <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     {edu.startDate} - {edu.endDate}
                   </div>
                 </div>
@@ -221,7 +221,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                             }`}
                           />
                         ))}
-                        <span className="text-xs text-gray-500 ml-1">{skill.level}</span>
+                        <span className="text-xs text-gray-500 ms-1">{skill.level}</span>
                       </div>
                     </div>
                   ))}
@@ -247,7 +247,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
             {data.languages.map((language) => (
               <div key={language.id} className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <Globe className="h-4 w-4 mr-2 text-orange-500" />
+                  <Globe className="h-4 w-4 me-2 text-orange-500" />
                   <span className="font-medium text-gray-800">{language.name}</span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -282,17 +282,17 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
           </h3>
           <div className="space-y-3">
             {data.certifications.map((cert) => (
-              <div key={cert.id} className="border-l-2 border-gray-200 pl-4">
+              <div key={cert.id} className="border-s-2 border-gray-200 ps-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Award className="h-4 w-4 mr-2 text-red-500" />
+                      <Award className="h-4 w-4 me-2 text-red-500" />
                       {cert.name}
                     </h4>
                     <p className="text-red-600 font-medium">{cert.issuer}</p>
                   </div>
                   <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     {cert.issueDate}
                     {cert.expiryDate && ` - ${cert.expiryDate}`}
                   </div>
@@ -311,7 +311,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" />
+                    <ExternalLink className="h-3 w-3 me-1" />
                     View Credential
                   </a>
                 )}
@@ -336,7 +336,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
           </h3>
           <div className="space-y-4">
             {data.projects.map((project) => (
-              <div key={project.id} className="border-l-2 border-gray-200 pl-4">
+              <div key={project.id} className="border-s-2 border-gray-200 ps-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900">{project.title}</h4>
@@ -348,7 +348,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
                         >
-                          <ExternalLink className="h-3 w-3 mr-1" />
+                          <ExternalLink className="h-3 w-3 me-1" />
                           Live Demo
                         </a>
                       )}
@@ -359,14 +359,14 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800"
                         >
-                          <Github className="h-3 w-3 mr-1" />
+                          <Github className="h-3 w-3 me-1" />
                           Source Code
                         </a>
                       )}
                     </div>
                   </div>
                   <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-4 w-4 me-1" />
                     {project.startDate} - {project.isOngoing ? 'Present' : project.endDate}
                   </div>
                 </div>
@@ -428,7 +428,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
             {refs.map((ref) => (
               <div key={ref.id} className="border border-gray-200 rounded-lg p-3">
                 <h4 className="font-semibold text-gray-900 flex items-center">
-                  <Building className="h-4 w-4 mr-2" />
+                  <Building className="h-4 w-4 me-2" />
                   {ref.name}
                 </h4>
                 {ref.position && <p className="text-gray-600 text-sm">{ref.position}</p>}
@@ -436,13 +436,13 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
                 <div className="mt-2 space-y-1">
                   {ref.email && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="h-3 w-3 mr-1" />
+                      <Mail className="h-3 w-3 me-1" />
                       {ref.email}
                     </div>
                   )}
                   {ref.phone && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <Phone className="h-3 w-3 mr-1" />
+                      <Phone className="h-3 w-3 me-1" />
                       {ref.phone}
                     </div>
                   )}
@@ -473,7 +473,7 @@ export const CVPreview = forwardRef<HTMLDivElement, CVPreviewProps>(
         case 'academic':
           return 'bg-blue-50 border-2 border-blue-300';
         case 'modern':
-          return 'bg-white border-l-4 border-l-green-500 border border-gray-200';
+          return 'bg-white border-s-4 border-s-green-500 border border-gray-200';
         default:
           return 'bg-white border border-gray-300';
       }

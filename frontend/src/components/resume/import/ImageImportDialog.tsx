@@ -137,7 +137,7 @@ export const ImageImportDialog: React.FC<ImageImportDialogProps> = ({
               id="resume-image"
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="cursor-pointer file:mr-4 file:cursor-pointer file:border-0 file:bg-primary file:py-2 file:px-4 file:text-white hover:file:bg-primary/90"
+              className="cursor-pointer file:me-4 file:cursor-pointer file:border-0 file:bg-primary file:py-2 file:px-4 file:text-white hover:file:bg-primary/90"
               onChange={handleFileUpload}
               disabled={isUploading}
             />
@@ -148,7 +148,7 @@ export const ImageImportDialog: React.FC<ImageImportDialogProps> = ({
           {isUploading && (
             <div className="flex items-center justify-center py-4">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-              <span className="ml-2 text-sm">Processing image...</span>
+              <span className="ms-2 text-sm">Processing image...</span>
             </div>
           )}
         </div>

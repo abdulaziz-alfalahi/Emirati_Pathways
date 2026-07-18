@@ -207,7 +207,7 @@ class SpacingValidator {
   }
 
   private isValidSpacingClass(spacing: string): boolean {
-    const validPrefixes = ['p-', 'px-', 'py-', 'pt-', 'pb-', 'pl-', 'pr-', 'm-', 'mx-', 'my-', 'mt-', 'mb-', 'ml-', 'mr-'];
+    const validPrefixes = ['p-', 'px-', 'py-', 'pt-', 'pb-', 'pl-', 'pr-', 'ps-', 'pe-', 'm-', 'mx-', 'my-', 'mt-', 'mb-', 'ml-', 'mr-', 'ms-', 'me-'];
     return validPrefixes.some(prefix => spacing.startsWith(prefix));
   }
 

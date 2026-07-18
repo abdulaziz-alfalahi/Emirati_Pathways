@@ -60,7 +60,7 @@ export const MatchingAlgorithm: React.FC = () => {
                           {match.compatibility} Match
                         </Badge>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <div className="text-2xl font-bold text-ehrdc-teal">{match.score}%</div>
                         <div className="text-xs text-muted-foreground">Compatibility</div>
                       </div>

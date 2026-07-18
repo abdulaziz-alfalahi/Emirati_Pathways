@@ -78,7 +78,7 @@ export const MentorResources: React.FC = () => {
                 
                 <div className="flex gap-2">
                   <Button size="sm" className="flex-1">
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download
                   </Button>
                   <Button size="sm" variant="outline">
@@ -98,7 +98,7 @@ export const MentorResources: React.FC = () => {
           and get support from experienced mentoring professionals.
         </p>
         <Button>
-          <Users className="h-4 w-4 mr-2" />
+          <Users className="h-4 w-4 me-2" />
           Join Mentor Community
         </Button>
       </div>

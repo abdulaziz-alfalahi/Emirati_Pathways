@@ -104,7 +104,7 @@ const RoleSwitcherButton = () => {
   return (
     <button
       onClick={handleRoleSwitch}
-      className="fixed top-5 right-5 z-[1000] flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-teal-600 to-teal-700 text-white text-sm font-semibold shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300"
+      className="fixed top-5 end-5 z-[1000] flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-teal-600 to-teal-700 text-white text-sm font-semibold shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300"
     >
       <RotateCcw size={14} />
       Switch Role
@@ -258,11 +258,11 @@ const RecruiterDashboard = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" className="text-slate-600 border-slate-200" onClick={() => navigate('/recruiter/settings')}>
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 me-2" />
                   Account Settings
                 </Button>
                 <Button className="bg-teal-600 hover:bg-teal-700 text-white" size="sm" onClick={() => navigate('/recruiter/post-job')}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Post New Job
                 </Button>
               </div>
@@ -274,16 +274,16 @@ const RecruiterDashboard = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-4 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
               <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
-                <User className="h-4 w-4 mr-2" /> Overview
+                <User className="h-4 w-4 me-2" /> Overview
               </TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
-                <Briefcase className="h-4 w-4 mr-2" /> Jobs
+                <Briefcase className="h-4 w-4 me-2" /> Jobs
               </TabsTrigger>
               <TabsTrigger value="candidates" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
-                <Users className="h-4 w-4 mr-2" /> Candidates
+                <Users className="h-4 w-4 me-2" /> Candidates
               </TabsTrigger>
               <TabsTrigger value="interviews" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
-                <Video className="h-4 w-4 mr-2" /> Interviews
+                <Video className="h-4 w-4 me-2" /> Interviews
               </TabsTrigger>
             </TabsList>
 
@@ -415,7 +415,7 @@ const RecruiterDashboard = () => {
                         <span>Candidate</span>
                         <span>Applied For</span>
                         <span className="text-center">AI Match</span>
-                        <span className="text-right">Status</span>
+                        <span className="text-end">Status</span>
                       </div>
                       {recentApplications.map((app, i) => (
                         <div key={i} className="grid grid-cols-4 gap-2 items-center px-3 py-3 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
@@ -434,7 +434,7 @@ const RecruiterDashboard = () => {
                               <span className="text-xs font-bold text-slate-700">{app.match}%</span>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-end">
                             <Badge className={`${app.statusColor} border text-[10px]`}>{app.status}</Badge>
                           </div>
                         </div>
@@ -452,7 +452,7 @@ const RecruiterDashboard = () => {
                         Upcoming Interviews
                       </CardTitle>
                       <Button variant="ghost" size="sm" className="text-xs text-teal-600">
-                        <Calendar className="h-3 w-3 mr-1" /> Full Calendar
+                        <Calendar className="h-3 w-3 me-1" /> Full Calendar
                       </Button>
                     </div>
                   </CardHeader>
@@ -499,8 +499,8 @@ const RecruiterDashboard = () => {
                         <SelectItem value="pending">Pending</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline"><Filter className="h-4 w-4 mr-2" /> Filter</Button>
-                    <Button className="bg-teal-600 hover:bg-teal-700"><Upload className="h-4 w-4 mr-2" /> Post New Job</Button>
+                    <Button variant="outline"><Filter className="h-4 w-4 me-2" /> Filter</Button>
+                    <Button className="bg-teal-600 hover:bg-teal-700"><Upload className="h-4 w-4 me-2" /> Post New Job</Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -556,7 +556,7 @@ const RecruiterDashboard = () => {
                         <SelectItem value="interviewed">Interviewed</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline"><Filter className="h-4 w-4 mr-2" /> Filter</Button>
+                    <Button variant="outline"><Filter className="h-4 w-4 me-2" /> Filter</Button>
                   </div>
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />

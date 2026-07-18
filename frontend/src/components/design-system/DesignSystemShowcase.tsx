@@ -751,7 +751,7 @@ export const DesignSystemShowcase: React.FC = () => {
 
         <div className="flex">
           {/* Sidebar Navigation */}
-          <div className="w-64 bg-white border-r border-ehrdc-neutral-light min-h-screen sticky top-0">
+          <div className="w-64 bg-white border-e border-ehrdc-neutral-light min-h-screen sticky top-0">
             <div className="p-6">
               <h2 className="font-semibold text-ehrdc-neutral-dark mb-4">Components</h2>
               <nav className="space-y-2">
@@ -759,7 +759,7 @@ export const DesignSystemShowcase: React.FC = () => {
                   <button
                     key={section.id}
                     onClick={() => setSelectedComponent(section.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-start transition-colors ${
                       selectedComponent === section.id
                         ? 'bg-ehrdc-teal text-white'
                         : 'text-ehrdc-neutral-dark hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal'

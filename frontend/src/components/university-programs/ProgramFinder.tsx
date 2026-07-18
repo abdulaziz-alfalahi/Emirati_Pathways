@@ -111,12 +111,12 @@ export const ProgramFinder: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search programs or universities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -176,7 +176,7 @@ export const ProgramFinder: React.FC = () => {
                       <Badge className={getLevelColor(program.level)}>{program.level}</Badge>
                       {program.scholarships && (
                         <Badge className="bg-yellow-100 text-yellow-800">
-                          <Award className="h-3 w-3 mr-1" />
+                          <Award className="h-3 w-3 me-1" />
                           Scholarships
                         </Badge>
                       )}

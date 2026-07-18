@@ -148,10 +148,10 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
       
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search materials..."
-            className="pl-8"
+            className="ps-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -196,7 +196,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                 <TableHead>Category</TableHead>
                 <TableHead>Visibility</TableHead>
                 <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-end">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -206,7 +206,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                   <TableCell>
                     <div className="flex items-center">
                       {getMaterialTypeIcon(material.material_type)}
-                      <span className="ml-2 capitalize">{material.material_type}</span>
+                      <span className="ms-2 capitalize">{material.material_type}</span>
                     </div>
                   </TableCell>
                   <TableCell>{material.category}</TableCell>
@@ -217,11 +217,11 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center text-muted-foreground">
-                      <Clock className="h-3 w-3 mr-1" />
+                      <Clock className="h-3 w-3 me-1" />
                       <span>{format(new Date(material.created_at), 'MMM d, yyyy')}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => setViewMaterial(material)} title="View">
                         <Eye className="h-4 w-4" />
@@ -252,7 +252,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                   <Badge className="bg-blue-500/10 text-blue-500">
                     <div className="flex items-center">
                       {getMaterialTypeIcon(material.material_type)}
-                      <span className="ml-1 capitalize">{material.material_type}</span>
+                      <span className="ms-1 capitalize">{material.material_type}</span>
                     </div>
                   </Badge>
                 </div>
@@ -264,13 +264,13 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
               <CardContent className="flex-grow">
                 <div className="text-sm space-y-2">
                   <div className="flex items-center text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-2" />
+                    <Calendar className="h-4 w-4 me-2" />
                     <span>{format(new Date(material.created_at), 'MMMM d, yyyy')}</span>
                   </div>
                   {material.category && (
                     <div className="flex items-center text-muted-foreground">
                       <span className="font-medium">Category:</span>
-                      <span className="ml-2">{material.category}</span>
+                      <span className="ms-2">{material.category}</span>
                     </div>
                   )}
                   {material.tags && material.tags.length > 0 && (
@@ -292,7 +292,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                     className="text-blue-500"
                     onClick={() => setViewMaterial(material)}
                   >
-                    <Eye className="h-4 w-4 mr-1" />
+                    <Eye className="h-4 w-4 me-1" />
                     View Details
                   </Button>
                   <Button 
@@ -300,7 +300,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                     size="sm"
                     onClick={() => handleDownload(material)}
                   >
-                    <Download className="h-4 w-4 mr-1" />
+                    <Download className="h-4 w-4 me-1" />
                     Download
                   </Button>
                 </div>
@@ -332,7 +332,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
                   <h4 className="text-sm font-medium mb-1">Type</h4>
                   <div className="flex items-center">
                     {getMaterialTypeIcon(viewMaterial.material_type)}
-                    <span className="ml-2 capitalize">{viewMaterial.material_type}</span>
+                    <span className="ms-2 capitalize">{viewMaterial.material_type}</span>
                   </div>
                 </div>
                 
@@ -373,7 +373,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
               
               <div className="flex justify-end pt-4">
                 <Button onClick={() => handleDownload(viewMaterial)}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   Download Material
                 </Button>
               </div>

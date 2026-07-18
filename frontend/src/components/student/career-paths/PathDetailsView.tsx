@@ -45,7 +45,7 @@ const PathDetailsView: React.FC<PathDetailsViewProps> = ({ selectedPath, onBack 
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="me-2 h-4 w-4" />
           Back
         </Button>
         <h3 className="text-2xl font-bold">{selectedPath.title}</h3>
@@ -81,7 +81,7 @@ const PathDetailsView: React.FC<PathDetailsViewProps> = ({ selectedPath, onBack 
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="bg-muted w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                  <div className="bg-muted w-8 h-8 rounded-full flex items-center justify-center me-3">
                     {index + 1}
                   </div>
                   <h5 className="font-medium">{step.title}</h5>
@@ -92,7 +92,7 @@ const PathDetailsView: React.FC<PathDetailsViewProps> = ({ selectedPath, onBack 
                   <Badge variant="outline">Pending</Badge>
                 )}
               </div>
-              <p className="mt-2 text-sm text-muted-foreground pl-11">
+              <p className="mt-2 text-sm text-muted-foreground ps-11">
                 {step.description}
               </p>
             </div>

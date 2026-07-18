@@ -21,7 +21,7 @@ const CreateAssessmentDialog: React.FC<CreateAssessmentDialogProps> = ({
     <Dialog onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create Assessment
+          <PlusCircle className="me-2 h-4 w-4" /> Create Assessment
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">

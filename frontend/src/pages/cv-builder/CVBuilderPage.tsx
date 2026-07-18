@@ -265,7 +265,7 @@ const CVBuilderPage: React.FC = () => {
           onClick={addExperience}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Add Experience
         </button>
       </div>
@@ -343,7 +343,7 @@ const CVBuilderPage: React.FC = () => {
           onClick={addSkill}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Add Skill
         </button>
       </div>
@@ -362,7 +362,7 @@ const CVBuilderPage: React.FC = () => {
                   );
                   setSkills(updated);
                 }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mr-2"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent me-2"
               />
               <button
                 onClick={() => setSkills(skills.filter(s => s.id !== skill.id))}
@@ -417,7 +417,7 @@ const CVBuilderPage: React.FC = () => {
                 }}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <label className="ml-2 text-sm text-gray-700">Certified</label>
+              <label className="ms-2 text-sm text-gray-700">Certified</label>
             </div>
           </div>
         ))}
@@ -450,7 +450,7 @@ const CVBuilderPage: React.FC = () => {
               }`}
           >
             {template.popular && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+              <span className="absolute -top-2 -end-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                 Popular
               </span>
             )}
@@ -462,7 +462,7 @@ const CVBuilderPage: React.FC = () => {
             </div>
 
             {cvTemplate === template.id && (
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-2 start-2">
                 <CheckCircle className="h-5 w-5 text-blue-500" />
               </div>
             )}
@@ -482,11 +482,11 @@ const CVBuilderPage: React.FC = () => {
             disabled={isAnalyzing}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4 me-2" />
             {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
           </button>
           <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Download PDF
           </button>
         </div>
@@ -505,15 +505,15 @@ const CVBuilderPage: React.FC = () => {
             </p>
             <div className="flex justify-center items-center space-x-6 text-sm text-gray-600">
               <span className="flex items-center">
-                <Mail className="h-4 w-4 mr-1" />
+                <Mail className="h-4 w-4 me-1" />
                 {personalInfo.email || 'email@example.com'}
               </span>
               <span className="flex items-center">
-                <Phone className="h-4 w-4 mr-1" />
+                <Phone className="h-4 w-4 me-1" />
                 {personalInfo.phone || '+971 50 123 4567'}
               </span>
               <span className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
+                <MapPin className="h-4 w-4 me-1" />
                 {personalInfo.emirate || 'UAE'}
               </span>
             </div>
@@ -522,7 +522,7 @@ const CVBuilderPage: React.FC = () => {
           {/* Summary */}
           {personalInfo.summary && (
             <div className="mb-8">
-              <h2 className="text-lg font-dubai-bold text-gray-900 mb-3 border-l-4 border-blue-500 pl-3">
+              <h2 className="text-lg font-dubai-bold text-gray-900 mb-3 border-s-4 border-blue-500 ps-3">
                 Professional Summary
               </h2>
               <p className="text-gray-700 leading-relaxed">{personalInfo.summary}</p>
@@ -532,12 +532,12 @@ const CVBuilderPage: React.FC = () => {
           {/* Experience */}
           {experiences.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-lg font-dubai-bold text-gray-900 mb-4 border-l-4 border-blue-500 pl-3">
+              <h2 className="text-lg font-dubai-bold text-gray-900 mb-4 border-s-4 border-blue-500 ps-3">
                 Professional Experience
               </h2>
               <div className="space-y-4">
                 {experiences.map((exp, index) => (
-                  <div key={exp.id} className="border-l-2 border-gray-200 pl-4">
+                  <div key={exp.id} className="border-s-2 border-gray-200 ps-4">
                     <h3 className="font-dubai-bold text-gray-900">{exp.position}</h3>
                     <p className="text-blue-600 font-dubai-medium">{exp.company}</p>
                     <p className="text-sm text-gray-600 mb-2">{exp.location}</p>
@@ -553,7 +553,7 @@ const CVBuilderPage: React.FC = () => {
           {/* Skills */}
           {skills.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-lg font-dubai-bold text-gray-900 mb-4 border-l-4 border-blue-500 pl-3">
+              <h2 className="text-lg font-dubai-bold text-gray-900 mb-4 border-s-4 border-blue-500 ps-3">
                 Skills & Competencies
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -585,7 +585,7 @@ const CVBuilderPage: React.FC = () => {
       {analysisResults && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6">
           <div className="flex items-center mb-4">
-            <Sparkles className="h-6 w-6 text-purple-600 mr-2" />
+            <Sparkles className="h-6 w-6 text-purple-600 me-2" />
             <h3 className="text-lg font-dubai-bold text-gray-900">AI Analysis Results</h3>
           </div>
 
@@ -601,13 +601,13 @@ const CVBuilderPage: React.FC = () => {
             {/* Strengths */}
             <div>
               <h4 className="font-dubai-bold text-green-700 mb-2 flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 me-1" />
                 Strengths
               </h4>
               <ul className="text-sm text-gray-700 space-y-1">
                 {analysisResults.strengths.map((strength: string, index: number) => (
                   <li key={index} className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
+                    <span className="text-green-500 me-2">•</span>
                     {strength}
                   </li>
                 ))}
@@ -617,13 +617,13 @@ const CVBuilderPage: React.FC = () => {
             {/* Improvements */}
             <div>
               <h4 className="font-dubai-bold text-orange-700 mb-2 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
+                <AlertCircle className="h-4 w-4 me-1" />
                 Improvements
               </h4>
               <ul className="text-sm text-gray-700 space-y-1">
                 {analysisResults.improvements.map((improvement: string, index: number) => (
                   <li key={index} className="flex items-start">
-                    <span className="text-orange-500 mr-2">•</span>
+                    <span className="text-orange-500 me-2">•</span>
                     {improvement}
                   </li>
                 ))}
@@ -674,7 +674,7 @@ const CVBuilderPage: React.FC = () => {
                           : 'text-gray-600 hover:bg-gray-100'
                         }`}
                     >
-                      <Icon className="h-4 w-4 mr-3" />
+                      <Icon className="h-4 w-4 me-3" />
                       {tab.name}
                     </button>
                   );
@@ -683,7 +683,7 @@ const CVBuilderPage: React.FC = () => {
 
               <div className="mt-6 pt-6 border-t">
                 <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center font-dubai-medium">
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4 me-2" />
                   Save Progress
                 </button>
               </div>

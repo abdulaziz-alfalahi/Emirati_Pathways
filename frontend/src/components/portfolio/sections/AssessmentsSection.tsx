@@ -17,7 +17,7 @@ const AssessmentsSection: React.FC<AssessmentsSectionProps> = ({ assessments }) 
       <Card className="bg-muted/40">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Gauge className="h-5 w-5 mr-2" />
+            <Gauge className="h-5 w-5 me-2" />
             Assessments
           </CardTitle>
           <CardDescription>No assessment results available</CardDescription>
@@ -34,7 +34,7 @@ const AssessmentsSection: React.FC<AssessmentsSectionProps> = ({ assessments }) 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Gauge className="h-5 w-5 mr-2" />
+          <Gauge className="h-5 w-5 me-2" />
           Assessments
         </CardTitle>
         <CardDescription>
@@ -67,7 +67,7 @@ const AssessmentsSection: React.FC<AssessmentsSectionProps> = ({ assessments }) 
               {assessment.score !== null && (
                 <div className="flex items-center">
                   <Award className={`h-5 w-5 ${Number(assessment.score) >= 70 ? 'text-green-500' : 'text-amber-500'}`} />
-                  <span className="font-semibold ml-1">{assessment.score}%</span>
+                  <span className="font-semibold ms-1">{assessment.score}%</span>
                 </div>
               )}
             </div>
@@ -83,7 +83,7 @@ const AssessmentsSection: React.FC<AssessmentsSectionProps> = ({ assessments }) 
             )}
             
             {assessment.coaching_recommended && (
-              <div className="mt-4 text-sm bg-muted p-2 rounded border-l-2 border-amber-500">
+              <div className="mt-4 text-sm bg-muted p-2 rounded border-s-2 border-amber-500">
                 <p>Coaching was recommended for this assessment</p>
               </div>
             )}
@@ -94,7 +94,7 @@ const AssessmentsSection: React.FC<AssessmentsSectionProps> = ({ assessments }) 
           <div className="flex justify-end">
             <Link to="/assessments" className="text-sm text-primary hover:underline flex items-center">
               View all {completedAssessments.length} assessments
-              <ArrowUpRight className="h-3 w-3 ml-1" />
+              <ArrowUpRight className="h-3 w-3 ms-1" />
             </Link>
           </div>
         )}

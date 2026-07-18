@@ -57,7 +57,7 @@ const SummaryForm: React.FC = () => {
       </div>
 
       <Button type="submit" disabled={loading.isLoading} className="w-full">
-        <Save className="mr-2 h-4 w-4" />
+        <Save className="me-2 h-4 w-4" />
         Save Summary
       </Button>
     </form>

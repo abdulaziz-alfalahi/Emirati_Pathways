@@ -149,7 +149,7 @@ const NotificationPanel: React.FC = () => {
             <TabsTrigger value="all">
               All
               {unreadCount > 0 && (
-                <Badge variant="destructive" className="ml-2">
+                <Badge variant="destructive" className="ms-2">
                   {unreadCount}
                 </Badge>
               )}
@@ -183,7 +183,7 @@ const NotificationPanel: React.FC = () => {
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium">{notification.title}</h4>
                         {!notification.isRead && (
-                          <Badge className="ml-2">New</Badge>
+                          <Badge className="ms-2">New</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">

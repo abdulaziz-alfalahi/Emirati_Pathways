@@ -146,7 +146,7 @@ const CredentialSharingManager: React.FC<CredentialSharingManagerProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
-                <Share2 className="mr-2 h-5 w-5" />
+                <Share2 className="me-2 h-5 w-5" />
                 Credential Sharing
               </CardTitle>
               <CardDescription>
@@ -156,7 +156,7 @@ const CredentialSharingManager: React.FC<CredentialSharingManagerProps> = ({
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button>
-                  <Share2 className="mr-2 h-4 w-4" />
+                  <Share2 className="me-2 h-4 w-4" />
                   Create Share Link
                 </Button>
               </DialogTrigger>
@@ -293,7 +293,7 @@ const CredentialSharingManager: React.FC<CredentialSharingManagerProps> = ({
           ) : (
             <div className="space-y-4">
               {permissions.map((permission) => (
-                <Card key={permission.id} className="border-l-4 border-l-blue-500">
+                <Card key={permission.id} className="border-s-4 border-s-blue-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-2">
@@ -312,7 +312,7 @@ const CredentialSharingManager: React.FC<CredentialSharingManagerProps> = ({
                           <p>Access Count: {permission.access_count} / {permission.max_access_count || '∞'}</p>
                           {permission.expires_at && (
                             <p className="flex items-center">
-                              <Calendar className="mr-1 h-3 w-3" />
+                              <Calendar className="me-1 h-3 w-3" />
                               Expires: {new Date(permission.expires_at).toLocaleDateString()}
                             </p>
                           )}

@@ -42,7 +42,7 @@ const RetireeResourceCard: React.FC<RetireeResourceCardProps> = ({ resource }) =
               {resource.title}
               {resource.is_featured && (
                 <Badge variant="secondary" className="bg-ehrdc-teal text-white">
-                  <Star className="h-3 w-3 mr-1" />
+                  <Star className="h-3 w-3 me-1" />
                   Featured
                 </Badge>
               )}
@@ -60,7 +60,7 @@ const RetireeResourceCard: React.FC<RetireeResourceCardProps> = ({ resource }) =
           </Badge>
           {resource.tags.slice(0, 2).map((tag, index) => (
             <Badge key={index} variant="outline" className="text-xs">
-              <Tag className="h-3 w-3 mr-1" />
+              <Tag className="h-3 w-3 me-1" />
               {tag}
             </Badge>
           ))}
@@ -81,7 +81,7 @@ const RetireeResourceCard: React.FC<RetireeResourceCardProps> = ({ resource }) =
             variant="outline"
             onClick={() => window.open(resource.resource_url, '_blank')}
           >
-            <ExternalLink className="h-4 w-4 mr-2" />
+            <ExternalLink className="h-4 w-4 me-2" />
             View Resource
           </Button>
         </div>

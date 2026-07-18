@@ -780,7 +780,7 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
                 <div className="flex justify-between items-center">
                   <Label>Degrees & Qualifications</Label>
                   <Button onClick={addEducation} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Degree
                   </Button>
                 </div>
@@ -858,7 +858,7 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
                 <div className="flex justify-between items-center">
                   <Label>Certifications & Licenses</Label>
                   <Button onClick={addCertification} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Certification
                   </Button>
                 </div>
@@ -1206,7 +1206,7 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
                   <div className="flex justify-between items-center mb-4">
                     <Label>Publications</Label>
                     <Button onClick={addPublication} size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4 me-2" />
                       Add Publication
                     </Button>
                   </div>
@@ -1528,12 +1528,12 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
         >
           {isSaving ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
               Saving...
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 me-2" />
               Save Profile
             </>
           )}

@@ -121,7 +121,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
               >
-                <Filter className="h-4 w-4 mr-1" />
+                <Filter className="h-4 w-4 me-1" />
                 Filters
               </Button>
               <select
@@ -144,7 +144,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                   <select
                     value={filterBy}
                     onChange={(e) => setFilterBy(e.target.value as any)}
-                    className="ml-2 px-2 py-1 border rounded text-sm"
+                    className="ms-2 px-2 py-1 border rounded text-sm"
                   >
                     <option value="all">All Matches</option>
                     <option value="high">Excellent (80%+)</option>
@@ -186,21 +186,21 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                           
                           <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                             <span className="flex items-center">
-                              <Building className="h-4 w-4 mr-1" />
+                              <Building className="h-4 w-4 me-1" />
                               {match.company}
                             </span>
                             <span className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
+                              <MapPin className="h-4 w-4 me-1" />
                               {match.location}
                             </span>
                             <span className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
+                              <Clock className="h-4 w-4 me-1" />
                               {formatDate(match.match_timestamp)}
                             </span>
                           </div>
                         </div>
                         
-                        <div className="text-right">
+                        <div className="text-end">
                           <div className="text-3xl font-bold text-green-600 mb-1">
                             {match.overall_score}%
                           </div>
@@ -285,7 +285,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                           <ul className="text-sm text-blue-700 space-y-1">
                             {match.recommendations.slice(0, 2).map((rec, index) => (
                               <li key={index} className="flex items-start">
-                                <span className="mr-2">•</span>
+                                <span className="me-2">•</span>
                                 <span>{rec}</span>
                               </li>
                             ))}
@@ -301,7 +301,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                             size="sm"
                             onClick={() => onJobAction(match.job_id, 'view')}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="h-4 w-4 me-1" />
                             View Details
                           </Button>
                           <Button 
@@ -309,7 +309,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                             size="sm"
                             onClick={() => onJobAction(match.job_id, 'save')}
                           >
-                            <Heart className="h-4 w-4 mr-1" />
+                            <Heart className="h-4 w-4 me-1" />
                             Save
                           </Button>
                         </div>
@@ -319,7 +319,7 @@ export function JobRecommendations({ matches, onJobAction, loading = false }: Jo
                           onClick={() => onJobAction(match.job_id, 'apply')}
                           className="bg-green-600 hover:bg-green-700"
                         >
-                          <Send className="h-4 w-4 mr-1" />
+                          <Send className="h-4 w-4 me-1" />
                           Apply Now
                         </Button>
                       </div>

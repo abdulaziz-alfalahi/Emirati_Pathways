@@ -327,11 +327,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ activeTab }) =>
                   </div>
                   <div className="flex space-x-4">
                     <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                      <Upload className="h-4 w-4 mr-2" />
+                      <Upload className="h-4 w-4 me-2" />
                       Post New Job
                     </Button>
                     <Button variant="outline">
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 me-2" />
                       View All Jobs
                     </Button>
                   </div>
@@ -367,7 +367,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ activeTab }) =>
                         </SelectContent>
                       </Select>
                       <Button variant="outline">
-                        <Filter className="h-4 w-4 mr-2" />
+                        <Filter className="h-4 w-4 me-2" />
                         Filter
                       </Button>
                     </div>
@@ -423,11 +423,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ activeTab }) =>
                   </div>
                   <div className="flex space-x-4">
                     <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Calendar className="h-4 w-4 me-2" />
                       Schedule Interview
                     </Button>
                     <Button variant="outline">
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 me-2" />
                       View Calendar
                     </Button>
                   </div>

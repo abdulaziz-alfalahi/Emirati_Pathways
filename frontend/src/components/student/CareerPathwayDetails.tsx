@@ -76,7 +76,7 @@ const CareerPathwayDetails: React.FC<CareerPathwayDetailsProps> = ({
                 {/* Vertical timeline line */}
                 {index < careerPath.stages.length - 1 && (
                   <div 
-                    className={`absolute left-6 top-10 w-0.5 h-full ${
+                    className={`absolute start-6 top-10 w-0.5 h-full ${
                       isPastStage ? 'bg-primary' : 'bg-gray-200'
                     }`}
                   />
@@ -84,7 +84,7 @@ const CareerPathwayDetails: React.FC<CareerPathwayDetailsProps> = ({
                 
                 {/* Stage icon with animation for current stage */}
                 <div 
-                  className={`w-12 h-12 rounded-full flex items-center justify-center z-10 mr-4 transition-all duration-300 ${
+                  className={`w-12 h-12 rounded-full flex items-center justify-center z-10 me-4 transition-all duration-300 ${
                     isCurrentStage 
                       ? 'bg-primary text-primary-foreground ring-4 ring-primary/20 animate-pulse' 
                       : isPastStage 
@@ -116,11 +116,11 @@ const CareerPathwayDetails: React.FC<CareerPathwayDetailsProps> = ({
                     <div className="flex justify-between">
                       <div className="flex items-center">
                         <h3 className="font-medium text-lg">
-                          {isPastStage && <span className="text-green-600 mr-2">✓</span>}
+                          {isPastStage && <span className="text-green-600 me-2">✓</span>}
                           {stage.title}
                         </h3>
                         {isCurrentStage && (
-                          <span className="ml-2 text-xs bg-primary text-white px-2 py-1 rounded-full animate-fade-in">
+                          <span className="ms-2 text-xs bg-primary text-white px-2 py-1 rounded-full animate-fade-in">
                             Current
                           </span>
                         )}
@@ -137,14 +137,14 @@ const CareerPathwayDetails: React.FC<CareerPathwayDetailsProps> = ({
                     <div className="mt-4 flex flex-wrap gap-4 text-sm">
                       {stage.duration && (
                         <div className="flex items-center text-muted-foreground">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <Clock className="h-4 w-4 me-1" />
                           <span>{stage.duration}</span>
                         </div>
                       )}
                       
                       {stage.skills && stage.skills.length > 0 && (
                         <div className="flex items-center text-muted-foreground">
-                          <Star className="h-4 w-4 mr-1" />
+                          <Star className="h-4 w-4 me-1" />
                           <span>{stage.skills.length} Skills</span>
                         </div>
                       )}
@@ -176,7 +176,7 @@ const CareerPathwayDetails: React.FC<CareerPathwayDetailsProps> = ({
                     
                     {isCurrentStage && onStageSelect && (
                       <div className="mt-4 flex items-center justify-end">
-                        <div className="text-xs text-primary mr-2">Click to update progress</div>
+                        <div className="text-xs text-primary me-2">Click to update progress</div>
                         <Award className="h-4 w-4 text-primary animate-pulse" />
                       </div>
                     )}

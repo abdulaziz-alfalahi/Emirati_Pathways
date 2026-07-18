@@ -130,7 +130,7 @@ const MemberActivityChart: React.FC<MemberActivityChartProps> = ({ groupId, time
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
-              <Activity className="h-4 w-4 mr-2 text-green-600" />
+              <Activity className="h-4 w-4 me-2 text-green-600" />
               Active Members
             </CardTitle>
           </CardHeader>
@@ -145,7 +145,7 @@ const MemberActivityChart: React.FC<MemberActivityChartProps> = ({ groupId, time
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
-              <Clock className="h-4 w-4 mr-2 text-blue-600" />
+              <Clock className="h-4 w-4 me-2 text-blue-600" />
               Peak Activity
             </CardTitle>
           </CardHeader>
@@ -160,7 +160,7 @@ const MemberActivityChart: React.FC<MemberActivityChartProps> = ({ groupId, time
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
-              <Eye className="h-4 w-4 mr-2 text-purple-600" />
+              <Eye className="h-4 w-4 me-2 text-purple-600" />
               Total Views
             </CardTitle>
           </CardHeader>
@@ -208,7 +208,7 @@ const MemberActivityChart: React.FC<MemberActivityChartProps> = ({ groupId, time
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Users className="h-5 w-5 mr-2" />
+            <Users className="h-5 w-5 me-2" />
             Top Contributors
           </CardTitle>
           <CardDescription>
@@ -230,7 +230,7 @@ const MemberActivityChart: React.FC<MemberActivityChartProps> = ({ groupId, time
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-green-400 to-blue-500"

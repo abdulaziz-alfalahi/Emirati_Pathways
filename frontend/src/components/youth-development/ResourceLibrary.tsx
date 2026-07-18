@@ -132,12 +132,12 @@ export const ResourceLibrary: React.FC = () => {
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search resources..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
                 
@@ -219,24 +219,24 @@ export const ResourceLibrary: React.FC = () => {
                   <div className="flex gap-2">
                     {resource.type === 'video' && (
                       <Button size="sm" className="flex-1">
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-4 w-4 me-2" />
                         Watch
                       </Button>
                     )}
                     {resource.type === 'audio' && (
                       <Button size="sm" className="flex-1">
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-4 w-4 me-2" />
                         Listen
                       </Button>
                     )}
                     {(resource.type === 'guide' || resource.type === 'toolkit') && (
                       <>
                         <Button size="sm" variant="outline" className="flex-1">
-                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <ExternalLink className="h-4 w-4 me-2" />
                           View
                         </Button>
                         <Button size="sm" className="flex-1">
-                          <Download className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 me-2" />
                           Download
                         </Button>
                       </>

@@ -91,7 +91,7 @@ export const MentorshipOpportunities: React.FC = () => {
               
               <Button className="w-full mt-4">
                 Express Interest
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ms-2" />
               </Button>
             </CardContent>
           </Card>

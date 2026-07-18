@@ -27,7 +27,7 @@ export const DesktopMenu: React.FC<DesktopMenuProps> = ({ navItems, navGroups })
       <MainNav navGroups={menuGroups} />
 
       {/* Right side actions - Language toggle, Theme toggle and user menu */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ms-auto flex items-center gap-2">
         <LanguageToggle />
         <ThemeToggle />
         {isAuthenticated && <UserMenu />}

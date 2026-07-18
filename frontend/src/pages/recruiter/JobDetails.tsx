@@ -196,12 +196,12 @@ export default function JobDetailsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Input type="file" multiple onChange={e => setFileList(e.target.files)} />
-                  <Button onClick={uploadDocuments} disabled={!jobId}><Upload className="h-4 w-4 mr-1" /> Upload</Button>
+                  <Button onClick={uploadDocuments} disabled={!jobId}><Upload className="h-4 w-4 me-1" /> Upload</Button>
                 </div>
                 <div className="overflow-x-auto rounded border max-h-[420px]">
                   <table className="min-w-full bg-white">
                     <thead>
-                      <tr className="text-left border-b">
+                      <tr className="text-start border-b">
                         <th className="p-3 sticky top-0 bg-white z-10">Filename</th>
                         <th className="p-3 sticky top-0 bg-white z-10">Type</th>
                         <th className="p-3 sticky top-0 bg-white z-10">Size</th>
@@ -221,7 +221,7 @@ export default function JobDetailsPage() {
                           <td className="p-3">{d.created_at}</td>
                           <td className="p-3">
                             <Button size="sm" variant="outline" onClick={() => deleteDocument(d.id)}>
-                              <Trash2 className="h-4 w-4 mr-1" /> Delete
+                              <Trash2 className="h-4 w-4 me-1" /> Delete
                             </Button>
                           </td>
                         </tr>
@@ -236,7 +236,7 @@ export default function JobDetailsPage() {
               <div className="overflow-x-auto rounded border max-h-[420px]">
                 <table className="min-w-full bg-white">
                   <thead>
-                    <tr className="text-left border-b">
+                    <tr className="text-start border-b">
                       <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
                       <th className="p-3 sticky top-0 bg-white z-10">Education</th>
                       <th className="p-3 sticky top-0 bg-white z-10">Experience</th>
@@ -257,7 +257,7 @@ export default function JobDetailsPage() {
                         <td className="p-3 space-x-2">
                           <Button size="sm" variant="outline" onClick={() => removeFromShortlist(s.candidate_id)}>Remove</Button>
                           <Link to={`/recruiter?tab=messages&to=${s.candidate_id}&job=${jobId}`}>
-                            <Button size="sm" variant="outline"><MessageSquare className="h-4 w-4 mr-1" /> Message</Button>
+                            <Button size="sm" variant="outline"><MessageSquare className="h-4 w-4 me-1" /> Message</Button>
                           </Link>
                         </td>
                       </tr>
@@ -269,12 +269,12 @@ export default function JobDetailsPage() {
 
             <TabsContent value="candidates">
               <div className="flex items-center gap-2 mb-4">
-                <Button onClick={publishAndMatch} disabled={!jobId}><Users className="h-4 w-4 mr-1" /> Publish & Match</Button>
+                <Button onClick={publishAndMatch} disabled={!jobId}><Users className="h-4 w-4 me-1" /> Publish & Match</Button>
               </div>
               <div className="overflow-x-auto rounded border max-h-[420px]">
                 <table className="min-w-full bg-white">
                   <thead>
-                    <tr className="text-left border-b">
+                    <tr className="text-start border-b">
                       <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
                       <th className="p-3 sticky top-0 bg-white z-10">Match %</th>
                       <th className="p-3 sticky top-0 bg-white z-10">Level</th>

@@ -757,12 +757,12 @@ const CandidateMatching = () => {
               >
                 {isMatching ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white me-2"></div>
                     Finding...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     Find Candidates
                   </>
                 )}
@@ -776,12 +776,12 @@ const CandidateMatching = () => {
                 >
                   {viewMode === 'shortlist' ? (
                     <>
-                      <Users className="h-4 w-4 mr-2" />
+                      <Users className="h-4 w-4 me-2" />
                       Back to Matching
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-4 w-4 me-2" />
                       View Shortlist
                     </>
                   )}
@@ -902,7 +902,7 @@ const CandidateMatching = () => {
                 </SelectContent>
               </Select>
               <Button variant="outline" size="sm" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-                <Filter className="h-4 w-4 mr-1" /> Filter
+                <Filter className="h-4 w-4 me-1" /> Filter
               </Button>
             </div>
           </CardHeader>
@@ -954,7 +954,7 @@ const CandidateMatching = () => {
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <Button size="sm" variant="outline" className="mr-2" onClick={() => {
+                  <Button size="sm" variant="outline" className="me-2" onClick={() => {
                     setFilterExperience('any');
                     setFilterEducation('any');
                     setFilterAvailability('any');
@@ -997,7 +997,7 @@ const CandidateMatching = () => {
                             {/* Applicant Badge */}
                             {(candidate as any).is_applicant && (
                               <Badge className="bg-purple-600 text-white hover:bg-purple-700">
-                                <Briefcase className="h-3 w-3 mr-1" />
+                                <Briefcase className="h-3 w-3 me-1" />
                                 APPLICANT
                               </Badge>
                             )}
@@ -1108,19 +1108,19 @@ const CandidateMatching = () => {
                       </div>
 
                       {/* Actions Column (replacing old Scores column) */}
-                      <div className="flex flex-col gap-2 justify-center lg:w-48 lg:border-l lg:pl-6">
+                      <div className="flex flex-col gap-2 justify-center lg:w-48 lg:border-s lg:ps-6">
                         <Button
                           className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                           onClick={() => handleCandidateAction(candidate.candidate_id, 'shortlist')}
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" /> Shortlist
+                          <CheckCircle className="h-4 w-4 me-2" /> Shortlist
                         </Button>
                         <Button
                           variant="outline"
                           className="w-full"
                           onClick={() => handleViewCandidate(candidate)}
                         >
-                          <Eye className="h-4 w-4 mr-2" /> Quick View
+                          <Eye className="h-4 w-4 me-2" /> Quick View
                         </Button>
                         {/* G22/G23: Headhunt button for passive talent */}
                         {candidate.employment_status && candidate.employment_status !== 'candidate' && !candidate.is_applicant ? (
@@ -1132,7 +1132,7 @@ const CandidateMatching = () => {
                               handleCandidateAction(candidate.candidate_id, 'message');
                             }}
                           >
-                            <Search className="h-4 w-4 mr-2" /> Headhunt
+                            <Search className="h-4 w-4 me-2" /> Headhunt
                           </Button>
                         ) : (
                           <Button
@@ -1140,7 +1140,7 @@ const CandidateMatching = () => {
                             className="w-full text-slate-500 hover:text-slate-700"
                             onClick={() => handleCandidateAction(candidate.candidate_id, 'message')}
                           >
-                            <MessageSquare className="h-4 w-4 mr-2" /> Message
+                            <MessageSquare className="h-4 w-4 me-2" /> Message
                           </Button>
                         )}
                       </div>
@@ -1189,7 +1189,7 @@ const CandidateMatching = () => {
                 <h3 className="font-semibold mb-3">Experience ({selectedCandidate.candidate_data.experience.length})</h3>
                 <div className="space-y-3">
                   {selectedCandidate.candidate_data.experience.map((exp, index) => (
-                    <div key={index} className="border-l-2 border-gray-200 pl-4">
+                    <div key={index} className="border-s-2 border-gray-200 ps-4">
                       <div className="font-medium">{exp.title}</div>
                       <div className="text-sm text-muted-foreground">{exp.company} • {exp.duration}</div>
                       <div className="text-sm mt-1">{exp.description}</div>
@@ -1313,14 +1313,14 @@ const CandidateMatching = () => {
                    onClick={() => handleDownloadCV(selectedCandidate.candidate_id, selectedCandidate.candidate_name)}
                    disabled={isDownloadingCV}
                  >
-                   <Download className="h-4 w-4 mr-2" />
+                   <Download className="h-4 w-4 me-2" />
                    {isDownloadingCV ? "Downloading..." : "Download CV"}
                  </Button>
                 <Button onClick={() => {
                   setIsDetailOpen(false);
                   handleCandidateAction(selectedCandidate.candidate_id, 'shortlist');
                 }}>
-                  <ThumbsUp className="h-4 w-4 mr-2" />
+                  <ThumbsUp className="h-4 w-4 me-2" />
                   Shortlist Candidate
                 </Button>
               </div>

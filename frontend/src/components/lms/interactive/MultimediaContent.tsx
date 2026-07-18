@@ -115,7 +115,7 @@ export const MultimediaContent: React.FC<MultimediaContentProps> = ({
             />
             
             {/* Video Controls Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+            <div className="absolute bottom-0 start-0 end-0 bg-gradient-to-t from-black/70 to-transparent p-4">
               <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
@@ -159,7 +159,7 @@ export const MultimediaContent: React.FC<MultimediaContentProps> = ({
             
             {/* Annotations Overlay */}
             {currentAnnotations.length > 0 && (
-              <div className="absolute top-4 right-4 space-y-2">
+              <div className="absolute top-4 end-4 space-y-2">
                 {currentAnnotations.map((annotation, index) => (
                   <div key={index} className="bg-blue-600 text-white p-2 rounded-lg text-sm max-w-xs">
                     {annotation.text}
@@ -272,10 +272,10 @@ export const MultimediaContent: React.FC<MultimediaContentProps> = ({
                     onClick={() => setActiveItem(index)}
                     className="flex-shrink-0"
                   >
-                    {item.type === 'video' && <Play className="h-3 w-3 mr-1" />}
-                    {item.type === 'audio' && <Volume2 className="h-3 w-3 mr-1" />}
-                    {item.type === 'image' && <Image className="h-3 w-3 mr-1" />}
-                    {item.type === 'pdf' && <FileText className="h-3 w-3 mr-1" />}
+                    {item.type === 'video' && <Play className="h-3 w-3 me-1" />}
+                    {item.type === 'audio' && <Volume2 className="h-3 w-3 me-1" />}
+                    {item.type === 'image' && <Image className="h-3 w-3 me-1" />}
+                    {item.type === 'pdf' && <FileText className="h-3 w-3 me-1" />}
                     {item.title}
                   </Button>
                 ))}

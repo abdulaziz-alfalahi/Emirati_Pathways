@@ -167,14 +167,14 @@ export const DateFields = () => {
                   <FormControl>
                     <Button
                       variant="outline"
-                      className="w-full pl-3 text-left font-normal"
+                      className="w-full ps-3 text-start font-normal"
                     >
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
                         <span>{t('forms.placeholders.pickDate')}</span>
                       )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      <CalendarIcon className="ms-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -203,14 +203,14 @@ export const DateFields = () => {
                   <FormControl>
                     <Button
                       variant="outline"
-                      className="w-full pl-3 text-left font-normal"
+                      className="w-full ps-3 text-start font-normal"
                     >
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
                         <span>{t('forms.placeholders.pickDate')}</span>
                       )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      <CalendarIcon className="ms-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -240,14 +240,14 @@ export const DateFields = () => {
                 <FormControl>
                   <Button
                     variant="outline"
-                    className="w-full pl-3 text-left font-normal"
+                    className="w-full ps-3 text-start font-normal"
                   >
                     {field.value ? (
                       format(field.value, "PPP")
                     ) : (
                       <span>{t('forms.placeholders.pickDate')}</span>
                     )}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    <CalendarIcon className="ms-auto h-4 w-4 opacity-50" />
                   </Button>
                 </FormControl>
               </PopoverTrigger>

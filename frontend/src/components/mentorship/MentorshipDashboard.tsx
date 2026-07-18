@@ -371,7 +371,7 @@ export const MentorshipDashboard: React.FC = () => {
                             onClick={() => handleStatusUpdate(selectedRelationship.id, 'active')}
                             className="flex-1"
                           >
-                            <CheckCircle className="h-4 w-4 mr-2" />
+                            <CheckCircle className="h-4 w-4 me-2" />
                             Accept Request
                           </Button>
                           <Button 
@@ -379,7 +379,7 @@ export const MentorshipDashboard: React.FC = () => {
                             onClick={() => handleStatusUpdate(selectedRelationship.id, 'cancelled')}
                             className="flex-1"
                           >
-                            <XCircle className="h-4 w-4 mr-2" />
+                            <XCircle className="h-4 w-4 me-2" />
                             Decline
                           </Button>
                         </div>
@@ -418,7 +418,7 @@ export const MentorshipDashboard: React.FC = () => {
                         <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
                           <DialogTrigger asChild>
                             <Button size="sm">
-                              <Plus className="h-4 w-4 mr-2" />
+                              <Plus className="h-4 w-4 me-2" />
                               Schedule Session
                             </Button>
                           </DialogTrigger>

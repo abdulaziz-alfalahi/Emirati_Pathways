@@ -160,7 +160,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
 
           {/* Created Date */}
           <div className="flex items-center text-xs text-muted-foreground">
-            <Clock className="h-3 w-3 mr-1" />
+            <Clock className="h-3 w-3 me-1" />
             <span>Created {formatDate(group.created_at)}</span>
           </div>
         </div>

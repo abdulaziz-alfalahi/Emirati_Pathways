@@ -167,8 +167,8 @@ export const CareerComparisonTool: React.FC = () => {
             <Badge variant="secondary">
               {selectedCareers.length}/4 careers selected
             </Badge>
-            <Button onClick={exportComparison} variant="outline" className="ml-auto">
-              <Download className="h-4 w-4 mr-2" />
+            <Button onClick={exportComparison} variant="outline" className="ms-auto">
+              <Download className="h-4 w-4 me-2" />
               Export Report
             </Button>
           </div>
@@ -328,7 +328,7 @@ export const CareerComparisonTool: React.FC = () => {
                 <table className="w-full border-collapse border border-ehrdc-neutral-light">
                   <thead>
                     <tr className="bg-ehrdc-neutral-light/20">
-                      <th className="border border-ehrdc-neutral-light p-3 text-left">Criteria</th>
+                      <th className="border border-ehrdc-neutral-light p-3 text-start">Criteria</th>
                       {selectedCareers.map(careerId => {
                         const career = careerData[careerId as keyof typeof careerData];
                         return (
@@ -397,7 +397,7 @@ export const CareerComparisonTool: React.FC = () => {
           {selectedCareers.length > 1 && (
             <div className="mt-6 text-center">
               <Button className="bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Generate Detailed Comparison Report
               </Button>
             </div>

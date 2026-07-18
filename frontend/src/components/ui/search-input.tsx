@@ -48,7 +48,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   return (
     <div className={cn("relative", className)}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder={placeholder}
@@ -56,15 +56,15 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           onChange={handleInputChange}
           disabled={disabled}
           className={cn(
-            "pl-10",
-            showClearButton && localValue && "pr-20",
+            "ps-10",
+            showClearButton && localValue && "pe-20",
             error && "border-destructive focus-visible:ring-destructive"
           )}
         />
         
         {/* Loading indicator */}
         {isSearching && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="absolute end-3 top-1/2 transform -translate-y-1/2">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         )}
@@ -76,7 +76,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
+            className="absolute end-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
           >
             <X className="h-4 w-4" />
           </Button>

@@ -269,7 +269,7 @@ export const CandidateOffers: React.FC = () => {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-s-4 border-s-blue-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -283,7 +283,7 @@ export const CandidateOffers: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-yellow-500">
+        <Card className="border-s-4 border-s-yellow-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -297,7 +297,7 @@ export const CandidateOffers: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-s-4 border-s-green-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -311,7 +311,7 @@ export const CandidateOffers: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-s-4 border-s-red-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -419,7 +419,7 @@ export const CandidateOffers: React.FC = () => {
                               const expiry = getExpiryInfo(offer.expiry_date);
                               return expiry ? (
                                 <Badge variant="outline" className={`mt-1 text-xs ${expiry.className}`}>
-                                  <Clock className="h-3 w-3 mr-1" />
+                                  <Clock className="h-3 w-3 me-1" />
                                   {expiry.urgent ? '⚡ ' : ''}{expiry.label}
                                 </Badge>
                               ) : null;
@@ -454,7 +454,7 @@ export const CandidateOffers: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {csOffers.map((app: any, idx: number) => (
-                <Card key={`cs-${idx}`} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                <Card key={`cs-${idx}`} className="hover:shadow-md transition-shadow border-s-4 border-s-green-500">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
@@ -505,7 +505,7 @@ export const CandidateOffers: React.FC = () => {
           </DialogHeader>
 
           {selectedOffer && (
-            <ScrollArea className="max-h-[60vh] pr-4">
+            <ScrollArea className="max-h-[60vh] pe-4">
               <div className="space-y-6 py-4">
                 {/* Status Banner */}
                 {(selectedOffer.status === 'pending' || selectedOffer.status === 'sent') && (
@@ -779,13 +779,13 @@ export const CandidateOffers: React.FC = () => {
               disabled={processing || (responseAction === 'negotiate' && !responseMessage.trim())}
             >
               {processing ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
               ) : responseAction === 'accept' ? (
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 me-1" />
               ) : responseAction === 'negotiate' ? (
-                <MessageCircle className="h-4 w-4 mr-1" />
+                <MessageCircle className="h-4 w-4 me-1" />
               ) : (
-                <XCircle className="h-4 w-4 mr-1" />
+                <XCircle className="h-4 w-4 me-1" />
               )}
               {responseAction === 'accept' ? t('Confirm Accept', 'تأكيد القبول') : responseAction === 'negotiate' ? t('Send Proposal', 'إرسال المقترح') : t('Confirm Decline', 'تأكيد الرفض')}
             </Button>

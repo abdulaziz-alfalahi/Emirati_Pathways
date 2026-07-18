@@ -77,7 +77,7 @@ const JobDescriptionCard: React.FC = () => (
       <p className="text-sm text-muted-foreground mb-4">
         Our job description parser extracts structured information including:
       </p>
-      <ul className="list-disc pl-5 text-sm text-muted-foreground mb-4">
+      <ul className="list-disc ps-5 text-sm text-muted-foreground mb-4">
         <li>Job title, company, and location</li>
         <li>Employment type and work mode</li>
         <li>Responsibilities and requirements</li>
@@ -104,7 +104,7 @@ const CandidateMatchingCard: React.FC = () => (
       <p className="text-sm text-muted-foreground mb-4">
         Our matching system connects your job requirements with candidate profiles:
       </p>
-      <ul className="list-disc pl-5 text-sm text-muted-foreground mb-4">
+      <ul className="list-disc ps-5 text-sm text-muted-foreground mb-4">
         <li>Skill-based matching algorithms</li>
         <li>Education and experience scoring</li>
         <li>Cultural fit assessment</li>

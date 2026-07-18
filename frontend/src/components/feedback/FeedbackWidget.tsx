@@ -577,7 +577,7 @@ export const FeedbackWidget = () => {
 
                                 {/* 1. Title Field (New) */}
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="title" className="text-right">
+                                    <Label htmlFor="title" className="text-end">
                                         Subject
                                     </Label>
                                     <input
@@ -591,7 +591,7 @@ export const FeedbackWidget = () => {
                                 </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="type" className="text-right">
+                                    <Label htmlFor="type" className="text-end">
                                         Type
                                     </Label>
                                     <div className="col-span-3">
@@ -602,12 +602,12 @@ export const FeedbackWidget = () => {
                                             <SelectContent>
                                                 <SelectItem value="bug">
                                                     <div className="flex items-center text-red-600">
-                                                        <Bug className="mr-2 h-4 w-4" /> Bug Report
+                                                        <Bug className="me-2 h-4 w-4" /> Bug Report
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="feature">
                                                     <div className="flex items-center text-amber-600">
-                                                        <Lightbulb className="mr-2 h-4 w-4" /> Feature Request
+                                                        <Lightbulb className="me-2 h-4 w-4" /> Feature Request
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="other">Other</SelectItem>
@@ -619,7 +619,7 @@ export const FeedbackWidget = () => {
                                 {/* 2. Severity (Only for Bugs) */}
                                 {type === 'bug' && (
                                     <div className="grid grid-cols-4 items-center gap-4 animate-in slide-in-from-top-1 duration-200">
-                                        <Label htmlFor="severity" className="text-right">
+                                        <Label htmlFor="severity" className="text-end">
                                             Severity
                                         </Label>
                                         <div className="col-span-3">
@@ -639,7 +639,7 @@ export const FeedbackWidget = () => {
                                 )}
 
                                 <div className="grid grid-cols-4 items-start gap-4">
-                                    <Label htmlFor="message" className="text-right pt-2">
+                                    <Label htmlFor="message" className="text-end pt-2">
                                         Description
                                     </Label>
                                     <Textarea
@@ -654,7 +654,7 @@ export const FeedbackWidget = () => {
                                 {/* 3. Steps to Reproduce (Only for Bugs) */}
                                 {type === 'bug' && (
                                     <div className="grid grid-cols-4 items-start gap-4 animate-in slide-in-from-top-2 duration-300">
-                                        <Label htmlFor="steps" className="text-right pt-2 text-xs font-semibold text-muted-foreground uppercase">
+                                        <Label htmlFor="steps" className="text-end pt-2 text-xs font-semibold text-muted-foreground uppercase">
                                             Steps to Reproduce
                                         </Label>
                                         <Textarea
@@ -669,7 +669,7 @@ export const FeedbackWidget = () => {
 
                                 {/* Screenshot Toggle & Preview */}
                                 <div className="grid grid-cols-4 items-start gap-4">
-                                    <Label htmlFor="screenshot" className="text-right pt-1 text-xs font-semibold text-muted-foreground uppercase">
+                                    <Label htmlFor="screenshot" className="text-end pt-1 text-xs font-semibold text-muted-foreground uppercase">
                                         Screenshot
                                     </Label>
                                     <div className="col-span-3 space-y-2">
@@ -745,7 +745,7 @@ export const FeedbackWidget = () => {
                                 </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label className="text-right text-xs text-muted-foreground">
+                                    <Label className="text-end text-xs text-muted-foreground">
                                         Context
                                     </Label>
                                     <div className="col-span-3 text-xs text-muted-foreground bg-muted p-2 rounded flex justify-between items-center">
@@ -761,14 +761,14 @@ export const FeedbackWidget = () => {
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSubmit} disabled={isSubmitting || !title.trim() || !message.trim()}>
-                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                                     Send Feedback
                                 </Button>
                             </DialogFooter>
                         </TabsContent>
 
                         <TabsContent value="history" className="py-4">
-                            <ScrollArea className="h-[300px] pr-4">
+                            <ScrollArea className="h-[300px] pe-4">
                                 {isLoadingHistory ? (
                                     <div className="flex justify-center items-center h-full py-8">
                                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -783,7 +783,7 @@ export const FeedbackWidget = () => {
                                             <div key={item.id} className="border rounded-lg p-3 space-y-2 bg-card">
                                                 <div className="flex justify-between items-start">
                                                     <Badge variant="outline" className={item.type === 'bug' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'}>
-                                                        {item.type === 'bug' ? <Bug className="h-3 w-3 mr-1" /> : <Lightbulb className="h-3 w-3 mr-1" />}
+                                                        {item.type === 'bug' ? <Bug className="h-3 w-3 me-1" /> : <Lightbulb className="h-3 w-3 me-1" />}
                                                         {item.type}
                                                     </Badge>
                                                     <span className="text-xs text-muted-foreground">

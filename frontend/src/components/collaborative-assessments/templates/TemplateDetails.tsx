@@ -59,7 +59,7 @@ export const TemplateDetails: React.FC<TemplateDetailsProps> = ({
                 <Badge variant="secondary">{template.category}</Badge>
                 {template.is_public && (
                   <Badge variant="outline">
-                    <Users className="h-3 w-3 mr-1" />
+                    <Users className="h-3 w-3 me-1" />
                     Public
                   </Badge>
                 )}
@@ -67,7 +67,7 @@ export const TemplateDetails: React.FC<TemplateDetailsProps> = ({
             </div>
             {onCreateAssessment && (
               <Button onClick={() => onCreateAssessment(template)}>
-                <Play className="h-4 w-4 mr-2" />
+                <Play className="h-4 w-4 me-2" />
                 Use This Template
               </Button>
             )}

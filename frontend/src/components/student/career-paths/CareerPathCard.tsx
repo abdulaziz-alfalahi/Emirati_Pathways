@@ -95,11 +95,11 @@ const CareerPathCard: React.FC<CareerPathCardProps> = ({
 
           <div className="flex justify-between text-xs text-muted-foreground">
             <div className="flex items-center">
-              <Clock className="mr-1 h-3 w-3" />
+              <Clock className="me-1 h-3 w-3" />
               <span>{duration}</span>
             </div>
             <div className="flex items-center">
-              <BadgeInfo className={`mr-1 h-3 w-3 ${getDifficultyColor()}`} />
+              <BadgeInfo className={`me-1 h-3 w-3 ${getDifficultyColor()}`} />
               <span className="capitalize">{difficulty}</span>
             </div>
           </div>
@@ -121,7 +121,7 @@ const CareerPathCard: React.FC<CareerPathCardProps> = ({
             onClick={onViewDetails}
           >
             <span>View Details</span>
-            <ArrowUpRight className="ml-1 h-3 w-3" />
+            <ArrowUpRight className="ms-1 h-3 w-3" />
           </Button>
         )}
       </CardFooter>

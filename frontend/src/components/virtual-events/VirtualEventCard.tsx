@@ -88,13 +88,13 @@ const VirtualEventCard: React.FC<VirtualEventCardProps> = ({ event, onRegistered
             alt={event.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute top-2 right-2 flex gap-2">
+          <div className="absolute top-2 end-2 flex gap-2">
             <Badge className={getStatusColor(event.status)}>
               {event.status}
             </Badge>
             {isLive && (
               <Badge className="bg-red-500 text-white animate-pulse">
-                <Video className="h-3 w-3 mr-1" />
+                <Video className="h-3 w-3 me-1" />
                 LIVE
               </Badge>
             )}
@@ -110,7 +110,7 @@ const VirtualEventCard: React.FC<VirtualEventCardProps> = ({ event, onRegistered
               {event.description}
             </CardDescription>
           </div>
-          <div className="ml-4">
+          <div className="ms-4">
             {event.is_public ? (
               <Globe className="h-4 w-4 text-muted-foreground" />
             ) : (
@@ -197,7 +197,7 @@ const VirtualEventCard: React.FC<VirtualEventCardProps> = ({ event, onRegistered
             {isLive && (
               <Link to={`/virtual-events/${event.id}/live`} className="flex-1">
                 <Button className="w-full bg-red-500 hover:bg-red-600">
-                  <Video className="h-4 w-4 mr-2" />
+                  <Video className="h-4 w-4 me-2" />
                   Join Live
                 </Button>
               </Link>

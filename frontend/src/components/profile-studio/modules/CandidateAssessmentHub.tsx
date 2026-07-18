@@ -171,7 +171,7 @@ export const CandidateAssessmentHub = () => {
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-2">{center.company_name || center.name}</h3>
                                             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{center.description}</p>
                                         </div>
-                                        <div className="text-sm text-gray-500 dark:text-slate-400 text-right">
+                                        <div className="text-sm text-gray-500 dark:text-slate-400 text-end">
                                             <div className="font-semibold">{center.emirate}</div>
                                             <div>{center.website}</div>
                                         </div>

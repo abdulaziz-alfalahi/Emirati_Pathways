@@ -114,7 +114,7 @@ export default function BatchUploadPage() {
             <div className="flex items-center gap-2">
               <Button onClick={upload}>Upload</Button>
               <Button variant="outline" onClick={handleDownloadTemplate}>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Download Template
               </Button>
             </div>

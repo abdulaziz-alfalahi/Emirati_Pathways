@@ -108,12 +108,12 @@ export const NationalServiceResourcesList: React.FC<NationalServiceResourcesList
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search resources..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
               
@@ -169,7 +169,7 @@ export const NationalServiceResourcesList: React.FC<NationalServiceResourcesList
                     )}
                   </div>
                   {resource.is_featured && (
-                    <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                    <Badge variant="outline" className="ms-2 text-green-600 border-green-200">
                       Featured
                     </Badge>
                   )}
@@ -199,14 +199,14 @@ export const NationalServiceResourcesList: React.FC<NationalServiceResourcesList
                 <div className="flex gap-2">
                   {resource.content_markdown && (
                     <Button variant="outline" size="sm" className="flex-1">
-                      <FileText className="h-4 w-4 mr-2" />
+                      <FileText className="h-4 w-4 me-2" />
                       Read More
                     </Button>
                   )}
                   {resource.content_url && (
                     <Button variant="outline" size="sm" asChild>
                       <a href={resource.content_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <ExternalLink className="h-4 w-4 me-2" />
                         View
                       </a>
                     </Button>

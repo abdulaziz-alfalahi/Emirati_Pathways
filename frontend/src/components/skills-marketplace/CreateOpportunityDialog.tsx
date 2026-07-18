@@ -286,7 +286,7 @@ export const CreateOpportunityDialog: React.FC<CreateOpportunityDialogProps> = (
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 ml-2"
+                      className="h-4 w-4 p-0 ms-2"
                       onClick={() => handleSkillToggle(skill.id)}
                     >
                       <X className="h-3 w-3" />

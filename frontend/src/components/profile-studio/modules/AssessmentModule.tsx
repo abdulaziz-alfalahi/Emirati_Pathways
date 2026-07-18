@@ -48,7 +48,7 @@ export const AssessmentModule: React.FC<AssessmentModuleProps> = ({ profile }) =
             {/* D33 Strategic Alignment Badge */}
             {d33Assessments.length > 0 && (
                 <div className="bg-gradient-to-r from-indigo-900 to-purple-900 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
-                    <div className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} p-4 opacity-10`}>
+                    <div className={`absolute top-0 end-0 p-4 opacity-10`}>
                         <TrendingUp size={120} />
                     </div>
                     <div className="relative z-10">
@@ -81,7 +81,7 @@ export const AssessmentModule: React.FC<AssessmentModuleProps> = ({ profile }) =
                 {/* UAE Cultural Competency */}
                 {culturalAssessments.length > 0 ? (
                     <div className="lg:col-span-1 bg-white border border-yellow-100 rounded-xl shadow-sm p-6 relative overflow-hidden">
-                        <div className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} w-32 h-32 bg-yellow-50 ${isRTL ? 'rounded-br-full -ml-8' : 'rounded-bl-full -mr-8'} -mt-8 z-0`}></div>
+                        <div className={`absolute top-0 end-0 w-32 h-32 bg-yellow-50 rounded-es-full -me-8 -mt-8 z-0`}></div>
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4 text-emerald-800">
                                 <Globe className="w-6 h-6" />

@@ -190,10 +190,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
     return (
       <Tabs defaultValue={activeTab} className="space-y-8">
         <TabsList className="mb-4">
-          <TabsTrigger value="overview"><User className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-          <TabsTrigger value="analytics"><BarChart4 className="h-4 w-4 mr-2" /> Analytics</TabsTrigger>
-          <TabsTrigger value="system"><Activity className="h-4 w-4 mr-2" /> System Health</TabsTrigger>
-          <TabsTrigger value="management"><Users className="h-4 w-4 mr-2" /> Management</TabsTrigger>
+          <TabsTrigger value="overview"><User className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+          <TabsTrigger value="analytics"><BarChart4 className="h-4 w-4 me-2" /> Analytics</TabsTrigger>
+          <TabsTrigger value="system"><Activity className="h-4 w-4 me-2" /> System Health</TabsTrigger>
+          <TabsTrigger value="management"><Users className="h-4 w-4 me-2" /> Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-8">
@@ -206,7 +206,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                     <p className="text-sm font-medium text-muted-foreground">Total Users</p>
                     <p className="text-2xl font-bold">{realTimeData.totalUsers.toLocaleString()}</p>
                     <p className="text-xs text-green-600 flex items-center mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <TrendingUp className="h-3 w-3 me-1" />
                       +12% from last month
                     </p>
                   </div>
@@ -222,7 +222,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                     <p className="text-sm font-medium text-muted-foreground">Active Users</p>
                     <p className="text-2xl font-bold">{realTimeData.activeUsers.toLocaleString()}</p>
                     <p className="text-xs text-green-600 flex items-center mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <TrendingUp className="h-3 w-3 me-1" />
                       +8% from yesterday
                     </p>
                   </div>
@@ -238,7 +238,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                     <p className="text-sm font-medium text-muted-foreground">Job Applications</p>
                     <p className="text-2xl font-bold">{realTimeData.jobApplications.toLocaleString()}</p>
                     <p className="text-xs text-green-600 flex items-center mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <TrendingUp className="h-3 w-3 me-1" />
                       +15% this week
                     </p>
                   </div>
@@ -254,7 +254,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                     <p className="text-sm font-medium text-muted-foreground">Emiratization Rate</p>
                     <p className="text-2xl font-bold">{realTimeData.emiratizationRate}%</p>
                     <p className="text-xs text-green-600 flex items-center mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
+                      <TrendingUp className="h-3 w-3 me-1" />
                       +2.3% this quarter
                     </p>
                   </div>
@@ -434,7 +434,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
           </Card>
 
           {/* Our Mission Page Settings */}
-          <Card className="border-l-4 border-l-teal-500 mt-6">
+          <Card className="border-s-4 border-s-teal-500 mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-800">
                 <Video className="h-5 w-5 text-teal-600" />
@@ -464,7 +464,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab }) => {
                   >
                     {savingVideoUrl ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 me-2 animate-spin" />
                         Saving...
                       </>
                     ) : (

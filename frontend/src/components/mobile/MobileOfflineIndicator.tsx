@@ -64,7 +64,7 @@ const MobileOfflineIndicator: React.FC = () => {
                 onClick={processSyncQueue}
                 className="text-xs"
               >
-                <RefreshCw className="h-3 w-3 mr-1" />
+                <RefreshCw className="h-3 w-3 me-1" />
                 Sync Now
               </Button>
             )}

@@ -108,24 +108,24 @@ const CredentialsList: React.FC<CredentialsListProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
               <div className="flex items-center text-muted-foreground">
-                <Calendar className="h-3 w-3 mr-1" />
+                <Calendar className="h-3 w-3 me-1" />
                 Issued: {formatDate(credential.issued_date)}
               </div>
               
               {credential.expiry_date && (
                 <div className="flex items-center text-muted-foreground">
-                  <Calendar className="h-3 w-3 mr-1" />
+                  <Calendar className="h-3 w-3 me-1" />
                   Expires: {formatDate(credential.expiry_date)}
                 </div>
               )}
               
               <div className="flex items-center text-muted-foreground">
-                <Shield className="h-3 w-3 mr-1" />
+                <Shield className="h-3 w-3 me-1" />
                 Block: #{credential.block_number}
               </div>
               
               <div className="flex items-center text-muted-foreground">
-                <ExternalLink className="h-3 w-3 mr-1" />
+                <ExternalLink className="h-3 w-3 me-1" />
                 Tx: {credential.transaction_hash.substring(0, 12)}...
               </div>
             </div>
@@ -149,7 +149,7 @@ const CredentialsList: React.FC<CredentialsListProps> = ({
                 size="sm" 
                 onClick={() => onPreviewCredential(credential)}
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 me-2" />
                 Preview
               </Button>
               <Button 
@@ -157,7 +157,7 @@ const CredentialsList: React.FC<CredentialsListProps> = ({
                 size="sm" 
                 onClick={() => onDownloadCredential(credential)}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Download
               </Button>
               <Button 
@@ -165,7 +165,7 @@ const CredentialsList: React.FC<CredentialsListProps> = ({
                 size="sm" 
                 onClick={() => onShareCredential(credential)}
               >
-                <Share className="h-4 w-4 mr-2" />
+                <Share className="h-4 w-4 me-2" />
                 Share
               </Button>
             </div>

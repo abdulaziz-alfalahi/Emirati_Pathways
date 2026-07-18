@@ -101,12 +101,12 @@ export const FindMentorsTab: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search mentors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 focus:border-[rgb(var(--pg-primary))] focus:ring-[rgb(var(--pg-primary))]"
+                className="ps-10 focus:border-[rgb(var(--pg-primary))] focus:ring-[rgb(var(--pg-primary))]"
               />
             </div>
             
@@ -191,7 +191,7 @@ export const FindMentorsTab: React.FC = () => {
                 onClick={() => handleConnectRequest(mentor.id)}
                 className="w-full bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90]"
               >
-                <MessageCircle className="h-4 w-4 mr-2" />
+                <MessageCircle className="h-4 w-4 me-2" />
                 Connect
               </Button>
             </CardContent>

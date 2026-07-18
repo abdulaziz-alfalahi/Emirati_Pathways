@@ -262,11 +262,11 @@ const ModernCommunities: React.FC = () => {
       headerActions={
         <div className="flex items-center space-x-3">
           <button className="btn-secondary">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             {t('common.filter')}
           </button>
           <button className="btn-primary">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t('pages.communities.create_community')}
           </button>
         </div>
@@ -285,13 +285,13 @@ const ModernCommunities: React.FC = () => {
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder={t('pages.communities.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full ps-10 pe-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
             <div className="flex space-x-2">
@@ -351,7 +351,7 @@ const ModernCommunities: React.FC = () => {
                   alt={community.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 left-4 flex items-center space-x-2">
+                <div className="absolute top-4 start-4 flex items-center space-x-2">
                   {community.isVerified && (
                     <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
                       {t('common.verified')}
@@ -365,7 +365,7 @@ const ModernCommunities: React.FC = () => {
                     {community.growth}
                   </span>
                 </div>
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-4 end-4">
                   {community.isJoined ? (
                     <button className="bg-teal-600 text-white p-2 rounded-full hover:bg-teal-700 transition-colors">
                       <Users className="h-4 w-4" />
@@ -432,7 +432,7 @@ const ModernCommunities: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{t('pages.communities.moderators')}:</span>
-                    <span className="text-gray-900 text-right">
+                    <span className="text-gray-900 text-end">
                       {community.moderators.slice(0, 1).join(', ')}
                       {community.moderators.length > 1 && ` +${community.moderators.length - 1}`}
                     </span>
@@ -538,7 +538,7 @@ const ModernCommunities: React.FC = () => {
                   <h4 className="text-sm font-medium text-gray-900 flex-1">
                     {event.title}
                   </h4>
-                  <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full ml-2">
+                  <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full ms-2">
                     {event.type}
                   </span>
                 </div>

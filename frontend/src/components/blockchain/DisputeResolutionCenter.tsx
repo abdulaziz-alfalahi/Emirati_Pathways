@@ -153,7 +153,7 @@ const DisputeResolutionCenter: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
-                <AlertTriangle className="mr-2 h-5 w-5" />
+                <AlertTriangle className="me-2 h-5 w-5" />
                 Dispute Resolution Center
               </CardTitle>
               <CardDescription>
@@ -163,7 +163,7 @@ const DisputeResolutionCenter: React.FC = () => {
             <Dialog open={showFileDialog} onOpenChange={setShowFileDialog}>
               <DialogTrigger asChild>
                 <Button>
-                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  <AlertTriangle className="me-2 h-4 w-4" />
                   File Dispute
                 </Button>
               </DialogTrigger>
@@ -252,7 +252,7 @@ const DisputeResolutionCenter: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {disputes.map((dispute) => (
-                    <Card key={dispute.id} className="border-l-4 border-l-red-500">
+                    <Card key={dispute.id} className="border-s-4 border-s-red-500">
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
@@ -263,7 +263,7 @@ const DisputeResolutionCenter: React.FC = () => {
                               </Badge>
                             </div>
                             <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="mr-1 h-3 w-3" />
+                              <Calendar className="me-1 h-3 w-3" />
                               {new Date(dispute.created_at).toLocaleDateString()}
                             </div>
                           </div>
@@ -312,7 +312,7 @@ const DisputeResolutionCenter: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {assignedDisputes.map((dispute) => (
-                      <Card key={dispute.id} className="border-l-4 border-l-blue-500">
+                      <Card key={dispute.id} className="border-s-4 border-s-blue-500">
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
@@ -323,7 +323,7 @@ const DisputeResolutionCenter: React.FC = () => {
                                 </Badge>
                               </div>
                               <div className="flex items-center text-sm text-muted-foreground">
-                                <Calendar className="mr-1 h-3 w-3" />
+                                <Calendar className="me-1 h-3 w-3" />
                                 {new Date(dispute.created_at).toLocaleDateString()}
                               </div>
                             </div>
@@ -344,7 +344,7 @@ const DisputeResolutionCenter: React.FC = () => {
                                   size="sm"
                                   onClick={() => handleResolveDispute(dispute.id, 'resolved', 'Dispute resolved after review')}
                                 >
-                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  <CheckCircle className="me-1 h-3 w-3" />
                                   Resolve
                                 </Button>
                                 <Button
@@ -352,7 +352,7 @@ const DisputeResolutionCenter: React.FC = () => {
                                   variant="outline"
                                   onClick={() => handleResolveDispute(dispute.id, 'rejected', 'Dispute rejected after review')}
                                 >
-                                  <XCircle className="mr-1 h-3 w-3" />
+                                  <XCircle className="me-1 h-3 w-3" />
                                   Reject
                                 </Button>
                               </div>

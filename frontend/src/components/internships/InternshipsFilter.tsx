@@ -96,7 +96,7 @@ export const InternshipsFilter: React.FC<InternshipsFilterProps> = ({ onFilterCh
           <CardTitle className="text-lg">Filters</CardTitle>
           {(selectedIndustries.length > 0 || selectedLocations.length > 0 || isPaid !== undefined || searchTerm) && (
             <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs">
-              <X className="h-3 w-3 mr-1" />
+              <X className="h-3 w-3 me-1" />
               Reset
             </Button>
           )}
@@ -106,19 +106,19 @@ export const InternshipsFilter: React.FC<InternshipsFilterProps> = ({ onFilterCh
         <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder={t('forms.placeholders.searchInternships')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
 
           {/* Paid Filter */}
           <div>
             <Label className="text-sm font-medium flex items-center mb-2">
-              <span className="mr-2 text-gray-500 font-medium">AED</span>
+              <span className="me-2 text-gray-500 font-medium">AED</span>
               Payment
             </Label>
             <div className="flex gap-2">
@@ -152,7 +152,7 @@ export const InternshipsFilter: React.FC<InternshipsFilterProps> = ({ onFilterCh
           {/* Industry Filter */}
           <div>
             <Label className="text-sm font-medium flex items-center mb-2">
-              <Briefcase className="h-4 w-4 mr-2 text-gray-500" />
+              <Briefcase className="h-4 w-4 me-2 text-gray-500" />
               Industry
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-36 overflow-y-auto">
@@ -190,7 +190,7 @@ export const InternshipsFilter: React.FC<InternshipsFilterProps> = ({ onFilterCh
           {/* Location Filter */}
           <div>
             <Label className="text-sm font-medium flex items-center mb-2">
-              <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+              <MapPin className="h-4 w-4 me-2 text-gray-500" />
               Location
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

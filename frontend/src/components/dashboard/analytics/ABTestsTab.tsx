@@ -92,7 +92,7 @@ const ABTestsTab: React.FC<ABTestsTabProps> = ({
                     <div key={variantId} className="flex items-center justify-between p-3 border rounded">
                       <div>
                         <span className="font-medium capitalize">{variantId}</span>
-                        <span className="text-sm text-muted-foreground ml-2">
+                        <span className="text-sm text-muted-foreground ms-2">
                           ({stats.assignments} users)
                         </span>
                       </div>

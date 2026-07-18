@@ -92,7 +92,7 @@ const SignUpProgress: React.FC<SignUpProgressProps> = ({ currentStep, totalSteps
                 {index < steps.length - 1 && (
                   <div
                     className={`
-                      absolute top-6 left-12 w-full h-0.5 transition-colors duration-300
+                      absolute top-6 start-12 w-full h-0.5 transition-colors duration-300
                       ${
                         currentStep > step.id
                           ? 'bg-green-500'

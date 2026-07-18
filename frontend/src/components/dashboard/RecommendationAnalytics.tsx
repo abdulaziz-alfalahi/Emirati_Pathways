@@ -68,7 +68,7 @@ const RecommendationAnalytics: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Activity className="mr-2 h-5 w-5" />
+            <Activity className="me-2 h-5 w-5" />
             Recommendation Analytics Dashboard
           </CardTitle>
           <CardDescription>

@@ -577,8 +577,8 @@ const CallCenterDashboard: React.FC = () => {
                             <div key={msg.id} className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
                               <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm ${
                                 isAgent
-                                  ? 'bg-teal-600 text-white rounded-br-md'
-                                  : 'bg-white text-slate-700 border border-slate-200 rounded-bl-md shadow-sm'
+                                  ? 'bg-teal-600 text-white rounded-ee-md'
+                                  : 'bg-white text-slate-700 border border-slate-200 rounded-es-md shadow-sm'
                               }`}>
                                 {!isAgent && <div className="text-[10px] font-semibold text-teal-600 mb-0.5">{msg.sender_name || 'User'}</div>}
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -637,7 +637,7 @@ const CallCenterDashboard: React.FC = () => {
                   </div>
                   {/* Filters */}
                   <div className="flex flex-wrap gap-2 mt-4">
-                    <span className="text-xs text-slate-500 flex items-center gap-1 mr-1"><Filter className="h-3 w-3" />{b('Filter:', 'تصفية:')}</span>
+                    <span className="text-xs text-slate-500 flex items-center gap-1 me-1"><Filter className="h-3 w-3" />{b('Filter:', 'تصفية:')}</span>
                     {/* Status */}
                     {['', 'open', 'in_progress', 'resolved'].map(s => (
                       <button key={s} onClick={() => setStatusFilter(s)}

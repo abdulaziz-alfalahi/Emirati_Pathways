@@ -181,7 +181,7 @@ export const MyMentorshipsTab: React.FC = () => {
             onClick={() => handleSendMessage(relationship.id)}
             className="flex-1"
           >
-            <MessageCircle className="h-4 w-4 mr-2" />
+            <MessageCircle className="h-4 w-4 me-2" />
             Message
           </Button>
           <Button 
@@ -189,7 +189,7 @@ export const MyMentorshipsTab: React.FC = () => {
             onClick={() => handleScheduleSession(relationship.id)}
             className="flex-1 bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90]"
           >
-            <Video className="h-4 w-4 mr-2" />
+            <Video className="h-4 w-4 me-2" />
             Schedule
           </Button>
         </div>

@@ -123,7 +123,7 @@ export const ContributorsTab: React.FC<ContributorsTabProps> = ({ searchQuery })
                   {contributor.name}
                   {contributor.is_featured && (
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                      <Star className="h-3 w-3 mr-1" />
+                      <Star className="h-3 w-3 me-1" />
                       Featured
                     </Badge>
                   )}
@@ -139,7 +139,7 @@ export const ContributorsTab: React.FC<ContributorsTabProps> = ({ searchQuery })
                 </CardDescription>
               </div>
               <Badge variant="outline" className="text-xs">
-                <Award className="h-3 w-3 mr-1" />
+                <Award className="h-3 w-3 me-1" />
                 {contributor.content_count} contributions
               </Badge>
             </div>

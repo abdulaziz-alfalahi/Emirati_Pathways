@@ -276,7 +276,7 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
                 variant="outline"
                 className="mx-auto"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 me-2" />
                 Choose Files
               </Button>
               <input
@@ -324,12 +324,12 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
               >
                 {isProcessingText ? (
                   <>
-                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    <Upload className="h-4 w-4 me-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <FileText className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 me-2" />
                     Parse CV Text
                   </>
                 )}
@@ -394,11 +394,11 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
                     {uploadedFile.result.analysis && (
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 me-2" />
                           View Analysis
                         </Button>
                         <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 me-2" />
                           Download Report
                         </Button>
                       </div>

@@ -113,7 +113,7 @@ const TransactionHistory: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Calendar className="mr-2 h-5 w-5" />
+            <Calendar className="me-2 h-5 w-5" />
             Transaction History
           </CardTitle>
           <CardDescription>
@@ -124,12 +124,12 @@ const TransactionHistory: React.FC = () => {
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-64">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -203,7 +203,7 @@ const TransactionHistory: React.FC = () => {
                         
                         <div className="text-xs text-gray-500 space-y-1">
                           <p className="flex items-center">
-                            <Calendar className="mr-1 h-3 w-3" />
+                            <Calendar className="me-1 h-3 w-3" />
                             {new Date(transaction.timestamp).toLocaleString()}
                           </p>
                           
@@ -213,7 +213,7 @@ const TransactionHistory: React.FC = () => {
                           
                           {transaction.transaction_hash && (
                             <p className="flex items-center">
-                              <ExternalLink className="mr-1 h-3 w-3" />
+                              <ExternalLink className="me-1 h-3 w-3" />
                               Tx: {transaction.transaction_hash.substring(0, 10)}...
                             </p>
                           )}
@@ -226,7 +226,7 @@ const TransactionHistory: React.FC = () => {
                     </div>
                     
                     {transaction.operation_details.metadata && (
-                      <div className="flex-shrink-0 ml-4">
+                      <div className="flex-shrink-0 ms-4">
                         <details className="text-xs">
                           <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
                             Details

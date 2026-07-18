@@ -25,7 +25,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <Star className="h-5 w-5 mr-2" />
+              <Star className="h-5 w-5 me-2" />
               Portfolio Highlights
             </CardTitle>
             <CardDescription>No portfolio highlights available</CardDescription>
@@ -59,7 +59,7 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center">
-            <Star className="h-5 w-5 mr-2" />
+            <Star className="h-5 w-5 me-2" />
             Portfolio Highlights
           </CardTitle>
           <CardDescription>{highlights.length} highlights</CardDescription>
@@ -108,13 +108,13 @@ const HighlightsSection: React.FC<HighlightsSectionProps> = ({
                     className="text-xs inline-flex items-center text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    View more <ExternalLink className="h-3 w-3 ml-1" />
+                    View more <ExternalLink className="h-3 w-3 ms-1" />
                   </a>
                 </div>
               )}
               
               {isEditable && (
-                <div className="absolute top-2 right-2 text-xs text-muted-foreground">
+                <div className="absolute top-2 end-2 text-xs text-muted-foreground">
                   Click to edit
                 </div>
               )}

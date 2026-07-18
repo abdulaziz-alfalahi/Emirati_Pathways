@@ -193,7 +193,7 @@ export const ApplicationTracker: React.FC = () => {
               <h3 className="text-lg font-semibold">{app.title}</h3>
               {app.matchScore && (
                 <Badge variant="outline" className="text-blue-600 border-blue-200">
-                  <Star className="h-3 w-3 mr-1" />
+                  <Star className="h-3 w-3 me-1" />
                   {app.matchScore}% match
                 </Badge>
               )}
@@ -287,18 +287,18 @@ export const ApplicationTracker: React.FC = () => {
           <div className="flex gap-2">
             {app.status === 'interview' && (
               <Button size="sm" variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 me-2" />
                 Interview Details
               </Button>
             )}
             {app.contactPerson && (
               <Button size="sm" variant="outline">
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <MessageSquare className="h-4 w-4 me-2" />
                 Contact
               </Button>
             )}
             <Button size="sm">
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 me-2" />
               View Details
             </Button>
           </div>

@@ -284,7 +284,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-5 w-5 me-2" />
             {t('steps.skills.addNew', 'Add New Skill')}
           </CardTitle>
         </CardHeader>
@@ -341,7 +341,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
             </div>
           </div>
           <Button onClick={handleAddSkill} className="mt-4" disabled={!newSkillName.trim()}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t('steps.skills.add', 'Add Skill')}
           </Button>
         </CardContent>
@@ -357,7 +357,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
               <TabsTrigger key={category.value} value={category.value} className="flex items-center space-x-1 text-xs">
                 <Icon className="h-3 w-3" />
                 <span className="hidden sm:inline">{category.label.split(' ')[0]}</span>
-                {categorySkills.length > 0 && <Badge className="ml-1 text-xs">{categorySkills.length}</Badge>}
+                {categorySkills.length > 0 && <Badge className="ms-1 text-xs">{categorySkills.length}</Badge>}
                 {category.strategic && <Star className="h-2 w-2 text-yellow-500" />}
               </TabsTrigger>
             );
@@ -376,7 +376,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
                       {t(`steps.skills.categories.${category.value.toLowerCase()}`, category.label)}
                       {category.strategic && (
                         <Badge className="text-xs">
-                          <Star className="h-3 w-3 mr-1" />
+                          <Star className="h-3 w-3 me-1" />
                           {t('steps.skills.strategic', 'Strategic')}
                         </Badge>
                       )}
@@ -463,7 +463,7 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
                     {t('steps.skills.suggestions', 'Suggested Skills')}
                     {category.strategic && (
                       <Badge className="text-xs">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="h-3 w-3 me-1" />
                         {t('steps.skills.highDemand', 'High Demand')}
                       </Badge>
                     )}
@@ -481,11 +481,11 @@ export const SkillsStep: React.FC<SkillsStepProps> = ({
                           key={`${category.value}-${index}-${skillName}`}
                           onClick={() => handleAddPresetSkill(skillName, category.value)}
                           disabled={isAlreadyAdded}
-                          className={`text-left justify-start h-auto p-2 ${
+                          className={`text-start justify-start h-auto p-2 ${
                             isAlreadyAdded ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          <Plus className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <Plus className="h-3 w-3 me-1 flex-shrink-0" />
                           <span className="text-xs">{skillName}</span>
                         </Button>
                       );

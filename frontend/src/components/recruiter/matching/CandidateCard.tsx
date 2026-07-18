@@ -89,7 +89,7 @@ const CandidateCard = ({ candidate, onAction }: CandidateCardProps) => {
             variant="destructive" 
             onClick={() => onAction(candidate.id, 'reject')}
           >
-            <ThumbsDown className="h-4 w-4 mr-1" /> Reject
+            <ThumbsDown className="h-4 w-4 me-1" /> Reject
           </Button>
         )}
         
@@ -99,7 +99,7 @@ const CandidateCard = ({ candidate, onAction }: CandidateCardProps) => {
             variant="default" 
             onClick={() => onAction(candidate.id, 'shortlist')}
           >
-            <ThumbsUp className="h-4 w-4 mr-1" /> Shortlist
+            <ThumbsUp className="h-4 w-4 me-1" /> Shortlist
           </Button>
         )}
         
@@ -108,7 +108,7 @@ const CandidateCard = ({ candidate, onAction }: CandidateCardProps) => {
           variant="outline" 
           onClick={() => onAction(candidate.id, 'message')}
         >
-          <MessageSquare className="h-4 w-4 mr-1" /> Message
+          <MessageSquare className="h-4 w-4 me-1" /> Message
         </Button>
         
         <Button 
@@ -116,7 +116,7 @@ const CandidateCard = ({ candidate, onAction }: CandidateCardProps) => {
           variant="outline" 
           onClick={() => onAction(candidate.id, 'interview')}
         >
-          <Video className="h-4 w-4 mr-1" /> Schedule Interview
+          <Video className="h-4 w-4 me-1" /> Schedule Interview
         </Button>
       </div>
     </div>

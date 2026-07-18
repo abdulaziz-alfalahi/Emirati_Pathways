@@ -87,11 +87,11 @@ export default function RecruiterAnalyticsPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            <FileSpreadsheet className="me-2 h-4 w-4" />
             Export CSV
           </Button>
           <Button onClick={handleExportPDF} className="bg-teal-600 hover:bg-teal-700">
-            <FileText className="mr-2 h-4 w-4" />
+            <FileText className="me-2 h-4 w-4" />
             Export PDF
           </Button>
         </div>
@@ -100,7 +100,7 @@ export default function RecruiterAnalyticsPage() {
       <div ref={contentRef} className="space-y-6">
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="shadow-sm border-l-4 border-l-blue-500">
+          <Card className="shadow-sm border-s-4 border-s-blue-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-500">Total Jobs</CardTitle>
             </CardHeader>
@@ -112,7 +112,7 @@ export default function RecruiterAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-l-4 border-l-green-500">
+          <Card className="shadow-sm border-s-4 border-s-green-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-500">Offers Accepted</CardTitle>
             </CardHeader>
@@ -124,7 +124,7 @@ export default function RecruiterAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-l-4 border-l-purple-500">
+          <Card className="shadow-sm border-s-4 border-s-purple-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-500">Avg Time to Hire</CardTitle>
             </CardHeader>
@@ -136,7 +136,7 @@ export default function RecruiterAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-l-4 border-l-orange-500">
+          <Card className="shadow-sm border-s-4 border-s-orange-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-slate-500">Shortlisted</CardTitle>
             </CardHeader>

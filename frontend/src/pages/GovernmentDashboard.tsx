@@ -308,7 +308,7 @@ const GovernmentDashboard: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
                   {firstName.charAt(0)}
                 </div>
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-start">
                   <div className="flex items-center gap-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                     <h1 className="text-2xl font-dubai-bold text-slate-900">
                       {getGreeting()}، {firstName}
@@ -380,7 +380,7 @@ const GovernmentDashboard: React.FC = () => {
                   <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
                     <CardContent className="pt-5 pb-4 px-5">
                       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={isRTL ? 'text-right' : 'text-left'}>
+                        <div className="text-start">
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                           <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                           <p className="text-xs text-slate-400 mt-0.5 font-dubai-medium">{stat.sub}</p>
@@ -428,7 +428,7 @@ const GovernmentDashboard: React.FC = () => {
                           <div className="relative">
                             <Progress value={sector.rate} className="h-2.5 bg-slate-100" />
                             <div
-                              className="absolute top-0 h-2.5 border-r-2 border-dashed border-slate-400"
+                              className="absolute top-0 h-2.5 border-e-2 border-dashed border-slate-400"
                               style={{ left: `${sector.target}%` }}
                               title={`${b('Target', 'الهدف')}: ${sector.target}%`}
                             />
@@ -449,7 +449,7 @@ const GovernmentDashboard: React.FC = () => {
                             {b('Overall Emiratization Goal', 'هدف التوطين الشامل')}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <p className="text-2xl font-dubai-bold text-emerald-700">
                             {dashboardData.emiratization.targetRate == null ? b('N/A', 'غير متاح') : `${dashboardData.emiratization.targetRate}%`}
                           </p>
@@ -533,7 +533,7 @@ const GovernmentDashboard: React.FC = () => {
                   <div className="space-y-2">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                        <div key={activity.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
                           <div className="flex-shrink-0 mt-0.5">
                             {getActivityIcon(activity.type)}
                           </div>
@@ -570,11 +570,11 @@ const GovernmentDashboard: React.FC = () => {
                   <table className="w-full text-sm" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                     <thead>
                       <tr className="border-b border-slate-100">
-                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Sector', 'القطاع')}</th>
-                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Current Rate', 'النسبة الحالية')}</th>
-                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Target', 'الهدف')}</th>
-                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Emirati Employees', 'الموظفون الإماراتيون')}</th>
-                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Status', 'الحالة')}</th>
+                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Sector', 'القطاع')}</th>
+                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Current Rate', 'النسبة الحالية')}</th>
+                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Target', 'الهدف')}</th>
+                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Emirati Employees', 'الموظفون الإماراتيون')}</th>
+                        <th className={`px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Status', 'الحالة')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -659,7 +659,7 @@ const GovernmentDashboard: React.FC = () => {
                   <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
                     <CardContent className="pt-5 pb-4 px-5">
                       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={isRTL ? 'text-right' : 'text-left'}>
+                        <div className="text-start">
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                           <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                         </div>

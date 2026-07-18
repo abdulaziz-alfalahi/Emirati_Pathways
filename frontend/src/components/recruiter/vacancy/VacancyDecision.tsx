@@ -141,7 +141,7 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                                 <div className="flex items-center gap-6">
 
                                     {/* Status Indicator */}
-                                    <div className="text-right">
+                                    <div className="text-end">
                                         <div className="flex items-center justify-end gap-2 mb-1">
                                             {candidate.status === 'approved' && <CheckCircle className="h-4 w-4 text-green-600" />}
                                             {candidate.status === 'recommended' && <Clock className="h-4 w-4 text-amber-500" />}
@@ -155,12 +155,12 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                                     {/* Action Button */}
                                     {candidate.status === 'approved' ? (
                                         <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => startOffer(candidate)}>
-                                            <FileSignature className="h-4 w-4 mr-2" />
+                                            <FileSignature className="h-4 w-4 me-2" />
                                             Draft Offer
                                         </Button>
                                     ) : (
                                         <Button variant="outline" disabled className="opacity-50">
-                                            <Clock className="h-4 w-4 mr-2" />
+                                            <Clock className="h-4 w-4 me-2" />
                                             Awaiting Approval
                                         </Button>
                                     )}
@@ -194,8 +194,8 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                         <div className="space-y-2">
                             <Label>Annual Base Salary (AED)</Label>
                             <div className="relative">
-                                <span className="absolute left-3 top-2.5 text-gray-500">AED</span>
-                                <Input className="pl-12" placeholder="300,000" />
+                                <span className="absolute start-3 top-2.5 text-gray-500">AED</span>
+                                <Input className="ps-12" placeholder="300,000" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -211,7 +211,7 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setOfferOpen(false)}>Save Draft</Button>
                         <Button onClick={handleSendOffer} className="bg-green-600 hover:bg-green-700">
-                            <Send className="h-4 w-4 mr-2" />
+                            <Send className="h-4 w-4 me-2" />
                             Send for Approval
                         </Button>
                     </DialogFooter>

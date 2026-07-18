@@ -201,14 +201,14 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({
           >
             {/* Popular Badge */}
             {role.popular && (
-              <Badge className="absolute -top-2 -right-2 bg-yellow-500 text-white">
+              <Badge className="absolute -top-2 -end-2 bg-yellow-500 text-white">
                 Popular
               </Badge>
             )}
 
             {/* Selected Indicator */}
             {selectedRole === role.id && (
-              <div className="absolute top-3 right-3">
+              <div className="absolute top-3 end-3">
                 <CheckCircle2 className="h-6 w-6 text-blue-500" />
               </div>
             )}
@@ -233,7 +233,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({
                 <ul className="space-y-1">
                   {role.features.slice(0, 3).map((feature, index) => (
                     <li key={index} className="flex items-center text-xs text-gray-600">
-                      <div className="h-1.5 w-1.5 bg-gray-400 rounded-full mr-2" />
+                      <div className="h-1.5 w-1.5 bg-gray-400 rounded-full me-2" />
                       {feature}
                     </li>
                   ))}
@@ -269,7 +269,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {selectedRoleData.features.map((feature, index) => (
                       <div key={index} className="flex items-center text-sm text-gray-600">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
+                        <CheckCircle2 className="h-4 w-4 text-green-500 me-2" />
                         {feature}
                       </div>
                     ))}
@@ -290,7 +290,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({
           size="lg"
         >
           Continue with {selectedRoleData?.title || 'Selected Role'}
-          <ArrowRight className="ml-2 h-5 w-5" />
+          <ArrowRight className="ms-2 h-5 w-5" />
         </Button>
       </div>
 

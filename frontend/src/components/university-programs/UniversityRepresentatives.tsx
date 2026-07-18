@@ -168,7 +168,7 @@ export const UniversityRepresentatives: React.FC = () => {
                     {session.status}
                   </Badge>
                   <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                    <Video className="h-4 w-4 mr-2" />
+                    <Video className="h-4 w-4 me-2" />
                     Join Meeting
                   </Button>
                 </div>
@@ -184,12 +184,12 @@ export const UniversityRepresentatives: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search representatives by name, university, or specialization..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -286,7 +286,7 @@ export const UniversityRepresentatives: React.FC = () => {
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button className="flex-1 bg-purple-600 hover:bg-purple-700">
-                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      <CalendarIcon className="h-4 w-4 me-2" />
                       Schedule Meeting
                     </Button>
                   </PopoverTrigger>

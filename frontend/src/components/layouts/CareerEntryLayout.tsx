@@ -94,11 +94,11 @@ export const CareerEntryLayout: React.FC<CareerEntryLayoutProps> = ({
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center mb-6">
-                <div className="p-3 bg-ehrdc-teal rounded-xl shadow-lg mr-4">
+                <div className="p-3 bg-ehrdc-teal rounded-xl shadow-lg me-4">
                   {icon}
                 </div>
                 <Badge className="bg-ehrdc-teal/10 text-ehrdc-teal hover:bg-ehrdc-teal/20">
-                  <Briefcase className="h-4 w-4 mr-2" />
+                  <Briefcase className="h-4 w-4 me-2" />
                   Career Entry
                 </Badge>
               </div>
@@ -118,7 +118,7 @@ export const CareerEntryLayout: React.FC<CareerEntryLayoutProps> = ({
                   onClick={handlePrimaryAction}
                 >
                   {primaryActionText}
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <ArrowRight className="h-4 w-4 ms-2" />
                 </Button>
                 <Button 
                   variant="outline" 
@@ -133,15 +133,15 @@ export const CareerEntryLayout: React.FC<CareerEntryLayoutProps> = ({
               {/* Success Indicators */}
               <div className="flex flex-wrap gap-4 text-sm text-ehrdc-neutral-dark/70">
                 <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <CheckCircle className="h-4 w-4 text-green-600 me-2" />
                   Free career guidance
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <CheckCircle className="h-4 w-4 text-green-600 me-2" />
                   UAE market insights
                 </div>
                 <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <CheckCircle className="h-4 w-4 text-green-600 me-2" />
                   Personalized matching
                 </div>
               </div>

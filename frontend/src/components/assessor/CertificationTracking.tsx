@@ -443,9 +443,9 @@ const CertificationTracking: React.FC<CertificationTrackingProps> = ({ onUpdate 
 
     return (
       <Card className={`transition-all duration-200 hover:shadow-md ${
-        cert.importance === 'critical' ? 'border-l-4 border-l-red-500' :
-        cert.importance === 'important' ? 'border-l-4 border-l-yellow-500' :
-        'border-l-4 border-l-blue-500'
+        cert.importance === 'critical' ? 'border-s-4 border-s-red-500' :
+        cert.importance === 'important' ? 'border-s-4 border-s-yellow-500' :
+        'border-s-4 border-s-blue-500'
       }`}>
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
@@ -544,14 +544,14 @@ const CertificationTracking: React.FC<CertificationTrackingProps> = ({ onUpdate 
               {cert.credentialUrl && (
                 <Button size="sm" variant="outline" asChild>
                   <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-1" />
+                    <ExternalLink className="h-4 w-4 me-1" />
                     Verify
                   </a>
                 </Button>
               )}
               {cert.documents.length > 0 && (
                 <Button size="sm" variant="outline">
-                  <FileText className="h-4 w-4 mr-1" />
+                  <FileText className="h-4 w-4 me-1" />
                   Documents ({cert.documents.length})
                 </Button>
               )}
@@ -687,7 +687,7 @@ const CertificationTracking: React.FC<CertificationTrackingProps> = ({ onUpdate 
         </div>
         
         <Button onClick={addCertification}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Add Certification
         </Button>
       </div>
@@ -706,7 +706,7 @@ const CertificationTracking: React.FC<CertificationTrackingProps> = ({ onUpdate 
                 }
               </p>
               <Button onClick={addCertification}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Add Your First Certification
               </Button>
             </CardContent>

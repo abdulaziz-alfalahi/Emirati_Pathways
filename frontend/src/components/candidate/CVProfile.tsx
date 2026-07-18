@@ -644,7 +644,7 @@ const CVProfile: React.FC = () => {
               {/* Overall Progress */}
               <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`absolute left-0 top-0 h-full ${getProgressColor(atsScore.overall)} transition-all duration-500`}
+                  className={`absolute start-0 top-0 h-full ${getProgressColor(atsScore.overall)} transition-all duration-500`}
                   style={{ width: `${atsScore.overall}%` }}
                 />
               </div>
@@ -824,7 +824,7 @@ const CVProfile: React.FC = () => {
               </h3>
               <div className="space-y-4">
                 {experience.slice(0, 3).map((exp, index) => (
-                  <div key={exp.id || index} className="border-l-2 border-teal-200 pl-4">
+                  <div key={exp.id || index} className="border-s-2 border-teal-200 ps-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">{exp.jobTitle}</h4>

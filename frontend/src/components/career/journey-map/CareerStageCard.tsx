@@ -108,7 +108,7 @@ const CareerStageCard: React.FC<CareerStageCardProps> = ({
   return (
     <div className="relative">
       {!isLast && (
-        <div className="absolute left-6 top-12 h-16 w-0.5 bg-gray-200" />
+        <div className="absolute start-6 top-12 h-16 w-0.5 bg-gray-200" />
       )}
       
       <div 

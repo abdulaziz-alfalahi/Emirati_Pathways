@@ -95,7 +95,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-              <span className="ml-3 text-gray-600">Loading job descriptions...</span>
+              <span className="ms-3 text-gray-600">Loading job descriptions...</span>
             </div>
           ) : jobDescriptions.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg border">
@@ -159,7 +159,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
             onClick={handleManageShortlist}
             disabled={!selectedJD || loading}
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <CheckCircle className="h-4 w-4 me-2" />
             Manage Shortlist
           </Button>
         </div>

@@ -16,11 +16,11 @@ interface MentorDashboardProps {
 const MentorDashboard: React.FC<MentorDashboardProps> = ({ activeTab }) => (
   <Tabs defaultValue={activeTab} className="space-y-8">
     <TabsList className="mb-4">
-      <TabsTrigger value="overview"><Briefcase className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-      <TabsTrigger value="students"><Users className="h-4 w-4 mr-2" /> Students</TabsTrigger>
-      <TabsTrigger value="coaching"><Users className="h-4 w-4 mr-2" /> Coaching</TabsTrigger>
-      <TabsTrigger value="metrics"><Award className="h-4 w-4 mr-2" /> Success Metrics</TabsTrigger>
-      <TabsTrigger value="resources"><BookOpen className="h-4 w-4 mr-2" /> Resources</TabsTrigger>
+      <TabsTrigger value="overview"><Briefcase className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+      <TabsTrigger value="students"><Users className="h-4 w-4 me-2" /> Students</TabsTrigger>
+      <TabsTrigger value="coaching"><Users className="h-4 w-4 me-2" /> Coaching</TabsTrigger>
+      <TabsTrigger value="metrics"><Award className="h-4 w-4 me-2" /> Success Metrics</TabsTrigger>
+      <TabsTrigger value="resources"><BookOpen className="h-4 w-4 me-2" /> Resources</TabsTrigger>
     </TabsList>
     
     <TabsContent value="overview" className="space-y-8">
@@ -49,7 +49,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ activeTab }) => (
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                   AS
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <div className="font-medium">Ahmed S.</div>
                   <div className="text-sm text-muted-foreground">Computer Science • Grade 12</div>
                 </div>
@@ -62,7 +62,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ activeTab }) => (
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                   MK
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <div className="font-medium">Maryam K.</div>
                   <div className="text-sm text-muted-foreground">Engineering • Grade 11</div>
                 </div>
@@ -75,7 +75,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ activeTab }) => (
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
                   NK
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <div className="font-medium">Noura K.</div>
                   <div className="text-sm text-muted-foreground">Medicine • University</div>
                 </div>

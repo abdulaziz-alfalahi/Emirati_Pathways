@@ -122,11 +122,11 @@ export const AnswerBuilder: React.FC = () => {
                 
                 <div className="flex gap-3 mt-4">
                   <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-4 w-4 me-2" />
                     Save & Continue
                   </Button>
                   <Button variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <RefreshCw className="h-4 w-4 me-2" />
                     Reset
                   </Button>
                 </div>

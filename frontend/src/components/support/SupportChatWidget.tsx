@@ -126,7 +126,7 @@ const SupportChatWidget: React.FC = () => {
       >
         <MessageCircle className="h-7 w-7 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[10px] font-bold w-5 h-5 flex items-center justify-center animate-bounce">
+          <span className="absolute -top-1 -end-1 bg-red-500 text-white rounded-full text-[10px] font-bold w-5 h-5 flex items-center justify-center animate-bounce">
             {unreadCount}
           </span>
         )}
@@ -305,8 +305,8 @@ const SupportChatWidget: React.FC = () => {
                         <div
                           className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                             isMine
-                              ? 'bg-teal-600 text-white rounded-br-md'
-                              : 'bg-white text-slate-700 border border-slate-200 rounded-bl-md shadow-sm'
+                              ? 'bg-teal-600 text-white rounded-ee-md'
+                              : 'bg-white text-slate-700 border border-slate-200 rounded-es-md shadow-sm'
                           }`}
                         >
                           {!isMine && (
@@ -329,7 +329,7 @@ const SupportChatWidget: React.FC = () => {
                 {/* Waiting indicator after initial message sent */}
                 {status === 'waiting' && messages.length > 0 && (
                   <div className="flex justify-start">
-                    <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-2xl rounded-es-md px-4 py-3 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-500" />
                         {b('Waiting for an agent...', 'في انتظار الوكيل...')}
@@ -347,7 +347,7 @@ const SupportChatWidget: React.FC = () => {
                     <div className="mb-3 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2.5 text-center">
                       <p className="text-xs font-semibold text-teal-800">
                         📋 {b('Your ticket reference:', 'رقم تذكرتك:')}
-                        <span className="text-teal-600 font-bold text-sm ml-1">#{ticketId}</span>
+                        <span className="text-teal-600 font-bold text-sm ms-1">#{ticketId}</span>
                       </p>
                       <p className="text-[10px] text-teal-600 mt-0.5">
                         {b('Use this number to track your issue', 'استخدم هذا الرقم لمتابعة مشكلتك')}

@@ -91,7 +91,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
               onClick={() => generateReport(selectedReport)} 
               disabled={!selectedReport}
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Generate
             </Button>
           </div>
@@ -123,7 +123,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
                       size="sm" 
                       onClick={() => generateReport(report.id)}
                     >
-                      <FileText className="h-3 w-3 mr-1" />
+                      <FileText className="h-3 w-3 me-1" />
                       Generate
                     </Button>
                     <Button 
@@ -131,7 +131,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
                       variant="outline"
                       onClick={() => scheduleReport(report.id)}
                     >
-                      <Calendar className="h-3 w-3 mr-1" />
+                      <Calendar className="h-3 w-3 me-1" />
                       Schedule
                     </Button>
                   </div>
@@ -175,7 +175,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
               </div>
 
               <Button variant="outline" className="w-full">
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 Configure Delivery Settings
               </Button>
             </div>
@@ -236,7 +236,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline">
-                  <Download className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 me-1" />
                   Download
                 </Button>
                 <Badge variant="secondary">PDF</Badge>
@@ -250,7 +250,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline">
-                  <Download className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 me-1" />
                   Download
                 </Button>
                 <Badge variant="secondary">Excel</Badge>
@@ -264,7 +264,7 @@ export const StakeholderReportsTab: React.FC<StakeholderReportsTabProps> = ({
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline">
-                  <Download className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 me-1" />
                   Download
                 </Button>
                 <Badge variant="secondary">PDF</Badge>

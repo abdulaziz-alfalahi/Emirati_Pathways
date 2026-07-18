@@ -124,7 +124,7 @@ const PortfolioTemplates: React.FC = () => {
           <p className="text-muted-foreground">Choose from professionally designed templates</p>
         </div>
         <Button>
-          <Palette className="h-4 w-4 mr-2" />
+          <Palette className="h-4 w-4 me-2" />
           Create Custom Template
         </Button>
       </div>
@@ -132,12 +132,12 @@ const PortfolioTemplates: React.FC = () => {
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -149,7 +149,7 @@ const PortfolioTemplates: React.FC = () => {
               onClick={() => setSelectedCategory(category.id)}
               className="whitespace-nowrap"
             >
-              <category.icon className="h-4 w-4 mr-2" />
+              <category.icon className="h-4 w-4 me-2" />
               {category.name}
             </Button>
           ))}
@@ -167,7 +167,7 @@ const PortfolioTemplates: React.FC = () => {
                 className="w-full h-48 object-cover"
               />
               {template.isPremium && (
-                <Badge className="absolute top-2 right-2 bg-gradient-to-r from-yellow-400 to-yellow-600">
+                <Badge className="absolute top-2 end-2 bg-gradient-to-r from-yellow-400 to-yellow-600">
                   Premium
                 </Badge>
               )}
@@ -223,7 +223,7 @@ const PortfolioTemplates: React.FC = () => {
                     className="flex-1"
                     onClick={() => handlePreviewTemplate(template.id)}
                   >
-                    <Eye className="h-4 w-4 mr-2" />
+                    <Eye className="h-4 w-4 me-2" />
                     Preview
                   </Button>
                   <Button 

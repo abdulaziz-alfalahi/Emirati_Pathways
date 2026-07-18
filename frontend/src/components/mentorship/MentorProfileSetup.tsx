@@ -183,7 +183,7 @@ export const MentorProfileSetup: React.FC = () => {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-4 w-4 p-0 ml-2"
+                    className="h-4 w-4 p-0 ms-2"
                     onClick={() => handleRemoveExpertise(expertise)}
                   >
                     <X className="h-3 w-3" />
@@ -344,7 +344,7 @@ export const MentorProfileSetup: React.FC = () => {
         {/* Submit Button */}
         <div className="flex justify-end">
           <Button type="submit" disabled={loading} className="px-8">
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 me-2" />
             {loading ? 'Saving...' : 'Save Profile'}
           </Button>
         </div>

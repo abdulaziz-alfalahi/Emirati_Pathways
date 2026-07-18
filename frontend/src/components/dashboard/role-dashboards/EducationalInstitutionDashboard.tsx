@@ -15,9 +15,9 @@ interface EducationalInstitutionDashboardProps {
 const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardProps> = ({ activeTab }) => (
   <Tabs defaultValue={activeTab} className="space-y-8">
     <TabsList className="mb-4">
-      <TabsTrigger value="overview"><User className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-      <TabsTrigger value="students"><Users className="h-4 w-4 mr-2" /> Students</TabsTrigger>
-      <TabsTrigger value="programs"><BookOpen className="h-4 w-4 mr-2" /> Programs</TabsTrigger>
+      <TabsTrigger value="overview"><User className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+      <TabsTrigger value="students"><Users className="h-4 w-4 me-2" /> Students</TabsTrigger>
+      <TabsTrigger value="programs"><BookOpen className="h-4 w-4 me-2" /> Programs</TabsTrigger>
     </TabsList>
 
     <TabsContent value="overview" className="space-y-8">
@@ -38,7 +38,7 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
             </div>
             <Link to="/knowledge-camps">
               <Button>
-                <Calendar className="mr-2 h-4 w-4" /> Manage Camps
+                <Calendar className="me-2 h-4 w-4" /> Manage Camps
               </Button>
             </Link>
           </CardHeader>
@@ -83,7 +83,7 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
             </div>
             <Link to="/scholarships">
               <Button>
-                <Award className="mr-2 h-4 w-4" /> Manage Scholarships
+                <Award className="me-2 h-4 w-4" /> Manage Scholarships
               </Button>
             </Link>
           </CardHeader>
@@ -130,13 +130,13 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
         </CardHeader>
         <CardContent className="space-y-4">
           <Button variant="outline" className="w-full justify-start">
-            <User className="mr-2 h-4 w-4" /> Upload Student Records
+            <User className="me-2 h-4 w-4" /> Upload Student Records
           </Button>
           <Button variant="outline" className="w-full justify-start">
-            <Calendar className="mr-2 h-4 w-4" /> Schedule Academic Events
+            <Calendar className="me-2 h-4 w-4" /> Schedule Academic Events
           </Button>
           <Button variant="outline" className="w-full justify-start">
-            <BarChart4 className="mr-2 h-4 w-4" /> View Performance Analytics
+            <BarChart4 className="me-2 h-4 w-4" /> View Performance Analytics
           </Button>
         </CardContent>
       </Card>

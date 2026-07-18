@@ -87,7 +87,7 @@ const ProgramsFilter: React.FC<ProgramsFilterProps> = ({
               onClick={clearAllFilters}
               className="text-ehrdc-teal hover:text-ehrdc-dark-teal"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 me-1" />
               Clear
             </Button>
           )}
@@ -99,13 +99,13 @@ const ProgramsFilter: React.FC<ProgramsFilterProps> = ({
         <div>
           <Label htmlFor="search" className="text-sm font-medium">Search Programs</Label>
           <div className="relative mt-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               id="search"
               placeholder="Search by title, institution..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
         </div>

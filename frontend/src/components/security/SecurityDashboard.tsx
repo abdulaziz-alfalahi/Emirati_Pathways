@@ -120,7 +120,7 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className 
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 me-2 ${autoRefresh ? 'animate-spin' : ''}`} />
             Auto Refresh {autoRefresh ? 'On' : 'Off'}
           </Button>
           
@@ -130,7 +130,7 @@ export const SecurityDashboard: React.FC<SecurityDashboardProps> = ({ className 
             onClick={performSecurityAudit}
             disabled={isMonitoring}
           >
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             {isMonitoring ? 'Scanning...' : 'Run Audit'}
           </Button>
         </div>

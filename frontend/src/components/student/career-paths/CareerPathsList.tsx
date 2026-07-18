@@ -114,12 +114,12 @@ const CareerPathsList: React.FC<CareerPathsListProps> = ({
                 >
                   {deletingId === path.id ? (
                     <>
-                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                      <div className="animate-spin me-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
                       Removing...
                     </>
                   ) : (
                     <>
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 me-2" />
                       Remove
                     </>
                   )}

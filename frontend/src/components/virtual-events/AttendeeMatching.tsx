@@ -144,7 +144,7 @@ const AttendeeMatching: React.FC<AttendeeMatchingProps> = ({ eventId }) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Users className="h-5 w-5 mr-2" />
+          <Users className="h-5 w-5 me-2" />
           Suggested Connections
         </CardTitle>
         <CardDescription>
@@ -167,7 +167,7 @@ const AttendeeMatching: React.FC<AttendeeMatchingProps> = ({ eventId }) => {
                     <div className="flex items-center space-x-2">
                       <h3 className="font-medium">{attendee.name}</h3>
                       <div className={`px-2 py-1 rounded-full text-xs font-medium ${getMatchScoreColor(attendee.match_score)}`}>
-                        <Star className="h-3 w-3 inline mr-1" />
+                        <Star className="h-3 w-3 inline me-1" />
                         {attendee.match_score}% match
                       </div>
                     </div>
@@ -249,7 +249,7 @@ const AttendeeMatching: React.FC<AttendeeMatchingProps> = ({ eventId }) => {
                   
                   {attendee.is_connected ? (
                     <Button variant="outline" size="sm" disabled>
-                      <MessageCircle className="h-4 w-4 mr-1" />
+                      <MessageCircle className="h-4 w-4 me-1" />
                       Connected
                     </Button>
                   ) : (
@@ -257,7 +257,7 @@ const AttendeeMatching: React.FC<AttendeeMatchingProps> = ({ eventId }) => {
                       size="sm" 
                       onClick={() => handleConnect(attendee.id)}
                     >
-                      <UserPlus className="h-4 w-4 mr-1" />
+                      <UserPlus className="h-4 w-4 me-1" />
                       Connect
                     </Button>
                   )}

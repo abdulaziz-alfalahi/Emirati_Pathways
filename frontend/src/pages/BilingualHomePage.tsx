@@ -129,8 +129,8 @@ const DashboardMockup: React.FC = () => (
     </div>
 
     {/* Decorative floating elements */}
-    <div className="absolute -top-4 -right-4 w-20 h-20 bg-teal-100/60 rounded-full blur-2xl" />
-    <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-teal-50/80 rounded-full blur-3xl" />
+    <div className="absolute -top-4 -end-4 w-20 h-20 bg-teal-100/60 rounded-full blur-2xl" />
+    <div className="absolute -bottom-6 -start-6 w-28 h-28 bg-teal-50/80 rounded-full blur-3xl" />
   </div>
 );
 
@@ -339,8 +339,8 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       <section className="relative py-20 lg:py-28 bg-gradient-to-br from-teal-50/40 via-white to-slate-50 overflow-hidden">
         {/* Subtle decorative circles */}
-        <div className="absolute top-10 right-0 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-teal-50/50 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+        <div className="absolute top-10 end-0 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 start-0 w-72 h-72 bg-teal-50/50 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -482,7 +482,7 @@ const BilingualHomePage: React.FC = () => {
                 className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 relative group"
               >
                 {persona.popular && (
-                  <div className={`absolute -top-3 ${isRTL ? 'right-6' : 'left-6'}`}>
+                  <div className={`absolute -top-3 start-6`}>
                     <span className="bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-dubai-medium">
                       {translations.pathways?.mostPopular || 'Most Popular'}
                     </span>
@@ -499,7 +499,7 @@ const BilingualHomePage: React.FC = () => {
                 <div className="space-y-2.5 mb-8">
                   {persona.features.map((feature, index) => (
                     <div key={index} className="flex items-center">
-                      <CheckCircle className={`w-4 h-4 text-teal-500 flex-shrink-0 ${isRTL ? 'ml-3' : 'mr-3'}`} />
+                      <CheckCircle className={`w-4 h-4 text-teal-500 flex-shrink-0 me-3`} />
                       <span className="text-slate-700 text-sm">{feature}</span>
                     </div>
                   ))}
@@ -510,7 +510,7 @@ const BilingualHomePage: React.FC = () => {
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-6 rounded-xl font-dubai-medium transition-all duration-200 flex items-center justify-center text-sm"
                 >
                   {persona.getStarted}
-                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
                 </Link>
               </div>
             ))}
@@ -577,8 +577,8 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       <section className="py-20 bg-gradient-to-br from-teal-600 to-teal-700 relative overflow-hidden">
         {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/30 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl -translate-x-1/4 translate-y-1/3 pointer-events-none" />
+        <div className="absolute top-0 end-0 w-64 h-64 bg-teal-500/30 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 start-0 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl -translate-x-1/4 translate-y-1/3 pointer-events-none" />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-dubai-bold text-white mb-6">
@@ -594,7 +594,7 @@ const BilingualHomePage: React.FC = () => {
               className="bg-white text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
             >
               {translations.cta?.primaryButton || 'Create Free Account'}
-              <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+              <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180`} />
             </Link>
             <Link
               to="/auth"

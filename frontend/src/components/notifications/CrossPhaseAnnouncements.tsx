@@ -271,7 +271,7 @@ export const CrossPhaseAnnouncements: React.FC = () => {
                           {announcement.actionUrl && (
                             <Button className="shrink-0">
                               {announcement.actionText || 'Learn More'}
-                              <ArrowRight className="h-4 w-4 ml-2" />
+                              <ArrowRight className="h-4 w-4 ms-2" />
                             </Button>
                           )}
                         </div>

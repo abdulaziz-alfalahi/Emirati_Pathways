@@ -97,9 +97,9 @@ const PersonaSelector: React.FC = () => {
   return (
     <section id="personas" className="section bg-emirati-navy/5 relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full bg-dot-pattern opacity-50 pointer-events-none"></div>
-      <div className="absolute top-1/4 -right-40 w-80 h-80 bg-emirati-teal/10 rounded-full filter blur-3xl"></div>
-      <div className="absolute bottom-1/4 -left-40 w-80 h-80 bg-emirati-gold/10 rounded-full filter blur-3xl"></div>
+      <div className="absolute top-0 start-0 w-full h-full bg-dot-pattern opacity-50 pointer-events-none"></div>
+      <div className="absolute top-1/4 -end-40 w-80 h-80 bg-emirati-teal/10 rounded-full filter blur-3xl"></div>
+      <div className="absolute bottom-1/4 -start-40 w-80 h-80 bg-emirati-gold/10 rounded-full filter blur-3xl"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-16">
@@ -118,14 +118,14 @@ const PersonaSelector: React.FC = () => {
           {/* Navigation Buttons */}
           <button
             onClick={prevPersona}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 md:-left-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
+            className="absolute start-0 top-1/2 -translate-y-1/2 z-10 md:-start-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
           >
             <ChevronLeft className="text-emirati-navy" />
           </button>
 
           <button
             onClick={nextPersona}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 md:-right-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
+            className="absolute end-0 top-1/2 -translate-y-1/2 z-10 md:-end-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
           >
             <ChevronRight className="text-emirati-navy" />
           </button>
@@ -156,7 +156,7 @@ const PersonaSelector: React.FC = () => {
                       <p className="text-foreground/70 leading-relaxed mb-6">{persona.description}</p>
                       <button className="mt-auto text-emirati-teal font-medium hover:text-emirati-navy transition-colors flex items-center">
                         Learn more
-                        <ChevronRight size={16} className="ml-1" />
+                        <ChevronRight size={16} className="ms-1" />
                       </button>
                     </div>
                   </div>

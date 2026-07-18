@@ -118,7 +118,7 @@ export const PreparationResources: React.FC = () => {
           onClick={() => setActiveTab('assessment')}
           className={activeTab === 'assessment' ? 'bg-ehrdc-teal hover:bg-ehrdc-teal/90' : ''}
         >
-          <Brain className="h-4 w-4 mr-2" />
+          <Brain className="h-4 w-4 me-2" />
           Assessment Center
         </Button>
         <Button 
@@ -126,7 +126,7 @@ export const PreparationResources: React.FC = () => {
           onClick={() => setActiveTab('interview')}
           className={activeTab === 'interview' ? 'bg-ehrdc-teal hover:bg-ehrdc-teal/90' : ''}
         >
-          <MessageCircle className="h-4 w-4 mr-2" />
+          <MessageCircle className="h-4 w-4 me-2" />
           Interview Prep
         </Button>
         <Button 
@@ -134,7 +134,7 @@ export const PreparationResources: React.FC = () => {
           onClick={() => setActiveTab('group')}
           className={activeTab === 'group' ? 'bg-ehrdc-teal hover:bg-ehrdc-teal/90' : ''}
         >
-          <Users className="h-4 w-4 mr-2" />
+          <Users className="h-4 w-4 me-2" />
           Group Exercises
         </Button>
         <Button 
@@ -142,7 +142,7 @@ export const PreparationResources: React.FC = () => {
           onClick={() => setActiveTab('presentation')}
           className={activeTab === 'presentation' ? 'bg-ehrdc-teal hover:bg-ehrdc-teal/90' : ''}
         >
-          <FileText className="h-4 w-4 mr-2" />
+          <FileText className="h-4 w-4 me-2" />
           Presentations
         </Button>
       </div>
@@ -168,7 +168,7 @@ export const PreparationResources: React.FC = () => {
               
               <div className="space-y-4">
                 {assessmentResources.map((resource) => (
-                  <Card key={resource.id} className="border-l-4 border-l-ehrdc-teal">
+                  <Card key={resource.id} className="border-s-4 border-s-ehrdc-teal">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -237,7 +237,7 @@ export const PreparationResources: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {interviewResources.map((resource) => (
-                  <Card key={resource.id} className="border-l-4 border-l-blue-500">
+                  <Card key={resource.id} className="border-s-4 border-s-blue-500">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -250,18 +250,18 @@ export const PreparationResources: React.FC = () => {
                       <div className="flex gap-3">
                         {resource.downloadable && (
                           <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-1" />
+                            <Download className="h-4 w-4 me-1" />
                             Download
                           </Button>
                         )}
                         {resource.videoAvailable && (
                           <Button variant="outline" size="sm">
-                            <Play className="h-4 w-4 mr-1" />
+                            <Play className="h-4 w-4 me-1" />
                             Watch Video
                           </Button>
                         )}
                         <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90" size="sm">
-                          <BookOpen className="h-4 w-4 mr-1" />
+                          <BookOpen className="h-4 w-4 me-1" />
                           Access Resource
                         </Button>
                       </div>
@@ -284,7 +284,7 @@ export const PreparationResources: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {groupExercises.map((exercise) => (
-                  <Card key={exercise.id} className="border-l-4 border-l-purple-500">
+                  <Card key={exercise.id} className="border-s-4 border-s-purple-500">
                     <CardContent className="p-4">
                       <h4 className="font-semibold mb-2">{exercise.title}</h4>
                       <p className="text-sm text-gray-600 mb-3">{exercise.description}</p>
@@ -349,7 +349,7 @@ export const PreparationResources: React.FC = () => {
               
               <div className="mt-6 text-center">
                 <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 me-2" />
                   Watch Presentation Tutorial
                 </Button>
               </div>

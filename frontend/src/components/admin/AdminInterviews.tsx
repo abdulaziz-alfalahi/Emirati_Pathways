@@ -172,44 +172,44 @@ const AdminInterviews = () => {
                     <p className="text-muted-foreground">Browse, search and review recorded interviews. Share for escalation.</p>
                 </div>
                 <Button onClick={fetchSessions} variant="outline" size="sm" disabled={loading}>
-                    <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`me-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
                 </Button>
             </div>
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <Card className="border-l-4 border-l-slate-400">
+                <Card className="border-s-4 border-s-slate-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">Total</p>
                         <p className="text-2xl font-bold">{stats.total}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-blue-400">
+                <Card className="border-s-4 border-s-blue-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">Scheduled</p>
                         <p className="text-2xl font-bold text-blue-600">{stats.scheduled}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-green-400">
+                <Card className="border-s-4 border-s-green-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">Active</p>
                         <p className="text-2xl font-bold text-green-600">{stats.active}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-gray-400">
+                <Card className="border-s-4 border-s-gray-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">Completed</p>
                         <p className="text-2xl font-bold">{stats.completed}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-red-400">
+                <Card className="border-s-4 border-s-red-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">Cancelled</p>
                         <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-purple-400">
+                <Card className="border-s-4 border-s-purple-400">
                     <CardContent className="pt-4 pb-3 px-4">
                         <p className="text-xs font-medium text-muted-foreground">AI Analyzed</p>
                         <p className="text-2xl font-bold text-purple-600">{stats.withAnalysis}</p>
@@ -220,12 +220,12 @@ const AdminInterviews = () => {
             {/* Search & Filter Bar */}
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search by candidate, recruiter, job title, or session ID..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
+                        className="ps-10"
                     />
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -264,7 +264,7 @@ const AdminInterviews = () => {
                     <div className="rounded-md border">
                         <table className="w-full text-sm">
                             <thead className="bg-muted/50 border-b">
-                                <tr className="text-left">
+                                <tr className="text-start">
                                     <th className="p-3 font-medium">Candidate</th>
                                     <th className="p-3 font-medium">Recruiter</th>
                                     <th className="p-3 font-medium hidden md:table-cell">Position</th>
@@ -272,7 +272,7 @@ const AdminInterviews = () => {
                                     <th className="p-3 font-medium hidden lg:table-cell">Duration</th>
                                     <th className="p-3 font-medium">Status</th>
                                     <th className="p-3 font-medium hidden lg:table-cell">AI Analysis</th>
-                                    <th className="p-3 font-medium text-right">Actions</th>
+                                    <th className="p-3 font-medium text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -320,11 +320,11 @@ const AdminInterviews = () => {
                                                 {/* Date/Time */}
                                                 <td className="p-3">
                                                     <div className="flex items-center text-sm">
-                                                        <Calendar className="mr-1.5 h-3 w-3 opacity-60" />
+                                                        <Calendar className="me-1.5 h-3 w-3 opacity-60" />
                                                         {new Date(session.scheduled_at).toLocaleDateString()}
                                                     </div>
                                                     <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                                                        <Clock className="mr-1.5 h-3 w-3 opacity-60" />
+                                                        <Clock className="me-1.5 h-3 w-3 opacity-60" />
                                                         {new Date(session.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </td>
@@ -335,7 +335,7 @@ const AdminInterviews = () => {
                                                 {/* Status */}
                                                 <td className="p-3">
                                                     <Badge variant="outline" className={`${getStatusColor(session.status)} text-xs`}>
-                                                        <span className="mr-1">{getStatusIcon(session.status)}</span>
+                                                        <span className="me-1">{getStatusIcon(session.status)}</span>
                                                         {session.status === 'active' ? 'LIVE' : session.status.toUpperCase()}
                                                     </Badge>
                                                 </td>
@@ -361,7 +361,7 @@ const AdminInterviews = () => {
                                                     )}
                                                 </td>
                                                 {/* Actions */}
-                                                <td className="p-3 text-right">
+                                                <td className="p-3 text-end">
                                                     <div className="flex items-center justify-end gap-1">
                                                         {/* Watch / Monitor button */}
                                                         {(session.status === 'active' || session.status === 'scheduled') && (
@@ -372,7 +372,7 @@ const AdminInterviews = () => {
                                                                 onClick={() => setActiveSession(session)}
                                                                 title="Monitor live"
                                                             >
-                                                                <Monitor className="h-3 w-3 mr-1" />
+                                                                <Monitor className="h-3 w-3 me-1" />
                                                                 Monitor
                                                             </Button>
                                                         )}
@@ -384,7 +384,7 @@ const AdminInterviews = () => {
                                                                 onClick={() => setActiveSession(session)}
                                                                 title="Watch recording"
                                                             >
-                                                                <Play className="h-3 w-3 mr-1" />
+                                                                <Play className="h-3 w-3 me-1" />
                                                                 Watch
                                                             </Button>
                                                         )}

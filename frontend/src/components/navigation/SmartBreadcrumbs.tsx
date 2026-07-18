@@ -190,7 +190,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+            <div className="flex items-center gap-2 ms-4 ps-4 border-s border-gray-200">
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: phaseData.color }}
@@ -240,7 +240,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     if (actions.length === 0) return null;
 
     return (
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-2 ms-auto">
         {actions}
       </div>
     );
@@ -255,9 +255,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
             variant="ghost"
             size="sm"
             onClick={goBack}
-            className="mr-4 text-gray-600 hover:text-gray-900"
+            className="me-4 text-gray-600 hover:text-gray-900"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             Back
           </Button>
         )}
@@ -276,7 +276,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
                     to={item.href}
                     className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
                   >
-                    {index === 0 && <Home className="h-4 w-4 mr-1" />}
+                    {index === 0 && <Home className="h-4 w-4 me-1" />}
                     {item.label}
                   </Link>
                 ) : (

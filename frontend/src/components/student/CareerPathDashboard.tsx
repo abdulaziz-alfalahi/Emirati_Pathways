@@ -104,11 +104,11 @@ const CareerPathDashboard: React.FC = () => {
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="my-paths" className="flex items-center justify-center">
-            <Briefcase className="h-4 w-4 mr-2" />
+            <Briefcase className="h-4 w-4 me-2" />
             My Career Paths
           </TabsTrigger>
           <TabsTrigger value="explore" className="flex items-center justify-center">
-            <ArrowUp className="h-4 w-4 mr-2" />
+            <ArrowUp className="h-4 w-4 me-2" />
             Explore Career Paths
           </TabsTrigger>
         </TabsList>

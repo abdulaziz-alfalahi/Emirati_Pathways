@@ -17,7 +17,7 @@ const TranslationLoadingState: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <div className={cn(
           "text-center mb-8",
-          isRTL && "rtl:text-right"
+          isRTL && "rtl:text-start"
         )}>
           <Skeleton className="h-12 w-3/4 mx-auto mb-4" />
           <Skeleton className="h-6 w-1/2 mx-auto" />
@@ -74,7 +74,7 @@ const TranslationLoadingState: React.FC = () => {
         </div>
 
         {/* Loading indicator */}
-        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 border">
+        <div className="fixed bottom-4 end-4 bg-white rounded-lg shadow-lg p-4 border">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
             <span className="text-sm text-gray-600">Loading translations...</span>

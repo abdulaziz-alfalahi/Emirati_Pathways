@@ -91,11 +91,11 @@ export const InterviewSimulator: React.FC = () => {
           
           <div className="flex gap-3 mt-6">
             <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90" disabled={!selectedIndustry}>
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 me-2" />
               Start Practice Session
             </Button>
             <Button variant="outline">
-              <Video className="h-4 w-4 mr-2" />
+              <Video className="h-4 w-4 me-2" />
               Quick Practice
             </Button>
           </div>
@@ -127,11 +127,11 @@ export const InterviewSimulator: React.FC = () => {
                     onClick={() => setIsRecording(!isRecording)}
                     className={isRecording ? "" : "bg-ehrdc-teal hover:bg-ehrdc-teal/90"}
                   >
-                    {isRecording ? <Square className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                    {isRecording ? <Square className="h-4 w-4 me-2" /> : <Play className="h-4 w-4 me-2" />}
                     {isRecording ? 'Stop Recording' : 'Start Recording'}
                   </Button>
                   <Button variant="outline">
-                    <RotateCcw className="h-4 w-4 mr-2" />
+                    <RotateCcw className="h-4 w-4 me-2" />
                     Retry
                   </Button>
                 </div>
@@ -174,7 +174,7 @@ export const InterviewSimulator: React.FC = () => {
                   <div className="text-sm text-gray-600">{session.date}</div>
                   <div className="text-sm text-gray-600">{session.feedback}</div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <div className="flex items-center gap-1 mb-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-semibold">{session.score}/100</span>

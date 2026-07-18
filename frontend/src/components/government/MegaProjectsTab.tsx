@@ -280,11 +280,11 @@ const projectTemplates: ProjectTemplate[] = [
 const getStatusBadge = (status: string, b: (en: string, ar: string) => string) => {
   switch (status) {
     case 'active':
-      return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 mr-1 inline" />{b('Active', 'نشط')}</Badge>;
+      return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 me-1 inline" />{b('Active', 'نشط')}</Badge>;
     case 'phase_1':
-      return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 mr-1 inline" />{b('Phase 1', 'المرحلة 1')}</Badge>;
+      return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 me-1 inline" />{b('Phase 1', 'المرحلة 1')}</Badge>;
     case 'planning':
-      return <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 mr-1 inline" />{b('Planning', 'تخطيط')}</Badge>;
+      return <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 me-1 inline" />{b('Planning', 'تخطيط')}</Badge>;
     default:
       return null;
   }
@@ -469,7 +469,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                   <div className="relative">
                     <Progress value={project.currentEmiratization} className="h-3 bg-emerald-100" />
                     <div
-                      className="absolute top-0 h-3 border-r-2 border-dashed border-emerald-600"
+                      className="absolute top-0 h-3 border-e-2 border-dashed border-emerald-600"
                       style={{ left: `${project.emiratizationTarget}%` }}
                       title={`${b('Target', 'الهدف')}: ${project.emiratizationTarget}%`}
                     />
@@ -507,7 +507,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                           </p>
                         </div>
                         {stage.status === 'active' && (
-                          <div className="absolute top-2 right-2">
+                          <div className="absolute top-2 end-2">
                             <span className="relative flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
@@ -541,7 +541,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                               size="sm"
                               className="h-7 px-3 text-xs font-dubai-medium bg-emerald-600 hover:bg-emerald-700 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <Search className="h-3 w-3 mr-1" />
+                              <Search className="h-3 w-3 me-1" />
                               {b('Find Candidates', 'ابحث عن مرشحين')}
                             </Button>
                           </div>
@@ -632,7 +632,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                       <div className="flex items-center gap-2 mb-1">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">{cp.name}</CardTitle>
                         <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">
-                          <Clock className="h-3 w-3 mr-1 inline" />{b('Draft', 'مسودة')}
+                          <Clock className="h-3 w-3 me-1 inline" />{b('Draft', 'مسودة')}
                         </Badge>
                       </div>
                       {cp.description && <CardDescription className="font-dubai-medium text-slate-500 text-sm">{cp.description}</CardDescription>}
@@ -672,7 +672,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
 
       {/* ─── Success Toast ─── */}
       {showSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 end-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-dubai-medium">
             <CheckCircle className="h-5 w-5" />
             <span className="text-sm">{b(`"${showSuccess}" created successfully!`, `تم إنشاء "${showSuccess}" بنجاح!`)}</span>

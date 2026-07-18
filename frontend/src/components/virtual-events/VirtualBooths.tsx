@@ -88,7 +88,7 @@ const VirtualBooths: React.FC<VirtualBoothsProps> = ({ eventId }) => {
                     className="w-full h-full object-cover"
                   />
                   {booth.is_featured && (
-                    <Badge className="absolute top-2 right-2 bg-yellow-500">
+                    <Badge className="absolute top-2 end-2 bg-yellow-500">
                       Featured
                     </Badge>
                   )}
@@ -107,7 +107,7 @@ const VirtualBooths: React.FC<VirtualBoothsProps> = ({ eventId }) => {
                     <img 
                       src={booth.logo_url} 
                       alt={`${booth.title} logo`}
-                      className="w-12 h-12 object-contain ml-2"
+                      className="w-12 h-12 object-contain ms-2"
                     />
                   )}
                 </div>
@@ -130,7 +130,7 @@ const VirtualBooths: React.FC<VirtualBoothsProps> = ({ eventId }) => {
                       onClick={() => handleVisitBooth(booth.id)}
                       className="flex-1"
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Visit Booth
                     </Button>
                     

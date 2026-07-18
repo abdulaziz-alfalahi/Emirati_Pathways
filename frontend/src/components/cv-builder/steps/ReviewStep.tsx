@@ -188,7 +188,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           {data.experience && data.experience.length > 0 ? (
             <div className="space-y-4">
               {data.experience.slice(0, 3).map((exp, index) => (
-                <div key={index} className="border-l-2 border-blue-200 pl-4">
+                <div key={index} className="border-s-2 border-blue-200 ps-4">
                   <div className="font-medium text-gray-900">{exp.position}</div>
                   <div className="text-sm text-gray-600">
                     {exp.company} • {exp.location}
@@ -236,7 +236,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           {data.education && data.education.length > 0 ? (
             <div className="space-y-4">
               {data.education.map((edu, index) => (
-                <div key={index} className="border-l-2 border-green-200 pl-4">
+                <div key={index} className="border-s-2 border-green-200 ps-4">
                   <div className="font-medium text-gray-900">{edu.degree}</div>
                   <div className="text-sm text-gray-600">
                     {edu.institution} • {edu.fieldOfStudy}
@@ -352,7 +352,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             onClick={onPreview}
             className="flex-1"
           >
-            <Eye className="w-4 h-4 mr-2" />
+            <Eye className="w-4 h-4 me-2" />
             Preview CV
           </Button>
           <Button
@@ -360,7 +360,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             onClick={onDownload}
             className="flex-1"
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4 me-2" />
             Download PDF
           </Button>
         </div>

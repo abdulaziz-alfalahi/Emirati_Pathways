@@ -451,7 +451,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                   <label htmlFor="ai-recommendations" className="text-sm font-medium">
                     Include Strategic AI Improvement Recommendations
                   </label>
-                  <Badge className="ml-2 bg-ehrdc-teal text-white">Strategic</Badge>
+                  <Badge className="ms-2 bg-ehrdc-teal text-white">Strategic</Badge>
                 </div>
 
                 {/* Strategic Score Analysis */}
@@ -465,7 +465,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                     Include Strategic CV Score Analysis
                   </label>
                   {cvScore && (
-                    <Badge className="ml-2">
+                    <Badge className="ms-2">
                       Strategic Score: {cvScore.strategicAlignment || cvScore.overall}/100
                     </Badge>
                   )}
@@ -481,7 +481,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                   <label htmlFor="cover-letter" className="text-sm font-medium">
                     Generate Strategic Cover Letter Template
                   </label>
-                  <Badge className="ml-2 bg-blue-100 text-blue-800">UAE Aligned</Badge>
+                  <Badge className="ms-2 bg-blue-100 text-blue-800">UAE Aligned</Badge>
                   {isGeneratingAI && exportOptions.includeCoverLetter && (
                     <Loader2 className="h-4 w-4 animate-spin text-ehrdc-teal" />
                   )}
@@ -497,7 +497,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                   <label htmlFor="interview-tips" className="text-sm font-medium">
                     Include Strategic Interview Preparation Guide
                   </label>
-                  <Badge className="ml-2 bg-green-100 text-green-800">Cultural Intelligence</Badge>
+                  <Badge className="ms-2 bg-green-100 text-green-800">Cultural Intelligence</Badge>
                   {isGeneratingAI && exportOptions.includeInterviewTips && (
                     <Loader2 className="h-4 w-4 animate-spin text-ehrdc-teal" />
                   )}
@@ -513,7 +513,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                   <label htmlFor="strategic-plan" className="text-sm font-medium">
                     Include 5-Year Strategic Career Development Plan
                   </label>
-                  <Badge className="ml-2 bg-purple-100 text-purple-800">D33 Vision</Badge>
+                  <Badge className="ms-2 bg-purple-100 text-purple-800">D33 Vision</Badge>
                   {isGeneratingAI && exportOptions.includeStrategicPlan && (
                     <Loader2 className="h-4 w-4 animate-spin text-ehrdc-teal" />
                   )}
@@ -576,7 +576,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                       {exportOptions.template} template in {exportOptions.format.toUpperCase()} format - UAE market optimized
                     </p>
                   </div>
-                  <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                  <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                 </div>
 
                 {/* Strategic AI Recommendations */}
@@ -589,7 +589,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                         {cvScore.recommendations.length} strategic suggestions aligned with Dubai's vision
                       </p>
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                    <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                   </div>
                 )}
 
@@ -603,7 +603,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                         Strategic alignment: {cvScore.strategicAlignment || cvScore.overall}/100 with framework breakdown
                       </p>
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                    <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                   </div>
                 )}
 
@@ -617,7 +617,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                         D33 and Talent33 and D33 aligned template with strategic positioning
                       </p>
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                    <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                   </div>
                 )}
 
@@ -631,7 +631,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                         {aiContent.interviewTips.length} UAE market-specific strategic tips
                       </p>
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                    <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                   </div>
                 )}
 
@@ -645,7 +645,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                         Comprehensive plan aligned with D33 and Talent33 and Dubai's 2033 strategies
                       </p>
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-500 ml-auto" />
+                    <CheckCircle className="h-5 w-5 text-green-500 ms-auto" />
                   </div>
                 )}
               </CardContent>
@@ -668,14 +668,14 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                     className="flex-1"
                   >
                     {isExporting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 me-2 animate-spin" />
                     ) : (
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 me-2" />
                     )}
                     Export Strategic CV Package
                   </Button>
                   <Button variant="outline" onClick={onClose}>
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 me-2" />
                     Cancel
                   </Button>
                 </div>

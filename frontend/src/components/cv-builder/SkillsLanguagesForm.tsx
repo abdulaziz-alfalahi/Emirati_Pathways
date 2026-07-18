@@ -115,7 +115,7 @@ const SkillsLanguagesForm: React.FC = () => {
                 </SelectContent>
               </Select>
               <Button onClick={handleAddSkill}>
-                <PlusCircle className="h-4 w-4 mr-2" />
+                <PlusCircle className="h-4 w-4 me-2" />
                 Add
               </Button>
             </div>
@@ -205,7 +205,7 @@ const SkillsLanguagesForm: React.FC = () => {
                 </SelectContent>
               </Select>
               <Button onClick={handleAddLanguage}>
-                <PlusCircle className="h-4 w-4 mr-2" />
+                <PlusCircle className="h-4 w-4 me-2" />
                 Add
               </Button>
             </div>
@@ -263,7 +263,7 @@ const SkillsLanguagesForm: React.FC = () => {
         disabled={isSaving}
         className="w-full"
       >
-        <Save className="mr-2 h-4 w-4" />
+        <Save className="me-2 h-4 w-4" />
         Save Skills & Languages
       </Button>
     </div>

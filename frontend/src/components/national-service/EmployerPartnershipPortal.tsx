@@ -82,12 +82,12 @@ export const EmployerPartnershipPortal: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search employers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -125,7 +125,7 @@ export const EmployerPartnershipPortal: React.FC = () => {
                       <h3 className="text-lg font-semibold">{employer.name}</h3>
                       <Badge variant="outline">{employer.sector}</Badge>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="flex items-center gap-1 mb-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         <span className="font-medium">{employer.rating}</span>

@@ -224,7 +224,7 @@ const EducationForm: React.FC = () => {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Education</h3>
         <Button variant="outline" onClick={handleAddEducation}>
-          <PlusCircle className="mr-2 h-4 w-4" />
+          <PlusCircle className="me-2 h-4 w-4" />
           Add Education
         </Button>
       </div>
@@ -257,7 +257,7 @@ const EducationForm: React.FC = () => {
         disabled={isSaving}
         className="w-full"
       >
-        <Save className="mr-2 h-4 w-4" />
+        <Save className="me-2 h-4 w-4" />
         Save All Education
       </Button>
     </div>

@@ -130,12 +130,12 @@ export const AlumniNetwork: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search alumni by name, university, or role..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -240,7 +240,7 @@ export const AlumniNetwork: React.FC = () => {
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   disabled={!alumnus.available}
                 >
-                  <MessageCircle className="h-4 w-4 mr-2" />
+                  <MessageCircle className="h-4 w-4 me-2" />
                   Connect
                 </Button>
                 <Button variant="outline" size="sm">

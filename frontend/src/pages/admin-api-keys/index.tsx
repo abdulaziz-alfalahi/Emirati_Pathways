@@ -591,7 +591,7 @@ const AdminApiKeysPage: React.FC = () => {
               {providers.map(provider => (
                 <Card key={provider.id} className={`relative ${provider.is_default ? 'ring-2 ring-primary' : ''}`}>
                   {provider.is_default && (
-                    <div className="absolute -top-2 -right-2">
+                    <div className="absolute -top-2 -end-2">
                       <Badge className="bg-primary text-primary-foreground flex items-center gap-1">
                         <Star className="h-3 w-3" />
                         Default
@@ -701,9 +701,9 @@ const AdminApiKeysPage: React.FC = () => {
                         className="flex-1"
                       >
                         {isTesting === provider.id ? (
-                          <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                          <RefreshCw className="h-4 w-4 animate-spin me-2" />
                         ) : (
-                          <TestTube className="h-4 w-4 mr-2" />
+                          <TestTube className="h-4 w-4 me-2" />
                         )}
                         Test
                       </Button>
@@ -714,7 +714,7 @@ const AdminApiKeysPage: React.FC = () => {
                         disabled={isSaving || !provider.config.api_key || !backendConnected}
                         className="flex-1"
                       >
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-4 w-4 me-2" />
                         Save
                       </Button>
                     </div>
@@ -728,7 +728,7 @@ const AdminApiKeysPage: React.FC = () => {
                         disabled={isSaving || !backendConnected}
                         className="w-full"
                       >
-                        <Star className="h-4 w-4 mr-2" />
+                        <Star className="h-4 w-4 me-2" />
                         Set as Default {provider.category} Provider
                       </Button>
                     )}
@@ -765,7 +765,7 @@ const AdminApiKeysPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <p className="font-medium text-green-600">
                             {provider.health_metrics?.health_score || 0}%
                           </p>

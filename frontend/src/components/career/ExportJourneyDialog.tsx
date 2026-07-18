@@ -126,12 +126,12 @@ const ExportJourneyDialog: React.FC<ExportJourneyDialogProps> = ({
           <Button onClick={handleExport} disabled={isExporting}>
             {isExporting ? (
               <>
-                <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                <div className="animate-spin me-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
                 Exporting...
               </>
             ) : (
               <>
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="me-2 h-4 w-4" />
                 Export
               </>
             )}

@@ -127,7 +127,7 @@ export const TeamManagementTab: React.FC = () => {
                     <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
                         <DialogTrigger asChild>
                             <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                                <Plus className="h-4 w-4 mr-2" />
+                                <Plus className="h-4 w-4 me-2" />
                                 Invite Recruiter
                             </Button>
                         </DialogTrigger>
@@ -174,7 +174,7 @@ export const TeamManagementTab: React.FC = () => {
                                     <TableHead>Role</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-end">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -192,18 +192,18 @@ export const TeamManagementTab: React.FC = () => {
                                         <TableCell>
                                             {member.invitation_status === 'active' ? (
                                                 <div className="flex items-center text-green-600 text-sm">
-                                                    <CheckCircle className="h-4 w-4 mr-1" /> Active
+                                                    <CheckCircle className="h-4 w-4 me-1" /> Active
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center text-yellow-600 text-sm">
-                                                    <Clock className="h-4 w-4 mr-1" /> Pending
+                                                    <Clock className="h-4 w-4 me-1" /> Pending
                                                 </div>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-sm text-slate-500">
                                             {new Date(member.joined_at).toLocaleDateString()}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-end">
                                             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleRemove(member.user_id)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>

@@ -53,14 +53,14 @@ const TraineeAssessments: React.FC<TraineeAssessmentsProps> = ({ traineeId }) =>
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h4 className="font-medium flex items-center">
-                  <FileText className="h-4 w-4 mr-2 text-emirati-teal" />
+                  <FileText className="h-4 w-4 me-2 text-emirati-teal" />
                   {assessment.title}
                 </h4>
                 <div className="flex items-center mt-1 text-sm text-muted-foreground">
-                  <Badge variant="outline" className="mr-2">
+                  <Badge variant="outline" className="me-2">
                     {assessment.type}
                   </Badge>
-                  <Calendar className="h-4 w-4 mr-1" />
+                  <Calendar className="h-4 w-4 me-1" />
                   {new Date(assessment.date).toLocaleDateString()}
                 </div>
               </div>
@@ -75,11 +75,11 @@ const TraineeAssessments: React.FC<TraineeAssessmentsProps> = ({ traineeId }) =>
                     <Badge className={assessment.score >= assessment.passingScore ? "bg-green-500/10 text-green-700" : "bg-red-500/10 text-red-700"}>
                       {assessment.score >= assessment.passingScore ? (
                         <span className="flex items-center">
-                          <CheckCircle className="h-3 w-3 mr-1" /> Passed
+                          <CheckCircle className="h-3 w-3 me-1" /> Passed
                         </span>
                       ) : (
                         <span className="flex items-center">
-                          <XCircle className="h-3 w-3 mr-1" /> Failed
+                          <XCircle className="h-3 w-3 me-1" /> Failed
                         </span>
                       )}
                     </Badge>
@@ -93,7 +93,7 @@ const TraineeAssessments: React.FC<TraineeAssessmentsProps> = ({ traineeId }) =>
             
             {assessment.status === 'scheduled' && (
               <div className="mt-2 border-t pt-2 text-sm flex items-center text-blue-600">
-                <Clock className="h-4 w-4 mr-1" />
+                <Clock className="h-4 w-4 me-1" />
                 Upcoming assessment
               </div>
             )}

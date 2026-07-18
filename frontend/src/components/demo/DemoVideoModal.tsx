@@ -86,7 +86,7 @@ const DemoVideoModal: React.FC<DemoVideoModalProps> = ({ isOpen, onClose }) => {
               {/* Video Placeholder */}
               <div className="text-center text-white">
                 <div className="w-24 h-24 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Play className="w-12 h-12 ml-1" />
+                  <Play className="w-12 h-12 ms-1" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Platform Demo Video</h3>
                 <p className="text-gray-300">
@@ -95,7 +95,7 @@ const DemoVideoModal: React.FC<DemoVideoModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               {/* Video Controls Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+              <div className="absolute bottom-0 start-0 end-0 bg-gradient-to-t from-black to-transparent p-4">
                 {/* Progress Bar */}
                 <div className="mb-4">
                   <div className="w-full bg-gray-600 rounded-full h-1">
@@ -177,23 +177,23 @@ const DemoVideoModal: React.FC<DemoVideoModalProps> = ({ isOpen, onClose }) => {
               </h4>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full me-3"></div>
                   AI-powered career matching
                 </li>
                 <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full me-3"></div>
                   Multi-role dashboard system
                 </li>
                 <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full me-3"></div>
                   Bilingual platform support
                 </li>
                 <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full me-3"></div>
                   Advanced analytics & reporting
                 </li>
                 <li className="flex items-center">
-                  <div className="w-2 h-2 bg-teal-500 rounded-full mr-3"></div>
+                  <div className="w-2 h-2 bg-teal-500 rounded-full me-3"></div>
                   Government compliance features
                 </li>
               </ul>

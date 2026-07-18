@@ -74,7 +74,7 @@ const InternshipsPreview: React.FC<InternshipsPreviewProps> = ({ limit = 3 }) =>
           <Link to="/internships">
             <Button variant="outline">
               Browse All Internships
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ms-2 h-4 w-4" />
             </Button>
           </Link>
         </CardFooter>
@@ -89,7 +89,7 @@ const InternshipsPreview: React.FC<InternshipsPreviewProps> = ({ limit = 3 }) =>
         <Link to="/internships">
           <Button variant="outline" size="sm">
             View All
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </Button>
         </Link>
       </div>
@@ -104,17 +104,17 @@ const InternshipsPreview: React.FC<InternshipsPreviewProps> = ({ limit = 3 }) =>
               <p className="text-sm text-gray-600 mb-3 line-clamp-2">{internship.description}</p>
               <div className="flex flex-wrap gap-2 text-sm text-gray-600">
                 <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                  <MapPin className="h-4 w-4 me-1 text-gray-400" />
                   {internship.location}
                 </div>
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                  <Calendar className="h-4 w-4 me-1 text-gray-400" />
                   Deadline: {new Date(internship.application_deadline).toLocaleDateString()}
                   {' '}
                   ({formatDistanceToNow(new Date(internship.application_deadline), { addSuffix: true })})
                 </div>
                 <div className="flex items-center">
-                  <Briefcase className="h-4 w-4 mr-1 text-gray-400" />
+                  <Briefcase className="h-4 w-4 me-1 text-gray-400" />
                   {internship.industry}
                 </div>
               </div>

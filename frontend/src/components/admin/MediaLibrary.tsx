@@ -383,7 +383,7 @@ const MediaLibrary: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                <Upload className="w-4 h-4 mr-2" />
+                <Upload className="w-4 h-4 me-2" />
                 Upload Media
               </button>
               <input
@@ -405,13 +405,13 @@ const MediaLibrary: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div className="flex-1 max-w-lg">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search media..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -440,7 +440,7 @@ const MediaLibrary: React.FC = () => {
                 onClick={() => setShowFilters(!showFilters)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <Filter className="w-4 h-4 me-2" />
                 Filters
               </button>
               
@@ -448,7 +448,7 @@ const MediaLibrary: React.FC = () => {
                 onClick={fetchMediaAssets}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="w-4 h-4 me-2" />
                 Refresh
               </button>
             </div>
@@ -534,7 +534,7 @@ const MediaLibrary: React.FC = () => {
         {/* Media Grid/List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mr-3" />
+            <RefreshCw className="w-6 h-6 animate-spin text-blue-600 me-3" />
             <span className="text-lg font-medium text-gray-700">Loading media...</span>
           </div>
         ) : viewMode === 'grid' ? (
@@ -585,7 +585,7 @@ const MediaLibrary: React.FC = () => {
                   </div>
                   
                   {/* Selection checkbox */}
-                  <div className="absolute top-2 left-2">
+                  <div className="absolute top-2 start-2">
                     <input
                       type="checkbox"
                       checked={selectedAssets.includes(asset.id)}
@@ -627,7 +627,7 @@ const MediaLibrary: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left">
+                  <th className="px-6 py-3 text-start">
                     <input
                       type="checkbox"
                       checked={selectedAssets.length === filteredAssets.length && filteredAssets.length > 0}
@@ -641,22 +641,22 @@ const MediaLibrary: React.FC = () => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     File
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Size
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Uploaded By
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -717,7 +717,7 @@ const MediaLibrary: React.FC = () => {
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {formatDate(asset.uploaded_at)}
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-medium">
+                    <td className="px-6 py-4 text-end text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => {

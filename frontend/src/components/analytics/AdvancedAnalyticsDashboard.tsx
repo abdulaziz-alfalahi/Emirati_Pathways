@@ -241,11 +241,11 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             onClick={refreshData}
             disabled={refreshing}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 me-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export
           </Button>
         </div>
@@ -268,7 +268,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             </div>
             <div className="flex items-center mt-2">
               {getTrendIcon(5.2)}
-              <span className="text-sm text-gray-600 ml-1">+5.2% from last month</span>
+              <span className="text-sm text-gray-600 ms-1">+5.2% from last month</span>
             </div>
           </CardContent>
         </Card>
@@ -288,7 +288,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             </div>
             <div className="flex items-center mt-2">
               {getTrendIcon(2.1)}
-              <span className="text-sm text-gray-600 ml-1">+2.1% progress</span>
+              <span className="text-sm text-gray-600 ms-1">+2.1% progress</span>
             </div>
           </CardContent>
         </Card>
@@ -308,7 +308,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             </div>
             <div className="flex items-center mt-2">
               {getTrendIcon(8.7)}
-              <span className="text-sm text-gray-600 ml-1">+8.7% engagement</span>
+              <span className="text-sm text-gray-600 ms-1">+8.7% engagement</span>
             </div>
           </CardContent>
         </Card>
@@ -328,7 +328,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             </div>
             <div className="flex items-center mt-2">
               {getTrendIcon(3.4)}
-              <span className="text-sm text-gray-600 ml-1">+3.4% improvement</span>
+              <span className="text-sm text-gray-600 ms-1">+3.4% improvement</span>
             </div>
           </CardContent>
         </Card>
@@ -362,7 +362,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Lightbulb className="h-5 w-5 mr-2" />
+                  <Lightbulb className="h-5 w-5 me-2" />
                   Key Insights
                 </CardTitle>
                 <CardDescription>
@@ -373,7 +373,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                 <ScrollArea className="h-80">
                   <div className="space-y-4">
                     {dashboardData.key_insights?.slice(0, 10).map((insight, index) => (
-                      <div key={insight.id} className="border-l-4 pl-4 py-2" style={{ borderLeftColor: getPriorityColor(insight.priority) }}>
+                      <div key={insight.id} className="border-s-4 ps-4 py-2" style={{ borderLeftColor: getPriorityColor(insight.priority) }}>
                         <div className="flex items-center justify-between mb-1">
                           <Badge variant="outline" style={{ color: getPriorityColor(insight.priority) }}>
                             {insight.priority}
@@ -395,7 +395,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Target className="h-5 w-5 mr-2" />
+                  <Target className="h-5 w-5 me-2" />
                   D33 and Talent33 Progress
                 </CardTitle>
                 <CardDescription>
@@ -429,7 +429,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <TrendingUp className="h-5 w-5 mr-2" />
+                <TrendingUp className="h-5 w-5 me-2" />
                 Employment Trends Overview
               </CardTitle>
               <CardDescription>
@@ -644,7 +644,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Brain className="h-5 w-5 mr-2" />
+                  <Brain className="h-5 w-5 me-2" />
                   AI Predictions
                 </CardTitle>
                 <CardDescription>
@@ -675,7 +675,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Zap className="h-5 w-5 mr-2" />
+                  <Zap className="h-5 w-5 me-2" />
                   AI Recommendations
                 </CardTitle>
                 <CardDescription>
@@ -701,9 +701,9 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                           <span className="text-xs text-gray-500">Impact Score:</span>
                           <Progress
                             value={rec.impact_score * 100}
-                            className="ml-2 h-2 flex-1"
+                            className="ms-2 h-2 flex-1"
                           />
-                          <span className="text-xs text-gray-500 ml-2">
+                          <span className="text-xs text-gray-500 ms-2">
                             {(rec.impact_score * 100).toFixed(0)}%
                           </span>
                         </div>

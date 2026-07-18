@@ -569,7 +569,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
         </div>
         {showNewConversation && (
           <Button onClick={() => setShowNewDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" /> New Message
+            <Plus className="h-4 w-4 me-1" /> New Message
           </Button>
         )}
       </div>
@@ -589,12 +589,12 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">{userSearch.length < 2 ? 'Recent contacts' : 'Search results'}</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
                   placeholder="Search by name…"
-                  className="pl-9 h-9"
+                  className="ps-9 h-9"
                   autoFocus
                 />
               </div>
@@ -617,7 +617,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                         {users.map(u => (
                           <button
                             key={String(u.id)}
-                            className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 border-t border-transparent"
+                            className="w-full text-start px-3 py-2 hover:bg-accent text-sm flex items-center gap-2 border-t border-transparent"
                             onClick={() => { setSelectedUser(u); setUserSearch(''); setFoundUsers([]); }}
                           >
                             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
@@ -671,7 +671,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => { setShowNewDialog(false); setSelectedUser(null); }}>Cancel</Button>
             <Button size="sm" disabled={!selectedUser || !newInitialMsg.trim() || creatingConv} onClick={handleCreateConversation}>
-              {creatingConv ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+              {creatingConv ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Send className="h-4 w-4 me-1" />}
               Send
             </Button>
           </div>
@@ -680,7 +680,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
       <Card className="flex flex-col md:flex-row h-[calc(100vh-200px)] md:h-[600px]">
         {/* Conversations list - hidden on mobile when viewing a thread */}
-        <div className={`w-full md:w-1/3 lg:w-1/4 border-r ${mobileView === 'thread' ? 'hidden md:block' : ''}`}>
+        <div className={`w-full md:w-1/3 lg:w-1/4 border-e ${mobileView === 'thread' ? 'hidden md:block' : ''}`}>
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
@@ -724,7 +724,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
         {/* Profile Sidebar */}
         {selectedConversation && (
-          <div className="hidden lg:block w-1/4 border-l p-4 bg-slate-50">
+          <div className="hidden lg:block w-1/4 border-s p-4 bg-slate-50">
             {(() => {
               const conv = conversations.find(c => c.id === selectedConversation);
               if (!conv) return null;

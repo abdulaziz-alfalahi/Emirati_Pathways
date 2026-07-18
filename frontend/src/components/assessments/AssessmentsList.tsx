@@ -29,11 +29,11 @@ const getAssessmentTypeColor = (type: AssessmentType) => {
 const getAssessmentTypeIcon = (type: AssessmentType) => {
   switch (type) {
     case 'skills':
-      return <BadgeCheck className="h-4 w-4 mr-1" />;
+      return <BadgeCheck className="h-4 w-4 me-1" />;
     case 'behaviors':
-      return <User className="h-4 w-4 mr-1" />;
+      return <User className="h-4 w-4 me-1" />;
     case 'capabilities':
-      return <CheckCircle className="h-4 w-4 mr-1" />;
+      return <CheckCircle className="h-4 w-4 me-1" />;
     default:
       return null;
   }
@@ -137,7 +137,7 @@ export const AssessmentsList = () => {
               {filteredAssessments.map((assessment) => (
                 <Dialog key={assessment.id}>
                   <DialogTrigger asChild>
-                    <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-[rgb(var(--pg-primary))]">
+                    <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-s-4 border-s-[rgb(var(--pg-primary))]">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
                           <Badge className={getAssessmentTypeColor(assessment.assessment_type)}>
@@ -155,7 +155,7 @@ export const AssessmentsList = () => {
                       <CardContent className="text-sm space-y-2">
                         {assessment.duration_minutes && (
                           <div className="flex items-center text-muted-foreground">
-                            <Clock className="h-4 w-4 mr-2" />
+                            <Clock className="h-4 w-4 me-2" />
                             <span>{assessment.duration_minutes} minutes</span>
                           </div>
                         )}

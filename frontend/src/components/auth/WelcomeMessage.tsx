@@ -53,7 +53,7 @@ const WelcomeMessage: React.FC = () => {
         
         <div className="flex items-center justify-center space-x-2">
           <Badge variant="secondary" className="bg-green-100 text-green-800">
-            <Star className="h-3 w-3 mr-1" />
+            <Star className="h-3 w-3 me-1" />
             World's Most Advanced Career Platform
           </Badge>
         </div>

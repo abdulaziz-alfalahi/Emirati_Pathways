@@ -72,7 +72,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
                     className="bg-[#006E6D] hover:bg-[#005A59] text-white px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center"
                   >
                     Get Started
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    <ArrowRight className="w-3.5 h-3.5 ms-1.5" />
                   </Link>
                 </>
               )}
@@ -199,7 +199,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
               </div>
 
               {/* Copyright */}
-              <div className="text-center lg:text-right">
+              <div className="text-center lg:text-end">
                 <div className="text-gray-500 text-xs mb-1">
                   © 2025 Emirati Human Resources Development Council
                 </div>

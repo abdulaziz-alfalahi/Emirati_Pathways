@@ -214,7 +214,7 @@ const EngagementDashboard: React.FC<EngagementDashboardProps> = ({ eventId, user
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-yellow-500" />
                         <span className="font-bold">{participant.overall_engagement_score}</span>

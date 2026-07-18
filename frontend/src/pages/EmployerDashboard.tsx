@@ -166,7 +166,7 @@ const EmployerDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 Employer Portal
               </h1>
-              <span className="ml-3 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+              <span className="ms-3 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                 Recruiter
               </span>
             </div>
@@ -187,7 +187,7 @@ const EmployerDashboard = () => {
                 className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-4 h-4 me-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -226,7 +226,7 @@ const EmployerDashboard = () => {
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <span className="text-2xl">💼</span>
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-600">Active Jobs</p>
                   <p className="text-2xl font-bold text-gray-900">{dashboardData.recruitment.activeJobs}</p>
                 </div>
@@ -238,7 +238,7 @@ const EmployerDashboard = () => {
                 <div className="p-2 bg-green-100 rounded-lg">
                   <span className="text-2xl">📋</span>
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-600">Applications</p>
                   <p className="text-2xl font-bold text-gray-900">{dashboardData.recruitment.totalApplications}</p>
                 </div>
@@ -250,7 +250,7 @@ const EmployerDashboard = () => {
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <span className="text-2xl">⭐</span>
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-600">Shortlisted</p>
                   <p className="text-2xl font-bold text-gray-900">{dashboardData.recruitment.shortlistedCandidates}</p>
                 </div>
@@ -262,7 +262,7 @@ const EmployerDashboard = () => {
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <span className="text-2xl">🎯</span>
                 </div>
-                <div className="ml-4">
+                <div className="ms-4">
                   <p className="text-sm font-medium text-gray-600">Hired</p>
                   <p className="text-2xl font-bold text-gray-900">{dashboardData.recruitment.hiredCandidates}</p>
                 </div>
@@ -327,14 +327,14 @@ const EmployerDashboard = () => {
                       <button
                         key={index}
                         onClick={action.action}
-                        className={`w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
+                        className={`w-full text-start p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
                           }`}
                       >
                         <div className="flex items-center">
                           <div className={`p-2 rounded-lg ${action.color} text-white`}>
                             <span className="text-lg">{action.icon}</span>
                           </div>
-                          <div className="ml-4">
+                          <div className="ms-4">
                             <p className="font-medium text-gray-900">{action.title}</p>
                             <p className="text-sm text-gray-600">{action.description}</p>
                           </div>
@@ -406,7 +406,7 @@ const EmployerDashboard = () => {
                               'bg-orange-500'
                           }`}></div>
                       </div>
-                      <div className="ml-4 flex-1">
+                      <div className="ms-4 flex-1">
                         <p className="text-sm font-medium text-gray-900">{activity.message}</p>
                         <p className="text-xs text-gray-500">{activity.time}</p>
                       </div>

@@ -164,7 +164,7 @@ export const CertificationRoadmaps: React.FC = () => {
                 <span className="text-sm">Investment: {currentRoadmap.totalInvestment}</span>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <Button className="bg-slate-800 hover:bg-slate-700">
                 Start This Path
               </Button>
@@ -202,7 +202,7 @@ export const CertificationRoadmaps: React.FC = () => {
                             <p className="text-sm text-muted-foreground mb-2">{cert.provider}</p>
                             <p className="text-sm">{cert.description}</p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-end">
                             <div className="flex items-center gap-1 text-green-600 font-medium">
                               <TrendingUp className="h-4 w-4" />
                               {cert.salaryImpact}

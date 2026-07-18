@@ -97,7 +97,7 @@ const ProgramsCalendar: React.FC<ProgramsCalendarProps> = ({ programs, setProgra
     });
 
     if (programsOnDate.length > 0) {
-      return <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+      return <div className="absolute bottom-0 start-0 end-0 flex justify-center">
         <div className="h-1 w-1 bg-emirati-teal rounded-full"></div>
       </div>;
     }
@@ -116,7 +116,7 @@ const ProgramsCalendar: React.FC<ProgramsCalendarProps> = ({ programs, setProgra
               setIsAddProgramDialogOpen(true);
             }}
           >
-            <Plus className="h-4 w-4 mr-1" /> Schedule Program
+            <Plus className="h-4 w-4 me-1" /> Schedule Program
           </Button>
         </div>
       </CardHeader>

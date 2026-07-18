@@ -215,7 +215,7 @@ export default function CareerServicesDashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="border-none shadow-sm bg-white overflow-hidden relative rounded-2xl group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+            <div className="absolute top-0 end-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
               <Users className="w-24 h-24" />
             </div>
             <CardContent className="p-6 relative z-10">
@@ -225,7 +225,7 @@ export default function CareerServicesDashboard() {
           </Card>
           
           <Card className="border-none shadow-sm bg-white overflow-hidden relative rounded-2xl group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+            <div className="absolute top-0 end-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
               <CheckCircle2 className="w-24 h-24 text-emerald-600" />
             </div>
             <CardContent className="p-6 relative z-10">
@@ -235,7 +235,7 @@ export default function CareerServicesDashboard() {
           </Card>
 
           <Card className="border-none shadow-sm bg-white overflow-hidden relative rounded-2xl group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+            <div className="absolute top-0 end-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
               <AlertCircle className="w-24 h-24 text-amber-500" />
             </div>
             <CardContent className="p-6 relative z-10">
@@ -245,7 +245,7 @@ export default function CareerServicesDashboard() {
           </Card>
 
           <Card className="border-none shadow-sm bg-white overflow-hidden relative rounded-2xl group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
+            <div className="absolute top-0 end-0 p-4 opacity-5 transform group-hover:scale-110 transition-transform duration-500">
               <Phone className="w-24 h-24 text-rose-500" />
             </div>
             <CardContent className="p-6 relative z-10">
@@ -261,10 +261,10 @@ export default function CareerServicesDashboard() {
           <div className="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-96">
-                <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
+                <Search className={`absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
                 <Input 
                   placeholder={t('Search by name or EID...', 'ابحث بالاسم أو الهوية...')}
-                  className={`pl-10 ${isRTL ? 'pr-10 pl-3' : 'pl-10'} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6D]`}
+                  className={`ps-10 ${isRTL ? 'pe-3' : ''} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6D]`}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 />
@@ -316,7 +316,7 @@ export default function CareerServicesDashboard() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left whitespace-nowrap">
+                <table className="w-full text-sm text-start whitespace-nowrap">
                   <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-100">
                     <tr>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Candidate', 'المرشح')}</th>
@@ -325,7 +325,7 @@ export default function CareerServicesDashboard() {
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Status', 'الحالة')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Assigned To', 'معين إلى')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Latest Remark', 'أحدث ملاحظة')}</th>
-                      <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-right">{t('Action', 'الإجراء')}</th>
+                      <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs text-end">{t('Action', 'الإجراء')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -375,7 +375,7 @@ export default function CareerServicesDashboard() {
                             {candidate.remarks || <span className="text-slate-400 italic">No remarks yet</span>}
                           </p>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-end">
                           <Button 
                             size="sm" 
                             onClick={() => handleEditClick(candidate)} 
@@ -448,7 +448,7 @@ export default function CareerServicesDashboard() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent side={isRTL ? 'left' : 'right'} className="w-full sm:max-w-md p-0 flex flex-col bg-white border-none shadow-2xl">
           <div className="px-6 py-6 border-b border-slate-100 bg-slate-50/80">
-            <SheetHeader className="text-left space-y-1">
+            <SheetHeader className="text-start space-y-1">
               <SheetTitle className="text-xl font-bold text-slate-900">{t('Edit Candidate', 'تعديل بيانات المرشح')}</SheetTitle>
               <SheetDescription className="text-slate-500">
                 {t('Update the counseling status and internal remarks for this candidate.', 'قم بتحديث حالة التوجيه والملاحظات الداخلية لهذا المرشح.')}
@@ -629,7 +629,7 @@ export default function CareerServicesDashboard() {
                 disabled={isSaving}
                 className="w-full sm:w-1/2 rounded-xl bg-[#006E6D] hover:bg-[#005A59] text-white shadow-md h-11"
               >
-                {isSaving ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
+                {isSaving ? <Loader2 className="h-5 w-5 me-2 animate-spin" /> : <Save className="h-5 w-5 me-2" />}
                 {t('Save Changes', 'حفظ التغييرات')}
               </Button>
             </SheetFooter>

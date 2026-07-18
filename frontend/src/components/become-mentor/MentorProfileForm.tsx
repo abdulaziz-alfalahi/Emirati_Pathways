@@ -187,7 +187,7 @@ export const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ mentorProf
           </div>
 
           <Button type="submit" disabled={loading} className="w-full">
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 me-2" />
             {loading ? 'Saving...' : (mentorProfile ? 'Update Profile' : 'Create Profile')}
           </Button>
         </form>

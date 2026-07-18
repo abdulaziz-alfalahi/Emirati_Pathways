@@ -164,7 +164,7 @@ export const MockInterviewScheduling: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-sm text-gray-600 mb-2">Next available: {advisor.nextAvailable}</p>
                     <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
                       Book Session
@@ -199,11 +199,11 @@ export const MockInterviewScheduling: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-sm text-gray-600 mb-2">Available: {peer.nextAvailable}</p>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-1" />
+                        <MessageCircle className="h-4 w-4 me-1" />
                         Message
                       </Button>
                       <Button size="sm" className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">

@@ -40,10 +40,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
         <CardTitle>{t('Conversations', 'المحادثات')}</CardTitle>
         <CardDescription>{t('Your recent message threads', 'سلاسل رسائلك الأخيرة')}</CardDescription>
         <div className="relative my-2">
-          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-2 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t('Search conversations...', 'بحث في المحادثات...')}
-            className="pl-8"
+            className="ps-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

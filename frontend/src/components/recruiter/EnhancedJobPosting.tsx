@@ -362,12 +362,12 @@ const EnhancedJobPosting = () => {
         
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePreview}>
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             Preview
           </Button>
           {isEducationalOpportunity() && (
             <Button variant="outline" onClick={handleAIEnhancement}>
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 me-2" />
               AI Enhance
             </Button>
           )}
@@ -740,14 +740,14 @@ const EnhancedJobPosting = () => {
               onClick={() => handleSubmit('draft')}
               disabled={isSubmitting || !formData.title || !formData.description}
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 me-2" />
               Save Draft
             </Button>
             <Button
               onClick={() => handleSubmit('publish')}
               disabled={isSubmitting || !formData.title || !formData.description}
             >
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 me-2" />
               {isSubmitting ? 'Publishing...' : 'Publish'}
             </Button>
           </div>

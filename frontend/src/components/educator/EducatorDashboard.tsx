@@ -218,15 +218,15 @@ const EducatorDashboard: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export Report
           </Button>
           <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 me-2" />
             Settings
           </Button>
           <Button variant="outline" size="sm">
-            <Bell className="h-4 w-4 mr-2" />
+            <Bell className="h-4 w-4 me-2" />
             Notifications
           </Button>
         </div>
@@ -314,7 +314,7 @@ const EducatorDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Clock className="h-5 w-5 mr-2" />
+                <Clock className="h-5 w-5 me-2" />
                 Recent Activities
               </CardTitle>
               <CardDescription>
@@ -348,7 +348,7 @@ const EducatorDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2" />
+                <Target className="h-5 w-5 me-2" />
                 Upcoming Tasks
               </CardTitle>
               <CardDescription>
@@ -373,7 +373,7 @@ const EducatorDashboard: React.FC = () => {
                 ))}
               </div>
               <Button className="w-full mt-4" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Add Task
               </Button>
             </CardContent>
@@ -424,7 +424,7 @@ const EducatorDashboard: React.FC = () => {
         <Globe className="h-4 w-4" />
         <AlertDescription>
           <strong>UAE Ministry of Education Update:</strong> New curriculum standards for the 2025-2026 academic year are now available. 
-          <Button variant="link" className="p-0 h-auto ml-2">
+          <Button variant="link" className="p-0 h-auto ms-2">
             View Updates
           </Button>
         </AlertDescription>
