@@ -1,47 +1,58 @@
-/* Dubai Font Family - Temporarily disabled due to availability issues (404s) */
-/* Using system fonts to ensure reliability and correct PDF generation */
+/* ============================================================================
+   LEGACY FONT COMPATIBILITY SHIM
+   ----------------------------------------------------------------------------
+   History: Dubai Font was disabled here ("availability issues / 404s") and the
+   file force-pinned everything to SYSTEM fonts with `!important`. That is why
+   the platform rendered in a different face on every device — and why Arabic
+   had no controlled typography at all (it fell back to whatever the OS had).
 
-/* Base body font */
+   Now: the canonical type tokens live in ./ehrdc-tokens.css (Readex Pro,
+   self-hosted, covering Latin + Arabic in one superfamily). This file only
+   keeps the legacy class NAMES working so existing markup is untouched.
+
+   `!important` is retained ONLY on the opt-in compatibility classes (to
+   preserve their previous precedence). It was removed from body/headings so
+   the token cascade — and Tailwind font utilities — can function.
+   ========================================================================== */
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans);
 }
 
-/* Headings */
 h1, h2, h3, h4, h5, h6 {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans);
 }
 
-/* Compatibility classes */
+/* Compatibility classes — previously "Dubai", now the canonical brand face. */
 .font-dubai {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 .font-dubai-light {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-weight: 300;
 }
 
 .font-dubai-regular {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-weight: 400;
 }
 
 .font-dubai-medium {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-weight: 500;
 }
 
 .font-dubai-bold {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-weight: 700;
 }
 
-/* Arabic text optimization */
+/* Arabic: same superfamily, looser leading for legibility. */
 [dir="rtl"], .arabic-text {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  font-family: var(--font-arabic) !important;
 }
 
-/* English text optimization */
 .english-text {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }

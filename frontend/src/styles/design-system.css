@@ -1,18 +1,23 @@
-/* ─── Design System Tokens — EHRDC + Google Stitch ─── */
+/* ─── Design System Tokens — EHRDC ───────────────────────────────────────────
+   NOT a token source. The canonical tokens live in ./ehrdc-tokens.css; the
+   scales below are ALIASES so the pages importing this file (5 "Modern*" pages)
+   stay in lockstep with the brand instead of drifting. Do not hardcode values
+   here — point them at the canonical variables.
+   -------------------------------------------------------------------------- */
 
 :root {
-  /* Primary Colors — EHRDC Teal Scale */
-  --color-primary-50: #E6F5F5;
-  --color-primary-100: #CCeBeA;
-  --color-primary-200: #99D7D6;
-  --color-primary-300: #66C3C1;
-  --color-primary-400: #33AFAD;
-  --color-primary-500: #006E6D;
+  /* Primary Colors — aliased to the canonical EHRDC teal ramp */
+  --color-primary-50: var(--ehrdc-teal-50);
+  --color-primary-100: var(--ehrdc-teal-100);
+  --color-primary-200: var(--ehrdc-teal-200);
+  --color-primary-300: var(--ehrdc-teal-300);
+  --color-primary-400: var(--ehrdc-teal-400);
+  --color-primary-500: var(--ehrdc-teal-600);
   /* EHRDC Brand Teal */
-  --color-primary-600: #006362;
-  --color-primary-700: #005A59;
-  --color-primary-800: #004847;
-  --color-primary-900: #003635;
+  --color-primary-600: var(--ehrdc-teal-600);
+  --color-primary-700: var(--ehrdc-teal-700);
+  --color-primary-800: var(--ehrdc-teal-800);
+  --color-primary-900: var(--ehrdc-teal-900);
 
   /* Secondary Colors — Neutral Slate */
   --color-secondary-50: #FAFBFC;
@@ -43,8 +48,9 @@
   --color-error-600: #DC2626;
 
   /* Typography */
-  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-arabic: 'Noto Sans Arabic', 'Arial Unicode MS', sans-serif;
+  /* Aliased to the canonical type tokens (Readex Pro — Latin + Arabic). */
+  --font-family-primary: var(--font-sans);
+  --font-family-arabic: var(--font-arabic);
 
   /* Font Sizes */
   --text-xs: 0.75rem;
