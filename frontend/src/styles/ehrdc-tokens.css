@@ -198,8 +198,37 @@
   --target-min:38px;   /* recruiters, operators, admin, board */
 }
 
-/* ── DARK THEME ──────────────────────────────────────────────────────────── */
-.dark{
+/* AMBIENT — the far end of the same dial, for the command-room WALL DISPLAY
+   (/operations-center/display). Counter-intuitively this is LOOSER than
+   Guided, not denser: the constraint is viewing distance (3-5m), not screen
+   real estate. 14px body text is unreadable across a room, so the base type is
+   ~2x Standard and spacing scales with it.
+
+   Nobody touches a wall, so --target-min is 0: hover states, tooltips and tap
+   targets are dead weight here, and data must never hide behind interaction.
+   Consumers of this posture should also strip global chrome (header, nav,
+   FABs), fit to one viewport without scrolling, and surface a stale-data
+   state — an unattended display that freezes looks identical to a calm one. */
+[data-density="ambient"]{
+  --density:1.8;
+  --ehrdc-text-base:32px;
+  --target-min:0px;
+}
+
+/* ── DARK SURFACE ────────────────────────────────────────────────────────────
+   The platform is LIGHT ONLY — dark grounds are off-brand for Dubai Government.
+   These values are therefore NOT an app-wide theme. They exist for one context:
+
+   `[data-theme="control-room"]` — the command-room WALL DISPLAY
+   (/operations-center/display). There dark is correct ergonomics, not styling:
+   a dim room, long shifts, and status indicators that need to read as luminous
+   from across the room. Pair it with [data-density="ambient"].
+
+   Scoped to a route, driven by the SAME tokens — a contextual mode, not a
+   second design language. `.dark` is retained only for the pre-existing theme
+   toggle; do not apply it app-wide. */
+.dark,
+[data-theme="control-room"]{
   --background:#0E1413;
   --foreground:#E9EFEC;
   --card:#182120;
