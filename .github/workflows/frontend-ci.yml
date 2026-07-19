@@ -30,6 +30,17 @@ jobs:
       - name: Build production bundle
         run: cd frontend && npm run build
 
+      # frontend/Dockerfile does `COPY dist/` and dist/ is gitignored, so the
+      # image can only be built from a bundle produced by this job. `needs:`
+      # alone does NOT carry it across — each job gets a fresh runner.
+      - name: Upload production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Run tests
         run: cd frontend && npm test -- --run
 
@@ -38,6 +49,23 @@ jobs:
     needs: build-and-test
     steps:
       - uses: actions/checkout@v4
+
+      # Without this the job fails at Dockerfile:9 with `"/dist": not found`,
+      # because dist/ is gitignored and a fresh checkout never contains it.
+      # This job has therefore NEVER passed on any PR touching frontend/** — it
+      # was red on #82, #84 and #85 alike, which is exactly how a permanently
+      # failing check stops being read.
+      - name: Download production bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Verify the bundle is present
+        run: |
+          test -f frontend/dist/index.html \
+            || { echo "::error::frontend/dist/index.html missing — the bundle did not transfer"; exit 1; }
+          echo "bundle files: $(find frontend/dist -type f | wc -l)"
 
       - name: Build Docker image
         run: docker build -t platform-frontend ./frontend
