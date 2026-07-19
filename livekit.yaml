@@ -18,11 +18,29 @@ room:
   empty_timeout: 300        # 5 min after last participant leaves
   max_participants: 10
 
-webhook:
-  urls:
-    - "http://egress-webhook:8003/webhook/egress"
-  # api_key is resolved from LIVEKIT_KEYS env var at runtime
-  api_key: ""
+# Webhooks are DISABLED — see below before re-enabling.
+#
+# This block crash-looped the staging LiveKit server 2,379 times.
+#
+# The old comment here claimed "api_key is resolved from LIVEKIT_KEYS env var at
+# runtime". That is not true: LiveKit does NOT derive webhook.api_key from
+# LIVEKIT_KEYS. It requires an explicit key name that exists in the keys map.
+# With an empty string the server logs "api_key is required to use webhooks"
+# and EXITS 0 on startup — a clean exit, so under `restart: unless-stopped` it
+# just restarts silently every ~60s and never serves. Video interviews are down
+# the whole time with no crash and no error state to alert on.
+#
+# The urls target (egress-webhook:8003) is also not deployed, so this block had
+# no working consumer in any environment we run today.
+#
+# To re-enable: deploy the egress-webhook service AND set api_key to a key that
+# exists in LIVEKIT_KEYS (currently "devkey"; the backend uses the matching
+# LIVEKIT_API_KEY=devkey).
+#
+# webhook:
+#   urls:
+#     - "http://egress-webhook:8003/webhook/egress"
+#   api_key: devkey
 
 logging:
   level: info
