@@ -33,9 +33,24 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5005/health')" || exit 1
 
 # Production: Gunicorn with gevent workers
+# WORKERS MUST STAY 1. gevent-websocket + Socket.IO keeps session state in the
+# worker process, so with >1 worker a client's polling handshake lands on a
+# worker that doesn't hold its session -> HTTP 400 "session unknown" -> the
+# socket never connects, and the WebRTC signalling relay never reaches the peer
+# (each video-interview participant sees only their own camera). Measured at 4
+# workers: ~60% of handshakes failed; at 1 worker: 100% succeeded.
+#
+# This CMD is the last line of defence: docker-compose.yml overrides it with an
+# explicit 1-worker command, but APPQA runs the image via plain `docker run`
+# (compose v1 is broken against that engine), where this CMD is what actually
+# runs. It previously said 4 and only worked because the run command happened to
+# override it — one recreate without that override silently breaks realtime.
+#
+# To scale, run multiple single-worker backends behind an nginx sticky-session
+# load balancer. Do not raise this number.
 CMD ["gunicorn", \
      "--worker-class", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", \
-     "--workers", "4", \
+     "--workers", "1", \
      "--bind", "0.0.0.0:5005", \
      "--timeout", "120", \
      "--keep-alive", "5", \

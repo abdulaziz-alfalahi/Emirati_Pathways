@@ -23,6 +23,21 @@ services:
     environment:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
     restart: unless-stopped
+    # LiveKit had no healthcheck, so a crash loop was invisible: a bad config
+    # makes it exit 0 during startup, and `unless-stopped` then restarts it
+    # every ~60s forever with no unhealthy state and nothing to alert on. That
+    # ran to 2,379 restarts before anyone noticed, with video interviews down
+    # the whole time. This asserts the signalling HTTP server is actually
+    # serving, not merely that the process exists.
+    # -Y off: BusyBox wget honours http_proxy but ignores no_proxy, so if proxy
+    # build args are ever added to this image the check would be answered by the
+    # corporate proxy with a 503 (this exact bug hit emirati_frontend).
+    healthcheck:
+      test: ["CMD-SHELL", "wget -Y off -qO- http://localhost:7880/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - emirati_net
 
