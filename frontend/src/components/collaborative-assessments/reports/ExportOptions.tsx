@@ -103,7 +103,7 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
               </p>
             </div>
             <Button variant="outline" onClick={handleShare}>
-              <Share className="h-4 w-4 mr-2" />
+              <Share className="h-4 w-4 me-2" />
               Share
             </Button>
           </div>

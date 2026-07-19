@@ -1,14 +1,19 @@
 /* Enhanced RTL (Right-to-Left) Support for Arabic Language */
 /* Building upon existing RTL styles with comprehensive Arabic support */
 
-/* Arabic Font Families */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+/* Fonts: the canonical type tokens live in ./ehrdc-tokens.css (Readex Pro —
+   one superfamily covering Latin AND Arabic, self-hosted).
 
-/* Enhanced Root RTL Variables */
+   Removed from here, deliberately:
+     - the Noto Sans Arabic + Cairo Google-CDN @imports, and
+     - a competing `--font-arabic` definition.
+   Because this file is imported by App.tsx, that definition silently OVERRODE
+   the design system's Arabic face (body.rtl consumes it), which is why Arabic
+   never picked up the brand typeface. Do not redefine --font-arabic here. */
+
 :root {
-  --font-arabic: 'Noto Sans Arabic', 'Cairo', 'Dubai', 'Segoe UI Arabic', 'Tahoma', sans-serif;
-  --font-english: 'Dubai', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  /* --font-arabic is defined canonically in ehrdc-tokens.css. */
+  --font-english: var(--font-sans);
 }
 
 /* Enhanced RTL Body Styles */

@@ -161,7 +161,7 @@ export const ApplicationTracker: React.FC = () => {
                   <p className="text-sm text-gray-600">Applied: {application.appliedDate}</p>
                 </div>
                 
-                <div className="text-right">
+                <div className="text-end">
                   <Badge className={getStatusColor(application.status)}>
                     {application.status}
                   </Badge>
@@ -229,15 +229,15 @@ export const ApplicationTracker: React.FC = () => {
               {/* Actions */}
               <div className="flex gap-3">
                 <Button variant="outline" size="sm">
-                  <FileText className="h-4 w-4 mr-1" />
+                  <FileText className="h-4 w-4 me-1" />
                   View Details
                 </Button>
                 <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-1" />
+                  <Upload className="h-4 w-4 me-1" />
                   Upload Documents
                 </Button>
                 <Button variant="outline" size="sm">
-                  <MessageSquare className="h-4 w-4 mr-1" />
+                  <MessageSquare className="h-4 w-4 me-1" />
                   Contact Recruiter
                 </Button>
               </div>

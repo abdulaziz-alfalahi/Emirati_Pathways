@@ -14,7 +14,7 @@ const PageHeader = () => {
         size="sm" 
         onClick={() => navigate('/recruiter')}
       >
-        <ChevronLeft className="h-4 w-4 mr-1" /> Back
+        <ChevronLeft className="h-4 w-4 me-1" /> Back
       </Button>
       <h1 className="text-3xl font-bold">Matching Candidates</h1>
     </div>

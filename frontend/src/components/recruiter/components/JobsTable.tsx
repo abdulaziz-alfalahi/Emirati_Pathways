@@ -39,7 +39,7 @@ const JobsTable = ({ jobs, onFindMatches }: JobsTableProps) => {
             <TableHead>Company</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Posted</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-end">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -50,7 +50,7 @@ const JobsTable = ({ jobs, onFindMatches }: JobsTableProps) => {
                 <TableCell>{job.company || 'N/A'}</TableCell>
                 <TableCell>{job.location || 'N/A'}</TableCell>
                 <TableCell>{formatDate(job.created_at)}</TableCell>
-                <TableCell className="text-right space-x-2">
+                <TableCell className="text-end space-x-2">
                   <Button variant="outline" size="sm" onClick={() => onFindMatches(job.id)} className="gap-1">
                     <Users className="h-4 w-4" /> Match
                   </Button>

@@ -215,7 +215,7 @@ export default function BoardPortal() {
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
                   {firstName.charAt(0)}
                 </div>
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-start">
                   <div className="flex items-center gap-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                     <h1 className="text-2xl font-dubai-bold text-slate-900">
                       {getGreeting()}، {firstName}
@@ -282,19 +282,19 @@ export default function BoardPortal() {
                   <Card key={stat.key} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
                     <CardContent className="pt-5 pb-4 px-5">
                       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={isRTL ? 'text-right' : 'text-left'}>
+                        <div className="text-start">
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                           <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                           <div className="flex items-center mt-1 text-xs font-dubai-medium">
                             {stat.trend?.startsWith('+') || stat.trend?.startsWith('-') && !stat.trend?.startsWith('-') ? (
-                              <TrendingUp className="h-3 w-3 text-emerald-500 mr-1" />
+                              <TrendingUp className="h-3 w-3 text-emerald-500 me-1" />
                             ) : (
-                              <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+                              <TrendingDown className="h-3 w-3 text-red-500 me-1" />
                             )}
                             <span className={stat.trend?.startsWith('+') ? 'text-emerald-600' : stat.trend?.startsWith('-') && stat.key === 'time_to_hire' ? 'text-emerald-600' : 'text-red-600'}>
                               {stat.trend}
                             </span>
-                            <span className="text-slate-400 ml-2">{b('vs target', 'مقابل الهدف')} {stat.target}</span>
+                            <span className="text-slate-400 ms-2">{b('vs target', 'مقابل الهدف')} {stat.target}</span>
                           </div>
                         </div>
                         <div className={`p-3 ${stat.bg} rounded-xl group-hover:scale-110 transition-transform`}>
@@ -425,7 +425,7 @@ export default function BoardPortal() {
                           <div className="flex justify-between items-start" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                             <CardTitle className="text-base font-dubai-bold text-slate-800">{dir.title}</CardTitle>
                             <Badge className={dir.status === 'open' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}>
-                              {dir.status === 'open' ? <Clock className="h-3 w-3 mr-1 inline" /> : <CheckCircle className="h-3 w-3 mr-1 inline" />}
+                              {dir.status === 'open' ? <Clock className="h-3 w-3 me-1 inline" /> : <CheckCircle className="h-3 w-3 me-1 inline" />}
                               {dir.status}
                             </Badge>
                           </div>
@@ -484,7 +484,7 @@ export default function BoardPortal() {
                       />
                     </div>
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-700 font-dubai-medium" onClick={submitDirective}>
-                      <Send className="h-4 w-4 mr-2" />
+                      <Send className="h-4 w-4 me-2" />
                       {b('Submit Directive', 'إرسال التوجيه')}
                     </Button>
                   </CardContent>
@@ -537,7 +537,7 @@ export default function BoardPortal() {
                           {b('Overall Emiratisation Goal — Private Sector', 'هدف التوطين الشامل — القطاع الخاص')}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className="text-2xl font-dubai-bold text-emerald-700">5.0%</p>
                         <p className="text-[10px] text-emerald-600 font-dubai-medium">
                           {b('Current', 'الحالي')}: 4.2%

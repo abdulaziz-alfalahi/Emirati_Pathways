@@ -210,7 +210,7 @@ export const PersonalizedInsights: React.FC = () => {
 
           <div className="mt-6">
             <Button onClick={generateRecommendations} className="bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-              <Target className="h-4 w-4 mr-2" />
+              <Target className="h-4 w-4 me-2" />
               Generate Personalized Recommendations
             </Button>
           </div>
@@ -229,7 +229,7 @@ export const PersonalizedInsights: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {getPersonalizedRanking().map((career, index) => (
-                <Card key={index} className={`border-l-4 ${index === 0 ? 'border-l-ehrdc-teal' : 'border-l-ehrdc-neutral-light'}`}>
+                <Card key={index} className={`border-s-4 ${index === 0 ? 'border-s-ehrdc-teal' : 'border-s-ehrdc-neutral-light'}`}>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>

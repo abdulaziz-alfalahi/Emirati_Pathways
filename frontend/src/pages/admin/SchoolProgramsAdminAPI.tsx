@@ -332,7 +332,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                   <div className="flex-shrink-0">
                     <BookOpen className="h-8 w-8 text-teal-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ms-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
                         {currentLanguage === 'en' ? 'Total Programs' : 'إجمالي البرامج'}
@@ -350,7 +350,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                   <div className="flex-shrink-0">
                     <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ms-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
                         {currentLanguage === 'en' ? 'Published Programs' : 'البرامج المنشورة'}
@@ -368,7 +368,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                   <div className="flex-shrink-0">
                     <Clock className="h-8 w-8 text-yellow-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ms-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
                         {currentLanguage === 'en' ? 'Pending Reviews' : 'المراجعات المعلقة'}
@@ -386,7 +386,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                   <div className="flex-shrink-0">
                     <TrendingUp className="h-8 w-8 text-blue-600" />
                   </div>
-                  <div className="ml-5 w-0 flex-1">
+                  <div className="ms-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">
                         {currentLanguage === 'en' ? 'Approval Rate' : 'معدل الموافقة'}
@@ -471,13 +471,13 @@ const SchoolProgramsAdminAPI: React.FC = () => {
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <input
                       type="text"
                       placeholder={currentLanguage === 'en' ? 'Search programs...' : 'البحث في البرامج...'}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -502,22 +502,22 @@ const SchoolProgramsAdminAPI: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'Program' : 'البرنامج'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'School' : 'المدرسة'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'Category' : 'الفئة'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'Status' : 'الحالة'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'Last Modified' : 'آخر تعديل'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {currentLanguage === 'en' ? 'Actions' : 'الإجراءات'}
                     </th>
                   </tr>

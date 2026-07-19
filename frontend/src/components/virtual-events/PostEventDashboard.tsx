@@ -175,12 +175,12 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
         >
           {actionLoading === 'sequence' ? (
             <>
-              <Clock className="h-4 w-4 mr-2 animate-spin" />
+              <Clock className="h-4 w-4 me-2 animate-spin" />
               Running...
             </>
           ) : (
             <>
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-4 w-4 me-2" />
               Run Full Sequence
             </>
           )}
@@ -201,7 +201,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
                 onClick={handleSendFeedbackRequest}
                 disabled={actionLoading === 'feedback'}
               >
-                <MessageCircle className="h-4 w-4 mr-1" />
+                <MessageCircle className="h-4 w-4 me-1" />
                 Send
               </Button>
             </div>
@@ -216,7 +216,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
                 <p className="text-xs text-muted-foreground">{certificates.length} issued</p>
               </div>
               <Badge variant="secondary">
-                <Award className="h-3 w-3 mr-1" />
+                <Award className="h-3 w-3 me-1" />
                 Auto-generated
               </Badge>
             </div>
@@ -236,7 +236,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
                 onClick={handleExportNetworking}
                 disabled={actionLoading === 'networking'}
               >
-                <Download className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 me-1" />
                 Export
               </Button>
             </div>
@@ -311,7 +311,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
                 {feedbackSummary?.commonImprovements?.length > 0 ? (
                   <div className="space-y-2">
                     {feedbackSummary.commonImprovements.map((theme: string, index: number) => (
-                      <Badge key={index} variant="outline" className="mr-2">
+                      <Badge key={index} variant="outline" className="me-2">
                         {theme}
                       </Badge>
                     ))}
@@ -354,7 +354,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
                           {cert.is_valid ? 'Valid' : 'Invalid'}
                         </Badge>
                         <Button size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-1" />
+                          <Download className="h-4 w-4 me-1" />
                           Download
                         </Button>
                       </div>
@@ -385,7 +385,7 @@ const PostEventDashboard: React.FC<PostEventDashboardProps> = ({ eventId }) => {
             <CardContent>
               <div className="text-center py-8">
                 <Button onClick={handleExportNetworking} disabled={actionLoading === 'networking'}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   Export All Connections
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">

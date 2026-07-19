@@ -199,17 +199,17 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center">
-                  <Award className="h-5 w-5 mr-2" />
+                  <Award className="h-5 w-5 me-2" />
                   {certification.name}
                   {isExpired(certification.expiryDate || '') && (
-                    <Badge variant="destructive" className="ml-2">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
+                    <Badge variant="destructive" className="ms-2">
+                      <AlertTriangle className="h-3 w-3 me-1" />
                       {t('cv.builder.certifications.expired', 'Expired')}
                     </Badge>
                   )}
                   {isExpiringSoon(certification.expiryDate || '') && (
-                    <Badge variant="secondary" className="ml-2">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
+                    <Badge variant="secondary" className="ms-2">
+                      <AlertTriangle className="h-3 w-3 me-1" />
                       {t('cv.builder.certifications.expiringSoon', 'Expiring Soon')}
                     </Badge>
                   )}
@@ -238,7 +238,7 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
                   {t('cv.builder.certifications.issuedBy', 'Issued by')}: {certification.issuer}
                 </p>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   {certification.issueDate}
                   {certification.expiryDate && (
                     <span> - {certification.expiryDate}</span>
@@ -256,7 +256,7 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
                     rel="noopener noreferrer"
                     className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
                   >
-                    <ExternalLink className="h-4 w-4 mr-1" />
+                    <ExternalLink className="h-4 w-4 me-1" />
                     {t('cv.builder.certifications.viewCredential', 'View Credential')}
                   </a>
                 )}
@@ -374,11 +374,11 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
 
             <div className="flex space-x-2 pt-4">
               <Button onClick={handleSaveCertification}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t('common.save', 'Save')}
               </Button>
               <Button variant="outline" onClick={handleCancelEdit}>
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 me-2" />
                 {t('common.cancel', 'Cancel')}
               </Button>
             </div>
@@ -404,7 +404,7 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Award className="h-5 w-5 mr-2" />
+            <Award className="h-5 w-5 me-2" />
             {t('cv.builder.certifications.popular', 'Popular Certifications')}
           </CardTitle>
         </CardHeader>
@@ -435,7 +435,7 @@ export const CertificationsStep: React.FC<CertificationsStepProps> = ({
                   onClick={() => handleAddPresetCertification(certName)}
                   className="text-xs"
                 >
-                  <Plus className="h-3 w-3 mr-1" />
+                  <Plus className="h-3 w-3 me-1" />
                   {certName}
                 </Button>
               ))}

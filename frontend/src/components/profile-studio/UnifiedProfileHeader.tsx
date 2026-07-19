@@ -177,11 +177,11 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
     const getVerificationBadge = () => {
         switch (currentUser.verificationStatus) {
             case 'verified':
-                return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
+                return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 me-1" />Verified</Badge>;
             case 'pending':
-                return <Badge className="bg-yellow-100 text-yellow-800"><AlertCircle className="h-3 w-3 mr-1" />Pending</Badge>;
+                return <Badge className="bg-yellow-100 text-yellow-800"><AlertCircle className="h-3 w-3 me-1" />Pending</Badge>;
             default:
-                return <Badge className="bg-gray-100 text-gray-800"><AlertCircle className="h-3 w-3 mr-1" />Unverified</Badge>;
+                return <Badge className="bg-gray-100 text-gray-800"><AlertCircle className="h-3 w-3 me-1" />Unverified</Badge>;
         }
     };
 
@@ -225,7 +225,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                     <div className="flex items-center gap-3">
                         {getVerificationBadge()}
                         <Badge variant="outline">
-                            <Shield className="h-3 w-3 mr-1" />
+                            <Shield className="h-3 w-3 me-1" />
                             {currentUser.profileVisibility}
                         </Badge>
                     </div>
@@ -275,7 +275,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                                     className={`text-xs ${isCurrent ? 'bg-teal-600 hover:bg-teal-700' : 'text-gray-600'}`}
                                                     onClick={() => !isCurrent && handleRoleSwitch(roleKey)}
                                                 >
-                                                    <config.icon className="h-3 w-3 mr-1" />
+                                                    <config.icon className="h-3 w-3 me-1" />
                                                     {config.label}
                                                 </Button>
                                             )
@@ -290,7 +290,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                                     className="text-xs text-teal-600 hover:text-teal-800 hover:bg-teal-50 border border-dashed border-teal-200"
                                                     onClick={() => setShowAddRoleMenu(!showAddRoleMenu)}
                                                 >
-                                                    <Plus className="h-3 w-3 mr-1" />
+                                                    <Plus className="h-3 w-3 me-1" />
                                                     Add Persona
                                                 </Button>
 
@@ -301,19 +301,19 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                                             className="fixed inset-0 z-40"
                                                             onClick={() => setShowAddRoleMenu(false)}
                                                         />
-                                                        <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-1 animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="absolute top-full start-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-1 animate-in fade-in zoom-in-95 duration-200">
                                                             <div className="text-[10px] uppercase font-bold text-gray-400 px-2 py-2">Available Pathways</div>
                                                             <div className="max-h-60 overflow-y-auto">
                                                                 {unownedKeys.map(roleKey => (
                                                                     <button
                                                                         key={roleKey}
-                                                                        className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                                                                        className="flex items-center w-full text-start px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
                                                                         onClick={() => {
                                                                             setShowAddRoleMenu(false);
                                                                             setRequestDialog({ isOpen: true, role: roleConfigs[roleKey].label });
                                                                         }}
                                                                     >
-                                                                        {React.createElement(roleConfigs[roleKey].icon, { className: "h-4 w-4 mr-2 opacity-70" })}
+                                                                        {React.createElement(roleConfigs[roleKey].icon, { className: "h-4 w-4 me-2 opacity-70" })}
                                                                         {roleConfigs[roleKey].label}
                                                                     </button>
                                                                 ))}
@@ -366,7 +366,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                     setIsRefreshing(false);
                                 }
                             }}>
-                                <RefreshCw className={`h-3 w-3 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                <RefreshCw className={`h-3 w-3 me-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                                 Refresh Data
                             </Button>
                         </div>

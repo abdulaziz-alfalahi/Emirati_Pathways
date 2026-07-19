@@ -122,13 +122,13 @@ const NewConversationDialog: React.FC<NewConversationDialogProps> = ({ open, onC
                     {/* Search Box */}
                     <div className="flex gap-2">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Search className="absolute start-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
                                 placeholder="Search by name or email..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                className="pl-9"
+                                className="ps-9"
                             />
                         </div>
                         <Button onClick={handleSearch} disabled={loading || !searchQuery.trim()}>
@@ -162,7 +162,7 @@ const NewConversationDialog: React.FC<NewConversationDialogProps> = ({ open, onC
                                     {creatingId === candidate.id ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
-                                        <MessageSquare className="h-4 w-4 mr-1" />
+                                        <MessageSquare className="h-4 w-4 me-1" />
                                     )}
                                     Chat
                                 </Button>

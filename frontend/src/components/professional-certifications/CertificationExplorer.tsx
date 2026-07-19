@@ -242,7 +242,7 @@ export const CertificationExplorer: React.FC = () => {
                     <div className="flex flex-wrap gap-2">
                       {cert.recognizedByEmployers.slice(0, 4).map((employer, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          <Building className="h-3 w-3 mr-1" />
+                          <Building className="h-3 w-3 me-1" />
                           {employer}
                         </Badge>
                       ))}
@@ -258,7 +258,7 @@ export const CertificationExplorer: React.FC = () => {
                     Add to Roadmap
                   </Button>
                   <Button variant="outline" className="w-full">
-                    <BookOpen className="h-4 w-4 mr-2" />
+                    <BookOpen className="h-4 w-4 me-2" />
                     Study Materials
                   </Button>
                 </div>

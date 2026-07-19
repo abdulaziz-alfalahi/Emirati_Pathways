@@ -139,7 +139,7 @@ const DashboardHeader: React.FC<{
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden -ml-2"
+                className="md:hidden -ms-2"
                 onClick={onToggleMobileSidebar}
               >
                 {showMobileSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -148,7 +148,7 @@ const DashboardHeader: React.FC<{
 
             {/* Icon */}
             {icon && (
-              <div className="flex-shrink-0 p-2 bg-teal-100 rounded-lg text-teal-600">
+              <div className="flex-shrink-0 p-2 bg-accent rounded-lg text-primary">
                 {icon}
               </div>
             )}
@@ -156,7 +156,7 @@ const DashboardHeader: React.FC<{
             {/* Title and description */}
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
                   {title}
                 </h1>
                 {badge && (
@@ -166,7 +166,7 @@ const DashboardHeader: React.FC<{
                 )}
               </div>
               {description && (
-                <p className="mt-1 text-sm sm:text-base text-gray-500">
+                <p className="mt-1 text-sm sm:text-base text-muted-foreground">
                   {description}
                 </p>
               )}
@@ -183,7 +183,7 @@ const DashboardHeader: React.FC<{
                 disabled={isLoading}
                 className="hidden sm:flex"
               >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+                <RefreshCw className={cn("h-4 w-4 me-2", isLoading && "animate-spin")} />
                 {isLoading ? '' : (typeof window !== 'undefined' && document.documentElement.lang === 'ar' ? 'تحديث' : 'Refresh')}
               </Button>
             )}
@@ -196,7 +196,7 @@ const DashboardHeader: React.FC<{
                 onClick={action.onClick}
                 disabled={action.disabled}
               >
-                {action.icon && <span className="mr-2">{action.icon}</span>}
+                {action.icon && <span className="me-2">{action.icon}</span>}
                 <span className="hidden sm:inline">{action.label}</span>
                 <span className="sm:hidden">{action.icon || action.label.charAt(0)}</span>
               </Button>
@@ -281,10 +281,10 @@ const DashboardErrorFallback: React.FC<{
       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
         <HelpCircle className="h-8 w-8 text-red-600" />
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <h2 className="text-xl font-semibold text-foreground mb-2">
         {t(`Error Loading ${title}`, `خطأ في تحميل ${title}`)}
       </h2>
-      <p className="text-gray-500 mb-4 max-w-md">
+      <p className="text-muted-foreground mb-4 max-w-md">
         {t(
           'We encountered an error while loading this dashboard. Please try again or contact support if the problem persists.',
           'واجهنا خطأ أثناء تحميل لوحة التحكم. يرجى المحاولة مرة أخرى أو التواصل مع الدعم إذا استمرت المشكلة.'
@@ -292,7 +292,7 @@ const DashboardErrorFallback: React.FC<{
       </p>
       {onRetry && (
         <Button onClick={onRetry}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 me-2" />
           {t('Try Again', 'حاول مرة أخرى')}
         </Button>
       )}
@@ -346,9 +346,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   bgVariant = 'gray'
 }) => {
   const bgClasses = {
-    default: 'bg-gray-50',
-    gray: 'bg-gray-50',
-    white: 'bg-white'
+    default: 'bg-muted',
+    gray: 'bg-muted',
+    white: 'bg-card'
   };
 
   return (
@@ -364,7 +364,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="flex">
           {/* Sidebar (desktop) */}
           {sidebar && (
-            <aside className="hidden md:block w-64 flex-shrink-0 border-r bg-white">
+            <aside className="hidden md:block w-64 flex-shrink-0 border-e bg-card">
               {sidebar}
             </aside>
           )}
@@ -376,7 +376,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 className="fixed inset-0 bg-black/50"
                 onClick={onToggleMobileSidebar}
               />
-              <aside className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50">
+              <aside className="fixed inset-y-0 start-0 w-64 bg-card shadow-xl z-50">
                 {sidebar}
               </aside>
             </div>

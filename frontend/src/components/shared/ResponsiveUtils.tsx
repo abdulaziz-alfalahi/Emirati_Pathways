@@ -219,7 +219,7 @@ export const MobileFilters: React.FC<MobileFiltersProps> = ({
       <SheetTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="md:hidden">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             Filters
           </Button>
         )}
@@ -231,7 +231,7 @@ export const MobileFilters: React.FC<MobileFiltersProps> = ({
         <div className="mt-6 space-y-4">
           {children}
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+        <div className="absolute bottom-0 start-0 end-0 p-4 border-t bg-white">
           <div className="flex gap-2">
             {onReset && (
               <Button variant="outline" className="flex-1" onClick={onReset}>
@@ -334,7 +334,7 @@ export function ResponsiveTable<T>({
             {columns.filter(col => !col.hideOnMobile).map((col) => (
               <th 
                 key={String(col.key)} 
-                className="px-4 py-3 text-left text-sm font-medium text-gray-500"
+                className="px-4 py-3 text-start text-sm font-medium text-gray-500"
               >
                 {col.header}
               </th>
@@ -405,7 +405,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   return (
     <div className={cn("border rounded-lg", className)}>
       <button
-        className="w-full flex items-center justify-between p-4 text-left"
+        className="w-full flex items-center justify-between p-4 text-start"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-semibold text-gray-900 flex items-center gap-2">
@@ -487,7 +487,7 @@ export const MobilePageHeader: React.FC<MobilePageHeaderProps> = ({
   <div className={cn("sticky top-0 z-10 bg-white border-b px-4 py-3 md:hidden", className)}>
     <div className="flex items-center gap-3">
       {onBack && (
-        <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="-ms-2">
           <ArrowLeft className="h-5 w-5" />
         </Button>
       )}
@@ -564,7 +564,7 @@ export const TouchActionMenu: React.FC<TouchActionMenuProps> = ({
             <button
               key={index}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 transition-colors",
+                "w-full flex items-center gap-3 px-4 py-3 text-start hover:bg-gray-100 transition-colors",
                 action.variant === 'destructive' && "text-red-600"
               )}
               onClick={() => {

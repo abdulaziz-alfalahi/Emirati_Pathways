@@ -163,7 +163,7 @@ const CVBuilderPage: React.FC = () => {
       icon: <FileText className="h-4 w-4" />,
       content: (
         <div
-          className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}
+          className={`space-y-6 text-start`}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div className="text-center">
@@ -235,7 +235,7 @@ const CVBuilderPage: React.FC = () => {
       icon: <Eye className="h-4 w-4" />,
       content: (
         <div
-          className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}
+          className={`space-y-6 text-start`}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div className="text-center">
@@ -281,7 +281,7 @@ const CVBuilderPage: React.FC = () => {
       icon: <Target className="h-4 w-4" />,
       content: (
         <div
-          className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}
+          className={`space-y-6 text-start`}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div className="text-center">
@@ -305,7 +305,7 @@ const CVBuilderPage: React.FC = () => {
                       <div
                         key={tipIndex}
                         className={`flex items-start gap-3 ${
-                          isRTL ? 'flex-row-reverse text-right' : ''
+                          isRTL ? 'flex-row-reverse text-start' : ''
                         }`}
                       >
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -326,7 +326,7 @@ const CVBuilderPage: React.FC = () => {
       icon: <BarChart3 className="h-4 w-4" />,
       content: (
         <div
-          className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}
+          className={`space-y-6 text-start`}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <div className="text-center">

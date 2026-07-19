@@ -166,9 +166,9 @@ const EnhancedHomePage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center text-start md:text-center`}>
             <div className={`inline-flex items-center px-4 py-2 bg-teal-100 text-teal-800 rounded-full text-sm font-medium mb-8 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-              <Sparkles className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              <Sparkles className={`w-4 h-4 me-2`} />
               {t('hero_ai_badge')}
             </div>
             
@@ -189,11 +189,11 @@ const EnhancedHomePage: React.FC = () => {
                 className={`bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl hover:scale-105 flex items-center group ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {t('hero_start_journey')}
-                <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'} group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
+                <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180 group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
               </Link>
               
               <button className={`flex items-center text-slate-600 hover:text-slate-900 font-medium transition-colors ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                <Play className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                <Play className={`w-5 h-5 me-2`} />
                 {t('hero_watch_demo')}
               </button>
             </div>
@@ -209,7 +209,7 @@ const EnhancedHomePage: React.FC = () => {
       {/* Platform Features */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center mb-16 ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center mb-16 text-start md:text-center`}>
             <h2 className={`text-3xl lg:text-4xl font-bold text-slate-900 mb-4 ${isRTL ? 'font-arabic' : ''}`}>
               {t('features_title')}
             </h2>
@@ -220,7 +220,7 @@ const EnhancedHomePage: React.FC = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {platformFeatures.map((feature, index) => (
-              <div key={index} className={`text-center group ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+              <div key={index} className={`text-center group text-start md:text-center`}>
                 <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-200">
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
@@ -239,7 +239,7 @@ const EnhancedHomePage: React.FC = () => {
       {/* Personas Section */}
       <section className="py-20 bg-gradient-to-br from-slate-50 to-teal-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center mb-16 ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center mb-16 text-start md:text-center`}>
             <h2 className={`text-3xl lg:text-4xl font-bold text-slate-900 mb-4 ${isRTL ? 'font-arabic' : ''}`}>
               {t('personas_title')}
             </h2>
@@ -250,14 +250,14 @@ const EnhancedHomePage: React.FC = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {personas.map((persona) => (
-              <div key={persona.id} className={`bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 relative group ${isRTL ? 'text-right' : 'text-left'}`}>
+              <div key={persona.id} className={`bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 relative group text-start`}>
                 {persona.popular && (
-                  <div className={`absolute -top-3 ${isRTL ? 'right-6' : 'left-6'} bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium`}>
+                  <div className={`absolute -top-3 start-6 bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium`}>
                     {t('persona_most_popular')}
                   </div>
                 )}
                 
-                <div className={`w-14 h-14 ${persona.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200 ${isRTL ? 'mr-auto' : 'ml-0'}`}>
+                <div className={`w-14 h-14 ${persona.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200 ${isRTL ? 'ms-auto' : 'ms-0'}`}>
                   <persona.icon className="w-7 h-7 text-white" />
                 </div>
                 
@@ -271,7 +271,7 @@ const EnhancedHomePage: React.FC = () => {
                 <div className="space-y-2 mb-8">
                   {persona.features.map((feature, index) => (
                     <div key={index} className={`flex items-center text-sm text-slate-600 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                      <CheckCircle className={`w-4 h-4 text-green-500 ${isRTL ? 'ml-2' : 'mr-2'} flex-shrink-0`} />
+                      <CheckCircle className={`w-4 h-4 text-green-500 me-2 flex-shrink-0`} />
                       <span className={isRTL ? 'font-arabic' : ''}>{feature}</span>
                     </div>
                   ))}
@@ -284,7 +284,7 @@ const EnhancedHomePage: React.FC = () => {
                   <span className={isRTL ? 'font-arabic' : ''}>
                     {t('persona_get_started')} {persona.title}
                   </span>
-                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'} group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
+                  <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180 group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
                 </Link>
               </div>
             ))}
@@ -295,7 +295,7 @@ const EnhancedHomePage: React.FC = () => {
       {/* Statistics */}
       <section className="py-20 bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center mb-16 ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center mb-16 text-start md:text-center`}>
             <h2 className={`text-3xl lg:text-4xl font-bold text-white mb-4 ${isRTL ? 'font-arabic' : ''}`}>
               {t('stats_title')}
             </h2>
@@ -306,7 +306,7 @@ const EnhancedHomePage: React.FC = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className={`text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+              <div key={index} className={`text-center text-start md:text-center`}>
                 <div className={`text-4xl lg:text-5xl font-bold text-white mb-2 ${isRTL ? 'font-arabic' : ''}`}>
                   {stat.number}
                 </div>
@@ -322,7 +322,7 @@ const EnhancedHomePage: React.FC = () => {
       {/* Testimonials */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`text-center mb-16 ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+          <div className={`text-center mb-16 text-start md:text-center`}>
             <h2 className={`text-3xl lg:text-4xl font-bold text-slate-900 mb-4 ${isRTL ? 'font-arabic' : ''}`}>
               {t('testimonials_title')}
             </h2>
@@ -333,7 +333,7 @@ const EnhancedHomePage: React.FC = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className={`bg-slate-50 rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <div key={index} className={`bg-slate-50 rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300 text-start`}>
                 <div className={`flex items-center mb-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
@@ -344,7 +344,7 @@ const EnhancedHomePage: React.FC = () => {
                   "{isRTL ? testimonial.content : testimonial.contentEn}"
                 </p>
                 
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-start">
                   <div className={`font-semibold text-slate-900 ${isRTL ? 'font-arabic' : ''}`}>
                     {isRTL ? testimonial.name : testimonial.nameEn}
                   </div>
@@ -363,7 +363,7 @@ const EnhancedHomePage: React.FC = () => {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
-        <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center ${isRTL ? 'text-right' : 'text-left'} md:text-center`}>
+        <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-start md:text-center`}>
           <h2 className={`text-3xl lg:text-4xl font-bold text-white mb-6 ${isRTL ? 'font-arabic' : ''}`}>
             {t('cta_title')}
           </h2>
@@ -377,12 +377,12 @@ const EnhancedHomePage: React.FC = () => {
               className={`bg-white hover:bg-slate-50 text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl flex items-center justify-center group ${isRTL ? 'flex-row-reverse font-arabic' : ''}`}
             >
               {t('cta_start_today')}
-              <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'} group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
+              <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180 group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform`} />
             </Link>
           </div>
           
           <div className={`mt-8 text-teal-100 text-sm ${isRTL ? 'font-arabic' : ''}`}>
-            <Shield className={`w-4 h-4 inline ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            <Shield className={`w-4 h-4 inline me-2`} />
             {t('cta_security_note')}
           </div>
         </div>
@@ -391,7 +391,7 @@ const EnhancedHomePage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`grid md:grid-cols-4 gap-8 ${isRTL ? 'text-right' : 'text-left'}`}>
+          <div className={`grid md:grid-cols-4 gap-8 text-start`}>
             <div className="col-span-2">
               <div className={`flex items-center space-x-4 ${isRTL ? 'space-x-reverse flex-row-reverse' : ''} mb-4`}>
                 <img 
@@ -406,7 +406,7 @@ const EnhancedHomePage: React.FC = () => {
                   className="h-10 w-auto opacity-90"
                 />
               </div>
-              <div className={isRTL ? 'mr-0' : 'ml-0'}>
+              <div className="ms-0">
                 <h3 className={`text-xl font-bold ${isRTL ? 'font-arabic' : ''}`}>
                   {t('platform_title')}
                 </h3>
@@ -445,7 +445,7 @@ const EnhancedHomePage: React.FC = () => {
             </div>
           </div>
           
-          <div className={`mt-8 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center ${isRTL ? 'md:flex-row-reverse text-right' : 'text-left'} md:text-center`}>
+          <div className={`mt-8 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-start ${isRTL ? 'md:flex-row-reverse' : ''} md:text-center`}>
             <p className={`text-slate-400 text-sm ${isRTL ? 'font-arabic' : ''}`}>
               {t('footer_copyright')}
             </p>

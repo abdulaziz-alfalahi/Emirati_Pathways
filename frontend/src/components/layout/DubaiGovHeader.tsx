@@ -28,9 +28,9 @@ const DubaiGovHeader: React.FC = () => {
       {/* Color Blind Filters */}
       <ColorBlindFilters />
 
-      <header className="bg-white border-b border-ehrdc-neutral-light shadow-sm">
+      <header className="bg-card border-b border-ehrdc-neutral-light shadow-sm">
         {/* Top utility bar - Government standard */}
-        <div className="bg-[#006E6D] text-white">
+        <div className="bg-primary text-white">
           <div className="dubai-container">
             <div className="flex justify-between items-center py-2 text-sm">
               {/* Left side - Empty space or can be removed entirely */}
@@ -68,7 +68,7 @@ const DubaiGovHeader: React.FC = () => {
                     </Link>
                     <Link
                       to="/auth?tab=sign-up"
-                      className="text-sm font-medium bg-white text-ehrdc-teal hover:bg-ehrdc-light-teal hover:text-white transition-colors px-3 py-1 rounded-md"
+                      className="text-sm font-medium bg-card text-ehrdc-teal hover:bg-ehrdc-light-teal hover:text-white transition-colors px-3 py-1 rounded-md"
                     >
                       Join Now
                     </Link>
@@ -79,7 +79,7 @@ const DubaiGovHeader: React.FC = () => {
                   <div className="hidden md:flex items-center space-x-3">
                     <Link
                       to="/dashboard"
-                      className="text-sm font-medium bg-white text-ehrdc-teal hover:bg-ehrdc-light-teal hover:text-white transition-colors px-3 py-1 rounded-md"
+                      className="text-sm font-medium bg-card text-ehrdc-teal hover:bg-ehrdc-light-teal hover:text-white transition-colors px-3 py-1 rounded-md"
                     >
                       Dashboard
                     </Link>
@@ -94,7 +94,7 @@ const DubaiGovHeader: React.FC = () => {
         </div>
 
         {/* Main header section with fixed logo positioning */}
-        <div className="bg-white">
+        <div className="bg-card">
           <div className="dubai-container">
             <div className="flex items-center justify-between gap-2 py-4" style={{ minHeight: '80px' }}>
 
@@ -124,18 +124,18 @@ const DubaiGovHeader: React.FC = () => {
                           placeholder="Search services..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-64 pl-10 pr-4 py-2 border border-ehrdc-neutral-light rounded-lg focus:ring-2 focus:ring-ehrdc-teal focus:border-ehrdc-teal"
+                          className="w-64 ps-10 pe-4 py-2 border border-ehrdc-neutral-light rounded-lg focus:ring-2 focus:ring-ehrdc-teal focus:border-ehrdc-teal"
                           autoFocus
                           aria-label="Search services"
                         />
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ehrdc-neutral-dark" />
+                        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ehrdc-neutral-dark" />
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsSearchOpen(false)}
-                        className="ml-2 text-ehrdc-neutral-dark hover:text-ehrdc-teal"
+                        className="ms-2 text-ehrdc-neutral-dark hover:text-ehrdc-teal"
                         aria-label="Close search"
                       >
                         <X className="h-4 w-4" />

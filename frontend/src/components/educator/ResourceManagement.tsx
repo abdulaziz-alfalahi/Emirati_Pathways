@@ -356,7 +356,7 @@ const ResourceManagement: React.FC = () => {
         <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 me-2" />
               Upload Resource
             </Button>
           </DialogTrigger>
@@ -391,7 +391,7 @@ const ResourceManagement: React.FC = () => {
                       {resourceTypes.map(type => (
                         <SelectItem key={type.value} value={type.value}>
                           <div className="flex items-center">
-                            <type.icon className="w-4 h-4 mr-2" />
+                            <type.icon className="w-4 h-4 me-2" />
                             {type.label}
                           </div>
                         </SelectItem>
@@ -516,13 +516,13 @@ const ResourceManagement: React.FC = () => {
             <div>
               <Label htmlFor="search">Search Resources</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
                   placeholder="Search by title, description, or tags"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -676,7 +676,7 @@ const ResourceManagement: React.FC = () => {
                 : 'Start by uploading your first educational resource.'}
             </p>
             <Button onClick={() => setIsUploadDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 me-2" />
               Upload Resource
             </Button>
           </CardContent>

@@ -224,19 +224,19 @@ const GroupsGrid: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="discover">
-            <Users className="h-4 w-4 mr-2" />
+            <Users className="h-4 w-4 me-2" />
             Discover
           </TabsTrigger>
           <TabsTrigger value="polls" disabled={joinedGroups.size === 0}>
-            <BarChart3 className="h-4 w-4 mr-2" />
+            <BarChart3 className="h-4 w-4 me-2" />
             Polls
           </TabsTrigger>
           <TabsTrigger value="events" disabled={joinedGroups.size === 0}>
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 me-2" />
             Events
           </TabsTrigger>
           <TabsTrigger value="trending">
-            <TrendingUp className="h-4 w-4 mr-2" />
+            <TrendingUp className="h-4 w-4 me-2" />
             Trending
           </TabsTrigger>
         </TabsList>
@@ -267,11 +267,11 @@ const GroupsGrid: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Communities</SelectItem>
                   <SelectItem value="recommended">
-                    <Sparkles className="h-4 w-4 mr-2 inline" />
+                    <Sparkles className="h-4 w-4 me-2 inline" />
                     Recommended
                   </SelectItem>
                   <SelectItem value="trending">
-                    <TrendingUp className="h-4 w-4 mr-2 inline" />
+                    <TrendingUp className="h-4 w-4 me-2 inline" />
                     Trending
                   </SelectItem>
                 </SelectContent>

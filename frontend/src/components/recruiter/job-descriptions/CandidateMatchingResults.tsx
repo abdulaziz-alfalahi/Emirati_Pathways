@@ -132,7 +132,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
+                <Users className="h-5 w-5 me-2" />
                 Matched Candidates
               </CardTitle>
               <CardDescription>
@@ -145,7 +145,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
               onClick={onRefresh}
               disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 me-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
@@ -227,7 +227,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                           <h3 className="font-semibold text-lg">
                             {getDisplayName(match.candidate)}
                             {match.candidate.is_uae_national && (
-                              <Badge variant="outline" className="ml-2">
+                              <Badge variant="outline" className="ms-2">
                                 UAE National
                               </Badge>
                             )}
@@ -239,13 +239,13 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                           <div className="flex flex-wrap gap-2 mt-2">
                             {match.candidate.experience_years && (
                               <Badge variant="secondary" className="text-xs">
-                                <Briefcase className="h-3 w-3 mr-1" />
+                                <Briefcase className="h-3 w-3 me-1" />
                                 {match.candidate.experience_years} years exp.
                               </Badge>
                             )}
                             {match.candidate.emirate && (
                               <Badge variant="secondary" className="text-xs">
-                                <MapPin className="h-3 w-3 mr-1" />
+                                <MapPin className="h-3 w-3 me-1" />
                                 {match.candidate.emirate}
                               </Badge>
                             )}
@@ -264,7 +264,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                           variant={getScoreVariant(match.match_score)}
                           className="text-lg px-3 py-1"
                         >
-                          <Star className="h-4 w-4 mr-1" />
+                          <Star className="h-4 w-4 me-1" />
                           {match.match_score.toFixed(0)}%
                         </Badge>
                         <p className="text-xs text-muted-foreground mt-1">Match Score</p>
@@ -293,13 +293,13 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                     {match.strengths.length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-green-600 mb-2 flex items-center">
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <CheckCircle className="h-4 w-4 me-1" />
                           Strengths
                         </h4>
                         <ul className="space-y-1">
                           {match.strengths.slice(0, 3).map((strength, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex items-start">
-                              <span className="mr-2">•</span>
+                              <span className="me-2">•</span>
                               <span>{strength}</span>
                             </li>
                           ))}
@@ -330,13 +330,13 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                     {match.concerns.length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-yellow-600 mb-2 flex items-center">
-                          <AlertTriangle className="h-4 w-4 mr-1" />
+                          <AlertTriangle className="h-4 w-4 me-1" />
                           Considerations
                         </h4>
                         <ul className="space-y-1">
                           {match.concerns.slice(0, 2).map((concern, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex items-start">
-                              <span className="mr-2">•</span>
+                              <span className="me-2">•</span>
                               <span>{concern}</span>
                             </li>
                           ))}
@@ -354,7 +354,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                       variant="outline"
                       className="flex-1 md:flex-none"
                     >
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 me-2" />
                       View Profile
                     </Button>
                     <Button
@@ -362,7 +362,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                       onClick={() => onShortlist(match.candidate.candidate_id)}
                       className="flex-1 md:flex-none"
                     >
-                      <UserPlus className="h-4 w-4 mr-2" />
+                      <UserPlus className="h-4 w-4 me-2" />
                       Shortlist
                     </Button>
                     {match.candidate.cv_url && (
@@ -373,7 +373,7 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                         className="flex-1 md:flex-none"
                       >
                         <a href={match.candidate.cv_url} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 me-2" />
                           CV
                         </a>
                       </Button>

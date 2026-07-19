@@ -277,31 +277,31 @@ export default function OffersPage() {
       draft: { className: 'bg-gray-100 text-gray-800 border-gray-200' },
       pending: {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        icon: <Clock className="h-3 w-3 mr-1" />
+        icon: <Clock className="h-3 w-3 me-1" />
       },
       pending_approval: {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        icon: <Clock className="h-3 w-3 mr-1" />
+        icon: <Clock className="h-3 w-3 me-1" />
       },
       withdrawn: {
         className: 'bg-gray-100 text-gray-800 border-gray-200',
-        icon: <XCircle className="h-3 w-3 mr-1" />
+        icon: <XCircle className="h-3 w-3 me-1" />
       },
       hired: {
         className: 'bg-teal-100 text-teal-800 border-teal-200',
-        icon: <UserCheck className="h-3 w-3 mr-1" />
+        icon: <UserCheck className="h-3 w-3 me-1" />
       },
       rescinded: {
         className: 'bg-red-100 text-red-800 border-red-200',
-        icon: <XCircle className="h-3 w-3 mr-1" />
+        icon: <XCircle className="h-3 w-3 me-1" />
       },
       approved: {
         className: 'bg-green-100 text-green-800 border-green-200',
-        icon: <CheckCircle className="h-3 w-3 mr-1" />
+        icon: <CheckCircle className="h-3 w-3 me-1" />
       },
       rejected: {
         className: 'bg-red-100 text-red-800 border-red-200',
-        icon: <XCircle className="h-3 w-3 mr-1" />
+        icon: <XCircle className="h-3 w-3 me-1" />
       },
       sent: { className: 'bg-blue-100 text-blue-800 border-blue-200' },
       accepted: { className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
@@ -350,7 +350,7 @@ export default function OffersPage() {
 
   const SortHeader: React.FC<{ label: string; field: 'created' | 'job' | 'candidate' | 'status' }> = ({ label, field }) => (
     <th className="p-3 sticky top-0 bg-card z-10">
-      <button className="w-full text-left flex items-center gap-1" onClick={() => {
+      <button className="w-full text-start flex items-center gap-1" onClick={() => {
         if (sortBy === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
         else { setSortBy(field); setSortOrder('desc'); }
       }}>
@@ -378,7 +378,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card shadow-sm border-l-4 border-l-yellow-500">
+        <Card className="bg-card shadow-sm border-s-4 border-s-yellow-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -392,7 +392,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card shadow-sm border-l-4 border-l-green-500">
+        <Card className="bg-card shadow-sm border-s-4 border-s-green-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -406,7 +406,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card shadow-sm border-l-4 border-l-red-500">
+        <Card className="bg-card shadow-sm border-s-4 border-s-red-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -467,7 +467,7 @@ export default function OffersPage() {
           <div className="overflow-x-auto rounded border">
             <table className="min-w-full bg-card">
               <thead>
-                <tr className="text-left border-b">
+                <tr className="text-start border-b">
                   <th className="p-3 sticky top-0 bg-card z-10">ID</th>
                   <SortHeader label="Job" field="job" />
                   <SortHeader label="Candidate" field="candidate" />
@@ -509,45 +509,45 @@ export default function OffersPage() {
                           setDetailsLoading(false);
                         }
                       }}>
-                        <Eye className="h-4 w-4 mr-1" /> View
+                        <Eye className="h-4 w-4 me-1" /> View
                       </Button>
 
                       {/* Show different actions based on status */}
                       {o.status === 'pending_approval' && (
                         <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                          <Clock className="h-3 w-3 mr-1" />
+                          <Clock className="h-3 w-3 me-1" />
                           Awaiting HR Approval
                         </Badge>
                       )}
 
                       {o.status === 'approved' && (
                         <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
-                          <Send className="h-4 w-4 mr-1" /> Send to Candidate
+                          <Send className="h-4 w-4 me-1" /> Send to Candidate
                         </Button>
                       )}
 
                       {o.status === 'rejected' && (
                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                          <XCircle className="h-3 w-3 mr-1" />
+                          <XCircle className="h-3 w-3 me-1" />
                           {o.candidate_response === 'rejected' || o.candidate_response === 'declined' ? 'Declined by Candidate' : 'Rejected by HR'}
                         </Badge>
                       )}
                       {o.status === 'declined' && (
                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                          <XCircle className="h-3 w-3 mr-1" />
+                          <XCircle className="h-3 w-3 me-1" />
                           Declined by Candidate
                         </Badge>
                       )}
 
                       {(o.status === 'sent' || o.status === 'draft') && o.status !== 'accepted' && o.status !== 'declined' && (
                         <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
-                          <Send className="h-4 w-4 mr-1" /> Send
+                          <Send className="h-4 w-4 me-1" /> Send
                         </Button>
                       )}
 
                       {o.signature_token && (
                         <Button size="sm" variant="outline" onClick={() => copySignUrl(o)}>
-                          <LinkIcon className="h-4 w-4 mr-1" /> Copy Link
+                          <LinkIcon className="h-4 w-4 me-1" /> Copy Link
                         </Button>
                       )}
                     </td>
@@ -643,14 +643,14 @@ export default function OffersPage() {
                     </span>
                   </div>
                   {(selectedOfferDetails.offer_data?.candidate_message || selectedOfferDetails.response_notes) && (
-                    <div className="mt-2 pl-6">
+                    <div className="mt-2 ps-6">
                       <p className="text-sm text-slate-700 italic">
                         "{selectedOfferDetails.offer_data?.candidate_message || selectedOfferDetails.response_notes}"
                       </p>
                     </div>
                   )}
                   {(selectedOfferDetails.offer_data?.responded_at || selectedOfferDetails.response_date) && (
-                    <p className="text-xs text-slate-500 mt-2 pl-6">
+                    <p className="text-xs text-slate-500 mt-2 ps-6">
                       Responded: {new Date(selectedOfferDetails.offer_data?.responded_at || selectedOfferDetails.response_date).toLocaleString()}
                     </p>
                   )}
@@ -675,7 +675,7 @@ export default function OffersPage() {
                         ? `${Number(selectedOfferDetails.salary_amount).toLocaleString()} ${selectedOfferDetails.salary_currency || 'AED'}`
                         : selectedOfferDetails.offer_data?.salary || '-'}
                       {selectedOfferDetails.salary_period && (
-                        <span className="text-sm text-slate-400 ml-1">({selectedOfferDetails.salary_period})</span>
+                        <span className="text-sm text-slate-400 ms-1">({selectedOfferDetails.salary_period})</span>
                       )}
                     </p>
                   </div>
@@ -901,7 +901,7 @@ export default function OffersPage() {
                 disabled={actionLoading}
                 onClick={() => handleRecruiterAction('accept')}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 me-2" />
                 {actionLoading ? 'Processing...' : 'Accept Negotiation'}
               </Button>
               <Button
@@ -914,7 +914,7 @@ export default function OffersPage() {
                   setCounterSalary(selectedOfferDetails.salary_amount?.toString() || '');
                 }}
               >
-                <MessageCircle className="h-4 w-4 mr-2" />
+                <MessageCircle className="h-4 w-4 me-2" />
                 Counter Offer
               </Button>
               <Button
@@ -925,7 +925,7 @@ export default function OffersPage() {
                   setShowCounterForm(false);
                 }}
               >
-                <XCircle className="h-4 w-4 mr-2" />
+                <XCircle className="h-4 w-4 me-2" />
                 Withdraw Offer
               </Button>
             </DialogFooter>
@@ -938,7 +938,7 @@ export default function OffersPage() {
                 disabled={actionLoading}
                 onClick={() => handleRecruiterAction('hire')}
               >
-                <UserCheck className="h-4 w-4 mr-2" />
+                <UserCheck className="h-4 w-4 me-2" />
                 {actionLoading ? 'Processing...' : 'Confirm Hire'}
               </Button>
               <Button
@@ -946,7 +946,7 @@ export default function OffersPage() {
                 className="border-blue-300 text-blue-700 hover:bg-blue-50"
                 onClick={handleDownloadLetter}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Download Offer Letter
               </Button>
               <Button
@@ -954,7 +954,7 @@ export default function OffersPage() {
                 className="border-green-300 text-green-700 hover:bg-green-50"
                 onClick={handleMessageCandidate}
               >
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 Message Candidate
               </Button>
               <Button
@@ -965,7 +965,7 @@ export default function OffersPage() {
                   setShowCounterForm(false);
                 }}
               >
-                <XCircle className="h-4 w-4 mr-2" />
+                <XCircle className="h-4 w-4 me-2" />
                 Rescind Offer
               </Button>
             </DialogFooter>

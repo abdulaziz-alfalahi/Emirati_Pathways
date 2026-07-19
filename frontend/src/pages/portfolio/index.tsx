@@ -34,7 +34,7 @@ const PortfolioPage: React.FC = () => {
           {t('emptyState.description')}
         </p>
         <Button>
-          <FolderOpen className="h-4 w-4 mr-2" />
+          <FolderOpen className="h-4 w-4 me-2" />
           {t('emptyState.createFirst')}
         </Button>
       </div>
@@ -89,7 +89,7 @@ const PortfolioPage: React.FC = () => {
         </Badge>
         <br />
         <Button variant="outline">
-          <Mail className="h-4 w-4 mr-2" />
+          <Mail className="h-4 w-4 me-2" />
           {t('builder.notifyMe')}
         </Button>
       </div>
@@ -124,7 +124,7 @@ const PortfolioPage: React.FC = () => {
                 <Badge variant="outline">{t('templates.features.professional')}</Badge>
               </div>
               <Button className="w-full" variant="outline">
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 me-2" />
                 {t('secondaryAction')}
               </Button>
             </CardContent>
@@ -197,21 +197,21 @@ const PortfolioPage: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <Monitor className="h-4 w-4 mr-2" />
+                  <Monitor className="h-4 w-4 me-2" />
                   <span className="text-sm">Desktop</span>
                 </div>
                 <span className="text-sm text-muted-foreground">52%</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <Smartphone className="h-4 w-4 mr-2" />
+                  <Smartphone className="h-4 w-4 me-2" />
                   <span className="text-sm">Mobile</span>
                 </div>
                 <span className="text-sm text-muted-foreground">38%</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
-                  <Tablet className="h-4 w-4 mr-2" />
+                  <Tablet className="h-4 w-4 me-2" />
                   <span className="text-sm">Tablet</span>
                 </div>
                 <span className="text-sm text-muted-foreground">10%</span>
@@ -266,24 +266,24 @@ const PortfolioPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button variant="outline" className="w-full justify-start">
-              <Copy className="h-4 w-4 mr-2" />
+              <Copy className="h-4 w-4 me-2" />
               {t('visibility.sharing.copyLink')}
             </Button>
             <Button variant="outline" className="w-full justify-start">
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className="h-4 w-4 me-2" />
               {t('visibility.sharing.shareEmail')}
             </Button>
             <Button variant="outline" className="w-full justify-start">
-              <Share2 className="h-4 w-4 mr-2" />
+              <Share2 className="h-4 w-4 me-2" />
               {t('visibility.sharing.shareLinkedIn')}
             </Button>
             <Button variant="outline" className="w-full justify-start">
-              <Share2 className="h-4 w-4 mr-2" />
+              <Share2 className="h-4 w-4 me-2" />
               {t('visibility.sharing.shareTwitter')}
             </Button>
             <Separator />
             <Button variant="outline" className="w-full justify-start">
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {t('visibility.sharing.downloadPDF')}
             </Button>
           </CardContent>

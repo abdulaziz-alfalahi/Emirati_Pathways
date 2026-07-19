@@ -255,7 +255,7 @@ const CVUploadPage: React.FC = () => {
                 🇦🇪 UAE Nationals Only
               </div>
               <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-dubai-medium">
-                <Sparkles className="w-4 h-4 inline mr-1" />
+                <Sparkles className="w-4 h-4 inline me-1" />
                 AI-Powered
               </div>
             </div>
@@ -334,25 +334,25 @@ const CVUploadPage: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       {file.status === 'uploading' && (
                         <div className="flex items-center text-blue-600">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <Loader2 className="w-4 h-4 animate-spin me-2" />
                           Uploading {file.uploadProgress}%
                         </div>
                       )}
                       {file.status === 'analyzing' && (
                         <div className="flex items-center text-purple-600">
-                          <Brain className="w-4 h-4 animate-pulse mr-2" />
+                          <Brain className="w-4 h-4 animate-pulse me-2" />
                           Analyzing...
                         </div>
                       )}
                       {file.status === 'completed' && (
                         <div className="flex items-center text-green-600">
-                          <CheckCircle className="w-4 h-4 mr-2" />
+                          <CheckCircle className="w-4 h-4 me-2" />
                           Analysis Complete
                         </div>
                       )}
                       {file.status === 'error' && (
                         <div className="flex items-center text-red-600">
-                          <AlertCircle className="w-4 h-4 mr-2" />
+                          <AlertCircle className="w-4 h-4 me-2" />
                           Upload Failed
                         </div>
                       )}
@@ -391,7 +391,7 @@ const CVUploadPage: React.FC = () => {
                               Based on UAE job market standards
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-end">
                             <div className="text-3xl font-dubai-bold text-green-600">
                               {file.analysis.score}%
                             </div>
@@ -404,7 +404,7 @@ const CVUploadPage: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                            <Users className="w-4 h-4 mr-2" />
+                            <Users className="w-4 h-4 me-2" />
                             Personal Information
                           </h4>
                           <div className="space-y-2 text-sm">
@@ -417,7 +417,7 @@ const CVUploadPage: React.FC = () => {
 
                         <div className="bg-gray-50 rounded-lg p-4">
                           <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                            <Award className="w-4 h-4 mr-2" />
+                            <Award className="w-4 h-4 me-2" />
                             Experience Summary
                           </h4>
                           <div className="space-y-2 text-sm">
@@ -431,7 +431,7 @@ const CVUploadPage: React.FC = () => {
                       {/* Skills */}
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                          <Target className="w-4 h-4 mr-2" />
+                          <Target className="w-4 h-4 me-2" />
                           Skills Analysis
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -471,7 +471,7 @@ const CVUploadPage: React.FC = () => {
                       {/* Job Matches */}
                       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
                         <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                          <TrendingUp className="w-4 h-4 mr-2" />
+                          <TrendingUp className="w-4 h-4 me-2" />
                           Top Job Matches
                         </h4>
                         <div className="space-y-3">
@@ -480,15 +480,15 @@ const CVUploadPage: React.FC = () => {
                               <div className="flex-1">
                                 <h5 className="font-dubai-medium text-gray-900">{job.title}</h5>
                                 <p className="text-sm text-gray-600 flex items-center mt-1">
-                                  <MapPin className="w-3 h-3 mr-1" />
+                                  <MapPin className="w-3 h-3 me-1" />
                                   {job.company} • {job.location}
                                 </p>
                                 <p className="text-sm text-green-600 flex items-center mt-1">
-                                  <DollarSign className="w-3 h-3 mr-1" />
+                                  <DollarSign className="w-3 h-3 me-1" />
                                   {job.salary}
                                 </p>
                               </div>
-                              <div className="text-right">
+                              <div className="text-end">
                                 <div className="text-lg font-dubai-bold text-blue-600">
                                   {job.matchPercentage}%
                                 </div>
@@ -502,13 +502,13 @@ const CVUploadPage: React.FC = () => {
                       {/* Recommendations */}
                       <div className="bg-yellow-50 rounded-lg p-4">
                         <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Sparkles className="w-4 h-4 me-2" />
                           AI Recommendations
                         </h4>
                         <ul className="space-y-2">
                           {file.analysis.recommendations.map((rec, index) => (
                             <li key={index} className="flex items-start">
-                              <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                              <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-gray-700">{rec}</span>
                             </li>
                           ))}

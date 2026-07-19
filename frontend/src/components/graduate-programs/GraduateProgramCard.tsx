@@ -91,11 +91,11 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
           <div className="flex-1">
             <CardTitle className="text-lg line-clamp-2 text-gray-900">{program.program_name}</CardTitle>
             <CardDescription className="flex items-center mt-2 text-gray-600">
-              <MapPin className="h-4 w-4 mr-1" />
+              <MapPin className="h-4 w-4 me-1" />
               {program.university_name}
             </CardDescription>
           </div>
-          <Badge className={`ml-2 ${getDegreeColor(program.degree_level)}`}>
+          <Badge className={`ms-2 ${getDegreeColor(program.degree_level)}`}>
             {program.degree_level}
           </Badge>
         </div>
@@ -103,16 +103,16 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
         <div className="flex flex-wrap gap-2 mt-3">
           <Badge variant="outline" className="flex items-center bg-blue-50 border-blue-200 text-blue-700">
             {getFieldIcon(program.field_of_study)}
-            <span className="ml-1">{program.field_of_study}</span>
+            <span className="ms-1">{program.field_of_study}</span>
           </Badge>
           {program.duration_years && (
             <Badge variant="outline" className="flex items-center bg-gray-50 border-gray-200">
-              <Clock className="h-3 w-3 mr-1" />
+              <Clock className="h-3 w-3 me-1" />
               {program.duration_years} year{program.duration_years > 1 ? 's' : ''}
             </Badge>
           )}
           <Badge variant="outline" className="flex items-center bg-green-50 border-green-200 text-green-700">
-            <Globe className="h-3 w-3 mr-1" />
+            <Globe className="h-3 w-3 me-1" />
             International
           </Badge>
         </div>
@@ -138,7 +138,7 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Funding:</span>
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <DollarSign className="h-3 w-3 mr-1" />
+              <DollarSign className="h-3 w-3 me-1" />
               Scholarships Available
             </Badge>
           </div>
@@ -146,10 +146,10 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
         
         {program.application_deadline && (
           <div className="flex items-center text-sm mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+            <Calendar className="h-4 w-4 me-2 text-blue-600" />
             <span className="text-gray-700">Application Deadline: </span>
             <span 
-              className={`ml-1 font-medium ${
+              className={`ms-1 font-medium ${
                 isDeadlineApproaching(program.application_deadline) 
                   ? 'text-orange-600' 
                   : 'text-blue-700'
@@ -158,7 +158,7 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
               {formatDeadline(program.application_deadline)}
             </span>
             {isDeadlineApproaching(program.application_deadline) && (
-              <Badge variant="outline" className="ml-2 text-orange-600 border-orange-200 bg-orange-50">
+              <Badge variant="outline" className="ms-2 text-orange-600 border-orange-200 bg-orange-50">
                 Deadline Soon
               </Badge>
             )}
@@ -170,13 +170,13 @@ const GraduateProgramCard: React.FC<GraduateProgramCardProps> = ({ program }) =>
           {program.program_url && (
             <Button variant="outline" size="sm" className="flex-1" asChild>
               <a href={program.program_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ExternalLink className="h-4 w-4 me-2" />
                 View Details
               </a>
             </Button>
           )}
           <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
-            <GraduationCap className="h-4 w-4 mr-2" />
+            <GraduationCap className="h-4 w-4 me-2" />
             Apply Now
           </Button>
         </div>

@@ -88,9 +88,9 @@ const insightsData = {
 };
 
 const categoryStyles = {
-  critical: "border-l-4 border-amber-500 bg-amber-50",
-  positive: "border-l-4 border-emerald-500 bg-emerald-50",
-  opportunity: "border-l-4 border-blue-500 bg-blue-50",
+  critical: "border-s-4 border-amber-500 bg-amber-50",
+  positive: "border-s-4 border-emerald-500 bg-emerald-50",
+  opportunity: "border-s-4 border-blue-500 bg-blue-50",
 };
 
 const PortfolioInsights = () => {
@@ -126,7 +126,7 @@ const PortfolioInsights = () => {
           onClick={refreshInsights} 
           disabled={isLoading}
         >
-          <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCcw className={`h-4 w-4 me-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh Insights
         </Button>
       </div>

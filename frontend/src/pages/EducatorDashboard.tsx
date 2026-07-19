@@ -464,12 +464,12 @@ const EducatorDashboard: React.FC = () => {
                 <CardContent>
                   {/* Search Bar */}
                   <div className="relative mb-4">
-                    <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
+                    <Search className={`absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
                     <Input
                       placeholder={t('Search students by name or email...', 'ابحث عن الطلاب بالاسم أو البريد...')}
                       value={studentsSearch}
                       onChange={(e) => setStudentsSearch(e.target.value)}
-                      className={`${isRTL ? 'pr-10' : 'pl-10'} font-dubai-medium`}
+                      className={`ps-10 font-dubai-medium`}
                     />
                   </div>
                   {(() => {
@@ -490,11 +490,11 @@ const EducatorDashboard: React.FC = () => {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-slate-200">
-                              <th className="ltr:text-left rtl:text-right py-3 px-4 font-dubai-medium text-slate-600">{t('Name', 'الاسم')}</th>
-                              <th className="ltr:text-left rtl:text-right py-3 px-4 font-dubai-medium text-slate-600">{t('Status', 'الحالة')}</th>
-                              <th className="ltr:text-left rtl:text-right py-3 px-4 font-dubai-medium text-slate-600">{t('GPA', 'المعدل')}</th>
-                              <th className="ltr:text-left rtl:text-right py-3 px-4 font-dubai-medium text-slate-600">{t('Attendance', 'الحضور')}</th>
-                              <th className="ltr:text-left rtl:text-right py-3 px-4 font-dubai-medium text-slate-600">{t('Performance', 'الأداء')}</th>
+                              <th className="text-start py-3 px-4 font-dubai-medium text-slate-600">{t('Name', 'الاسم')}</th>
+                              <th className="text-start py-3 px-4 font-dubai-medium text-slate-600">{t('Status', 'الحالة')}</th>
+                              <th className="text-start py-3 px-4 font-dubai-medium text-slate-600">{t('GPA', 'المعدل')}</th>
+                              <th className="text-start py-3 px-4 font-dubai-medium text-slate-600">{t('Attendance', 'الحضور')}</th>
+                              <th className="text-start py-3 px-4 font-dubai-medium text-slate-600">{t('Performance', 'الأداء')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -641,11 +641,11 @@ const EducatorDashboard: React.FC = () => {
                           <div className="space-y-3">
                             {analyticsData.subject_performance.map((sp: any) => (
                               <div key={sp.subject} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                <span className={`font-dubai-medium text-slate-900 w-40 ${isRTL ? 'text-right' : 'text-left'}`}>{sp.subject}</span>
+                                <span className={`font-dubai-medium text-slate-900 w-40 text-start`}>{sp.subject}</span>
                                 <div className="flex-1 mx-4">
                                   <Progress value={Number(sp.average_grade || 0)} className="h-2" />
                                 </div>
-                                <span className="text-sm font-dubai-bold text-slate-700 w-16 text-right">{sp.average_grade}%</span>
+                                <span className="text-sm font-dubai-bold text-slate-700 w-16 text-end">{sp.average_grade}%</span>
                                 <Badge variant="outline" className="ms-2 text-xs bg-green-50 text-green-700">{sp.pass_rate}% {t('pass', 'نجاح')}</Badge>
                               </div>
                             ))}

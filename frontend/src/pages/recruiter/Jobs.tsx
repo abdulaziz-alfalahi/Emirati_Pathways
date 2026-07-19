@@ -86,7 +86,7 @@ const RecruiterJobs: React.FC = () => {
                   {isHrManager ? 'Position Management' : 'Job Descriptions'}
                 </h1>
               </div>
-              <p className="text-slate-600 font-dubai-medium ml-7">
+              <p className="text-slate-600 font-dubai-medium ms-7">
                 {isHrManager ? 'Manage your job positions and requirements' : 'Manage your job postings and descriptions'}
               </p>
             </div>
@@ -102,7 +102,7 @@ const RecruiterJobs: React.FC = () => {
                 className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
                 onClick={() => navigate('/recruiter/jd-builder')}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Create New Position
               </Button>
             </div>

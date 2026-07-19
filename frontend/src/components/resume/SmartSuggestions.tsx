@@ -117,7 +117,7 @@ const SmartSuggestions: React.FC<SmartSuggestionsProps> = ({ resumeData }) => {
                     size="sm"
                     onClick={() => applySuggestion(suggestion.id)}
                     disabled={appliedSuggestions.includes(suggestion.id)}
-                    className="bg-ehrdc-teal hover:bg-ehrdc-teal/90 ml-4"
+                    className="bg-ehrdc-teal hover:bg-ehrdc-teal/90 ms-4"
                   >
                     {appliedSuggestions.includes(suggestion.id) ? (
                       <CheckCircle className="h-4 w-4" />

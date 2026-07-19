@@ -33,11 +33,11 @@ export const AssessmentDetails: React.FC<AssessmentDetailsProps> = ({ assessment
   const getAssessmentTypeIcon = (type: AssessmentType) => {
     switch (type) {
       case 'skills':
-        return <BadgeCheck className="h-5 w-5 mr-2 text-[rgb(var(--pg-primary))]" />;
+        return <BadgeCheck className="h-5 w-5 me-2 text-[rgb(var(--pg-primary))]" />;
       case 'behaviors':
-        return <User className="h-5 w-5 mr-2 text-[rgb(var(--pg-secondary))]" />;
+        return <User className="h-5 w-5 me-2 text-[rgb(var(--pg-secondary))]" />;
       case 'capabilities':
-        return <CheckCircle className="h-5 w-5 mr-2 text-[rgb(var(--pg-accent))]" />;
+        return <CheckCircle className="h-5 w-5 me-2 text-[rgb(var(--pg-accent))]" />;
       default:
         return null;
     }
@@ -124,14 +124,14 @@ export const AssessmentDetails: React.FC<AssessmentDetailsProps> = ({ assessment
             <h3 className="font-semibold text-[rgb(var(--pg-primary))] text-lg">Assessment Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-center p-3 bg-[rgb(var(--pg-primary))/5] rounded-lg">
-                <Clock className="h-5 w-5 mr-3 text-[rgb(var(--pg-primary))]" />
+                <Clock className="h-5 w-5 me-3 text-[rgb(var(--pg-primary))]" />
                 <span className="font-medium">Duration:</span>
-                <span className="ml-2">{assessment.duration_minutes ? `${assessment.duration_minutes} minutes` : 'Duration not specified'}</span>
+                <span className="ms-2">{assessment.duration_minutes ? `${assessment.duration_minutes} minutes` : 'Duration not specified'}</span>
               </div>
               <div className="flex items-center p-3 bg-[rgb(var(--pg-secondary))/5] rounded-lg">
-                <BadgeCheck className="h-5 w-5 mr-3 text-[rgb(var(--pg-secondary))]" />
+                <BadgeCheck className="h-5 w-5 me-3 text-[rgb(var(--pg-secondary))]" />
                 <span className="font-medium">Type:</span>
-                <span className="ml-2">{assessment.assessment_type.charAt(0).toUpperCase() + assessment.assessment_type.slice(1)}</span>
+                <span className="ms-2">{assessment.assessment_type.charAt(0).toUpperCase() + assessment.assessment_type.slice(1)}</span>
               </div>
               <div className="flex items-center p-3 bg-[rgb(var(--pg-accent))/5] rounded-lg">
                 {assessment.price_amount ? (
@@ -172,7 +172,7 @@ export const AssessmentDetails: React.FC<AssessmentDetailsProps> = ({ assessment
         {assessment.requirements && (
           <div className="space-y-3">
             <h3 className="font-semibold text-[rgb(var(--pg-primary))] text-lg">Requirements</h3>
-            <div className="p-4 bg-[rgb(var(--pg-primary))/5] rounded-lg border-l-4 border-[rgb(var(--pg-primary))]">
+            <div className="p-4 bg-[rgb(var(--pg-primary))/5] rounded-lg border-s-4 border-[rgb(var(--pg-primary))]">
               <p className="text-sm">{assessment.requirements}</p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const AssessmentDetails: React.FC<AssessmentDetailsProps> = ({ assessment
                           !date && "text-muted-foreground"
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="me-2 h-4 w-4" />
                         {date ? format(date, "PPP") : "Select date"}
                       </Button>
                     </PopoverTrigger>
@@ -227,7 +227,7 @@ export const AssessmentDetails: React.FC<AssessmentDetailsProps> = ({ assessment
 
       <DialogFooter>
         {!user && (
-          <p className="text-sm text-muted-foreground mr-auto">Sign in to schedule this assessment</p>
+          <p className="text-sm text-muted-foreground me-auto">Sign in to schedule this assessment</p>
         )}
       </DialogFooter>
     </>

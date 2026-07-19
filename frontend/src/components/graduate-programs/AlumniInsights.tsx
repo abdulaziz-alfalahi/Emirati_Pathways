@@ -145,18 +145,18 @@ export const AlumniInsights: React.FC = () => {
                   <Badge variant="outline" className="mt-1">{alum.program}</Badge>
                 </div>
                 
-                <div className="text-right">
+                <div className="text-end">
                   <div className="text-sm text-gray-600">Graduated: {alum.graduationYear}</div>
                   {alum.videoAvailable && (
                     <Button size="sm" variant="outline" className="mt-2">
-                      <Play className="h-4 w-4 mr-1" />
+                      <Play className="h-4 w-4 me-1" />
                       Watch Video
                     </Button>
                   )}
                 </div>
               </div>
               
-              <blockquote className="text-gray-700 italic mb-4 pl-4 border-l-4 border-ehrdc-teal">
+              <blockquote className="text-gray-700 italic mb-4 ps-4 border-s-4 border-ehrdc-teal">
                 "{alum.story}"
               </blockquote>
               
@@ -189,11 +189,11 @@ export const AlumniInsights: React.FC = () => {
               
               <div className="flex gap-3">
                 <Button variant="outline" size="sm">
-                  <MessageCircle className="h-4 w-4 mr-1" />
+                  <MessageCircle className="h-4 w-4 me-1" />
                   Connect
                 </Button>
                 <Button variant="outline" size="sm">
-                  <Award className="h-4 w-4 mr-1" />
+                  <Award className="h-4 w-4 me-1" />
                   Full Story
                 </Button>
               </div>
@@ -232,7 +232,7 @@ export const AlumniInsights: React.FC = () => {
           
           <div className="mt-6 text-center">
             <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 me-2" />
               Watch Full Day Video
             </Button>
           </div>

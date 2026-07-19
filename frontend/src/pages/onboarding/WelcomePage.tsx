@@ -341,7 +341,7 @@ const WelcomePage: React.FC = () => {
                                 <button
                                     key={role.id}
                                     onClick={() => handleRoleSelect(role.id)}
-                                    className={`relative flex items-start p-4 rounded-xl border-2 transition-all duration-200 text-left hover:shadow-md
+                                    className={`relative flex items-start p-4 rounded-xl border-2 transition-all duration-200 text-start hover:shadow-md
                       ${isSelected
                                             ? `border-teal-600 bg-teal-50 ring-1 ring-teal-600`
                                             : `border-border bg-card hover:border-gray-300`
@@ -351,7 +351,7 @@ const WelcomePage: React.FC = () => {
                                     <div className={`flex-shrink-0 p-3 rounded-lg ${role.color}`}>
                                         <Icon className="w-6 h-6" />
                                     </div>
-                                    <div className="ml-4 flex-1">
+                                    <div className="ms-4 flex-1">
                                         <div className="flex justify-between">
                                             <h3 className={`text-base font-semibold ${isSelected ? 'text-teal-900' : 'text-gray-900'}`}>
                                                 {role.title}
@@ -372,7 +372,7 @@ const WelcomePage: React.FC = () => {
                     {error && (
                         <div className="mt-6 rounded-md bg-red-50 p-4 border border-red-200">
                             <div className="flex">
-                                <div className="ml-3">
+                                <div className="ms-3">
                                     <h3 className="text-sm font-medium text-red-800">{error}</h3>
                                 </div>
                             </div>
@@ -393,7 +393,7 @@ const WelcomePage: React.FC = () => {
                 `}
                         >
                             {isLoading ? 'Setting up...' : 'Continue to Dashboard'}
-                            {!isLoading && <ArrowRight className="ml-2 -mr-1 h-5 w-5" />}
+                            {!isLoading && <ArrowRight className="ms-2 -me-1 h-5 w-5" />}
                         </button>
                     </div>
                 </div>

@@ -153,7 +153,7 @@ const DebugCVParsing: React.FC = () => {
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-yellow-600" />
           🔍 CV Parsing Debug Tool
-          <Badge variant="outline" className="ml-auto bg-yellow-100 text-yellow-800">
+          <Badge variant="outline" className="ms-auto bg-yellow-100 text-yellow-800">
             Testing Mode
           </Badge>
         </CardTitle>
@@ -169,7 +169,7 @@ const DebugCVParsing: React.FC = () => {
             </div>
             {apiCallMade && (
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <Zap className="h-3 w-3 mr-1" />
+                <Zap className="h-3 w-3 me-1" />
                 API Called
               </Badge>
             )}
@@ -184,7 +184,7 @@ const DebugCVParsing: React.FC = () => {
             accept=".pdf,.doc,.docx,.txt"
             onChange={handleFileUpload}
             disabled={isDebugging}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
+            className="block w-full text-sm text-gray-500 file:me-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100"
           />
         </div>
 

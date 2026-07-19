@@ -272,7 +272,7 @@ const JobsPage: React.FC = () => {
               className="bg-green-600 hover:bg-green-700 text-white"
               size="lg"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-5 w-5 me-2" />
               Create Job
             </Button>
           </div>
@@ -342,7 +342,7 @@ const JobsPage: React.FC = () => {
                 </SelectContent>
               </Select>
               <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700">
-                <Search className="h-4 w-4 mr-2" />
+                <Search className="h-4 w-4 me-2" />
                 Search Jobs
               </Button>
             </div>
@@ -380,7 +380,7 @@ const JobsPage: React.FC = () => {
                 <h3 className="text-xl font-semibold mb-2">No jobs found</h3>
                 <p className="text-gray-600 mb-6">Try adjusting your search criteria or create a new job posting.</p>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Create Job
                 </Button>
               </div>
@@ -456,15 +456,15 @@ const JobsPage: React.FC = () => {
                           className="bg-blue-600 hover:bg-blue-700"
                           onClick={() => handleApplyToJob(job)}
                         >
-                          <Send className="h-4 w-4 mr-2" />
+                          <Send className="h-4 w-4 me-2" />
                           Apply Now
                         </Button>
                         <Button variant="outline">
-                          <Heart className="h-4 w-4 mr-2" />
+                          <Heart className="h-4 w-4 me-2" />
                           Save
                         </Button>
                         <Button variant="outline">
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 me-2" />
                           View Details
                         </Button>
                       </div>

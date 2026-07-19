@@ -86,7 +86,7 @@ const TrainingRecommendationsDialog: React.FC<TrainingRecommendationsDialogProps
                     ) : recommendations.length > 0 ? (
                         <div className="grid gap-4">
                             {recommendations.map((program) => (
-                                <Card key={program.id} className="border-l-4 border-l-teal-500">
+                                <Card key={program.id} className="border-s-4 border-s-teal-500">
                                     <CardHeader className="pb-2">
                                         <div className="flex justify-between items-start">
                                             <div>

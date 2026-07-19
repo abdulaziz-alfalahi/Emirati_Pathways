@@ -109,12 +109,12 @@ export const PostServicePrograms: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search programs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -145,7 +145,7 @@ export const PostServicePrograms: React.FC = () => {
                   <h3 className="text-lg font-semibold mb-2">{program.title}</h3>
                   <p className="text-ehrdc-teal font-medium">{program.provider}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <Badge className="mb-2">{program.category}</Badge>
                   <div className="flex items-center gap-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

@@ -217,7 +217,7 @@ export const PredictiveAnalyticsTab: React.FC<PredictiveAnalyticsTabProps> = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-3 bg-blue-50 rounded border-l-4 border-blue-500">
+              <div className="p-3 bg-blue-50 rounded border-s-4 border-blue-500">
                 <div className="font-medium text-blue-800">Resource Scaling</div>
                 <div className="text-sm text-blue-700">
                   Increase capacity by 25% in Q4 to meet predicted demand surge
@@ -225,7 +225,7 @@ export const PredictiveAnalyticsTab: React.FC<PredictiveAnalyticsTabProps> = ({
                 <Badge variant="outline" className="mt-2">High Priority</Badge>
               </div>
               
-              <div className="p-3 bg-green-50 rounded border-l-4 border-green-500">
+              <div className="p-3 bg-green-50 rounded border-s-4 border-green-500">
                 <div className="font-medium text-green-800">Skills Program Expansion</div>
                 <div className="text-sm text-green-700">
                   Launch additional digital literacy programs in technology sector
@@ -233,7 +233,7 @@ export const PredictiveAnalyticsTab: React.FC<PredictiveAnalyticsTabProps> = ({
                 <Badge variant="outline" className="mt-2">Medium Priority</Badge>
               </div>
               
-              <div className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
+              <div className="p-3 bg-yellow-50 rounded border-s-4 border-yellow-500">
                 <div className="font-medium text-yellow-800">Geographic Distribution</div>
                 <div className="text-sm text-yellow-700">
                   Consider expanding services to northern emirates based on demand patterns

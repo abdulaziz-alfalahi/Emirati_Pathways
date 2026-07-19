@@ -59,7 +59,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
       </div>
 
       {/* Main Government Header */}
-      <header className="bg-white border-b border-[#E2E5E9] sticky top-0 z-50" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <header className="bg-card border-b border-[#E2E5E9] sticky top-0 z-50" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
             {/* Government Logos Section */}
@@ -79,10 +79,10 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className={`text-xl font-bold text-slate-900 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <h1 className={`text-xl font-bold text-foreground text-start`}>
                     {t('platform_title', 'Emirati Human Development Platform')}
                   </h1>
-                  <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <p className={`text-sm text-muted-foreground text-start`}>
                     {t('platform_subtitle', 'UAE Nationals Career Development')}
                   </p>
                 </Link>
@@ -95,7 +95,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
               {isAuthenticated && (
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
@@ -105,28 +105,28 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                 <>
                   <Link
                     to="/auth"
-                    className="hidden sm:block text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                    className="hidden sm:block text-muted-foreground hover:text-foreground font-medium transition-colors"
                   >
                     {t('sign_in', 'Sign In')}
                   </Link>
                   <Link
                     to="/auth"
-                    className={`bg-[#006E6D] hover:bg-[#005A59] text-white px-6 py-2.5 rounded-full font-medium transition-all duration-200 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}
+                    className={`bg-primary hover:bg-[var(--ehrdc-teal-700)] text-white px-6 py-2.5 rounded-full font-medium transition-all duration-200 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}
                   >
                     {t('get_started', 'Get Started')}
-                    <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                    <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
                   </Link>
                 </>
               ) : (
                 <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
                   {userRole && (
                     <div className={`hidden sm:flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''}`}>
-                      <div className="w-2 h-2 bg-[#006E6D] rounded-full"></div>
-                      <span className="text-sm text-slate-600 capitalize">{userRole}</span>
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      <span className="text-sm text-muted-foreground capitalize">{userRole}</span>
                     </div>
                   )}
                   <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''}`}>
-                    <div className="w-8 h-8 bg-[#006E6D] rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-medium">U</span>
                     </div>
                     <span className="hidden sm:block text-sm text-slate-700">
@@ -142,7 +142,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
 
       {/* Dedicated Navigation Bar */}
       {isAuthenticated && (
-        <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
+        <nav className="bg-card text-[#374151] border-b border-[#E2E5E9]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
               {navigationGroups.map((group) => (
@@ -152,19 +152,19 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                   onMouseEnter={() => setActiveDropdown(group.id)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
+                  <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-primary transition-colors font-medium`}>
                     <span>{t(`nav_${group.id}`, group.name)}</span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
 
                   {activeDropdown === group.id && (
-                    <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                    <div className={`absolute top-full start-0 mt-1 w-80 bg-card rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
                       <div className="p-4">
                         <div className="mb-3">
-                          <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <h3 className={`font-semibold text-foreground text-lg text-start`}>
                             {t(`nav_${group.id}`, group.name)}
                           </h3>
-                          <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                          <p className={`text-sm text-muted-foreground text-start`}>
                             {t(`nav_${group.id}_desc`, group.description)}
                           </p>
                         </div>
@@ -175,12 +175,12 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                               to={item.href}
                               className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group`}
                             >
-                              <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
-                              <div className={isRTL ? 'text-right' : 'text-left'}>
-                                <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
+                              <item.icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                              <div className="text-start">
+                                <div className="font-medium text-[#1A1A1A] group-hover:text-primary">
                                   {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}`, item.name)}
                                 </div>
-                                <div className="text-sm text-slate-600 line-clamp-2">
+                                <div className="text-sm text-muted-foreground line-clamp-2">
                                   {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}_desc`, item.description)}
                                 </div>
                               </div>
@@ -199,21 +199,21 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
 
       {/* Mobile Navigation Menu */}
       {isAuthenticated && isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 shadow-lg">
+        <div className="lg:hidden bg-card border-b border-border shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="space-y-4">
               {navigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
-                  <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
-                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                  <h3 className={`font-semibold text-foreground mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
+                    <span className={`w-3 h-3 bg-primary rounded-full me-2`}></span>
                     {t(`nav_${group.id}`, group.name)}
                   </h3>
-                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
+                  <div className={`grid grid-cols-1 gap-2 ms-5`}>
                     {group.items.map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-[#6B7280] hover:text-[#006E6D] transition-colors py-1`}
+                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-[#6B7280] hover:text-primary transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />

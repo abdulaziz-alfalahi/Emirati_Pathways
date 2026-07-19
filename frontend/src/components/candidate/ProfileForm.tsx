@@ -264,7 +264,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             <div className="flex gap-2">
               {!isEditing ? (
                 <Button onClick={() => setIsEditing(true)} variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 me-2" />
                   Edit Profile
                 </Button>
               ) : (
@@ -282,12 +282,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                   >
                     {isSaving ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2"></div>
                         Saving...
                       </>
                     ) : (
                       <>
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-4 w-4 me-2" />
                         Save Changes
                       </>
                     )}
@@ -412,7 +412,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               onClick={() => navigate('/cv-builder')}
               className="text-xs"
             >
-              <Sparkles className="h-3 w-3 mr-1 text-teal-600" />
+              <Sparkles className="h-3 w-3 me-1 text-teal-600" />
               Auto-fill from CV
             </Button>
           </div>
@@ -482,12 +482,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 mb-4">
               {profileData.skills.map((skill, index) => (
-                <Badge key={index} variant="secondary" className="pl-3 pr-1 py-1">
+                <Badge key={index} variant="secondary" className="ps-3 pe-1 py-1">
                   {skill}
                   {isEditing && (
                     <button
                       onClick={() => removeFromArray('skills', index)}
-                      className="ml-2 hover:bg-slate-200 rounded-full p-0.5"
+                      className="ms-2 hover:bg-slate-200 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -563,12 +563,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 mb-4">
               {profileData.languages.map((lang, index) => (
-                <Badge key={index} variant="outline" className="pl-3 pr-1 py-1">
+                <Badge key={index} variant="outline" className="ps-3 pe-1 py-1">
                   {lang}
                   {isEditing && (
                     <button
                       onClick={() => removeFromArray('languages', index)}
-                      className="ml-2 hover:bg-slate-200 rounded-full p-0.5"
+                      className="ms-2 hover:bg-slate-200 rounded-full p-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>

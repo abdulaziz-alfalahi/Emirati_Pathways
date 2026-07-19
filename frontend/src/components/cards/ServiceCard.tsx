@@ -90,7 +90,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           disabled={status === 'coming-soon'}
         >
           {actionLabel}
-          <ArrowRight className="ml-2 h-4 w-4" />
+          <ArrowRight className="ms-2 h-4 w-4" />
         </Button>
       </DubaiCardFooter>
     </DubaiCard>

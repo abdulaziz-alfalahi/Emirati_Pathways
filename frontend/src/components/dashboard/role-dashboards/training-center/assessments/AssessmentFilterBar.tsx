@@ -21,10 +21,10 @@ const AssessmentFilterBar: React.FC<AssessmentFilterBarProps> = ({
   return (
     <div className="flex justify-between mb-4">
       <div className="relative w-full max-w-sm">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search assessments..."
-          className="pl-8"
+          className="ps-8"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />

@@ -144,7 +144,7 @@ const ResourcesSection: React.FC = () => {
                   </div>
                   
                   <Button className="w-full ehrdc-button-primary">
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download Resource
                   </Button>
                 </CardContent>
@@ -190,12 +190,12 @@ const ResourcesSection: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <div className="text-right text-xs text-muted-foreground">
+                      <div className="text-end text-xs text-muted-foreground">
                         <div>{resource.downloadCount.toLocaleString()} downloads</div>
                         <div>Updated {new Date(resource.lastUpdated).toLocaleDateString()}</div>
                       </div>
                       <Button size="sm" className="ehrdc-button-primary">
-                        <Download className="h-4 w-4 mr-1" />
+                        <Download className="h-4 w-4 me-1" />
                         Download
                       </Button>
                     </div>

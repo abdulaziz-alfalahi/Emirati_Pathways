@@ -243,7 +243,7 @@ export const UniversityPartnership: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {campusRecruitmentEvents.map((event) => (
-              <Card key={event.id} className="border-l-4 border-l-ehrdc-teal">
+              <Card key={event.id} className="border-s-4 border-s-ehrdc-teal">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>

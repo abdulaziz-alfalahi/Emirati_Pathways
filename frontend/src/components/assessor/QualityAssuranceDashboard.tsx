@@ -288,11 +288,11 @@ const QualityAssuranceDashboard: React.FC = () => {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={runQualityCheck} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 me-2 ${loading ? 'animate-spin' : ''}`} />
             Run Check
           </Button>
           <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export Report
           </Button>
         </div>
@@ -357,7 +357,7 @@ const QualityAssuranceDashboard: React.FC = () => {
                           {new Date(alert.timestamp).toLocaleString('en-AE')}
                         </p>
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 ms-4">
                         <Button size="sm" variant="outline" onClick={() => acknowledgeAlert(alert.id)}>
                           Acknowledge
                         </Button>
@@ -653,7 +653,7 @@ const QualityAssuranceDashboard: React.FC = () => {
                         <h4 className="font-medium">{assessor.assessor}</h4>
                         <p className="text-sm text-gray-600">{assessor.assessments} assessments completed</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <div className="text-sm font-medium">
                           Reliability: {Math.round(assessor.reliability * 100)}%
                         </div>

@@ -88,7 +88,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                   isActive 
                     ? 'border-blue-200 bg-blue-50' 
                     : isAccessible 
-                      ? 'border-gray-200 hover:border-gray-300 cursor-pointer' 
+                      ? 'border-border hover:border-gray-300 cursor-pointer' 
                       : 'border-gray-100 opacity-60'
                 }`}
               >
@@ -100,11 +100,11 @@ export const EnhancedNavigationHeader: React.FC = () => {
                     />
                     <div>
                       <h4 className="font-medium">{info.name}</h4>
-                      <p className="text-sm text-gray-600">{info.description}</p>
+                      <p className="text-sm text-muted-foreground">{info.description}</p>
                     </div>
                   </div>
                   {progress && (
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-sm font-medium">
                         {progress.completionPercentage}%
                       </div>
@@ -116,7 +116,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                 {isActive && progress && (
                   <div className="mt-3 pt-3 border-t border-blue-200">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">
+                      <span className="text-muted-foreground">
                         {progress.milestonesCompleted} of {progress.totalMilestones} milestones
                       </span>
                       <Badge variant={progress.eligibleForTransition ? 'default' : 'secondary'}>
@@ -139,13 +139,13 @@ export const EnhancedNavigationHeader: React.FC = () => {
               <Link
                 key={rec.id}
                 to={rec.actionUrl}
-                className="block p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                className="block p-3 rounded-lg border border-border hover:border-blue-300 hover:bg-blue-50 transition-colors"
                 onClick={() => setIsPhaseMenuOpen(false)}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium text-sm">{rec.title}</h4>
-                    <p className="text-xs text-gray-600">{rec.description}</p>
+                    <p className="text-xs text-muted-foreground">{rec.description}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge 
                         variant="outline" 
@@ -158,7 +158,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                         {phaseInfo[rec.targetPhase].name}
                       </Badge>
                       {rec.estimatedTime && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           • {rec.estimatedTime}
                         </span>
                       )}
@@ -196,7 +196,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
               onClick={() => setIsSearchOpen(true)}
               className="text-white hover:bg-white/20"
             >
-              <Search className="h-4 w-4 mr-2" />
+              <Search className="h-4 w-4 me-2" />
               Search
             </Button>
 
@@ -209,7 +209,7 @@ export const EnhancedNavigationHeader: React.FC = () => {
                     size="sm"
                     className="text-white hover:bg-white/20"
                   >
-                    <Navigation className="h-4 w-4 mr-2" />
+                    <Navigation className="h-4 w-4 me-2" />
                     Navigate Phases
                   </Button>
                 </SheetTrigger>

@@ -140,9 +140,9 @@ export const ProgramComparison: React.FC = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-4 font-semibold">Feature</th>
+                      <th className="text-start p-4 font-semibold">Feature</th>
                       {selectedPrograms.map((program) => (
-                        <th key={program.id} className="text-left p-4 font-semibold text-ehrdc-teal">
+                        <th key={program.id} className="text-start p-4 font-semibold text-ehrdc-teal">
                           {comparisonData[program.id]?.name || program.name}
                         </th>
                       ))}

@@ -139,7 +139,7 @@ const ExportCenter: React.FC<ExportCenterProps> = ({
                       disabled={isExporting}
                       className="bg-ehrdc-teal hover:bg-ehrdc-teal/90"
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 me-2" />
                       Download
                     </Button>
                   </div>
@@ -151,15 +151,15 @@ const ExportCenter: React.FC<ExportCenterProps> = ({
           {/* Quick Actions */}
           <div className="flex gap-2 pt-4 border-t">
             <Button variant="outline" size="sm">
-              <Printer className="h-4 w-4 mr-2" />
+              <Printer className="h-4 w-4 me-2" />
               Print Preview
             </Button>
             <Button variant="outline" size="sm">
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className="h-4 w-4 me-2" />
               Email Resume
             </Button>
             <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 me-2" />
               Preview
             </Button>
           </div>
@@ -217,7 +217,7 @@ const ExportCenter: React.FC<ExportCenterProps> = ({
               </div>
 
               <Button className="w-full bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                <Share2 className="h-4 w-4 mr-2" />
+                <Share2 className="h-4 w-4 me-2" />
                 Generate Share Link
               </Button>
             </CardContent>

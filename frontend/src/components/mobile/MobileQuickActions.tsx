@@ -85,7 +85,7 @@ const MobileQuickActions: React.FC = () => {
     <Card className="border border-ehrdc-neutral-light shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center text-ehrdc-neutral-dark">
-          <Clock className="h-5 w-5 mr-2 text-ehrdc-teal" />
+          <Clock className="h-5 w-5 me-2 text-ehrdc-teal" />
           Quick Actions
         </CardTitle>
       </CardHeader>
@@ -108,7 +108,7 @@ const MobileQuickActions: React.FC = () => {
                 <div className={`p-2 rounded-lg ${action.color} flex-shrink-0`}>
                   <action.icon className="h-4 w-4 text-white" />
                 </div>
-                <div className="text-left">
+                <div className="text-start">
                   <div className="text-sm font-medium text-ehrdc-neutral-dark">{action.label}</div>
                   <div className="text-xs text-ehrdc-neutral-dark/70">{action.description}</div>
                 </div>

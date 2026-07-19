@@ -121,7 +121,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center px-4 py-1.5 bg-[#E6F5F5] text-[#006E6D] rounded-full text-sm font-medium mb-8">
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-4 h-4 me-2" />
               Powered by Advanced AI Technology
             </div>
 
@@ -143,7 +143,7 @@ const HomePage: React.FC = () => {
                 className="bg-[#006E6D] hover:bg-[#005A59] text-white px-8 py-3 rounded-full font-semibold text-base transition-colors flex items-center group"
               >
                 Start Your Journey
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-4 h-4 ms-2 group-hover:translate-x-0.5 transition-transform" />
               </Link>
 
               <button
@@ -155,7 +155,7 @@ const HomePage: React.FC = () => {
                   }
                 }}
               >
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="w-4 h-4 me-2" />
                 Watch Demo
               </button>
             </div>
@@ -205,7 +205,7 @@ const HomePage: React.FC = () => {
             {personas.map((persona) => (
               <div key={persona.id} className="bg-white rounded-2xl p-7 border border-[#E2E5E9] hover:border-[#006E6D]/30 transition-all duration-200 relative group" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 {persona.popular && (
-                  <div className="absolute -top-2.5 left-5 bg-[#006E6D] text-white px-3 py-0.5 rounded-full text-xs font-medium">
+                  <div className="absolute -top-2.5 start-5 bg-[#006E6D] text-white px-3 py-0.5 rounded-full text-xs font-medium">
                     Most Popular
                   </div>
                 )}
@@ -220,7 +220,7 @@ const HomePage: React.FC = () => {
                 <div className="space-y-2 mb-6">
                   {persona.features.map((feature, index) => (
                     <div key={index} className="flex items-center text-sm text-[#374151]">
-                      <CheckCircle className="w-4 h-4 text-[#006E6D] mr-2 flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-[#006E6D] me-2 flex-shrink-0" />
                       {feature}
                     </div>
                   ))}
@@ -231,7 +231,7 @@ const HomePage: React.FC = () => {
                   className="w-full bg-[#006E6D] hover:bg-[#005A59] text-white py-2.5 rounded-xl font-medium text-sm transition-colors flex items-center justify-center group"
                 >
                   Get Started as {persona.title}
-                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 ms-1.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
             ))}
@@ -315,12 +315,12 @@ const HomePage: React.FC = () => {
               className="bg-white hover:bg-gray-50 text-[#006E6D] px-8 py-3 rounded-full font-semibold text-base transition-colors flex items-center justify-center group"
             >
               Start Your Journey Today
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 ms-2 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
           <div className="mt-6 text-white/60 text-sm flex items-center justify-center">
-            <Shield className="w-3.5 h-3.5 mr-1.5" />
+            <Shield className="w-3.5 h-3.5 me-1.5" />
             UAE Nationals Only — Secure & Confidential Platform
           </div>
         </div>

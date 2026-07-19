@@ -101,7 +101,7 @@ const MentorRecommendationsDialog: React.FC<MentorRecommendationsDialogProps> = 
                     ) : recommendations.length > 0 ? (
                         <div className="grid gap-4">
                             {recommendations.map((rec) => (
-                                <Card key={rec.mentor.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                                <Card key={rec.mentor.id} className="border-s-4 border-s-blue-500 hover:shadow-md transition-shadow">
                                     <CardContent className="pt-6">
                                         <div className="flex flex-col md:flex-row gap-4 justify-between">
                                             <div className="flex gap-4">
@@ -135,7 +135,7 @@ const MentorRecommendationsDialog: React.FC<MentorRecommendationsDialogProps> = 
                                                 </div>
 
                                                 <Button size="sm" className="w-full mt-2">
-                                                    <UserPlus className="h-4 w-4 mr-2" />
+                                                    <UserPlus className="h-4 w-4 me-2" />
                                                     Assign Mentor
                                                 </Button>
                                             </div>

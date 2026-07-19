@@ -17,7 +17,7 @@ const SelectedCredentialsSection: React.FC<SelectedCredentialsSectionProps> = ({
         {credentials.map((credential) => (
           <div key={credential.id} className="text-sm flex items-center justify-between">
             <span className="truncate">{credential.title}</span>
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="outline" className="ms-2">
               {credential.credential_type}
             </Badge>
           </div>

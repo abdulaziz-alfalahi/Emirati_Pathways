@@ -183,7 +183,7 @@ export const InteractiveExercise: React.FC<InteractiveExerciseProps> = ({
                 onClick={() => toggleHints(currentStepData.id)}
                 className="text-sm"
               >
-                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertCircle className="h-4 w-4 me-2" />
                 {showHints[currentStepData.id] ? 'Hide Hints' : 'Show Hints'}
               </Button>
               

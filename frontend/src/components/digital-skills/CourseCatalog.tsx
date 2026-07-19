@@ -91,7 +91,7 @@ export const CourseCatalog: React.FC = () => {
                   <span className="font-semibold text-lg">{course.price}</span>
                 </div>
                 <Button>
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 me-2" />
                   Enroll
                 </Button>
               </div>

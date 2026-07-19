@@ -163,7 +163,7 @@ const InteractiveQA: React.FC<InteractiveQAProps> = ({
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center">
-          <MessageSquare className="h-5 w-5 mr-2" />
+          <MessageSquare className="h-5 w-5 me-2" />
           Q&A Session
         </CardTitle>
         <CardDescription>
@@ -219,7 +219,7 @@ const InteractiveQA: React.FC<InteractiveQAProps> = ({
                     </Avatar>
                     <span className="text-sm font-medium">{question.user_name}</span>
                     <div className="flex items-center text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 mr-1" />
+                      <Clock className="h-3 w-3 me-1" />
                       {new Date(question.created_at).toLocaleTimeString('en-AE', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -232,7 +232,7 @@ const InteractiveQA: React.FC<InteractiveQAProps> = ({
                 <p className="text-sm mb-3">{question.question}</p>
 
                 {question.answer && (
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mb-3">
+                  <div className="bg-blue-50 border-s-4 border-blue-400 p-3 mb-3">
                     <p className="text-sm text-blue-800">{question.answer}</p>
                     {question.answered_by && (
                       <p className="text-xs text-blue-600 mt-1">
@@ -249,7 +249,7 @@ const InteractiveQA: React.FC<InteractiveQAProps> = ({
                     onClick={() => voteQuestion(question.id)}
                     className={question.user_voted ? 'text-blue-600' : ''}
                   >
-                    <ThumbsUp className="h-4 w-4 mr-1" />
+                    <ThumbsUp className="h-4 w-4 me-1" />
                     {question.votes}
                   </Button>
                   

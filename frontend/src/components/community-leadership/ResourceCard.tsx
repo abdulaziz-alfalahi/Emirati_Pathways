@@ -118,7 +118,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
               <Users className="h-4 w-4 text-gray-400" />
               <span>Apply by: {formatDate(resource.application_deadline)}</span>
               {isDeadlineApproaching(resource.application_deadline) && (
-                <Badge variant="destructive" className="ml-2 text-xs">
+                <Badge variant="destructive" className="ms-2 text-xs">
                   Deadline Soon
                 </Badge>
               )}
@@ -153,7 +153,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
         {resource.url ? (
           <Button className="w-full" asChild>
             <a href={resource.url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" />
+              <ExternalLink className="h-4 w-4 me-2" />
               {resource.type === 'opportunity' ? 'Apply Now' : 'Learn More'}
             </a>
           </Button>

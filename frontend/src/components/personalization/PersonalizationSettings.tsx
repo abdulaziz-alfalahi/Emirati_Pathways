@@ -76,7 +76,7 @@ const PersonalizationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Brain className="mr-2 h-5 w-5" />
+            <Brain className="me-2 h-5 w-5" />
             AI Personalization
           </CardTitle>
           <CardDescription>
@@ -117,7 +117,7 @@ const PersonalizationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Palette className="mr-2 h-5 w-5" />
+            <Palette className="me-2 h-5 w-5" />
             Interface Preferences
           </CardTitle>
           <CardDescription>
@@ -210,7 +210,7 @@ const PersonalizationSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Bell className="mr-2 h-5 w-5" />
+            <Bell className="me-2 h-5 w-5" />
             Learning Preferences
           </CardTitle>
           <CardDescription>

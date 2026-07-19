@@ -213,11 +213,11 @@ const AssessmentCenterDashboard: React.FC<AssessmentCenterDashboardProps> = ({ a
           <div className="flex justify-between items-center mb-4">
             <div className="flex gap-4 items-center">
               <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search assessments..."
-                  className="pl-8"
+                  className="ps-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -238,7 +238,7 @@ const AssessmentCenterDashboard: React.FC<AssessmentCenterDashboardProps> = ({ a
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Create Assessment
                 </Button>
               </DialogTrigger>
@@ -264,7 +264,7 @@ const AssessmentCenterDashboard: React.FC<AssessmentCenterDashboardProps> = ({ a
                   <TableHead className="text-center">Candidates</TableHead>
                   <TableHead className="text-center">Avg. Score</TableHead>
                   <TableHead>Last Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -280,7 +280,7 @@ const AssessmentCenterDashboard: React.FC<AssessmentCenterDashboardProps> = ({ a
                       <TableCell className="text-center">{assessment.candidates}</TableCell>
                       <TableCell className="text-center">{assessment.avgScore}%</TableCell>
                       <TableCell>{assessment.lastUpdated}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button variant="ghost" size="sm">Edit</Button>
                         <Button variant="ghost" size="sm">View</Button>
                       </TableCell>

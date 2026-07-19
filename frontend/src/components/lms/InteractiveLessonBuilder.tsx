@@ -257,7 +257,7 @@ export const InteractiveLessonBuilder: React.FC<InteractiveLessonBuilderProps> =
                   size="sm"
                   onClick={() => addContentBlock('text')}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 me-2" />
                   Text
                 </Button>
                 <Button
@@ -265,7 +265,7 @@ export const InteractiveLessonBuilder: React.FC<InteractiveLessonBuilderProps> =
                   size="sm"
                   onClick={() => addContentBlock('video')}
                 >
-                  <Video className="h-4 w-4 mr-2" />
+                  <Video className="h-4 w-4 me-2" />
                   Video
                 </Button>
                 <Button
@@ -273,7 +273,7 @@ export const InteractiveLessonBuilder: React.FC<InteractiveLessonBuilderProps> =
                   size="sm"
                   onClick={() => addContentBlock('quiz')}
                 >
-                  <HelpCircle className="h-4 w-4 mr-2" />
+                  <HelpCircle className="h-4 w-4 me-2" />
                   Quiz
                 </Button>
                 <Button
@@ -281,7 +281,7 @@ export const InteractiveLessonBuilder: React.FC<InteractiveLessonBuilderProps> =
                   size="sm"
                   onClick={() => addContentBlock('exercise')}
                 >
-                  <Code className="h-4 w-4 mr-2" />
+                  <Code className="h-4 w-4 me-2" />
                   Exercise
                 </Button>
               </div>

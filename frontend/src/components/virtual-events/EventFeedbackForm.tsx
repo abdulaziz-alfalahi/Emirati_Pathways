@@ -133,7 +133,7 @@ const EventFeedbackForm: React.FC<EventFeedbackFormProps> = ({
           <Star className="h-5 w-5 fill-current" />
         </button>
       ))}
-      <span className="ml-2 text-sm text-muted-foreground">
+      <span className="ms-2 text-sm text-muted-foreground">
         {rating > 0 ? `${rating}/5` : 'Not rated'}
       </span>
     </div>
@@ -248,7 +248,7 @@ const EventFeedbackForm: React.FC<EventFeedbackFormProps> = ({
               'Submitting...'
             ) : (
               <>
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4 me-2" />
                 Submit Feedback
               </>
             )}

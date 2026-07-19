@@ -91,7 +91,7 @@ export const StandardCard: React.FC<StandardCardProps> = ({
 
   if (onClick) {
     return (
-      <button onClick={onClick} className="block w-full text-left group">
+      <button onClick={onClick} className="block w-full text-start group">
         <CardContent />
       </button>
     );

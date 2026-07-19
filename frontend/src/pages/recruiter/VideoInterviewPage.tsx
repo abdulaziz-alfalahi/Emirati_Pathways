@@ -236,11 +236,11 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                         <div className="flex items-center gap-1">
                             {isListening ? (
                                 <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 animate-pulse">
-                                    <Mic className="h-3 w-3 mr-1" /> Live
+                                    <Mic className="h-3 w-3 me-1" /> Live
                                 </Badge>
                             ) : (
                                 <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-500">
-                                    <MicOff className="h-3 w-3 mr-1" /> Off
+                                    <MicOff className="h-3 w-3 me-1" /> Off
                                 </Badge>
                             )}
                         </div>
@@ -507,10 +507,10 @@ const VideoInterviewPage = () => {
             {/* Header */}
             <div className="flex items-center gap-4 text-white px-4 py-3 border-b border-slate-800/50">
                 <Button variant="ghost" className="text-white hover:text-white/80 hover:bg-white/10" onClick={handleBack}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    <ArrowLeft className="me-2 h-4 w-4" /> Back
                 </Button>
                 <h1 className="text-lg font-bold">Video Interview Session</h1>
-                <span className="text-xs text-slate-500 font-mono ml-auto">
+                <span className="text-xs text-slate-500 font-mono ms-auto">
                     Session: {sessionId.slice(0, 16)}...
                 </span>
             </div>
@@ -531,7 +531,7 @@ const VideoInterviewPage = () => {
                 </div>
 
                 {/* AI Analysis Sidebar - takes 1/4 of the space */}
-                <div className="lg:col-span-1 lg:pl-4 mt-4 lg:mt-0">
+                <div className="lg:col-span-1 lg:ps-4 mt-4 lg:mt-0">
                     <AIAnalysisSidebar sessionId={sessionId} />
                 </div>
             </div>

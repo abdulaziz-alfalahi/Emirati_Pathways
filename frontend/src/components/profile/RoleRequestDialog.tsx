@@ -441,7 +441,7 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                                         /* Search input */
                                         <>
                                             <div className="relative">
-                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                                 <Input
                                                     value={institutionSearchQuery}
                                                     onChange={(e) => {
@@ -455,10 +455,10 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                                                             : `Search ${roleFields['education_level'].toLowerCase()}s...`
                                                     }
                                                     disabled={!roleFields['education_level']}
-                                                    className="pl-9"
+                                                    className="ps-9"
                                                 />
                                                 {institutionSearching && (
-                                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                                                    <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
                                                 )}
                                             </div>
 
@@ -470,7 +470,7 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                                                             <button
                                                                 key={inst.id || idx}
                                                                 type="button"
-                                                                className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors"
+                                                                className="flex items-center gap-2 w-full text-start px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors"
                                                                 onClick={() => {
                                                                     handleFieldChange(field.key, inst.name);
                                                                     setInstitutionSearchQuery('');
@@ -488,7 +488,7 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                                                         ))
                                                     ) : institutionSearching ? (
                                                         <div className="px-3 py-4 text-sm text-gray-400 text-center">
-                                                            <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                                                            <Loader2 className="h-4 w-4 animate-spin inline me-2" />
                                                             Searching...
                                                         </div>
                                                     ) : (
@@ -559,12 +559,12 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                             >
                                 {uploadedFile ? (
                                     <>
-                                        <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                        <CheckCircle2 className="me-2 h-4 w-4 text-green-600" />
                                         {uploadedFile}
                                     </>
                                 ) : (
                                     <>
-                                        <Upload className="mr-2 h-4 w-4" />
+                                        <Upload className="me-2 h-4 w-4" />
                                         {config.uploadLabel}
                                     </>
                                 )}
@@ -601,7 +601,7 @@ export const RoleRequestDialog: React.FC<RoleRequestDialogProps> = ({
                         disabled={isSubmitting || !reasonCategory || !agreedToTerms || !requiredFieldsFilled}
                         className="bg-teal-600 hover:bg-teal-700"
                     >
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                         Submit Request
                     </Button>
                 </DialogFooter>

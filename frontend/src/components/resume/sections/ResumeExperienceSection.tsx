@@ -81,7 +81,7 @@ const ResumeExperienceSection: React.FC<ResumeExperienceSectionProps> = ({
             className="w-full"
             onClick={addExperience}
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="me-2 h-4 w-4" />
             Add Work Experience
           </Button>
         </div>

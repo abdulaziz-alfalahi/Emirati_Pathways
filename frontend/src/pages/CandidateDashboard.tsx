@@ -40,6 +40,17 @@ import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 import { useAuth } from '@/context/AuthContext';
 import { profileSnapshotAPI, type RecommendedJob, type ProfileSnapshot } from '@/services/intelligenceAPI';
+import {
+  langOf,
+  employmentTypeLabel,
+  salaryLabel,
+  jobSourceLabel,
+  skillLevelLabel,
+  recommendationTypeLabel,
+  sessionTypeLabel,
+  activityTitleLabel,
+  activityDescriptionLabel,
+} from '@/utils/enumLabels';
 
 interface DashboardData {
   profile: {
@@ -77,13 +88,13 @@ const CircularProgress: React.FC<{ value: number; size?: number; strokeWidth?: n
   return (
     <svg width={size} height={size} className="transform -rotate-90">
       <circle cx={size / 2} cy={size / 2} r={radius}
-        fill="none" stroke="#E5E7EB" strokeWidth={strokeWidth} />
+        fill="none" stroke="var(--border)" strokeWidth={strokeWidth} />
       <circle cx={size / 2} cy={size / 2} r={radius}
-        fill="none" stroke="#006E6D" strokeWidth={strokeWidth}
+        fill="none" stroke="var(--primary)" strokeWidth={strokeWidth}
         strokeDasharray={circumference} strokeDashoffset={offset}
         strokeLinecap="round" className="transition-all duration-1000 ease-out" />
       <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
-        className="fill-slate-900 text-2xl font-bold" transform={`rotate(90, ${size / 2}, ${size / 2})`}>
+        className="fill-foreground text-2xl font-bold" transform={`rotate(90, ${size / 2}, ${size / 2})`}>
         {value}%
       </text>
     </svg>
@@ -127,6 +138,9 @@ const CandidateDashboard: React.FC = () => {
   // Bilingual helper
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
+  // Enum-like DATA values (job type, skill level, status …) are not UI copy and
+  // never reach t(); they go through the enumLabels lookups instead.
+  const lang = langOf(isRTL);
   const { unreadCount } = useUnreadMessageCount();
 
   useEffect(() => {
@@ -223,7 +237,7 @@ const CandidateDashboard: React.FC = () => {
       case 'interview': return <Calendar className="h-4 w-4 text-purple-500" />;
       case 'profile_view': return <Eye className="h-4 w-4 text-green-500" />;
       case 'job_match': return <Target className="h-4 w-4 text-orange-500" />;
-      default: return <Bell className="h-4 w-4 text-gray-500" />;
+      default: return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -233,29 +247,34 @@ const CandidateDashboard: React.FC = () => {
       case 'interview': return 'bg-purple-100 border-purple-200';
       case 'profile_view': return 'bg-green-100 border-green-200';
       case 'job_match': return 'bg-orange-100 border-orange-200';
-      default: return 'bg-gray-100 border-gray-200';
+      default: return 'bg-muted border-border';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-          <span className="text-slate-600 font-dubai-medium">{t('Loading dashboard...', 'جاري تحميل لوحة التحكم...')}</span>
+          <span className="text-muted-foreground font-dubai-medium">{t('Loading dashboard...', 'جاري تحميل لوحة التحكم...')}</span>
         </div>
       </div>
     );
   }
 
-  const firstName = dashboardData.profile.name.split(' ')[0];
+  // Names arrive from the Emirates-ID record in ALL CAPS ("ABDULAZIZ ESSA AHMAD
+  // ALFALAHI"), which reads as shouting in a greeting. Title-case for display
+  // only. No-op for Arabic (the script is caseless), so this is RTL-safe.
+  const toTitleCase = (s: string) =>
+    s.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const firstName = toTitleCase(dashboardData.profile.name.split(' ')[0]);
 
   const recentActivity = dashboardData.recentActivity;
 
   // Stat card config
   const statCards = [
     { label: t('Profile Views', 'مشاهدات الملف'), value: dashboardData.stats.profileViews, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
+    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-primary', bg: 'bg-accent', border: 'border-teal-100' },
     { label: t('Applications', 'الطلبات'), value: dashboardData.stats.applications, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
     { label: t('Interviews', 'المقابلات'), value: dashboardData.stats.interviews, icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
   ];
@@ -265,7 +284,7 @@ const CandidateDashboard: React.FC = () => {
       <HybridGovernmentNavFixed
         showAuthButtons={false}
         currentPage="dashboard"
-        userRole="job seeker"
+        userRole="candidate"
         currentLanguage={language}
         onLanguageToggle={toggleLanguage}
       />
@@ -281,7 +300,7 @@ const CandidateDashboard: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-brand-teal-500 to-brand-teal-700 flex items-center justify-center">
                   <span className="text-white font-bold text-xl">
                     {dashboardData.profile.name ? dashboardData.profile.name.charAt(0).toUpperCase() : 'C'}
                   </span>
@@ -324,20 +343,24 @@ const CandidateDashboard: React.FC = () => {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 animate-in fade-in slide-in-from-left-4 duration-500">
-                {dashboardData.profile.name === 'New Member'
+              <h1 className="text-2xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
+                {/* 'Job Seeker' / 'New Member' are placeholder role tokens, not a
+                    person's name — greeting them by "first name" leaked "Job"
+                    into the Arabic header. */}
+                {['New Member', 'Job Seeker'].includes(dashboardData.profile.name)
                   ? t('Welcome!', '!مرحباً')
                   : (() => {
                     const hour = new Date().getHours();
                     const greeting = hour < 12 ? t('Good morning', 'صباح الخير') : hour < 17 ? t('Good afternoon', 'مساء الخير') : t('Good evening', 'مساء الخير');
-                    return `${greeting}, ${firstName}`;
+                    // Arabic uses its own comma (U+060C), not the Latin one.
+                    return `${greeting}${isRTL ? '، ' : ', '}${firstName}`;
                   })()}
               </h1>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   {new Date().toLocaleDateString(isRTL ? 'ar-AE' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
-                <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-xs font-dubai-medium">
+                <Badge className="bg-accent text-primary border border-teal-200 text-xs font-dubai-medium">
                   {t('Candidate Status: Active', 'حالة المرشح: نشط')}
                 </Badge>
               </div>
@@ -348,13 +371,13 @@ const CandidateDashboard: React.FC = () => {
         {!dashboardData.profile.cvUploaded && (
           <div className="pt-2 mb-6">
             <Alert className="border-teal-200 bg-teal-50/80 shadow-sm backdrop-blur-sm">
-              <Sparkles className="h-4 w-4 text-teal-600" />
-              <AlertDescription className="text-teal-800 flex justify-between items-center">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary flex justify-between items-center">
                 <span>
                   <strong>{t('Boost your profile!', 'عزّز ملفك الشخصي!')}</strong> {t('Upload your CV to get AI-powered job matches and a professional profile.', 'ارفع سيرتك الذاتية للحصول على مطابقات وظيفية ذكية وملف مهني احترافي.')}
                 </span>
-                <Button size="sm" className="bg-teal-600 hover:bg-teal-700" style={{ marginInlineStart: 16 }} onClick={() => navigate('/candidate/profile')}>
-                  {t('Upload CV Now', 'ارفع السيرة الذاتية')} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 8 }} />
+                <Button size="sm" className="bg-primary hover:bg-primary" style={{ marginInlineStart: 16 }} onClick={() => navigate('/candidate/profile')}>
+                  {t('Upload CV Now', 'ارفع السيرة الذاتية')} <ArrowRight className="h-4 w-4 rtl:rotate-180" style={{ marginInlineStart: 8 }} />
                 </Button>
               </AlertDescription>
             </Alert>
@@ -363,23 +386,23 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-8' : 'grid-cols-7'} bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
-              <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
-              <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
-              <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
-              <TabsTrigger value="applications" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
-              <TabsTrigger value="offers" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
-              <TabsTrigger value="interviews" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
-              <TabsTrigger value="messages" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
+            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-8' : 'grid-cols-7'} bg-card p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
+              <TabsTrigger value="overview" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
+              <TabsTrigger value="jobs" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
+              <TabsTrigger value="applications" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
+              <TabsTrigger value="offers" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
+              <TabsTrigger value="interviews" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="messages" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">
                 {t('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
+                  <span className="ms-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </TabsTrigger>
               {user?.company_id && (
-                <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
+                <TabsTrigger value="company" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">
                   <Building2 className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
                   {t('My Company', 'شركتي')}
                 </TabsTrigger>
@@ -397,17 +420,17 @@ const CandidateDashboard: React.FC = () => {
                 {/* Left Sidebar — Profile Status + Quick Actions */}
                 <div className="lg:col-span-3 space-y-6">
                   {/* Profile Readiness */}
-                  <Card className="bg-white border border-slate-200/80">
+                  <Card className="bg-card border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                        <User className="h-4 w-4 text-teal-600" />
+                      <CardTitle className="flex items-center gap-2 text-base text-foreground">
+                        <User className="h-4 w-4 text-primary" />
                         {t('Profile Readiness', 'جاهزية الملف')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-5 flex flex-col items-center">
                       <CircularProgress value={dashboardData.profile.completionPercentage} />
                       <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-slate-500">{t('ATS Compatibility', 'توافق ATS')}</span>
+                        <span className="text-xs text-muted-foreground">{t('ATS Compatibility', 'توافق ATS')}</span>
                         <Badge className={`text-[10px] ${(dashboardData.profile.ats_score || 0) >= 80 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                           {(dashboardData.profile.ats_score || 0) >= 80 ? t('High', 'عالي') : t('Medium', 'متوسط')}
                         </Badge>
@@ -416,7 +439,7 @@ const CandidateDashboard: React.FC = () => {
                         onClick={() => navigate('/candidate/profile')}
                         variant="outline"
                         size="sm"
-                        className="w-full mt-4 text-xs font-dubai-medium text-teal-700 border-teal-200 hover:bg-teal-50"
+                        className="w-full mt-4 text-xs font-dubai-medium text-primary border-teal-200 hover:bg-accent"
                       >
                         {t('Improve Readiness →', 'حسّن الجاهزية ←')}
                       </Button>
@@ -424,23 +447,23 @@ const CandidateDashboard: React.FC = () => {
                   </Card>
 
                   {/* Quick Actions */}
-                  <Card className="bg-white border border-slate-200/80">
+                  <Card className="bg-card border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                        <TrendingUp className="h-4 w-4 text-teal-600" />
+                      <CardTitle className="flex items-center gap-2 text-base text-foreground">
+                        <TrendingUp className="h-4 w-4 text-primary" />
                         {t('Quick Actions', 'إجراءات سريعة')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-2">
-                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => navigate('/candidate/profile')}>
-                        <Upload className="h-4 w-4 text-teal-600" style={{ marginInlineEnd: 10 }} />
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-accent hover:text-primary" onClick={() => navigate('/candidate/profile')}>
+                        <Upload className="h-4 w-4 text-primary" style={{ marginInlineEnd: 10 }} />
                         {t('Upload Latest CV', 'ارفع أحدث سيرة ذاتية')}
                       </Button>
-                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => setActiveTab('jobs')}>
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-accent hover:text-primary" onClick={() => setActiveTab('jobs')}>
                         <Search className="h-4 w-4 text-blue-500" style={{ marginInlineEnd: 10 }} />
                         {t('Browse New Jobs', 'تصفح الوظائف الجديدة')}
                       </Button>
-                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => navigate('/mentorship')}>
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-accent hover:text-primary" onClick={() => navigate('/mentorship')}>
                         <Users className="h-4 w-4 text-purple-500" style={{ marginInlineEnd: 10 }} />
                         {t('Find a Mentor', 'ابحث عن مرشد')}
                       </Button>
@@ -453,13 +476,13 @@ const CandidateDashboard: React.FC = () => {
                   {/* Stat Cards (2x2 grid) */}
                   <div className="grid grid-cols-2 gap-4">
                     {statCards.map((stat, i) => (
-                      <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
+                      <Card key={i} className={`bg-card border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
                         <CardContent className="pt-5 pb-4 px-5">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">{stat.label}</p>
                               <div className="flex items-baseline gap-2">
-                                <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                                <p className="text-3xl font-bold text-foreground">{stat.value}</p>
                               </div>
                             </div>
                             <div className={`p-3 ${stat.bg} rounded-xl group-hover:scale-110 transition-transform`}>
@@ -472,15 +495,17 @@ const CandidateDashboard: React.FC = () => {
                   </div>
 
                   {/* Recommended for You */}
-                  <Card className="bg-white border border-slate-200/80">
+                  <Card className="bg-card border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                          <Target className="h-4 w-4 text-teal-600" />
+                        <CardTitle className="flex items-center gap-2 text-base text-foreground">
+                          <Target className="h-4 w-4 text-primary" />
                           {t('Recommended for You', 'موصى به لك')}
                         </CardTitle>
-                        <Button variant="link" size="sm" className="text-xs text-teal-600" onClick={() => setActiveTab('jobs')}>
-                          {t('View All', 'عرض الكل')} →
+                        <Button variant="link" size="sm" className="text-xs text-primary" onClick={() => setActiveTab('jobs')}>
+                          {/* Arrow must follow reading direction. Arrows written
+                              INSIDE t() already flip; these bare ones did not. */}
+                          {t('View All', 'عرض الكل')} {isRTL ? '←' : '→'}
                         </Button>
                       </div>
                     </CardHeader>
@@ -489,22 +514,22 @@ const CandidateDashboard: React.FC = () => {
                         <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0">
+                              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground flex-shrink-0">
                                 {(job.company || '?').charAt(0)}
                               </div>
                               <div>
-                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{isRTL && (job as any).title_ar ? (job as any).title_ar : job.title}</p>
-                                <p className="text-xs text-slate-500">{isRTL && (job as any).company_ar ? (job as any).company_ar : job.company}</p>
-                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{isRTL && (job as any).title_ar ? (job as any).title_ar : job.title}</p>
+                                <p className="text-xs text-muted-foreground">{isRTL && (job as any).company_ar ? (job as any).company_ar : job.company}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                                   <span>📍 {job.location || 'UAE'}</span>
-                                  <span>💰 {job.salary}</span>
-                                  <span>🏢 {job.type}</span>
-                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">Live</Badge>}
+                                  <span>💰 {salaryLabel(job.salary, lang)}</span>
+                                  <span>🏢 {employmentTypeLabel(job.type, lang)}</span>
+                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">{jobSourceLabel(job.source, lang)}</Badge>}
                                 </div>
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-bold">
+                              <Badge className="bg-accent text-primary border border-teal-200 text-[11px] font-bold">
                                 ✦ {job.match_score}% {t('Match', 'تطابق')}
                               </Badge>
                               {(job as any).hasApplied ? (
@@ -513,7 +538,7 @@ const CandidateDashboard: React.FC = () => {
                                   {t('Applied', 'تم التقديم')}
                                 </Badge>
                               ) : (
-                                <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-7 px-3" onClick={(e) => { e.stopPropagation(); setActiveTab('jobs'); }}>
+                                <Button size="sm" className="bg-primary hover:bg-primary text-white text-xs h-7 px-3" onClick={(e) => { e.stopPropagation(); setActiveTab('jobs'); }}>
                                   {t('Apply Now', 'قدّم الآن')}
                                 </Button>
                               )}
@@ -521,10 +546,10 @@ const CandidateDashboard: React.FC = () => {
                           </div>
                         </div>
                       )) : (
-                        <div className="text-center py-6 text-slate-400">
+                        <div className="text-center py-6 text-muted-foreground">
                           <p className="text-sm">{t('Upload your CV to get personalized job recommendations', 'ارفع سيرتك الذاتية للحصول على توصيات وظيفية مخصصة')}</p>
-                          <Button variant="link" size="sm" className="text-teal-600 mt-1" onClick={() => setActiveTab('jobs')}>
-                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} →
+                          <Button variant="link" size="sm" className="text-primary mt-1" onClick={() => setActiveTab('jobs')}>
+                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} {isRTL ? '←' : '→'}
                           </Button>
                         </div>
                       )}
@@ -532,10 +557,10 @@ const CandidateDashboard: React.FC = () => {
                   </Card>
 
                   {/* Recent Activity */}
-                  <Card className="bg-white border border-slate-200/80">
+                  <Card className="bg-card border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                        <Clock className="h-4 w-4 text-teal-600" />
+                      <CardTitle className="flex items-center gap-2 text-base text-foreground">
+                        <Clock className="h-4 w-4 text-primary" />
                         {t('Recent Activity', 'النشاط الأخير')}
                       </CardTitle>
                     </CardHeader>
@@ -548,14 +573,14 @@ const CandidateDashboard: React.FC = () => {
                                 {getActivityIcon(activity.type)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
-                                <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{activityTitleLabel(activity.title, lang)}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{activityDescriptionLabel(activity.description, lang)}</p>
                               </div>
-                              <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
+                              <span className="text-xs text-muted-foreground flex-shrink-0 mt-1">{activity.timestamp}</span>
                             </div>
                           ))
                         ) : (
-                          <div className="text-center py-6 text-slate-400">
+                          <div className="text-center py-6 text-muted-foreground">
                             <p className="text-sm">{t('No recent activity yet. Start applying to jobs!', 'لا توجد نشاطات أخيرة بعد. ابدأ بالتقدم للوظائف!')}</p>
                           </div>
                         )}
@@ -567,16 +592,16 @@ const CandidateDashboard: React.FC = () => {
                 {/* Right Sidebar — AI Career Insight + Upcoming Events */}
                 <div className="lg:col-span-3 space-y-6">
                   {/* AI Career Insight — LIVE */}
-                  <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl p-5 text-white shadow-lg">
+                  <div className="bg-gradient-to-br from-brand-teal-600 to-brand-teal-800 rounded-xl p-5 text-white shadow-lg">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                         <Sparkles className="h-4 w-4 text-white" />
                       </div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-teal-100">
+                      <span className="text-xs font-bold uppercase tracking-wider text-brand-teal-100">
                         {t('AI Career Insight', 'رؤية مهنية بالذكاء الاصطناعي')}
                       </span>
                     </div>
-                    <p className="text-sm text-teal-50 leading-relaxed mb-4">
+                    <p className="text-sm text-brand-teal-100 leading-relaxed mb-4">
                       {aiInsight
                         ? (isRTL ? aiInsight.ar : aiInsight.en)
                         : t(
@@ -587,15 +612,19 @@ const CandidateDashboard: React.FC = () => {
                     {readinessScore > 0 && (
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex-1 bg-white/20 rounded-full h-2">
-                          <div className="bg-white rounded-full h-2 transition-all duration-1000" style={{ width: `${readinessScore}%` }} />
+                          <div className="bg-card rounded-full h-2 transition-all duration-1000" style={{ width: `${readinessScore}%` }} />
                         </div>
-                        <span className="text-xs text-teal-100 font-bold">{readinessScore}%</span>
+                        <span className="text-xs text-brand-teal-100 font-bold">{readinessScore}%</span>
                       </div>
                     )}
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-white/30 text-white hover:bg-white/10 hover:text-white text-xs rounded-lg w-full"
+                      // CONTRAST FIX: variant="outline" sets bg-background (white);
+                      // combined with text-white the label was invisible and the
+                      // control rendered as a blank white box on the teal card.
+                      // Force a transparent ground so the white label is legible.
+                      className="bg-transparent border-white/40 text-white hover:bg-white/15 hover:text-white text-xs rounded-lg w-full focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0"
                       onClick={() => navigate('/career-advisory')}
                     >
                       {t('Explore Recommendations', 'استكشف التوصيات')}
@@ -604,9 +633,9 @@ const CandidateDashboard: React.FC = () => {
 
                   {/* Skill Gaps — LIVE */}
                   {topGaps.length > 0 && (
-                    <Card className="bg-white border border-slate-200/80">
+                    <Card className="bg-card border border-slate-200/80">
                       <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <CardTitle className="flex items-center gap-2 text-base text-foreground">
                           <Zap className="h-4 w-4 text-amber-500" />
                           {t('Skill Gaps', 'فجوات المهارات')}
                         </CardTitle>
@@ -624,10 +653,10 @@ const CandidateDashboard: React.FC = () => {
                                   gap.priority >= 0.4 ? t('Medium', 'متوسط') : t('Low', 'منخفض')}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                              <span>{gap.current_level || t('None', 'لا يوجد')}</span>
-                              <span>→</span>
-                              <span className="text-teal-600 font-medium">{gap.required_level}</span>
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <span>{skillLevelLabel(gap.current_level, lang) || t('None', 'لا يوجد')}</span>
+                              <span>{isRTL ? '←' : '→'}</span>
+                              <span className="text-primary font-medium">{skillLevelLabel(gap.required_level, lang)}</span>
                             </div>
                           </div>
                         ))}
@@ -645,9 +674,9 @@ const CandidateDashboard: React.FC = () => {
 
                   {/* Quick Win Recommendations — LIVE */}
                   {quickWins.length > 0 && (
-                    <Card className="bg-white border border-slate-200/80">
+                    <Card className="bg-card border border-slate-200/80">
                       <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <CardTitle className="flex items-center gap-2 text-base text-foreground">
                           <BookOpen className="h-4 w-4 text-green-600" />
                           {t('Quick Wins', 'إنجازات سريعة')}
                         </CardTitle>
@@ -660,8 +689,8 @@ const CandidateDashboard: React.FC = () => {
                               {isRTL && rec.title_ar ? rec.title_ar : rec.title}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge className="text-[9px] bg-green-50 text-green-600 border-green-200">{rec.type}</Badge>
-                              <span className="text-[10px] text-slate-400">{rec.effort}</span>
+                              <Badge className="text-[9px] bg-green-50 text-green-600 border-green-200">{recommendationTypeLabel(rec.type, lang)}</Badge>
+                              <span className="text-[10px] text-muted-foreground">{sessionTypeLabel(rec.effort, lang)}</span>
                             </div>
                           </div>
                         ))}

@@ -63,7 +63,7 @@ const MobilePullToRefresh: React.FC<MobilePullToRefreshProps> = ({
       {/* Pull to refresh indicator */}
       <div
         className={cn(
-          "absolute top-0 left-0 right-0 flex items-center justify-center transition-transform duration-200 z-10",
+          "absolute top-0 start-0 end-0 flex items-center justify-center transition-transform duration-200 z-10",
           "bg-gradient-to-b from-white to-transparent py-4"
         )}
         style={{

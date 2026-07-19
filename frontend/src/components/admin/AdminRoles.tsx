@@ -138,7 +138,7 @@ const AdminRoles = () => {
                     <p className="text-muted-foreground">Manage system roles and access control.</p>
                 </div>
                 <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" /> Create Role
+                    <Plus className="me-2 h-4 w-4" /> Create Role
                 </Button>
             </div>
 
@@ -156,7 +156,7 @@ const AdminRoles = () => {
                 {filteredRoles.map(role => (
                     <Card key={role.id} className="relative overflow-hidden">
                         {role.is_system_role && (
-                            <div className="absolute top-2 right-2">
+                            <div className="absolute top-2 end-2">
                                 <Badge variant="secondary" className="flex items-center gap-1">
                                     <Lock className="h-3 w-3" /> System
                                 </Badge>
@@ -182,7 +182,7 @@ const AdminRoles = () => {
 
                                 <div className="flex gap-2 pt-4">
                                     <Button variant="outline" className="flex-1" onClick={() => handleEdit(role)}>
-                                        <Edit2 className="mr-2 h-4 w-4" /> Edit
+                                        <Edit2 className="me-2 h-4 w-4" /> Edit
                                     </Button>
                                     {!role.is_system_role && (
                                         <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDelete(role.id)}>

@@ -134,14 +134,14 @@ const ConversationList: React.FC<ConversationListProps> = ({
   };
 
   return (
-    <div className="w-full md:w-1/3 border-r flex flex-col overflow-hidden">
+    <div className="w-full md:w-1/3 border-e flex flex-col overflow-hidden">
       <CardHeader className="px-4 pb-2">
         <CardTitle>Conversations</CardTitle>
         <div className="relative my-2">
-          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-2 top-3 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search conversations..." 
-            className="pl-8"
+            className="ps-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

@@ -206,7 +206,7 @@ export const InternshipsList: React.FC<InternshipsListProps> = ({ filters, useMo
                 </div>
                 {internship.is_paid && (
                   <Badge className="bg-green-600">
-                    <CreditCard className="h-3 w-3 mr-1" />
+                    <CreditCard className="h-3 w-3 me-1" />
                     Paid
                   </Badge>
                 )}
@@ -216,22 +216,22 @@ export const InternshipsList: React.FC<InternshipsListProps> = ({ filters, useMo
               <p className="text-sm text-gray-600 mb-3 line-clamp-2">{internship.description}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                 <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                  <MapPin className="h-4 w-4 me-2 text-gray-400" />
                   {internship.location}
                 </div>
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <Calendar className="h-4 w-4 me-2 text-gray-400" />
                   {internship.start_date && internship.end_date ? 
                     `${new Date(internship.start_date).toLocaleDateString()} - ${new Date(internship.end_date).toLocaleDateString()}` : 
                     'Dates flexible'
                   }
                 </div>
                 <div className="flex items-center">
-                  <Briefcase className="h-4 w-4 mr-2 text-gray-400" />
+                  <Briefcase className="h-4 w-4 me-2 text-gray-400" />
                   {internship.department || internship.industry}
                 </div>
                 <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                  <Clock className="h-4 w-4 me-2 text-gray-400" />
                   Deadline: {new Date(internship.application_deadline).toLocaleDateString()}
                   {new Date(internship.application_deadline) > new Date() ? 
                     ` (${formatDistanceToNow(new Date(internship.application_deadline), { addSuffix: true })})` : 

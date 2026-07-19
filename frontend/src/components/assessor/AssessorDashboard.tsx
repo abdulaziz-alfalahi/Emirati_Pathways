@@ -191,11 +191,11 @@ const AssessorDashboard: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 me-2" />
             Settings
           </Button>
           <Button size="sm">
-            <ClipboardCheck className="h-4 w-4 mr-2" />
+            <ClipboardCheck className="h-4 w-4 me-2" />
             New Assessment
           </Button>
         </div>

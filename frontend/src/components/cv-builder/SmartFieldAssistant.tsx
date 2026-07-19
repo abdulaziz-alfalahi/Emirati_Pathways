@@ -311,7 +311,7 @@ Return as JSON array: [{"type": "improve", "text": "strategically enhanced objec
           <Button
             variant="ghost"
             size="sm"
-            className={`absolute right-2 top-2 z-10 h-8 w-8 p-0 ${
+            className={`absolute end-2 top-2 z-10 h-8 w-8 p-0 ${
               showSuggestions ? 'text-ehrdc-teal bg-ehrdc-teal/10' : 'text-gray-400'
             }`}
             disabled={!currentValue || currentValue.length < 10}
@@ -333,7 +333,7 @@ Return as JSON array: [{"type": "improve", "text": "strategically enhanced objec
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-ehrdc-teal" />
-                <span className="ml-2 text-sm text-gray-600">Generating strategic suggestions...</span>
+                <span className="ms-2 text-sm text-gray-600">Generating strategic suggestions...</span>
               </div>
             ) : suggestions.length > 0 ? (
               <div className="space-y-3">
@@ -353,7 +353,7 @@ Return as JSON array: [{"type": "improve", "text": "strategically enhanced objec
                         onClick={() => applySuggestion(suggestion)}
                         className="flex-1"
                       >
-                        <Check className="h-3 w-3 mr-1" />
+                        <Check className="h-3 w-3 me-1" />
                         Apply
                       </Button>
                       <Button
@@ -380,7 +380,7 @@ Return as JSON array: [{"type": "improve", "text": "strategically enhanced objec
 
       {/* Suggestion Indicator */}
       {showSuggestions && suggestions.length > 0 && !isOpen && (
-        <div className="absolute -top-1 -right-1 z-20">
+        <div className="absolute -top-1 -end-1 z-20">
           <div className="bg-ehrdc-teal text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
             {suggestions.length}
           </div>

@@ -15,7 +15,7 @@ const JobsTab: React.FC = () => {
       <CardContent className="space-y-4">
         <Link to="/job-descriptions">
           <Button className="w-full justify-start">
-            <Briefcase className="mr-2 h-4 w-4" /> Post New Job
+            <Briefcase className="me-2 h-4 w-4" /> Post New Job
           </Button>
         </Link>
         <div className="border rounded-lg divide-y">

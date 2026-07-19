@@ -219,11 +219,11 @@ export const CertificationTracking: React.FC = () => {
 
                   <div className="flex flex-col gap-2 lg:w-48">
                     <Button size="sm" variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 me-2" />
                       Download Certificate
                     </Button>
                     <Button size="sm" variant="outline">
-                      <Share2 className="h-4 w-4 mr-2" />
+                      <Share2 className="h-4 w-4 me-2" />
                       Share Badge
                     </Button>
                     <Button size="sm" variant="outline">

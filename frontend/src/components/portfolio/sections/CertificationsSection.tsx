@@ -24,7 +24,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <Award className="h-5 w-5 mr-2" />
+              <Award className="h-5 w-5 me-2" />
               Certifications
             </CardTitle>
             <CardDescription>No certifications available</CardDescription>
@@ -45,7 +45,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center">
-            <Award className="h-5 w-5 mr-2" />
+            <Award className="h-5 w-5 me-2" />
             Certifications
           </CardTitle>
           <CardDescription>{certificates.length} certifications</CardDescription>
@@ -90,7 +90,7 @@ const CertificationsSection: React.FC<CertificationsSectionProps> = ({
               )}
               
               {isEditable && (
-                <div className="absolute top-2 right-2 text-xs text-muted-foreground">
+                <div className="absolute top-2 end-2 text-xs text-muted-foreground">
                   Click to edit
                 </div>
               )}

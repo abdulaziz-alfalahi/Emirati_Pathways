@@ -52,7 +52,7 @@ export const LMSTabsContent: React.FC<LMSTabsContentProps> = ({
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold">My Enrolled Courses</h2>
                 <Button onClick={() => setActiveTab('browse')}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Enroll in More Courses
                 </Button>
               </div>

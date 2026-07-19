@@ -96,12 +96,12 @@ export const MentorshipConnection: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search mentors or expertise..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             <Select value={selectedField} onValueChange={setSelectedField}>
@@ -180,7 +180,7 @@ export const MentorshipConnection: React.FC = () => {
 
               <div className="flex gap-2">
                 <Button className="flex-1 ehrdc-button-primary">
-                  <Heart className="h-4 w-4 mr-2" />
+                  <Heart className="h-4 w-4 me-2" />
                   Connect
                 </Button>
                 <Button variant="outline" size="icon">

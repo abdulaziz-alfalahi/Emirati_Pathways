@@ -341,7 +341,7 @@ export const IdentityModule = () => {
                                 <p className="text-sm text-teal-800 leading-relaxed mb-3">
                                     {t('Setting your residence location enables our AI to calculate accurate commute times for every job listing.', 'تحديد موقع سكنك يمكّن الذكاء الاصطناعي من حساب أوقات التنقل بدقة لكل وظيفة.')}
                                 </p>
-                                <ul className={`text-sm text-teal-800 space-y-1 ${isRTL ? 'mr-5' : 'ml-5'} list-disc`}>
+                                <ul className={`text-sm text-teal-800 space-y-1 ms-5 list-disc`}>
                                     <li>{t('See drive times during peak hours', 'عرض أوقات القيادة في ساعات الذروة')}</li>
                                     <li>{t('Filter jobs by max commute time', 'تصفية الوظائف حسب أقصى وقت تنقل')}</li>
                                     <li>{t('Find opportunities closer to home', 'إيجاد فرص أقرب إلى المنزل')}</li>
@@ -369,7 +369,7 @@ export const IdentityModule = () => {
                             <FileText className="mx-auto h-10 w-10 text-gray-300 mb-2" />
                             <p className="text-gray-500">{t('No CVs uploaded yet.', 'لم يتم رفع أي سيرة ذاتية بعد.')}</p>
                             {debugData && (
-                                <div className={`mt-4 mx-auto max-w-sm p-3 bg-red-50 text-red-800 text-xs ${isRTL ? 'text-right' : 'text-left'} rounded border border-red-100 font-mono`}>
+                                <div className={`mt-4 mx-auto max-w-sm p-3 bg-red-50 text-red-800 text-xs text-start rounded border border-red-100 font-mono`}>
                                     <div className="font-bold mb-1">{t('Diagnostic Info:', 'معلومات تشخيصية:')}</div>
                                     <div>User ID: {JSON.stringify(debugData.user_id)}</div>
                                     <div>Type: {debugData.user_id_type}</div>
@@ -690,10 +690,10 @@ const VideoRecorderModal = ({ onClose, onSave, t }: VideoRecorderModalProps) => 
                                             className="w-full h-full object-cover scale-x-[-1]"
                                         />
                                         {recording && (
-                                            <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-2 font-medium tracking-wide">
+                                            <div className="absolute top-4 start-4 bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-2 font-medium tracking-wide">
                                                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shrink-0" />
                                                 <span>REC</span>
-                                                <span className="border-l border-white/20 pl-2 ml-1 text-red-400 font-mono">{countdown}s</span>
+                                                <span className="border-s border-white/20 ps-2 ms-1 text-red-400 font-mono">{countdown}s</span>
                                             </div>
                                         )}
                                     </>

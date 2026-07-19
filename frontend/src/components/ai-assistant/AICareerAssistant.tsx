@@ -191,7 +191,7 @@ const AICareerAssistant: React.FC<AICareerAssistantProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              <ScrollArea className="flex-1 pr-4">
+              <ScrollArea className="flex-1 pe-4">
                 <div className="space-y-4">
                   {messages.length === 0 && (
                     <div className="text-center py-8">

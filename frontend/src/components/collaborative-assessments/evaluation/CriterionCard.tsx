@@ -62,7 +62,7 @@ export const CriterionCard: React.FC<CriterionCardProps> = ({
               className="mt-2"
             />
           </div>
-          <div className="text-right text-sm text-muted-foreground">
+          <div className="text-end text-sm text-muted-foreground">
             Max Score: {criterion.max_score}
           </div>
         </div>

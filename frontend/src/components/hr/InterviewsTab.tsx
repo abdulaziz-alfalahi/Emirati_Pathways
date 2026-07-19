@@ -98,7 +98,7 @@ export const InterviewsTab: React.FC = () => {
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-3 mb-6">
                         <Button variant="ghost" size="sm" onClick={() => setAnalyticsSession(null)} className="text-ehrdc-teal hover:text-ehrdc-teal/80">
-                            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Interviews
+                            <ArrowLeft className="h-4 w-4 me-1" /> Back to Interviews
                         </Button>
                         <h2 className="text-xl font-bold">Interview Analytics</h2>
                         <Badge variant="outline">{analyticsSession.title || 'Interview'}</Badge>
@@ -142,7 +142,7 @@ export const InterviewsTab: React.FC = () => {
                                 <TableHead>Date & Time</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Attendees</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead className="text-end">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -159,11 +159,11 @@ export const InterviewsTab: React.FC = () => {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center text-slate-600">
-                                            <Calendar className="h-4 w-4 mr-2" />
+                                            <Calendar className="h-4 w-4 me-2" />
                                             {format(new Date(session.scheduled_at), 'MMM d, yyyy')}
                                         </div>
                                         <div className="flex items-center text-slate-500 text-xs mt-1">
-                                            <Clock className="h-3 w-3 mr-2" />
+                                            <Clock className="h-3 w-3 me-2" />
                                             {format(new Date(session.scheduled_at), 'h:mm a')}
                                         </div>
                                     </TableCell>
@@ -177,7 +177,7 @@ export const InterviewsTab: React.FC = () => {
                                             <div className="flex -space-x-2">
                                                 {/* Mock avatars or count */}
                                                 <Badge variant="outline" className="bg-slate-50">
-                                                    <Users className="h-3 w-3 mr-1" />
+                                                    <Users className="h-3 w-3 me-1" />
                                                     {Array.isArray(session.attendees) ? session.attendees.length : JSON.parse(String(session.attendees)).length}
                                                 </Badge>
                                             </div>
@@ -185,7 +185,7 @@ export const InterviewsTab: React.FC = () => {
                                             <span className="text-slate-400 text-xs">-</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-end">
                                         <div className="flex items-center justify-end gap-2">
                                             {session.status === 'scheduled' && (
                                                 <Button
@@ -193,7 +193,7 @@ export const InterviewsTab: React.FC = () => {
                                                     className="bg-teal-600 hover:bg-teal-700 text-white"
                                                     onClick={() => joinInterview(session.id)}
                                                 >
-                                                    <Video className="h-4 w-4 mr-1" />
+                                                    <Video className="h-4 w-4 me-1" />
                                                     Join
                                                 </Button>
                                             )}
@@ -203,7 +203,7 @@ export const InterviewsTab: React.FC = () => {
                                                 onClick={() => setAnalyticsSession(session)}
                                                 title="View Analytics"
                                             >
-                                                <BarChart3 className="h-4 w-4 mr-1 text-purple-600" />
+                                                <BarChart3 className="h-4 w-4 me-1 text-purple-600" />
                                                 Analytics
                                             </Button>
                                         </div>

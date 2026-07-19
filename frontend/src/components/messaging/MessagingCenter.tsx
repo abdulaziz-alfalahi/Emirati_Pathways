@@ -150,25 +150,25 @@ const MessagingCenter: React.FC = () => {
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 w-full">
           <TabsTrigger value="messages" className="flex items-center justify-center">
-            <MessageSquare className="h-4 w-4 mr-2" />
+            <MessageSquare className="h-4 w-4 me-2" />
             Messages
             {unreadMessageCount > 0 && (
-              <Badge variant="destructive" className="ml-2 h-5 min-w-5 flex items-center justify-center rounded-full">
+              <Badge variant="destructive" className="ms-2 h-5 min-w-5 flex items-center justify-center rounded-full">
                 {unreadMessageCount}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center justify-center">
-            <Bell className="h-4 w-4 mr-2" />
+            <Bell className="h-4 w-4 me-2" />
             Notifications
             {unreadNotificationCount > 0 && (
-              <Badge variant="destructive" className="ml-2 h-5 min-w-5 flex items-center justify-center rounded-full">
+              <Badge variant="destructive" className="ms-2 h-5 min-w-5 flex items-center justify-center rounded-full">
                 {unreadNotificationCount}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="announcements" className="flex items-center justify-center">
-            <Megaphone className="h-4 w-4 mr-2" />
+            <Megaphone className="h-4 w-4 me-2" />
             Announcements
           </TabsTrigger>
         </TabsList>

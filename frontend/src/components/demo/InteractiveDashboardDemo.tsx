@@ -294,7 +294,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
           {currentStepData.dashboard === 'candidate' && (
             <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center me-4">
                   <Users className="text-white" size={24} />
                 </div>
                 <div>
@@ -323,7 +323,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
           {currentStepData.dashboard === 'employer_admin' && (
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center me-4">
                   <BarChart3 className="text-white" size={24} />
                 </div>
                 <div>
@@ -352,7 +352,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
           {currentStepData.dashboard === 'recruiter' && (
             <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mr-4">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center me-4">
                   <Users className="text-white" size={24} />
                 </div>
                 <div>
@@ -381,7 +381,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
           {currentStepData.dashboard === 'mentor' && (
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mr-4">
+                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center me-4">
                   <UserCheck className="text-white" size={24} />
                 </div>
                 <div>

@@ -237,12 +237,12 @@ export const ExportManager: React.FC<ExportManagerProps> = ({
         >
           {isExporting ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 me-2 animate-spin" />
               Exporting...
             </>
           ) : (
             <>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Export as {exportFormat.toUpperCase()}
             </>
           )}

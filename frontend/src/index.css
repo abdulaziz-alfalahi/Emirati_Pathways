@@ -1,107 +1,18 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
+/* Design tokens — SINGLE SOURCE OF TRUTH (brand, semantic, type, density).
+   Also self-hosts Readex Pro, replacing the Inter + Noto Sans Arabic CDN
+   imports that used to live here (removed: external font CDNs are blocked in
+   hardened environments, and Readex Pro covers Latin + Arabic in one family). */
+@import './styles/ehrdc-tokens.css';
 @import './styles/dubai-font.css';
+/* OpenDyslexic retained for the accessibility font toggle. */
 @import url('https://fonts.googleapis.com/css2?family=Open+Dyslexic:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    /* ─── EHRDC Brand Teal (extracted from logo) ─── */
-    --ehrdc-teal: #006E6D;
-    --ehrdc-dark-teal: #005A59;
-    --ehrdc-light-teal: #4A9B9A;
-    --ehrdc-subtle-bg: #F0F7F7;
-    --ehrdc-neutral-dark: #1A1A1A;
-    --ehrdc-neutral-light: #F4F5F7;
-    --ehrdc-white: #FFFFFF;
-
-    /* ─── Professional Growth palette ─── */
-    --pg-primary: 238 100 156;
-    --pg-primary-light: 245 208 254;
-    --pg-secondary: 99 102 241;
-    --pg-secondary-light: 199 210 254;
-    --pg-accent: 139 92 246;
-    --pg-accent-light: 221 214 254;
-    --pg-background: 245 243 255;
-    --pg-gradient-from: 79 70 229;
-    --pg-gradient-to: 147 51 234;
-
-    /* ─── Group Colors ─── */
-    --group-early-bg: rgba(224, 242, 241, 0.25);
-    --group-early-hover: rgba(224, 242, 241, 0.4);
-    --group-early-text: #006E6D;
-    --group-early-border: rgba(224, 242, 241, 0.6);
-
-    --group-advanced-bg: rgba(219, 234, 254, 0.5);
-    --group-advanced-hover: rgba(191, 219, 254, 0.5);
-    --group-advanced-text: #1d4ed8;
-    --group-advanced-border: rgba(191, 219, 254, 0.7);
-
-    /* ─── Semantic Design Tokens (Stitch-inspired) ─── */
-    --background: #FAFBFC;
-    --foreground: #1A1A1A;
-    --card: #FFFFFF;
-    --card-foreground: #1A1A1A;
-    --popover: #FFFFFF;
-    --popover-foreground: #1A1A1A;
-    --primary: #006E6D;
-    --primary-foreground: #FFFFFF;
-    --secondary: #F4F5F7;
-    --secondary-foreground: #1A1A1A;
-    --muted: #F4F5F7;
-    --muted-foreground: #6B7280;
-    --accent: #E6F5F5;
-    --accent-foreground: #006E6D;
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
-    --border: #E2E5E9;
-    --input: #E2E5E9;
-    --ring: #006E6D;
-    --chart-1: #006E6D;
-    --chart-2: #4A9B9A;
-    --chart-3: #005A59;
-    --chart-4: #10B981;
-    --chart-5: #F59E0B;
-    --radius: 0.75rem;
-
-    /* ─── Emirati aliases ─── */
-    --emirati-teal: var(--ehrdc-teal);
-    --emirati-navy: var(--ehrdc-neutral-dark);
-    --emirati-gold: #D4AF37;
-  }
-
-  .dark {
-    --background: #020817;
-    --foreground: #F8FAFC;
-    --card: #020817;
-    --card-foreground: #F8FAFC;
-    --popover: #020817;
-    --popover-foreground: #F8FAFC;
-    --primary: #F8FAFC;
-    --primary-foreground: #0F172A;
-    --secondary: #1E293B;
-    --secondary-foreground: #F8FAFC;
-    --muted: #1E293B;
-    --muted-foreground: #94A3B8;
-    --accent: #1E293B;
-    --accent-foreground: #F8FAFC;
-    --destructive: #7f1d1d;
-    --destructive-foreground: #F8FAFC;
-    --border: #1E293B;
-    --input: #1E293B;
-    --ring: #cbd5e1;
-
-    --ehrdc-teal: #4A9B9A;
-    --ehrdc-dark-teal: #2DD4BF;
-    --ehrdc-light-teal: #134E4A;
-    --ehrdc-neutral-dark: #F8FAFC;
-    --ehrdc-neutral-light: #1E293B;
-    --ehrdc-white: #020817;
-  }
-}
+/* Design tokens now live in ./styles/ehrdc-tokens.css (single source of truth).
+   The previous :root / .dark block was removed from here to end token drift. */
 
 @layer base {
   * {
@@ -110,14 +21,17 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
+    font-size: var(--ehrdc-text-base);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Arabic font support */
+  /* Arabic: same superfamily (Readex Pro covers both scripts), with the
+     slightly looser line-height Arabic needs for legibility. */
   [dir="rtl"] body {
-    font-family: 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-arabic);
+    line-height: 1.8;
   }
 }
 
@@ -225,7 +139,7 @@
 
   /* Display font utility */
   .font-display {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans);
     font-weight: 600;
   }
 }

@@ -230,7 +230,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onRsvp }) => {
               onClick={() => window.open(event.virtual_meeting_url, '_blank')}
               className="w-full"
             >
-              <Video className="h-4 w-4 mr-2" />
+              <Video className="h-4 w-4 me-2" />
               Join Virtual Event
             </Button>
           </div>

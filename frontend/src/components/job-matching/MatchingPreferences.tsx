@@ -166,7 +166,7 @@ export const MatchingPreferences: React.FC = () => {
                   {skill}
                   <button
                     onClick={() => toggleSkill(skill)}
-                    className="ml-1 text-xs"
+                    className="ms-1 text-xs"
                   >
                     ×
                   </button>

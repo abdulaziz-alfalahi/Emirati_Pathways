@@ -125,7 +125,7 @@ const HealthScoreCard: React.FC<HealthScoreCardProps> = ({ groupId, timeRange })
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Heart className="h-4 w-4 mr-2" />
+            <Heart className="h-4 w-4 me-2" />
             Health Score
           </CardTitle>
         </CardHeader>
@@ -167,7 +167,7 @@ const HealthScoreCard: React.FC<HealthScoreCardProps> = ({ groupId, timeRange })
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center justify-between">
           <span className="flex items-center">
-            <Heart className="h-4 w-4 mr-2 text-red-500" />
+            <Heart className="h-4 w-4 me-2 text-red-500" />
             Health Score
           </span>
           {getTrendIcon()}

@@ -52,7 +52,7 @@ export default function DistributionPage() {
         <button className="px-3 py-1 bg-gray-100 rounded" onClick={refresh} disabled={!jobId}>Refresh</button>
       </div>
       {error && <div className="text-red-600">{error}</div>}
-      <ul className="list-disc pl-6">
+      <ul className="list-disc ps-6">
         {queued.map((row) => (
           <li key={row.id}>
             {row.target} - {row.status}

@@ -20,7 +20,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         <h3 className="text-lg font-medium">{title}</h3>
         <p className="text-muted-foreground">{message}</p>
         <Button onClick={onBack} className="mt-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Go Back
         </Button>
       </div>

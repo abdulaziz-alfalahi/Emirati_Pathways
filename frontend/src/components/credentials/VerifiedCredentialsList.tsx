@@ -131,7 +131,7 @@ const VerifiedCredentialsList: React.FC<VerifiedCredentialsListProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
-                <Shield className="mr-2 h-5 w-5" />
+                <Shield className="me-2 h-5 w-5" />
                 Verified Credentials
               </CardTitle>
               <CardDescription>
@@ -139,7 +139,7 @@ const VerifiedCredentialsList: React.FC<VerifiedCredentialsListProps> = ({
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Refresh
             </Button>
           </div>
@@ -163,7 +163,7 @@ const VerifiedCredentialsList: React.FC<VerifiedCredentialsListProps> = ({
                       <div>
                         <h3 className="font-semibold">{credential.credential_title}</h3>
                         <div className="flex items-center text-sm text-muted-foreground">
-                          <Building2 className="h-3 w-3 mr-1" />
+                          <Building2 className="h-3 w-3 me-1" />
                           {credential.institution_name}
                         </div>
                       </div>
@@ -179,18 +179,18 @@ const VerifiedCredentialsList: React.FC<VerifiedCredentialsListProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     {credential.issue_date && (
                       <div className="flex items-center text-muted-foreground">
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 me-1" />
                         Issue Date: {formatDate(credential.issue_date)}
                       </div>
                     )}
                     {credential.expiry_date && (
                       <div className="flex items-center text-muted-foreground">
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 me-1" />
                         Expires: {formatDate(credential.expiry_date)}
                       </div>
                     )}
                     <div className="flex items-center text-muted-foreground">
-                      <Shield className="h-3 w-3 mr-1" />
+                      <Shield className="h-3 w-3 me-1" />
                       Verified by: {credential.verification_source.replace('_', ' ').toUpperCase()}
                     </div>
                   </div>
@@ -212,7 +212,7 @@ const VerifiedCredentialsList: React.FC<VerifiedCredentialsListProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Clock className="mr-2 h-5 w-5" />
+              <Clock className="me-2 h-5 w-5" />
               Verification History
             </CardTitle>
             <CardDescription>

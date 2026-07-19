@@ -107,7 +107,7 @@ const FeatureFlagsTab: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h2 className="text-xl font-bold text-gray-900 font-dubai-bold flex items-center">
-            <Settings className="w-6 h-6 mr-3 text-blue-600" />
+            <Settings className="w-6 h-6 me-3 text-blue-600" />
             Platform Modules
           </h2>
           <p className="text-gray-500 mt-1 font-dubai-regular text-sm">

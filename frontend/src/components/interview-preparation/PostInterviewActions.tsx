@@ -169,7 +169,7 @@ Best regards,
                 </div>
                 
                 <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="h-4 w-4 me-2" />
                   Generate Final Email
                 </Button>
               </div>
@@ -207,7 +207,7 @@ Best regards,
                   <p className="text-sm text-gray-600">{item.description}</p>
                 </div>
                 
-                <div className="text-right">
+                <div className="text-end">
                   <div className="font-semibold text-ehrdc-teal">{item.timeframe}</div>
                   <div className="text-sm text-gray-500">after interview</div>
                 </div>
@@ -268,7 +268,7 @@ Best regards,
             </div>
             
             <Button variant="outline">
-              <MessageCircle className="h-4 w-4 mr-2" />
+              <MessageCircle className="h-4 w-4 me-2" />
               Copy Template
             </Button>
           </div>

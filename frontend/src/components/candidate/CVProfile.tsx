@@ -617,7 +617,7 @@ const CVProfile: React.FC = () => {
         className="mb-2"
         id="back-to-dashboard-btn"
       >
-        <ArrowRight className="h-4 w-4 rotate-180" style={{ marginInlineEnd: 8 }} />
+        <ArrowRight className="h-4 w-4" style={{ marginInlineEnd: 8, transform: isRTL ? undefined : 'rotate(180deg)' }} />
         {t('Back to Dashboard', 'العودة إلى لوحة التحكم')}
       </Button>
       {/* ATS Score Card */}
@@ -644,7 +644,7 @@ const CVProfile: React.FC = () => {
               {/* Overall Progress */}
               <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`absolute left-0 top-0 h-full ${getProgressColor(atsScore.overall)} transition-all duration-500`}
+                  className={`absolute start-0 top-0 h-full ${getProgressColor(atsScore.overall)} transition-all duration-500`}
                   style={{ width: `${atsScore.overall}%` }}
                 />
               </div>
@@ -824,7 +824,7 @@ const CVProfile: React.FC = () => {
               </h3>
               <div className="space-y-4">
                 {experience.slice(0, 3).map((exp, index) => (
-                  <div key={exp.id || index} className="border-l-2 border-teal-200 pl-4">
+                  <div key={exp.id || index} className="border-s-2 border-teal-200 ps-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">{exp.jobTitle}</h4>
@@ -842,7 +842,7 @@ const CVProfile: React.FC = () => {
                 ))}
                 {experience.length > 3 && (
                   <Button variant="link" onClick={() => navigate('/cv-builder')} className="text-teal-600 p-0">
-                    {t(`View all ${experience.length} positions`, `عرض جميع المناصب (${experience.length})`)} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 4 }} />
+                    {t(`View all ${experience.length} positions`, `عرض جميع المناصب (${experience.length})`)} <ArrowRight className="h-4 w-4 rtl:rotate-180" style={{ marginInlineStart: 4 }} />
                   </Button>
                 )}
               </div>

@@ -265,7 +265,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-4 w-4 p-0 ml-1"
+                    className="h-4 w-4 p-0 ms-1"
                     onClick={() => removeTag(tag)}
                   >
                     ×
@@ -285,7 +285,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
               <CardDescription>Define the sections and criteria for evaluation</CardDescription>
             </div>
             <Button onClick={addSection} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               Add Section
             </Button>
           </div>
@@ -403,7 +403,7 @@ export const TemplateBuilder: React.FC<TemplateBuilderProps> = ({
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={isLoading}>
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="h-4 w-4 me-2" />
           {isLoading ? 'Saving...' : 'Save Template'}
         </Button>
       </div>

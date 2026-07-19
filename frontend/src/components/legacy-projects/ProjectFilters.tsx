@@ -27,12 +27,12 @@ export const ProjectFilters: React.FC<ProjectFiltersProps> = ({ onFilterChange }
       <CardContent className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search projects..."
               value={filters.searchTerm}
               onChange={(e) => updateFilters({ searchTerm: e.target.value })}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
 

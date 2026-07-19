@@ -42,7 +42,7 @@ const ExperienceItem: React.FC<ExperienceItemProps> = ({
   return (
     <Card className="relative">
       <CardContent className="pt-6">
-        <div className="absolute right-4 top-4 flex space-x-2">
+        <div className="absolute end-4 top-4 flex space-x-2">
           {onMoveUp && (
             <Button
               type="button"

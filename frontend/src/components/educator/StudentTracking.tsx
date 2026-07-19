@@ -255,15 +255,15 @@ const StudentTracking: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export Data
           </Button>
           <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4 me-2" />
             Import Students
           </Button>
           <Button onClick={() => setShowAddStudent(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4 me-2" />
             Add Student
           </Button>
         </div>
@@ -276,13 +276,13 @@ const StudentTracking: React.FC = () => {
             <div>
               <Label htmlFor="search">Search Students</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
                   placeholder="Search by name or ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -341,7 +341,7 @@ const StudentTracking: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
+                <Users className="h-5 w-5 me-2" />
                 Students ({filteredStudents.length})
               </CardTitle>
             </CardHeader>
@@ -370,7 +370,7 @@ const StudentTracking: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <Badge className={getStatusColor(student.status)}>
                           {student.status}
                         </Badge>
@@ -397,7 +397,7 @@ const StudentTracking: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Eye className="h-5 w-5 mr-2" />
+                  <Eye className="h-5 w-5 me-2" />
                   Student Details
                 </CardTitle>
               </CardHeader>

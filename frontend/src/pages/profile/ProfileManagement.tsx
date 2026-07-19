@@ -201,7 +201,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         className="bg-teal-600 hover:bg-teal-700"
       >
         Go to Profile Studio
-        <ExternalLink className="ml-2 h-4 w-4" />
+        <ExternalLink className="ms-2 h-4 w-4" />
       </Button>
     </div>
   );
@@ -368,11 +368,11 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const getVerificationBadge = () => {
     switch (currentUser.verificationStatus) {
       case 'verified':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>;
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 me-1" />Verified</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800"><AlertCircle className="h-3 w-3 mr-1" />Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800"><AlertCircle className="h-3 w-3 me-1" />Pending</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800"><AlertCircle className="h-3 w-3 mr-1" />Unverified</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800"><AlertCircle className="h-3 w-3 me-1" />Unverified</Badge>;
     }
   };
 
@@ -388,7 +388,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
       <HybridGovernmentNav showAuthButtons={false} currentPage="profile" userRole={currentUser.primaryRole} />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Back
         </Button>
         {/* Profile Header */}
@@ -420,7 +420,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
               <div className="flex items-center gap-3">
                 {getVerificationBadge()}
                 <Badge variant="outline">
-                  <Shield className="h-3 w-3 mr-1" />
+                  <Shield className="h-3 w-3 me-1" />
                   {currentUser.profileVisibility}
                 </Badge>
               </div>
@@ -470,7 +470,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                           variant="default"
                           className="text-xs cursor-default"
                         >
-                          <Icon className="h-3 w-3 mr-1" />
+                          <Icon className="h-3 w-3 me-1" />
                           {label}
                         </Button>
                       );
@@ -485,7 +485,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                           onClick={() => handleRoleSwitch(roleKey)}
                           className="text-xs"
                         >
-                          <Icon className="h-3 w-3 mr-1" />
+                          <Icon className="h-3 w-3 me-1" />
                           {label}
                         </Button>
                       );
@@ -500,7 +500,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                         onClick={() => setRequestDialog({ isOpen: true, role: label })}
                         className="text-xs text-gray-400 hover:text-gray-600 border border-dashed border-gray-300"
                       >
-                        <Icon className="h-3 w-3 mr-1" />
+                        <Icon className="h-3 w-3 me-1" />
                         Request {label}
                       </Button>
                     );
@@ -546,12 +546,12 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                 >
                   {isSaving ? (
                     <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1" />
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 me-1" />
                       Refreshing...
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="h-3 w-3 mr-1" />
+                      <RefreshCw className="h-3 w-3 me-1" />
                       Refresh Data
                     </>
                   )}
@@ -594,18 +594,18 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
               <TabsList className="grid w-full grid-cols-4">
                 {roleConfig.tabs.map(tab => (
                   <TabsTrigger key={tab} value={tab} className="capitalize">
-                    {tab === 'overview' && <TrendingUp className="h-4 w-4 mr-2" />}
-                    {tab === 'personal' && <User className="h-4 w-4 mr-2" />}
-                    {tab === 'company' && <Building className="h-4 w-4 mr-2" />}
-                    {tab === 'institution' && <GraduationCap className="h-4 w-4 mr-2" />}
-                    {tab === 'certifications' && <ClipboardCheck className="h-4 w-4 mr-2" />}
-                    {tab === 'preferences' && <Settings className="h-4 w-4 mr-2" />}
-                    {tab === 'methodology' && <Settings className="h-4 w-4 mr-2" />}
-                    {tab === 'curriculum' && <BookOpen className="h-4 w-4 mr-2" />}
-                    {tab === 'career' && <TrendingUp className="h-4 w-4 mr-2" />}
-                    {tab === 'skills' && <Star className="h-4 w-4 mr-2" />}
-                    {tab === 'expertise' && <Star className="h-4 w-4 mr-2" />}
-                    {tab === 'mentoring' && <Users className="h-4 w-4 mr-2" />}
+                    {tab === 'overview' && <TrendingUp className="h-4 w-4 me-2" />}
+                    {tab === 'personal' && <User className="h-4 w-4 me-2" />}
+                    {tab === 'company' && <Building className="h-4 w-4 me-2" />}
+                    {tab === 'institution' && <GraduationCap className="h-4 w-4 me-2" />}
+                    {tab === 'certifications' && <ClipboardCheck className="h-4 w-4 me-2" />}
+                    {tab === 'preferences' && <Settings className="h-4 w-4 me-2" />}
+                    {tab === 'methodology' && <Settings className="h-4 w-4 me-2" />}
+                    {tab === 'curriculum' && <BookOpen className="h-4 w-4 me-2" />}
+                    {tab === 'career' && <TrendingUp className="h-4 w-4 me-2" />}
+                    {tab === 'skills' && <Star className="h-4 w-4 me-2" />}
+                    {tab === 'expertise' && <Star className="h-4 w-4 me-2" />}
+                    {tab === 'mentoring' && <Users className="h-4 w-4 me-2" />}
                     {tab}
                   </TabsTrigger>
                 ))}
@@ -649,29 +649,29 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                         <h4 className="font-medium mb-3">Quick Actions</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <Button variant="outline" onClick={() => setActiveTab('personal')}>
-                            <User className="h-4 w-4 mr-2" />
+                            <User className="h-4 w-4 me-2" />
                             Update Personal Information
                           </Button>
                           {currentUser.primaryRole === 'HR/Recruiter' && (
                             <Button variant="outline" onClick={() => setActiveTab('company')}>
-                              <Building className="h-4 w-4 mr-2" />
+                              <Building className="h-4 w-4 me-2" />
                               Manage Company Profile
                             </Button>
                           )}
                           {currentUser.primaryRole === 'Educator' && (
                             <Button variant="outline" onClick={() => setActiveTab('institution')}>
-                              <GraduationCap className="h-4 w-4 mr-2" />
+                              <GraduationCap className="h-4 w-4 me-2" />
                               Manage Institution Profile
                             </Button>
                           )}
                           {currentUser.primaryRole === 'Assessor' && (
                             <Button variant="outline" onClick={() => setActiveTab('certifications')}>
-                              <ClipboardCheck className="h-4 w-4 mr-2" />
+                              <ClipboardCheck className="h-4 w-4 me-2" />
                               Manage Certifications
                             </Button>
                           )}
                           <Button variant="outline">
-                            <Settings className="h-4 w-4 mr-2" />
+                            <Settings className="h-4 w-4 me-2" />
                             Privacy Settings
                           </Button>
                         </div>
@@ -792,7 +792,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                             This section is under development. Advanced {tab} management features will be available soon.
                           </p>
                           <Button variant="outline">
-                            <Bell className="h-4 w-4 mr-2" />
+                            <Bell className="h-4 w-4 me-2" />
                             Notify When Available
                           </Button>
                         </CardContent>

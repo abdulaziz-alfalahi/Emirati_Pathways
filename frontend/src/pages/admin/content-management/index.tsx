@@ -261,12 +261,12 @@ const ContentManagementPage: React.FC = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search content..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
               
@@ -301,7 +301,7 @@ const ContentManagementPage: React.FC = () => {
                 setStatusFilter('all');
                 setTypeFilter('all');
               }}>
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 me-2" />
                 Clear Filters
               </Button>
             </div>
@@ -329,7 +329,7 @@ const ContentManagementPage: React.FC = () => {
                   setSelectedContent(null);
                   setCurrentView('editor');
                 }}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Create First Content
                 </Button>
               </CardContent>
@@ -358,7 +358,7 @@ const ContentManagementPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 ms-4">
                       <Badge className={getStatusColor(item.status)}>
                         {item.status.replace('_', ' ')}
                       </Badge>

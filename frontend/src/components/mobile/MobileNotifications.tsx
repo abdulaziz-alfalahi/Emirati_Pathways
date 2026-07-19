@@ -87,7 +87,7 @@ const MobileNotifications: React.FC = () => {
           <Bell className="h-5 w-5" />
           <CardTitle className="text-lg">Notifications</CardTitle>
           {unreadCount > 0 && (
-            <Badge variant="destructive" className="ml-2">
+            <Badge variant="destructive" className="ms-2">
               {unreadCount}
             </Badge>
           )}
@@ -123,7 +123,7 @@ const MobileNotifications: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1 ml-2">
+                    <div className="flex items-center space-x-1 ms-2">
                       {!notification.read && (
                         <Button
                           size="sm"

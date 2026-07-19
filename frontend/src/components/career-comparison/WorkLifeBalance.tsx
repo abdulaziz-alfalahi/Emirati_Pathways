@@ -115,7 +115,7 @@ export const WorkLifeBalance: React.FC = () => {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-semibold text-lg">{career.career}</h3>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-2xl font-bold text-ehrdc-teal">{career.overallScore}%</div>
                       <div className="text-sm text-muted-foreground">Overall Score</div>
                     </div>
@@ -131,15 +131,15 @@ export const WorkLifeBalance: React.FC = () => {
                       <div className="space-y-2 text-sm">
                         <div>
                           <span className="text-muted-foreground">Hours/Week:</span>
-                          <span className="ml-2 font-medium">{career.workHours}</span>
+                          <span className="ms-2 font-medium">{career.workHours}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">PTO Average:</span>
-                          <span className="ml-2 font-medium">{career.ptoAverage}</span>
+                          <span className="ms-2 font-medium">{career.ptoAverage}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Company Type:</span>
-                          <span className="ml-2 font-medium">{career.companySize}</span>
+                          <span className="ms-2 font-medium">{career.companySize}</span>
                         </div>
                       </div>
                     </div>

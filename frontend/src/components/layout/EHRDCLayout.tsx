@@ -18,7 +18,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFBFC]">
       {/* ─── Clean Header ─── */}
-      <header className="bg-white border-b border-[#E2E5E9] sticky top-0 z-50">
+      <header className="bg-card border-b border-[#E2E5E9] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Government Logos */}
@@ -49,11 +49,11 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
               {user ? (
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
-                    <div className="w-1.5 h-1.5 bg-[#006E6D] rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                     <span className="text-sm text-[#6B7280] capitalize">{user.role}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-[#006E6D] rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-medium">U</span>
                     </div>
                     <span className="hidden sm:block text-sm text-[#374151]">UAE National</span>
@@ -69,10 +69,10 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
                   </Link>
                   <Link
                     to="/auth"
-                    className="bg-[#006E6D] hover:bg-[#005A59] text-white px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center"
+                    className="bg-primary hover:bg-[var(--ehrdc-teal-700)] text-white px-5 py-2 rounded-full font-medium text-sm transition-colors flex items-center"
                   >
                     Get Started
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    <ArrowRight className="w-3.5 h-3.5 ms-1.5" />
                   </Link>
                 </>
               )}
@@ -82,7 +82,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
       </header>
 
       {/* ─── Navigation Bar ─── */}
-      <nav className="bg-white border-b border-[#E2E5E9]">
+      <nav className="bg-card border-b border-[#E2E5E9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-12 items-center">
             {isMobile ? (
@@ -97,7 +97,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
       <main className="flex-1" tabIndex={-1}>{children}</main>
 
       {/* ─── Footer ─── */}
-      <footer className="bg-[#111827] text-white border-t-2 border-[#006E6D]" role="contentinfo">
+      <footer className="bg-[#111827] text-white border-t-2 border-primary" role="contentinfo">
         {/* Main Footer */}
         <div className="py-10 px-6">
           <div className="max-w-7xl mx-auto">
@@ -199,11 +199,11 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
               </div>
 
               {/* Copyright */}
-              <div className="text-center lg:text-right">
-                <div className="text-gray-500 text-xs mb-1">
+              <div className="text-center lg:text-end">
+                <div className="text-muted-foreground text-xs mb-1">
                   © 2025 Emirati Human Resources Development Council
                 </div>
-                <div className="flex flex-wrap justify-center lg:justify-end gap-3 text-xs text-gray-500">
+                <div className="flex flex-wrap justify-center lg:justify-end gap-3 text-xs text-muted-foreground">
                   <Link to="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
                   <Link to="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</Link>
                   <Link to="/accessibility" className="hover:text-gray-300 transition-colors">Accessibility</Link>

@@ -25,7 +25,7 @@ const TrainingsSection: React.FC<TrainingsSectionProps> = ({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <GraduationCap className="h-5 w-5 mr-2" />
+              <GraduationCap className="h-5 w-5 me-2" />
               Training & Courses
             </CardTitle>
             <CardDescription>No training records available</CardDescription>
@@ -46,7 +46,7 @@ const TrainingsSection: React.FC<TrainingsSectionProps> = ({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center">
-            <GraduationCap className="h-5 w-5 mr-2" />
+            <GraduationCap className="h-5 w-5 me-2" />
             Training & Courses
           </CardTitle>
           <CardDescription>{trainings.length} training records</CardDescription>
@@ -70,7 +70,7 @@ const TrainingsSection: React.FC<TrainingsSectionProps> = ({
                 <h3 className="font-medium">{training.title}</h3>
                 {training.is_completed && (
                   <Badge variant="outline" className="flex items-center">
-                    <CheckCircle className="h-3 w-3 mr-1" />
+                    <CheckCircle className="h-3 w-3 me-1" />
                     Completed
                   </Badge>
                 )}
@@ -98,7 +98,7 @@ const TrainingsSection: React.FC<TrainingsSectionProps> = ({
               )}
               
               {isEditable && (
-                <div className="absolute top-2 right-2 text-xs text-muted-foreground">
+                <div className="absolute top-2 end-2 text-xs text-muted-foreground">
                   Click to edit
                 </div>
               )}

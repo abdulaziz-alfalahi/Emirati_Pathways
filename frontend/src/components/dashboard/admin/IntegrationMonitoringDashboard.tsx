@@ -175,7 +175,7 @@ export const IntegrationMonitoringDashboard: React.FC = () => {
             size="sm"
             disabled={isLoading}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 me-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -237,19 +237,19 @@ export const IntegrationMonitoringDashboard: React.FC = () => {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">
-            <Activity className="h-4 w-4 mr-2" />
+            <Activity className="h-4 w-4 me-2" />
             Overview
           </TabsTrigger>
           <TabsTrigger value="health">
-            <Shield className="h-4 w-4 mr-2" />
+            <Shield className="h-4 w-4 me-2" />
             System Health
           </TabsTrigger>
           <TabsTrigger value="failures">
-            <AlertTriangle className="h-4 w-4 mr-2" />
+            <AlertTriangle className="h-4 w-4 me-2" />
             Failure Analysis
           </TabsTrigger>
           <TabsTrigger value="activity">
-            <Clock className="h-4 w-4 mr-2" />
+            <Clock className="h-4 w-4 me-2" />
             Recent Activity
           </TabsTrigger>
         </TabsList>

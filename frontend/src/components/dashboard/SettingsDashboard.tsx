@@ -31,7 +31,7 @@ export const SettingsDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <User className="mr-2 h-5 w-5" />
+                <User className="me-2 h-5 w-5" />
                 Profile Settings
               </CardTitle>
               <CardDescription>Manage your personal information and preferences</CardDescription>
@@ -50,7 +50,7 @@ export const SettingsDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Bell className="mr-2 h-5 w-5" />
+                <Bell className="me-2 h-5 w-5" />
                 Notification Preferences
               </CardTitle>
               <CardDescription>Control how and when you receive notifications</CardDescription>
@@ -69,7 +69,7 @@ export const SettingsDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Shield className="mr-2 h-5 w-5" />
+                <Shield className="me-2 h-5 w-5" />
                 Privacy & Security
               </CardTitle>
               <CardDescription>Manage your privacy settings and data controls</CardDescription>

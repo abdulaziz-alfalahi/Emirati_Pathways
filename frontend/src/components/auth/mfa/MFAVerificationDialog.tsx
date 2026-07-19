@@ -192,7 +192,7 @@ export const MFAVerificationDialog: React.FC<MFAVerificationDialogProps> = ({
                   <button
                     key={factor.id}
                     onClick={() => setSelectedFactor(factor)}
-                    className={`flex items-center space-x-3 rounded-lg border p-3 text-left transition-colors ${
+                    className={`flex items-center space-x-3 rounded-lg border p-3 text-start transition-colors ${
                       selectedFactor?.id === factor.id
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:bg-accent'

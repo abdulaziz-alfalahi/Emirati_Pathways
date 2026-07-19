@@ -74,17 +74,17 @@ export const DocumentationCenter: React.FC = () => {
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1 max-w-md">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search documents..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
             <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 me-2" />
               Upload Document
             </Button>
           </div>
@@ -113,7 +113,7 @@ export const DocumentationCenter: React.FC = () => {
                   <Badge 
                     className={doc.verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
                   >
-                    {doc.verified && <CheckCircle className="h-3 w-3 mr-1" />}
+                    {doc.verified && <CheckCircle className="h-3 w-3 me-1" />}
                     {doc.status}
                   </Badge>
                   
@@ -212,7 +212,7 @@ export const DocumentationCenter: React.FC = () => {
                     {template.downloads} downloads
                   </span>
                   <Button size="sm" variant="outline">
-                    <Download className="h-4 w-4 mr-1" />
+                    <Download className="h-4 w-4 me-1" />
                     Download
                   </Button>
                 </div>

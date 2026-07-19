@@ -42,14 +42,14 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({
             />
             <div className="absolute inset-0 bg-black/20 rounded-lg flex items-center justify-center">
               <Button size="lg" variant="secondary" className="bg-white/90 hover:bg-white">
-                <Play className="h-6 w-6 mr-2" />
+                <Play className="h-6 w-6 me-2" />
                 Play Video
-                {duration && <span className="ml-2 text-sm">({duration})</span>}
+                {duration && <span className="ms-2 text-sm">({duration})</span>}
               </Button>
             </div>
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 end-2">
               <div className="bg-black/70 text-white px-2 py-1 rounded text-xs flex items-center">
-                <Video className="h-3 w-3 mr-1" />
+                <Video className="h-3 w-3 me-1" />
                 Video Testimonial
               </div>
             </div>

@@ -99,12 +99,12 @@ export const ProfessionalCertificationsList: React.FC<ProfessionalCertifications
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search certifications..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -198,7 +198,7 @@ export const ProfessionalCertificationsList: React.FC<ProfessionalCertifications
                 {certification.certification_url && (
                   <Button variant="outline" size="sm" className="w-full" asChild>
                     <a href={certification.certification_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Learn More
                     </a>
                   </Button>

@@ -248,7 +248,7 @@ export const OfferApprovalPanel: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-yellow-500">
+        <Card className="border-s-4 border-s-yellow-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -262,7 +262,7 @@ export const OfferApprovalPanel: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-s-4 border-s-green-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -276,7 +276,7 @@ export const OfferApprovalPanel: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-s-4 border-s-red-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -305,7 +305,7 @@ export const OfferApprovalPanel: React.FC = () => {
             <Clock className="h-5 w-5 text-yellow-600" />
             Pending Offer Approvals
             {pendingApprovals.length > 0 && (
-              <Badge variant="secondary" className="ml-2">{pendingApprovals.length}</Badge>
+              <Badge variant="secondary" className="ms-2">{pendingApprovals.length}</Badge>
             )}
           </CardTitle>
           <CardDescription>
@@ -372,7 +372,7 @@ export const OfferApprovalPanel: React.FC = () => {
                             setShowReviewDialog(true);
                           }}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
+                          <Eye className="h-4 w-4 me-1" />
                           Review
                         </Button>
                         <Button
@@ -383,7 +383,7 @@ export const OfferApprovalPanel: React.FC = () => {
                             setShowReviewDialog(true);
                           }}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <CheckCircle className="h-4 w-4 me-1" />
                           Approve
                         </Button>
                         <Button
@@ -394,7 +394,7 @@ export const OfferApprovalPanel: React.FC = () => {
                             setShowRejectDialog(true);
                           }}
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
+                          <XCircle className="h-4 w-4 me-1" />
                           Reject
                         </Button>
                       </div>
@@ -463,7 +463,7 @@ export const OfferApprovalPanel: React.FC = () => {
           </DialogHeader>
 
           {selectedApproval && (
-            <ScrollArea className="max-h-[70vh] pr-4">
+            <ScrollArea className="max-h-[70vh] pe-4">
               <div className="space-y-6 py-4">
                 {/* Position & Company Section */}
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -653,7 +653,7 @@ export const OfferApprovalPanel: React.FC = () => {
                 setShowRejectDialog(true);
               }}
             >
-              <XCircle className="h-4 w-4 mr-1" />
+              <XCircle className="h-4 w-4 me-1" />
               Reject
             </Button>
             <Button
@@ -662,9 +662,9 @@ export const OfferApprovalPanel: React.FC = () => {
               disabled={processing}
             >
               {processing ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4 me-1" />
               )}
               Approve Offer
             </Button>
@@ -716,9 +716,9 @@ export const OfferApprovalPanel: React.FC = () => {
               disabled={processing || !rejectionReason.trim()}
             >
               {processing ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
               ) : (
-                <XCircle className="h-4 w-4 mr-1" />
+                <XCircle className="h-4 w-4 me-1" />
               )}
               Confirm Rejection
             </Button>

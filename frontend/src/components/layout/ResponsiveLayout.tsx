@@ -217,15 +217,15 @@ const MobileNavigation: React.FC<{
               <Button
                 variant={currentPath === item.path ? 'default' : 'ghost'}
                 className={cn(
-                  'w-full justify-start text-left',
+                  'w-full justify-start text-start',
                   currentPath === item.path && 'bg-primary text-primary-foreground'
                 )}
                 onClick={() => handleNavigate(item.path)}
               >
-                <item.icon className="h-4 w-4 mr-3" />
+                <item.icon className="h-4 w-4 me-3" />
                 {item.label}
                 {item.badge && (
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge variant="secondary" className="ms-auto">
                     {item.badge}
                   </Badge>
                 )}
@@ -234,7 +234,7 @@ const MobileNavigation: React.FC<{
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-2 p-1"
+                  className="ms-2 p-1"
                   onClick={() => toggleExpanded(item.id)}
                 >
                   <ChevronDown
@@ -248,19 +248,19 @@ const MobileNavigation: React.FC<{
             </div>
 
             {item.subItems && expandedItems.has(item.id) && (
-              <div className="ml-6 space-y-1">
+              <div className="ms-6 space-y-1">
                 {item.subItems.map((subItem) => (
                   <Button
                     key={subItem.id}
                     variant={currentPath === subItem.path ? 'default' : 'ghost'}
                     size="sm"
                     className={cn(
-                      'w-full justify-start text-left',
+                      'w-full justify-start text-start',
                       currentPath === subItem.path && 'bg-primary text-primary-foreground'
                     )}
                     onClick={() => handleNavigate(subItem.path)}
                   >
-                    <subItem.icon className="h-3 w-3 mr-2" />
+                    <subItem.icon className="h-3 w-3 me-2" />
                     {subItem.label}
                   </Button>
                 ))}
@@ -296,7 +296,7 @@ const DesktopSidebar: React.FC<{
 
   return (
     <div className={cn(
-      'h-full bg-white border-r border-gray-200 transition-all duration-300',
+      'h-full bg-card border-e border-border transition-all duration-300',
       collapsed ? 'w-16' : 'w-64'
     )}>
       <ScrollArea className="h-full">
@@ -307,19 +307,19 @@ const DesktopSidebar: React.FC<{
                 <Button
                   variant={currentPath === item.path ? 'default' : 'ghost'}
                   className={cn(
-                    'justify-start text-left transition-all',
+                    'justify-start text-start transition-all',
                     collapsed ? 'w-8 h-8 p-0' : 'w-full',
                     currentPath === item.path && 'bg-primary text-primary-foreground'
                   )}
                   onClick={() => onNavigate(item.path)}
                   title={collapsed ? item.label : undefined}
                 >
-                  <item.icon className={cn('h-4 w-4', !collapsed && 'mr-3')} />
+                  <item.icon className={cn('h-4 w-4', !collapsed && 'me-3')} />
                   {!collapsed && (
                     <>
                       {item.label}
                       {item.badge && (
-                        <Badge variant="secondary" className="ml-auto">
+                        <Badge variant="secondary" className="ms-auto">
                           {item.badge}
                         </Badge>
                       )}
@@ -330,7 +330,7 @@ const DesktopSidebar: React.FC<{
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="ml-2 p-1"
+                    className="ms-2 p-1"
                     onClick={() => toggleExpanded(item.id)}
                   >
                     <ChevronDown
@@ -344,19 +344,19 @@ const DesktopSidebar: React.FC<{
               </div>
 
               {item.subItems && expandedItems.has(item.id) && !collapsed && (
-                <div className="ml-6 space-y-1">
+                <div className="ms-6 space-y-1">
                   {item.subItems.map((subItem) => (
                     <Button
                       key={subItem.id}
                       variant={currentPath === subItem.path ? 'default' : 'ghost'}
                       size="sm"
                       className={cn(
-                        'w-full justify-start text-left',
+                        'w-full justify-start text-start',
                         currentPath === subItem.path && 'bg-primary text-primary-foreground'
                       )}
                       onClick={() => onNavigate(subItem.path)}
                     >
-                      <subItem.icon className="h-3 w-3 mr-2" />
+                      <subItem.icon className="h-3 w-3 me-2" />
                       {subItem.label}
                     </Button>
                   ))}
@@ -385,7 +385,7 @@ const TopHeader: React.FC<{
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4">
       <div className="flex items-center space-x-4">
         {isMobile && (
           <Button variant="ghost" size="sm" aria-label="Open navigation menu" onClick={onMenuClick}>
@@ -394,13 +394,13 @@ const TopHeader: React.FC<{
         )}
 
         <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-foreground">
             {isMobile ? 'EHD Platform' : 'Emirati Human Development Platform'}
           </h1>
           {!isMobile && (
             <Badge variant="outline" className="hidden sm:flex">
               {getBreakpointIcon()}
-              <span className="ml-1 capitalize">{userType.replace('_', ' ')}</span>
+              <span className="ms-1 capitalize">{userType.replace('_', ' ')}</span>
             </Badge>
           )}
         </div>
@@ -420,7 +420,7 @@ const TopHeader: React.FC<{
         {/* User Menu */}
         <div className="flex items-center space-x-2">
           {!isMobile && userName && (
-            <span className="text-sm text-gray-600 hidden md:block">
+            <span className="text-sm text-muted-foreground hidden md:block">
               {userName}
             </span>
           )}
@@ -479,7 +479,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   }, [isTablet, isMobile]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Top Header */}
       <TopHeader
         userName={userName}
@@ -537,7 +537,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
       {/* Mobile Bottom Navigation (Optional) */}
       {isMobile && (
-        <div className="bg-white border-t border-gray-200 p-2">
+        <div className="bg-card border-t border-border p-2">
           <div className="flex justify-around">
             {navigationItems.slice(0, 4).map((item) => (
               <Button
@@ -557,7 +557,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
       {/* Responsive Debug Info (Development only) */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 bg-black text-white text-xs p-2 rounded opacity-50">
+        <div className="fixed bottom-4 end-4 bg-black text-white text-xs p-2 rounded opacity-50">
           {breakpoint} - {window.innerWidth}px
         </div>
       )}

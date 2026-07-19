@@ -23,7 +23,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
   userRole = ''
 }) => {
   return (
-    <nav className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Government Logos Section */}
@@ -43,8 +43,8 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
             </div>
             <div className="hidden md:block">
               <Link to="/" className="hover:opacity-80 transition-opacity">
-                <h1 className="text-xl font-bold text-slate-900">Emirati Human Development Platform</h1>
-                <p className="text-sm text-slate-600">UAE Nationals Career Development</p>
+                <h1 className="text-xl font-bold text-foreground">Emirati Human Development Platform</h1>
+                <p className="text-sm text-muted-foreground">UAE Nationals Career Development</p>
               </Link>
             </div>
           </div>
@@ -55,7 +55,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
               <NavigationMenuList>
                 {navigationGroups.map((group) => (
                   <NavigationMenuItem key={group.id}>
-                    <NavigationMenuTrigger className="text-slate-700 hover:text-teal-600 font-medium px-3 py-2 rounded-md transition-colors">
+                    <NavigationMenuTrigger className="text-slate-700 hover:text-primary font-medium px-3 py-2 rounded-md transition-colors">
                       {group.name}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
@@ -63,7 +63,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                         <div className="row-span-3">
                           <NavigationMenuLink asChild>
                             <Link
-                              className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-teal-50 to-teal-600 p-6 no-underline outline-none focus:shadow-md"
+                              className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-brand-teal-50 to-brand-teal-600 p-6 no-underline outline-none focus:shadow-md"
                               to={group.items[0]?.href || '/'}
                             >
                               <div className="mb-2 mt-4 text-lg font-medium text-white">
@@ -79,13 +79,13 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                           <NavigationMenuLink key={item.name} asChild>
                             <Link
                               to={item.href}
-                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-teal-50 hover:text-teal-600 focus:bg-teal-50 focus:text-teal-600"
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-primary focus:bg-accent focus:text-primary"
                             >
                               <div className="text-sm font-medium leading-none flex items-center">
-                                <item.icon className="h-4 w-4 mr-2 text-teal-600" />
+                                <item.icon className="h-4 w-4 me-2 text-primary" />
                                 {item.name}
                               </div>
-                              <p className="line-clamp-2 text-sm leading-snug text-slate-600">
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                                 {item.description}
                               </p>
                             </Link>
@@ -95,12 +95,12 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                           <NavigationMenuLink asChild>
                             <Link
                               to={`/${group.id}`}
-                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-teal-50 hover:text-teal-600 focus:bg-teal-50 focus:text-teal-600 border-t border-slate-200 mt-2 pt-3"
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-primary focus:bg-accent focus:text-primary border-t border-border mt-2 pt-3"
                             >
-                              <div className="text-sm font-medium leading-none text-teal-600">
+                              <div className="text-sm font-medium leading-none text-primary">
                                 View All {group.name} →
                               </div>
-                              <p className="text-sm leading-snug text-slate-600">
+                              <p className="text-sm leading-snug text-muted-foreground">
                                 See all {group.items.length} options
                               </p>
                             </Link>
@@ -120,16 +120,16 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
               <>
                 <Link
                   to="/auth"
-                  className="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                  className="text-muted-foreground hover:text-foreground font-medium transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/auth"
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
+                  className="bg-primary hover:bg-primary text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                 >
                   Get Started
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ms-2" />
                 </Link>
               </>
             ) : (
@@ -137,11 +137,11 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                 {userRole && (
                   <div className="hidden sm:flex items-center space-x-2">
                     <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                    <span className="text-sm text-slate-600 capitalize">{userRole}</span>
+                    <span className="text-sm text-muted-foreground capitalize">{userRole}</span>
                   </div>
                 )}
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">U</span>
                   </div>
                   <span className="hidden sm:block text-sm text-slate-700">UAE National</span>
@@ -152,17 +152,17 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
         </div>
 
         {/* Mobile Navigation Menu */}
-        <div className="lg:hidden border-t border-slate-200 py-4">
+        <div className="lg:hidden border-t border-border py-4">
           <div className="grid grid-cols-2 gap-4">
             {navigationGroups.map((group) => (
               <div key={group.id} className="space-y-2">
-                <h3 className="font-medium text-slate-900 text-sm">{group.name}</h3>
+                <h3 className="font-medium text-foreground text-sm">{group.name}</h3>
                 <div className="space-y-1">
                   {group.items.slice(0, 3).map((item) => (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className="block text-sm text-slate-600 hover:text-teal-600 transition-colors"
+                      className="block text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
                       {item.name}
                     </Link>
@@ -170,7 +170,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                   {group.items.length > 3 && (
                     <Link
                       to={`/${group.id}`}
-                      className="block text-sm text-teal-600 font-medium"
+                      className="block text-sm text-primary font-medium"
                     >
                       +{group.items.length - 3} more →
                     </Link>

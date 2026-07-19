@@ -198,7 +198,7 @@ export const AccessibilityToolbar: React.FC = () => {
         <div className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-ehrdc-neutral-dark flex items-center">
-              <Type className="h-4 w-4 mr-2" />
+              <Type className="h-4 w-4 me-2" />
               {t('Text Size', 'حجم النص')}
             </span>
             <span className="text-xs text-ehrdc-neutral-dark/70">
@@ -252,10 +252,10 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.highContrast ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Contrast className="h-4 w-4 mr-2" />
+          <Contrast className="h-4 w-4 me-2" />
           <span>{t('High Contrast', 'تباين عالي')}</span>
           {settings.highContrast && (
-            <span className="ml-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
+            <span className="ms-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
               {t('ON', 'مفعّل')}
             </span>
           )}
@@ -269,10 +269,10 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.dyslexiaFont ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Type className="h-4 w-4 mr-2" />
+          <Type className="h-4 w-4 me-2" />
           <span>{t('Dyslexia-Friendly Font', 'خط مناسب لعسر القراءة')}</span>
           {settings.dyslexiaFont && (
-            <span className="ml-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
+            <span className="ms-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
               {t('ON', 'مفعّل')}
             </span>
           )}
@@ -290,7 +290,7 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.colorBlindFilter === 'none' ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="h-4 w-4 me-2" />
           <span>{t('Normal Vision', 'رؤية طبيعية')}</span>
         </DropdownMenuItem>
 
@@ -299,7 +299,7 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.colorBlindFilter === 'protanopia' ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="h-4 w-4 me-2" />
           <span>{t('Protanopia (Red-blind)', 'عمى اللون الأحمر')}</span>
         </DropdownMenuItem>
 
@@ -308,7 +308,7 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.colorBlindFilter === 'deuteranopia' ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="h-4 w-4 me-2" />
           <span>{t('Deuteranopia (Green-blind)', 'عمى اللون الأخضر')}</span>
         </DropdownMenuItem>
 
@@ -317,7 +317,7 @@ export const AccessibilityToolbar: React.FC = () => {
           className={`cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal ${settings.colorBlindFilter === 'tritanopia' ? 'bg-ehrdc-teal/10 text-ehrdc-teal' : ''
             }`}
         >
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="h-4 w-4 me-2" />
           <span>{t('Tritanopia (Blue-blind)', 'عمى اللون الأزرق')}</span>
         </DropdownMenuItem>
 
@@ -325,12 +325,12 @@ export const AccessibilityToolbar: React.FC = () => {
 
         {/* Navigation Aids */}
         <DropdownMenuItem className="cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal">
-          <Keyboard className="h-4 w-4 mr-2" />
+          <Keyboard className="h-4 w-4 me-2" />
           <span>{t('Keyboard Navigation Guide', 'دليل التنقل بلوحة المفاتيح')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem className="cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal">
-          <Volume2 className="h-4 w-4 mr-2" />
+          <Volume2 className="h-4 w-4 me-2" />
           <span>{t('Screen Reader Support', 'دعم قارئ الشاشة')}</span>
         </DropdownMenuItem>
 
@@ -341,7 +341,7 @@ export const AccessibilityToolbar: React.FC = () => {
           onClick={resetSettings}
           className="cursor-pointer hover:bg-orange-50 hover:text-orange-600 text-orange-600"
         >
-          <RotateCcw className="h-4 w-4 mr-2" />
+          <RotateCcw className="h-4 w-4 me-2" />
           <span>{t('Reset All Settings', 'إعادة تعيين جميع الإعدادات')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

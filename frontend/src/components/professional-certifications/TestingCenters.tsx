@@ -115,7 +115,7 @@ export const TestingCenters: React.FC = () => {
             </div>
             <div className="flex items-end">
               <Button className="w-full bg-slate-800 hover:bg-slate-700">
-                <MapPin className="h-4 w-4 mr-2" />
+                <MapPin className="h-4 w-4 me-2" />
                 View on Map
               </Button>
             </div>
@@ -167,7 +167,7 @@ export const TestingCenters: React.FC = () => {
                     <div className="flex flex-wrap gap-2">
                       {center.availableExams.map((exam, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          <Award className="h-3 w-3 mr-1" />
+                          <Award className="h-3 w-3 me-1" />
                           {exam}
                         </Badge>
                       ))}
@@ -188,18 +188,18 @@ export const TestingCenters: React.FC = () => {
 
                 <div className="flex flex-col gap-2 lg:w-48">
                   <Button className="w-full bg-slate-800 hover:bg-slate-700">
-                    <Calendar className="h-4 w-4 mr-2" />
+                    <Calendar className="h-4 w-4 me-2" />
                     Book Exam
                   </Button>
                   <Button variant="outline" className="w-full">
-                    <MapPin className="h-4 w-4 mr-2" />
+                    <MapPin className="h-4 w-4 me-2" />
                     Directions
                   </Button>
                   <Button variant="outline" className="w-full">
                     View Details
                   </Button>
                   <Button variant="outline" className="w-full">
-                    <Phone className="h-4 w-4 mr-2" />
+                    <Phone className="h-4 w-4 me-2" />
                     Contact
                   </Button>
                 </div>

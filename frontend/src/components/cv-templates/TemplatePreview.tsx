@@ -73,16 +73,16 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         <div className="text-sm text-gray-600 space-y-1">
           <div className="flex items-center justify-center space-x-4">
             <span className="flex items-center">
-              <Mail className="w-3 h-3 mr-1" />
+              <Mail className="w-3 h-3 me-1" />
               {sampleData.personalInfo.email}
             </span>
             <span className="flex items-center">
-              <Phone className="w-3 h-3 mr-1" />
+              <Phone className="w-3 h-3 me-1" />
               {sampleData.personalInfo.phone}
             </span>
           </div>
           <div className="flex items-center justify-center">
-            <MapPin className="w-3 h-3 mr-1" />
+            <MapPin className="w-3 h-3 me-1" />
             {sampleData.personalInfo.location}
           </div>
         </div>
@@ -142,7 +142,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
               <span className="text-xs text-gray-600">{exp.startDate} - {exp.endDate}</span>
             </div>
             {exp.responsibilities && (
-              <div className="text-xs text-gray-700 leading-relaxed pl-2">
+              <div className="text-xs text-gray-700 leading-relaxed ps-2">
                 {exp.responsibilities.split('\n').map((line, i) => (
                   <p key={i} className="mb-0.5">• {line.replace(/^•\s*/, '')}</p>
                 ))}
@@ -187,7 +187,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Professional Summary */}
       <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-purple-100">
         <h2 className="text-lg font-bold text-purple-800 mb-2 flex items-center">
-          <User className="w-4 h-4 mr-2" />
+          <User className="w-4 h-4 me-2" />
           PROFESSIONAL SUMMARY
         </h2>
         <p className="text-xs text-gray-700 leading-relaxed text-justify">
@@ -199,7 +199,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
           <h2 className="text-sm font-bold text-purple-800 mb-3 flex items-center">
-            <Zap className="w-4 h-4 mr-2" />
+            <Zap className="w-4 h-4 me-2" />
             TECHNICAL SKILLS
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -212,7 +212,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         </div>
         <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
           <h2 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
-            <Users className="w-4 h-4 mr-2" />
+            <Users className="w-4 h-4 me-2" />
             SOFT SKILLS
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -228,26 +228,26 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Experience with modern layout */}
       <div className="mb-6">
         <h2 className="text-lg font-bold text-purple-800 mb-3 flex items-center">
-          <Building2 className="w-4 h-4 mr-2" />
+          <Building2 className="w-4 h-4 me-2" />
           EXPERIENCE
         </h2>
         <div className="space-y-3">
           {sampleData.experience.map((exp, index) => (
-            <div key={index} className="bg-white rounded-lg p-4 border-l-4 border-purple-500 shadow-sm">
+            <div key={index} className="bg-white rounded-lg p-4 border-s-4 border-purple-500 shadow-sm">
               <div className="flex justify-between items-baseline mb-2">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 leading-tight">{exp.jobTitle}</h3>
                   <p className="text-xs text-purple-700 font-medium">{exp.company}</p>
                 </div>
-                <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-full whitespace-nowrap ml-2">
+                <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-full whitespace-nowrap ms-2">
                   {exp.startDate} - {exp.endDate}
                 </span>
               </div>
               {exp.responsibilities && (
-                <div className="text-xs text-gray-600 leading-relaxed mt-2 pl-2 border-l border-gray-100">
+                <div className="text-xs text-gray-600 leading-relaxed mt-2 ps-2 border-s border-gray-100">
                   {exp.responsibilities.split('\n').map((line, i) => (
                     <p key={i} className="mb-1 last:mb-0 flex items-start">
-                      <span className="mr-2 text-purple-400">•</span>
+                      <span className="me-2 text-purple-400">•</span>
                       <span>{line.replace(/^•\s*/, '')}</span>
                     </p>
                   ))}
@@ -261,11 +261,11 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Education */}
       <div>
         <h2 className="text-lg font-bold text-purple-800 mb-2 flex items-center">
-          <GraduationCap className="w-4 h-4 mr-1" />
+          <GraduationCap className="w-4 h-4 me-1" />
           EDUCATION
         </h2>
         {sampleData.education.map((edu, index) => (
-          <div key={index} className="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+          <div key={index} className="bg-white rounded-lg p-3 border-s-4 border-blue-500">
             <h3 className="text-sm font-semibold text-gray-900">{edu.degree}</h3>
             <p className="text-xs text-gray-700">{edu.institution} • {edu.graduationYear}</p>
           </div>
@@ -283,15 +283,15 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         </h1>
         <div className="text-sm text-gray-600 grid grid-cols-2 gap-2">
           <div className="flex items-center">
-            <Mail className="w-3 h-3 mr-1" />
+            <Mail className="w-3 h-3 me-1" />
             {sampleData.personalInfo.email}
           </div>
           <div className="flex items-center">
-            <Phone className="w-3 h-3 mr-1" />
+            <Phone className="w-3 h-3 me-1" />
             {sampleData.personalInfo.phone}
           </div>
           <div className="flex items-center col-span-2">
-            <MapPin className="w-3 h-3 mr-1" />
+            <MapPin className="w-3 h-3 me-1" />
             {sampleData.personalInfo.location}
           </div>
         </div>
@@ -315,7 +315,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         <div className="grid grid-cols-2 gap-2">
           {[...sampleData.technicalSkills.slice(0, 4), ...sampleData.softSkills.slice(0, 4)].map((skill, index) => (
             <div key={index} className="flex items-center text-xs">
-              <div className="w-2 h-2 bg-green-600 rounded-full mr-2"></div>
+              <div className="w-2 h-2 bg-green-600 rounded-full me-2"></div>
               {skill}
             </div>
           ))}
@@ -328,7 +328,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           PROFESSIONAL EXPERIENCE
         </h2>
         {sampleData.experience.map((exp, index) => (
-          <div key={index} className="mb-4 border-l-2 border-green-400 pl-3">
+          <div key={index} className="mb-4 border-s-2 border-green-400 ps-3">
             <div className="flex justify-between items-start mb-1">
               <div>
                 <h3 className="text-sm font-bold text-gray-900">{exp.jobTitle}</h3>
@@ -353,7 +353,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           EDUCATION & QUALIFICATIONS
         </h2>
         {sampleData.education.map((edu, index) => (
-          <div key={index} className="border-l-2 border-green-400 pl-3">
+          <div key={index} className="border-s-2 border-green-400 ps-3">
             <h3 className="text-sm font-semibold text-gray-900">{edu.degree}</h3>
             <p className="text-xs text-gray-700">{edu.institution} • {edu.graduationYear}</p>
           </div>

@@ -336,7 +336,7 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
             <Clock className="h-4 w-4" />
             Other Approvals
             {pendingItems.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{pendingItems.length}</Badge>
+              <Badge variant="secondary" className="ms-1">{pendingItems.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
@@ -405,7 +405,7 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
                                 setShowApprovalDialog(true);
                               }}
                             >
-                              <Eye className="h-4 w-4 mr-1" />
+                              <Eye className="h-4 w-4 me-1" />
                               Review
                             </Button>
                           </div>
@@ -603,14 +603,14 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
               variant="destructive"
               onClick={() => selectedItem && handleReject(selectedItem)}
             >
-              <XCircle className="h-4 w-4 mr-2" />
+              <XCircle className="h-4 w-4 me-2" />
               Reject
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700"
               onClick={() => selectedItem && handleApprove(selectedItem)}
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-4 w-4 me-2" />
               Approve
             </Button>
           </DialogFooter>

@@ -56,7 +56,7 @@ export const DubaiSection: React.FC<DubaiSectionProps> = ({
           variant={dividerTop.variant}
           color={dividerTop.color}
           direction={dividerTop.direction}
-          className="absolute top-0 left-0 right-0 z-10"
+          className="absolute top-0 start-0 end-0 z-10"
         />
       )}
       
@@ -71,7 +71,7 @@ export const DubaiSection: React.FC<DubaiSectionProps> = ({
           variant={dividerBottom.variant}
           color={dividerBottom.color}
           direction={dividerBottom.direction}
-          className="absolute bottom-0 left-0 right-0 z-10"
+          className="absolute bottom-0 start-0 end-0 z-10"
         />
       )}
     </section>

@@ -80,27 +80,27 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onReadMore, variant = 'def
               duration={story.media.video_testimonial.duration}
               className="h-full"
             />
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-4 start-4">
               <Badge variant="secondary" className="bg-white/90 text-gray-900">
                 Featured Story
               </Badge>
             </div>
-            <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-4 end-4" onClick={(e) => e.stopPropagation()}>
               <SocialShareButtons story={story} variant="minimal" />
             </div>
           </div>
         ) : story.media.featured_image ? (
           <div className="relative h-64 bg-cover bg-center" style={{ backgroundImage: `url(${story.media.featured_image})` }}>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-4 start-4">
               <Badge variant="secondary" className="bg-white/90 text-gray-900">
                 Featured Story
               </Badge>
             </div>
-            <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-4 end-4" onClick={(e) => e.stopPropagation()}>
               <SocialShareButtons story={story} variant="minimal" />
             </div>
-            <div className="absolute bottom-4 left-4 right-4">
+            <div className="absolute bottom-4 start-4 end-4">
               <h2 className="text-xl font-bold text-white mb-2 line-clamp-2">{story.title}</h2>
               <p className="text-white/90 text-sm line-clamp-2">{story.summary}</p>
             </div>
@@ -163,13 +163,13 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onReadMore, variant = 'def
             )}
             {hasVideo && (
               <Badge variant="outline" className="text-xs">
-                <Video className="h-3 w-3 mr-1" />
+                <Video className="h-3 w-3 me-1" />
                 Video
               </Badge>
             )}
             {hasAudio && (
               <Badge variant="outline" className="text-xs">
-                <Volume2 className="h-3 w-3 mr-1" />
+                <Volume2 className="h-3 w-3 me-1" />
                 Audio
               </Badge>
             )}

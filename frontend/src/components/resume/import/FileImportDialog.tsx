@@ -88,7 +88,7 @@ const FileImportDialog: React.FC<FileImportDialogProps> = ({
                 onClick={handleSubmit}
                 disabled={isUploading}
               >
-                <FileUp size={16} className="mr-2" />
+                <FileUp size={16} className="me-2" />
                 {isUploading ? "Processing..." : "Import Resume"}
               </Button>
             )}

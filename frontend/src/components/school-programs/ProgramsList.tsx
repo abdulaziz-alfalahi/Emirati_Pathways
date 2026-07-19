@@ -135,7 +135,7 @@ const ProgramsList: React.FC<ProgramsListProps> = ({ type, filters, searchQuery 
                   alt={program.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-3 left-3 space-x-2">
+                <div className="absolute top-3 start-3 space-x-2">
                   {program.programType.map((type) => (
                     <Badge key={type} className="bg-white/90 text-ehrdc-teal text-xs">
                       {type}

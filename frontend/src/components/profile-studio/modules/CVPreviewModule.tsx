@@ -182,7 +182,7 @@ export const CVPreviewModule = () => {
                     header: "bg-slate-900 text-white p-6 mb-6 -mx-[15mm] -mt-[15mm]",
                     name: "text-2xl font-bold mb-1",
                     subtext: "text-slate-300 text-sm",
-                    sectionTitle: `text-slate-900 font-bold text-sm ${isRTL ? 'border-r-4 pr-2' : 'border-l-4 pl-2'} border-slate-900 mb-3 uppercase`,
+                    sectionTitle: `text-slate-900 font-bold text-sm border-s-4 ps-2 border-slate-900 mb-3 uppercase`,
                     grid: "grid grid-cols-3 gap-6"
                 };
             default:
@@ -217,7 +217,7 @@ export const CVPreviewModule = () => {
     return (
         <div className="flex h-[calc(100vh-100px)]">
             {/* Controls Sidebar */}
-            <div className={`w-80 bg-white ${isRTL ? 'border-l' : 'border-r'} border-gray-200 p-6 overflow-y-auto`}>
+            <div className={`w-80 bg-white border-e border-gray-200 p-6 overflow-y-auto`}>
                 <h2 className="text-xl font-bold mb-6">{t('CV Settings', 'إعدادات السيرة الذاتية')}</h2>
 
                 {/* Template Selector */}
@@ -319,10 +319,10 @@ export const CVPreviewModule = () => {
 
                                 <section>
                                     <h3 className={styles.sectionTitle}>{t('Experience', 'الخبرة')}</h3>
-                                    <div className={`space-y-6 ${isRTL ? 'border-r-2 pr-4' : 'border-l-2 pl-4'} border-purple-100`}>
+                                    <div className={`space-y-6 border-s-2 ps-4 border-purple-100`}>
                                         {profile?.experience?.sort((a: any, b: any) => new Date(b.start_date || 0).getTime() - new Date(a.start_date || 0).getTime()).map((exp: any, i: number) => (
                                             <div key={i} className="relative">
-                                                <div className={`absolute ${isRTL ? '-right-[21px]' : '-left-[21px]'} top-1 w-3 h-3 rounded-full bg-purple-500 border-2 border-white`}></div>
+                                                <div className={`absolute -start-[21px] top-1 w-3 h-3 rounded-full bg-purple-500 border-2 border-white`}></div>
                                                 <h4 className="font-bold text-gray-900">{exp.job_title}</h4>
                                                 <div className="text-sm text-purple-600 font-medium mb-1">{exp.company} | {new Date(exp.start_date).getFullYear()} - {exp.is_current ? t('Present', 'الحالي') : new Date(exp.end_date).getFullYear()}</div>
                                                 <p className="text-sm text-gray-600">{exp.description}</p>

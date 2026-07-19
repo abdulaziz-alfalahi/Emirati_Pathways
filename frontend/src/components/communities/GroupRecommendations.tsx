@@ -145,7 +145,7 @@ const GroupRecommendations: React.FC<GroupRecommendationsProps> = ({
         onClick={() => setIsVisible(true)}
         className="w-full"
       >
-        <Eye className="h-4 w-4 mr-2" />
+        <Eye className="h-4 w-4 me-2" />
         Show Recommendations ({recommendations.length})
       </Button>
     );
@@ -234,7 +234,7 @@ const GroupRecommendations: React.FC<GroupRecommendationsProps> = ({
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-end">
                   <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                     <TrendingUp className="h-4 w-4" />
                     <span>{Math.round(recommendation.recommendation_score)}% match</span>

@@ -310,7 +310,7 @@ const PortfolioAnalytics: React.FC<PortfolioAnalyticsProps> = ({ portfolio }) =>
                             style={{ width: `${location.percentage}%` }}
                           />
                         </div>
-                        <span className="text-sm w-12 text-right">{location.visitors}</span>
+                        <span className="text-sm w-12 text-end">{location.visitors}</span>
                       </div>
                     </div>
                   ))}
@@ -369,27 +369,27 @@ const PortfolioAnalytics: React.FC<PortfolioAnalyticsProps> = ({ portfolio }) =>
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                     <span>Project downloaded - Dubai Smart City</span>
-                    <span className="text-muted-foreground ml-auto">2 min ago</span>
+                    <span className="text-muted-foreground ms-auto">2 min ago</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-blue-500 rounded-full" />
                     <span>Portfolio shared on LinkedIn</span>
-                    <span className="text-muted-foreground ml-auto">5 min ago</span>
+                    <span className="text-muted-foreground ms-auto">5 min ago</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-purple-500 rounded-full" />
                     <span>New visitor from Saudi Arabia</span>
-                    <span className="text-muted-foreground ml-auto">12 min ago</span>
+                    <span className="text-muted-foreground ms-auto">12 min ago</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-orange-500 rounded-full" />
                     <span>Contact form submitted</span>
-                    <span className="text-muted-foreground ml-auto">18 min ago</span>
+                    <span className="text-muted-foreground ms-auto">18 min ago</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                     <span>Media gallery viewed</span>
-                    <span className="text-muted-foreground ml-auto">25 min ago</span>
+                    <span className="text-muted-foreground ms-auto">25 min ago</span>
                   </div>
                 </div>
               </CardContent>

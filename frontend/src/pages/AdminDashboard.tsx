@@ -525,7 +525,7 @@ const AdminDashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center">
-                        <BarChart3 className="h-5 w-5 mr-2" />
+                        <BarChart3 className="h-5 w-5 me-2" />
                         Platform Analytics
                       </CardTitle>
                     </CardHeader>
@@ -555,7 +555,7 @@ const AdminDashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center">
-                        <Shield className="h-5 w-5 mr-2" />
+                        <Shield className="h-5 w-5 me-2" />
                         Moderation Queue
                       </CardTitle>
                     </CardHeader>
@@ -591,10 +591,10 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Invitation Pipeline */}
-                <Card className="border-l-4 border-l-teal-500">
+                <Card className="border-s-4 border-s-teal-500">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Send className="h-5 w-5 mr-2" />
+                      <Send className="h-5 w-5 me-2" />
                       Invitation Pipeline
                     </CardTitle>
                     <CardDescription>
@@ -626,10 +626,10 @@ const AdminDashboard = () => {
                 </Card>
 
                 {/* Feedback Overview (FUT) */}
-                <Card className="border-l-4 border-l-purple-500">
+                <Card className="border-s-4 border-s-purple-500">
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-2" />
+                      <MessageSquare className="h-5 w-5 me-2" />
                       Feedback Overview
                     </CardTitle>
                     <CardDescription>
@@ -666,7 +666,7 @@ const AdminDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
-                      <Activity className="h-5 w-5 mr-2" />
+                      <Activity className="h-5 w-5 me-2" />
                       Recent System Activity
                     </CardTitle>
                     <CardDescription>
@@ -721,7 +721,7 @@ const AdminDashboard = () => {
                     <CardTitle className="flex items-center justify-between">
                       <span>Feedback & Issues Reports</span>
                       <Button variant="outline" size="sm" onClick={loadFeedbackList}>
-                        <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                        <RefreshCw className="h-4 w-4 me-2" /> Refresh
                       </Button>
                     </CardTitle>
                     <CardDescription>
@@ -732,7 +732,7 @@ const AdminDashboard = () => {
                     <div className="rounded-md border">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50 border-b">
-                          <tr className="text-left">
+                          <tr className="text-start">
                             <th className="p-3 font-medium">Type</th>
                             <th className="p-3 font-medium">Status</th>
                             <th className="p-3 font-medium">Message</th>
@@ -796,7 +796,7 @@ const AdminDashboard = () => {
                                         setIsDetailsOpen(true);
                                       }}
                                     >
-                                      <Eye className="h-3 w-3 mr-1" /> View Details
+                                      <Eye className="h-3 w-3 me-1" /> View Details
                                     </Button>
 
                                     {item.status !== 'resolved' && (
@@ -806,7 +806,7 @@ const AdminDashboard = () => {
                                         className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700 font-medium"
                                         onClick={() => updateFeedbackStatus(item.id, 'resolved')}
                                       >
-                                        <CheckCircle className="h-3 w-3 mr-1" /> Resolve
+                                        <CheckCircle className="h-3 w-3 me-1" /> Resolve
                                       </Button>
                                     )}
                                     <Button
@@ -862,7 +862,7 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                                         });
                                       }}
                                     >
-                                      <ClipboardCopy className="h-3 w-3 mr-1" />
+                                      <ClipboardCopy className="h-3 w-3 me-1" />
                                       Copy for Dev
                                     </Button>
                                   </div>
@@ -902,7 +902,7 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                             <Badge variant={selectedFeedback.type === 'bug' ? 'destructive' : 'secondary'}>
                               {selectedFeedback.type?.toUpperCase()}
                             </Badge>
-                            <span className="text-xs text-muted-foreground ml-auto">
+                            <span className="text-xs text-muted-foreground ms-auto">
                               {new Date(selectedFeedback.created_at).toLocaleString()}
                             </span>
                           </div>
@@ -983,7 +983,7 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                                     }}
                                     disabled={isSubmittingClarification || !clarificationNotes.trim()}
                                   >
-                                    {isSubmittingClarification && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                    {isSubmittingClarification && <Loader2 className="me-2 h-3 w-3 animate-spin" />}
                                     Send Request
                                   </Button>
                                 </div>
@@ -1171,7 +1171,7 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                                       setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'resolved' } : null);
                                     }}
                                   >
-                                    <CheckCircle className="h-4 w-4 mr-2" /> Mark as Resolved
+                                    <CheckCircle className="h-4 w-4 me-2" /> Mark as Resolved
                                   </Button>
                                   {selectedFeedback.status !== 'pending_clarification' && !showClarificationInput && (
                                     <Button
@@ -1180,7 +1180,7 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                                       className="border-amber-300 hover:bg-amber-50 text-amber-700 font-medium"
                                       onClick={() => setShowClarificationInput(true)}
                                     >
-                                      <HelpCircle className="h-4 w-4 mr-2" /> Request Clarification
+                                      <HelpCircle className="h-4 w-4 me-2" /> Request Clarification
                                     </Button>
                                   )}
                                 </div>
@@ -1229,7 +1229,7 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                                   });
                                 }}
                               >
-                                <ClipboardCopy className="h-4 w-4 mr-2" /> Copy for Dev
+                                <ClipboardCopy className="h-4 w-4 me-2" /> Copy for Dev
                               </Button>
                             </div>
                             
@@ -1326,7 +1326,7 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                 </Card>
 
                 {/* Our Mission Page Settings */}
-                <Card className="border-l-4 border-l-teal-500">
+                <Card className="border-s-4 border-s-teal-500">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Video className="h-5 w-5 text-teal-600" />
@@ -1356,7 +1356,7 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                         >
                           {savingVideoUrl ? (
                             <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              <Loader2 className="h-4 w-4 me-2 animate-spin" />
                               {b('Saving...', 'جاري الحفظ...')}
                             </>
                           ) : (
@@ -1405,7 +1405,7 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                       <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg flex items-center">
-                            <Shield className="h-5 w-5 mr-2" />
+                            <Shield className="h-5 w-5 me-2" />
                             {b('Security Score', 'درجة الأمان')}
                           </CardTitle>
                         </CardHeader>

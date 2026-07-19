@@ -37,7 +37,7 @@ const ComingSoon: React.FC<ComingSoonProps> = ({
                 onClick={() => navigate(-1)}
                 className="w-full flex items-center justify-center px-4 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-lg transition-colors border border-gray-200"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-4 h-4 me-2" />
                 Go Back
               </button>
             )}

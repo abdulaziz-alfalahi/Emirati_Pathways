@@ -157,17 +157,17 @@ export const IndustryProfiles: React.FC = () => {
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search companies or industries..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             <Select value={selectedSector} onValueChange={setSelectedSector}>
               <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="h-4 w-4 me-2" />
                 <SelectValue placeholder="Filter by sector" />
               </SelectTrigger>
               <SelectContent>
@@ -196,7 +196,7 @@ export const IndustryProfiles: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            <TrendingUp className="h-3 w-3 mr-1" />
+                            <TrendingUp className="h-3 w-3 me-1" />
                             {profile.growth}
                           </Badge>
                         </div>

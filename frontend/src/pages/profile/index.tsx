@@ -72,11 +72,11 @@ const ProfilePage = () => {
             <Tabs value={activeView} onValueChange={setActiveView}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="enhanced">
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 me-2" />
                   Enhanced Profile
                 </TabsTrigger>
                 <TabsTrigger value="classic">
-                  <User className="h-4 w-4 mr-2" />
+                  <User className="h-4 w-4 me-2" />
                   Classic View
                 </TabsTrigger>
               </TabsList>

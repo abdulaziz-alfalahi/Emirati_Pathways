@@ -278,7 +278,7 @@ export const MentorshipMatching: React.FC = () => {
                 disabled={loading || preferences.desired_expertise.length === 0}
                 className="w-full"
               >
-                <Search className="h-4 w-4 mr-2" />
+                <Search className="h-4 w-4 me-2" />
                 {loading ? 'Finding Matches...' : 'Find Mentors'}
               </Button>
             </CardContent>
@@ -429,7 +429,7 @@ export const MentorshipMatching: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="text-right">
+                          <div className="text-end">
                             <div className="text-2xl font-bold text-primary">
                               {suggestion.compatibility_score}%
                             </div>
@@ -505,7 +505,7 @@ export const MentorshipMatching: React.FC = () => {
                               setShowMatchDetails(true);
                             }}
                           >
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Eye className="h-4 w-4 me-2" />
                             View Match Details
                           </Button>
                           
@@ -514,7 +514,7 @@ export const MentorshipMatching: React.FC = () => {
                               <Button 
                                 onClick={() => setSelectedMentor(suggestion.mentor)}
                               >
-                                <MessageCircle className="h-4 w-4 mr-2" />
+                                <MessageCircle className="h-4 w-4 me-2" />
                                 Request Mentorship
                               </Button>
                             </DialogTrigger>
@@ -553,7 +553,7 @@ export const MentorshipMatching: React.FC = () => {
                           </Dialog>
                           
                           <Button variant="outline">
-                            <Calendar className="h-4 w-4 mr-2" />
+                            <Calendar className="h-4 w-4 me-2" />
                             View Schedule
                           </Button>
                         </div>

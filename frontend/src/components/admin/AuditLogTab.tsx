@@ -177,7 +177,7 @@ const AuditLogTab: React.FC = () => {
           onClick={handleRefresh}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 me-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
@@ -190,7 +190,7 @@ const AuditLogTab: React.FC = () => {
             <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
               <Activity className="w-6 h-6" />
             </div>
-            <div className="ml-4">
+            <div className="ms-4">
               <p className="text-sm font-medium text-gray-500">Total Events</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.total_events.toLocaleString()}
@@ -205,7 +205,7 @@ const AuditLogTab: React.FC = () => {
             <div className="p-2 rounded-lg bg-green-100 text-green-600">
               <Clock className="w-6 h-6" />
             </div>
-            <div className="ml-4">
+            <div className="ms-4">
               <p className="text-sm font-medium text-gray-500">Today's Events</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.events_today.toLocaleString()}
@@ -220,7 +220,7 @@ const AuditLogTab: React.FC = () => {
             <div className="p-2 rounded-lg bg-red-100 text-red-600">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <div className="ml-4">
+            <div className="ms-4">
               <p className="text-sm font-medium text-gray-500">Unauthorized Attempts</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.unauthorized_attempts.toLocaleString()}
@@ -235,7 +235,7 @@ const AuditLogTab: React.FC = () => {
             <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
               <Users className="w-6 h-6" />
             </div>
-            <div className="ml-4">
+            <div className="ms-4">
               <p className="text-sm font-medium text-gray-500">Role Changes</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.role_changes.toLocaleString()}
@@ -274,12 +274,12 @@ const AuditLogTab: React.FC = () => {
           <div className="min-w-[160px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
             <div className="relative">
-              <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
+              <Calendar className="absolute start-2 top-2.5 w-4 h-4 text-gray-400" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full ps-8 pe-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -288,12 +288,12 @@ const AuditLogTab: React.FC = () => {
           <div className="min-w-[160px]">
             <label className="block text-xs font-medium text-gray-500 mb-1">End Date</label>
             <div className="relative">
-              <Calendar className="absolute left-2 top-2.5 w-4 h-4 text-gray-400" />
+              <Calendar className="absolute start-2 top-2.5 w-4 h-4 text-gray-400" />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full ps-8 pe-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -303,7 +303,7 @@ const AuditLogTab: React.FC = () => {
             onClick={handleFilterApply}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
           >
-            <Search className="w-4 h-4 mr-1" />
+            <Search className="w-4 h-4 me-1" />
             Apply
           </button>
           <button
@@ -320,7 +320,7 @@ const AuditLogTab: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading audit log…</span>
+            <span className="ms-2 text-gray-600">Loading audit log…</span>
           </div>
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -333,22 +333,22 @@ const AuditLogTab: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Timestamp
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Action
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Resource Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Details
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     IP Address
                   </th>
                 </tr>
@@ -407,7 +407,7 @@ const AuditLogTab: React.FC = () => {
                 disabled={currentPage <= 1}
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" />
+                <ChevronLeft className="w-4 h-4 me-1" />
                 Previous
               </button>
               <span className="text-sm text-gray-700">
@@ -419,7 +419,7 @@ const AuditLogTab: React.FC = () => {
                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
-                <ChevronRight className="w-4 h-4 ml-1" />
+                <ChevronRight className="w-4 h-4 ms-1" />
               </button>
             </div>
           </div>

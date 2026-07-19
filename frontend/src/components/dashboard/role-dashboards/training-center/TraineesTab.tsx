@@ -96,7 +96,7 @@ const TraineesTab: React.FC = () => {
             <Dialog open={showAddTraineeDialog} onOpenChange={setShowAddTraineeDialog}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Add New Trainee
+                  <Plus className="me-2 h-4 w-4" /> Add New Trainee
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -108,19 +108,19 @@ const TraineesTab: React.FC = () => {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="name" className="text-right">
+                    <label htmlFor="name" className="text-end">
                       Full Name
                     </label>
                     <Input id="name" className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="email" className="text-right">
+                    <label htmlFor="email" className="text-end">
                       Email
                     </label>
                     <Input id="email" className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="program" className="text-right">
+                    <label htmlFor="program" className="text-end">
                       Program
                     </label>
                     <select className="col-span-3 p-2 border rounded">
@@ -180,10 +180,10 @@ const TraineesTab: React.FC = () => {
           
           <div className="flex justify-between mb-4">
             <div className="relative w-full max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search trainees..."
-                className="pl-8"
+                className="ps-8"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -227,7 +227,7 @@ const TraineesTab: React.FC = () => {
                   <TableCell>
                     <div className="space-y-1">
                       {trainee.programs.map((program, i) => (
-                        <Badge key={i} variant="outline" className="mr-1">{program}</Badge>
+                        <Badge key={i} variant="outline" className="me-1">{program}</Badge>
                       ))}
                     </div>
                   </TableCell>

@@ -19,7 +19,7 @@ export const EvaluationHeader: React.FC<EvaluationHeaderProps> = ({
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           Back
         </Button>
         <div>
@@ -27,7 +27,7 @@ export const EvaluationHeader: React.FC<EvaluationHeaderProps> = ({
           <p className="text-muted-foreground">Evaluation Interface</p>
         </div>
       </div>
-      <div className="text-right">
+      <div className="text-end">
         <p className="text-sm text-muted-foreground">Overall Progress</p>
         <div className="flex items-center space-x-2">
           <Progress value={progressPercentage} className="w-24" />

@@ -189,7 +189,7 @@ export const PreparationResources: React.FC = () => {
                       <CardTitle className="text-lg">{resource.title}</CardTitle>
                       <Badge variant="outline" className="mt-2">
                         {getResourceIcon(resource.type)}
-                        <span className="ml-1">{resource.type}</span>
+                        <span className="ms-1">{resource.type}</span>
                       </Badge>
                     </div>
                   </div>
@@ -219,12 +219,12 @@ export const PreparationResources: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm">
                       <span className="text-yellow-500">★</span>
-                      <span className="font-medium ml-1">{resource.rating}</span>
+                      <span className="font-medium ms-1">{resource.rating}</span>
                     </div>
                   </div>
 
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Access Resource
                   </Button>
                 </CardContent>
@@ -243,7 +243,7 @@ export const PreparationResources: React.FC = () => {
                       <CardTitle className="text-lg">{resource.title}</CardTitle>
                       <Badge variant="outline" className="mt-2">
                         {getResourceIcon(resource.type)}
-                        <span className="ml-1">{resource.type}</span>
+                        <span className="ms-1">{resource.type}</span>
                       </Badge>
                     </div>
                   </div>
@@ -269,12 +269,12 @@ export const PreparationResources: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm">
                       <span className="text-yellow-500">★</span>
-                      <span className="font-medium ml-1">{resource.rating}</span>
+                      <span className="font-medium ms-1">{resource.rating}</span>
                     </div>
                   </div>
 
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download Guide
                   </Button>
                 </CardContent>
@@ -293,7 +293,7 @@ export const PreparationResources: React.FC = () => {
                       <CardTitle className="text-lg">{resource.title}</CardTitle>
                       <Badge variant="outline" className="mt-2">
                         {getResourceIcon(resource.type)}
-                        <span className="ml-1">{resource.type}</span>
+                        <span className="ms-1">{resource.type}</span>
                       </Badge>
                     </div>
                   </div>
@@ -319,12 +319,12 @@ export const PreparationResources: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm">
                       <span className="text-yellow-500">★</span>
-                      <span className="font-medium ml-1">{resource.rating}</span>
+                      <span className="font-medium ms-1">{resource.rating}</span>
                     </div>
                   </div>
 
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 me-2" />
                     Start Practice
                   </Button>
                 </CardContent>
@@ -367,7 +367,7 @@ export const PreparationResources: React.FC = () => {
                   </div>
 
                   <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    <Video className="h-4 w-4 mr-2" />
+                    <Video className="h-4 w-4 me-2" />
                     Start Tour
                   </Button>
                 </CardContent>

@@ -309,7 +309,7 @@ const CreateJobDialog = ({ isOpen, onOpenChange, onCreateJob }: CreateJobDialogP
             <button
               type="button"
               onClick={() => removeFromList(listType, index)}
-              className="ml-1 hover:text-red-500"
+              className="ms-1 hover:text-red-500"
             >
               <X className="h-3 w-3" />
             </button>

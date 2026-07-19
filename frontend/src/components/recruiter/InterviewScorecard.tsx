@@ -187,7 +187,7 @@ export default function InterviewScorecard({ interviewId, interviewTitle, onBack
       <div className="flex items-center gap-3">
         {onBack && (
           <Button variant="ghost" size="sm" onClick={onBack} className="text-ehrdc-teal hover:text-ehrdc-teal/80">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <ArrowLeft className="h-4 w-4 me-1" /> Back
           </Button>
         )}
         <div>
@@ -264,7 +264,7 @@ export default function InterviewScorecard({ interviewId, interviewTitle, onBack
               <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full">
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     Submitting...
                   </>
                 ) : (
@@ -304,7 +304,7 @@ export default function InterviewScorecard({ interviewId, interviewTitle, onBack
                               style={{ width: `${(avgValue / 5) * 100}%` }}
                             />
                           </div>
-                          <span className="text-sm font-bold w-8 text-right">{avgValue.toFixed(1)}</span>
+                          <span className="text-sm font-bold w-8 text-end">{avgValue.toFixed(1)}</span>
                         </div>
                       </div>
                     );
@@ -326,7 +326,7 @@ export default function InterviewScorecard({ interviewId, interviewTitle, onBack
                 Individual Scorecards ({scorecards.length})
               </h3>
               {scorecards.map((sc) => (
-                <Card key={sc.id} className="border-l-4 border-l-purple-400">
+                <Card key={sc.id} className="border-s-4 border-s-purple-400">
                   <CardContent className="pt-4 pb-3">
                     <div className="flex justify-between items-start mb-2">
                       <div>

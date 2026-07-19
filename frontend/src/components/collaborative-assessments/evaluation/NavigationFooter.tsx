@@ -27,7 +27,7 @@ export const NavigationFooter: React.FC<NavigationFooterProps> = ({
         onClick={onPreviousSection}
         disabled={!canGoPrevious}
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
+        <ArrowLeft className="h-4 w-4 me-2" />
         Previous Section
       </Button>
       
@@ -42,7 +42,7 @@ export const NavigationFooter: React.FC<NavigationFooterProps> = ({
         disabled={!canGoNext}
       >
         Next Section
-        <ArrowRight className="h-4 w-4 ml-2" />
+        <ArrowRight className="h-4 w-4 ms-2" />
       </Button>
     </div>
   );

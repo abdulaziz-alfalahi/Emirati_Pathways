@@ -422,7 +422,7 @@ const HRDashboard: React.FC = () => {
                   {b('Talent33 Aligned', 'متوافق مع برنامج نافس')}
                 </Badge>
                 <Button variant="outline" size="sm">
-                  <Settings className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  <Settings className={`h-4 w-4 me-2`} />
                   {b('Settings', 'الإعدادات')}
                 </Button>
 
@@ -437,7 +437,7 @@ const HRDashboard: React.FC = () => {
                 className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
                 onClick={() => navigate('/recruiter/jd-builder')}
               >
-                <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                <Plus className={`h-4 w-4 me-2`} />
                 {b('Post New Job', 'نشر وظيفة جديدة')}
               </Button>
               <Button
@@ -445,7 +445,7 @@ const HRDashboard: React.FC = () => {
                 className="font-dubai-medium"
                 onClick={() => navigate('/recruiter/candidates')}
               >
-                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                <Upload className={`h-4 w-4 me-2`} />
                 {b('Import Candidates', 'استيراد المرشحين')}
               </Button>
               <Button
@@ -453,7 +453,7 @@ const HRDashboard: React.FC = () => {
                 className="font-dubai-medium"
                 onClick={() => navigate('/recruiter/analytics')}
               >
-                <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                <Download className={`h-4 w-4 me-2`} />
                 {b('Export Reports', 'تصدير التقارير')}
               </Button>
               {COMPANY_ID && (
@@ -462,7 +462,7 @@ const HRDashboard: React.FC = () => {
                   className="font-dubai-medium bg-white hover:bg-teal-50 text-teal-700 border-teal-200"
                   onClick={() => navigate(`/workspace/${COMPANY_ID}/dashboard`)}
                 >
-                  <Building2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  <Building2 className={`h-4 w-4 me-2`} />
                   {b('Company Workspace', 'مساحة عمل الشركة')}
                 </Button>
               )}
@@ -481,7 +481,7 @@ const HRDashboard: React.FC = () => {
               <TabsTrigger value="messages" className="font-dubai-medium">
                 {b('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
-                  <span className={`${isRTL ? 'mr-1.5' : 'ml-1.5'} inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]`}>
+                  <span className={`ms-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]`}>
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -616,22 +616,22 @@ const HRDashboard: React.FC = () => {
                     <CardContent className="pt-3 space-y-2">
                       <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}
                         onClick={() => navigate('/recruiter/analytics')}>
-                        <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-teal-600`} />
+                        <Download className={`h-4 w-4 me-2 text-teal-600`} />
                         {b('Generate Report', 'إنشاء تقرير')}
                       </Button>
                       <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}
                         onClick={() => navigate('/recruiter/jd-builder')}>
-                        <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-500`} />
+                        <Plus className={`h-4 w-4 me-2 text-blue-500`} />
                         {b('Request Headcount', 'طلب عدد موظفين')}
                       </Button>
                       <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}>
-                        <Building className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-500`} />
+                        <Building className={`h-4 w-4 me-2 text-purple-500`} />
                         {b('View MOHRE Portal', 'عرض بوابة الوزارة')}
                       </Button>
                       {COMPANY_ID && (
                         <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700 border-teal-200`}
                           onClick={() => navigate(`/workspace/${COMPANY_ID}/dashboard`)}>
-                          <Building2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-teal-600`} />
+                          <Building2 className={`h-4 w-4 me-2 text-teal-600`} />
                           {b('Company Workspace', 'مساحة عمل الشركة')}
                         </Button>
                       )}
@@ -769,7 +769,7 @@ const HRDashboard: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <Button className="font-dubai-medium">
-                      <Filter className="h-4 w-4 mr-2" />
+                      <Filter className="h-4 w-4 me-2" />
                       Filter
                     </Button>
                   </div>
@@ -922,7 +922,7 @@ const HRDashboard: React.FC = () => {
                         <DialogTitle>AI Candidate Analysis</DialogTitle>
                         <DialogDescription>Comprehensive profile analysis for {getDisplayName(selectedCandidate)}</DialogDescription>
                       </DialogHeader>
-                      <ScrollArea className="h-full pr-4">
+                      <ScrollArea className="h-full pe-4">
                         <div className="space-y-6">
                           {/* 1. CV Analysis */}
                           <section>
@@ -941,7 +941,7 @@ const HRDashboard: React.FC = () => {
                               <Briefcase className="h-5 w-5 text-purple-500" /> Portfolio & Projects
                             </h3>
                             <div className="bg-slate-50 p-4 rounded-lg border text-sm text-slate-600">
-                              <ul className="list-disc pl-5 space-y-1">
+                              <ul className="list-disc ps-5 space-y-1">
                                 <li><strong>E-commerce Platform:</strong> Lead developer for a scalable React/Node app.</li>
                                 <li><strong>AI Chatbot:</strong> Implemented RAG pipeline using Python/LangChain.</li>
                               </ul>
@@ -1085,7 +1085,7 @@ const HRDashboard: React.FC = () => {
                               <TableHead>Job Details</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Requirements</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
+                              <TableHead className="text-end">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1128,10 +1128,10 @@ const HRDashboard: React.FC = () => {
                                     <div>Benefits: {Array.isArray(job.benefits) ? job.benefits.length : 0}</div>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-end">
                                   <div className="flex justify-end gap-2">
                                     <Button variant="outline" size="sm" className="text-teal-600 border-teal-200 hover:bg-teal-50" onClick={() => navigate(`/recruiter/jd-builder?id=${job.id}`)}>
-                                      <Edit className="h-4 w-4 mr-2" />
+                                      <Edit className="h-4 w-4 me-2" />
                                       Edit
                                     </Button>
                                     <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleDeleteJob(job.id)}>
@@ -1199,7 +1199,7 @@ const HRDashboard: React.FC = () => {
                           <div className="w-36 text-sm font-dubai-medium text-slate-700">{stage.label}</div>
                           <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
                             <div
-                              className={`${stage.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
+                              className={`${stage.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pe-2`}
                               style={{ width: `${Math.max(percentage, 2)}%` }}
                             >
                               {percentage > 10 && (
@@ -1207,7 +1207,7 @@ const HRDashboard: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <div className="w-16 text-right font-dubai-bold text-slate-900">{stage.value}</div>
+                          <div className="w-16 text-end font-dubai-bold text-slate-900">{stage.value}</div>
                         </div>
                       );
                     })}

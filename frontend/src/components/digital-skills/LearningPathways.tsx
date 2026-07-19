@@ -67,7 +67,7 @@ export const LearningPathways: React.FC = () => {
             </div>
           </div>
           <Button className="w-full">
-            Start Learning Path <ArrowRight className="h-4 w-4 ml-2" />
+            Start Learning Path <ArrowRight className="h-4 w-4 ms-2" />
           </Button>
         </Card>
       ))}

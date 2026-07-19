@@ -225,7 +225,7 @@ const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string;
                 placeholder="Type your response here..."
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
-                className="min-h-[60px] text-xs bg-white border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
+                className="min-h-[60px] text-xs bg-card border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
                 disabled={isSubmitting}
             />
             <div className="flex justify-end">
@@ -527,21 +527,32 @@ export const FeedbackWidget = () => {
 
     return (
         <>
-            {/* Floating Trigger Button — sits clearly above the Support-chat FAB (which is
-                a 60px circle at bottom:24px right:24px). bottom-40 (10rem) keeps a comfortable
-                gap so the two don't crowd/overlap on short viewports, where the button was
-                otherwise hard to reach. */}
-            <div className="fixed bottom-40 right-6 z-50 group feedback-trigger-btn">
-                {/* Pulse effect ring */}
-                <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
+            {/* Floating trigger — sits in the corner column above the Support-chat FAB
+                (a 60px circle at bottom:24 right:24).
 
+                It previously sat at bottom-40 as a ~155px-wide pill, which pushed it into
+                the CONTENT column and covered page material (e.g. the Skill Gaps card and
+                its "View Full Analysis" link on the candidate dashboard). It is now a
+                circular icon button the same size as the chat FAB, so its footprint is
+                ~56px instead of ~155px, and it expands to reveal the label on hover/focus.
+
+                The permanent `animate-ping` ring and `animate-bounce-slow` icon were
+                removed: unmotivated perpetual motion on every page, and neither honoured
+                prefers-reduced-motion. Hover feedback is now a subtle scale, gated behind
+                `motion-safe`. */}
+            <div className="fixed bottom-24 end-6 z-50 group feedback-trigger-btn">
                 <Button
                     onClick={() => setIsOpen(true)}
-                    className="relative rounded-full h-14 pl-4 pr-6 shadow-xl bg-gradient-to-r from-primary to-primary/80 hover:to-primary text-white border-2 border-white/20 transition-all transform hover:scale-105"
-                    title="Report an Issue"
+                    aria-label="Send feedback or report an issue"
+                    title="Send feedback or report an issue"
+                    className="relative flex items-center justify-center rounded-full h-14 min-w-14 px-4 shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-white/20 transition-transform motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
                 >
-                    <MessageSquare className="h-6 w-6 mr-2 animate-bounce-slow" />
-                    <span className="font-semibold text-lg">Feedback</span>
+                    <MessageSquare className="h-6 w-6 shrink-0" />
+                    <span
+                        className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 font-semibold transition-all duration-200 group-hover:max-w-[7rem] group-hover:opacity-100 group-hover:ms-2 group-focus-within:max-w-[7rem] group-focus-within:opacity-100 group-focus-within:ms-2"
+                    >
+                        Feedback
+                    </span>
                 </Button>
             </div>
 
@@ -566,7 +577,7 @@ export const FeedbackWidget = () => {
 
                                 {/* 1. Title Field (New) */}
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="title" className="text-right">
+                                    <Label htmlFor="title" className="text-end">
                                         Subject
                                     </Label>
                                     <input
@@ -580,7 +591,7 @@ export const FeedbackWidget = () => {
                                 </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label htmlFor="type" className="text-right">
+                                    <Label htmlFor="type" className="text-end">
                                         Type
                                     </Label>
                                     <div className="col-span-3">
@@ -591,12 +602,12 @@ export const FeedbackWidget = () => {
                                             <SelectContent>
                                                 <SelectItem value="bug">
                                                     <div className="flex items-center text-red-600">
-                                                        <Bug className="mr-2 h-4 w-4" /> Bug Report
+                                                        <Bug className="me-2 h-4 w-4" /> Bug Report
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="feature">
                                                     <div className="flex items-center text-amber-600">
-                                                        <Lightbulb className="mr-2 h-4 w-4" /> Feature Request
+                                                        <Lightbulb className="me-2 h-4 w-4" /> Feature Request
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="other">Other</SelectItem>
@@ -608,7 +619,7 @@ export const FeedbackWidget = () => {
                                 {/* 2. Severity (Only for Bugs) */}
                                 {type === 'bug' && (
                                     <div className="grid grid-cols-4 items-center gap-4 animate-in slide-in-from-top-1 duration-200">
-                                        <Label htmlFor="severity" className="text-right">
+                                        <Label htmlFor="severity" className="text-end">
                                             Severity
                                         </Label>
                                         <div className="col-span-3">
@@ -628,7 +639,7 @@ export const FeedbackWidget = () => {
                                 )}
 
                                 <div className="grid grid-cols-4 items-start gap-4">
-                                    <Label htmlFor="message" className="text-right pt-2">
+                                    <Label htmlFor="message" className="text-end pt-2">
                                         Description
                                     </Label>
                                     <Textarea
@@ -643,7 +654,7 @@ export const FeedbackWidget = () => {
                                 {/* 3. Steps to Reproduce (Only for Bugs) */}
                                 {type === 'bug' && (
                                     <div className="grid grid-cols-4 items-start gap-4 animate-in slide-in-from-top-2 duration-300">
-                                        <Label htmlFor="steps" className="text-right pt-2 text-xs font-semibold text-muted-foreground uppercase">
+                                        <Label htmlFor="steps" className="text-end pt-2 text-xs font-semibold text-muted-foreground uppercase">
                                             Steps to Reproduce
                                         </Label>
                                         <Textarea
@@ -651,14 +662,14 @@ export const FeedbackWidget = () => {
                                             value={reproSteps}
                                             onChange={(e) => setReproSteps(e.target.value)}
                                             placeholder="1. Go to page X&#10;2. Click on button Y&#10;3. See error Z"
-                                            className="col-span-3 min-h-[100px] font-mono text-sm bg-slate-50"
+                                            className="col-span-3 min-h-[100px] font-mono text-sm bg-muted"
                                         />
                                     </div>
                                 )}
 
                                 {/* Screenshot Toggle & Preview */}
                                 <div className="grid grid-cols-4 items-start gap-4">
-                                    <Label htmlFor="screenshot" className="text-right pt-1 text-xs font-semibold text-muted-foreground uppercase">
+                                    <Label htmlFor="screenshot" className="text-end pt-1 text-xs font-semibold text-muted-foreground uppercase">
                                         Screenshot
                                     </Label>
                                     <div className="col-span-3 space-y-2">
@@ -673,7 +684,7 @@ export const FeedbackWidget = () => {
                                                         capturePageScreenshot();
                                                     }
                                                 }}
-                                                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                                className="h-4 w-4 rounded border-input text-primary focus:ring-ring cursor-pointer"
                                             />
                                             <label htmlFor="include-screenshot" className="text-xs text-muted-foreground font-medium select-none cursor-pointer">
                                                 Include screenshot of the current page
@@ -681,10 +692,10 @@ export const FeedbackWidget = () => {
                                         </div>
                                         
                                         {includeScreenshot && (
-                                            <div className="relative border rounded-md overflow-hidden bg-slate-50 h-24 flex items-center justify-center group/screenshot">
+                                            <div className="relative border rounded-md overflow-hidden bg-muted h-24 flex items-center justify-center group/screenshot">
                                                 {isCapturingScreenshot ? (
                                                     <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1">
-                                                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                                         <span>Capturing page...</span>
                                                     </div>
                                                 ) : screenshot ? (
@@ -699,7 +710,7 @@ export const FeedbackWidget = () => {
                                                                 type="button"
                                                                 size="sm"
                                                                 variant="secondary"
-                                                                className="h-7 text-[10px] px-2 py-0 bg-white hover:bg-slate-100 text-black border-none"
+                                                                className="h-7 text-[10px] px-2 py-0 bg-card hover:bg-muted text-foreground border-none"
                                                                 onClick={capturePageScreenshot}
                                                             >
                                                                 Retake
@@ -708,7 +719,7 @@ export const FeedbackWidget = () => {
                                                                 href={screenshot}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="h-7 text-[10px] px-2 py-1 bg-white text-black rounded hover:bg-slate-100 flex items-center justify-center font-medium"
+                                                                className="h-7 text-[10px] px-2 py-1 bg-card text-foreground rounded hover:bg-muted flex items-center justify-center font-medium"
                                                             >
                                                                 View
                                                             </a>
@@ -734,7 +745,7 @@ export const FeedbackWidget = () => {
                                 </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label className="text-right text-xs text-muted-foreground">
+                                    <Label className="text-end text-xs text-muted-foreground">
                                         Context
                                     </Label>
                                     <div className="col-span-3 text-xs text-muted-foreground bg-muted p-2 rounded flex justify-between items-center">
@@ -750,14 +761,14 @@ export const FeedbackWidget = () => {
                                     Cancel
                                 </Button>
                                 <Button onClick={handleSubmit} disabled={isSubmitting || !title.trim() || !message.trim()}>
-                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                                     Send Feedback
                                 </Button>
                             </DialogFooter>
                         </TabsContent>
 
                         <TabsContent value="history" className="py-4">
-                            <ScrollArea className="h-[300px] pr-4">
+                            <ScrollArea className="h-[300px] pe-4">
                                 {isLoadingHistory ? (
                                     <div className="flex justify-center items-center h-full py-8">
                                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -772,7 +783,7 @@ export const FeedbackWidget = () => {
                                             <div key={item.id} className="border rounded-lg p-3 space-y-2 bg-card">
                                                 <div className="flex justify-between items-start">
                                                     <Badge variant="outline" className={item.type === 'bug' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'}>
-                                                        {item.type === 'bug' ? <Bug className="h-3 w-3 mr-1" /> : <Lightbulb className="h-3 w-3 mr-1" />}
+                                                        {item.type === 'bug' ? <Bug className="h-3 w-3 me-1" /> : <Lightbulb className="h-3 w-3 me-1" />}
                                                         {item.type}
                                                     </Badge>
                                                     <span className="text-xs text-muted-foreground">

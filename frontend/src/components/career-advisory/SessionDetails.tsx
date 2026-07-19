@@ -204,14 +204,14 @@ const SessionDetails: React.FC = () => {
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">Date</div>
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <Calendar className="h-4 w-4 me-2 text-muted-foreground" />
                 {format(new Date(session.scheduled_date), 'PPP')}
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-sm text-muted-foreground">Time</div>
               <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                <Clock className="h-4 w-4 me-2 text-muted-foreground" />
                 {format(new Date(session.scheduled_date), 'h:mm a')}
               </div>
             </div>
@@ -253,7 +253,7 @@ const SessionDetails: React.FC = () => {
 
           {session.video_call_url && (
             <Button className="w-full" onClick={() => window.open(session.video_call_url!, '_blank')}>
-              <Video className="mr-2 h-4 w-4" />
+              <Video className="me-2 h-4 w-4" />
               Join Video Call
             </Button>
           )}
@@ -264,7 +264,7 @@ const SessionDetails: React.FC = () => {
               onClick={handleStartVideoCall}
               disabled={startingCall}
             >
-              <Video className="mr-2 h-4 w-4" />
+              <Video className="me-2 h-4 w-4" />
               {startingCall ? 'Starting Video Call...' : 'Start Video Call'}
             </Button>
           )}

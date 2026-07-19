@@ -94,17 +94,17 @@ export const CertificatesTab: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Certificate No:</span>
-                  <span className="ml-2 font-mono">{certificate.certificateNumber}</span>
+                  <span className="ms-2 font-mono">{certificate.certificateNumber}</span>
                 </div>
                 {certificate.expiryDate && (
                   <div>
                     <span className="text-muted-foreground">Expires:</span>
-                    <span className="ml-2">{new Date(certificate.expiryDate).toLocaleDateString()}</span>
+                    <span className="ms-2">{new Date(certificate.expiryDate).toLocaleDateString()}</span>
                   </div>
                 )}
                 <div>
                   <span className="text-muted-foreground">Credential ID:</span>
-                  <span className="ml-2 font-mono text-xs">{certificate.credentialId}</span>
+                  <span className="ms-2 font-mono text-xs">{certificate.credentialId}</span>
                 </div>
               </div>
               
@@ -114,11 +114,11 @@ export const CertificatesTab: React.FC = () => {
                   className="flex-1 bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90] text-white"
                   disabled={certificate.status === 'Expired'}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   Download
                 </Button>
                 <Button size="sm" variant="outline" className="flex-1">
-                  <Share2 className="h-4 w-4 mr-2" />
+                  <Share2 className="h-4 w-4 me-2" />
                   Share
                 </Button>
               </div>
@@ -128,7 +128,7 @@ export const CertificatesTab: React.FC = () => {
                 variant="ghost" 
                 className="w-full text-[rgb(var(--pg-secondary))] hover:bg-[rgb(var(--pg-secondary))/10]"
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ExternalLink className="h-4 w-4 me-2" />
                 Verify Certificate
               </Button>
             </CardContent>

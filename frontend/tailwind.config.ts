@@ -85,6 +85,53 @@ export default {
 					neutralDark: '#1A1A1A',
 					neutralLight: '#F4F5F7',
 				},
+				// ── EHRDC canonical ramps — values defined in src/styles/ehrdc-tokens.css ──
+				// Namespaced under `brand-` so they cannot collide with Tailwind's
+				// built-in `teal` / `gold` scales already used across the app.
+				brand: {
+					teal: {
+						50: 'var(--ehrdc-teal-50)',
+						100: 'var(--ehrdc-teal-100)',
+						200: 'var(--ehrdc-teal-200)',
+						300: 'var(--ehrdc-teal-300)',
+						400: 'var(--ehrdc-teal-400)',
+						500: 'var(--ehrdc-teal-500)',
+						600: 'var(--ehrdc-teal-600)',
+						700: 'var(--ehrdc-teal-700)',
+						800: 'var(--ehrdc-teal-800)',
+						900: 'var(--ehrdc-teal-900)',
+						DEFAULT: 'var(--ehrdc-teal-600)',
+					},
+					gold: {
+						100: 'var(--ehrdc-gold-100)',
+						400: 'var(--ehrdc-gold-400)',
+						600: 'var(--ehrdc-gold-600)',
+						800: 'var(--ehrdc-gold-800)',
+						DEFAULT: 'var(--ehrdc-gold-600)',
+					},
+				},
+				surface: 'var(--ehrdc-surface)',
+				paper: 'var(--ehrdc-paper)',
+				ink: 'var(--ehrdc-ink)',
+				line: 'var(--ehrdc-line)',
+				success: 'var(--ehrdc-success)',
+				warning: 'var(--ehrdc-warning)',
+				danger: 'var(--ehrdc-danger)',
+				info: 'var(--ehrdc-info)',
+				// Soft fills and hairlines for state surfaces. Tailwind's slash
+				// opacity modifier (`bg-success/10`) emits NOTHING for var()-mapped
+				// colours — it cannot split a var() into channels, and drops the
+				// utility silently. Tinted surfaces must use these tokens instead.
+				'tint-primary': 'var(--tint-primary)',
+				'tint-success': 'var(--tint-success)',
+				'tint-warning': 'var(--tint-warning)',
+				'tint-danger': 'var(--tint-danger)',
+				'tint-info': 'var(--tint-info)',
+				'edge-primary': 'var(--edge-primary)',
+				'edge-success': 'var(--edge-success)',
+				'edge-warning': 'var(--edge-warning)',
+				'edge-danger': 'var(--edge-danger)',
+				'edge-info': 'var(--edge-info)',
 				// Dubai Design System Colors
 				dubai: {
 					blue: '#0079C1',
@@ -127,16 +174,22 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-				display: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-				gov: ['Dubai', 'Arial', 'sans-serif'],
-				arabic: ['Dubai', 'Arial', 'sans-serif'],
-				dubai: ['Dubai', 'Arial', 'sans-serif'],
+				// Single source of truth: src/styles/ehrdc-tokens.css
+				// Readex Pro — self-hosted, covers Latin AND Arabic in one superfamily.
+				sans: ['var(--font-sans)'],
+				display: ['var(--font-sans)'],
+				arabic: ['var(--font-arabic)'],
+				mono: ['var(--font-mono)'],
+				// Legacy aliases retained so existing `font-gov` / `font-dubai` markup
+				// keeps working — they now resolve to the canonical brand face.
+				gov: ['var(--font-sans)'],
+				dubai: ['var(--font-sans)'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				pill: 'var(--radius-pill)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -197,7 +250,10 @@ export default {
 				'premium': '0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04)',
 				'card': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)',
 				'dubai': '0 2px 8px rgba(0, 110, 109, 0.08)',
-				'dubai-strong': '0 4px 16px rgba(0, 110, 109, 0.12)'
+				'dubai-strong': '0 4px 16px rgba(0, 110, 109, 0.12)',
+				// Canonical elevation — teal-tinted, never pure black on light.
+				'elev-1': 'var(--elev-1)',
+				'elev-2': 'var(--elev-2)'
 			},
 			backdropFilter: {
 				'glass': 'blur(10px)'
@@ -231,7 +287,7 @@ export default {
 				},
 				'.rtl\\:font-arabic': {
 					'[dir="rtl"] &': {
-						'font-family': 'Dubai, Arial, sans-serif',
+						'font-family': 'var(--font-arabic)',
 						'line-height': '1.8'
 					}
 				},

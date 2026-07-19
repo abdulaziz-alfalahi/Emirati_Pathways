@@ -261,13 +261,13 @@ const SchoolProgramsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
               placeholder="Search programs, subjects, or schools..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div className="flex items-center space-x-4">
@@ -322,9 +322,9 @@ const SchoolProgramsPage: React.FC = () => {
                     <p className="text-sm text-gray-600">{program.provider}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <div className="flex items-center mb-1">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current mr-1" />
+                    <Star className="h-4 w-4 text-yellow-500 fill-current me-1" />
                     <span className="text-sm font-dubai-medium">{program.rating}</span>
                   </div>
                   <p className="text-xs text-gray-500">{program.studentsEnrolled} students</p>
@@ -466,7 +466,7 @@ const SchoolProgramsPage: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Growth Rate</p>
                   <p className="text-sm font-dubai-bold text-blue-600 flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" />
+                    <TrendingUp className="h-3 w-3 me-1" />
                     {pathway.growthRate}
                   </p>
                 </div>
@@ -521,7 +521,7 @@ const SchoolProgramsPage: React.FC = () => {
                       : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className="h-4 w-4 mr-2" />
+                  <Icon className="h-4 w-4 me-2" />
                   {tab.name}
                 </button>
               );
@@ -536,7 +536,7 @@ const SchoolProgramsPage: React.FC = () => {
         {/* UAE Education System Info */}
         <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border p-6">
           <div className="flex items-center mb-4">
-            <span className="text-2xl mr-3">🇦🇪</span>
+            <span className="text-2xl me-3">🇦🇪</span>
             <h3 className="text-lg font-dubai-bold text-gray-900">UAE Education Excellence</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

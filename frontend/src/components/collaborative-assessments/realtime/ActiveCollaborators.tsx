@@ -77,7 +77,7 @@ export const ActiveCollaborators: React.FC<ActiveCollaboratorsProps> = ({
                             </AvatarFallback>
                           </Avatar>
                           <Circle 
-                            className={`absolute -bottom-1 -right-1 h-3 w-3 fill-current ${getStatusColor(collaborator.status)}`}
+                            className={`absolute -bottom-1 -end-1 h-3 w-3 fill-current ${getStatusColor(collaborator.status)}`}
                           />
                         </div>
                         

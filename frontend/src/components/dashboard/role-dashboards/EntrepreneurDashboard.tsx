@@ -13,9 +13,9 @@ interface EntrepreneurDashboardProps {
 const EntrepreneurDashboard: React.FC<EntrepreneurDashboardProps> = ({ activeTab }) => (
   <Tabs defaultValue={activeTab} className="space-y-8">
     <TabsList className="mb-4">
-      <TabsTrigger value="overview"><Building className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-      <TabsTrigger value="opportunities"><Lightbulb className="h-4 w-4 mr-2" /> Opportunities</TabsTrigger>
-      <TabsTrigger value="resources"><LineChart className="h-4 w-4 mr-2" /> Resources</TabsTrigger>
+      <TabsTrigger value="overview"><Building className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+      <TabsTrigger value="opportunities"><Lightbulb className="h-4 w-4 me-2" /> Opportunities</TabsTrigger>
+      <TabsTrigger value="resources"><LineChart className="h-4 w-4 me-2" /> Resources</TabsTrigger>
     </TabsList>
     
     <TabsContent value="overview" className="space-y-8">

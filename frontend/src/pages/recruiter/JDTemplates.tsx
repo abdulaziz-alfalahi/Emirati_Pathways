@@ -97,7 +97,7 @@ export default function JDTemplatesPage() {
             <div className="overflow-x-auto rounded border">
               <table className="min-w-full bg-card text-sm">
                 <thead>
-                  <tr className="text-left border-b bg-muted/50">
+                  <tr className="text-start border-b bg-muted/50">
                     <th className="p-3 font-medium text-slate-600">Title</th>
                     <th className="p-3 font-medium text-slate-600">Source</th>
                     <th className="p-3 font-medium text-slate-600">Created At</th>

@@ -86,7 +86,7 @@ const InternshipsPage: React.FC = () => {
         </Badge>
         <br />
         <Button variant="outline">
-          <Mail className="h-4 w-4 mr-2" />
+          <Mail className="h-4 w-4 me-2" />
           {t('opportunities.notifyMe')}
         </Button>
       </div>
@@ -128,7 +128,7 @@ const InternshipsPage: React.FC = () => {
         </div>
 
         <Button>
-          <Search className="h-4 w-4 mr-2" />
+          <Search className="h-4 w-4 me-2" />
           {t('applications.empty.action')}
         </Button>
       </div>
@@ -163,7 +163,7 @@ const InternshipsPage: React.FC = () => {
         </div>
 
         <Button>
-          <Search className="h-4 w-4 mr-2" />
+          <Search className="h-4 w-4 me-2" />
           {t('saved.empty.action')}
         </Button>
       </div>

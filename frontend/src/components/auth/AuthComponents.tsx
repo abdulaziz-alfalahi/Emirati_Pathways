@@ -199,7 +199,7 @@ export const LoginForm: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'
+                  className={`appearance-none relative block w-full px-3 py-2 pe-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'
                     } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Enter your password"
                   value={formData.password}
@@ -207,7 +207,7 @@ export const LoginForm: React.FC = () => {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 end-0 pe-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -226,7 +226,7 @@ export const LoginForm: React.FC = () => {
             {showMFA && (
               <div>
                 <label htmlFor="mfaCode" className="block text-sm font-medium text-gray-700">
-                  <ShieldCheckIcon className="inline h-4 w-4 mr-1" />
+                  <ShieldCheckIcon className="inline h-4 w-4 me-1" />
                   MFA Code
                 </label>
                 <input
@@ -480,7 +480,7 @@ export const RegistrationForm: React.FC = () => {
               {/* Phone */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  <DevicePhoneMobileIcon className="inline h-4 w-4 mr-1" />
+                  <DevicePhoneMobileIcon className="inline h-4 w-4 me-1" />
                   UAE Phone Number *
                 </label>
                 <input
@@ -565,7 +565,7 @@ export const RegistrationForm: React.FC = () => {
                     checked={formData.terms_accepted}
                     onChange={(e) => setFormData({ ...formData, terms_accepted: e.target.checked })}
                   />
-                  <label htmlFor="terms_accepted" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="terms_accepted" className="ms-2 block text-sm text-gray-900">
                     I accept the{' '}
                     <Link to="/terms" className="text-blue-600 hover:text-blue-500">
                       Terms and Conditions
@@ -586,7 +586,7 @@ export const RegistrationForm: React.FC = () => {
                     checked={formData.privacy_accepted}
                     onChange={(e) => setFormData({ ...formData, privacy_accepted: e.target.checked })}
                   />
-                  <label htmlFor="privacy_accepted" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="privacy_accepted" className="ms-2 block text-sm text-gray-900">
                     I accept the{' '}
                     <Link to="/privacy" className="text-blue-600 hover:text-blue-500">
                       Privacy Policy
@@ -607,7 +607,7 @@ export const RegistrationForm: React.FC = () => {
                     checked={formData.marketing_consent}
                     onChange={(e) => setFormData({ ...formData, marketing_consent: e.target.checked })}
                   />
-                  <label htmlFor="marketing_consent" className="ml-2 block text-sm text-gray-900">
+                  <label htmlFor="marketing_consent" className="ms-2 block text-sm text-gray-900">
                     I would like to receive marketing communications and job alerts
                   </label>
                 </div>

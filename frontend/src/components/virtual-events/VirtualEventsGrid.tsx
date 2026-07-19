@@ -123,12 +123,12 @@ const VirtualEventsGrid: React.FC = () => {
       <div className="bg-card p-4 rounded-lg border">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search events..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
           
@@ -167,7 +167,7 @@ const VirtualEventsGrid: React.FC = () => {
               Upcoming Only
             </Button>
             <Button variant="outline" onClick={clearFilters}>
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 me-2" />
               Clear
             </Button>
           </div>

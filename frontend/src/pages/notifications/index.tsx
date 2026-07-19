@@ -43,13 +43,13 @@ const NotificationsPage: React.FC = () => {
   const getNotificationTypeColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'border-l-green-500';
+        return 'border-s-green-500';
       case 'warning':
-        return 'border-l-yellow-500';
+        return 'border-s-yellow-500';
       case 'urgent':
-        return 'border-l-red-500';
+        return 'border-s-red-500';
       default:
-        return 'border-l-blue-500';
+        return 'border-s-blue-500';
     }
   };
 
@@ -169,7 +169,7 @@ const NotificationsPage: React.FC = () => {
                 {filteredNotifications.map((notification) => (
                   <Card
                     key={notification.id}
-                    className={`border-l-4 ${getNotificationTypeColor(notification.type)} ${!notification.is_read ? 'bg-muted/30' : ''
+                    className={`border-s-4 ${getNotificationTypeColor(notification.type)} ${!notification.is_read ? 'bg-muted/30' : ''
                       } hover:shadow-md transition-shadow cursor-pointer`}
                     onClick={() => handleNotificationClick(notification)}
                   >

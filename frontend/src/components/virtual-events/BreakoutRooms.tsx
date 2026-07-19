@@ -182,7 +182,7 @@ const BreakoutRooms: React.FC<BreakoutRoomsProps> = ({ sessionId, eventId }) => 
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2" />
+              <Users className="h-5 w-5 me-2" />
               Breakout Rooms
             </CardTitle>
             <CardDescription>
@@ -192,7 +192,7 @@ const BreakoutRooms: React.FC<BreakoutRoomsProps> = ({ sessionId, eventId }) => 
           <Dialog open={showCreateRoom} onOpenChange={setShowCreateRoom}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 me-1" />
                 Create Room
               </Button>
             </DialogTrigger>
@@ -221,11 +221,11 @@ const BreakoutRooms: React.FC<BreakoutRoomsProps> = ({ sessionId, eventId }) => 
                   <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                     <span>Host: {room.host_name}</span>
                     <div className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
+                      <Users className="h-3 w-3 me-1" />
                       {room.current_participants}/{room.max_participants}
                     </div>
                     <div className="flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
+                      <Clock className="h-3 w-3 me-1" />
                       {new Date(room.created_at).toLocaleTimeString('en-AE', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -301,7 +301,7 @@ const BreakoutRooms: React.FC<BreakoutRoomsProps> = ({ sessionId, eventId }) => 
                     onClick={() => joinRoom(room.id)}
                     disabled={room.current_participants >= room.max_participants}
                   >
-                    <Video className="h-4 w-4 mr-1" />
+                    <Video className="h-4 w-4 me-1" />
                     Join Room
                   </Button>
                 </div>

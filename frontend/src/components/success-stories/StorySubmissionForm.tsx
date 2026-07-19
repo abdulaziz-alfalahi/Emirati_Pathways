@@ -246,12 +246,12 @@ export const StorySubmissionForm: React.FC<StorySubmissionFormProps> = ({ onSubm
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
                   Submitting...
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="me-2 h-4 w-4" />
                   Submit Story
                 </>
               )}

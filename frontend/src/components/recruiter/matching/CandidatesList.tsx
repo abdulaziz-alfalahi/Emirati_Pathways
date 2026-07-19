@@ -62,7 +62,7 @@ const CandidatesHeader: React.FC<CandidatesHeaderProps> = React.memo(({ candidat
       <CardDescription>{candidateCount} candidates found</CardDescription>
     </div>
     <Button variant="outline" size="sm">
-      <Filter className="h-4 w-4 mr-1" /> Filter
+      <Filter className="h-4 w-4 me-1" /> Filter
     </Button>
   </CardHeader>
 ));

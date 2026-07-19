@@ -139,7 +139,7 @@ export const ResourcesTab: React.FC = () => {
                     </p>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="flex-1">
-                        <ExternalLink className="h-3 w-3 mr-1" />
+                        <ExternalLink className="h-3 w-3 me-1" />
                         View
                       </Button>
                       {item.type.includes('PDF') || item.type.includes('Guide') && (

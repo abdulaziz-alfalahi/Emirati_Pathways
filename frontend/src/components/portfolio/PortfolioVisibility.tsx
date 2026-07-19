@@ -89,9 +89,9 @@ const PortfolioVisibility: React.FC<PortfolioVisibilityProps> = ({ portfolio }) 
                 <Input 
                   value={portfolioUrl}
                   readOnly
-                  className="pl-9"
+                  className="ps-9"
                 />
-                <Link className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Link className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
               <Button onClick={handleCopyLink} variant="outline" size="icon">
                 <Copy className="h-4 w-4" />

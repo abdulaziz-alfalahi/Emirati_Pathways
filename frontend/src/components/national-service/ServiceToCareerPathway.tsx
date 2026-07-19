@@ -128,7 +128,7 @@ export const ServiceToCareerPathway: React.FC = () => {
               </h3>
               <div className="space-y-2">
                 {selectedRoleData.transferableSkills.map((skill, index) => (
-                  <Badge key={index} variant="outline" className="mr-2 mb-2">
+                  <Badge key={index} variant="outline" className="me-2 mb-2">
                     {skill}
                   </Badge>
                 ))}
@@ -174,9 +174,9 @@ export const ServiceToCareerPathway: React.FC = () => {
               
               return (
                 <div key={index} className={`flex items-start gap-4 p-4 rounded-lg transition-all ${
-                  status === 'current' ? 'bg-ehrdc-teal/10 border-l-4 border-ehrdc-teal' :
-                  status === 'completed' ? 'bg-green-50 border-l-4 border-green-500' :
-                  'bg-gray-50 border-l-4 border-gray-300'
+                  status === 'current' ? 'bg-ehrdc-teal/10 border-s-4 border-ehrdc-teal' :
+                  status === 'completed' ? 'bg-green-50 border-s-4 border-green-500' :
+                  'bg-gray-50 border-s-4 border-gray-300'
                 }`}>
                   <div className={`rounded-full p-2 ${
                     status === 'current' ? 'bg-ehrdc-teal text-white' :

@@ -39,9 +39,9 @@ const ReadReceipt: React.FC<{ message: Message; isCurrentUser: boolean }> = ({ m
   if (!isCurrentUser) return null;
   const status = message.status || (message.read ? 'read' : 'sent');
   if (status === 'read') {
-    return <CheckCheck className="h-3.5 w-3.5 text-blue-400 inline-block ml-1" />;
+    return <CheckCheck className="h-3.5 w-3.5 text-blue-400 inline-block ms-1" />;
   }
-  return <Check className="h-3.5 w-3.5 text-gray-400 inline-block ml-1" />;
+  return <Check className="h-3.5 w-3.5 text-gray-400 inline-block ms-1" />;
 };
 
 /** Renders file attachments inline */
@@ -71,7 +71,7 @@ const AttachmentDisplay: React.FC<{ attachments: Attachment[] }> = ({ attachment
                 <FileText className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate max-w-[160px]">{att.filename}</span>
                 <span className="text-muted-foreground">{formatFileSize(att.size)}</span>
-                <Download className="h-3 w-3 ml-auto" />
+                <Download className="h-3 w-3 ms-auto" />
               </a>
             )}
           </div>
@@ -235,13 +235,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         {searchOpen && (
           <div className="flex items-center gap-2 mt-2 pt-2 border-t">
             <div className="relative flex-1">
-              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <SearchIcon className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <input
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setMatchIndex(0); }}
                 placeholder="Search messages…"
-                className="w-full h-8 pl-8 pr-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full h-8 ps-8 pe-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
             {searchQuery.length >= 2 && (
@@ -326,7 +326,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                                 className="w-full bg-white hover:bg-slate-50"
                                 onClick={() => navigate(`/candidate-profile/${safeMetadata.candidate_id}`)}
                               >
-                                <Briefcase className="h-3 w-3 mr-2" />
+                                <Briefcase className="h-3 w-3 me-2" />
                                 View Candidate Profile
                               </Button>
                             );
@@ -347,8 +347,8 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                               <div className="text-sm font-medium mb-1">{message.senderName}</div>
                             )}
                             <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${isCurrentUser
-                              ? `bg-blue-600 text-white rounded-br-none${message._optimistic ? ' opacity-60' : ''}${message._failed ? ' bg-red-500' : ''}`
-                              : 'bg-white border rounded-bl-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                              ? `bg-blue-600 text-white rounded-ee-none${message._optimistic ? ' opacity-60' : ''}${message._failed ? ' bg-red-500' : ''}`
+                              : 'bg-white border rounded-es-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                               }`}>
                               <HighlightText text={message.content} query={searchQuery} />
                               {message.attachments && message.attachments.length > 0 && (
@@ -388,7 +388,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                     <Avatar className="mt-1">
                       <AvatarFallback>{(typingUserName || participantName).charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="rounded-2xl px-4 py-3 bg-white border rounded-bl-none shadow-sm dark:bg-slate-800">
+                    <div className="rounded-2xl px-4 py-3 bg-white border rounded-es-none shadow-sm dark:bg-slate-800">
                       <div className="flex gap-1 items-center">
                         <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -416,7 +416,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                 {onRemoveAttachment && (
                   <button
                     onClick={() => onRemoveAttachment(i)}
-                    className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                    className="ms-1 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>

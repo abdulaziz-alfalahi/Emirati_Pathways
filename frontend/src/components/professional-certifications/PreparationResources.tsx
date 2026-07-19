@@ -192,11 +192,11 @@ export const PreparationResources: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline">
-                        <BookOpen className="h-4 w-4 mr-2" />
+                        <BookOpen className="h-4 w-4 me-2" />
                         Preview
                       </Button>
                       <Button size="sm" className="bg-slate-800 hover:bg-slate-700">
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="h-4 w-4 me-2" />
                         Download
                       </Button>
                     </div>
@@ -246,7 +246,7 @@ export const PreparationResources: React.FC = () => {
                         View Details
                       </Button>
                       <Button size="sm" className="bg-slate-800 hover:bg-slate-700">
-                        <Play className="h-4 w-4 mr-2" />
+                        <Play className="h-4 w-4 me-2" />
                         Start Exam
                       </Button>
                     </div>
@@ -340,7 +340,7 @@ export const PreparationResources: React.FC = () => {
                       View Group
                     </Button>
                     <Button className="bg-slate-800 hover:bg-slate-700">
-                      <Users className="h-4 w-4 mr-2" />
+                      <Users className="h-4 w-4 me-2" />
                       Join Group
                     </Button>
                   </div>

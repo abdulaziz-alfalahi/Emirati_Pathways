@@ -45,7 +45,7 @@ export const SectionNavigation: React.FC<SectionNavigationProps> = ({
             onClick={onPreviousSection}
             disabled={!canGoPrevious}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             Previous
           </Button>
           
@@ -64,7 +64,7 @@ export const SectionNavigation: React.FC<SectionNavigationProps> = ({
           disabled={!canGoNext}
         >
           Next
-          <ArrowRight className="h-4 w-4 ml-2" />
+          <ArrowRight className="h-4 w-4 ms-2" />
         </Button>
       </div>
 

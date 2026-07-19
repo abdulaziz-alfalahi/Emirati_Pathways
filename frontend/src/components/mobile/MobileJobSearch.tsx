@@ -245,7 +245,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
     const isApplied = appliedJobs.has(job.id);
 
     return (
-      <Card className="mb-4 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+      <Card className="mb-4 border-s-4 border-s-blue-500 hover:shadow-md transition-shadow">
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
@@ -255,7 +255,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                 </h3>
                 {job.match_score && job.match_score > 80 && (
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    <Star className="h-3 w-3 mr-1" />
+                    <Star className="h-3 w-3 me-1" />
                     {job.match_score}% match
                   </Badge>
                 )}
@@ -266,7 +266,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                 <span>{job.company}</span>
                 {job.is_emiratization_target && (
                   <Badge variant="outline" className="text-xs">
-                    <Award className="h-3 w-3 mr-1" />
+                    <Award className="h-3 w-3 me-1" />
                     Emiratization
                   </Badge>
                 )}
@@ -274,15 +274,15 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
 
               <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                 <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-1" />
+                  <MapPin className="h-4 w-4 me-1" />
                   {job.location}
                 </div>
                 <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 mr-1" />
+                  <DollarSign className="h-4 w-4 me-1" />
                   {formatSalary(job.salary_range)}
                 </div>
                 <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
+                  <Clock className="h-4 w-4 me-1" />
                   {formatTimeAgo(job.posted_date)}
                 </div>
               </div>
@@ -291,13 +291,13 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                 <Badge variant="outline">{job.employment_type}</Badge>
                 {job.remote_option && (
                   <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                    <Globe className="h-3 w-3 mr-1" />
+                    <Globe className="h-3 w-3 me-1" />
                     Remote
                   </Badge>
                 )}
                 {job.urgency && (
                   <Badge className={getUrgencyColor(job.urgency)}>
-                    <Zap className="h-3 w-3 mr-1" />
+                    <Zap className="h-3 w-3 me-1" />
                     {job.urgency} priority
                   </Badge>
                 )}
@@ -325,7 +325,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                 size="sm"
                 onClick={() => onSelect(job)}
               >
-                <Eye className="h-4 w-4 mr-1" />
+                <Eye className="h-4 w-4 me-1" />
                 View
               </Button>
             </div>
@@ -338,12 +338,12 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
             >
               {isApplied ? (
                 <>
-                  <Send className="h-4 w-4 mr-1" />
+                  <Send className="h-4 w-4 me-1" />
                   Applied
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4 mr-1" />
+                  <Send className="h-4 w-4 me-1" />
                   Apply
                 </>
               )}
@@ -364,7 +364,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
         <SheetContent side="bottom" className="h-[90vh]">
           <SheetHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-left">{job.title}</SheetTitle>
+              <SheetTitle className="text-start">{job.title}</SheetTitle>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
@@ -419,7 +419,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                   <ul className="space-y-1">
                     {job.requirements.map((req, index) => (
                       <li key={index} className="text-sm text-gray-600 flex items-start">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0" />
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 me-2 flex-shrink-0" />
                         {req}
                       </li>
                     ))}
@@ -434,7 +434,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                   <ul className="space-y-1">
                     {job.benefits.map((benefit, index) => (
                       <li key={index} className="text-sm text-gray-600 flex items-start">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0" />
+                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 me-2 flex-shrink-0" />
                         {benefit}
                       </li>
                     ))}
@@ -445,14 +445,14 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
           </ScrollArea>
 
           {/* Action Buttons */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <div className="absolute bottom-0 start-0 end-0 p-4 bg-white border-t">
             <div className="flex space-x-3">
               <Button
                 variant="outline"
                 onClick={() => toggleSaveJob(job.id)}
                 className={isSaved ? 'bg-blue-50 text-blue-700' : ''}
               >
-                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
+                {isSaved ? <BookmarkCheck className="h-4 w-4 me-1" /> : <Bookmark className="h-4 w-4 me-1" />}
                 {isSaved ? 'Saved' : 'Save'}
               </Button>
               
@@ -463,12 +463,12 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
               >
                 {isApplied ? (
                   <>
-                    <Send className="h-4 w-4 mr-1" />
+                    <Send className="h-4 w-4 me-1" />
                     Applied
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-1" />
+                    <Send className="h-4 w-4 me-1" />
                     Apply Now
                   </>
                 )}
@@ -583,7 +583,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
         </ScrollArea>
 
         {/* Filter Actions */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
+        <div className="absolute bottom-0 start-0 end-0 p-4 bg-white border-t">
           <div className="flex space-x-3">
             <Button
               variant="outline"
@@ -625,12 +625,12 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
       <div className="bg-white border-b border-gray-200 p-4 space-y-3">
         <div className="flex space-x-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search jobs..."
               value={searchFilters.query}
               onChange={(e) => setSearchFilters(prev => ({ ...prev, query: e.target.value }))}
-              className="pl-10"
+              className="ps-10"
               onKeyPress={(e) => e.key === 'Enter' && loadJobs()}
             />
           </div>
@@ -651,7 +651,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
               <Badge variant="secondary">
                 Location: {searchFilters.location}
                 <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  className="h-3 w-3 ms-1 cursor-pointer" 
                   onClick={() => setSearchFilters(prev => ({ ...prev, location: '' }))}
                 />
               </Badge>
@@ -660,7 +660,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
               <Badge variant="secondary">
                 Type: {searchFilters.employment_type}
                 <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  className="h-3 w-3 ms-1 cursor-pointer" 
                   onClick={() => setSearchFilters(prev => ({ ...prev, employment_type: '' }))}
                 />
               </Badge>
@@ -669,7 +669,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
               <Badge variant="secondary">
                 Emiratization Only
                 <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  className="h-3 w-3 ms-1 cursor-pointer" 
                   onClick={() => setSearchFilters(prev => ({ ...prev, emiratization_only: false }))}
                 />
               </Badge>
@@ -678,7 +678,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
               <Badge variant="secondary">
                 Remote Only
                 <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  className="h-3 w-3 ms-1 cursor-pointer" 
                   onClick={() => setSearchFilters(prev => ({ ...prev, remote_only: false }))}
                 />
               </Badge>
@@ -711,7 +711,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
                 {jobs.length} job{jobs.length !== 1 ? 's' : ''} found
               </p>
               <Button variant="ghost" size="sm" onClick={loadJobs}>
-                <TrendingUp className="h-4 w-4 mr-1" />
+                <TrendingUp className="h-4 w-4 me-1" />
                 Refresh
               </Button>
             </div>

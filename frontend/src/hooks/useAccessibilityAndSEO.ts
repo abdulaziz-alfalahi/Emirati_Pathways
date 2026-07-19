@@ -82,7 +82,7 @@ export const useAccessibilityAndSEO = (
     if (options.skipLinkTarget && !document.querySelector('.skip-link')) {
       const skipLink = document.createElement('a');
       skipLink.href = options.skipLinkTarget;
-      skipLink.className = 'skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded';
+      skipLink.className = 'skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:start-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded';
       skipLink.textContent = language === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content';
       skipLink.setAttribute('aria-label', language === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content');
       document.body.insertBefore(skipLink, document.body.firstChild);

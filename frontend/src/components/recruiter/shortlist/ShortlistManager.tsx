@@ -429,11 +429,11 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
           <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => { loadShortlist(); loadStats(); }}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={handleViewInterviews}>
-              <CalendarDays className="h-4 w-4 mr-2" />
+              <CalendarDays className="h-4 w-4 me-2" />
               View Interviews
             </Button>
 
@@ -442,7 +442,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               onClick={handleCreateOfferForSelected}
               disabled={selectedCandidates.length === 0}
             >
-              <Gift className="h-4 w-4 mr-2" />
+              <Gift className="h-4 w-4 me-2" />
               Create Offer ({selectedCandidates.length})
             </Button>
             <Button
@@ -450,7 +450,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={() => setShowOfferManager(true)}
             >
-              <Gift className="h-4 w-4 mr-2" />
+              <Gift className="h-4 w-4 me-2" />
               Manage Offers
             </Button>
           </div>
@@ -524,7 +524,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   <TableHead>Interview</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>UAE National</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -957,7 +957,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     <TableHead>Status</TableHead>
                     <TableHead>Rating</TableHead>
                     <TableHead>Recommendation</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

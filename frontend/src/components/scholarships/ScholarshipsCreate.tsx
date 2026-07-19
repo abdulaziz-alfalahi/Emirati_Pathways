@@ -286,7 +286,7 @@ const ScholarshipsCreate: React.FC<ScholarshipsCreateProps> = ({ onSuccess }) =>
               onClick={addRequirement}
               className="w-full"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               Add Requirement
             </Button>
           </div>

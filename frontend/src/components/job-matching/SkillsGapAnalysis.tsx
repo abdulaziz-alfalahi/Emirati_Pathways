@@ -181,7 +181,7 @@ const SkillsGapAnalysis: React.FC<SkillsGapAnalysisProps> = ({ jobMatch, onClose
         ) : (
           <div className="grid gap-4">
             {skillsGap.map((gap, index) => (
-              <Card key={index} className="border-l-4 border-l-blue-500">
+              <Card key={index} className="border-s-4 border-s-blue-500">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{gap.skill}</CardTitle>
@@ -196,7 +196,7 @@ const SkillsGapAnalysis: React.FC<SkillsGapAnalysisProps> = ({ jobMatch, onClose
                     <span>Current: {gap.currentLevel}</span>
                     <span>→</span>
                     <span>Required: {gap.requiredLevel}</span>
-                    <span className="ml-auto">
+                    <span className="ms-auto">
                       Mentioned in {gap.frequency}% of similar jobs
                     </span>
                   </div>
@@ -225,7 +225,7 @@ const SkillsGapAnalysis: React.FC<SkillsGapAnalysisProps> = ({ jobMatch, onClose
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(resource.url, '_blank')}
-                            className="ml-2"
+                            className="ms-2"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </Button>

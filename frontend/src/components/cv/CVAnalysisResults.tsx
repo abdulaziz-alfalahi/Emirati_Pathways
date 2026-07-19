@@ -125,7 +125,7 @@ const CVAnalysisResults: React.FC<CVAnalysisResultsProps> = ({
         ) : (
           <div className="space-y-4">
             {experience.map((exp, index) => (
-              <div key={index} className="border-l-2 border-blue-200 pl-4 pb-4">
+              <div key={index} className="border-s-2 border-blue-200 ps-4 pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-semibold text-lg">{exp.position}</h4>
@@ -188,7 +188,7 @@ const CVAnalysisResults: React.FC<CVAnalysisResultsProps> = ({
         ) : (
           <div className="space-y-4">
             {education.map((edu, index) => (
-              <div key={index} className="border-l-2 border-green-200 pl-4 pb-4">
+              <div key={index} className="border-s-2 border-green-200 ps-4 pb-4">
                 <h4 className="font-semibold">{edu.degree}</h4>
                 <p className="text-green-600 font-medium">{edu.institution}</p>
                 <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
@@ -454,19 +454,19 @@ const CVAnalysisResults: React.FC<CVAnalysisResultsProps> = ({
         <div className="flex gap-2">
           {onEdit && (
             <Button variant="outline" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 me-2" />
               Edit
             </Button>
           )}
           {onDownload && (
             <Button variant="outline" onClick={onDownload}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Download
             </Button>
           )}
           {onShare && (
             <Button variant="outline" onClick={onShare}>
-              <Share2 className="h-4 w-4 mr-2" />
+              <Share2 className="h-4 w-4 me-2" />
               Share
             </Button>
           )}

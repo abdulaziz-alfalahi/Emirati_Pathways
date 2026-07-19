@@ -96,7 +96,7 @@ function ParsedDataDisplay({ data, onEdit, onSave, isSaving }: ParsedDataDisplay
           )}
           <div className="flex space-x-2">
             <Button size="sm" onClick={handleSaveEdit}>
-              <CheckCircle className="h-4 w-4 mr-1" />
+              <CheckCircle className="h-4 w-4 me-1" />
               Save
             </Button>
             <Button variant="outline" size="sm" onClick={handleCancelEdit}>
@@ -263,7 +263,7 @@ function ParsedDataDisplay({ data, onEdit, onSave, isSaving }: ParsedDataDisplay
                 <span className="font-medium">
                   {data.salary.currency || 'AED'} {data.salary.min?.toLocaleString()} - {data.salary.max?.toLocaleString()}
                 </span>
-                <span className="text-gray-600 ml-2">per {data.salary.period || 'month'}</span>
+                <span className="text-gray-600 ms-2">per {data.salary.period || 'month'}</span>
               </div>
             </div>
           )}
@@ -335,12 +335,12 @@ function ParsedDataDisplay({ data, onEdit, onSave, isSaving }: ParsedDataDisplay
         >
           {isSaving ? (
             <>
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              <RefreshCw className="h-4 w-4 me-2 animate-spin" />
               Saving...
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 me-2" />
               Save Job Description
             </>
           )}
@@ -489,12 +489,12 @@ export function JobDescriptionForm() {
                 >
                   {isLoading ? (
                     <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      <RefreshCw className="h-4 w-4 me-2 animate-spin" />
                       Parsing Job Description...
                     </>
                   ) : (
                     <>
-                      <Wand2 className="h-4 w-4 mr-2" />
+                      <Wand2 className="h-4 w-4 me-2" />
                       Parse Job Description
                     </>
                   )}

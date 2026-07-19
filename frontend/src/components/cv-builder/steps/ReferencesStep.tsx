@@ -129,7 +129,7 @@ export const ReferencesStep: React.FC<ReferencesStepProps> = ({
       <Card className="bg-amber-50 border-amber-200">
         <CardHeader>
           <CardTitle className="text-lg text-amber-800 flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
+            <AlertCircle className="h-5 w-5 me-2" />
             {t('cv.builder.references.notice', 'Important Notice')}
           </CardTitle>
         </CardHeader>
@@ -150,7 +150,7 @@ export const ReferencesStep: React.FC<ReferencesStepProps> = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center">
-                  <User className="h-5 w-5 mr-2" />
+                  <User className="h-5 w-5 me-2" />
                   {reference.name}
                 </CardTitle>
                 <div className="flex space-x-2">
@@ -174,21 +174,21 @@ export const ReferencesStep: React.FC<ReferencesStepProps> = ({
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Building className="h-4 w-4 mr-2" />
+                  <Building className="h-4 w-4 me-2" />
                   {reference.position} at {reference.company}
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="h-4 w-4 me-2" />
                   {reference.email}
                 </div>
                 {reference.phone && (
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4 mr-2" />
+                    <Phone className="h-4 w-4 me-2" />
                     {reference.phone}
                   </div>
                 )}
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 me-2" />
                   {t('cv.builder.references.relationship', 'Relationship')}: {reference.relationship}
                 </div>
               </div>
@@ -292,11 +292,11 @@ export const ReferencesStep: React.FC<ReferencesStepProps> = ({
 
             <div className="flex space-x-2 pt-4">
               <Button onClick={handleSaveReference}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t('common.save', 'Save')}
               </Button>
               <Button variant="outline" onClick={handleCancelEdit}>
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 me-2" />
                 {t('common.cancel', 'Cancel')}
               </Button>
             </div>

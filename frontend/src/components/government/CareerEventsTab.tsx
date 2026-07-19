@@ -313,13 +313,13 @@ const getEventTypeBadge = (type: string, b: (en: string, ar: string) => string) 
 const getStatusBadge = (status: string, b: (en: string, ar: string) => string) => {
   switch (status) {
     case 'upcoming':
-      return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 mr-1 inline" />{b('Upcoming', 'قادم')}</Badge>;
+      return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Clock className="h-3 w-3 me-1 inline" />{b('Upcoming', 'قادم')}</Badge>;
     case 'registration_open':
-      return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><Radio className="h-3 w-3 mr-1 inline" />{b('Registration Open', 'التسجيل مفتوح')}</Badge>;
+      return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><Radio className="h-3 w-3 me-1 inline" />{b('Registration Open', 'التسجيل مفتوح')}</Badge>;
     case 'live':
-      return <Badge className="bg-red-50 text-red-700 border-red-200 text-[10px] font-dubai-medium animate-pulse"><Radio className="h-3 w-3 mr-1 inline" />{b('Live Now', 'مباشر الآن')}</Badge>;
+      return <Badge className="bg-red-50 text-red-700 border-red-200 text-[10px] font-dubai-medium animate-pulse"><Radio className="h-3 w-3 me-1 inline" />{b('Live Now', 'مباشر الآن')}</Badge>;
     case 'completed':
-      return <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 mr-1 inline" />{b('Completed', 'مكتمل')}</Badge>;
+      return <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 me-1 inline" />{b('Completed', 'مكتمل')}</Badge>;
     default:
       return null;
   }
@@ -514,7 +514,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="text-right">
+                          <div className="text-end">
                             <p className="text-xs font-dubai-bold text-slate-700">{company.jobsOffered} {b('jobs', 'وظيفة')}</p>
                             <p className="text-[10px] text-slate-400 font-dubai-medium">{company.emiratizationContribution}% {b('Emiratization', 'توطين')}</p>
                           </div>
@@ -601,7 +601,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
                       <div className="flex items-center gap-2 mb-1">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">{ce.name}</CardTitle>
                         <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">
-                          <Clock className="h-3 w-3 mr-1 inline" />{b('Draft', 'مسودة')}
+                          <Clock className="h-3 w-3 me-1 inline" />{b('Draft', 'مسودة')}
                         </Badge>
                       </div>
                       {ce.description && <CardDescription className="font-dubai-medium text-slate-500 text-sm">{ce.description}</CardDescription>}
@@ -624,7 +624,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
 
       {/* ─── Success Toast ─── */}
       {showSuccess && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 end-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-dubai-medium">
             <CheckCircle className="h-5 w-5" />
             <span className="text-sm">{b(`"${showSuccess}" created successfully!`, `تم إنشاء "${showSuccess}" بنجاح!`)}</span>

@@ -762,7 +762,7 @@ const AssessorProfileForm: React.FC<AssessorProfileFormProps> = ({
                 <div className="flex justify-between items-center">
                   <Label>Certifications & Credentials</Label>
                   <Button onClick={addCertification} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Certification
                   </Button>
                 </div>
@@ -857,7 +857,7 @@ const AssessorProfileForm: React.FC<AssessorProfileFormProps> = ({
                 <div className="flex justify-between items-center">
                   <Label>Professional Development</Label>
                   <Button onClick={addContinuingEducation} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Course
                   </Button>
                 </div>
@@ -1631,12 +1631,12 @@ const AssessorProfileForm: React.FC<AssessorProfileFormProps> = ({
         >
           {isSaving ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />
               Saving...
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-4 w-4 me-2" />
               Save Profile
             </>
           )}

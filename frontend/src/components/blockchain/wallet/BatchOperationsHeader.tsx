@@ -31,9 +31,9 @@ const BatchOperationsHeader: React.FC<BatchOperationsHeaderProps> = ({
           className="flex items-center"
         >
           {selectedCredentials.length === totalCredentials ? (
-            <CheckSquare className="h-4 w-4 mr-2" />
+            <CheckSquare className="h-4 w-4 me-2" />
           ) : (
-            <Square className="h-4 w-4 mr-2" />
+            <Square className="h-4 w-4 me-2" />
           )}
           {selectedCredentials.length === totalCredentials ? 'Deselect All' : 'Select All'}
         </Button>
@@ -59,7 +59,7 @@ const BatchOperationsHeader: React.FC<BatchOperationsHeaderProps> = ({
             onClick={onBatchOperations}
             className="flex items-center"
           >
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="h-4 w-4 me-2" />
             Batch Operations
           </Button>
         )}

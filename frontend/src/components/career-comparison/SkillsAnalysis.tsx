@@ -43,7 +43,7 @@ export const SkillsAnalysis: React.FC = () => {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-semibold text-lg">{career.career}</h3>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-sm text-muted-foreground">Market Demand</div>
                       <div className="flex items-center gap-2">
                         <Progress value={career.demandLevel} className="w-20 h-2" />

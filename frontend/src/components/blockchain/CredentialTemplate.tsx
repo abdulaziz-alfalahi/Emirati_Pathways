@@ -114,21 +114,21 @@ const CredentialTemplate: React.FC<CredentialTemplateProps> = ({
 
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 me-2" />
                 <span>Issued: {formatDate(credential.issued_date)}</span>
               </div>
               {credential.expiry_date && (
                 <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   <span>Expires: {formatDate(credential.expiry_date)}</span>
                 </div>
               )}
               <div className="flex items-center">
-                <Hash className="h-4 w-4 mr-2" />
+                <Hash className="h-4 w-4 me-2" />
                 <span>Block: #{credential.block_number}</span>
               </div>
               <div className="flex items-center">
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <ExternalLink className="h-4 w-4 me-2" />
                 <span>Tx: {credential.transaction_hash.substring(0, 12)}...</span>
               </div>
             </div>
@@ -138,7 +138,7 @@ const CredentialTemplate: React.FC<CredentialTemplateProps> = ({
           <div className="text-center">
             <div className="flex justify-center items-center mb-2">
               <div 
-                className={`w-3 h-3 rounded-full mr-2 ${
+                className={`w-3 h-3 rounded-full me-2 ${
                   credential.verification_status === 'verified' ? 'bg-green-400' : 
                   credential.verification_status === 'pending' ? 'bg-yellow-400' : 'bg-red-400'
                 }`}
@@ -200,7 +200,7 @@ const CredentialTemplate: React.FC<CredentialTemplateProps> = ({
           </div>
           
           <Badge 
-            className={`absolute top-2 right-2 ${
+            className={`absolute top-2 end-2 ${
               credential.verification_status === 'verified' ? 'bg-green-500' : 
               credential.verification_status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
             }`}
@@ -211,11 +211,11 @@ const CredentialTemplate: React.FC<CredentialTemplateProps> = ({
 
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 me-2" />
             <span>Issued: {formatDate(credential.issued_date)}</span>
           </div>
           <div className="flex items-center">
-            <Hash className="h-4 w-4 mr-2" />
+            <Hash className="h-4 w-4 me-2" />
             <span>Block: #{credential.block_number}</span>
           </div>
         </div>

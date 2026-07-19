@@ -148,12 +148,12 @@ const ResumeTemplateSelector: React.FC<ResumeTemplateSelectorProps> = ({
       {/* Search and Filters */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search templates..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
         
@@ -202,7 +202,7 @@ const ResumeTemplateSelector: React.FC<ResumeTemplateSelectorProps> = ({
                   )}
                   <div className="flex items-center">
                     <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-600 ml-1">{template.rating}</span>
+                    <span className="text-sm text-gray-600 ms-1">{template.rating}</span>
                   </div>
                 </div>
               </div>

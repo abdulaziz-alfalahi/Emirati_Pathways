@@ -148,11 +148,11 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
 
                     <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => onMessage(displayApplicant)}>
-                            <MessageSquare className="h-4 w-4 mr-2" />
+                            <MessageSquare className="h-4 w-4 me-2" />
                             Message
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => onScheduleInterview(displayApplicant)}>
-                            <Video className="h-4 w-4 mr-2" />
+                            <Video className="h-4 w-4 me-2" />
                             Schedule Interview
                         </Button>
                         <Button
@@ -160,7 +160,7 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                             size="sm"
                             onClick={() => setShowDiscussionModal(true)}
                         >
-                            <Share2 className="h-4 w-4 mr-2" />
+                            <Share2 className="h-4 w-4 me-2" />
                             Share
                         </Button>
 
@@ -171,7 +171,7 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                             size="sm"
                             onClick={() => onUpdateStatus(applicant.application_id, 'shortlisted')}
                         >
-                            <CheckCircle className="h-4 w-4 mr-2" />
+                            <CheckCircle className="h-4 w-4 me-2" />
                             Shortlist
                         </Button>
                         <Button
@@ -179,7 +179,7 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                             size="sm"
                             onClick={() => onUpdateStatus(applicant.application_id, 'rejected')}
                         >
-                            <XCircle className="h-4 w-4 mr-2" />
+                            <XCircle className="h-4 w-4 me-2" />
                             Reject
                         </Button>
                     </div>
@@ -221,8 +221,8 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     {displayApplicant.work_experience.map((exp: any, idx: number) => (
-                                        <div key={idx} className="relative pl-4 border-l-2 border-gray-100 last:border-0">
-                                            <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-blue-600"></div>
+                                        <div key={idx} className="relative ps-4 border-s-2 border-gray-100 last:border-0">
+                                            <div className="absolute -start-[5px] top-1 h-2.5 w-2.5 rounded-full bg-blue-600"></div>
                                             <div className="mb-1">
                                                 <h4 className="font-semibold text-gray-900">{exp.job_title || exp.jobTitle}</h4>
                                                 <div className="text-sm text-gray-600 flex items-center gap-2">
@@ -317,7 +317,7 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                                     onClick={handleDownloadCV}
                                     disabled={isDownloading}
                                 >
-                                    <Download className="h-4 w-4 mr-2" />
+                                    <Download className="h-4 w-4 me-2" />
                                     {isDownloading ? "Downloading..." : "Download CV"}
                                 </Button>
                             </CardContent>

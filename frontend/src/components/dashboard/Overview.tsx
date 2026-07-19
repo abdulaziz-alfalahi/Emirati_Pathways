@@ -60,23 +60,23 @@ export const Overview: React.FC<OverviewProps> = ({ activeRole }) => {
             <div className="space-y-2">
               {activeRole === 'candidate' && (
                 <>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Update Resume</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Search Jobs</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Practice Interview</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Update Resume</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Search Jobs</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Practice Interview</button>
                 </>
               )}
               {activeRole === 'candidate' && (
                 <>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">View Assignments</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Join Study Group</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Schedule Mentoring</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">View Assignments</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Join Study Group</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Schedule Mentoring</button>
                 </>
               )}
               {!['candidate', 'candidate'].includes(activeRole) && (
                 <>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Complete Profile</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Explore Opportunities</button>
-                  <button className="w-full text-left p-2 hover:bg-muted rounded">Connect with Mentors</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Complete Profile</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Explore Opportunities</button>
+                  <button className="w-full text-start p-2 hover:bg-muted rounded">Connect with Mentors</button>
                 </>
               )}
             </div>

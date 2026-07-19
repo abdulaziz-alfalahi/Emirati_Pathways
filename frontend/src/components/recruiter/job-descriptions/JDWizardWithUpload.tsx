@@ -70,7 +70,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
                 className="mb-4"
                 aria-label="View all saved job descriptions"
               >
-                <FolderOpen className="h-4 w-4 mr-2" />
+                <FolderOpen className="h-4 w-4 me-2" />
                 View Saved JDs
               </Button>
               <p className="text-xs text-muted-foreground">
@@ -94,7 +94,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
                     </p>
                   </div>
                   <Button className="w-full" onClick={() => setMode('upload')}>
-                    <FileUp className="h-4 w-4 mr-2" />
+                    <FileUp className="h-4 w-4 me-2" />
                     Upload File
                   </Button>
                   <div className="text-xs text-muted-foreground space-y-1">
@@ -120,7 +120,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
                     </p>
                   </div>
                   <Button variant="outline" className="w-full" onClick={handleManualStart}>
-                    <Edit3 className="h-4 w-4 mr-2" />
+                    <Edit3 className="h-4 w-4 me-2" />
                     Start from Scratch
                   </Button>
                   <div className="text-xs text-muted-foreground space-y-1">
@@ -159,7 +159,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
               onClick={() => navigate('/recruiter/jobs')}
               aria-label="View all saved job descriptions"
             >
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 me-2" />
               View Saved JDs
             </Button>
             <Button variant="outline" onClick={handleManualStart}>

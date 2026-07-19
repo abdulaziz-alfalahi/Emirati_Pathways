@@ -39,7 +39,7 @@ const ImportOptions: React.FC<ImportOptionsProps> = ({
         className="w-full justify-start"
         onClick={handleFileUpload}
       >
-        <FileUp size={16} className="mr-2" />
+        <FileUp size={16} className="me-2" />
         Upload Resume File
       </Button>
       
@@ -49,7 +49,7 @@ const ImportOptions: React.FC<ImportOptionsProps> = ({
         className="w-full justify-start"
         onClick={handleImageImport}
       >
-        <Image size={16} className="mr-2" />
+        <Image size={16} className="me-2" />
         Import from Image
       </Button>
       
@@ -59,7 +59,7 @@ const ImportOptions: React.FC<ImportOptionsProps> = ({
         className="w-full justify-start"
         onClick={handleLinkedInImport}
       >
-        <Linkedin size={16} className="mr-2" />
+        <Linkedin size={16} className="me-2" />
         Import from LinkedIn
       </Button>
 

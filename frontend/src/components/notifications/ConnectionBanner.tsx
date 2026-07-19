@@ -39,7 +39,7 @@ const ConnectionBanner: React.FC = () => {
     if (!showBanner) return null;
 
     return (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500/95 text-white text-center py-1.5 text-sm font-medium shadow-md backdrop-blur-sm animate-pulse">
+        <div className="fixed top-0 start-0 end-0 z-[100] bg-amber-500/95 text-white text-center py-1.5 text-sm font-medium shadow-md backdrop-blur-sm animate-pulse">
             <div className="flex items-center justify-center gap-2">
                 <WifiOff className="h-4 w-4" />
                 Reconnecting to real-time services…

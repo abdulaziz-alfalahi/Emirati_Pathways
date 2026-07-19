@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateFromString } from '@/utils/dateFormat';
+import { langOf, employmentTypeLabel, salaryLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 
 interface MatchBreakdown {
@@ -96,17 +97,11 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     { value: 'senior', label: t('Senior (5+ yrs)', 'خبير (5+ سنوات)'), icon: '⭐' },
   ];
 
-  const getJobTypeLabel = (type: string) => {
-    const typeMap: Record<string, string> = {
-      'full-time': t('Full Time', 'دوام كامل'),
-      'part-time': t('Part Time', 'دوام جزئي'),
-      'contract': t('Contract', 'عقد'),
-      'internship': t('Internship', 'تدريب'),
-      'temporary': t('Temporary', 'مؤقت'),
-      'freelance': t('Freelance', 'عمل حر'),
-    };
-    return typeMap[type] || type.replace('-', ' ');
-  };
+  // Employment type is an API enum, not UI copy — the shared lookup also
+  // absorbs the casing/underscore variants the job APIs emit ("Full-time",
+  // "full_time"), which the old local map missed.
+  const lang = langOf(isRTL);
+  const getJobTypeLabel = (type: string) => employmentTypeLabel(type, lang);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -578,7 +573,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <Button
               size="sm"
               variant="outline"
-              className="ml-4 border-amber-300 hover:bg-amber-100"
+              className="ms-4 border-amber-300 hover:bg-amber-100"
               onClick={() => navigate('/cv-builder')}
             >
               <FileText className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
@@ -608,7 +603,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                 </Badge>
               )}
               {userLocation.lat && (
-                <Badge variant="outline" className="ml-2 flex items-center gap-1">
+                <Badge variant="outline" className="ms-2 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   {t('Location Set', 'تم تحديد الموقع')}
                 </Badge>
@@ -714,7 +709,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
               </div>
             ) : (
               filteredJobs.map((job) => (
-                <Card key={job.id} className={`border-l-4 ${job.matchScore >= 70 ? 'border-l-green-500' : job.matchScore >= 50 ? 'border-l-blue-500' : 'border-l-gray-300'}`}>
+                <Card key={job.id} className={`border-s-4 ${job.matchScore >= 70 ? 'border-s-green-500' : job.matchScore >= 50 ? 'border-s-blue-500' : 'border-s-gray-300'}`}>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
@@ -752,7 +747,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           )}
                           <div className="flex items-center space-x-1">
                             <Coins className="h-4 w-4" />
-                            <span>{job.salary}</span>
+                            <span>{salaryLabel(job.salary, lang)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />

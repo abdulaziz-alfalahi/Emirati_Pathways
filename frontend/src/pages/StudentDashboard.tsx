@@ -155,8 +155,8 @@ export const StudentDashboard = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
-                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {t('Deadline:', 'الموعد النهائي:')} {p.deadline || 'Open'}</span>
-                                            {p.min_gpa && <span className="flex items-center"><Award className="h-4 w-4 mr-1" /> {t('Min GPA:', 'الحد الأدنى للمعدل:')} {p.min_gpa}</span>}
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 me-1" /> {t('Deadline:', 'الموعد النهائي:')} {p.deadline || 'Open'}</span>
+                                            {p.min_gpa && <span className="flex items-center"><Award className="h-4 w-4 me-1" /> {t('Min GPA:', 'الحد الأدنى للمعدل:')} {p.min_gpa}</span>}
                                         </div>
                                         <Button className="w-full">{t('Apply Now', 'قدّم الآن')}</Button>
                                     </CardContent>
@@ -183,9 +183,9 @@ export const StudentDashboard = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
-                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {p.duration}</span>
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 me-1" /> {p.duration}</span>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-4 flex items-center"><ExternalLink className="h-3 w-3 mr-1" /> {p.location}</p>
+                                        <p className="text-sm text-gray-600 mb-4 flex items-center"><ExternalLink className="h-3 w-3 me-1" /> {p.location}</p>
                                         <Button variant="outline" className="w-full">{t('View Details', 'عرض التفاصيل')}</Button>
                                     </CardContent>
                                 </Card>
@@ -212,8 +212,8 @@ export const StudentDashboard = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
-                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {isRTL ? (p.duration_ar || p.duration) : p.duration}</span>
-                                            <span className="flex items-center"><Award className="h-4 w-4 mr-1" /> {isRTL ? (p.tuition_ar || p.tuition) : p.tuition}</span>
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 me-1" /> {isRTL ? (p.duration_ar || p.duration) : p.duration}</span>
+                                            <span className="flex items-center"><Award className="h-4 w-4 me-1" /> {isRTL ? (p.tuition_ar || p.tuition) : p.tuition}</span>
                                         </div>
                                         <Button className="w-full">{t('View Program', 'عرض البرنامج')}</Button>
                                     </CardContent>

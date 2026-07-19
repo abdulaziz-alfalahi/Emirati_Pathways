@@ -14,9 +14,9 @@ interface RetireeDashboardProps {
 const RetireeDashboard: React.FC<RetireeDashboardProps> = ({ activeTab }) => (
   <Tabs defaultValue={activeTab} className="space-y-8">
     <TabsList className="mb-4">
-      <TabsTrigger value="overview"><Heart className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-      <TabsTrigger value="opportunities"><Award className="h-4 w-4 mr-2" /> Opportunities</TabsTrigger>
-      <TabsTrigger value="community"><Users className="h-4 w-4 mr-2" /> Community</TabsTrigger>
+      <TabsTrigger value="overview"><Heart className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+      <TabsTrigger value="opportunities"><Award className="h-4 w-4 me-2" /> Opportunities</TabsTrigger>
+      <TabsTrigger value="community"><Users className="h-4 w-4 me-2" /> Community</TabsTrigger>
     </TabsList>
     
     <TabsContent value="overview" className="space-y-8">

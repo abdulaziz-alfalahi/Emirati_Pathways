@@ -140,14 +140,14 @@ const AdvisoryDashboard: React.FC = () => {
         <CardContent className="space-y-4">
           <Link to="/career-advisory/schedule">
             <Button variant="outline" className="w-full justify-start">
-              <Calendar className="mr-2 h-4 w-4" />
+              <Calendar className="me-2 h-4 w-4" />
               Schedule Advisory Session
             </Button>
           </Link>
           
           <Link to="/career-advisory/interviews">
             <Button variant="outline" className="w-full justify-start">
-              <Video className="mr-2 h-4 w-4" />
+              <Video className="me-2 h-4 w-4" />
               Online Interviews
             </Button>
           </Link>

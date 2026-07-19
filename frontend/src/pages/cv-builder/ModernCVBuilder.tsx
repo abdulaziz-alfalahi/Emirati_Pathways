@@ -162,11 +162,11 @@ const ModernCVBuilder: React.FC = () => {
       headerActions={
         <div className="flex items-center space-x-3">
           <button className="btn-secondary">
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             {t('pages.cv_builder.preview')}
           </button>
           <button className="btn-primary">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t('pages.cv_builder.download')}
           </button>
         </div>
@@ -203,13 +203,13 @@ const ModernCVBuilder: React.FC = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex flex-col space-y-3 lg:ml-8">
+          <div className="flex flex-col space-y-3 lg:ms-8">
             <button className="btn-primary">
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 me-2" />
               {t('pages.cv_builder.upload_existing')}
             </button>
             <button className="btn-secondary">
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 me-2" />
               {t('pages.cv_builder.ai_enhance')}
             </button>
           </div>
@@ -316,7 +316,7 @@ const ModernCVBuilder: React.FC = () => {
                         {suggestion.description}
                       </p>
                     </div>
-                    <button className="btn-primary text-sm px-3 py-1 ml-3">
+                    <button className="btn-primary text-sm px-3 py-1 ms-3">
                       {suggestion.action}
                     </button>
                   </div>
@@ -341,7 +341,7 @@ const ModernCVBuilder: React.FC = () => {
                   className="relative group cursor-pointer"
                 >
                   {template.popular && (
-                    <div className="absolute -top-2 -right-2 z-10">
+                    <div className="absolute -top-2 -end-2 z-10">
                       <span className="bg-yellow-400 text-yellow-900 text-xs font-medium px-2 py-1 rounded-full">
                         {t('common.popular')}
                       </span>
@@ -374,7 +374,7 @@ const ModernCVBuilder: React.FC = () => {
                 {t('pages.cv_builder.preview.title')}
               </h3>
               <button className="btn-ghost text-sm">
-                <Eye className="h-4 w-4 mr-1" />
+                <Eye className="h-4 w-4 me-1" />
                 {t('pages.cv_builder.preview.full_view')}
               </button>
             </div>

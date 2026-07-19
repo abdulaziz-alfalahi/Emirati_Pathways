@@ -82,7 +82,7 @@ const AIRecommendations = () => {
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Sparkles className="mr-2 h-5 w-5" />
+            <Sparkles className="me-2 h-5 w-5" />
             AI Recommendations
           </CardTitle>
           <CardDescription>Personalized opportunities based on your profile</CardDescription>
@@ -102,7 +102,7 @@ const AIRecommendations = () => {
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Sparkles className="mr-2 h-5 w-5" />
+          <Sparkles className="me-2 h-5 w-5" />
           AI Recommendations
         </CardTitle>
         <CardDescription>
@@ -149,7 +149,7 @@ const AIRecommendations = () => {
               size="sm" 
               className="w-full"
             >
-              <TrendingUp className="h-4 w-4 mr-2" />
+              <TrendingUp className="h-4 w-4 me-2" />
               Refresh Recommendations
             </Button>
           </div>

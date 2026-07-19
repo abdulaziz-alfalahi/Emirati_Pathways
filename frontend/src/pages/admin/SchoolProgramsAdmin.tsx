@@ -115,7 +115,7 @@ const SchoolProgramsAdmin: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm text-green-600">
-            <TrendingUp className="w-4 h-4 mr-1" />
+            <TrendingUp className="w-4 h-4 me-1" />
             {currentLanguage === 'en' ? '+12% from last month' : '+12% من الشهر الماضي'}
           </div>
         </div>
@@ -133,7 +133,7 @@ const SchoolProgramsAdmin: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm text-green-600">
-            <Star className="w-4 h-4 mr-1" />
+            <Star className="w-4 h-4 me-1" />
             {currentLanguage === 'en' ? '94% approval rate' : 'معدل موافقة 94%'}
           </div>
         </div>
@@ -151,7 +151,7 @@ const SchoolProgramsAdmin: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center text-sm text-blue-600">
-            <Activity className="w-4 h-4 mr-1" />
+            <Activity className="w-4 h-4 me-1" />
             {currentLanguage === 'en' ? 'Avg. 18 days approval' : 'متوسط 18 يوم للموافقة'}
           </div>
         </div>
@@ -251,13 +251,13 @@ const SchoolProgramsAdmin: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 rtl:space-x-reverse">
             <div className="relative">
-              <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
                 placeholder={currentLanguage === 'en' ? 'Search programs...' : 'البحث في البرامج...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 rtl:pl-3 rtl:pr-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent w-full sm:w-64"
+                className="ps-10 pe-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent w-full sm:w-64"
               />
             </div>
             
@@ -287,22 +287,22 @@ const SchoolProgramsAdmin: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Program' : 'البرنامج'}
                 </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'School' : 'المدرسة'}
                 </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Category' : 'الفئة'}
                 </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Status' : 'الحالة'}
                 </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Last Modified' : 'آخر تعديل'}
                 </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Actions' : 'الإجراءات'}
                 </th>
               </tr>
@@ -412,7 +412,7 @@ const SchoolProgramsAdmin: React.FC = () => {
             
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                <div className="text-right rtl:text-left">
+                <div className="text-end">
                   <p className="text-sm font-medium text-gray-900">
                     {mockAdminUser.name[currentLanguage]}
                   </p>

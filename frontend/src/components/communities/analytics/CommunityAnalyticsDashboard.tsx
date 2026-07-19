@@ -162,7 +162,7 @@ const CommunityAnalyticsDashboard: React.FC = () => {
         {communityMetrics.map((metric, index) => {
           const IconComponent = metric.icon;
           return (
-            <Card key={index} className="border-l-4 border-l-[rgb(var(--pg-primary))]">
+            <Card key={index} className="border-s-4 border-s-[rgb(var(--pg-primary))]">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -187,21 +187,21 @@ const CommunityAnalyticsDashboard: React.FC = () => {
             value="communities" 
             className="data-[state=active]:bg-[rgb(var(--pg-primary))] data-[state=active]:text-white"
           >
-            <Users className="h-4 w-4 mr-2" />
+            <Users className="h-4 w-4 me-2" />
             My Communities
           </TabsTrigger>
           <TabsTrigger 
             value="events" 
             className="data-[state=active]:bg-[rgb(var(--pg-secondary))] data-[state=active]:text-white"
           >
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-4 w-4 me-2" />
             Events
           </TabsTrigger>
           <TabsTrigger 
             value="discussions" 
             className="data-[state=active]:bg-[rgb(var(--pg-accent))] data-[state=active]:text-white"
           >
-            <MessageSquare className="h-4 w-4 mr-2" />
+            <MessageSquare className="h-4 w-4 me-2" />
             Discussions
           </TabsTrigger>
         </TabsList>
@@ -212,14 +212,14 @@ const CommunityAnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[rgb(var(--pg-primary))]">Your Professional Communities</h3>
               <Button className="bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90]">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Join Community
               </Button>
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {myCommunities.map((community) => (
-                <Card key={community.id} className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-[rgb(var(--pg-primary))]">
+                <Card key={community.id} className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02] border-s-4 border-s-[rgb(var(--pg-primary))]">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <Badge className={getEngagementColor(community.engagement)}>
@@ -236,11 +236,11 @@ const CommunityAnalyticsDashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent className="text-sm space-y-2">
                     <div className="flex items-center text-muted-foreground">
-                      <Users className="h-4 w-4 mr-2" />
+                      <Users className="h-4 w-4 me-2" />
                       <span>{community.members.toLocaleString()} members</span>
                     </div>
                     <div className="flex items-center text-muted-foreground">
-                      <Clock className="h-4 w-4 mr-2" />
+                      <Clock className="h-4 w-4 me-2" />
                       <span>Active {community.lastActive}</span>
                     </div>
                     <div className="flex items-center justify-between mt-4">
@@ -252,7 +252,7 @@ const CommunityAnalyticsDashboard: React.FC = () => {
                         size="sm" 
                         className="text-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/10]"
                       >
-                        <Eye className="h-4 w-4 mr-1" />
+                        <Eye className="h-4 w-4 me-1" />
                         View
                       </Button>
                     </div>
@@ -269,14 +269,14 @@ const CommunityAnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[rgb(var(--pg-secondary))]">Upcoming Community Events</h3>
               <Button variant="outline" className="border-[rgb(var(--pg-secondary))] text-[rgb(var(--pg-secondary))] hover:bg-[rgb(var(--pg-secondary))/10]">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 me-2" />
                 View Calendar
               </Button>
             </div>
             
             <div className="space-y-3">
               {upcomingEvents.map((event) => (
-                <Card key={event.id} className="hover:shadow-md transition-shadow border-l-4 border-l-[rgb(var(--pg-secondary))]">
+                <Card key={event.id} className="hover:shadow-md transition-shadow border-s-4 border-s-[rgb(var(--pg-secondary))]">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -294,15 +294,15 @@ const CommunityAnalyticsDashboard: React.FC = () => {
                         <p className="text-sm text-muted-foreground mb-2">{event.community}</p>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
+                            <Calendar className="h-4 w-4 me-1" />
                             {event.date} at {event.time}
                           </div>
                           <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
+                            <MapPin className="h-4 w-4 me-1" />
                             {event.location}
                           </div>
                           <div className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
+                            <Users className="h-4 w-4 me-1" />
                             {event.attendees} attending
                           </div>
                         </div>
@@ -327,14 +327,14 @@ const CommunityAnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-[rgb(var(--pg-accent))]">Active Discussions</h3>
               <Button variant="outline" className="border-[rgb(var(--pg-accent))] text-[rgb(var(--pg-accent))] hover:bg-[rgb(var(--pg-accent))/10]">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Start Discussion
               </Button>
             </div>
             
             <div className="space-y-3">
               {activeDiscussions.map((discussion) => (
-                <Card key={discussion.id} className="hover:shadow-md transition-shadow border-l-4 border-l-[rgb(var(--pg-accent))]">
+                <Card key={discussion.id} className="hover:shadow-md transition-shadow border-s-4 border-s-[rgb(var(--pg-accent))]">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -344,15 +344,15 @@ const CommunityAnalyticsDashboard: React.FC = () => {
                         </p>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                           <div className="flex items-center">
-                            <MessageSquare className="h-4 w-4 mr-1" />
+                            <MessageSquare className="h-4 w-4 me-1" />
                             {discussion.replies} replies
                           </div>
                           <div className="flex items-center">
-                            <Star className="h-4 w-4 mr-1" />
+                            <Star className="h-4 w-4 me-1" />
                             {discussion.likes} likes
                           </div>
                           <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
+                            <Clock className="h-4 w-4 me-1" />
                             {discussion.lastActivity}
                           </div>
                         </div>

@@ -9,7 +9,7 @@ export const UnifiedFooter: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
 
     return (
-        <footer className="bg-[#111827] text-white border-t-2 border-[#006E6D] mt-12" dir={isRTL ? 'rtl' : 'ltr'}>
+        <footer className="bg-[#111827] text-white border-t-2 border-primary mt-12" dir={isRTL ? 'rtl' : 'ltr'}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* UAE Government Branding */}
@@ -30,7 +30,7 @@ export const UnifiedFooter: React.FC = () => {
                         <h3 className="text-base font-semibold mb-1">
                             {t('Emirati Human Development Platform', 'منصة الإمارات للتنمية البشرية')}
                         </h3>
-                        <p className="text-gray-500 text-xs mb-3">
+                        <p className="text-muted-foreground text-xs mb-3">
                             {t('UAE Nationals Career Development', 'تطوير المسيرة المهنية للمواطنين الإماراتيين')}
                         </p>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-md">
@@ -106,7 +106,7 @@ export const UnifiedFooter: React.FC = () => {
 
                 {/* Copyright */}
                 <div className="mt-8 pt-6 border-t border-gray-800">
-                    <p className="text-center text-xs text-gray-500">
+                    <p className="text-center text-xs text-muted-foreground">
                         © {new Date().getFullYear()} {t('Emirati Human Development Platform', 'منصة الإمارات للتنمية البشرية')}. {t('All rights reserved.', 'جميع الحقوق محفوظة.')}
                     </p>
                 </div>

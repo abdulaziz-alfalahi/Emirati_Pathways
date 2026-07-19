@@ -133,7 +133,7 @@ export const ProgramCalendar: React.FC = () => {
                   <p className="text-sm text-ehrdc-teal">{deadline.company}</p>
                   <p className="text-sm text-gray-600">Deadline: {deadline.deadline}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <div className={`text-lg font-bold ${
                     deadline.daysRemaining <= 7 ? 'text-red-600' : 
                     deadline.daysRemaining <= 14 ? 'text-yellow-600' : 'text-green-600'
@@ -142,7 +142,7 @@ export const ProgramCalendar: React.FC = () => {
                   </div>
                   <p className="text-sm text-gray-600">remaining</p>
                   <Button size="sm" className="mt-2 bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                    <Bell className="h-4 w-4 mr-1" />
+                    <Bell className="h-4 w-4 me-1" />
                     Set Reminder
                   </Button>
                 </div>
@@ -168,7 +168,7 @@ export const ProgramCalendar: React.FC = () => {
                       {event.type}
                     </Badge>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <div className="text-sm font-medium">{event.date}</div>
                     <div className="text-sm text-gray-600">{event.time}</div>
                   </div>
@@ -182,7 +182,7 @@ export const ProgramCalendar: React.FC = () => {
                       <MapPin className="h-4 w-4 text-gray-500" />
                       <span>{event.location}</span>
                       {event.virtual && (
-                        <Badge variant="outline" className="ml-2">Virtual</Badge>
+                        <Badge variant="outline" className="ms-2">Virtual</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -210,11 +210,11 @@ export const ProgramCalendar: React.FC = () => {
                     Register Now
                   </Button>
                   <Button variant="outline">
-                    <ExternalLink className="h-4 w-4 mr-1" />
+                    <ExternalLink className="h-4 w-4 me-1" />
                     More Details
                   </Button>
                   <Button variant="outline">
-                    <Bell className="h-4 w-4 mr-1" />
+                    <Bell className="h-4 w-4 me-1" />
                     Set Reminder
                   </Button>
                 </div>

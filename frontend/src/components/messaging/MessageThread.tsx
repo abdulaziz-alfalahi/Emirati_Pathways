@@ -216,7 +216,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ conversationId }) => {
                               }`}>
                                 {message.content}
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1 text-right">
+                              <div className="text-xs text-muted-foreground mt-1 text-end">
                                 {formatTime(message.timestamp)}
                               </div>
                             </div>

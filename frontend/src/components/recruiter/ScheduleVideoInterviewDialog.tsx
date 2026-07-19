@@ -541,7 +541,7 @@ export function ScheduleVideoInterviewDialog({
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                         >
                                             {member.full_name}
-                                            <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
+                                            <Badge variant="outline" className="ms-2 text-[10px] py-0 px-1.5">
                                                 {member.role}
                                             </Badge>
                                         </label>
@@ -575,9 +575,9 @@ export function ScheduleVideoInterviewDialog({
                     </Button>
                     <Button onClick={handleSchedule} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
                         {loading ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scheduling...</>
+                            <><Loader2 className="me-2 h-4 w-4 animate-spin" /> Scheduling...</>
                         ) : (
-                            <><Calendar className="mr-2 h-4 w-4" /> Schedule Interview</>
+                            <><Calendar className="me-2 h-4 w-4" /> Schedule Interview</>
                         )}
                     </Button>
                 </DialogFooter>

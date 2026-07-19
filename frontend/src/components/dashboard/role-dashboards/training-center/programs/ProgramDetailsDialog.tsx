@@ -44,18 +44,18 @@ const ProgramDetailsDialog: React.FC<ProgramDetailsDialogProps> = ({
               <span className="text-sm text-muted-foreground">Status:</span>
               <Badge 
                 variant={program.status === 'active' ? 'default' : 'secondary'}
-                className={program.status === 'active' ? 'bg-green-500/10 text-green-700 ml-2' : 'ml-2'}
+                className={program.status === 'active' ? 'bg-green-500/10 text-green-700 ms-2' : 'ms-2'}
               >
                 {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
               </Badge>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Start Date:</span> 
-              <span className="ml-2">{program.startDate}</span>
+              <span className="ms-2">{program.startDate}</span>
             </div>
             <div>
               <span className="text-sm text-muted-foreground">Trainees:</span> 
-              <span className="ml-2">{program.trainees}</span>
+              <span className="ms-2">{program.trainees}</span>
             </div>
           </div>
           
@@ -76,14 +76,14 @@ const ProgramDetailsDialog: React.FC<ProgramDetailsDialogProps> = ({
                   {program.documents.map(doc => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium flex items-center">
-                        <File className="h-4 w-4 mr-2" /> {doc.name}
+                        <File className="h-4 w-4 me-2" /> {doc.name}
                       </TableCell>
                       <TableCell>{doc.type}</TableCell>
                       <TableCell>{doc.uploadDate}</TableCell>
                       <TableCell>{doc.size}</TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4 mr-1" /> View
+                          <FileText className="h-4 w-4 me-1" /> View
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -95,7 +95,7 @@ const ProgramDetailsDialog: React.FC<ProgramDetailsDialogProps> = ({
                 <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
                 <p className="mt-2 text-muted-foreground">No documents uploaded yet</p>
                 <Button variant="outline" size="sm" className="mt-2" onClick={onUploadClick}>
-                  <Upload className="h-4 w-4 mr-1" /> Upload Document
+                  <Upload className="h-4 w-4 me-1" /> Upload Document
                 </Button>
               </div>
             )}

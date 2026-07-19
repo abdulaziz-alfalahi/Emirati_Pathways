@@ -55,7 +55,7 @@ const TraineePrograms: React.FC<TraineeProgramsProps> = ({ trainee }) => {
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h4 className="font-medium flex items-center">
-                  <Book className="h-4 w-4 mr-2 text-emirati-teal" />
+                  <Book className="h-4 w-4 me-2 text-emirati-teal" />
                   {program.title}
                 </h4>
                 <p className="text-sm text-muted-foreground">Instructor: {program.instructor}</p>
@@ -72,7 +72,7 @@ const TraineePrograms: React.FC<TraineeProgramsProps> = ({ trainee }) => {
             </div>
             
             <div className="flex items-center text-sm text-muted-foreground mb-2">
-              <Calendar className="h-4 w-4 mr-1" />
+              <Calendar className="h-4 w-4 me-1" />
               {new Date(program.startDate).toLocaleDateString()} - {new Date(program.endDate).toLocaleDateString()}
             </div>
             

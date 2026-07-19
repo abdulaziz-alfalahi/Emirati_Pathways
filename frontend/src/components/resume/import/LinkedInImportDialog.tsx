@@ -137,7 +137,7 @@ const LinkedInImportDialog: React.FC<LinkedInImportDialogProps> = ({
               onClick={handleLinkedInAuth}
               disabled={isExtracting}
             >
-              <Linkedin size={16} className="mr-2" />
+              <Linkedin size={16} className="me-2" />
               Sign in with LinkedIn
             </Button>
           </div>

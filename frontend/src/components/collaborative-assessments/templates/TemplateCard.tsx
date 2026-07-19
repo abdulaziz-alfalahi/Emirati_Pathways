@@ -70,19 +70,19 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
             <DropdownMenuContent align="end">
               {onView && (
                 <DropdownMenuItem onClick={() => onView(template)}>
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-4 w-4 me-2" />
                   View Details
                 </DropdownMenuItem>
               )}
               {onEdit && (
                 <DropdownMenuItem onClick={() => onEdit(template)}>
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 me-2" />
                   Edit Template
                 </DropdownMenuItem>
               )}
               {onDuplicate && (
                 <DropdownMenuItem onClick={() => onDuplicate(template)}>
-                  <Copy className="h-4 w-4 mr-2" />
+                  <Copy className="h-4 w-4 me-2" />
                   Duplicate
                 </DropdownMenuItem>
               )}
@@ -91,7 +91,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
                   onClick={() => onDelete(template)}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4 me-2" />
                   Delete
                 </DropdownMenuItem>
               )}
@@ -106,7 +106,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           <Badge variant="secondary">{template.category}</Badge>
           {template.is_public && (
             <Badge variant="outline">
-              <Users className="h-3 w-3 mr-1" />
+              <Users className="h-3 w-3 me-1" />
               Public
             </Badge>
           )}
@@ -157,7 +157,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
             <>
               {onCreateAssessment && (
                 <Button onClick={() => onCreateAssessment(template)} className="flex-1">
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 me-2" />
                   Use Template
                 </Button>
               )}

@@ -87,14 +87,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
           {project.location && (
             <div className="flex items-center text-sm text-gray-500">
-              <MapPin className="h-4 w-4 mr-1" />
+              <MapPin className="h-4 w-4 me-1" />
               {project.location}
             </div>
           )}
 
           {project.expected_completion_date && (
             <div className="flex items-center text-sm text-gray-500">
-              <Calendar className="h-4 w-4 mr-1" />
+              <Calendar className="h-4 w-4 me-1" />
               Target: {new Date(project.expected_completion_date).toLocaleDateString()}
             </div>
           )}
@@ -136,7 +136,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               onClick={() => setShowContributeDialog(true)}
               className="flex-1"
             >
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-4 w-4 me-2" />
               Contribute
             </Button>
             {project.website_url && (

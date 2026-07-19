@@ -23,7 +23,7 @@ const ResumeBuilderHeader: React.FC<ResumeBuilderHeaderProps> = ({
   return (
     <div className="flex items-center justify-between p-4 border-b bg-background">
       <Button variant="ghost" onClick={onBack}>
-        <ArrowLeft size={16} className="mr-2" />
+        <ArrowLeft size={16} className="me-2" />
         Back
       </Button>
       
@@ -32,7 +32,7 @@ const ResumeBuilderHeader: React.FC<ResumeBuilderHeaderProps> = ({
           variant="outline" 
           onClick={onPreview}
         >
-          <Eye size={16} className="mr-2" />
+          <Eye size={16} className="me-2" />
           Preview
         </Button>
         
@@ -41,7 +41,7 @@ const ResumeBuilderHeader: React.FC<ResumeBuilderHeaderProps> = ({
           onClick={onExport}
           disabled={isExporting}
         >
-          <FileOutput size={16} className="mr-2" />
+          <FileOutput size={16} className="me-2" />
           {isExporting ? 'Exporting...' : 'Export PDF'}
         </Button>
         
@@ -50,7 +50,7 @@ const ResumeBuilderHeader: React.FC<ResumeBuilderHeaderProps> = ({
           onClick={onSave}
           disabled={isSaving}
         >
-          <Save size={16} className="mr-2" />
+          <Save size={16} className="me-2" />
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>

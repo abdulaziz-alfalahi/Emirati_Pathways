@@ -189,22 +189,22 @@ export const EducationStep: React.FC<EducationStepProps> = ({
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <GraduationCap className="h-4 w-4 mr-2" />
+                  <GraduationCap className="h-4 w-4 me-2" />
                   {education.fieldOfStudy} at {education.institution}
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   {education.startDate} - {education.isCurrentStudy ? 'Present' : education.endDate}
                 </div>
                 {education.location && (
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2" />
+                    <MapPin className="h-4 w-4 me-2" />
                     {education.location}
                   </div>
                 )}
                 {education.gpa && (
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Award className="h-4 w-4 mr-2" />
+                    <Award className="h-4 w-4 me-2" />
                     GPA: {education.gpa}
                   </div>
                 )}
@@ -217,7 +217,7 @@ export const EducationStep: React.FC<EducationStepProps> = ({
                     <ul className="text-sm space-y-1">
                       {education.achievements.map((achievement, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="text-primary mr-2">•</span>
+                          <span className="text-primary me-2">•</span>
                           {achievement}
                         </li>
                       ))}
@@ -414,11 +414,11 @@ export const EducationStep: React.FC<EducationStepProps> = ({
 
             <div className="flex space-x-2 pt-4">
               <Button onClick={handleSaveEducation}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t('common.save', 'Save')}
               </Button>
               <Button onClick={handleCancelEdit}>
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 me-2" />
                 {t('common.cancel', 'Cancel')}
               </Button>
             </div>

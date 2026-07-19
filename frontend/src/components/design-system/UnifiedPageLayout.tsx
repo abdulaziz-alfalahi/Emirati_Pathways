@@ -81,7 +81,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                     onClick={() => window.history.back()}
                     className="inline-flex items-center px-3 py-2 border border-[#E2E5E9] text-sm font-medium rounded-xl text-[#374151] bg-white hover:bg-[#F4F5F7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#006E6D]/20 transition-colors"
                   >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <ArrowLeft className="h-4 w-4 me-2" />
                     {t('common.back')}
                   </button>
                 )}

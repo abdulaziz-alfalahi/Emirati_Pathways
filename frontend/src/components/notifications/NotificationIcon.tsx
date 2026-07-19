@@ -105,7 +105,7 @@ export const NotificationIcon: React.FC = () => {
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -end-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -163,7 +163,7 @@ export const NotificationIcon: React.FC = () => {
                         {notification.title}
                       </p>
                       {!notification.read && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ms-2"></div>
                       )}
                     </div>
                     <p className="text-xs text-gray-600 mt-1 line-clamp-2">

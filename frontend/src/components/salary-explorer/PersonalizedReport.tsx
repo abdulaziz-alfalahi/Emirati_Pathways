@@ -65,7 +65,7 @@ export const PersonalizedReport: React.FC = () => {
 
         <div className="flex gap-2">
           <Button className="flex-1 bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Download Report
           </Button>
           <Button variant="outline" className="flex-1">

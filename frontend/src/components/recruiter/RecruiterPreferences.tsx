@@ -152,7 +152,7 @@ export const RecruiterPreferences: React.FC<RecruiterPreferencesProps> = ({
 
                     <div className="flex justify-end">
                         <Button onClick={handleSave} disabled={isSaving}>
-                            {isSaving ? 'Saving...' : <><Save className="mr-2 h-4 w-4" /> Save Preferences</>}
+                            {isSaving ? 'Saving...' : <><Save className="me-2 h-4 w-4" /> Save Preferences</>}
                         </Button>
                     </div>
                 </CardContent>

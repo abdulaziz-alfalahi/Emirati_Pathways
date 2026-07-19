@@ -140,7 +140,7 @@ export const GrowthOperations: React.FC = () => {
                             onClick={fetchCandidates}
                             disabled={loading}
                         >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`h-4 w-4 me-2 ${loading ? 'animate-spin' : ''}`} />
                             Refresh Data
                         </Button>
                     </CardContent>
@@ -174,7 +174,7 @@ export const GrowthOperations: React.FC = () => {
                     <CardContent className="flex items-center gap-2 py-4">
                         <AlertCircle className="h-5 w-5 text-red-500" />
                         <span className="text-red-700">{error}</span>
-                        <Button variant="outline" size="sm" onClick={fetchCandidates} className="ml-auto">
+                        <Button variant="outline" size="sm" onClick={fetchCandidates} className="ms-auto">
                             Retry
                         </Button>
                     </CardContent>
@@ -196,7 +196,7 @@ export const GrowthOperations: React.FC = () => {
                             <>Sending...</>
                         ) : (
                             <>
-                                <Send className="h-4 w-4 mr-2" />
+                                <Send className="h-4 w-4 me-2" />
                                 Send Onboarding Emails ({selectedCompanies.length})
                             </>
                         )}
@@ -215,7 +215,7 @@ export const GrowthOperations: React.FC = () => {
                                     </TableHead>
                                     <TableHead>Company</TableHead>
                                     <TableHead>Contact</TableHead>
-                                    <TableHead className="text-right">Vacancies</TableHead>
+                                    <TableHead className="text-end">Vacancies</TableHead>
                                     <TableHead>Imported</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -247,7 +247,7 @@ export const GrowthOperations: React.FC = () => {
                                                 {company.company_name}
                                             </TableCell>
                                             <TableCell>{company.contact_email}</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-end">
                                                 <Badge variant="secondary" className="bg-slate-100">
                                                     {company.vacancy_count}
                                                 </Badge>

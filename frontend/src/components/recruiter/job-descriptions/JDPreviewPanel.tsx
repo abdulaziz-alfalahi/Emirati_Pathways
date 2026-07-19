@@ -112,7 +112,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
               : jdData.basic_info.title || 'Job Title'}
           </CardTitle>
           <Badge variant="outline">
-            <Globe className="h-3 w-3 mr-1" />
+            <Globe className="h-3 w-3 me-1" />
             {language === 'ar' ? 'عربي' : 'English'}
           </Badge>
         </div>
@@ -123,22 +123,22 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">
-              <Briefcase className="h-3 w-3 mr-1" />
+              <Briefcase className="h-3 w-3 me-1" />
               {formatJobType(jdData.basic_info.job_type)}
             </Badge>
             <Badge variant="secondary">
-              <Award className="h-3 w-3 mr-1" />
+              <Award className="h-3 w-3 me-1" />
               {formatJobLevel(jdData.basic_info.job_level)}
             </Badge>
             <Badge variant="secondary">
-              <MapPin className="h-3 w-3 mr-1" />
+              <MapPin className="h-3 w-3 me-1" />
               {jdData.basic_info.emirate && jdData.basic_info.city
                 ? `${jdData.basic_info.city}, ${jdData.basic_info.emirate}`
                 : 'Location TBD'}
             </Badge>
             {jdData.basic_info.remote_option && (
               <Badge variant="secondary">
-                <Globe className="h-3 w-3 mr-1" />
+                <Globe className="h-3 w-3 me-1" />
                 Remote Option
               </Badge>
             )}
@@ -171,7 +171,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
         {jdData.description && (
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Target className="h-5 w-5 mr-2" />
+              <Target className="h-5 w-5 me-2" />
               About the Role
             </h3>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">
@@ -186,7 +186,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
         {jdData.requirements.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2" />
+              <CheckCircle className="h-5 w-5 me-2" />
               Requirements
             </h3>
             <div className="space-y-4">
@@ -204,7 +204,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
                         <span className="text-sm">
                           {req.description}
                           {!req.is_required && (
-                            <Badge variant="outline" className="ml-2 text-xs">
+                            <Badge variant="outline" className="ms-2 text-xs">
                               Preferred
                             </Badge>
                           )}
@@ -222,7 +222,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
         {jdData.responsibilities.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Award className="h-5 w-5 mr-2" />
+              <Award className="h-5 w-5 me-2" />
               Key Responsibilities
             </h3>
             <ul className="space-y-2">
@@ -240,7 +240,7 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
         {jdData.benefits.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Gift className="h-5 w-5 mr-2" />
+              <Gift className="h-5 w-5 me-2" />
               Benefits & Perks
             </h3>
             <div className="space-y-4">
@@ -267,11 +267,11 @@ const JDPreviewPanel: React.FC<JDPreviewPanelProps> = ({
         <Separator />
         <div className="text-xs text-muted-foreground space-y-1">
           <p className="flex items-center">
-            <Clock className="h-3 w-3 mr-1" />
+            <Clock className="h-3 w-3 me-1" />
             Posted: {new Date().toLocaleDateString()}
           </p>
           <p className="flex items-center">
-            <Users className="h-3 w-3 mr-1" />
+            <Users className="h-3 w-3 me-1" />
             Equal opportunity employer
           </p>
         </div>

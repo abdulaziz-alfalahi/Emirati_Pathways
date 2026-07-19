@@ -203,7 +203,7 @@ export const PhaseVariantShowcase: React.FC = () => {
           </Card>
 
           <Card 
-            className="border-l-4 hover:shadow-lg transition-shadow"
+            className="border-s-4 hover:shadow-lg transition-shadow"
             style={{ borderLeftColor: phase.primaryColor }}
           >
             <CardHeader>
@@ -285,7 +285,7 @@ export const PhaseVariantShowcase: React.FC = () => {
           <CardContent>
             <div className="space-y-2">
               {phase.characteristics.map((characteristic) => (
-                <Badge key={characteristic} variant="outline" className="mr-2 mb-2">
+                <Badge key={characteristic} variant="outline" className="me-2 mb-2">
                   {characteristic}
                 </Badge>
               ))}
@@ -380,7 +380,7 @@ export const PhaseVariantShowcase: React.FC = () => {
 
       {/* Selected Phase Overview */}
       <Card 
-        className="border-l-4"
+        className="border-s-4"
         style={{ borderLeftColor: currentPhase.primaryColor }}
       >
         <CardHeader>

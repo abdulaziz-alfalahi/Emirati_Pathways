@@ -45,7 +45,7 @@ export function LanguageToggle() {
         >
           <span className="text-base">🇺🇸</span>
           <span>English</span>
-          {language === 'en' && <span className="ml-auto">✓</span>}
+          {language === 'en' && <span className="ms-auto">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => handleLanguageChange("ar")}
@@ -53,7 +53,7 @@ export function LanguageToggle() {
         >
           <span className="text-base">🇦🇪</span>
           <span>العربية</span>
-          {language === 'ar' && <span className="ml-auto">✓</span>}
+          {language === 'ar' && <span className="ms-auto">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

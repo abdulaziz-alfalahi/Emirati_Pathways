@@ -279,11 +279,11 @@ const PerformanceAnalytics: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export Report
           </Button>
           <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             Advanced Filters
           </Button>
         </div>
@@ -338,7 +338,7 @@ const PerformanceAnalytics: React.FC = () => {
             </div>
             <div className="flex items-end">
               <Button className="w-full">
-                <BarChart3 className="h-4 w-4 mr-2" />
+                <BarChart3 className="h-4 w-4 me-2" />
                 Generate Report
               </Button>
             </div>
@@ -411,7 +411,7 @@ const PerformanceAnalytics: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <BookOpen className="h-5 w-5 mr-2" />
+                <BookOpen className="h-5 w-5 me-2" />
                 Subject Performance Overview
               </CardTitle>
             </CardHeader>
@@ -445,7 +445,7 @@ const PerformanceAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                  <TrendingUp className="h-5 w-5 me-2 text-green-600" />
                   Top Performers
                 </CardTitle>
               </CardHeader>
@@ -469,7 +469,7 @@ const PerformanceAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
+                  <AlertCircle className="h-5 w-5 me-2 text-red-600" />
                   Students Needing Support
                 </CardTitle>
               </CardHeader>
@@ -496,7 +496,7 @@ const PerformanceAnalytics: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
+                <Users className="h-5 w-5 me-2" />
                 Individual Student Performance
               </CardTitle>
               <CardDescription>
@@ -547,7 +547,7 @@ const PerformanceAnalytics: React.FC = () => {
                         Last Assessment: {student.lastAssessment}
                       </span>
                       <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
+                        <Eye className="h-4 w-4 me-2" />
                         View Details
                       </Button>
                     </div>
@@ -562,7 +562,7 @@ const PerformanceAnalytics: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2" />
+                <Target className="h-5 w-5 me-2" />
                 Assessment Analysis
               </CardTitle>
               <CardDescription>
@@ -614,11 +614,11 @@ const PerformanceAnalytics: React.FC = () => {
                     <div className="flex justify-between items-center pt-3 border-t">
                       <div className="flex space-x-4">
                         <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 me-2" />
                           View Details
                         </Button>
                         <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 me-2" />
                           Export Results
                         </Button>
                       </div>
@@ -637,7 +637,7 @@ const PerformanceAnalytics: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Globe className="h-5 w-5 mr-2" />
+                <Globe className="h-5 w-5 me-2" />
                 UAE National Benchmarks
               </CardTitle>
               <CardDescription>

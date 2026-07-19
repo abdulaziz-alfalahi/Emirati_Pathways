@@ -285,7 +285,7 @@ const CVBuilderContent: React.FC = () => {
                   onClick={() => setActiveStep(0)}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <ArrowLeft className="w-4 h-4 me-2" />
                   {currentLanguage === 'en' ? 'Back to Upload' : 'العودة للرفع'}
                 </button>
                 <button
@@ -293,7 +293,7 @@ const CVBuilderContent: React.FC = () => {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
                 >
                   {currentLanguage === 'en' ? 'Preview & Export' : 'معاينة وتصدير'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ms-2" />
                 </button>
               </div>
             </div>
@@ -415,7 +415,7 @@ const CVBuilderContent: React.FC = () => {
                     {/* Personal Info */}
                     <div className="bg-gray-50 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Users className="w-5 h-5 mr-2 text-blue-600" />
+                        <Users className="w-5 h-5 me-2 text-blue-600" />
                         {currentLanguage === 'en' ? 'Personal Information' : 'المعلومات الشخصية'}
                       </h4>
                       <div className="space-y-3">
@@ -426,15 +426,15 @@ const CVBuilderContent: React.FC = () => {
                           <span className="text-gray-900">{cvData.personalInfo?.name}</span>
                         </div>
                         <div className="flex items-center">
-                          <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                          <Mail className="w-4 h-4 me-2 text-gray-400" />
                           <span className="text-gray-900">{cvData.personalInfo?.email}</span>
                         </div>
                         <div className="flex items-center">
-                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                          <Phone className="w-4 h-4 me-2 text-gray-400" />
                           <span className="text-gray-900">{cvData.personalInfo?.phone}</span>
                         </div>
                         <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                          <MapPin className="w-4 h-4 me-2 text-gray-400" />
                           <span className="text-gray-900">{cvData.personalInfo?.location}</span>
                         </div>
                       </div>
@@ -443,7 +443,7 @@ const CVBuilderContent: React.FC = () => {
                     {/* Skills */}
                     <div className="bg-gray-50 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Zap className="w-5 h-5 mr-2 text-purple-600" />
+                        <Zap className="w-5 h-5 me-2 text-purple-600" />
                         {currentLanguage === 'en' ? 'Skills Analysis' : 'تحليل المهارات'}
                       </h4>
                       <div className="space-y-4">
@@ -479,7 +479,7 @@ const CVBuilderContent: React.FC = () => {
                   {cvData.job_matches && cvData.job_matches.length > 0 && (
                     <div className="mt-8 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                        <TrendingUp className="w-5 h-5 me-2 text-blue-600" />
                         {currentLanguage === 'en' ? 'Top Job Matches' : 'أفضل الوظائف المطابقة'}
                       </h4>
                       <div className="grid gap-4">
@@ -487,7 +487,7 @@ const CVBuilderContent: React.FC = () => {
                           <div key={index} className="bg-white rounded-lg p-4 border">
                             <div className="flex items-center justify-between mb-2">
                               <h5 className="font-semibold text-gray-900">{job.title}</h5>
-                              <div className="text-right">
+                              <div className="text-end">
                                 <div className="text-lg font-bold text-blue-600">
                                   {job.match_score}%
                                 </div>
@@ -513,7 +513,7 @@ const CVBuilderContent: React.FC = () => {
                   {cvData.uae_context && (
                     <div className="mt-8 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-6">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Shield className="w-5 h-5 mr-2 text-green-600" />
+                        <Shield className="w-5 h-5 me-2 text-green-600" />
                         {currentLanguage === 'en' ? 'UAE Market Analysis' : 'تحليل السوق الإماراتي'}
                       </h4>
                       <div className="grid grid-cols-2 gap-4">
@@ -545,14 +545,14 @@ const CVBuilderContent: React.FC = () => {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center"
                       >
                         {currentLanguage === 'en' ? 'Build CV with This Data' : 'أنشئ السيرة الذاتية بهذه البيانات'}
-                        <ArrowRight className="w-5 h-5 ml-2" />
+                        <ArrowRight className="w-5 h-5 ms-2" />
                       </button>
                       <button
                         onClick={() => window.open('/cv-builder-wizard', '_blank')}
                         className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center"
                       >
                         {currentLanguage === 'en' ? 'Open CV Builder' : 'افتح منشئ السيرة الذاتية'}
-                        <Edit3 className="w-5 h-5 ml-2" />
+                        <Edit3 className="w-5 h-5 ms-2" />
                       </button>
                     </div>
                     <p className="text-sm text-gray-500">

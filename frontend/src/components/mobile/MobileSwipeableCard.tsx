@@ -53,7 +53,7 @@ const MobileSwipeableCard: React.FC<MobileSwipeableCardProps> = ({
     <div className="relative overflow-hidden">
       {/* Left actions */}
       {leftActions.length > 0 && (
-        <div className="absolute left-0 top-0 bottom-0 flex items-center bg-green-500">
+        <div className="absolute start-0 top-0 bottom-0 flex items-center bg-green-500">
           {leftActions.map((action, index) => {
             const Icon = action.icon;
             return (
@@ -73,7 +73,7 @@ const MobileSwipeableCard: React.FC<MobileSwipeableCardProps> = ({
 
       {/* Right actions */}
       {rightActions.length > 0 && (
-        <div className="absolute right-0 top-0 bottom-0 flex items-center bg-red-500">
+        <div className="absolute end-0 top-0 bottom-0 flex items-center bg-red-500">
           {rightActions.map((action, index) => {
             const Icon = action.icon;
             return (

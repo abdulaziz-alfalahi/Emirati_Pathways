@@ -157,12 +157,12 @@ const RoleTestDashboard: React.FC = () => {
                 >
                   {isSimulating ? (
                     <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      <RefreshCw className="h-4 w-4 me-2 animate-spin" />
                       Redirecting...
                     </>
                   ) : (
                     <>
-                      <ArrowRight className="h-4 w-4 mr-2" />
+                      <ArrowRight className="h-4 w-4 me-2" />
                       Test This Role
                     </>
                   )}

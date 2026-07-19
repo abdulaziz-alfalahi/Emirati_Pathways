@@ -115,12 +115,12 @@ export const YouthProgramsList: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search programs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -182,7 +182,7 @@ export const YouthProgramsList: React.FC = () => {
                     <CardDescription className="mt-1">{program.organizer}</CardDescription>
                   </div>
                   {isUpcoming(program.start_date) && (
-                    <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                    <Badge variant="outline" className="ms-2 text-green-600 border-green-200">
                       Upcoming
                     </Badge>
                   )}
@@ -192,7 +192,7 @@ export const YouthProgramsList: React.FC = () => {
                   <Badge variant="secondary">{program.focus_area}</Badge>
                   {program.age_group && (
                     <Badge variant="outline" className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
+                      <Users className="h-3 w-3 me-1" />
                       Ages {program.age_group}
                     </Badge>
                   )}
@@ -224,7 +224,7 @@ export const YouthProgramsList: React.FC = () => {
                 {program.program_url && (
                   <Button variant="outline" size="sm" className="w-full" asChild>
                     <a href={program.program_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Learn More & Apply
                     </a>
                   </Button>

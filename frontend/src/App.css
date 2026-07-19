@@ -1,3 +1,17 @@
+/* ============================================================================
+   DEPRECATED — NOT IMPORTED ANYWHERE (verified: no `App.css` import in src/).
+   ----------------------------------------------------------------------------
+   This file defined a SECOND :root using shadcn-style HSL triplets
+   (e.g. `--background: 0 0% 100%`). tailwind.config.ts consumes colours as
+   `var(--x)` directly, NOT `hsl(var(--x))`, so those triplets were never valid
+   colours. It was also the only definer of `--sidebar-*`, which therefore
+   resolved to nothing at runtime.
+
+   Those tokens now live in ./styles/ehrdc-tokens.css (the single source of
+   truth), where the sidebar values are defined correctly. Do not re-import
+   this file — doing so would reintroduce the conflict.
+   ========================================================================== */
+
 
 @tailwind base;
 @tailwind components;

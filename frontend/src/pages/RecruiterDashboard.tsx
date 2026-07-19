@@ -263,7 +263,7 @@ const RecruiterDashboard: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
                   {firstName.charAt(0)}
                 </div>
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-start">
                   <div className="flex items-center gap-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                     <h1 className="text-2xl font-dubai-bold text-slate-900">
                       {getGreeting()}، {firstName}
@@ -326,7 +326,7 @@ const RecruiterDashboard: React.FC = () => {
               <TabsTrigger value="messages" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('messages')}>
                 {b('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
+                  <span className="ms-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -346,7 +346,7 @@ const RecruiterDashboard: React.FC = () => {
                   <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
                     <CardContent className="pt-5 pb-4 px-5">
                       <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={isRTL ? 'text-right' : 'text-left'}>
+                        <div className="text-start">
                           <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                           <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                           <p className="text-xs text-slate-400 mt-0.5 font-dubai-medium">{stat.sub}</p>
@@ -379,10 +379,10 @@ const RecruiterDashboard: React.FC = () => {
                     <table className="w-full text-sm" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                       <thead>
                         <tr className="border-b border-slate-100">
-                          <th className={`px-5 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Job Title', 'المسمى الوظيفي')}</th>
-                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Applicants', 'المتقدمون')}</th>
-                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Status', 'الحالة')}</th>
-                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Posted', 'تاريخ النشر')}</th>
+                          <th className={`px-5 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Job Title', 'المسمى الوظيفي')}</th>
+                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Applicants', 'المتقدمون')}</th>
+                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Status', 'الحالة')}</th>
+                          <th className={`px-3 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Posted', 'تاريخ النشر')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -478,7 +478,7 @@ const RecruiterDashboard: React.FC = () => {
                   <div className="space-y-2">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.slice(0, 4).map((activity) => (
-                        <div key={activity.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                        <div key={activity.id} className={`flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
                           <div className="flex-shrink-0 mt-0.5">
                             {activity.type === 'placement_success' && <CheckCircle className="h-4 w-4 text-green-500" />}
                             {activity.type === 'interview_scheduled' && <Calendar className="h-4 w-4 text-blue-500" />}
