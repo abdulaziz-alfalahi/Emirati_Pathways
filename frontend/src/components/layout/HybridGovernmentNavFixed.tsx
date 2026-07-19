@@ -225,7 +225,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'call_center_agent': 'موظف مركز اتصال',
     };
     const roleMap = isRTL ? roleMapAr : roleMapEn;
-    return roleMap[role.toLowerCase()] || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    // Normalise aliases before lookup. The DB stores this persona as
+    // `job_seeker` while the maps are keyed `candidate`, so the raw lookup
+    // missed and fell through to the title-case fallback — which manufactured
+    // the English string "Job Seeker" and rendered it even in Arabic.
+    // normalizeRole already knows every alias; use it rather than adding keys.
+    const key = String(normalizeRole(role) || role).toLowerCase();
+    return roleMap[key]
+        || roleMap[role.toLowerCase()]
+        || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const itemKeyByHref: Record<string, { name: string; desc: string }> = {
