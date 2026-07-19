@@ -252,7 +252,7 @@ export const PhaseTransitionGuide: React.FC<PhaseTransitionGuideProps> = ({
       case 'in-progress':
         return 'bg-yellow-50 border-yellow-200';
       default:
-        return 'bg-gray-50 border-gray-200';
+        return 'bg-muted border-border';
     }
   };
 
@@ -267,7 +267,7 @@ export const PhaseTransitionGuide: React.FC<PhaseTransitionGuideProps> = ({
         <div className="text-3xl font-bold mb-2" style={{ color: targetPhaseInfo.color }}>
           {readinessScore}%
         </div>
-        <p className="text-gray-600">Transition Readiness</p>
+        <p className="text-muted-foreground">Transition Readiness</p>
         <Progress value={readinessScore} className="w-full mt-4" />
       </div>
 
@@ -294,7 +294,7 @@ export const PhaseTransitionGuide: React.FC<PhaseTransitionGuideProps> = ({
                     {req.priority} priority
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{req.description}</p>
+                <p className="text-sm text-muted-foreground mt-1">{req.description}</p>
               </div>
             </div>
           </div>
@@ -318,9 +318,9 @@ export const PhaseTransitionGuide: React.FC<PhaseTransitionGuideProps> = ({
                 )}
                 <div>
                   <h4 className="font-medium">{milestone.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{milestone.description}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{milestone.description}</p>
                   {milestone.estimatedTime && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {milestone.estimatedTime}
                     </div>

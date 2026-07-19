@@ -283,8 +283,8 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
                       {phaseInfo[result.phase]?.name}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{result.description}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <p className="text-sm text-muted-foreground mb-2">{result.description}</p>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="capitalize">{result.category}</span>
                     {result.estimatedTime && (
                       <span className="flex items-center gap-1">
@@ -307,7 +307,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
       ))}
 
       {query && searchResults.length === 0 && !isLoading && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-muted-foreground">
           <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No results found for "{query}"</p>
           <p className="text-sm">Try adjusting your search terms or filters</p>
@@ -324,7 +324,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
           <Link to="/dashboard" onClick={onClose}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4 text-center">
-                <TrendingUp className="h-6 w-6 mx-auto mb-2 text-ehrdc-teal" />
+                <TrendingUp className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <p className="text-sm font-medium">Dashboard</p>
               </CardContent>
             </Card>
@@ -332,7 +332,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
           <Link to="/portfolio" onClick={onClose}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4 text-center">
-                <Star className="h-6 w-6 mx-auto mb-2 text-ehrdc-teal" />
+                <Star className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <p className="text-sm font-medium">Portfolio</p>
               </CardContent>
             </Card>
@@ -348,7 +348,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
               <button
                 key={index}
                 onClick={() => handleSearch(search)}
-                className="flex items-center gap-2 w-full text-left p-2 rounded hover:bg-gray-50 text-sm"
+                className="flex items-center gap-2 w-full text-left p-2 rounded hover:bg-muted text-sm"
               >
                 <Clock className="h-4 w-4 text-gray-400" />
                 {search}
@@ -386,7 +386,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
           {/* Filters */}
           <div className="flex items-center gap-4 pb-4 border-b">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Filters:</span>
             </div>
 

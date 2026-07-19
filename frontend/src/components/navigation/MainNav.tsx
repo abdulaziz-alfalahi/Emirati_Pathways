@@ -31,7 +31,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
     <div className={`flex items-center ${language === 'ar' ? 'space-x-reverse space-x-6' : 'space-x-6'}`}>
       {/* Logo */}
       <Link to="/" className={`flex items-center ${language === 'ar' ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
-        <div className="font-bold text-xl text-ehrdc-teal">{t('emiratiGateway')}</div>
+        <div className="font-bold text-xl text-primary">{t('emiratiGateway')}</div>
       </Link>
 
       {/* Navigation Menu */}
@@ -39,7 +39,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
         <NavigationMenuList className={language === 'ar' ? 'flex-row-reverse' : ''}>
           {orderedNavGroups.map((group) => (
             <NavigationMenuItem key={group.id}>
-              <NavigationMenuTrigger className={`text-ehrdc-neutral-dark hover:text-ehrdc-teal ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+              <NavigationMenuTrigger className={`text-foreground hover:text-primary ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                 {t(`groups.${group.id}.title`)}
               </NavigationMenuTrigger>
               <NavigationMenuContent>
@@ -100,7 +100,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
                       <NavigationMenuLink key={item.name} asChild>
                         <Link
                           to={item.href}
-                          className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-ehrdc-light-teal/10 hover:text-ehrdc-teal focus:bg-ehrdc-light-teal/10 focus:text-ehrdc-teal ${language === 'ar' ? 'text-right' : 'text-left'}`}
+                          className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${language === 'ar' ? 'text-right' : 'text-left'}`}
                         >
                           <div className={`text-sm font-medium leading-none ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                             {t(`groups.${group.id}.items.${itemKey}.title`)}
@@ -127,7 +127,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
         {user && (
           <Link
             to="/dashboard"
-            className={`text-sm font-medium transition-colors hover:text-ehrdc-teal ${location.pathname === '/dashboard' ? 'text-ehrdc-teal' : 'text-ehrdc-neutral-dark'
+            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-foreground'
               } ${language === 'ar' ? 'text-right' : 'text-left'}`}
           >
             {t('dashboard')}
