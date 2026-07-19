@@ -140,6 +140,7 @@ const EducationOperatorDashboard = lazy(() => import('@/pages/operator-dashboard
 const ProfessionalDevDashboard = lazy(() => import('@/pages/operator-dashboards/ProfessionalDevDashboard'));
 const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/CommunityOperatorDashboard'));
 const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
+const OperationsWallDisplay = lazy(() => import('@/pages/operator-dashboards/OperationsWallDisplay'));
 const DemographicsAnalytics = lazy(() => import('@/pages/operator-dashboards/DemographicsAnalytics'));
 const ExecutiveDashboard = lazy(() => import('@/pages/operator-dashboards/ExecutiveDashboard'));
 const ServiceCatalog = lazy(() => import('@/pages/operator-dashboards/ServiceCatalog'));
@@ -195,6 +196,12 @@ const GovernmentRedirect: React.FC = () => {
 const AppContent: React.FC = () => {
   const { i18n } = useTranslation();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { pathname } = useLocation();
+
+  // The command-room wall display owns the whole screen. Global chrome —
+  // skip links, connection banner, FABs, toasts — is wasted wall space and
+  // there is nobody standing at the wall to click it.
+  const isWallDisplay = pathname.startsWith('/operations-center/display');
 
   useEffect(() => {
     // Set initial language and direction
@@ -223,14 +230,14 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="App min-h-screen bg-background">
-      <SkipNavigation />
+      {!isWallDisplay && <SkipNavigation />}
       {isAuthenticated && user && user.id && (
         <NotificationProvider
           userId={user.id.toString()}
           userType={user.user_type || user.role || 'user'}
           authToken={token}
         >
-          <ConnectionBanner />
+          {!isWallDisplay && <ConnectionBanner />}
           <SupportChatProvider>
           <Suspense fallback={<DashboardLoading />}>
             <Routes>
@@ -895,6 +902,15 @@ const AppContent: React.FC = () => {
                 path="/mentorship-operator-dashboard"
                 element={<MentorshipOperatorDashboard />}
               />
+              {/* Operations Center is TWO surfaces sharing one data source:
+                  the at-desk view below, and the command-room wall display.
+                  A wall display is not the dashboard darker — viewing distance
+                  changes the design — so it gets its own route rather than a
+                  mode toggle. Declared first: it is the more specific path. */}
+              <Route
+                path="/operations-center/display"
+                element={<OperationsWallDisplay />}
+              />
               <Route
                 path="/operations-center"
                 element={<OperationsMonitoringCenter />}
@@ -1003,7 +1019,7 @@ const AppContent: React.FC = () => {
             }}
           />
           {/* Support Chat Widget — visible to all non-agent personas */}
-          {user.role !== 'call_center_agent' && <SupportChatWidget />}
+          {user.role !== 'call_center_agent' && !isWallDisplay && <SupportChatWidget />}
           </SupportChatProvider>
         </NotificationProvider>
       )}
@@ -1036,8 +1052,8 @@ const AppContent: React.FC = () => {
           </Routes>
         </Suspense>
       )}
-      <Toaster />
-      <FeedbackWidget />
+      {!isWallDisplay && <Toaster />}
+      {!isWallDisplay && <FeedbackWidget />}
     </div>
   );
 };

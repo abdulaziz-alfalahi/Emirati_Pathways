@@ -72,6 +72,29 @@
   --ehrdc-danger:#B3261E;
   --ehrdc-info:#37556F;
 
+  /* ── STATE TINTS & EDGES ────────────────────────────────────────────────
+     Soft fills and hairlines derived from the state hues above.
+
+     These exist as TOKENS because Tailwind's opacity modifier (`bg-success/10`)
+     silently emits NOTHING for colours mapped to `var(--x)` — it cannot parse a
+     var() into channels, so the utility is dropped from the stylesheet with no
+     error. Verified in the built CSS. Any tinted surface must therefore come
+     from a token, never from a slash modifier.
+
+     Defined per theme rather than by alpha alone: a 10% tint that reads on
+     white disappears on the control-room ground, so the dark set is re-cut. */
+  --tint-primary:rgba(0,110,109,.08);
+  --tint-success:rgba(46,125,70,.10);
+  --tint-warning:rgba(183,121,31,.10);
+  --tint-danger:rgba(179,38,30,.09);
+  --tint-info:rgba(55,85,111,.10);
+
+  --edge-primary:rgba(0,110,109,.30);
+  --edge-success:rgba(46,125,70,.32);
+  --edge-warning:rgba(183,121,31,.35);
+  --edge-danger:rgba(179,38,30,.30);
+  --edge-info:rgba(55,85,111,.32);
+
   /* ── LEGACY BRAND ALIASES (preserved — widely referenced in components) ── */
   --ehrdc-teal:var(--ehrdc-teal-600);
   --ehrdc-dark-teal:var(--ehrdc-teal-700);
@@ -257,6 +280,27 @@
   --sidebar-accent-foreground:#3FB9A9;
   --sidebar-border:#25322E;
   --sidebar-ring:#3FB9A9;
+
+  /* State hues are re-cut for the dark ground. The light values (#2E7D46 etc.)
+     are tuned for contrast against white and go muddy on #0E1413 — on a wall
+     read from 3-5m a status colour that reads as "dark" reads as "off". */
+  --ehrdc-success:#3FBF6B;
+  --ehrdc-warning:#E0A63C;
+  --ehrdc-danger:#F0736A;
+  --ehrdc-info:#6FA8D6;
+
+  /* Tints/edges re-cut for the dark ground — the light alphas vanish here. */
+  --tint-primary:rgba(63,185,169,.14);
+  --tint-success:rgba(63,191,107,.14);
+  --tint-warning:rgba(224,166,60,.16);
+  --tint-danger:rgba(240,115,106,.16);
+  --tint-info:rgba(111,168,214,.14);
+
+  --edge-primary:rgba(63,185,169,.45);
+  --edge-success:rgba(63,191,107,.45);
+  --edge-warning:rgba(224,166,60,.50);
+  --edge-danger:rgba(240,115,106,.50);
+  --edge-info:rgba(111,168,214,.45);
 
   --ehrdc-teal:#3FB9A9;
   --ehrdc-dark-teal:#2F9A8C;

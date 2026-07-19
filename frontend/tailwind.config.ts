@@ -118,6 +118,20 @@ export default {
 				warning: 'var(--ehrdc-warning)',
 				danger: 'var(--ehrdc-danger)',
 				info: 'var(--ehrdc-info)',
+				// Soft fills and hairlines for state surfaces. Tailwind's slash
+				// opacity modifier (`bg-success/10`) emits NOTHING for var()-mapped
+				// colours — it cannot split a var() into channels, and drops the
+				// utility silently. Tinted surfaces must use these tokens instead.
+				'tint-primary': 'var(--tint-primary)',
+				'tint-success': 'var(--tint-success)',
+				'tint-warning': 'var(--tint-warning)',
+				'tint-danger': 'var(--tint-danger)',
+				'tint-info': 'var(--tint-info)',
+				'edge-primary': 'var(--edge-primary)',
+				'edge-success': 'var(--edge-success)',
+				'edge-warning': 'var(--edge-warning)',
+				'edge-danger': 'var(--edge-danger)',
+				'edge-info': 'var(--edge-info)',
 				// Dubai Design System Colors
 				dubai: {
 					blue: '#0079C1',
