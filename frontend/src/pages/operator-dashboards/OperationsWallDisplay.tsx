@@ -32,12 +32,26 @@ import { useOperationsData } from '@/hooks/useOperationsData';
  * Global chrome (header, mega-nav, FABs, toasts) is suppressed for this route
  * in App.tsx — chrome is wasted wall space.
  *
- * SECURITY NOTE — long-lived session (owner-approved approach): a wall display
- * cannot re-login, so JWT expiry would silently blank it. The credential that
- * drives this route MUST be a dedicated, read-only, low-privilege account
- * scoped to this display — never a real operator's token. The room is
- * semi-public; a long session on a wall is otherwise a standing privileged
- * credential sitting in it.
+ * SECURITY CONTRACT — long-lived session, READ-ONLY (owner-decided).
+ *
+ * A wall display cannot re-login, so JWT expiry would silently blank it, and a
+ * blank wall in a command room is an outage nobody gets paged for. It therefore
+ * runs on a long-lived session. The room is semi-public, so that credential is
+ * constrained rather than trusted:
+ *
+ *   · a DEDICATED account — never a real operator's token
+ *   · READ-ONLY — it may GET the two operations endpoints and nothing else
+ *   · LOW-PRIVILEGE — no access to PII, no mutating routes, no admin surface
+ *   · SCOPED to this route
+ *
+ * This screen is built to honour that: it issues no writes, exposes no
+ * controls, and renders only aggregate counts — no candidate names, no
+ * employer records, nothing that identifies a person. Keep it that way. If a
+ * future panel here needs per-person data, it needs a different auth story,
+ * not a wider token.
+ *
+ * NOT YET PROVISIONED — the account and the backend scope check still have to
+ * be created before this route is deployed to a room.
  */
 
 const OperationsWallDisplay: React.FC = () => {
