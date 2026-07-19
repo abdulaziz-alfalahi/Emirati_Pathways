@@ -31,6 +31,8 @@ set -euo pipefail
 IMAGE="${1:-emirati_backend:latest}"
 NAME=backend
 NETWORK=emirati_net
+# The volume compose declares as `upload_data` is created project-prefixed.
+VOLUME="${UPLOAD_VOLUME:-emirati_pathways_upload_data}"
 BACKUP_DIR="$HOME/appqa-backups/backend-recreate-$(date +%Y-%m-%d-%H%M)"
 
 echo "==> Preflight"
@@ -61,11 +63,13 @@ else
 fi
 
 echo "==> Ensuring the uploads volume exists and is seeded"
-docker volume create upload_data >/dev/null
+docker volume create "$VOLUME" >/dev/null
 if [ -d "$BACKUP_DIR/uploads" ]; then
-  # -n: never overwrite files already in the volume.
-  docker run --rm -v upload_data:/dest -v "$BACKUP_DIR/uploads":/src:ro \
-    alpine sh -c 'cp -an /src/. /dest/ 2>/dev/null || true'
+  # Seed with -n so anything already in the volume always wins; the volume is
+  # the source of truth once mounted. Uses the app image rather than `alpine`,
+  # because APPQA sits behind a forward proxy and may not be able to pull.
+  docker run --rm -v "$VOLUME":/dest -v "$BACKUP_DIR/uploads":/src:ro \
+    "$IMAGE" sh -c 'cp -an /src/. /dest/ 2>/dev/null || true'
 fi
 
 echo "==> Starting $NAME from $IMAGE"
@@ -74,7 +78,7 @@ docker run -d \
   --network "$NETWORK" \
   --env-file "$BACKUP_DIR/backend.env" \
   -p 5005:5005 \
-  -v upload_data:/app/uploads \
+  -v "$VOLUME":/app/uploads \
   --restart unless-stopped \
   "$IMAGE" \
   gunicorn \
