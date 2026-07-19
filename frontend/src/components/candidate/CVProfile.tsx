@@ -617,7 +617,7 @@ const CVProfile: React.FC = () => {
         className="mb-2"
         id="back-to-dashboard-btn"
       >
-        <ArrowRight className="h-4 w-4 rotate-180" style={{ marginInlineEnd: 8 }} />
+        <ArrowRight className="h-4 w-4" style={{ marginInlineEnd: 8, transform: isRTL ? undefined : 'rotate(180deg)' }} />
         {t('Back to Dashboard', 'العودة إلى لوحة التحكم')}
       </Button>
       {/* ATS Score Card */}
@@ -842,7 +842,7 @@ const CVProfile: React.FC = () => {
                 ))}
                 {experience.length > 3 && (
                   <Button variant="link" onClick={() => navigate('/cv-builder')} className="text-teal-600 p-0">
-                    {t(`View all ${experience.length} positions`, `عرض جميع المناصب (${experience.length})`)} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 4 }} />
+                    {t(`View all ${experience.length} positions`, `عرض جميع المناصب (${experience.length})`)} <ArrowRight className="h-4 w-4 rtl:rotate-180" style={{ marginInlineStart: 4 }} />
                   </Button>
                 )}
               </div>
