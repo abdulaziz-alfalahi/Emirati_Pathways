@@ -97,15 +97,15 @@ const CredentialPreviewDialog: React.FC<CredentialPreviewDialogProps> = ({
           
           <div className="flex space-x-2">
             <Button variant="outline" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
+              <Printer className="h-4 w-4 me-2" />
               Print
             </Button>
             <Button variant="outline" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Download
             </Button>
             <Button variant="outline" onClick={handleShare}>
-              <Share className="h-4 w-4 mr-2" />
+              <Share className="h-4 w-4 me-2" />
               Share
             </Button>
           </div>

@@ -63,7 +63,7 @@ const CareerPathCard: React.FC<CareerPathCardProps> = ({
             </CardTitle>
             <p className="text-muted-foreground">{path.industry} Industry</p>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <div className="text-sm text-muted-foreground mb-1">Overall Progress</div>
             <div className="flex items-center gap-2">
               <Progress value={path.totalProgress} className="w-24" />

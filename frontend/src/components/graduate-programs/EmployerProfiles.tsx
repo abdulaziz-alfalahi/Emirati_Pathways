@@ -274,15 +274,15 @@ export const EmployerProfiles: React.FC = () => {
               {/* Actions */}
               <div className="flex gap-3">
                 <Button className="bg-ehrdc-teal hover:bg-ehrdc-teal/90">
-                  <Target className="h-4 w-4 mr-2" />
+                  <Target className="h-4 w-4 me-2" />
                   Apply to Program
                 </Button>
                 <Button variant="outline">
-                  <Building className="h-4 w-4 mr-2" />
+                  <Building className="h-4 w-4 me-2" />
                   Company Profile
                 </Button>
                 <Button variant="outline">
-                  <Users className="h-4 w-4 mr-2" />
+                  <Users className="h-4 w-4 me-2" />
                   Meet Alumni
                 </Button>
               </div>

@@ -125,7 +125,7 @@ export const SkillExchangeBoard: React.FC = () => {
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               Create Exchange Request
             </Button>
           </DialogTrigger>

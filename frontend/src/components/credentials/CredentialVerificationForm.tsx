@@ -67,7 +67,7 @@ const CredentialVerificationForm: React.FC<CredentialVerificationFormProps> = ({
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Shield className="mr-2 h-5 w-5" />
+          <Shield className="me-2 h-5 w-5" />
           Verify Your Credentials
         </CardTitle>
         <CardDescription>
@@ -78,15 +78,15 @@ const CredentialVerificationForm: React.FC<CredentialVerificationFormProps> = ({
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="education" className="flex items-center">
-              <GraduationCap className="mr-2 h-4 w-4" />
+              <GraduationCap className="me-2 h-4 w-4" />
               Education
             </TabsTrigger>
             <TabsTrigger value="employment" className="flex items-center">
-              <Briefcase className="mr-2 h-4 w-4" />
+              <Briefcase className="me-2 h-4 w-4" />
               Employment
             </TabsTrigger>
             <TabsTrigger value="certification" className="flex items-center">
-              <Award className="mr-2 h-4 w-4" />
+              <Award className="me-2 h-4 w-4" />
               Certifications
             </TabsTrigger>
           </TabsList>

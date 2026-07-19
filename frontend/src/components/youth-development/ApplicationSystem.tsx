@@ -212,7 +212,7 @@ export const ApplicationSystem: React.FC = () => {
                 </div>
 
                 <Button className="w-full ehrdc-button-primary">
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-4 w-4 me-2" />
                   Submit Application
                 </Button>
               </CardContent>

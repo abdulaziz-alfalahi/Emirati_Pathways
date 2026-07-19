@@ -41,10 +41,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
         <CardTitle>Conversations</CardTitle>
         <CardDescription>Your recent message threads</CardDescription>
         <div className="relative my-2">
-          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-2 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search conversations..."
-            className="pl-8"
+            className="ps-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -73,7 +73,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       <OnlineIndicator
                         isOnline={isOnline(conversation.participantId)}
                         size="sm"
-                        className="absolute -bottom-0.5 -right-0.5"
+                        className="absolute -bottom-0.5 -end-0.5"
                       />
                     </div>
                     <div>

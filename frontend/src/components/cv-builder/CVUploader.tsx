@@ -320,7 +320,7 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
       case 'success':
         return (
           <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-            <Check className="h-3 w-3 mr-1" />
+            <Check className="h-3 w-3 me-1" />
             Parsed Successfully
           </Badge>
         );
@@ -415,19 +415,19 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
                         {parsingStats.method && (
                           <div>
                             <span className="text-green-700 font-medium">Method:</span>
-                            <span className="text-green-600 ml-1">{parsingStats.method}</span>
+                            <span className="text-green-600 ms-1">{parsingStats.method}</span>
                           </div>
                         )}
                         {parsingStats.language && (
                           <div>
                             <span className="text-green-700 font-medium">Language:</span>
-                            <span className="text-green-600 ml-1">{parsingStats.language}</span>
+                            <span className="text-green-600 ms-1">{parsingStats.language}</span>
                           </div>
                         )}
                         {parsingStats.entities && (
                           <div>
                             <span className="text-green-700 font-medium">Data Points:</span>
-                            <span className="text-green-600 ml-1">{parsingStats.entities}</span>
+                            <span className="text-green-600 ms-1">{parsingStats.entities}</span>
                           </div>
                         )}
                         {parsingStats.ruleBasedName && (
@@ -462,25 +462,25 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
           {parsingStats.method && (
             <div>
               <span className="text-gray-600">Method:</span>
-              <span className="ml-1 font-medium">{parsingStats.method}</span>
+              <span className="ms-1 font-medium">{parsingStats.method}</span>
             </div>
           )}
           {parsingStats.language && (
             <div>
               <span className="text-gray-600">Language:</span>
-              <span className="ml-1 font-medium">{parsingStats.language}</span>
+              <span className="ms-1 font-medium">{parsingStats.language}</span>
             </div>
           )}
           {parsingStats.entities !== undefined && (
             <div>
               <span className="text-gray-600">Entities:</span>
-              <span className="ml-1 font-medium">{parsingStats.entities}</span>
+              <span className="ms-1 font-medium">{parsingStats.entities}</span>
             </div>
           )}
           {parsingStats.ruleBasedName !== undefined && (
             <div>
               <span className="text-gray-600">Enhanced Name:</span>
-              <span className="ml-1 font-medium">{parsingStats.ruleBasedName ? 'Yes' : 'No'}</span>
+              <span className="ms-1 font-medium">{parsingStats.ruleBasedName ? 'Yes' : 'No'}</span>
             </div>
           )}
         </div>

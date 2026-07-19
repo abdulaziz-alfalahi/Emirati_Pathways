@@ -204,7 +204,7 @@ const CareerJourneyVisualization: React.FC = () => {
           size="sm"
           onClick={() => setSelectedCategory('education')}
         >
-          <BookOpen className="h-4 w-4 mr-1" />
+          <BookOpen className="h-4 w-4 me-1" />
           Education
         </Button>
         <Button
@@ -212,7 +212,7 @@ const CareerJourneyVisualization: React.FC = () => {
           size="sm"
           onClick={() => setSelectedCategory('career')}
         >
-          <Briefcase className="h-4 w-4 mr-1" />
+          <Briefcase className="h-4 w-4 me-1" />
           Career
         </Button>
         <Button
@@ -220,7 +220,7 @@ const CareerJourneyVisualization: React.FC = () => {
           size="sm"
           onClick={() => setSelectedCategory('personal')}
         >
-          <Target className="h-4 w-4 mr-1" />
+          <Target className="h-4 w-4 me-1" />
           Personal
         </Button>
       </div>
@@ -233,7 +233,7 @@ const CareerJourneyVisualization: React.FC = () => {
               <h3 className="text-2xl font-bold">{currentPath.title}</h3>
               <p className="text-muted-foreground">{currentPath.industry} Industry</p>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-sm text-muted-foreground mb-1">Overall Progress</div>
               <div className="flex items-center gap-2">
                 <Progress value={currentPath.totalProgress} className="w-32" />
@@ -255,7 +255,7 @@ const CareerJourneyVisualization: React.FC = () => {
               return (
                 <div key={stage.id} className="relative">
                   {!isLast && (
-                    <div className="absolute left-6 top-12 h-16 w-0.5 bg-gray-200" />
+                    <div className="absolute start-6 top-12 h-16 w-0.5 bg-gray-200" />
                   )}
                   
                   <div className="flex gap-4">

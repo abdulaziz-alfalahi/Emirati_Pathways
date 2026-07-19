@@ -65,7 +65,7 @@ export const CriterionCollaborators: React.FC<CriterionCollaboratorsProps> = ({
                       {user.user?.full_name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 border border-white rounded-full animate-pulse"></div>
+                  <div className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-blue-500 border border-white rounded-full animate-pulse"></div>
                 </div>
               </TooltipTrigger>
               <TooltipContent>

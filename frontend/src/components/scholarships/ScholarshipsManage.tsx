@@ -194,15 +194,15 @@ const ScholarshipsManage: React.FC<ScholarshipsManageProps> = ({
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-4 w-4 me-2" />
                   View Applications
                 </Button>
                 <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 me-2" />
                   Edit
                 </Button>
                 <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4 me-2" />
                   Delete
                 </Button>
               </div>

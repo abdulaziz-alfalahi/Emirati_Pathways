@@ -112,7 +112,7 @@ const InterviewPreparationPage: React.FC = () => {
         </Badge>
         <br />
         <Button variant="outline">
-          <Mail className="h-4 w-4 mr-2" />
+          <Mail className="h-4 w-4 me-2" />
           {t('preparation.notifyMe')}
         </Button>
       </div>
@@ -132,7 +132,7 @@ const InterviewPreparationPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Video className="h-5 w-5 mr-2" />
+              <Video className="h-5 w-5 me-2" />
               {t('simulator.setup.title')}
             </CardTitle>
           </CardHeader>
@@ -161,7 +161,7 @@ const InterviewPreparationPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2" />
+              <BarChart3 className="h-5 w-5 me-2" />
               {t('sessions.statistics.totalSessions')}
             </CardTitle>
           </CardHeader>
@@ -187,7 +187,7 @@ const InterviewPreparationPage: React.FC = () => {
 
       <div className="text-center">
         <Button size="lg">
-          <Play className="h-4 w-4 mr-2" />
+          <Play className="h-4 w-4 me-2" />
           {t('actions.start')} {t('tabs.simulator.label')}
         </Button>
       </div>
@@ -221,7 +221,7 @@ const InterviewPreparationPage: React.FC = () => {
                 <Badge variant="outline">{t('questions.levels.senior')}</Badge>
               </div>
               <Button className="w-full" variant="outline">
-                <BookOpen className="h-4 w-4 mr-2" />
+                <BookOpen className="h-4 w-4 me-2" />
                 {t('secondaryAction')}
               </Button>
             </CardContent>
@@ -388,7 +388,7 @@ const InterviewPreparationPage: React.FC = () => {
         </div>
 
         <Button>
-          <Play className="h-4 w-4 mr-2" />
+          <Play className="h-4 w-4 me-2" />
           {t('emptyState.action')}
         </Button>
       </div>

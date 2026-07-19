@@ -79,7 +79,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className }) => {
       
       <SheetContent 
         side="left" 
-        className="w-80 p-0 bg-white border-r border-ehrdc-neutral-light"
+        className="w-80 p-0 bg-white border-e border-ehrdc-neutral-light"
       >
         {/* Header */}
         <SheetHeader className="px-6 py-4 border-b border-ehrdc-neutral-light bg-ehrdc-teal">
@@ -197,7 +197,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className }) => {
               <div className="space-y-2">
                 <Link to="/auth?tab=sign-in" onClick={closeMenu}>
                   <Button variant="outline" className="w-full justify-center border-ehrdc-teal text-ehrdc-teal hover:bg-ehrdc-teal hover:text-white">
-                    <LogIn className="h-4 w-4 mr-2" />
+                    <LogIn className="h-4 w-4 me-2" />
                     {t('buttons.signIn')}
                   </Button>
                 </Link>

@@ -138,10 +138,10 @@ const AdvisorScheduling: React.FC = () => {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-start text-start font-normal"
                   id="date"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="me-2 h-4 w-4" />
                   {selectedDate ? (
                     format(selectedDate, 'PPP')
                   ) : (
@@ -174,7 +174,7 @@ const AdvisorScheduling: React.FC = () => {
                 <SelectValue placeholder="Select a time">
                   {selectedTime ? (
                     <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
+                      <Clock className="me-2 h-4 w-4" />
                       {selectedTime}
                     </div>
                   ) : (
@@ -186,7 +186,7 @@ const AdvisorScheduling: React.FC = () => {
                 {availableTimes.map(time => (
                   <SelectItem key={time} value={time}>
                     <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
+                      <Clock className="me-2 h-4 w-4" />
                       {time}
                     </div>
                   </SelectItem>

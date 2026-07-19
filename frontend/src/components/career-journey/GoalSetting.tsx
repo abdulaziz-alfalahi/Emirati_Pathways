@@ -206,7 +206,7 @@ const GoalSetting: React.FC = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">My Career Goals</h2>
         <Button onClick={() => setShowAddGoal(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Add Goal
         </Button>
       </div>
@@ -301,7 +301,7 @@ const GoalSetting: React.FC = () => {
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={addMilestone}>
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 me-1" />
                 Add Milestone
               </Button>
             </div>

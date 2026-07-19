@@ -169,7 +169,7 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({ onViewAll, l
                 className="w-full mt-2"
                 onClick={() => onViewAll ? onViewAll() : navigate('/recruiter?tab=jobs')}
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 me-2" />
                 View All Applicants
               </Button>
             )}

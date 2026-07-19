@@ -38,7 +38,7 @@ const AssessmentDocumentation: React.FC = () => {
               <div className="divide-y">
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                    <FileText className="h-4 w-4 me-2 text-blue-600" />
                     <span className="text-sm">Assessment Guidelines.pdf</span>
                   </div>
                   <Button variant="ghost" size="icon">
@@ -47,7 +47,7 @@ const AssessmentDocumentation: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-green-600" />
+                    <FileText className="h-4 w-4 me-2 text-green-600" />
                     <span className="text-sm">Scoring Matrix.xlsx</span>
                   </div>
                   <Button variant="ghost" size="icon">
@@ -56,7 +56,7 @@ const AssessmentDocumentation: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-purple-600" />
+                    <FileText className="h-4 w-4 me-2 text-purple-600" />
                     <span className="text-sm">Question Bank.docx</span>
                   </div>
                   <Button variant="ghost" size="icon">
@@ -66,7 +66,7 @@ const AssessmentDocumentation: React.FC = () => {
               </div>
             </CardContent>
             <CardFooter className="border-t pt-4">
-              <Button variant="link" className="ml-auto">View All Documents</Button>
+              <Button variant="link" className="ms-auto">View All Documents</Button>
             </CardFooter>
           </Card>
         </div>

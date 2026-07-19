@@ -277,7 +277,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                   {/* Personal Info */}
                   <div className="bg-gray-50 rounded-lg p-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Users className="w-5 h-5 mr-2 text-blue-600" />
+                      <Users className="w-5 h-5 me-2 text-blue-600" />
                       Personal Information
                     </h4>
                     <div className="space-y-3">
@@ -286,15 +286,15 @@ const SimpleCVBuilderPage: React.FC = () => {
                         <span className="text-gray-900">{cvData.personalInfo?.name}</span>
                       </div>
                       <div className="flex items-center">
-                        <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                        <Mail className="w-4 h-4 me-2 text-gray-400" />
                         <span className="text-gray-900">{cvData.personalInfo?.email}</span>
                       </div>
                       <div className="flex items-center">
-                        <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                        <Phone className="w-4 h-4 me-2 text-gray-400" />
                         <span className="text-gray-900">{cvData.personalInfo?.phone}</span>
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                        <MapPin className="w-4 h-4 me-2 text-gray-400" />
                         <span className="text-gray-900">{cvData.personalInfo?.location}</span>
                       </div>
                     </div>
@@ -303,7 +303,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                   {/* Skills */}
                   <div className="bg-gray-50 rounded-lg p-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Zap className="w-5 h-5 mr-2 text-purple-600" />
+                      <Zap className="w-5 h-5 me-2 text-purple-600" />
                       Skills Analysis
                     </h4>
                     <div className="space-y-4">
@@ -335,7 +335,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                 {cvData.job_matches && cvData.job_matches.length > 0 && (
                   <div className="mt-8 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                      <TrendingUp className="w-5 h-5 me-2 text-blue-600" />
                       Top Job Matches
                     </h4>
                     <div className="grid gap-4">
@@ -365,7 +365,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                 {cvData.uae_context && (
                   <div className="mt-8 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-6">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Shield className="w-5 h-5 mr-2 text-green-600" />
+                      <Shield className="w-5 h-5 me-2 text-green-600" />
                       UAE Market Analysis
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
@@ -393,7 +393,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                       className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center"
                     >
                       Build CV with This Data
-                      <ArrowRight className="w-5 h-5 ml-2" />
+                      <ArrowRight className="w-5 h-5 ms-2" />
                     </button>
                   </div>
                   <p className="text-sm text-gray-500">

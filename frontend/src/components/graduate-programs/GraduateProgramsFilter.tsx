@@ -53,7 +53,7 @@ const GraduateProgramsFilter: React.FC<GraduateProgramsFilterProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center">
-            <Filter className="h-5 w-5 mr-2 text-blue-600" />
+            <Filter className="h-5 w-5 me-2 text-blue-600" />
             Advanced Filters
           </CardTitle>
           {hasActiveFilters && (
@@ -63,7 +63,7 @@ const GraduateProgramsFilter: React.FC<GraduateProgramsFilterProps> = ({
               onClick={handleClearFilters}
               className="h-8 px-2 lg:px-3 text-red-600 hover:text-red-700"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 me-1" />
               Clear
             </Button>
           )}

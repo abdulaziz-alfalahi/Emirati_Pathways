@@ -348,7 +348,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
               <button
                 key={index}
                 onClick={() => handleSearch(search)}
-                className="flex items-center gap-2 w-full text-left p-2 rounded hover:bg-gray-50 text-sm"
+                className="flex items-center gap-2 w-full text-start p-2 rounded hover:bg-gray-50 text-sm"
               >
                 <Clock className="h-4 w-4 text-gray-400" />
                 {search}
@@ -373,12 +373,12 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
         <div className="space-y-4">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search for tools, programs, opportunities..."
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 pr-4"
+              className="ps-10 pe-4"
               autoFocus
             />
           </div>
@@ -410,7 +410,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
 
             {(selectedPhases.length > 0 || selectedCategories.length > 0) && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="h-4 w-4 mr-1" />
+                <X className="h-4 w-4 me-1" />
                 Clear
               </Button>
             )}

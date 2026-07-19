@@ -321,7 +321,7 @@ const AIAssistanceWidget: React.FC<AIAssistanceWidgetProps> = ({
               disabled={isLoadingSuggestions}
               className="text-xs"
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
+              <RefreshCw className="h-3 w-3 me-1" />
               Refresh Tips
             </Button>
             <Button
@@ -330,7 +330,7 @@ const AIAssistanceWidget: React.FC<AIAssistanceWidgetProps> = ({
               onClick={() => setAppliedSuggestions(new Set())}
               className="text-xs"
             >
-              <AlertCircle className="h-3 w-3 mr-1" />
+              <AlertCircle className="h-3 w-3 me-1" />
               Reset Applied
             </Button>
           </div>

@@ -173,7 +173,7 @@ const SkillsGapAnalysis: React.FC = () => {
                   {gap > 0 && (
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline">
-                        <BookOpen className="h-4 w-4 mr-1" />
+                        <BookOpen className="h-4 w-4 me-1" />
                         Find Courses
                       </Button>
                       <Button size="sm" variant="outline">

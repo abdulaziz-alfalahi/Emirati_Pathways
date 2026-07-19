@@ -102,7 +102,7 @@ export const SkillsTracker: React.FC = () => {
               onClick={() => setShowAddGoal(true)}
               className="ehrdc-button-primary"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               Add Goal
             </Button>
           </div>
@@ -251,7 +251,7 @@ export const SkillsTracker: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button className="w-full ehrdc-button-primary">
-                <BookOpen className="h-4 w-4 mr-2" />
+                <BookOpen className="h-4 w-4 me-2" />
                 Find Learning Resources
               </Button>
               <Button variant="outline" className="w-full">

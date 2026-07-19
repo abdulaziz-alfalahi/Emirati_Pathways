@@ -94,12 +94,12 @@ const MyApplications: React.FC = () => {
 
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 me-2" />
                 Deadline: {new Date(application.deadline).toLocaleDateString()}
               </div>
               {application.submittedDate && (
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4 mr-2" />
+                  <Clock className="h-4 w-4 me-2" />
                   Submitted: {new Date(application.submittedDate).toLocaleDateString()}
                 </div>
               )}
@@ -130,7 +130,7 @@ const MyApplications: React.FC = () => {
 
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
-                <ExternalLink className="h-4 w-4 mr-1" />
+                <ExternalLink className="h-4 w-4 me-1" />
                 View Details
               </Button>
               {application.status === 'incomplete' && (

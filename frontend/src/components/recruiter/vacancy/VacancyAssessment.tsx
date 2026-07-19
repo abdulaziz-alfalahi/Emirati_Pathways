@@ -81,7 +81,7 @@ export const VacancyAssessment: React.FC<VacancyAssessmentProps> = ({ job }) => 
                         <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
                             <DialogTrigger asChild>
                                 <Button className="bg-indigo-600 hover:bg-indigo-700">
-                                    <CalendarIcon className="h-4 w-4 mr-2" />
+                                    <CalendarIcon className="h-4 w-4 me-2" />
                                     Smart Schedule
                                 </Button>
                             </DialogTrigger>
@@ -143,7 +143,7 @@ export const VacancyAssessment: React.FC<VacancyAssessmentProps> = ({ job }) => 
                                 <div className="flex items-center p-4">
 
                                     {/* Time Box */}
-                                    <div className="flex-none w-20 text-center border-r pr-4 mr-4">
+                                    <div className="flex-none w-20 text-center border-e pe-4 me-4">
                                         <span className="block text-xs font-bold text-indigo-600 uppercase tracking-wider">{interview.status}</span>
                                         <span className="block text-sm font-medium text-gray-900 mt-1">{interview.time.split(',')[0]}</span>
                                         <span className="block text-lg font-bold text-gray-800">{interview.time.split(',')[1]}</span>

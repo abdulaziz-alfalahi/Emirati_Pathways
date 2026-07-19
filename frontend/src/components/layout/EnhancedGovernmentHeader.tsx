@@ -82,7 +82,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                               className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-teal-50 hover:text-teal-600 focus:bg-teal-50 focus:text-teal-600"
                             >
                               <div className="text-sm font-medium leading-none flex items-center">
-                                <item.icon className="h-4 w-4 mr-2 text-teal-600" />
+                                <item.icon className="h-4 w-4 me-2 text-teal-600" />
                                 {item.name}
                               </div>
                               <p className="line-clamp-2 text-sm leading-snug text-slate-600">
@@ -129,7 +129,7 @@ const EnhancedGovernmentHeader: React.FC<EnhancedGovernmentHeaderProps> = ({
                   className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                 >
                   Get Started
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ms-2" />
                 </Link>
               </>
             ) : (

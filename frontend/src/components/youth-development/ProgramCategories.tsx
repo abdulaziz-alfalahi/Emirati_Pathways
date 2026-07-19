@@ -129,12 +129,12 @@ export const ProgramCategories: React.FC = () => {
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search programs..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -192,7 +192,7 @@ export const ProgramCategories: React.FC = () => {
                       alt={program.title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-3 start-3">
                       <Badge className={category?.color}>{category?.name}</Badge>
                     </div>
                   </div>

@@ -280,7 +280,7 @@ const CandidateProfilePage: React.FC = () => {
                 {error || 'Could not load candidate profile'}
               </p>
               <Button onClick={handleBack} variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Go Back
               </Button>
             </div>
@@ -298,7 +298,7 @@ const CandidateProfilePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Button onClick={handleBack} variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Back
               </Button>
 
@@ -402,9 +402,9 @@ const CandidateProfilePage: React.FC = () => {
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
                   {creatingConversation ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 me-2 animate-spin" />
                   ) : (
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <MessageSquare className="h-4 w-4 me-2" />
                   )}
                   Send Message
                 </Button>
@@ -531,15 +531,15 @@ const CandidateProfilePage: React.FC = () => {
                     const endDate = exp.is_current ? 'Present' : exp.end_date ? new Date(exp.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
                     const dateRange = startDate ? `${startDate} - ${endDate}` : '';
                     return (
-                      <div key={index} className="relative pl-6 border-l-2 border-emerald-200 pb-2">
-                        <div className="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-emerald-500" />
+                      <div key={index} className="relative ps-6 border-s-2 border-emerald-200 pb-2">
+                        <div className="absolute -start-[7px] top-1 w-3 h-3 rounded-full bg-emerald-500" />
                         <div className="flex items-start justify-between">
                           <div>
                             <h4 className="font-semibold text-gray-900">{title}</h4>
                             {company && <p className="text-sm text-emerald-700">{company}{exp.location ? ` — ${exp.location}` : ''}</p>}
                           </div>
                           {dateRange && (
-                            <span className="text-xs text-gray-500 whitespace-nowrap ml-4 flex items-center gap-1">
+                            <span className="text-xs text-gray-500 whitespace-nowrap ms-4 flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {dateRange}
                             </span>

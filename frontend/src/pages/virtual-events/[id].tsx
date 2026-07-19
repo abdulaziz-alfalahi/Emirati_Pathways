@@ -153,7 +153,7 @@ const VirtualEventDetailPage: React.FC = () => {
                 </Badge>
                 {isLive && (
                   <Badge className="bg-red-500 text-white animate-pulse">
-                    <Video className="h-3 w-3 mr-1" />
+                    <Video className="h-3 w-3 me-1" />
                     LIVE
                   </Badge>
                 )}
@@ -202,7 +202,7 @@ const VirtualEventDetailPage: React.FC = () => {
 
               {isRegistered && isLive && (
                 <Button onClick={handleCheckIn} size="lg" className="bg-red-500 hover:bg-red-600">
-                  <Video className="h-4 w-4 mr-2" />
+                  <Video className="h-4 w-4 me-2" />
                   Join Live Event
                 </Button>
               )}

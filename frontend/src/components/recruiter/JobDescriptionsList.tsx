@@ -469,7 +469,7 @@ const JobDescriptionsList = () => {
                                 <div className="text-xs text-blue-600">Applicants</div>
                               </div>
                               {newApplicants > 0 && (
-                                <Badge className="bg-red-500 text-white ml-2">
+                                <Badge className="bg-red-500 text-white ms-2">
                                   {newApplicants} New
                                 </Badge>
                               )}
@@ -501,7 +501,7 @@ const JobDescriptionsList = () => {
                             navigate(`/recruiter/jd-builder?jd_id=${jdId}`, { replace: false });
                           }}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
+                          <Eye className="h-4 w-4 me-1" />
                           Edit
                         </Button>
                         {(job.status === 'published' || job.status === 'active' || job.status === 'draft') && (
@@ -511,7 +511,7 @@ const JobDescriptionsList = () => {
                               className="bg-blue-600 hover:bg-blue-700 text-white"
                               onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
                             >
-                              <UserPlus className="h-4 w-4 mr-1" />
+                              <UserPlus className="h-4 w-4 me-1" />
                               Applicants ({totalApplicants})
                             </Button>
                             <Button
@@ -519,7 +519,7 @@ const JobDescriptionsList = () => {
                               className="bg-emerald-600 hover:bg-emerald-700 text-white"
                               onClick={() => setSelectedJobForShortlist({ ...job, jd_id: jdId })}
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <CheckCircle className="h-4 w-4 me-1" />
                               Shortlist ({totalShortlisted})
                             </Button>
                           </>
@@ -556,7 +556,7 @@ const JobDescriptionsList = () => {
                             <span>{applicantData.offers_made} Offers</span>
                           </div>
                           {applicantData.last_application_date && (
-                            <span className="text-muted-foreground ml-auto">
+                            <span className="text-muted-foreground ms-auto">
                               Last: {formatRelativeTime(applicantData.last_application_date)}
                             </span>
                           )}
@@ -605,7 +605,7 @@ const JobDescriptionsList = () => {
                   Create your first job posting to start receiving applications
                 </p>
                 <Button onClick={() => navigate('/recruiter/jd-builder')}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Create Job Posting
                 </Button>
               </CardContent>

@@ -104,7 +104,7 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({ groupId, onPollCrea
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <BarChart3 className="h-4 w-4 mr-2" />
+          <BarChart3 className="h-4 w-4 me-2" />
           Create Poll
         </Button>
       </DialogTrigger>
@@ -168,7 +168,7 @@ const CreatePollDialog: React.FC<CreatePollDialogProps> = ({ groupId, onPollCrea
                 onClick={handleAddOption}
                 className="w-full"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Add Option
               </Button>
             )}

@@ -117,7 +117,7 @@ const CredentialVerification: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Shield className="mr-2 h-5 w-5" />
+            <Shield className="me-2 h-5 w-5" />
             Credential Verification
           </CardTitle>
           <CardDescription>
@@ -176,12 +176,12 @@ const CredentialVerification: React.FC = () => {
           >
             {isVerifying ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2" />
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white me-2" />
                 Verifying...
               </>
             ) : (
               <>
-                <Shield className="h-4 w-4 mr-2" />
+                <Shield className="h-4 w-4 me-2" />
                 Verify Credential
               </>
             )}
@@ -191,14 +191,14 @@ const CredentialVerification: React.FC = () => {
 
       {/* Verification Result */}
       {verificationResult && (
-        <Card className={`border-l-4 ${
-          verificationResult.isValid ? 'border-l-green-500' : 'border-l-red-500'
+        <Card className={`border-s-4 ${
+          verificationResult.isValid ? 'border-s-green-500' : 'border-s-red-500'
         }`}>
           <CardHeader>
             <CardTitle className="flex items-center">
               {getStatusIcon(verificationResult.status)}
-              <span className="ml-2">Verification Result</span>
-              <Badge className={`ml-auto ${getStatusColor(verificationResult.status)}`}>
+              <span className="ms-2">Verification Result</span>
+              <Badge className={`ms-auto ${getStatusColor(verificationResult.status)}`}>
                 {verificationResult.status.toUpperCase()}
               </Badge>
             </CardTitle>
@@ -227,16 +227,16 @@ const CredentialVerification: React.FC = () => {
                     <h4 className="font-semibold text-sm mb-2">Blockchain Details</h4>
                     <div className="space-y-2 text-sm">
                       <p className="flex items-center">
-                        <Hash className="mr-1 h-3 w-3" />
+                        <Hash className="me-1 h-3 w-3" />
                         <strong>Block:</strong> #{verificationResult.credential.block_number}
                       </p>
                       <p className="flex items-center">
-                        <ExternalLink className="mr-1 h-3 w-3" />
+                        <ExternalLink className="me-1 h-3 w-3" />
                         <strong>Tx:</strong> {verificationResult.credential.transaction_hash.substring(0, 10)}...
                       </p>
                       {verificationResult.verificationDetails && (
                         <p className="flex items-center">
-                          <Calendar className="mr-1 h-3 w-3" />
+                          <Calendar className="me-1 h-3 w-3" />
                           <strong>Verified:</strong> {new Date(verificationResult.verificationDetails.verifiedAt).toLocaleString()}
                         </p>
                       )}

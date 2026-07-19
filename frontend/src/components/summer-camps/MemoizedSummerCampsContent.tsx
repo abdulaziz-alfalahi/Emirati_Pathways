@@ -76,20 +76,20 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
         key={campId} 
         className={cn(
           "transition-all duration-300 hover:shadow-lg focus-within:ring-2 focus-within:ring-orange-500",
-          isRTL && "rtl:text-right"
+          isRTL && "rtl:text-start"
         )}
         role="article"
         aria-labelledby={`${campId}-title`}
         aria-describedby={`${campId}-description`}
       >
         <CardHeader className={cn(
-          isRTL && "rtl:text-right"
+          isRTL && "rtl:text-start"
         )}>
           <CardTitle 
             id={`${campId}-title`}
             className={cn(
               "text-lg",
-              isRTL && "rtl:text-right rtl:font-arabic"
+              isRTL && "rtl:text-start rtl:font-arabic"
             )}
           >
             {camp.title}
@@ -98,14 +98,14 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
             id={`${campId}-description`}
             className={cn(
               "text-muted-foreground",
-              isRTL && "rtl:text-right rtl:font-arabic rtl:leading-relaxed"
+              isRTL && "rtl:text-start rtl:font-arabic rtl:leading-relaxed"
             )}
           >
             {camp.description}
           </p>
         </CardHeader>
         <CardContent className={cn(
-          isRTL && "rtl:text-right"
+          isRTL && "rtl:text-start"
         )}>
           <div className={cn(
             "space-y-2 mb-4",
@@ -114,7 +114,7 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
             
             <div className={cn(
               "flex justify-between text-sm",
-              isRTL && "rtl:flex-row-reverse rtl:text-right"
+              isRTL && "rtl:flex-row-reverse rtl:text-start"
             )} role="listitem">
               <span className={cn(isRTL && "rtl:font-arabic")} aria-label={t('info.duration')}>
                 {t('info.duration')}:
@@ -126,7 +126,7 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
             
             <div className={cn(
               "flex justify-between text-sm",
-              isRTL && "rtl:flex-row-reverse rtl:text-right"
+              isRTL && "rtl:flex-row-reverse rtl:text-start"
             )} role="listitem">
               <span className={cn(isRTL && "rtl:font-arabic")} aria-label={t('ui.filters.ageGroup')}>
                 {t('ui.filters.ageGroup')}:
@@ -138,7 +138,7 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
             
             <div className={cn(
               "flex justify-between text-sm",
-              isRTL && "rtl:flex-row-reverse rtl:text-right"
+              isRTL && "rtl:flex-row-reverse rtl:text-start"
             )} role="listitem">
               <span className={cn(isRTL && "rtl:font-arabic")} aria-label={t('ui.filters.location')}>
                 {t('ui.filters.location')}:
@@ -150,7 +150,7 @@ const MemoizedSummerCampsContent: React.FC<MemoizedSummerCampsContentProps> = me
             
             <div className={cn(
               "flex justify-between items-center",
-              isRTL && "rtl:flex-row-reverse rtl:text-right"
+              isRTL && "rtl:flex-row-reverse rtl:text-start"
             )} role="listitem">
               <span className={cn(
                 "text-sm",

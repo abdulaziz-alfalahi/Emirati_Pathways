@@ -31,7 +31,7 @@ const TraineeProfileViewer: React.FC<TraineeProfileViewerProps> = ({ trainee, on
             <div>
               <CardTitle className="text-2xl">{trainee.name}</CardTitle>
               <CardDescription className="flex items-center mt-1">
-                <Mail className="h-4 w-4 mr-1" />
+                <Mail className="h-4 w-4 me-1" />
                 {trainee.email}
               </CardDescription>
               <div className="mt-2">
@@ -55,13 +55,13 @@ const TraineeProfileViewer: React.FC<TraineeProfileViewerProps> = ({ trainee, on
         <Tabs defaultValue="programs" className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="programs" className="flex items-center">
-              <Book className="h-4 w-4 mr-2" /> Programs
+              <Book className="h-4 w-4 me-2" /> Programs
             </TabsTrigger>
             <TabsTrigger value="assessments" className="flex items-center">
-              <FileText className="h-4 w-4 mr-2" /> Assessments
+              <FileText className="h-4 w-4 me-2" /> Assessments
             </TabsTrigger>
             <TabsTrigger value="personal" className="flex items-center">
-              <User className="h-4 w-4 mr-2" /> Personal Info
+              <User className="h-4 w-4 me-2" /> Personal Info
             </TabsTrigger>
           </TabsList>
           

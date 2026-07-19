@@ -105,7 +105,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               onClick={clearAllFilters}
               className="text-muted-foreground"
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="h-4 w-4 me-1" />
               Clear All
             </Button>
           </div>
@@ -226,8 +226,8 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 <label className="text-sm font-medium">Date Range</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <Calendar className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="w-full justify-start text-start font-normal">
+                      <Calendar className="me-2 h-4 w-4" />
                       {dateRange?.from ? (
                         dateRange.to ? (
                           <>

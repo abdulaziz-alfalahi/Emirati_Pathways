@@ -275,7 +275,7 @@ const Messages: React.FC = () => {
             </div>
 
             <Card className="flex flex-col md:flex-row h-[600px]">
-                <div className="w-full md:w-1/3 border-r">
+                <div className="w-full md:w-1/3 border-e">
                     <ConversationList
                         conversations={conversations}
                         selectedConversation={selectedConversation}

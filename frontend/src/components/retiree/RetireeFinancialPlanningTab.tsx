@@ -106,7 +106,7 @@ export const RetireeFinancialPlanningTab: React.FC = () => {
                     ))}
                   </div>
                   <Button variant="outline" size="sm" className="w-full">
-                    <Calculator className="h-4 w-4 mr-2" />
+                    <Calculator className="h-4 w-4 me-2" />
                     Use Tool
                   </Button>
                 </div>
@@ -139,7 +139,7 @@ export const RetireeFinancialPlanningTab: React.FC = () => {
               <CardContent>
                 <Button variant="outline" size="sm" className="w-full" asChild>
                   <a href={resource.url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 me-2" />
                     Read Guide
                   </a>
                 </Button>
@@ -177,7 +177,7 @@ export const RetireeFinancialPlanningTab: React.FC = () => {
               </div>
             </div>
             <Button className="w-full">
-              <Calculator className="h-4 w-4 mr-2" />
+              <Calculator className="h-4 w-4 me-2" />
               Take Full Financial Assessment
             </Button>
           </div>

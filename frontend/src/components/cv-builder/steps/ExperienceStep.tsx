@@ -173,15 +173,15 @@ export const ExperienceStep: React.FC<ExperienceStepProps> = ({
             <CardContent>
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Building className="h-4 w-4 mr-2" />
+                  <Building className="h-4 w-4 me-2" />
                   {experience.company}
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   {experience.startDate} - {experience.isCurrentJob ? 'Present' : experience.endDate}
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 mr-2" />
+                  <MapPin className="h-4 w-4 me-2" />
                   {experience.location}
                 </div>
                 <p className="text-sm mt-2">{experience.description}</p>
@@ -191,7 +191,7 @@ export const ExperienceStep: React.FC<ExperienceStepProps> = ({
                     <ul className="text-sm space-y-1">
                       {experience.achievements.map((achievement, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="text-primary mr-2">•</span>
+                          <span className="text-primary me-2">•</span>
                           {achievement}
                         </li>
                       ))}
@@ -352,7 +352,7 @@ export const ExperienceStep: React.FC<ExperienceStepProps> = ({
                     <Badge key={index} className="cursor-pointer">
                       {skill}
                       <X
-                        className="h-3 w-3 ml-1"
+                        className="h-3 w-3 ms-1"
                         onClick={() => handleRemoveSkill(index)}
                       />
                     </Badge>
@@ -374,11 +374,11 @@ export const ExperienceStep: React.FC<ExperienceStepProps> = ({
 
             <div className="flex space-x-2 pt-4">
               <Button onClick={handleSaveExperience}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t('common.save', 'Save')}
               </Button>
               <Button onClick={handleCancelEdit}>
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 me-2" />
                 {t('common.cancel', 'Cancel')}
               </Button>
             </div>

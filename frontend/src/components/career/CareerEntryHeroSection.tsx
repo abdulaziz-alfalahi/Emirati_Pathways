@@ -53,7 +53,7 @@ export const CareerEntryHeroSection: React.FC<CareerEntryHeroProps> = ({
               className="bg-white text-[#006E6D] hover:bg-gray-50 font-semibold rounded-full px-8"
               onClick={primaryActionOnClick}
             >
-              {primaryActionIcon && <span className="mr-2">{primaryActionIcon}</span>}
+              {primaryActionIcon && <span className="me-2">{primaryActionIcon}</span>}
               {primaryActionLabel}
             </Button>
 
@@ -64,7 +64,7 @@ export const CareerEntryHeroSection: React.FC<CareerEntryHeroProps> = ({
                 className="border-white/40 text-white hover:bg-white/10 rounded-full px-8"
                 onClick={secondaryActionOnClick}
               >
-                {secondaryActionIcon && <span className="mr-2">{secondaryActionIcon}</span>}
+                {secondaryActionIcon && <span className="me-2">{secondaryActionIcon}</span>}
                 {secondaryActionLabel}
               </Button>
             )}

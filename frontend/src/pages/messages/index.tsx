@@ -355,8 +355,8 @@ const MessagesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <Button variant="ghost" className="text-white hover:bg-white/20 mb-4 pl-0 hover:text-white" onClick={() => navigate(getDashboardPath())}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+          <Button variant="ghost" className="text-white hover:bg-white/20 mb-4 ps-0 hover:text-white" onClick={() => navigate(getDashboardPath())}>
+            <ArrowLeft className="h-4 w-4 me-2" /> Back to Dashboard
           </Button>
           <div className="flex justify-between items-center">
             <div>
@@ -364,7 +364,7 @@ const MessagesPage: React.FC = () => {
               <p className="text-xl opacity-90">Connect with recruiters, mentors, and career advisors</p>
             </div>
             <Button onClick={() => setShowNewConversation(true)} className="bg-purple-600 hover:bg-purple-700 text-white" size="lg">
-              <Plus className="h-5 w-5 mr-2" /> New Message
+              <Plus className="h-5 w-5 me-2" /> New Message
             </Button>
           </div>
         </div>
@@ -380,8 +380,8 @@ const MessagesPage: React.FC = () => {
                   <Badge variant="secondary">{conversations.filter(c => c.unread_count > 0).length} unread</Badge>
                 </div>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search conversations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input placeholder="Search conversations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="ps-10" />
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0">
@@ -404,7 +404,7 @@ const MessagesPage: React.FC = () => {
                           <div
                             key={conversation.id}
                             onClick={() => setSelectedConversation(conversation)}
-                            className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${selectedConversation?.id === conversation.id ? 'bg-blue-50 border-l-blue-500' : 'border-l-transparent'}`}
+                            className={`p-4 cursor-pointer hover:bg-gray-50 border-s-4 transition-colors ${selectedConversation?.id === conversation.id ? 'bg-blue-50 border-s-blue-500' : 'border-s-transparent'}`}
                           >
                             <div className="flex items-start space-x-3">
                               <Avatar className="h-10 w-10">
@@ -504,7 +504,7 @@ const MessagesPage: React.FC = () => {
                   <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
                   <h3 className="text-xl font-semibold mb-2">Select a conversation</h3>
                   <p className="text-gray-600 mb-6">Choose a conversation from the list to start messaging</p>
-                  <Button onClick={() => setShowNewConversation(true)}><Plus className="h-4 w-4 mr-2" /> Start New Conversation</Button>
+                  <Button onClick={() => setShowNewConversation(true)}><Plus className="h-4 w-4 me-2" /> Start New Conversation</Button>
                 </div>
               </Card>
             )}

@@ -106,7 +106,7 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({ onGroupCreated })
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           Create Group
         </Button>
       </DialogTrigger>
@@ -197,7 +197,7 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({ onGroupCreated })
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:bg-red-100 rounded-full p-1"
+                      className="ms-1 hover:bg-red-100 rounded-full p-1"
                     >
                       <X className="h-3 w-3" />
                     </button>

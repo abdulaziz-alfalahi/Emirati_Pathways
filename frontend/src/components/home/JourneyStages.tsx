@@ -107,7 +107,7 @@ const JourneyStages: React.FC = () => {
         </div>
 
         {/* Journey Timeline */}
-        <div className="relative mb-12 pl-6 md:pl-0">
+        <div className="relative mb-12 ps-6 md:ps-0">
           <div className="hidden md:grid grid-cols-8 gap-0 mb-8">
             {journeyStages.map((stage, index) => (
               <div key={stage.id} className="relative" onClick={() => setActiveStage(index)}>
@@ -138,7 +138,7 @@ const JourneyStages: React.FC = () => {
           {/* Stage Details */}
           <div className="bg-white rounded-2xl shadow-card p-8 transition-all duration-500 hover:shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center mb-6">
-              <div className="text-4xl mb-4 md:mb-0 md:mr-6">{journeyStages[activeStage].icon}</div>
+              <div className="text-4xl mb-4 md:mb-0 md:me-6">{journeyStages[activeStage].icon}</div>
               <div>
                 <h3 className="text-2xl font-display font-medium text-ehrdc-teal">
                   {journeyStages[activeStage].title}

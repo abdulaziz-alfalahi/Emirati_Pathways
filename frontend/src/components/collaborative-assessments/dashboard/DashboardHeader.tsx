@@ -24,12 +24,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       <div className="flex gap-2">
         {onCreateTemplate && (
           <Button variant="outline" onClick={onCreateTemplate}>
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText className="h-4 w-4 me-2" />
             Create Template
           </Button>
         )}
         <Button onClick={onCreateAssessment}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           New Assessment
         </Button>
       </div>

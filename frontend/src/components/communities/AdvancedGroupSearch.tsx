@@ -132,12 +132,12 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
         {/* Main Search */}
         <div className="relative">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search communities by name, description, or tags..."
               value={filters.search || ''}
               onChange={(e) => updateFilter('search', e.target.value)}
-              className="pl-10 pr-12"
+              className="ps-10 pe-12"
               onFocus={() => filters.search && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             />
@@ -145,7 +145,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2"
+              className="absolute end-1 top-1/2 transform -translate-y-1/2"
             >
               <Filter className="h-4 w-4" />
             </Button>
@@ -153,13 +153,13 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
           
           {/* Search Suggestions */}
           {showSuggestions && searchSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
+            <div className="absolute top-full start-0 end-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
               <div className="p-2 space-y-1">
                 {searchSuggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     onClick={() => applySuggestion(suggestion)}
-                    className="w-full text-left px-3 py-2 hover:bg-muted rounded-sm flex items-center justify-between"
+                    className="w-full text-start px-3 py-2 hover:bg-muted rounded-sm flex items-center justify-between"
                   >
                     <span className="flex items-center space-x-2">
                       <Badge variant="secondary" className="text-xs">
@@ -185,7 +185,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
             onClick={() => updateFilter('sort_by', 'recommended')}
             className="h-8"
           >
-            <Sparkles className="h-3 w-3 mr-1" />
+            <Sparkles className="h-3 w-3 me-1" />
             Recommended
           </Button>
           <Button
@@ -194,7 +194,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
             onClick={() => updateFilter('sort_by', 'trending')}
             className="h-8"
           >
-            <TrendingUp className="h-3 w-3 mr-1" />
+            <TrendingUp className="h-3 w-3 me-1" />
             Trending
           </Button>
           <Button
@@ -203,7 +203,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
             onClick={() => updateFilter('sort_by', 'largest')}
             className="h-8"
           >
-            <Users className="h-3 w-3 mr-1" />
+            <Users className="h-3 w-3 me-1" />
             Most Members
           </Button>
           <Button
@@ -212,7 +212,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
             onClick={() => updateFilter('sort_by', 'newest')}
             className="h-8"
           >
-            <Clock className="h-3 w-3 mr-1" />
+            <Clock className="h-3 w-3 me-1" />
             Newest
           </Button>
         </div>
@@ -330,7 +330,7 @@ const AdvancedGroupSearch: React.FC<AdvancedGroupSearchProps> = ({
             {hasActiveFilters && (
               <div className="flex justify-end">
                 <Button variant="outline" onClick={clearFilters} size="sm">
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4 me-2" />
                   Clear All Filters
                 </Button>
               </div>

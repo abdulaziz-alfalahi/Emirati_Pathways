@@ -386,7 +386,7 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
                     Your profile CV will be automatically attached to this application.
                   </p>
                   <Button type="button" variant="outline" size="sm" className="w-full">
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 me-2" />
                     Upload New CV (Optional)
                   </Button>
                 </CardContent>
@@ -410,12 +410,12 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2"></div>
                       Submitting...
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4 mr-2" />
+                      <Send className="h-4 w-4 me-2" />
                       Submit Application
                     </>
                   )}

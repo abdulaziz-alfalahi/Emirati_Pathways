@@ -40,7 +40,7 @@ export const VacancySourcing: React.FC<VacancySourcingProps> = ({ job }) => {
                             <Label htmlFor="blind-hiring" className="flex items-center gap-2 cursor-pointer">
                                 {blindHiringMode ? <EyeOff className="h-4 w-4 text-purple-600" /> : <Eye className="h-4 w-4 text-gray-500" />}
                                 <span>Blind Hiring</span>
-                                {blindHiringMode && <Badge variant="secondary" className="ml-1 text-xs bg-purple-100 text-purple-700">Active</Badge>}
+                                {blindHiringMode && <Badge variant="secondary" className="ms-1 text-xs bg-purple-100 text-purple-700">Active</Badge>}
                             </Label>
                         </div>
 

@@ -39,13 +39,13 @@ export const InformationCard: React.FC<InformationCardProps> = ({
   const getPriorityColor = () => {
     switch (priority) {
       case 'high':
-        return 'border-l-4 border-l-red-500';
+        return 'border-s-4 border-s-red-500';
       case 'medium':
-        return 'border-l-4 border-l-orange-500';
+        return 'border-s-4 border-s-orange-500';
       case 'low':
-        return 'border-l-4 border-l-green-500';
+        return 'border-s-4 border-s-green-500';
       default:
-        return 'border-l-4 border-l-ehrdc-teal';
+        return 'border-s-4 border-s-ehrdc-teal';
     }
   };
 

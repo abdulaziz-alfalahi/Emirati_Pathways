@@ -146,7 +146,7 @@ export const OpportunitiesList: React.FC = () => {
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 me-2" />
               Filters
             </Button>
           </div>
@@ -294,9 +294,9 @@ export const OpportunitiesList: React.FC = () => {
                     <DialogTrigger asChild>
                       <Button 
                         onClick={() => setSelectedOpportunity(opportunity)}
-                        className="ml-4"
+                        className="ms-4"
                       >
-                        <Send className="h-4 w-4 mr-2" />
+                        <Send className="h-4 w-4 me-2" />
                         Apply
                       </Button>
                     </DialogTrigger>

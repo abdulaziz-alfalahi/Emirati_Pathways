@@ -89,7 +89,7 @@ const ResumeSkillsSection: React.FC<ResumeSkillsSectionProps> = ({
               <div className="flex justify-between items-center">
                 <p className="text-sm text-muted-foreground">Add your technical and professional skills.</p>
                 <Button variant="outline" size="sm" onClick={addSkill}>
-                  <Plus size={16} className="mr-2" />
+                  <Plus size={16} className="me-2" />
                   Add Skill
                 </Button>
               </div>
@@ -145,7 +145,7 @@ const ResumeSkillsSection: React.FC<ResumeSkillsSectionProps> = ({
               <div className="flex justify-between items-center">
                 <p className="text-sm text-muted-foreground">Add languages you speak and their proficiency level.</p>
                 <Button variant="outline" size="sm" onClick={addLanguage}>
-                  <Plus size={16} className="mr-2" />
+                  <Plus size={16} className="me-2" />
                   Add Language
                 </Button>
               </div>

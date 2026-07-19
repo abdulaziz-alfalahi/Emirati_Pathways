@@ -182,7 +182,7 @@ export default function RecruiterInterviews() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => setAnalyticsSession(null)} className="text-ehrdc-teal hover:text-ehrdc-teal/80">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Interviews
+            <ArrowLeft className="h-4 w-4 me-1" /> Back to Interviews
           </Button>
           <h2 className="text-xl font-bold">Interview Analytics</h2>
           <Badge variant="outline">{analyticsSession.title || 'Interview'}</Badge>
@@ -232,7 +232,7 @@ export default function RecruiterInterviews() {
             initialCandidateId={candidateIdParam || undefined}
           />
           <Button onClick={() => setScheduleOpen(true)}>
-            <Calendar className="mr-2 h-4 w-4" /> Schedule Interview
+            <Calendar className="me-2 h-4 w-4" /> Schedule Interview
           </Button>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function RecruiterInterviews() {
                       <div className="text-sm font-medium text-slate-700 mb-1">{session.job_title}</div>
                       <div className="text-xs text-slate-500 mb-2">Candidate: {getPrefixedDisplayName(session, 'candidate_')}</div>
                       <CardDescription className="flex items-center mt-1">
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 me-1" />
                         {new Date(session.scheduled_time || session.scheduled_at).toLocaleString()}
                       </CardDescription>
                     </div>
@@ -274,14 +274,14 @@ export default function RecruiterInterviews() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="mr-2 h-4 w-4" />
+                      <Clock className="me-2 h-4 w-4" />
                       {session.duration_minutes || 60} Minutes
                     </div>
 
                     {/* AI Analysis Section skipped for brevity - assume kept or simplified */}
                     {session.ai_analysis && (
                       <div className="bg-slate-50 p-2 rounded text-xs border">
-                        <div className="font-semibold text-purple-600 flex items-center"><Sparkles className="h-3 w-3 mr-1" /> AI Insight</div>
+                        <div className="font-semibold text-purple-600 flex items-center"><Sparkles className="h-3 w-3 me-1" /> AI Insight</div>
                         <p className="line-clamp-2 mt-1">{session.ai_analysis.summary}</p>
                       </div>
                     )}
@@ -289,7 +289,7 @@ export default function RecruiterInterviews() {
                     <div className="flex gap-2 items-center pt-2">
                       {(session.status === 'scheduled' || session.status === 'in_progress') && (
                         <Button className="flex-1" onClick={() => handleJoin(session)}>
-                          <Video className="mr-2 h-4 w-4" /> Join Call
+                          <Video className="me-2 h-4 w-4" /> Join Call
                         </Button>
                       )}
 
@@ -327,18 +327,18 @@ export default function RecruiterInterviews() {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setScorecardSession(session)}>
-                            <Star className="mr-2 h-4 w-4" /> Scorecard
+                            <Star className="me-2 h-4 w-4" /> Scorecard
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setAnalyticsSession(session)}>
-                            <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                            <BarChart3 className="me-2 h-4 w-4" /> View Analytics
                           </DropdownMenuItem>
                           {session.guest_token && (
                             <DropdownMenuItem onClick={() => handleCopyLink(session.guest_token)}>
-                              <ClipboardCopy className="mr-2 h-4 w-4" /> Copy Guest Link
+                              <ClipboardCopy className="me-2 h-4 w-4" /> Copy Guest Link
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => openRescheduleDialog(session)}>
-                            <Edit className="mr-2 h-4 w-4" /> Reschedule
+                            <Edit className="me-2 h-4 w-4" /> Reschedule
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -347,7 +347,7 @@ export default function RecruiterInterviews() {
                               confirmCancel(session.id);
                             }}
                           >
-                            <X className="mr-2 h-4 w-4" /> Cancel Interview
+                            <X className="me-2 h-4 w-4" /> Cancel Interview
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

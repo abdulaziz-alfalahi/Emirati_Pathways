@@ -343,11 +343,11 @@ const AssessmentPlanning: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={generatePlan} disabled={loading}>
-            <Lightbulb className="h-4 w-4 mr-2" />
+            <Lightbulb className="h-4 w-4 me-2" />
             AI Generate
           </Button>
           <Button onClick={savePlan} disabled={loading || errors.length > 0}>
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 me-2" />
             Save Plan
           </Button>
         </div>
@@ -451,7 +451,7 @@ const AssessmentPlanning: React.FC = () => {
                   </div>
                 ))}
                 <Button variant="outline" onClick={addResource}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Add Resource
                 </Button>
               </div>

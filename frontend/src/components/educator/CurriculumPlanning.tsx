@@ -314,15 +314,15 @@ const CurriculumPlanning: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export Plans
           </Button>
           <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="h-4 w-4 me-2" />
             Import Template
           </Button>
           <Button onClick={() => setShowCreateLesson(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             Create Lesson
           </Button>
         </div>
@@ -335,13 +335,13 @@ const CurriculumPlanning: React.FC = () => {
             <div>
               <Label htmlFor="search">Search</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
                   placeholder="Search curriculum content..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="ps-10"
                 />
               </div>
             </div>
@@ -395,7 +395,7 @@ const CurriculumPlanning: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Target className="h-5 w-5 mr-2" />
+                <Target className="h-5 w-5 me-2" />
                 UAE Educational Standards ({filteredStandards.length})
               </CardTitle>
               <CardDescription>
@@ -431,7 +431,7 @@ const CurriculumPlanning: React.FC = () => {
                         </div>
                         <p className="text-xs text-gray-500">{standard.ministryReference}</p>
                       </div>
-                      <div className="ml-4">
+                      <div className="ms-4">
                         <Button
                           variant={selectedStandards.includes(standard.id) ? "default" : "outline"}
                           size="sm"
@@ -444,9 +444,9 @@ const CurriculumPlanning: React.FC = () => {
                           }}
                         >
                           {selectedStandards.includes(standard.id) ? (
-                            <CheckCircle className="h-4 w-4 mr-2" />
+                            <CheckCircle className="h-4 w-4 me-2" />
                           ) : (
-                            <Plus className="h-4 w-4 mr-2" />
+                            <Plus className="h-4 w-4 me-2" />
                           )}
                           {selectedStandards.includes(standard.id) ? 'Selected' : 'Select'}
                         </Button>
@@ -463,7 +463,7 @@ const CurriculumPlanning: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <BookOpen className="h-5 w-5 mr-2" />
+                <BookOpen className="h-5 w-5 me-2" />
                 Lesson Plans ({filteredLessonPlans.length})
               </CardTitle>
               <CardDescription>
@@ -506,7 +506,7 @@ const CurriculumPlanning: React.FC = () => {
                           <ul className="text-sm text-gray-600 space-y-1">
                             {lesson.objectives.slice(0, 2).map((objective, index) => (
                               <li key={index} className="flex items-start">
-                                <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 me-2 flex-shrink-0"></span>
                                 {objective}
                               </li>
                             ))}
@@ -553,7 +553,7 @@ const CurriculumPlanning: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <FileText className="h-5 w-5 mr-2" />
+                <FileText className="h-5 w-5 me-2" />
                 Curriculum Templates ({filteredTemplates.length})
               </CardTitle>
               <CardDescription>
@@ -618,7 +618,7 @@ const CurriculumPlanning: React.FC = () => {
 
                         <div className="flex space-x-2 pt-2">
                           <Button className="flex-1">
-                            <Download className="h-4 w-4 mr-2" />
+                            <Download className="h-4 w-4 me-2" />
                             Use Template
                           </Button>
                           <Button variant="outline">
@@ -638,7 +638,7 @@ const CurriculumPlanning: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Calendar className="h-5 w-5 mr-2" />
+                <Calendar className="h-5 w-5 me-2" />
                 Pacing Guide & Calendar
               </CardTitle>
               <CardDescription>
@@ -653,7 +653,7 @@ const CurriculumPlanning: React.FC = () => {
                   Interactive calendar and pacing guide features are being developed to help you plan your curriculum timeline.
                 </p>
                 <Button variant="outline">
-                  <Bell className="h-4 w-4 mr-2" />
+                  <Bell className="h-4 w-4 me-2" />
                   Notify Me When Available
                 </Button>
               </div>
@@ -667,7 +667,7 @@ const CurriculumPlanning: React.FC = () => {
         <Globe className="h-4 w-4" />
         <AlertDescription>
           <strong>UAE Ministry of Education:</strong> All curriculum content is aligned with the latest UAE educational standards and cultural values. 
-          <Button variant="link" className="p-0 h-auto ml-2">
+          <Button variant="link" className="p-0 h-auto ms-2">
             Learn More
           </Button>
         </AlertDescription>

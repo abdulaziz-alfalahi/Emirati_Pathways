@@ -148,7 +148,7 @@ const EditorialReviewDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingStories.map((story) => (
                 <Card key={story.id} className="relative">
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 end-4">
                     <Badge variant={
                       story.status === 'published' ? 'default' :
                       story.status === 'approved' ? 'secondary' :
@@ -159,7 +159,7 @@ const EditorialReviewDashboard: React.FC = () => {
                     </Badge>
                   </div>
                   
-                  <CardHeader className="pr-20">
+                  <CardHeader className="pe-20">
                     <CardTitle className="line-clamp-2">{story.title}</CardTitle>
                     <CardDescription className="line-clamp-3">{story.summary}</CardDescription>
                   </CardHeader>
@@ -168,7 +168,7 @@ const EditorialReviewDashboard: React.FC = () => {
                     <div className="flex items-center space-x-2 mb-4">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{story.author.name}</span>
-                      <Calendar className="h-4 w-4 text-muted-foreground ml-4" />
+                      <Calendar className="h-4 w-4 text-muted-foreground ms-4" />
                       <span className="text-sm">{new Date(story.submitted_at!).toLocaleDateString()}</span>
                     </div>
                     
@@ -181,7 +181,7 @@ const EditorialReviewDashboard: React.FC = () => {
                             className="flex-1"
                             onClick={() => setSelectedStory(story)}
                           >
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Eye className="h-4 w-4 me-2" />
                             Review
                           </Button>
                         </DialogTrigger>
@@ -219,13 +219,13 @@ const EditorialReviewDashboard: React.FC = () => {
                                   variant="destructive"
                                   onClick={() => handleReview(selectedStory.id, 'rejected', reviewNotes)}
                                 >
-                                  <XCircle className="h-4 w-4 mr-2" />
+                                  <XCircle className="h-4 w-4 me-2" />
                                   Reject
                                 </Button>
                                 <Button
                                   onClick={() => handleReview(selectedStory.id, 'approved', reviewNotes)}
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  <CheckCircle className="h-4 w-4 me-2" />
                                   Approve & Publish
                                 </Button>
                               </div>
@@ -245,7 +245,7 @@ const EditorialReviewDashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {reviewedStories.map((story) => (
               <div key={story.id} className="relative">
-                <div className="absolute top-4 right-4 z-10">
+                <div className="absolute top-4 end-4 z-10">
                   <Badge variant={
                     story.status === 'published' ? 'default' :
                     story.status === 'approved' ? 'secondary' :

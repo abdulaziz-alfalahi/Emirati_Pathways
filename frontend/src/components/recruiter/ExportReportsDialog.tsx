@@ -188,12 +188,12 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
           <Button onClick={handleExport} disabled={loading}>
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2"></div>
                 Exporting...
               </>
             ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Export Report
               </>
             )}

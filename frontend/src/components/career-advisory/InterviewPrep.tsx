@@ -155,7 +155,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ session, onSessionUpdate 
                 disabled={isLoading}
                 className="w-full mt-4"
               >
-                <Video className="mr-2 h-4 w-4" />
+                <Video className="me-2 h-4 w-4" />
                 Start Interview Now
               </Button>
             )}
@@ -165,7 +165,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ session, onSessionUpdate 
                 className="w-full mt-4" 
                 onClick={() => window.open(session.video_call_url!, '_blank')}
               >
-                <Video className="mr-2 h-4 w-4" />
+                <Video className="me-2 h-4 w-4" />
                 Join Ongoing Interview
               </Button>
             )}
@@ -193,7 +193,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ session, onSessionUpdate 
                   <Award className="h-5 w-5 text-amber-500" />
                   Before the Interview
                 </h3>
-                <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
+                <ul className="list-disc ps-5 mt-2 space-y-1 text-muted-foreground">
                   <li>Research the company and role thoroughly</li>
                   <li>Prepare examples of your achievements</li>
                   <li>Practice your responses to common questions</li>
@@ -207,7 +207,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ session, onSessionUpdate 
                   <Award className="h-5 w-5 text-amber-500" />
                   During the Interview
                 </h3>
-                <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
+                <ul className="list-disc ps-5 mt-2 space-y-1 text-muted-foreground">
                   <li>Maintain eye contact with the camera</li>
                   <li>Speak clearly and at a moderate pace</li>
                   <li>Use the STAR method for behavioral questions</li>
@@ -221,7 +221,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ session, onSessionUpdate 
                   <Award className="h-5 w-5 text-amber-500" />
                   After the Interview
                 </h3>
-                <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
+                <ul className="list-disc ps-5 mt-2 space-y-1 text-muted-foreground">
                   <li>Send a thank-you email within 24 hours</li>
                   <li>Reflect on what went well and what to improve</li>
                   <li>Follow up if you haven't heard back within a week</li>

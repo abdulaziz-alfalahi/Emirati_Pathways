@@ -15,12 +15,12 @@ export const ThoughtLeadershipContent: React.FC = () => {
     <div className="space-y-6">
       {/* Search Bar */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Search thought leadership content..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
+          className="ps-9"
         />
       </div>
 

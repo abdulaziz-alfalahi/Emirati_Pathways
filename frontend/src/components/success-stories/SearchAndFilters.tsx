@@ -97,7 +97,7 @@ const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
                   onClick={() => onTagToggle(tag)}
                 >
                   {tag}
-                  {isSelected && <X className="h-3 w-3 ml-1" />}
+                  {isSelected && <X className="h-3 w-3 ms-1" />}
                 </Badge>
               );
             })}

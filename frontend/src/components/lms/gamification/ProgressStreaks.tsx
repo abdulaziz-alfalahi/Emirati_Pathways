@@ -120,7 +120,7 @@ export const ProgressStreaks: React.FC = () => {
                     <p className="text-sm text-muted-foreground">{description}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-end">
                   <p className={`text-2xl font-bold ${getStreakColor(streak.current_streak)}`}>
                     {streak.current_streak}
                   </p>

@@ -141,7 +141,7 @@ const NetworkingRooms: React.FC<NetworkingRoomsProps> = ({ eventId }) => {
                       className="flex-1"
                       disabled={!room.is_active || room.current_participants >= room.max_participants}
                     >
-                      <Users className="h-4 w-4 mr-2" />
+                      <Users className="h-4 w-4 me-2" />
                       Join Room
                     </Button>
                     

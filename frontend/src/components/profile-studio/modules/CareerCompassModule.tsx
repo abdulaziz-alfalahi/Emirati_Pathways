@@ -91,7 +91,7 @@ export const CareerCompassModule = () => {
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             <div className="bg-gradient-to-br from-teal-900 to-slate-900 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
-                <div className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl ${isRTL ? '-ml-16' : '-mr-16'} -mt-16`}></div>
+                <div className={`absolute top-0 end-0 w-64 h-64 bg-teal-500 opacity-10 rounded-full blur-3xl -me-16 -mt-16`}></div>
                 <div className="relative z-10 flex items-start gap-6">
                     <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm">
                         <Compass size={48} className="text-teal-300" />

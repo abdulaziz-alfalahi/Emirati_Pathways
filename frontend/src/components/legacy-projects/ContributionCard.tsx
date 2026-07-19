@@ -86,7 +86,7 @@ export const ContributionCard: React.FC<ContributionCardProps> = ({ contribution
         )}
 
         <div className="flex items-center text-sm text-gray-500">
-          <Calendar className="h-4 w-4 mr-1" />
+          <Calendar className="h-4 w-4 me-1" />
           Contributed on {new Date(contribution.contribution_date).toLocaleDateString()}
         </div>
 

@@ -1092,7 +1092,7 @@ const UserManagerEnhanced: React.FC = () => {
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <UserPlus className="w-4 h-4 me-2" />
             Add User
           </button>
         </div>
@@ -1147,13 +1147,13 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name, email, or ID..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -1164,10 +1164,10 @@ const UserManagerEnhanced: React.FC = () => {
               className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium ${showFilters ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
                 }`}
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="w-4 h-4 me-2" />
               Filters
               {Object.values(filters).filter(v => v && v !== 'all').length > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                <span className="ms-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
                   {Object.values(filters).filter(v => v && v !== 'all').length}
                 </span>
               )}
@@ -1185,7 +1185,7 @@ const UserManagerEnhanced: React.FC = () => {
                 onClick={() => handleExport('csv')}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4 me-2" />
                 Export
               </button>
             </div>
@@ -1270,28 +1270,28 @@ const UserManagerEnhanced: React.FC = () => {
               onClick={() => handleBulkAction('activate')}
               className="inline-flex items-center px-3 py-1.5 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-white hover:bg-green-50"
             >
-              <CheckCircle className="w-4 h-4 mr-1" />
+              <CheckCircle className="w-4 h-4 me-1" />
               Activate
             </button>
             <button
               onClick={() => handleBulkAction('suspend')}
               className="inline-flex items-center px-3 py-1.5 border border-orange-300 rounded-md text-sm font-medium text-orange-700 bg-white hover:bg-orange-50"
             >
-              <Ban className="w-4 h-4 mr-1" />
+              <Ban className="w-4 h-4 me-1" />
               Suspend
             </button>
             <button
               onClick={() => setShowBulkRoleModal(true)}
               className="inline-flex items-center px-3 py-1.5 border border-purple-300 rounded-md text-sm font-medium text-purple-700 bg-white hover:bg-purple-50"
             >
-              <Shield className="w-4 h-4 mr-1" />
+              <Shield className="w-4 h-4 me-1" />
               Assign Roles
             </button>
             <button
               onClick={() => handleBulkAction('delete')}
               className="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50"
             >
-              <Trash2 className="w-4 h-4 mr-1" />
+              <Trash2 className="w-4 h-4 me-1" />
               Delete
             </button>
             <button
@@ -1312,7 +1312,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-12 text-amber-600">
-            <AlertTriangle className="w-5 h-5 mr-2" />
+            <AlertTriangle className="w-5 h-5 me-2" />
             {error}
           </div>
         ) : filteredUsers.length === 0 ? (
@@ -1325,7 +1325,7 @@ const UserManagerEnhanced: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left">
+                  <th className="px-4 py-3 text-start">
                     <input
                       type="checkbox"
                       checked={selectAll}
@@ -1334,48 +1334,48 @@ const UserManagerEnhanced: React.FC = () => {
                     />
                   </th>
                   <th
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('full_name')}
                   >
                     <div className="flex items-center">
                       User
                       {sortConfig.field === 'full_name' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ms-1" /> : <ChevronDown className="w-4 h-4 ms-1" />
                       )}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Roles
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Department
                   </th>
                   <th
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('last_login')}
                   >
                     <div className="flex items-center">
                       Last Login
                       {sortConfig.field === 'last_login' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ms-1" /> : <ChevronDown className="w-4 h-4 ms-1" />
                       )}
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-start text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('created_at')}
                   >
                     <div className="flex items-center">
                       Created
                       {sortConfig.field === 'created_at' && (
-                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                        sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ms-1" /> : <ChevronDown className="w-4 h-4 ms-1" />
                       )}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-end text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -1396,7 +1396,7 @@ const UserManagerEnhanced: React.FC = () => {
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
                           {getUserDisplayName(user).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
-                        <div className="ml-4">
+                        <div className="ms-4">
                           <div className="text-sm font-medium text-gray-900">{getUserDisplayName(user)}</div>
                           <div className="text-sm text-gray-500">{user.email}</div>
                           {formatEID(user.id) && (
@@ -1408,12 +1408,12 @@ const UserManagerEnhanced: React.FC = () => {
                     <td className="px-4 py-4">
                       {user.is_active ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <CheckCircle className="w-3 h-3 mr-1" />
+                          <CheckCircle className="w-3 h-3 me-1" />
                           Active
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <Ban className="w-3 h-3 mr-1" />
+                          <Ban className="w-3 h-3 me-1" />
                           Inactive
                         </span>
                       )}
@@ -1441,7 +1441,7 @@ const UserManagerEnhanced: React.FC = () => {
                     <td className="px-4 py-4 text-sm text-gray-500">
                       {formatDate(user.created_at)}
                     </td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="px-4 py-4 text-end">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openProfileModal(user)}
@@ -1548,10 +1548,10 @@ const UserManagerEnhanced: React.FC = () => {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${validationErrors.email ? 'border-red-300' : emailAvailable === true ? 'border-green-300' : 'border-gray-300'}`}
+                      className={`w-full px-3 py-2 pe-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${validationErrors.email ? 'border-red-300' : emailAvailable === true ? 'border-green-300' : 'border-gray-300'}`}
                       placeholder="Enter email"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute end-3 top-1/2 transform -translate-y-1/2">
                       {emailChecking && <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />}
                       {!emailChecking && emailAvailable === true && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                       {!emailChecking && emailAvailable === false && <XCircle className="w-4 h-4 text-red-500" />}
@@ -1673,7 +1673,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Phone</label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Phone className="absolute start-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="tel"
                         value={formData.profile_data.phone}
@@ -1681,7 +1681,7 @@ const UserManagerEnhanced: React.FC = () => {
                           ...formData,
                           profile_data: { ...formData.profile_data, phone: e.target.value }
                         })}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="+971 50 XXX XXXX"
                       />
                     </div>
@@ -1690,14 +1690,14 @@ const UserManagerEnhanced: React.FC = () => {
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Department</label>
                     <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Building className="absolute start-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <select
                         value={formData.profile_data.department}
                         onChange={(e) => setFormData({
                           ...formData,
                           profile_data: { ...formData.profile_data, department: e.target.value }
                         })}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select department</option>
                         {DEPARTMENTS.map(dept => (
@@ -1710,7 +1710,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Position</label>
                     <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Briefcase className="absolute start-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         value={formData.profile_data.position}
@@ -1718,7 +1718,7 @@ const UserManagerEnhanced: React.FC = () => {
                           ...formData,
                           profile_data: { ...formData.profile_data, position: e.target.value }
                         })}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Job title"
                       />
                     </div>
@@ -1727,7 +1727,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Location</label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <MapPin className="absolute start-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         value={formData.profile_data.location}
@@ -1735,7 +1735,7 @@ const UserManagerEnhanced: React.FC = () => {
                           ...formData,
                           profile_data: { ...formData.profile_data, location: e.target.value }
                         })}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full ps-10 pe-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="City, Country"
                       />
                     </div>
@@ -1966,12 +1966,12 @@ const UserManagerEnhanced: React.FC = () => {
                   <div className="flex items-center gap-2 mt-2">
                     {selectedUser.is_active ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <CheckCircle className="w-3 h-3 me-1" />
                         Active
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <Ban className="w-3 h-3 mr-1" />
+                        <Ban className="w-3 h-3 me-1" />
                         Inactive
                       </span>
                     )}

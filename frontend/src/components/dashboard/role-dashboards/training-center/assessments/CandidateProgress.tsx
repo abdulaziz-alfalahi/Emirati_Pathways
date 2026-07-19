@@ -53,7 +53,7 @@ const CandidateProgress: React.FC = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Score</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -67,7 +67,7 @@ const CandidateProgress: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>-</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button variant="ghost" size="sm">View</Button>
                   </TableCell>
                 </TableRow>
@@ -81,7 +81,7 @@ const CandidateProgress: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>87%</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button variant="ghost" size="sm">View</Button>
                   </TableCell>
                 </TableRow>
@@ -95,7 +95,7 @@ const CandidateProgress: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>-</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button variant="ghost" size="sm">View</Button>
                   </TableCell>
                 </TableRow>
@@ -105,7 +105,7 @@ const CandidateProgress: React.FC = () => {
         </div>
       </CardContent>
       <CardFooter className="border-t pt-4">
-        <Button variant="outline" onClick={() => navigate('/assessments')} className="ml-auto">
+        <Button variant="outline" onClick={() => navigate('/assessments')} className="ms-auto">
           View All Candidates
         </Button>
       </CardFooter>

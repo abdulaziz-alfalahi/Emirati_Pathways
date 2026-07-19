@@ -60,7 +60,7 @@ export const TemplateFilters: React.FC<TemplateFiltersProps> = ({
       <div className="flex gap-2 items-center">
         <Select value={selectedCategory} onValueChange={(value) => batchUpdateFilters({ category: value })}>
           <SelectTrigger className="w-48">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             <SelectValue placeholder="All categories" />
           </SelectTrigger>
           <SelectContent>
@@ -75,7 +75,7 @@ export const TemplateFilters: React.FC<TemplateFiltersProps> = ({
         
         {hasActiveFilters && (
           <Button variant="outline" size="sm" onClick={clearFilters}>
-            <X className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 me-2" />
             Clear
           </Button>
         )}

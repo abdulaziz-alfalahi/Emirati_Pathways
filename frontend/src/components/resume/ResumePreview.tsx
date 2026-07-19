@@ -107,7 +107,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ template, data, theme = "
                 theme === "modern" ? "text-primary border-b-2 border-primary inline-block" : 
                 theme === "minimalist" ? "text-gray-700" : "text-accent"
               }`}>Skills</h3>
-              <ul className="list-disc pl-5">
+              <ul className="list-disc ps-5">
                 {data.skills.map((skill) => (
                   <li key={skill.id}>
                     {skill.name} {skill.level && <span className="text-gray-600">({skill.level})</span>}
@@ -123,7 +123,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({ template, data, theme = "
                 theme === "modern" ? "text-primary border-b-2 border-primary inline-block" : 
                 theme === "minimalist" ? "text-gray-700" : "text-accent"
               }`}>Languages</h3>
-              <ul className="list-disc pl-5">
+              <ul className="list-disc ps-5">
                 {data.languages.map((lang) => (
                   <li key={lang.id}>
                     {lang.name} {lang.proficiency && <span className="text-gray-600">({lang.proficiency})</span>}

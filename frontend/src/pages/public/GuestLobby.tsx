@@ -109,15 +109,15 @@ export default function GuestLobby() {
                     <CardContent className="space-y-6 pt-6">
                         <div className="bg-slate-50 p-4 rounded-lg space-y-3 text-sm">
                             <div className="flex items-center justify-between text-slate-700">
-                                <span className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> Date</span>
+                                <span className="flex items-center"><Calendar className="h-4 w-4 me-2" /> Date</span>
                                 <span className="font-medium">{new Date(session.scheduled_at).toLocaleDateString()}</span>
                             </div>
                             <div className="flex items-center justify-between text-slate-700">
-                                <span className="flex items-center"><Clock className="h-4 w-4 mr-2" /> Time</span>
+                                <span className="flex items-center"><Clock className="h-4 w-4 me-2" /> Time</span>
                                 <span className="font-medium">{new Date(session.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <div className="flex items-center justify-between text-slate-700">
-                                <span className="flex items-center"><User className="h-4 w-4 mr-2" /> For</span>
+                                <span className="flex items-center"><User className="h-4 w-4 me-2" /> For</span>
                                 <span className="font-medium">{getPrefixedDisplayName(session, 'candidate_', 'Invited Guest')}</span>
                             </div>
                         </div>

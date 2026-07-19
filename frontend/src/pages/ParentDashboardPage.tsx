@@ -185,7 +185,7 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-blue-100 rounded-full">
                                     <Users className="h-6 w-6 text-blue-600" />
                                 </div>
-                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                <div className="ms-4">
                                     <p className="text-sm font-dubai-medium text-muted-foreground">{t('Children', 'الأبناء')}</p>
                                     <p className="text-2xl font-dubai-bold text-foreground">{childrenData.length}</p>
                                 </div>
@@ -200,7 +200,7 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-emerald-100 rounded-full">
                                     <CheckCircle className="h-6 w-6 text-emerald-600" />
                                 </div>
-                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                <div className="ms-4">
                                     <p className="text-sm font-dubai-medium text-muted-foreground">{t('Camp Enrolments', 'التسجيل في المعسكرات')}</p>
                                     <p className="text-2xl font-dubai-bold text-foreground">{totalEnrolled}</p>
                                 </div>
@@ -215,7 +215,7 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-purple-100 rounded-full">
                                     <Calendar className="h-6 w-6 text-purple-600" />
                                 </div>
-                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                <div className="ms-4">
                                     <p className="text-sm font-dubai-medium text-muted-foreground">{t('Upcoming Events', 'الفعاليات القادمة')}</p>
                                     <p className="text-2xl font-dubai-bold text-foreground">{upcomingEvents.length}</p>
                                 </div>
@@ -233,7 +233,7 @@ const ParentDashboardPage: React.FC = () => {
                             <p className="text-teal-50 text-sm mb-4">{t("Browse programmes and track your children's progress.", 'تصفّح البرامج وتابع تقدّم أبنائك.')}</p>
                             <Link to="/knowledge-camps">
                                 <Button variant="secondary" size="sm" className="w-full text-teal-700 font-semibold">
-                                    {t('Browse Camps', 'تصفّح المعسكرات')} <ArrowIcon className={`h-4 w-4 ${isRTL ? 'mr-2' : 'ml-2'}`} />
+                                    {t('Browse Camps', 'تصفّح المعسكرات')} <ArrowIcon className={`h-4 w-4 ms-2`} />
                                 </Button>
                             </Link>
                         </CardContent>
@@ -369,7 +369,7 @@ const ParentDashboardPage: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
-                                                <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('GPA', 'المعدل')} {child.gpa}
+                                                <TrendingUp className={`h-3 w-3 me-1`} />{t('GPA', 'المعدل')} {child.gpa}
                                             </Badge>
                                             <Badge variant="outline">{child.attendance}% {t('Attendance', 'الحضور')}</Badge>
                                         </div>
@@ -411,10 +411,10 @@ const ParentDashboardPage: React.FC = () => {
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-2">
                                         <Button variant="outline" size="sm">
-                                            <BarChart3 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t('Full Academic Report', 'التقرير الأكاديمي الكامل')}
+                                            <BarChart3 className={`h-4 w-4 me-2`} /> {t('Full Academic Report', 'التقرير الأكاديمي الكامل')}
                                         </Button>
                                         <Button variant="outline" size="sm">
-                                            <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t('Schedule Meeting', 'جدولة اجتماع')}
+                                            <Calendar className={`h-4 w-4 me-2`} /> {t('Schedule Meeting', 'جدولة اجتماع')}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -572,7 +572,7 @@ const ParentDashboardPage: React.FC = () => {
                                                     <p className="text-sm text-muted-foreground">{app.company}</p>
                                                     <p className="text-xs text-muted-foreground mt-1">{t('Applied', 'تقدم')}: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : '—'}</p>
                                                 </div>
-                                                <div className="text-right space-y-1">
+                                                <div className="text-end space-y-1">
                                                     <Badge className={`text-[10px] ${app.educator_status === 'approved' ? 'bg-green-50 text-green-700 border-green-200'
                                                         : app.educator_status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200'
                                                             : 'bg-amber-50 text-amber-700 border-amber-200'

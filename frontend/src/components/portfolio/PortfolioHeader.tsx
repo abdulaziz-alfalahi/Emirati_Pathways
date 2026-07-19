@@ -47,19 +47,19 @@ const PortfolioHeader: React.FC<PortfolioHeaderProps> = ({
         <div className="flex gap-2">
           {isOwnPortfolio && onEdit && (
             <Button variant="outline" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 me-2" />
               Edit Portfolio
             </Button>
           )}
           
           <Button variant="outline" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Export PDF
           </Button>
           
           {isOwnPortfolio && (
             <Button variant="outline" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
+              <Share2 className="h-4 w-4 me-2" />
               Share
             </Button>
           )}

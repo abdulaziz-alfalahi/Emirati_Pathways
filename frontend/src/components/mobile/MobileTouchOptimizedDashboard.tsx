@@ -138,7 +138,7 @@ const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps
               return (
                 <button
                   key={action.id}
-                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 active:scale-95 transition-all duration-200 text-left"
+                  className="p-4 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 active:scale-95 transition-all duration-200 text-start"
                   onClick={() => window.location.href = action.path}
                 >
                   <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center mb-3`}>
@@ -167,7 +167,7 @@ const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps
             </div>
             <Button size="sm" variant="ghost">
               View All
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="h-4 w-4 ms-1" />
             </Button>
           </CardTitle>
         </CardHeader>

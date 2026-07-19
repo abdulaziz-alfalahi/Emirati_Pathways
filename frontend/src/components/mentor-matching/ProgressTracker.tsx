@@ -43,7 +43,7 @@ export const ProgressTracker: React.FC = () => {
                     </Badge>
                   </div>
                   <Progress value={goal.progress} className="h-2" />
-                  <div className="text-xs text-muted-foreground text-right">
+                  <div className="text-xs text-muted-foreground text-end">
                     {goal.progress}% Complete
                   </div>
                 </div>

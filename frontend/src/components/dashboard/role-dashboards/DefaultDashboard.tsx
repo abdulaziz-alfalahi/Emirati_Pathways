@@ -43,9 +43,9 @@ const DefaultDashboard: React.FC<DefaultDashboardProps> = ({ userRole, activeTab
   return (
     <Tabs defaultValue={activeTab} className="space-y-8">
       <TabsList className="mb-4">
-        <TabsTrigger value="overview"><User className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-        <TabsTrigger value="journey"><BarChart4 className="h-4 w-4 mr-2" /> Journey</TabsTrigger>
-        <TabsTrigger value="resources"><BookOpen className="h-4 w-4 mr-2" /> Resources</TabsTrigger>
+        <TabsTrigger value="overview"><User className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+        <TabsTrigger value="journey"><BarChart4 className="h-4 w-4 me-2" /> Journey</TabsTrigger>
+        <TabsTrigger value="resources"><BookOpen className="h-4 w-4 me-2" /> Resources</TabsTrigger>
       </TabsList>
       
       <TabsContent value="overview" className="space-y-8">
@@ -74,22 +74,22 @@ const DefaultDashboard: React.FC<DefaultDashboardProps> = ({ userRole, activeTab
           </CardHeader>
           <CardContent className="p-6">
             <div className="relative">
-              <div className="absolute left-0 top-0 h-full w-1 bg-gray-200"></div>
+              <div className="absolute start-0 top-0 h-full w-1 bg-gray-200"></div>
               
-              <div className="relative pl-8 pb-8">
-                <div className="absolute left-0 top-0 h-4 w-4 rounded-full bg-emirati-teal"></div>
+              <div className="relative ps-8 pb-8">
+                <div className="absolute start-0 top-0 h-4 w-4 rounded-full bg-emirati-teal"></div>
                 <h3 className="font-medium text-lg">Education</h3>
                 <p className="text-sm text-muted-foreground">Completed primary and secondary education</p>
               </div>
               
-              <div className="relative pl-8 pb-8">
-                <div className="absolute left-0 top-0 h-4 w-4 rounded-full bg-emirati-teal"></div>
+              <div className="relative ps-8 pb-8">
+                <div className="absolute start-0 top-0 h-4 w-4 rounded-full bg-emirati-teal"></div>
                 <h3 className="font-medium text-lg">Current: {roleLabels[userRole] || userRole}</h3>
                 <p className="text-sm text-muted-foreground">You are here in your journey</p>
               </div>
               
-              <div className="relative pl-8">
-                <div className="absolute left-0 top-0 h-4 w-4 rounded-full bg-gray-300"></div>
+              <div className="relative ps-8">
+                <div className="absolute start-0 top-0 h-4 w-4 rounded-full bg-gray-300"></div>
                 <h3 className="font-medium text-lg text-muted-foreground">Next Steps</h3>
                 <p className="text-sm text-muted-foreground">Set your goals and plan your career path</p>
               </div>

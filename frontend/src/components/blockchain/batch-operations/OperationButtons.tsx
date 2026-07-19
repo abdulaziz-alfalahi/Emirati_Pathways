@@ -31,7 +31,7 @@ const OperationButtons: React.FC<OperationButtonsProps> = ({
         disabled={isProcessing}
         className="flex items-center"
       >
-        <Download className="h-4 w-4 mr-2" />
+        <Download className="h-4 w-4 me-2" />
         Download All
       </Button>
       
@@ -41,7 +41,7 @@ const OperationButtons: React.FC<OperationButtonsProps> = ({
         disabled={isProcessing}
         className="flex items-center"
       >
-        <Share className="h-4 w-4 mr-2" />
+        <Share className="h-4 w-4 me-2" />
         Share All
       </Button>
       
@@ -59,7 +59,7 @@ const OperationButtons: React.FC<OperationButtonsProps> = ({
             disabled={isProcessing || !revocationReason.trim()}
             className="w-full flex items-center"
           >
-            <X className="h-4 w-4 mr-2" />
+            <X className="h-4 w-4 me-2" />
             Revoke All
           </Button>
         </div>

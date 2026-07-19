@@ -262,12 +262,12 @@ const ModernUniversityPrograms: React.FC = () => {
       headerActions={
         <div className="flex items-center space-x-3">
           <button className="btn-secondary">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             {t('common.filter')}
           </button>
           <button className="btn-primary">
             {t('pages.university_programs.apply_now')}
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </button>
         </div>
       }
@@ -285,13 +285,13 @@ const ModernUniversityPrograms: React.FC = () => {
           {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder={t('pages.university_programs.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
+                className="w-full ps-10 pe-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               />
             </div>
 
@@ -411,7 +411,7 @@ const ModernUniversityPrograms: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
                 {university.badge && (
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 end-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${university.badge === t('common.top_ranked')
                         ? 'bg-yellow-100 text-yellow-800'
                         : university.badge === t('common.international')

@@ -174,7 +174,7 @@ const PersonalGoalsPanel: React.FC<PersonalGoalsPanelProps> = ({
                     </Badge>
                     {goal.targetDate && (
                       <Badge variant="outline" className="text-xs">
-                        <Calendar className="h-3 w-3 mr-1" />
+                        <Calendar className="h-3 w-3 me-1" />
                         {new Date(goal.targetDate).toLocaleDateString()}
                       </Badge>
                     )}

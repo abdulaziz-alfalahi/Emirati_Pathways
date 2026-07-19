@@ -120,7 +120,7 @@ export const SalaryBenchmarkTool: React.FC = () => {
           </div>
 
           <Button onClick={handleBenchmark} className="w-full bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-            <Search className="h-4 w-4 mr-2" />
+            <Search className="h-4 w-4 me-2" />
             Benchmark My Salary
           </Button>
         </CardContent>

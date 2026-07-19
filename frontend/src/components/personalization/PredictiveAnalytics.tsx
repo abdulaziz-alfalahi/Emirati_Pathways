@@ -230,7 +230,7 @@ const PredictiveAnalytics: React.FC = () => {
                     </CardDescription>
                   </div>
                 </div>
-                <div className="text-right space-y-1">
+                <div className="text-end space-y-1">
                   <Badge variant="outline" className={getImpactColor(insight.impact)}>
                     {insight.impact} impact
                   </Badge>

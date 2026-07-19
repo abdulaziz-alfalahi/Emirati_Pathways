@@ -194,7 +194,7 @@ export const InteractiveIndustryMap: React.FC = () => {
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-muted-foreground">Growth</span>
                       <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        <TrendingUp className="h-3 w-3 mr-1" />
+                        <TrendingUp className="h-3 w-3 me-1" />
                         {industry.growth}
                       </Badge>
                     </div>

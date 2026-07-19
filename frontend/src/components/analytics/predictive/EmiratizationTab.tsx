@@ -148,7 +148,7 @@ export const EmiratizationTab: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="p-3 bg-blue-50 rounded border-l-4 border-blue-500">
+              <div className="p-3 bg-blue-50 rounded border-s-4 border-blue-500">
                 <div className="font-medium text-blue-800">Skills Development Programs</div>
                 <div className="text-sm text-blue-700">
                   Accelerate technology and leadership training for Emirati professionals
@@ -156,7 +156,7 @@ export const EmiratizationTab: React.FC = () => {
                 <Badge variant="outline" className="mt-2">High Impact</Badge>
               </div>
               
-              <div className="p-3 bg-green-50 rounded border-l-4 border-green-500">
+              <div className="p-3 bg-green-50 rounded border-s-4 border-green-500">
                 <div className="font-medium text-green-800">Public-Private Partnerships</div>
                 <div className="text-sm text-green-700">
                   Strengthen collaboration between government and private sector
@@ -164,7 +164,7 @@ export const EmiratizationTab: React.FC = () => {
                 <Badge variant="outline" className="mt-2">Strategic</Badge>
               </div>
               
-              <div className="p-3 bg-yellow-50 rounded border-l-4 border-yellow-500">
+              <div className="p-3 bg-yellow-50 rounded border-s-4 border-yellow-500">
                 <div className="font-medium text-yellow-800">Mentorship Programs</div>
                 <div className="text-sm text-yellow-700">
                   Establish senior professional mentorship networks

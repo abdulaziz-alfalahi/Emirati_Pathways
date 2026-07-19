@@ -120,7 +120,7 @@ const RetirementBenefitsTab: React.FC = () => {
                 {resource.resource_url && (
                   <Button variant="outline" size="sm" className="w-full" asChild>
                     <a href={resource.resource_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Learn More
                     </a>
                   </Button>

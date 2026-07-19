@@ -49,7 +49,7 @@ const MobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
+    <nav className="fixed bottom-0 start-0 end-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const IconComponent = item.icon;
@@ -76,7 +76,7 @@ const MobileBottomNav: React.FC = () => {
                   isOfflineTab && !isOnline && "text-orange-500"
                 )} />
                 {isOfflineTab && !isOnline && (
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <div className="absolute -top-1 -end-1 w-2 h-2 bg-orange-500 rounded-full"></div>
                 )}
               </div>
               <span className={cn(

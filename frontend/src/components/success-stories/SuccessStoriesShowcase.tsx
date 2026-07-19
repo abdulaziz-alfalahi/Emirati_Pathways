@@ -115,7 +115,7 @@ const SuccessStoriesShowcase: React.FC<SuccessStoriesShowcaseProps> = ({ showOnl
               {story.title}
               {story.is_featured && (
                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                  <Star className="h-3 w-3 mr-1" />
+                  <Star className="h-3 w-3 me-1" />
                   Featured
                 </Badge>
               )}
@@ -169,7 +169,7 @@ const SuccessStoriesShowcase: React.FC<SuccessStoriesShowcaseProps> = ({ showOnl
             variant="outline"
             onClick={() => setSelectedStory(story)}
           >
-            <Eye className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 me-2" />
             Read Story
           </Button>
         </div>
@@ -181,7 +181,7 @@ const SuccessStoriesShowcase: React.FC<SuccessStoriesShowcaseProps> = ({ showOnl
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading stories...</span>
+        <span className="ms-2">Loading stories...</span>
       </div>
     );
   }
@@ -191,12 +191,12 @@ const SuccessStoriesShowcase: React.FC<SuccessStoriesShowcaseProps> = ({ showOnl
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search stories by title, summary, or author..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>

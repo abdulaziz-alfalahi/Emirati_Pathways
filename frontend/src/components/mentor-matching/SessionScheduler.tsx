@@ -47,10 +47,10 @@ export const SessionScheduler: React.FC = () => {
                     className="w-full justify-start"
                     disabled={!slot.available}
                   >
-                    <Clock className="h-4 w-4 mr-2" />
+                    <Clock className="h-4 w-4 me-2" />
                     {slot.time}
                     {!slot.available && (
-                      <span className="ml-auto text-xs">Booked</span>
+                      <span className="ms-auto text-xs">Booked</span>
                     )}
                   </Button>
                 ))}

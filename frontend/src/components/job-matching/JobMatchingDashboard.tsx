@@ -222,7 +222,7 @@ export function JobMatchingDashboard() {
           <div className="flex justify-between items-center">
             <span>Failed to load dashboard data: {error}</span>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Retry
             </Button>
           </div>
@@ -247,9 +247,9 @@ export function JobMatchingDashboard() {
           disabled={refreshing}
         >
           {refreshing ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            <RefreshCw className="h-4 w-4 me-2 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 me-2" />
           )}
           Refresh
         </Button>
@@ -417,20 +417,20 @@ export function JobMatchingDashboard() {
                       </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
                         <span className="flex items-center">
-                          <Building className="h-4 w-4 mr-1" />
+                          <Building className="h-4 w-4 me-1" />
                           {match.company}
                         </span>
                         <span className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1" />
+                          <MapPin className="h-4 w-4 me-1" />
                           {match.location}
                         </span>
                         <span className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <Clock className="h-4 w-4 me-1" />
                           {new Date(match.match_timestamp).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="text-2xl font-bold text-green-600">
                         {match.overall_score}%
                       </div>
@@ -498,7 +498,7 @@ export function JobMatchingDashboard() {
                       size="sm"
                       onClick={() => handleJobAction(match.job_id, 'view')}
                     >
-                      <Eye className="h-4 w-4 mr-1" />
+                      <Eye className="h-4 w-4 me-1" />
                       View Details
                     </Button>
                     <Button 
@@ -506,14 +506,14 @@ export function JobMatchingDashboard() {
                       size="sm"
                       onClick={() => handleJobAction(match.job_id, 'save')}
                     >
-                      <Heart className="h-4 w-4 mr-1" />
+                      <Heart className="h-4 w-4 me-1" />
                       Save
                     </Button>
                     <Button 
                       size="sm"
                       onClick={() => handleJobAction(match.job_id, 'apply')}
                     >
-                      <Send className="h-4 w-4 mr-1" />
+                      <Send className="h-4 w-4 me-1" />
                       Apply Now
                     </Button>
                   </div>

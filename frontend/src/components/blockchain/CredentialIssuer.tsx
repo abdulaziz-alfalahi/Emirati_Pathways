@@ -103,7 +103,7 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Award className="mr-2 h-5 w-5" />
+          <Award className="me-2 h-5 w-5" />
           Issue Digital Credential
         </CardTitle>
         <CardDescription>
@@ -194,12 +194,12 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
         >
           {isIssuing ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white me-2" />
               Issuing Credential...
             </>
           ) : (
             <>
-              <Award className="h-4 w-4 mr-2" />
+              <Award className="h-4 w-4 me-2" />
               Issue Credential
             </>
           )}

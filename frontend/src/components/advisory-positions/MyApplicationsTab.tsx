@@ -179,7 +179,7 @@ export const MyApplicationsTab: React.FC = () => {
                     size="sm"
                     onClick={() => window.open(application.resume_url, '_blank')}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <ExternalLink className="h-4 w-4 me-2" />
                     View Resume/CV
                   </Button>
                 </div>
@@ -192,10 +192,10 @@ export const MyApplicationsTab: React.FC = () => {
                       key={index}
                       variant="outline"
                       size="sm"
-                      className="mr-2"
+                      className="me-2"
                       onClick={() => window.open(doc, '_blank')}
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Additional Document {index + 1}
                     </Button>
                   ))}

@@ -49,8 +49,8 @@ export const CourseCard: React.FC<CourseCardProps> = React.memo(({
             </CardDescription>
           </div>
           {course.is_featured && (
-            <Badge variant="secondary" className="ml-2">
-              <Star className="h-3 w-3 mr-1" />
+            <Badge variant="secondary" className="ms-2">
+              <Star className="h-3 w-3 me-1" />
               Featured
             </Badge>
           )}
@@ -103,12 +103,12 @@ const CourseMetrics: React.FC<CourseMetricsProps> = React.memo(({ durationHours 
   <div className="flex items-center justify-between text-sm text-muted-foreground">
     {durationHours && (
       <div className="flex items-center">
-        <Clock className="h-4 w-4 mr-1" />
+        <Clock className="h-4 w-4 me-1" />
         {durationHours}h
       </div>
     )}
     <div className="flex items-center">
-      <BookOpen className="h-4 w-4 mr-1" />
+      <BookOpen className="h-4 w-4 me-1" />
       Course
     </div>
   </div>

@@ -102,12 +102,12 @@ const ATSOptimizer: React.FC<ATSOptimizerProps> = ({ resumeData }) => {
             >
               {isOptimizing ? (
                 <>
-                  <Zap className="h-4 w-4 mr-2 animate-spin" />
+                  <Zap className="h-4 w-4 me-2 animate-spin" />
                   Optimizing...
                 </>
               ) : (
                 <>
-                  <Zap className="h-4 w-4 mr-2" />
+                  <Zap className="h-4 w-4 me-2" />
                   Auto-Optimize Resume
                 </>
               )}

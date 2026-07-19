@@ -1021,7 +1021,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             className="mb-0.5 bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200"
             title="Auto-fill fields based on title"
           >
-            <Wand2 className="h-4 w-4 mr-2" />
+            <Wand2 className="h-4 w-4 me-2" />
             Smart Fill
           </Button>
         </div>
@@ -1198,7 +1198,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={handleGenerateDescription}
           disabled={loading}
         >
-          <Sparkles className="h-4 w-4 mr-2" />
+          <Sparkles className="h-4 w-4 me-2" />
           Generate with AI
         </Button>
       </div>
@@ -1247,7 +1247,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => handleAIGenerate('requirements')}
           className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
         >
-          <Sparkles className="h-3 w-3 mr-1" />
+          <Sparkles className="h-3 w-3 me-1" />
           AI Generate Requirements
         </Button>
       </div>
@@ -1354,7 +1354,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => handleAIGenerate('responsibilities')}
           className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
         >
-          <Sparkles className="h-3 w-3 mr-1" />
+          <Sparkles className="h-3 w-3 me-1" />
           AI Generate Responsibilities
         </Button>
       </div>
@@ -1426,7 +1426,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => handleAIGenerate('benefits')}
           className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
         >
-          <Sparkles className="h-3 w-3 mr-1" />
+          <Sparkles className="h-3 w-3 me-1" />
           AI Generate Benefits
         </Button>
       </div>
@@ -1555,15 +1555,15 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-muted-foreground">Requirements:</span>
-              <span className="ml-2 font-semibold">{jdData.requirements.length}</span>
+              <span className="ms-2 font-semibold">{jdData.requirements.length}</span>
             </div>
             <div>
               <span className="text-muted-foreground">Responsibilities:</span>
-              <span className="ml-2 font-semibold">{jdData.responsibilities.length}</span>
+              <span className="ms-2 font-semibold">{jdData.responsibilities.length}</span>
             </div>
             <div>
               <span className="text-muted-foreground">Benefits:</span>
-              <span className="ml-2 font-semibold">{jdData.benefits.length}</span>
+              <span className="ms-2 font-semibold">{jdData.benefits.length}</span>
             </div>
           </div>
         </CardContent>
@@ -1572,7 +1572,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Users className="h-5 w-5 mr-2" />
+            <Users className="h-5 w-5 me-2" />
             AI Candidate Matching
           </CardTitle>
           <CardDescription>
@@ -1603,7 +1603,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             disabled={matchingLoading || completionScore < 60}
             className="w-full"
           >
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             {matchingLoading ? 'Matching...' : 'Find Top 10 Candidates'}
           </Button>
 
@@ -1683,7 +1683,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             onClick={handlePrevious}
             disabled={currentStep === 0}
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+            <ChevronLeft className="h-4 w-4 me-2" />
             Previous
           </Button>
 
@@ -1695,7 +1695,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             {currentStep === steps.length - 1 ? (
               <>
                 <Button variant="outline" onClick={handleSaveDraft} disabled={loading}>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="h-4 w-4 me-2" />
                   {loading ? 'Saving...' : 'Save as Draft'}
                 </Button>
                 <Button
@@ -1708,18 +1708,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                     setShowMatchingDialog(true);
                   }}
                 >
-                  <Search className="h-4 w-4 mr-2" />
+                  <Search className="h-4 w-4 me-2" />
                   {loading ? 'Saving...' : 'Save Draft & Headhunt'}
                 </Button>
                 <Button onClick={handlePublish} disabled={loading || completionScore < 60}>
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="h-4 w-4 me-2" />
                   {loading ? 'Publishing...' : 'Publish Job'}
                 </Button>
               </>
             ) : (
               <Button onClick={handleNext}>
                 Next
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <ChevronRight className="h-4 w-4 ms-2" />
               </Button>
             )}
           </div>
@@ -1782,7 +1782,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
                   {match.candidate.distance_km != null && (
                     <div className="flex items-center mt-2 text-sm text-blue-600 font-medium bg-blue-50 w-fit px-2 py-1 rounded">
-                      <MapPin className="h-3 w-3 mr-1" />
+                      <MapPin className="h-3 w-3 me-1" />
                       Candidate's residence is {match.candidate.distance_km} km away
                     </div>
                   )}

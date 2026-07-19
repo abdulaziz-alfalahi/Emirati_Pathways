@@ -66,7 +66,7 @@ export const RecognitionGallery: React.FC = () => {
                       </div>
                       {story.videoAvailable && (
                         <Button size="sm" variant="outline">
-                          <Play className="h-4 w-4 mr-1" />
+                          <Play className="h-4 w-4 me-1" />
                           Watch Video
                         </Button>
                       )}

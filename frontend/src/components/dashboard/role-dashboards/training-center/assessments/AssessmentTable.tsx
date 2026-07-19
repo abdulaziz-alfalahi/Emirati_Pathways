@@ -52,7 +52,7 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({ assessments, isLoadin
             <TableHead>Duration</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Participation</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-end">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -79,7 +79,7 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({ assessments, isLoadin
                     <span className="text-xs text-muted-foreground">75%</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-end">
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm">View</Button>
                     <Button variant="outline" size="sm">Edit</Button>
@@ -93,7 +93,7 @@ const AssessmentTable: React.FC<AssessmentTableProps> = ({ assessments, isLoadin
               <TableCell colSpan={6} className="text-center py-6">
                 <p className="text-muted-foreground">No assessments found</p>
                 <Button variant="outline" className="mt-2">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Create Assessment
+                  <PlusCircle className="me-2 h-4 w-4" /> Create Assessment
                 </Button>
               </TableCell>
             </TableRow>

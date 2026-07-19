@@ -739,7 +739,7 @@ const InstitutionProfileSetup: React.FC<InstitutionProfileSetupProps> = ({
               <div className="flex justify-between items-center">
                 <Label>Programs Offered</Label>
                 <Button onClick={addProgram} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Add Program
                 </Button>
               </div>
@@ -833,7 +833,7 @@ const InstitutionProfileSetup: React.FC<InstitutionProfileSetupProps> = ({
                 <div className="flex justify-between items-center mb-4">
                   <Label>Semesters/Terms</Label>
                   <Button onClick={addSemester} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Semester
                   </Button>
                 </div>
@@ -971,7 +971,7 @@ const InstitutionProfileSetup: React.FC<InstitutionProfileSetupProps> = ({
               <div className="flex justify-between items-center">
                 <Label>Partnerships</Label>
                 <Button onClick={addPartnership} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Add Partnership
                 </Button>
               </div>
@@ -1188,7 +1188,7 @@ const InstitutionProfileSetup: React.FC<InstitutionProfileSetupProps> = ({
           </Button>
         ) : (
           <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
-            <CheckCircle className="h-4 w-4 mr-2" />
+            <CheckCircle className="h-4 w-4 me-2" />
             Complete Setup
           </Button>
         )}

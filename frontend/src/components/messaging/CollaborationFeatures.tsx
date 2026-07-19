@@ -149,7 +149,7 @@ export const CollaborationFeatures: React.FC<CollaborationFeaturesProps> = ({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Task
                   </Button>
                 </DialogTrigger>
@@ -216,7 +216,7 @@ export const CollaborationFeatures: React.FC<CollaborationFeaturesProps> = ({
                           <span className="text-xs text-gray-500">{task.assignee}</span>
                           {task.dueDate && (
                             <>
-                              <Clock className="h-3 w-3 ml-2" />
+                              <Clock className="h-3 w-3 ms-2" />
                               <span className="text-xs text-gray-500">{task.dueDate}</span>
                             </>
                           )}
@@ -245,7 +245,7 @@ export const CollaborationFeatures: React.FC<CollaborationFeaturesProps> = ({
               <Dialog>
                 <DialogTrigger asChild>
                   <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Schedule Meeting
                   </Button>
                 </DialogTrigger>

@@ -77,7 +77,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
                         <p className="text-lg text-muted-foreground mt-2">{content.excerpt}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 ms-4">
                       <Badge className={getStatusColor(content.status)}>
                         {content.status.replace('_', ' ')}
                       </Badge>

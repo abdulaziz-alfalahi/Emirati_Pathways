@@ -195,7 +195,7 @@ const DubaiGovFormExample: React.FC = () => {
                   />
                   <Label htmlFor="terms" className="text-sm font-normal cursor-pointer leading-relaxed">
                     I agree to the <a href="#" className="text-ehrdc-teal hover:text-ehrdc-dark-teal underline">Terms and Conditions</a> and 
-                    <a href="#" className="text-ehrdc-teal hover:text-ehrdc-dark-teal underline ml-1">Privacy Policy</a> of the Dubai Government
+                    <a href="#" className="text-ehrdc-teal hover:text-ehrdc-dark-teal underline ms-1">Privacy Policy</a> of the Dubai Government
                   </Label>
                 </div>
               </FormField>

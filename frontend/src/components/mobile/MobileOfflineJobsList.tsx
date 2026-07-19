@@ -53,7 +53,7 @@ const MobileOfflineJobsList: React.FC = () => {
                   <h4 className="font-medium text-sm line-clamp-1">{job.title}</h4>
                   <p className="text-sm text-gray-600 line-clamp-1">{job.company}</p>
                 </div>
-                <div className="flex items-center space-x-1 ml-2">
+                <div className="flex items-center space-x-1 ms-2">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -103,7 +103,7 @@ const MobileOfflineJobsList: React.FC = () => {
                   {job.synced ? 'Synced' : 'Offline'}
                 </Badge>
                 <Button size="sm" variant="outline" className="text-xs">
-                  <ExternalLink className="h-3 w-3 mr-1" />
+                  <ExternalLink className="h-3 w-3 me-1" />
                   View Details
                 </Button>
               </div>

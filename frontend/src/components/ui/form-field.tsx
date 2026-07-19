@@ -23,7 +23,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500 ms-1">*</span>}
         </label>
         
         <div className="relative">

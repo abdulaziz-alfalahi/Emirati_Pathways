@@ -618,7 +618,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="h-8 w-8 animate-spin text-teal-600" />
-        <span className="ml-2 text-gray-600">Loading Growth Operators...</span>
+        <span className="ms-2 text-gray-600">Loading Growth Operators...</span>
       </div>
     );
   }
@@ -634,7 +634,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 me-2" />
               Refresh
             </Button>
             <Button
@@ -645,7 +645,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               }}
               disabled={selectedOperators.length === 0}
             >
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-4 w-4 me-2" />
               Bulk Assign ({selectedOperators.length})
             </Button>
           </div>
@@ -684,9 +684,9 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       <span className={`flex items-center ${stats.trend === 'up' ? 'text-green-600' :
                         stats.trend === 'down' ? 'text-red-600' : 'text-gray-600'
                         }`}>
-                        {stats.trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1" /> :
-                          stats.trend === 'down' ? <TrendingDown className="h-3 w-3 mr-1" /> :
-                            <Activity className="h-3 w-3 mr-1" />}
+                        {stats.trend === 'up' ? <TrendingUp className="h-3 w-3 me-1" /> :
+                          stats.trend === 'down' ? <TrendingDown className="h-3 w-3 me-1" /> :
+                            <Activity className="h-3 w-3 me-1" />}
                         {stats.trendValue > 0 ? '+' : ''}{stats.trendValue}%
                       </span>
                     </div>
@@ -713,19 +713,19 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="kanban">
-              <Move className="h-4 w-4 mr-2" />
+              <Move className="h-4 w-4 me-2" />
               Kanban Board
             </TabsTrigger>
             <TabsTrigger value="list">
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-4 w-4 me-2" />
               Operator List
             </TabsTrigger>
             <TabsTrigger value="domains">
-              <Target className="h-4 w-4 mr-2" />
+              <Target className="h-4 w-4 me-2" />
               Domain Details
             </TabsTrigger>
             <TabsTrigger value="analytics">
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-4 w-4 me-2" />
               Analytics
             </TabsTrigger>
           </TabsList>
@@ -806,7 +806,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                             onDragStart={(e) => handleDragStart(e, op.id)}
                             onDragEnd={handleDragEnd}
                             className={`p-3 bg-white rounded-lg border shadow-sm cursor-move hover:shadow-md transition-all ${dragState.operatorId === op.id ? 'opacity-50' : ''
-                              } ${op.primaryDomain === key ? `border-l-4 ${config.borderColor}` : ''}`}
+                              } ${op.primaryDomain === key ? `border-s-4 ${config.borderColor}` : ''}`}
                           >
                             <div className="flex items-center gap-2">
                               <GripVertical className="h-4 w-4 text-gray-400" />
@@ -827,14 +827,14 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => handleAssignDomains(op)}>
-                                    <Edit className="h-4 w-4 mr-2" />
+                                    <Edit className="h-4 w-4 me-2" />
                                     Edit Assignments
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => {
                                     setSelectedOperator(op);
                                     setShowOperatorDetailModal(true);
                                   }}>
-                                    <Eye className="h-4 w-4 mr-2" />
+                                    <Eye className="h-4 w-4 me-2" />
                                     View Details
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
@@ -842,7 +842,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                                     className="text-red-600"
                                     onClick={() => removeOperatorFromDomain(op.id, key)}
                                   >
-                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    <Trash2 className="h-4 w-4 me-2" />
                                     Remove from {config.label.split(' ')[0]}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -851,15 +851,15 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                             {op.performance && (
                               <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                                 <span className="flex items-center">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  <CheckCircle className="h-3 w-3 me-1" />
                                   {op.performance.tasksCompleted}
                                 </span>
                                 <span className="flex items-center">
-                                  <Clock className="h-3 w-3 mr-1" />
+                                  <Clock className="h-3 w-3 me-1" />
                                   {op.performance.avgResponseTime}
                                 </span>
                                 <span className="flex items-center">
-                                  <Star className="h-3 w-3 mr-1 text-yellow-500" />
+                                  <Star className="h-3 w-3 me-1 text-yellow-500" />
                                   {op.performance.rating}
                                 </span>
                               </div>
@@ -889,12 +889,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex-1 min-w-[200px]">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="Search operators..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="ps-10"
                       />
                     </div>
                   </div>
@@ -945,7 +945,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                     <TableHead>Primary Domain</TableHead>
                     <TableHead>Performance</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1000,7 +1000,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                         <TableCell>
                           {operator.primaryDomain ? (
                             <Badge variant="secondary" className="capitalize">
-                              <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                              <Star className="h-3 w-3 me-1 fill-yellow-400 text-yellow-400" />
                               {operator.primaryDomain}
                             </Badge>
                           ) : (
@@ -1026,14 +1026,14 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                             {operator.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleAssignDomains(operator)}
                             >
-                              <Edit className="h-4 w-4 mr-1" />
+                              <Edit className="h-4 w-4 me-1" />
                               Assign
                             </Button>
                             <Button
@@ -1094,7 +1094,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                                   className={op.primaryDomain === key ? 'border-yellow-400' : ''}
                                 >
                                   {op.primaryDomain === key && (
-                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                    <Star className="h-3 w-3 me-1 fill-yellow-400 text-yellow-400" />
                                   )}
                                   {op.full_name}
                                 </Badge>
@@ -1145,7 +1145,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                         }}
                       >
                         View All Operators
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                        <ArrowRight className="h-4 w-4 ms-2" />
                       </Button>
                     </CardFooter>
                   </Card>
@@ -1335,12 +1335,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               >
                 {isSaving ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    <RefreshCw className="h-4 w-4 me-2 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-4 w-4 me-2" />
                     Save Assignment
                   </>
                 )}
@@ -1407,12 +1407,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               >
                 {isSaving ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    <RefreshCw className="h-4 w-4 me-2 animate-spin" />
                     Assigning...
                   </>
                 ) : (
                   <>
-                    <UserPlus className="h-4 w-4 mr-2" />
+                    <UserPlus className="h-4 w-4 me-2" />
                     Assign to {selectedDomains.length} Domain(s)
                   </>
                 )}
@@ -1444,7 +1444,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       </Badge>
                       {selectedOperator.primaryDomain && (
                         <Badge variant="outline">
-                          <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                          <Star className="h-3 w-3 me-1 fill-yellow-400 text-yellow-400" />
                           {DOMAIN_CONFIG[selectedOperator.primaryDomain]?.label || selectedOperator.primaryDomain}
                         </Badge>
                       )}
@@ -1496,7 +1496,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       </div>
                       <div className="text-center p-4 bg-gray-50 rounded-lg">
                         <p className="text-2xl font-bold text-yellow-600 flex items-center justify-center">
-                          <Star className="h-5 w-5 mr-1 fill-yellow-400" />
+                          <Star className="h-5 w-5 me-1 fill-yellow-400" />
                           {selectedOperator.performance.rating}
                         </p>
                         <p className="text-sm text-gray-500">Rating</p>
@@ -1536,7 +1536,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                 setShowOperatorDetailModal(false);
                 if (selectedOperator) handleAssignDomains(selectedOperator);
               }}>
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-4 w-4 me-2" />
                 Edit Assignments
               </Button>
             </DialogFooter>

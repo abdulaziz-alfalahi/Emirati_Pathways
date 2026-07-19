@@ -106,8 +106,8 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                           <div className="text-sm font-medium mb-1">{message.senderName}</div>
                         )}
                         <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${isCurrentUser
-                          ? `bg-teal-600 text-white rounded-br-none${message._optimistic ? ' opacity-60' : ''}${message._failed ? ' bg-red-500' : ''}`
-                          : 'bg-white border rounded-bl-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                          ? `bg-teal-600 text-white rounded-ee-none${message._optimistic ? ' opacity-60' : ''}${message._failed ? ' bg-red-500' : ''}`
+                          : 'bg-white border rounded-es-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                           }`}>
                           {message.content}
                           {/* Render attachments */}
@@ -124,13 +124,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                                 >
                                   <FileText className="h-3.5 w-3.5 flex-shrink-0" />
                                   <span className="truncate max-w-[200px]">{att.filename}</span>
-                                  <Download className="h-3 w-3 flex-shrink-0 ml-auto" />
+                                  <Download className="h-3 w-3 flex-shrink-0 ms-auto" />
                                 </a>
                               ))}
                             </div>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1 text-right flex items-center justify-end gap-1">
+                        <div className="text-xs text-muted-foreground mt-1 text-end flex items-center justify-end gap-1">
                           {message._optimistic ? (
                             <span className="italic">Sending...</span>
                           ) : message._failed ? (

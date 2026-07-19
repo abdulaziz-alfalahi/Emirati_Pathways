@@ -65,7 +65,7 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
   };
 
   return (
-    <div className="w-64 border-r bg-muted/40 p-4 flex flex-col h-full">
+    <div className="w-64 border-e bg-muted/40 p-4 flex flex-col h-full">
       <div className="mb-4">
         <h3 className="text-sm font-medium mb-2">Import Options</h3>
         <ImportOptions 
@@ -95,11 +95,11 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
                 className="w-full justify-start relative"
                 onClick={() => onSectionChange(section.id)}
               >
-                <span className="mr-2">{section.icon}</span>
+                <span className="me-2">{section.icon}</span>
                 {section.label}
                 
                 {/* Status indicator */}
-                <div className="ml-auto flex items-center">
+                <div className="ms-auto flex items-center">
                   {status === 'complete' && (
                     <div className="w-2 h-2 rounded-full bg-green-500" title="Complete" />
                   )}
@@ -107,7 +107,7 @@ const ResumeSidebar: React.FC<ResumeSidebarProps> = ({
                     <div className="w-2 h-2 rounded-full bg-amber-500" title="Partially complete" />
                   )}
                   {activeSection === section.id && (
-                    <ChevronRight size={14} className="ml-1" />
+                    <ChevronRight size={14} className="ms-1" />
                   )}
                 </div>
               </Button>

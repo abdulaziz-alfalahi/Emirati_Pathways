@@ -80,11 +80,11 @@ export const MentorMatching: React.FC = () => {
 
             <div className="space-y-2">
               <Button className="w-full" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4 me-2" />
                 Book Session
               </Button>
               <Button variant="outline" className="w-full" size="sm">
-                <MessageCircle className="h-4 w-4 mr-2" />
+                <MessageCircle className="h-4 w-4 me-2" />
                 Send Message
               </Button>
             </div>

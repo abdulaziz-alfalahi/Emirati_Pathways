@@ -167,12 +167,12 @@ export const EnhancedMessagingCenter: React.FC = () => {
             </CardTitle>
             <div className="space-y-2">
               <div className="relative">
-                <Search className="absolute left-2 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-2 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8"
+                  className="ps-8"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -196,8 +196,8 @@ export const EnhancedMessagingCenter: React.FC = () => {
               {filteredConversations.map((conversation) => (
                 <div
                   key={conversation.id}
-                  className={`p-3 cursor-pointer transition-colors hover:bg-gray-50 border-l-4 ${
-                    activeConversation === conversation.id ? 'bg-blue-50 border-l-blue-500' : 'border-l-transparent'
+                  className={`p-3 cursor-pointer transition-colors hover:bg-gray-50 border-s-4 ${
+                    activeConversation === conversation.id ? 'bg-blue-50 border-s-blue-500' : 'border-s-transparent'
                   }`}
                   onClick={() => setActiveConversation(conversation.id)}
                 >
@@ -254,7 +254,7 @@ export const EnhancedMessagingCenter: React.FC = () => {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button size="sm" variant="outline">
-                    <Users className="h-4 w-4 mr-2" />
+                    <Users className="h-4 w-4 me-2" />
                     Participants
                   </Button>
                   <Button size="sm" variant="outline">
@@ -279,7 +279,7 @@ export const EnhancedMessagingCenter: React.FC = () => {
                         <p className="text-sm">Your scholarship application has been approved! Please check your email for next steps.</p>
                         <p className="text-xs text-gray-500 mt-1">Dubai University • 2 hours ago</p>
                       </div>
-                      <div className="bg-blue-100 p-3 rounded-lg shadow-sm ml-auto max-w-xs">
+                      <div className="bg-blue-100 p-3 rounded-lg shadow-sm ms-auto max-w-xs">
                         <p className="text-sm">Thank you so much! When do I need to submit the additional documents?</p>
                         <p className="text-xs text-gray-500 mt-1">You • 1 hour ago</p>
                       </div>
@@ -317,7 +317,7 @@ export const EnhancedMessagingCenter: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">Scheduled Meetings</h3>
                       <Button size="sm">
-                        <Calendar className="h-4 w-4 mr-2" />
+                        <Calendar className="h-4 w-4 me-2" />
                         Schedule New
                       </Button>
                     </div>

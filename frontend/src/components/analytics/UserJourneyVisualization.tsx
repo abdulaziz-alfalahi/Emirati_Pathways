@@ -148,8 +148,8 @@ export const UserJourneyVisualization: React.FC = () => {
             </div>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                <Button variant="outline" className="w-[240px] justify-start text-start font-normal">
+                  <CalendarIcon className="me-2 h-4 w-4" />
                   {format(dateRange.start, 'MMM dd')} - {format(dateRange.end, 'MMM dd')}
                 </Button>
               </PopoverTrigger>

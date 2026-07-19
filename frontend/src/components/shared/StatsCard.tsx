@@ -201,7 +201,7 @@ const TrendBadge: React.FC<{
     )}>
       <TrendIcon className="h-3 w-3" />
       <span>{Math.abs(trend)}%</span>
-      {label && <span className="text-gray-500 ml-1">{label}</span>}
+      {label && <span className="text-gray-500 ms-1">{label}</span>}
     </div>
   );
 };

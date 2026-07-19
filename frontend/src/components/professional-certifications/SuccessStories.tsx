@@ -180,7 +180,7 @@ export const SuccessStories: React.FC = () => {
                       {story.company}
                     </div>
                     <Badge className="bg-blue-100 text-blue-800">
-                      <Award className="h-3 w-3 mr-1" />
+                      <Award className="h-3 w-3 me-1" />
                       {story.certification}
                     </Badge>
                   </div>

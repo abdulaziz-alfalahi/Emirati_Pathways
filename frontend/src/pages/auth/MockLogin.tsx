@@ -163,8 +163,8 @@ const MockLogin: React.FC = () => {
                   className="w-full h-12 text-lg bg-teal-600 hover:bg-teal-700"
                   disabled={loading}
                 >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Get OTP Code'}
-                  {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
+                  {loading ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : 'Get OTP Code'}
+                  {!loading && <ArrowRight className="ms-2 h-4 w-4" />}
                 </Button>
               </form>
             ) : (
@@ -198,7 +198,7 @@ const MockLogin: React.FC = () => {
                   className="w-full h-12 text-lg bg-teal-600 hover:bg-teal-700"
                   disabled={loading}
                 >
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Login'}
+                  {loading ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : 'Verify & Login'}
                 </Button>
                 <Button
                   type="button"
@@ -215,7 +215,7 @@ const MockLogin: React.FC = () => {
       </div>
 
       {/* Right Side: Dev Helper Sidebar */}
-      <div className="hidden md:flex w-80 bg-white border-l p-6 flex-col justify-center overflow-y-auto">
+      <div className="hidden md:flex w-80 bg-white border-s p-6 flex-col justify-center overflow-y-auto">
         <div className="mb-6">
           <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
             <span className="text-xl">🛠️</span>

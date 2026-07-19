@@ -158,7 +158,7 @@ export const ApplicationTimeline: React.FC = () => {
               <h2 className="text-2xl font-bold text-blue-600 mb-2">Application Timeline</h2>
               <p className="text-muted-foreground">Track your university application progress</p>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-sm text-muted-foreground mb-2">Overall Progress</div>
               <div className="flex items-center gap-4">
                 <Progress value={getProgress()} className="w-32" />
@@ -175,7 +175,7 @@ export const ApplicationTimeline: React.FC = () => {
           <Card key={item.id} className="relative">
             {/* Timeline connector */}
             {index < timelineData.length - 1 && (
-              <div className="absolute left-6 top-16 w-0.5 h-full bg-gray-200 -z-10"></div>
+              <div className="absolute start-6 top-16 w-0.5 h-full bg-gray-200 -z-10"></div>
             )}
             
             <CardContent className="p-6">
@@ -226,7 +226,7 @@ export const ApplicationTimeline: React.FC = () => {
                           <div className="flex flex-wrap gap-2">
                             {item.documents.map((doc, docIndex) => (
                               <Badge key={docIndex} variant="outline" className="text-xs">
-                                <FileText className="h-3 w-3 mr-1" />
+                                <FileText className="h-3 w-3 me-1" />
                                 {doc}
                               </Badge>
                             ))}

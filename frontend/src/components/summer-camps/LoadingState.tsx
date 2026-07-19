@@ -19,10 +19,10 @@ const LoadingState: React.FC<LoadingStateProps> = ({ message = "Loading camps...
         "flex items-center justify-center py-4",
         isRTL && "rtl:flex-row-reverse"
       )}>
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mr-3"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 me-3"></div>
         <span className={cn(
           "text-gray-600",
-          isRTL && "rtl:font-arabic rtl:mr-0 rtl:ml-3"
+          isRTL && "rtl:font-arabic rtl:ms-0 rtl:me-3"
         )}>{message}</span>
       </div>
 

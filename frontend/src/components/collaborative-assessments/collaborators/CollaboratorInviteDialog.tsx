@@ -297,7 +297,7 @@ export const CollaboratorInviteDialog: React.FC<CollaboratorInviteDialogProps> =
       <DialogTrigger asChild>
         {trigger || (
           <Button>
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4 me-2" />
             Invite Collaborator
           </Button>
         )}

@@ -67,25 +67,25 @@ const MobileNativeFeatures: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="font-medium">Platform:</span>
-                <Badge variant="outline" className="ml-2">
+                <Badge variant="outline" className="ms-2">
                   {deviceInfo.platform}
                 </Badge>
               </div>
               <div>
                 <span className="font-medium">OS:</span>
-                <span className="ml-2">{deviceInfo.operatingSystem} {deviceInfo.osVersion}</span>
+                <span className="ms-2">{deviceInfo.operatingSystem} {deviceInfo.osVersion}</span>
               </div>
               <div>
                 <span className="font-medium">Model:</span>
-                <span className="ml-2">{deviceInfo.model}</span>
+                <span className="ms-2">{deviceInfo.model}</span>
               </div>
               <div>
                 <span className="font-medium">Manufacturer:</span>
-                <span className="ml-2">{deviceInfo.manufacturer}</span>
+                <span className="ms-2">{deviceInfo.manufacturer}</span>
               </div>
               {deviceInfo.batteryLevel && (
                 <div className="flex items-center">
-                  <BatteryLow className="h-4 w-4 mr-1" />
+                  <BatteryLow className="h-4 w-4 me-1" />
                   <span>{Math.round(deviceInfo.batteryLevel * 100)}%</span>
                 </div>
               )}

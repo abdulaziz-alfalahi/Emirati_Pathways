@@ -113,7 +113,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onCl
               onClick={markAllAsRead}
               className="text-xs"
             >
-              <CheckCheck className="h-3 w-3 mr-1" />
+              <CheckCheck className="h-3 w-3 me-1" />
               Mark all read
             </Button>
           )}

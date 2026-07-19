@@ -31,7 +31,7 @@ export const LearningAnalyticsDashboard: React.FC = () => {
         <p className="text-xs text-muted-foreground">{description}</p>
         {trend && (
           <div className="flex items-center text-xs text-green-600 mt-1">
-            <TrendingUp className="h-3 w-3 mr-1" />
+            <TrendingUp className="h-3 w-3 me-1" />
             {trend}
           </div>
         )}
@@ -121,7 +121,7 @@ export const LearningAnalyticsDashboard: React.FC = () => {
                         style={{ width: `${item.percentage}%` }}
                       ></div>
                     </div>
-                    <span className="text-xs text-muted-foreground w-12 text-right">
+                    <span className="text-xs text-muted-foreground w-12 text-end">
                       {item.count}
                     </span>
                   </div>

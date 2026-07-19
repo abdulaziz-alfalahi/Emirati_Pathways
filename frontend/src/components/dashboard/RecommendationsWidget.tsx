@@ -74,7 +74,7 @@ const RecommendationsWidget: React.FC<RecommendationsWidgetProps> = ({
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
-            <Sparkles className="mr-2 h-5 w-5" />
+            <Sparkles className="me-2 h-5 w-5" />
             AI Recommendations
           </CardTitle>
         </CardHeader>
@@ -91,7 +91,7 @@ const RecommendationsWidget: React.FC<RecommendationsWidgetProps> = ({
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center text-lg">
-          <Sparkles className="mr-2 h-5 w-5" />
+          <Sparkles className="me-2 h-5 w-5" />
           AI Recommendations
         </CardTitle>
         <CardDescription>Personalized opportunities for you</CardDescription>

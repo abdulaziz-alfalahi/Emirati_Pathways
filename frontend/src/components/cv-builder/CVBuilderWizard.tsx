@@ -370,7 +370,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No experience added yet</p>
                   <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Experience
                   </Button>
                 </div>
@@ -399,7 +399,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No education added yet</p>
                   <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Education
                   </Button>
                 </div>
@@ -428,7 +428,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No skills added yet</p>
                   <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Skill
                   </Button>
                 </div>
@@ -462,7 +462,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No languages added yet</p>
                   <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 me-2" />
                     Add Language
                   </Button>
                 </div>
@@ -500,15 +500,15 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 <h3 className="text-lg font-semibold mb-4">Export Options</h3>
                 <div className="space-y-2">
                   <Button className="w-full" onClick={() => handleExport('pdf')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download PDF
                   </Button>
                   <Button className="w-full" onClick={() => handleExport('word')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download Word
                   </Button>
                   <Button className="w-full" onClick={() => handleExport('json')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Download JSON
                   </Button>
                 </div>
@@ -560,7 +560,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 Step {steps.findIndex(step => step.id === localStep) + 1} of {totalSteps}
               </p>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <div className="text-2xl font-bold text-blue-900">{completionScore}%</div>
               <div className="text-sm text-blue-700">Complete</div>
             </div>
@@ -692,7 +692,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 onClick={handleSave}
                 disabled={loading && typeof loading === 'object' ? loading.isLoading : false}
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {loading && typeof loading === 'object' && loading.isLoading ? 'Saving...' : 'Save Progress'}
               </Button>
               
@@ -700,7 +700,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                 className="w-full justify-start"
                 onClick={() => setShowPreview(!showPreview)}
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="h-4 w-4 me-2" />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
               </Button>
               
@@ -709,7 +709,7 @@ const CVBuilderWizard: React.FC<CVBuilderWizardProps> = ({
                   className="w-full justify-start"
                   onClick={() => handleExport('pdf')}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   Export PDF
                 </Button>
               )}

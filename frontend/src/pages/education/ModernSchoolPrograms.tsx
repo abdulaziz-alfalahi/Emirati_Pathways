@@ -183,12 +183,12 @@ const ModernSchoolPrograms: React.FC = () => {
       headerActions={
         <div className="flex items-center space-x-3">
           <button className="btn-secondary">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 me-2" />
             {t('common.filter')}
           </button>
           <button className="btn-primary">
             {t('pages.school_programs.apply_now')}
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </button>
         </div>
       }
@@ -206,13 +206,13 @@ const ModernSchoolPrograms: React.FC = () => {
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder={t('pages.school_programs.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
+                className="w-full ps-10 pe-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               />
             </div>
             <div className="flex space-x-2">

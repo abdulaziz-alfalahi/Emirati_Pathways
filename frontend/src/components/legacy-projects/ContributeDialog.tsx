@@ -190,7 +190,7 @@ export const ContributeDialog: React.FC<ContributeDialogProps> = ({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {loading && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               Submit Contribution
             </Button>
           </div>

@@ -15,7 +15,7 @@ const InterviewsSection: React.FC<InterviewsSectionProps> = ({ interviews }) => 
       <Card className="bg-muted/40">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Video className="h-5 w-5 mr-2" />
+            <Video className="h-5 w-5 me-2" />
             Interview Outcomes
           </CardTitle>
           <CardDescription>No interview data available</CardDescription>
@@ -43,7 +43,7 @@ const InterviewsSection: React.FC<InterviewsSectionProps> = ({ interviews }) => 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Video className="h-5 w-5 mr-2" />
+          <Video className="h-5 w-5 me-2" />
           Interview Outcomes
         </CardTitle>
         <CardDescription>
@@ -73,7 +73,7 @@ const InterviewsSection: React.FC<InterviewsSectionProps> = ({ interviews }) => 
               
               <div className="flex items-center">
                 {getStatusIcon(interview.status)}
-                <span className="text-xs ml-1 capitalize">{interview.status}</span>
+                <span className="text-xs ms-1 capitalize">{interview.status}</span>
               </div>
             </div>
             
@@ -86,7 +86,7 @@ const InterviewsSection: React.FC<InterviewsSectionProps> = ({ interviews }) => 
             
             {interview.rating !== null && interview.status === "completed" && (
               <div className="mt-2 flex">
-                <span className="text-xs font-medium mr-2">Rating:</span>
+                <span className="text-xs font-medium me-2">Rating:</span>
                 <div className="flex items-center">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <span 
@@ -104,7 +104,7 @@ const InterviewsSection: React.FC<InterviewsSectionProps> = ({ interviews }) => 
           <div className="flex justify-end">
             <Link to="/career-advisory/interviews" className="text-sm text-primary hover:underline flex items-center">
               View all {interviews.length} interviews
-              <ArrowUpRight className="h-3 w-3 ml-1" />
+              <ArrowUpRight className="h-3 w-3 ms-1" />
             </Link>
           </div>
         )}

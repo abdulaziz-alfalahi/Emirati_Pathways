@@ -265,7 +265,7 @@ export const PrivacyDashboard: React.FC = () => {
               key={option.value}
               onClick={() => updateEmploymentStatus(option.value)}
               disabled={isUpdatingStatus}
-              className={`flex items-center space-x-3 w-full p-3 border rounded-lg text-left transition-colors ${
+              className={`flex items-center space-x-3 w-full p-3 border rounded-lg text-start transition-colors ${
                 employmentStatus === option.value
                   ? 'border-primary bg-primary/5'
                   : 'hover:bg-accent'
@@ -372,7 +372,7 @@ export const PrivacyDashboard: React.FC = () => {
               <button
                 key={visibility}
                 onClick={() => updatePrivacySetting('profileVisibility', visibility)}
-                className={`flex items-center space-x-3 w-full p-3 border rounded-lg text-left transition-colors ${
+                className={`flex items-center space-x-3 w-full p-3 border rounded-lg text-start transition-colors ${
                   privacySettings.profileVisibility === visibility
                     ? 'border-primary bg-primary/5'
                     : 'hover:bg-accent'
@@ -452,7 +452,7 @@ export const PrivacyDashboard: React.FC = () => {
                 disabled={isLoading}
                 className="w-full"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 Request Data Export
               </Button>
             </div>
@@ -468,7 +468,7 @@ export const PrivacyDashboard: React.FC = () => {
                 disabled={isLoading}
                 className="w-full"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-4 w-4 me-2" />
                 Delete All Data
               </Button>
             </div>
@@ -496,7 +496,7 @@ export const PrivacyDashboard: React.FC = () => {
                       </Badge>
                       {request.status === 'ready' && request.downloadUrl && (
                         <Button size="sm" variant="outline">
-                          <Download className="h-3 w-3 mr-1" />
+                          <Download className="h-3 w-3 me-1" />
                           Download
                         </Button>
                       )}

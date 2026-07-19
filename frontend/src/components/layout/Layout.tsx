@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* EHRDC Information */}
               <div className="lg:col-span-2">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-[#006E6D] rounded-xl flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 bg-[#006E6D] rounded-xl flex items-center justify-center me-4">
                     <span className="text-white font-bold text-lg">EG</span>
                   </div>
                   <div>
@@ -132,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
 
               {/* Copyright */}
-              <div className="text-center lg:text-right">
+              <div className="text-center lg:text-end">
                 <div className="text-gray-500 text-sm mb-2">
                   © {new Date().getFullYear()} Emirati Human Resources Development Council
                 </div>

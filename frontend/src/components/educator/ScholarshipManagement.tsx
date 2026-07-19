@@ -179,7 +179,7 @@ const ScholarshipManagement: React.FC = () => {
                         </div>
 
                         <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                            {isLoading ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
                             Post Scholarship
                         </Button>
                     </form>

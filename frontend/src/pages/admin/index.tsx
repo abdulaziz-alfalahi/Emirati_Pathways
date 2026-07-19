@@ -323,7 +323,7 @@ const AdminDashboard: React.FC = () => {
                 </SelectContent>
               </Select>
               <Button variant="outline" className="bg-white text-purple-600 hover:bg-gray-100">
-                <Settings className="h-4 w-4 mr-2" />
+                <Settings className="h-4 w-4 me-2" />
                 Settings
               </Button>
             </div>
@@ -352,7 +352,7 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-gray-500 text-sm">Total Users</p>
                       <p className="text-2xl font-bold text-blue-600">{platformData?.total_users.toLocaleString()}</p>
                       <div className="flex items-center mt-1">
-                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <TrendingUp className="h-4 w-4 text-green-500 me-1" />
                         <span className="text-sm text-green-500">+{platformData?.user_growth_rate}%</span>
                       </div>
                     </div>
@@ -368,7 +368,7 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-gray-500 text-sm">Total Jobs</p>
                       <p className="text-2xl font-bold text-green-600">{platformData?.total_jobs.toLocaleString()}</p>
                       <div className="flex items-center mt-1">
-                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <TrendingUp className="h-4 w-4 text-green-500 me-1" />
                         <span className="text-sm text-green-500">+{platformData?.job_growth_rate}%</span>
                       </div>
                     </div>
@@ -384,7 +384,7 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-gray-500 text-sm">Total Applications</p>
                       <p className="text-2xl font-bold text-purple-600">{platformData?.total_applications.toLocaleString()}</p>
                       <div className="flex items-center mt-1">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                        <CheckCircle className="h-4 w-4 text-green-500 me-1" />
                         <span className="text-sm text-green-500">{platformData?.application_success_rate}% success</span>
                       </div>
                     </div>
@@ -400,7 +400,7 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-gray-500 text-sm">Companies</p>
                       <p className="text-2xl font-bold text-orange-600">{platformData?.total_companies.toLocaleString()}</p>
                       <div className="flex items-center mt-1">
-                        <Building className="h-4 w-4 text-orange-500 mr-1" />
+                        <Building className="h-4 w-4 text-orange-500 me-1" />
                         <span className="text-sm text-gray-500">Active employers</span>
                       </div>
                     </div>
@@ -551,7 +551,7 @@ const AdminDashboard: React.FC = () => {
                   <CardTitle>User Management</CardTitle>
                   <div className="flex space-x-2">
                     <Button onClick={() => handleExportData('users')} variant="outline">
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 me-2" />
                       Export Users
                     </Button>
                   </div>
@@ -561,12 +561,12 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex flex-wrap gap-4 mb-6">
                   <div className="flex-1 min-w-64">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="Search users..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="ps-10"
                       />
                     </div>
                   </div>
@@ -599,7 +599,7 @@ const AdminDashboard: React.FC = () => {
                     </SelectContent>
                   </Select>
                   <Button onClick={loadUsers}>
-                    <Filter className="h-4 w-4 mr-2" />
+                    <Filter className="h-4 w-4 me-2" />
                     Apply Filters
                   </Button>
                 </div>
@@ -609,13 +609,13 @@ const AdminDashboard: React.FC = () => {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left p-4">User</th>
-                        <th className="text-left p-4">Role</th>
-                        <th className="text-left p-4">Emirate</th>
-                        <th className="text-left p-4">Registration</th>
-                        <th className="text-left p-4">Last Login</th>
-                        <th className="text-left p-4">Status</th>
-                        <th className="text-left p-4">Actions</th>
+                        <th className="text-start p-4">User</th>
+                        <th className="text-start p-4">Role</th>
+                        <th className="text-start p-4">Emirate</th>
+                        <th className="text-start p-4">Registration</th>
+                        <th className="text-start p-4">Last Login</th>
+                        <th className="text-start p-4">Status</th>
+                        <th className="text-start p-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -626,7 +626,7 @@ const AdminDashboard: React.FC = () => {
                               <p className="font-medium">{user.name}</p>
                               <p className="text-sm text-gray-500">{user.email}</p>
                               <div className="flex items-center mt-1">
-                                <Progress value={user.profile_completion} className="w-16 h-2 mr-2" />
+                                <Progress value={user.profile_completion} className="w-16 h-2 me-2" />
                                 <span className="text-xs text-gray-500">{user.profile_completion}%</span>
                               </div>
                             </div>
@@ -646,12 +646,12 @@ const AdminDashboard: React.FC = () => {
                           <td className="p-4">
                             {user.is_active ? (
                               <Badge className="bg-green-100 text-green-800">
-                                <CheckCircle className="h-3 w-3 mr-1" />
+                                <CheckCircle className="h-3 w-3 me-1" />
                                 Active
                               </Badge>
                             ) : (
                               <Badge className="bg-red-100 text-red-800">
-                                <XCircle className="h-3 w-3 mr-1" />
+                                <XCircle className="h-3 w-3 me-1" />
                                 Inactive
                               </Badge>
                             )}
@@ -696,7 +696,7 @@ const AdminDashboard: React.FC = () => {
                     Comprehensive job oversight and management capabilities.
                   </p>
                   <Button onClick={() => handleExportData('jobs')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Export Job Data
                   </Button>
                 </div>
@@ -718,7 +718,7 @@ const AdminDashboard: React.FC = () => {
                     Monitor and manage job applications across the platform.
                   </p>
                   <Button onClick={() => handleExportData('applications')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Export Application Data
                   </Button>
                 </div>
@@ -740,7 +740,7 @@ const AdminDashboard: React.FC = () => {
                     Deep insights and analytics for platform performance and D33 and Talent33 compliance.
                   </p>
                   <Button onClick={() => handleExportData('analytics')}>
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Export Analytics Report
                   </Button>
                 </div>

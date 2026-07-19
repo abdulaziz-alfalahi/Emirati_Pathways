@@ -64,7 +64,7 @@ export const MediaTab: React.FC<MediaTabProps> = ({ searchQuery }) => {
           </div>
           {item.is_featured && (
             <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-              <Star className="h-3 w-3 mr-1" />
+              <Star className="h-3 w-3 me-1" />
               Featured
             </Badge>
           )}

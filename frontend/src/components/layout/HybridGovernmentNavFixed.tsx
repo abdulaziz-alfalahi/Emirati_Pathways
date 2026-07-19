@@ -357,7 +357,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
                       return (
                         <div className="hidden sm:flex items-center relative">
-                          <div className="w-2 h-2 bg-[#006E6D] rounded-full mr-2"></div>
+                          <div className="w-2 h-2 bg-[#006E6D] rounded-full me-2"></div>
                           {hasMultipleRoles ? (
                             <>
                               <button
@@ -369,7 +369,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                               </button>
                               {roleSwitcherOpen && (
                                 <div
-                                  className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]"
+                                  className="absolute top-full end-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]"
                                   onMouseLeave={() => setRoleSwitcherOpen(false)}
                                 >
                                   {uniqueRoles.map(role => (
@@ -382,14 +382,14 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                                         }
                                         setRoleSwitcherOpen(false);
                                       }}
-                                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${normalizeRole(userRole) === role
+                                      className={`w-full text-start px-4 py-2 text-sm transition-colors ${normalizeRole(userRole) === role
                                           ? 'bg-[#F0F7F7] text-[#006E6D] font-medium'
                                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                         }`}
                                     >
                                       {getRoleDisplayName(role)}
                                       {normalizeRole(userRole) === role && (
-                                        <span className="text-xs text-slate-400 ml-2">•</span>
+                                        <span className="text-xs text-slate-400 ms-2">•</span>
                                       )}
                                     </button>
                                   ))}
@@ -447,7 +447,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
                     <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
                     {group.featureFlagKey && flags[group.featureFlagKey] === false && (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ms-2`}>
                         {isRTL ? 'قريباً' : 'Coming Soon'}
                       </span>
                     )}
@@ -455,7 +455,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   </button>
 
                   {activeDropdown === group.id && (
-                    <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} dir={isRTL ? 'rtl' : 'ltr'} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                    <div className={`absolute top-full start-0 mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} dir={isRTL ? 'rtl' : 'ltr'} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
                       <div className="p-4">
                         <div className="mb-3">
                           <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
@@ -477,7 +477,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                                 <div className={`font-medium flex items-center ${isItemDisabled ? 'text-slate-500' : 'text-[#1A1A1A] group-hover:text-[#006E6D]'}`}>
                                   {t(itemKeyByHref[item.href]?.name || '', item.name)}
                                   {isItemDisabled && (
-                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 ms-2`}>
                                       {isRTL ? 'قريباً' : 'Coming Soon'}
                                     </span>
                                   )}
@@ -529,15 +529,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               {isAuthenticated && filteredNavigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
-                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full me-2`}></span>
                     {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
                     {group.featureFlagKey && flags[group.featureFlagKey] === false && (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ms-2`}>
                         {isRTL ? 'قريباً' : 'Coming Soon'}
                       </span>
                     )}
                   </h3>
-                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
+                  <div className={`grid grid-cols-1 gap-2 ms-5`}>
                     {group.items.map((item) => {
                       const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
                       const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
@@ -546,7 +546,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       <Link
                         key={item.name}
                         to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
-                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 transition-colors py-1 ${isItemDisabled ? 'opacity-60 text-slate-400' : 'text-[#6B7280] hover:text-[#006E6D]'}`}
+                        className={`flex text-start ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center gap-2 transition-colors py-1 ${isItemDisabled ? 'opacity-60 text-slate-400' : 'text-[#6B7280] hover:text-[#006E6D]'}`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />
@@ -567,7 +567,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <div className="border-b border-slate-100 pb-4">
                   <Link
                     to="/our-mission"
-                    className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#374151] hover:text-[#006E6D] transition-colors py-1 font-semibold`}
+                    className={`flex text-start ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center gap-2 text-[#374151] hover:text-[#006E6D] transition-colors py-1 font-semibold`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <span className={`w-3 h-3 bg-[#006E6D] rounded-full`}></span>

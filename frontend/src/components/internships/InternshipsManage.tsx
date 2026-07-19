@@ -138,7 +138,7 @@ export const InternshipsManage: React.FC<InternshipsManageProps> = ({ useMockDat
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <PlusCircle className="me-2 h-4 w-4" />
               Post New Internship
             </Button>
           </DialogTrigger>
@@ -207,7 +207,7 @@ export const InternshipsManage: React.FC<InternshipsManageProps> = ({ useMockDat
             <div>
               <CardTitle className="flex items-center text-lg md:text-xl">
                 {internship.title}
-                <div className="ml-2">
+                <div className="ms-2">
                   {new Date(internship.application_deadline) <= new Date() ? (
                     <Badge variant="outline" className="bg-gray-100">Expired</Badge>
                   ) : internship.is_active ? (

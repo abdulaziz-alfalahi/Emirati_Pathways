@@ -78,11 +78,11 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ activeTab }) => {
   return (
     <Tabs defaultValue={activeTab} className="space-y-8">
       <TabsList className="mb-4">
-        <TabsTrigger value="overview"><User className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-        <TabsTrigger value="children"><Users className="h-4 w-4 mr-2" /> Children</TabsTrigger>
-        <TabsTrigger value="camps"><Calendar className="h-4 w-4 mr-2" /> Knowledge Camps</TabsTrigger>
-        <TabsTrigger value="assessments"><BookOpen className="h-4 w-4 mr-2" /> Assessments</TabsTrigger>
-        <TabsTrigger value="resources"><BookOpen className="h-4 w-4 mr-2" /> Resources</TabsTrigger>
+        <TabsTrigger value="overview"><User className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+        <TabsTrigger value="children"><Users className="h-4 w-4 me-2" /> Children</TabsTrigger>
+        <TabsTrigger value="camps"><Calendar className="h-4 w-4 me-2" /> Knowledge Camps</TabsTrigger>
+        <TabsTrigger value="assessments"><BookOpen className="h-4 w-4 me-2" /> Assessments</TabsTrigger>
+        <TabsTrigger value="resources"><BookOpen className="h-4 w-4 me-2" /> Resources</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-8">
@@ -110,11 +110,11 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ activeTab }) => {
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="text-sm">
                   <span className="text-muted-foreground">Overall GPA:</span>
-                  <span className="ml-2 font-medium">3.8/4.0</span>
+                  <span className="ms-2 font-medium">3.8/4.0</span>
                 </div>
                 <div className="text-sm">
                   <span className="text-muted-foreground">Attendance:</span>
-                  <span className="ml-2 font-medium">98%</span>
+                  <span className="ms-2 font-medium">98%</span>
                 </div>
               </div>
               <Button variant="outline" size="sm" className="mt-3">
@@ -130,11 +130,11 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ activeTab }) => {
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="text-sm">
                   <span className="text-muted-foreground">Overall GPA:</span>
-                  <span className="ml-2 font-medium">3.9/4.0</span>
+                  <span className="ms-2 font-medium">3.9/4.0</span>
                 </div>
                 <div className="text-sm">
                   <span className="text-muted-foreground">Attendance:</span>
-                  <span className="ml-2 font-medium">99%</span>
+                  <span className="ms-2 font-medium">99%</span>
                 </div>
               </div>
               <Button variant="outline" size="sm" className="mt-3">

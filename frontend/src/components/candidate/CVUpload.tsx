@@ -442,12 +442,12 @@ Certified Scrum Master`;
               >
                 {isParsing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin me-2" />
                     Parsing CV...
                   </>
                 ) : (
                   <>
-                    <Brain className="h-4 w-4 mr-2" />
+                    <Brain className="h-4 w-4 me-2" />
                     Parse CV with AI
                   </>
                 )}
@@ -470,8 +470,8 @@ Certified Scrum Master`;
                       <p className="text-green-700">Ready for profile integration</p>
                     </div>
                     {parsedData.scores?.overall !== undefined && (
-                      <Badge variant="secondary" className="ml-auto text-lg px-3 py-1">
-                        <Sparkles className="h-4 w-4 mr-1" />
+                      <Badge variant="secondary" className="ms-auto text-lg px-3 py-1">
+                        <Sparkles className="h-4 w-4 me-1" />
                         Score: {parsedData.scores.overall}/100
                       </Badge>
                     )}
@@ -598,7 +598,7 @@ Certified Scrum Master`;
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {parsedData.experience.map((exp, index) => (
-                        <div key={index} className="border-l-2 border-blue-200 pl-3">
+                        <div key={index} className="border-s-2 border-blue-200 ps-3">
                           <h4 className="font-medium text-sm">{exp.title}</h4>
                           <p className="text-sm text-gray-600">{exp.company}</p>
                           <p className="text-xs text-gray-500">{exp.duration}</p>
@@ -622,7 +622,7 @@ Certified Scrum Master`;
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {parsedData.education.map((edu, index) => (
-                        <div key={index} className="border-l-2 border-green-200 pl-3">
+                        <div key={index} className="border-s-2 border-green-200 ps-3">
                           <h4 className="font-medium text-sm">{edu.degree}</h4>
                           <p className="text-sm text-gray-600">{edu.institution}</p>
                           <p className="text-xs text-gray-500">{edu.year}</p>
@@ -676,7 +676,7 @@ Certified Scrum Master`;
                       }}
                       className="flex-1"
                     >
-                      <Target className="h-4 w-4 mr-2" />
+                      <Target className="h-4 w-4 me-2" />
                       Update Profile with This Data
                     </Button>
                   </div>

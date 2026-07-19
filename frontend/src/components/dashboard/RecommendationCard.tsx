@@ -131,7 +131,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({
             size="sm"
           >
             View Details
-            <ExternalLink className="h-3 w-3 ml-1" />
+            <ExternalLink className="h-3 w-3 ms-1" />
           </Button>
           
           {!feedbackGiven && (
@@ -142,7 +142,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 onClick={() => handleFeedback(true)}
                 className="flex-1"
               >
-                <ThumbsUp className="h-3 w-3 mr-1" />
+                <ThumbsUp className="h-3 w-3 me-1" />
                 Helpful
               </Button>
               <Button
@@ -151,7 +151,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 onClick={() => handleFeedback(false)}
                 className="flex-1"
               >
-                <ThumbsDown className="h-3 w-3 mr-1" />
+                <ThumbsDown className="h-3 w-3 me-1" />
                 Not Relevant
               </Button>
             </div>

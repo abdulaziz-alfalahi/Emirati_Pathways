@@ -76,12 +76,12 @@ export const QuestionLibrary: React.FC = () => {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search questions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -108,7 +108,7 @@ export const QuestionLibrary: React.FC = () => {
             </Select>
             
             <Button variant="outline">
-              <Bookmark className="h-4 w-4 mr-2" />
+              <Bookmark className="h-4 w-4 me-2" />
               Saved ({questions.filter(q => q.saved).length})
             </Button>
           </div>
@@ -175,7 +175,7 @@ export const QuestionLibrary: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-2 ml-4">
+                <div className="flex gap-2 ms-4">
                   <Button variant="outline" size="sm">
                     <Bookmark className={`h-4 w-4 ${question.saved ? 'fill-ehrdc-teal text-ehrdc-teal' : ''}`} />
                   </Button>

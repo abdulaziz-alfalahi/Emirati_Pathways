@@ -63,7 +63,7 @@ const UniversityProgramsFilter: React.FC<UniversityProgramsFilterProps> = ({
           </CardTitle>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 me-1" />
               Clear
             </Button>
           )}
@@ -74,13 +74,13 @@ const UniversityProgramsFilter: React.FC<UniversityProgramsFilterProps> = ({
         <div className="space-y-2">
           <Label htmlFor="search">Search Programs</Label>
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               id="search"
               placeholder="Search by program or university..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
         </div>

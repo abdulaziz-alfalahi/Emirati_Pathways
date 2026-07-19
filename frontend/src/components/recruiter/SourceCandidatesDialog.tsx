@@ -152,13 +152,13 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                   Search Keywords
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="searchQuery"
                     placeholder="Job title, skills, or keywords"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
               </div>
@@ -167,13 +167,13 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute start-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="location"
                     placeholder="e.g., Dubai, Abu Dhabi"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="pl-10"
+                    className="ps-10"
                   />
                 </div>
               </div>
@@ -213,12 +213,12 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
               <Button onClick={handleSearch} disabled={loading}>
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2"></div>
                     Searching...
                   </>
                 ) : (
                   <>
-                    <Search className="h-4 w-4 mr-2" />
+                    <Search className="h-4 w-4 me-2" />
                     Search Candidates
                   </>
                 )}
@@ -323,7 +323,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                           onClick={() => handleViewProfile(candidate.id)}
                           className="whitespace-nowrap"
                         >
-                          <ExternalLink className="h-4 w-4 mr-1" />
+                          <ExternalLink className="h-4 w-4 me-1" />
                           View Profile
                         </Button>
                         <Button
@@ -333,9 +333,9 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                           disabled={contactingId === candidate.id}
                         >
                           {contactingId === candidate.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            <Loader2 className="h-4 w-4 me-1 animate-spin" />
                           ) : (
-                            <MessageSquare className="h-4 w-4 mr-1" />
+                            <MessageSquare className="h-4 w-4 me-1" />
                           )}
                           Message
                         </Button>

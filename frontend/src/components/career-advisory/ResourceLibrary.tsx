@@ -160,12 +160,12 @@ const ResourceLibrary: React.FC = () => {
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search resources, topics, or tags..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -241,7 +241,7 @@ const ResourceLibrary: React.FC = () => {
                       <span>{resource.downloads} downloads</span>
                     </div>
                     <Button size="sm" className="bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-                      <ExternalLink className="h-3 w-3 mr-1" />
+                      <ExternalLink className="h-3 w-3 me-1" />
                       View
                     </Button>
                   </div>
@@ -292,7 +292,7 @@ const ResourceLibrary: React.FC = () => {
                     </div>
                   </div>
                   <Button variant="outline" size="sm">
-                    <ExternalLink className="h-3 w-3 mr-1" />
+                    <ExternalLink className="h-3 w-3 me-1" />
                     View
                   </Button>
                 </div>

@@ -331,7 +331,7 @@ const EnhancedRecruiterDashboard: React.FC = () => {
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config?.color || 'bg-gray-100 text-gray-800'}`}>
-        <Icon className="w-3 h-3 mr-1" />
+        <Icon className="w-3 h-3 me-1" />
         {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
       </span>
     );
@@ -423,15 +423,15 @@ const EnhancedRecruiterDashboard: React.FC = () => {
         <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <FileText className="h-5 w-5 mr-2" />
+            <FileText className="h-5 w-5 me-2" />
             Create New JD
           </button>
           <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <MessageSquare className="h-5 w-5 mr-2" />
+            <MessageSquare className="h-5 w-5 me-2" />
             Send Messages
           </button>
           <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-            <BarChart3 className="h-5 w-5 mr-2" />
+            <BarChart3 className="h-5 w-5 me-2" />
             View Analytics
           </button>
         </div>
@@ -481,13 +481,13 @@ const EnhancedRecruiterDashboard: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
           <div className="flex-1 max-w-lg">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Search candidates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full ps-10 pe-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -508,7 +508,7 @@ const EnhancedRecruiterDashboard: React.FC = () => {
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 me-2" />
               Filters
             </button>
             
@@ -648,7 +648,7 @@ const EnhancedRecruiterDashboard: React.FC = () => {
                         {renderStatusBadge(candidate.status)}
                         {candidate.match_score && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            <Target className="w-3 h-3 mr-1" />
+                            <Target className="w-3 h-3 me-1" />
                             {candidate.match_score}% match
                           </span>
                         )}
@@ -656,11 +656,11 @@ const EnhancedRecruiterDashboard: React.FC = () => {
                       
                       <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
                         <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
+                          <MapPin className="w-4 h-4 me-1" />
                           {candidate.location}
                         </span>
                         <span className="flex items-center">
-                          <Briefcase className="w-4 h-4 mr-1" />
+                          <Briefcase className="w-4 h-4 me-1" />
                           {candidate.experience_years} years exp.
                         </span>
                         {candidate.current_position && (
@@ -726,7 +726,7 @@ const EnhancedRecruiterDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">Job Descriptions</h3>
             <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               Create New JD
             </button>
           </div>
@@ -760,19 +760,19 @@ const EnhancedRecruiterDashboard: React.FC = () => {
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="font-medium text-gray-900">{job.applications_count}</span>
-                      <span className="text-gray-500 ml-1">Applications</span>
+                      <span className="text-gray-500 ms-1">Applications</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-900">{job.views_count}</span>
-                      <span className="text-gray-500 ml-1">Views</span>
+                      <span className="text-gray-500 ms-1">Views</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-900">{job.shortlisted_count}</span>
-                      <span className="text-gray-500 ml-1">Shortlisted</span>
+                      <span className="text-gray-500 ms-1">Shortlisted</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-900">{job.hired_count}</span>
-                      <span className="text-gray-500 ml-1">Hired</span>
+                      <span className="text-gray-500 ms-1">Hired</span>
                     </div>
                   </div>
                   
@@ -780,15 +780,15 @@ const EnhancedRecruiterDashboard: React.FC = () => {
                     <div className="mt-4 flex items-center space-x-4 text-sm">
                       <div className="flex items-center">
                         <span className="text-gray-500">Quality:</span>
-                        <span className="ml-1 font-medium text-gray-900">{job.enhanced_metadata.quality_score}%</span>
+                        <span className="ms-1 font-medium text-gray-900">{job.enhanced_metadata.quality_score}%</span>
                       </div>
                       <div className="flex items-center">
                         <span className="text-gray-500">Compliance:</span>
-                        <span className="ml-1 font-medium text-gray-900">{job.enhanced_metadata.compliance_score}%</span>
+                        <span className="ms-1 font-medium text-gray-900">{job.enhanced_metadata.compliance_score}%</span>
                       </div>
                       <div className="flex items-center">
                         <span className="text-gray-500">UAE Alignment:</span>
-                        <span className="ml-1 font-medium text-gray-900">{job.enhanced_metadata.uae_alignment}%</span>
+                        <span className="ms-1 font-medium text-gray-900">{job.enhanced_metadata.uae_alignment}%</span>
                       </div>
                     </div>
                   )}
@@ -930,7 +930,7 @@ const EnhancedRecruiterDashboard: React.FC = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <Icon className="h-5 w-5 mr-2" />
+                  <Icon className="h-5 w-5 me-2" />
                   {tab.label}
                 </button>
               );

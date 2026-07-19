@@ -132,7 +132,7 @@ const CredentialExportManager: React.FC<CredentialExportManagerProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Download className="mr-2 h-5 w-5" />
+            <Download className="me-2 h-5 w-5" />
             Export Credential
           </CardTitle>
           <CardDescription>
@@ -176,7 +176,7 @@ const CredentialExportManager: React.FC<CredentialExportManagerProps> = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <FileText className="mr-2 h-5 w-5" />
+              <FileText className="me-2 h-5 w-5" />
               Previous Exports
             </CardTitle>
             <CardDescription>
@@ -201,7 +201,7 @@ const CredentialExportManager: React.FC<CredentialExportManagerProps> = ({
                       </div>
                       <div className="text-sm text-muted-foreground space-x-4">
                         <span className="flex items-center">
-                          <Calendar className="mr-1 h-3 w-3" />
+                          <Calendar className="me-1 h-3 w-3" />
                           {new Date(exportRecord.created_at).toLocaleDateString()}
                         </span>
                         <span>Downloads: {exportRecord.downloaded_count}</span>
@@ -218,7 +218,7 @@ const CredentialExportManager: React.FC<CredentialExportManagerProps> = ({
                           variant="outline"
                           onClick={() => handleDownloadExisting(exportRecord.access_token, format?.format_name || '')}
                         >
-                          <Download className="mr-1 h-3 w-3" />
+                          <Download className="me-1 h-3 w-3" />
                           Download
                         </Button>
                       )}

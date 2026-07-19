@@ -139,7 +139,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ programs, assessments }) => {
                   <div>
                     <h4 className="font-medium">{program.title}</h4>
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="h-3.5 w-3.5 mr-1" /> 
+                      <Users className="h-3.5 w-3.5 me-1" /> 
                       <span>{program.trainees} trainees</span>
                       <span className="mx-2">•</span>
                       <span>Starts: {program.startDate}</span>
@@ -172,7 +172,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ programs, assessments }) => {
                   <div>
                     <h4 className="font-medium">{assessment.title}</h4>
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Users className="h-3.5 w-3.5 mr-1" /> 
+                      <Users className="h-3.5 w-3.5 me-1" /> 
                       <span>{assessment.candidates} candidates</span>
                       <span className="mx-2">•</span>
                       <span>{assessment.date}</span>

@@ -205,7 +205,7 @@ export default function ApprovalsPage() {
       {/* Approval Cards */}
       <div className="space-y-3">
         {items.map((r) => (
-          <Card key={r.id} className={`hover:shadow-md transition-shadow ${r.status === 'pending' ? 'border-l-4 border-l-yellow-400' : ''}`}>
+          <Card key={r.id} className={`hover:shadow-md transition-shadow ${r.status === 'pending' ? 'border-s-4 border-s-yellow-400' : ''}`}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-4">
                 {/* Left: Details */}
@@ -255,7 +255,7 @@ export default function ApprovalsPage() {
                         className="bg-teal-600 hover:bg-teal-700 text-white"
                         onClick={() => handleActionClick(r, 'approve')}
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <CheckCircle className="h-4 w-4 me-1" />
                         Approve
                       </Button>
                       <Button
@@ -264,7 +264,7 @@ export default function ApprovalsPage() {
                         className="border-red-200 text-red-700 hover:bg-red-50"
                         onClick={() => handleActionClick(r, 'reject')}
                       >
-                        <XCircle className="h-4 w-4 mr-1" />
+                        <XCircle className="h-4 w-4 me-1" />
                         Reject
                       </Button>
                     </>
@@ -344,7 +344,7 @@ export default function ApprovalsPage() {
               disabled={processing || (confirmAction === 'reject' && !confirmComment.trim())}
               className={confirmAction === 'approve' ? 'bg-teal-600 hover:bg-teal-700' : 'bg-red-600 hover:bg-red-700'}
             >
-              {processing && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />}
+              {processing && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white me-2" />}
               {confirmAction === 'approve' ? 'Confirm Approve' : 'Confirm Reject'}
             </Button>
           </DialogFooter>

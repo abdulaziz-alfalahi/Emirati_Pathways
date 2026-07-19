@@ -416,19 +416,19 @@ export const CVScoringWidget: React.FC<CVScoringWidgetProps> = ({
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-4 w-4 me-2" />
               Overview
             </TabsTrigger>
             <TabsTrigger value="strengths">
-              <Award className="h-4 w-4 mr-2" />
+              <Award className="h-4 w-4 me-2" />
               Strengths
             </TabsTrigger>
             <TabsTrigger value="suggestions">
-              <Lightbulb className="h-4 w-4 mr-2" />
+              <Lightbulb className="h-4 w-4 me-2" />
               Suggestions
             </TabsTrigger>
             <TabsTrigger value="market">
-              <TrendingUp className="h-4 w-4 mr-2" />
+              <TrendingUp className="h-4 w-4 me-2" />
               Market
             </TabsTrigger>
           </TabsList>
@@ -456,7 +456,7 @@ export const CVScoringWidget: React.FC<CVScoringWidgetProps> = ({
                         </div>
                         <Progress value={pct} className="h-2" />
                         {section.suggestions.length > 0 && (
-                          <div className="text-xs text-gray-600 ml-2">💡 {section.suggestions[0]}</div>
+                          <div className="text-xs text-gray-600 ms-2">💡 {section.suggestions[0]}</div>
                         )}
                       </div>
                     );
@@ -507,7 +507,7 @@ export const CVScoringWidget: React.FC<CVScoringWidgetProps> = ({
                   <div className="flex flex-wrap gap-2">
                     {marketInsights.competitiveAdvantages.map((advantage: string, index: number) => (
                       <Badge key={index} className="bg-yellow-100 text-yellow-800">
-                        <Star className="h-3 w-3 mr-1" />
+                        <Star className="h-3 w-3 me-1" />
                         {advantage}
                       </Badge>
                     ))}
@@ -614,7 +614,7 @@ export const CVScoringWidget: React.FC<CVScoringWidgetProps> = ({
                     <div className="flex flex-wrap gap-2">
                       {marketInsights.trendingSkills.map((skill: string, index: number) => (
                         <Badge key={index} className="bg-purple-100 text-purple-800">
-                          <TrendingUp className="h-3 w-3 mr-1" />
+                          <TrendingUp className="h-3 w-3 me-1" />
                           {skill}
                         </Badge>
                       ))}
@@ -672,19 +672,19 @@ export const CVScoringWidget: React.FC<CVScoringWidgetProps> = ({
       {/* Quick Action Buttons */}
       <div className="flex justify-center gap-3">
         <Button variant="outline" onClick={() => setActiveTab('suggestions')} disabled={loading.isLoading}>
-          <Lightbulb className="h-4 w-4 mr-2" />
+          <Lightbulb className="h-4 w-4 me-2" />
           Get Suggestions
         </Button>
 
         <Button onClick={handleRefreshAnalytics} disabled={loading.isLoading}>
           {loading.isLoading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 me-2 animate-spin" />
               Refreshing...
             </>
           ) : (
             <>
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 me-2" />
               Refresh Analysis
             </>
           )}

@@ -573,7 +573,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <Button
               size="sm"
               variant="outline"
-              className="ml-4 border-amber-300 hover:bg-amber-100"
+              className="ms-4 border-amber-300 hover:bg-amber-100"
               onClick={() => navigate('/cv-builder')}
             >
               <FileText className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
@@ -603,7 +603,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                 </Badge>
               )}
               {userLocation.lat && (
-                <Badge variant="outline" className="ml-2 flex items-center gap-1">
+                <Badge variant="outline" className="ms-2 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
                   {t('Location Set', 'تم تحديد الموقع')}
                 </Badge>
@@ -709,7 +709,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
               </div>
             ) : (
               filteredJobs.map((job) => (
-                <Card key={job.id} className={`border-l-4 ${job.matchScore >= 70 ? 'border-l-green-500' : job.matchScore >= 50 ? 'border-l-blue-500' : 'border-l-gray-300'}`}>
+                <Card key={job.id} className={`border-s-4 ${job.matchScore >= 70 ? 'border-s-green-500' : job.matchScore >= 50 ? 'border-s-blue-500' : 'border-s-gray-300'}`}>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">

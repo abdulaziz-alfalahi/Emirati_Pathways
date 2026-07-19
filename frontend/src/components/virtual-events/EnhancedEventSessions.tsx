@@ -130,11 +130,11 @@ const EnhancedEventSessions: React.FC<EnhancedEventSessionsProps> = ({ eventId }
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
                       <div className="flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="h-3 w-3 me-1" />
                         {formatDateTime(session.start_time)}
                       </div>
                       <div className="flex items-center">
-                        <Users className="h-3 w-3 mr-1" />
+                        <Users className="h-3 w-3 me-1" />
                         {session.current_attendees} attendees
                       </div>
                     </div>
@@ -193,14 +193,14 @@ const EnhancedEventSessions: React.FC<EnhancedEventSessionsProps> = ({ eventId }
                       
                       {activeSession.meeting_url && (
                         <Button variant="outline">
-                          <Video className="h-4 w-4 mr-2" />
+                          <Video className="h-4 w-4 me-2" />
                           Join Meeting
                         </Button>
                       )}
                       
                       {activeSession.recording_url && (
                         <Button variant="outline">
-                          <Play className="h-4 w-4 mr-2" />
+                          <Play className="h-4 w-4 me-2" />
                           Watch Recording
                         </Button>
                       )}
@@ -212,7 +212,7 @@ const EnhancedEventSessions: React.FC<EnhancedEventSessionsProps> = ({ eventId }
                 <Tabs defaultValue="chat" className="space-y-4">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="chat">
-                      <MessageSquare className="h-4 w-4 mr-2" />
+                      <MessageSquare className="h-4 w-4 me-2" />
                       Chat
                     </TabsTrigger>
                     <TabsTrigger value="qa">Q&A</TabsTrigger>

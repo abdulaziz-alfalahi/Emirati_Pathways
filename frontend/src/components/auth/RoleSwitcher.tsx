@@ -104,7 +104,7 @@ const RoleSwitcher: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+        <div className="absolute end-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
           <div className="py-1">
             <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
               Switch Role
@@ -113,14 +113,14 @@ const RoleSwitcher: React.FC = () => {
               <button
                 key={role}
                 onClick={() => handleRoleSwitch(role)}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                className={`w-full text-start px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
                   role === activeRole ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                 }`}
               >
                 <span className="text-lg">{getRoleIcon(role)}</span>
                 <span>{getRoleDisplayName(role)}</span>
                 {role === activeRole && (
-                  <span className="ml-auto text-blue-500">
+                  <span className="ms-auto text-blue-500">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"

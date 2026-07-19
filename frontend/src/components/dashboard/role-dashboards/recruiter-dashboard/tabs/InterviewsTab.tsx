@@ -72,7 +72,7 @@ const UpcomingInterviewsCard: React.FC = () => (
       <div className="flex justify-center pt-2">
         <Link to="/career-advisory/interviews/schedule">
           <Button>
-            <Calendar className="mr-2 h-4 w-4" />
+            <Calendar className="me-2 h-4 w-4" />
             Schedule New Interview
           </Button>
         </Link>

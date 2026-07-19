@@ -127,7 +127,7 @@ export const EventsCalendar: React.FC = () => {
                     All Events
                   </span>
                   <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
+                    <Filter className="h-4 w-4 me-2" />
                     Filter
                   </Button>
                 </CardTitle>

@@ -100,7 +100,7 @@ const JDScoringWidget: React.FC<JDScoringWidgetProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2" />
+            <TrendingUp className="h-5 w-5 me-2" />
             Completion Score
           </span>
           <Badge variant={getScoreVariant(score)} className="text-lg px-3 py-1">

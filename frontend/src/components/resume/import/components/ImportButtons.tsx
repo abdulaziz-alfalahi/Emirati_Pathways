@@ -22,7 +22,7 @@ export const ImportButtons: React.FC<ImportButtonsProps> = ({
         className="w-full" 
         onClick={onOpenFileImport}
       >
-        <FileText size={16} className="mr-2" />
+        <FileText size={16} className="me-2" />
         Import from File
       </Button>
       
@@ -32,7 +32,7 @@ export const ImportButtons: React.FC<ImportButtonsProps> = ({
         className="w-full" 
         onClick={onOpenImageImport}
       >
-        <Image size={16} className="mr-2" />
+        <Image size={16} className="me-2" />
         Import from Image
       </Button>
       
@@ -42,7 +42,7 @@ export const ImportButtons: React.FC<ImportButtonsProps> = ({
         className="w-full" 
         onClick={onOpenLinkedInImport}
       >
-        <Linkedin size={16} className="mr-2" />
+        <Linkedin size={16} className="me-2" />
         Import from LinkedIn
       </Button>
       
@@ -52,7 +52,7 @@ export const ImportButtons: React.FC<ImportButtonsProps> = ({
         className="w-full" 
         disabled
       >
-        <Upload size={16} className="mr-2" />
+        <Upload size={16} className="me-2" />
         More Options
       </Button>
     </div>

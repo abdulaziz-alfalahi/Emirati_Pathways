@@ -27,7 +27,7 @@ const CredentialsGrid: React.FC<CredentialsGridProps> = ({
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {credentials.map((credential) => (
         <div key={credential.id} className="relative">
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute top-2 start-2 z-10">
             <Checkbox
               checked={selectedCredentials.includes(credential.id)}
               onCheckedChange={(checked) => 
@@ -45,7 +45,7 @@ const CredentialsGrid: React.FC<CredentialsGridProps> = ({
               size="sm" 
               onClick={() => onPreviewCredential(credential)}
             >
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="h-4 w-4 me-2" />
               Preview
             </Button>
             <Button 
@@ -53,7 +53,7 @@ const CredentialsGrid: React.FC<CredentialsGridProps> = ({
               size="sm" 
               onClick={() => onDownloadCredential(credential)}
             >
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               Download
             </Button>
             <Button 
@@ -61,7 +61,7 @@ const CredentialsGrid: React.FC<CredentialsGridProps> = ({
               size="sm" 
               onClick={() => onShareCredential(credential)}
             >
-              <Share className="h-4 w-4 mr-2" />
+              <Share className="h-4 w-4 me-2" />
               Share
             </Button>
           </div>

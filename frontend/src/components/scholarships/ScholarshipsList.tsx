@@ -199,7 +199,7 @@ const ScholarshipsList: React.FC<ScholarshipsListProps> = ({
             {scholarship.requirements && scholarship.requirements.length > 0 && (
               <div className="mb-6">
                 <h4 className="font-medium mb-2">Requirements:</h4>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                <ul className="list-disc ps-5 space-y-1 text-sm text-muted-foreground">
                   {scholarship.requirements.slice(0, 3).map((requirement, index) => (
                     <li key={index}>{requirement}</li>
                   ))}

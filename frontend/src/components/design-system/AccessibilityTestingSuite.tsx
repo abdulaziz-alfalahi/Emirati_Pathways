@@ -273,7 +273,7 @@ export const AccessibilityTestingSuite: React.FC = () => {
               )}
             </Button>
             <Button variant="outline" disabled={isRunning}>
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               Export Report
             </Button>
           </div>

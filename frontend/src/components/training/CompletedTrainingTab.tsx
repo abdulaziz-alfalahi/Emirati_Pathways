@@ -86,7 +86,7 @@ export const CompletedTrainingTab: React.FC = () => {
               
               <div className="text-sm">
                 <span className="text-muted-foreground">Duration:</span>
-                <span className="ml-2 font-medium">{program.duration}</span>
+                <span className="ms-2 font-medium">{program.duration}</span>
               </div>
               
               <div>
@@ -106,7 +106,7 @@ export const CompletedTrainingTab: React.FC = () => {
                   variant="outline" 
                   className="flex-1"
                 >
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-4 w-4 me-2" />
                   View Details
                 </Button>
                 {program.certificateAvailable && (
@@ -114,7 +114,7 @@ export const CompletedTrainingTab: React.FC = () => {
                     size="sm"
                     className="flex-1 bg-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/90] text-white"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 me-2" />
                     Certificate
                   </Button>
                 )}

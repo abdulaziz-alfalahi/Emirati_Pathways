@@ -328,7 +328,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
         return (
             <div className="h-full w-full min-h-[500px] flex flex-col relative">
                 {/* Connection Status & Manual Fallback Button */}
-                <div className="absolute top-4 right-4 z-10">
+                <div className="absolute top-4 end-4 z-10">
                     <button 
                         onClick={() => {
                             console.log("User manually initiated Direct Connection fallback.");
@@ -369,7 +369,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     return (
         <div className="h-full w-full min-h-[550px] flex flex-col bg-slate-950 text-white rounded-xl overflow-hidden shadow-2xl relative border border-slate-850">
             {/* Header Status Bar */}
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
+            <div className="absolute top-4 start-4 end-4 flex items-center justify-between z-10 pointer-events-none">
                 <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-800 text-xs font-medium">
                     <span className={`h-2 w-2 rounded-full ${remoteStream ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></span>
                     <span className="text-slate-300">
@@ -425,7 +425,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     )}
 
                     {/* Participant Tag */}
-                    <div className="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold flex items-center gap-2">
+                    <div className="absolute bottom-4 start-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold flex items-center gap-2">
                         <User className="h-3 w-3 text-teal-400" />
                         <span>{remoteStream ? remoteName : `${remoteName} (Connecting...)`}</span>
                     </div>
@@ -454,7 +454,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     )}
 
                     {/* Participant Tag */}
-                    <div className="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold flex items-center gap-2">
+                    <div className="absolute bottom-4 start-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold flex items-center gap-2">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>

@@ -190,10 +190,10 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center">
-                  <Folder className="h-5 w-5 mr-2" />
+                  <Folder className="h-5 w-5 me-2" />
                   {project.name}
                   {project.isOngoing && (
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge variant="secondary" className="ms-2">
                       {t('cv.builder.projects.ongoing', 'Ongoing')}
                     </Badge>
                   )}
@@ -219,7 +219,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 mr-2" />
+                  <Calendar className="h-4 w-4 me-2" />
                   {project.startDate} - {project.isOngoing ? 'Present' : project.endDate}
                 </div>
                 
@@ -233,7 +233,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                     <div className="flex flex-wrap gap-1">
                       {project.technologies.map((tech, i) => (
                         <Badge key={i} variant="outline" className="text-xs">
-                          <Code className="h-3 w-3 mr-1" />
+                          <Code className="h-3 w-3 me-1" />
                           {tech}
                         </Badge>
                       ))}
@@ -249,7 +249,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                     <ul className="text-sm space-y-1">
                       {project.achievements.map((achievement, i) => (
                         <li key={i} className="flex items-start">
-                          <span className="text-primary mr-2">•</span>
+                          <span className="text-primary me-2">•</span>
                           {achievement}
                         </li>
                       ))}
@@ -265,7 +265,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                       rel="noopener noreferrer"
                       className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
                     >
-                      <ExternalLink className="h-4 w-4 mr-1" />
+                      <ExternalLink className="h-4 w-4 me-1" />
                       {t('cv.builder.projects.viewProject', 'View Project')}
                     </a>
                   )}
@@ -276,7 +276,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                       rel="noopener noreferrer"
                       className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800"
                     >
-                      <Github className="h-4 w-4 mr-1" />
+                      <Github className="h-4 w-4 me-1" />
                       {t('cv.builder.projects.viewCode', 'View Code')}
                     </a>
                   )}
@@ -397,10 +397,10 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                 <div className="flex flex-wrap gap-2">
                   {currentProject.technologies.map((tech, index) => (
                     <Badge key={index} variant="secondary" className="cursor-pointer">
-                      <Code className="h-3 w-3 mr-1" />
+                      <Code className="h-3 w-3 me-1" />
                       {tech}
                       <X 
-                        className="h-3 w-3 ml-1" 
+                        className="h-3 w-3 ms-1" 
                         onClick={() => handleRemoveTechnology(index)}
                       />
                     </Badge>
@@ -434,7 +434,7 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
                         onClick={() => handleAddPresetTechnology(tech)}
                         className="text-xs h-6"
                       >
-                        <Plus className="h-2 w-2 mr-1" />
+                        <Plus className="h-2 w-2 me-1" />
                         {tech}
                       </Button>
                     ))}
@@ -475,11 +475,11 @@ export const ProjectsStep: React.FC<ProjectsStepProps> = ({
 
             <div className="flex space-x-2 pt-4">
               <Button onClick={handleSaveProject}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t('common.save', 'Save')}
               </Button>
               <Button variant="outline" onClick={handleCancelEdit}>
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 me-2" />
                 {t('common.cancel', 'Cancel')}
               </Button>
             </div>

@@ -14,9 +14,9 @@ interface GovRepDashboardProps {
 const GovRepDashboard: React.FC<GovRepDashboardProps> = ({ activeTab }) => (
   <Tabs defaultValue={activeTab} className="space-y-8">
     <TabsList className="mb-4">
-      <TabsTrigger value="overview"><LineChart className="h-4 w-4 mr-2" /> Overview</TabsTrigger>
-      <TabsTrigger value="emiratization"><Users className="h-4 w-4 mr-2" /> Emiratization</TabsTrigger>
-      <TabsTrigger value="initiatives"><Landmark className="h-4 w-4 mr-2" /> Initiatives</TabsTrigger>
+      <TabsTrigger value="overview"><LineChart className="h-4 w-4 me-2" /> Overview</TabsTrigger>
+      <TabsTrigger value="emiratization"><Users className="h-4 w-4 me-2" /> Emiratization</TabsTrigger>
+      <TabsTrigger value="initiatives"><Landmark className="h-4 w-4 me-2" /> Initiatives</TabsTrigger>
     </TabsList>
     
     <TabsContent value="overview" className="space-y-8">

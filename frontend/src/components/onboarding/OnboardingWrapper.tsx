@@ -98,7 +98,7 @@ const OnboardingWrapper: React.FC<OnboardingWrapperProps> = ({ hasCompletedOnboa
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative animate-fade-in">
         <button 
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute top-4 end-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
         >
           <X size={20} />
         </button>
@@ -182,7 +182,7 @@ const OnboardingWrapper: React.FC<OnboardingWrapperProps> = ({ hasCompletedOnboa
                       <label key={interest} className="flex items-center">
                         <input
                           type="checkbox"
-                          className="mr-2"
+                          className="me-2"
                           onChange={(e) => {
                             if (e.target.checked) {
                               setFormData(prev => ({
@@ -227,7 +227,7 @@ const OnboardingWrapper: React.FC<OnboardingWrapperProps> = ({ hasCompletedOnboa
               </button>
             )}
             
-            <div className={currentStep === 0 ? "mx-auto" : "ml-auto"}>
+            <div className={currentStep === 0 ? "mx-auto" : "ms-auto"}>
               {currentStep < 3 ? (
                 <button
                   onClick={handleNext}

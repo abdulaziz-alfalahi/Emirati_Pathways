@@ -105,7 +105,7 @@ export default function RecruiterCandidatesPage() {
   const SortHeader: React.FC<{ label: string; field: string }> = ({ label, field }) => (
     <th className="p-3 sticky top-0 bg-card z-10">
       <button
-        className="text-left w-full flex items-center gap-1"
+        className="text-start w-full flex items-center gap-1"
         onClick={() => {
           if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -126,7 +126,7 @@ export default function RecruiterCandidatesPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <Button variant="ghost" className="gap-2 pl-0 hover:pl-2 transition-all" onClick={() => {
+        <Button variant="ghost" className="gap-2 ps-0 hover:ps-2 transition-all" onClick={() => {
           try {
             const userStr = localStorage.getItem('user');
             if (userStr) {
@@ -204,13 +204,13 @@ export default function RecruiterCandidatesPage() {
                   <option value="asc">Asc</option>
                 </select>
                 <Button onClick={() => { setPage(1); runSearch(); }} disabled={loading}>{loading ? 'Searching…' : 'Search'}</Button>
-                <div className="ml-auto text-sm text-slate-500">Total: {total}</div>
+                <div className="ms-auto text-sm text-slate-500">Total: {total}</div>
               </div>
               <div className="text-sm text-slate-500 mb-2">Total: {total}</div>
               <div className="overflow-x-auto rounded border">
                 <table className="min-w-full bg-card">
                   <thead>
-                    <tr className="text-left border-b">
+                    <tr className="text-start border-b">
                       <th className="p-3 sticky top-0 bg-card z-10">ID</th>
                       <SortHeader label="Name" field="name" />
                       <th className="p-3 sticky top-0 bg-card z-10">Emirate</th>
@@ -235,7 +235,7 @@ export default function RecruiterCandidatesPage() {
                         <td className="p-3">{c.experience_years}</td>
                         <td className="p-3">
                           {(c.skills || []).map((s: string) => (
-                            <Badge key={s} variant="outline" className="mr-1 mb-1">{s}</Badge>
+                            <Badge key={s} variant="outline" className="me-1 mb-1">{s}</Badge>
                           ))}
                         </td>
                         <td className="p-3">
@@ -287,12 +287,12 @@ export default function RecruiterCandidatesPage() {
               <div className="overflow-x-auto rounded border">
                 <table className="min-w-full bg-card">
                   <thead>
-                    <tr className="text-left border-b">
+                    <tr className="text-start border-b">
                       <th className="p-3 sticky top-0 bg-card z-10">Candidate ID</th>
                       <th className="p-3 sticky top-0 bg-card z-10">Name</th>
                       <th className="p-3 sticky top-0 bg-card z-10">
                         <button
-                          className="text-left w-full flex items-center gap-1"
+                          className="text-start w-full flex items-center gap-1"
                           onClick={() => {
                             if (mSortBy === 'percentage') setMSortOrder(mSortOrder === 'asc' ? 'desc' : 'asc');
                             else { setMSortBy('percentage'); setMSortOrder('desc'); }

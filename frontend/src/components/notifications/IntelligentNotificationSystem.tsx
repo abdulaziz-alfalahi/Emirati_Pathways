@@ -234,7 +234,7 @@ export const IntelligentNotificationSystem: React.FC = () => {
                   </div>
                 ) : (
                   filteredNotifications.map((notification) => (
-                    <Card key={notification.id} className="border-l-4" style={{ borderLeftColor: getPhaseColor(notification.phase) }}>
+                    <Card key={notification.id} className="border-s-4" style={{ borderLeftColor: getPhaseColor(notification.phase) }}>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
@@ -302,7 +302,7 @@ export const IntelligentNotificationSystem: React.FC = () => {
                           {notification.actionUrl && (
                             <Button className="shrink-0">
                               {notification.actionText || 'View Details'}
-                              <ArrowRight className="h-4 w-4 ml-2" />
+                              <ArrowRight className="h-4 w-4 ms-2" />
                             </Button>
                           )}
                         </div>

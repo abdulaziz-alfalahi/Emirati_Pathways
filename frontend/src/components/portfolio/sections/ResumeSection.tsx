@@ -16,7 +16,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({ resumeData }) => {
       <Card className="bg-muted/40">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2" />
+            <FileText className="h-5 w-5 me-2" />
             Resume
           </CardTitle>
           <CardDescription>No resume data available</CardDescription>
@@ -53,7 +53,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({ resumeData }) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <FileText className="h-5 w-5 mr-2" />
+          <FileText className="h-5 w-5 me-2" />
           Resume
         </CardTitle>
         <CardDescription>
@@ -144,7 +144,7 @@ const ResumeSection: React.FC<ResumeSectionProps> = ({ resumeData }) => {
         <div className="flex justify-end pt-4">
           <Link to="/resume-builder" className="text-sm text-primary hover:underline flex items-center">
             View full resume & edit
-            <ArrowUpRight className="h-3 w-3 ml-1" />
+            <ArrowUpRight className="h-3 w-3 ms-1" />
           </Link>
         </div>
       </CardContent>

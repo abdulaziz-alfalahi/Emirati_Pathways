@@ -106,7 +106,7 @@ export const CreateTemplateDialog: React.FC<CreateTemplateDialogProps> = ({
       <DialogTrigger asChild>
         {trigger || (
           <Button>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             Create Template
           </Button>
         )}

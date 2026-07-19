@@ -186,16 +186,16 @@ const ModernAnalytics: React.FC = () => {
       headerActions={
         <div className="flex items-center space-x-3">
           <button className="btn-secondary">
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 me-2" />
             {t('pages.analytics.refresh')}
           </button>
           <button className="btn-secondary">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t('pages.analytics.export')}
           </button>
           <button className="btn-primary">
             {t('pages.analytics.view_report')}
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4" />
           </button>
         </div>
       }

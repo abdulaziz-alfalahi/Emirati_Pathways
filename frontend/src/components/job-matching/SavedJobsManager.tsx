@@ -97,7 +97,7 @@ export const SavedJobsManager: React.FC = () => {
 
                   <div className="flex gap-2">
                     <Button className="flex-1">
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="h-4 w-4 me-2" />
                       Apply Now
                     </Button>
                     <Button variant="outline" className="flex-1">

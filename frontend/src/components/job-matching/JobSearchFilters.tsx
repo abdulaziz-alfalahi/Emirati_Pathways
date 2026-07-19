@@ -151,12 +151,12 @@ const JobSearchFilters: React.FC = () => {
             <div>
               <label className="text-sm font-medium mb-2 block">Keywords</label>
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Job title, skills, company..."
                   value={filters.keywords}
                   onChange={(e) => handleFilterChange('keywords', e.target.value)}
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
             </div>
@@ -165,12 +165,12 @@ const JobSearchFilters: React.FC = () => {
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <MapPin className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="City, emirate, or country"
                   value={filters.location}
                   onChange={(e) => handleFilterChange('location', e.target.value)}
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
             </div>
@@ -331,7 +331,7 @@ const JobSearchFilters: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {searchResults.map((job) => (
-                <Card key={job.id} className="border-l-4 border-l-ehrdc-teal">
+                <Card key={job.id} className="border-s-4 border-s-ehrdc-teal">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -341,7 +341,7 @@ const JobSearchFilters: React.FC = () => {
                           {job.company}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <div className="text-sm text-muted-foreground">{job.posted}</div>
                         <Badge variant="outline">{job.type}</Badge>
                       </div>

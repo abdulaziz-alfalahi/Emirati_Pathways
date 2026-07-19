@@ -137,7 +137,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ groupId, onEventC
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Calendar className="h-4 w-4 mr-2" />
+          <Calendar className="h-4 w-4 me-2" />
           Create Event
         </Button>
       </DialogTrigger>
@@ -214,13 +214,13 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ groupId, onEventC
               <div>
                 <Label htmlFor="location">Location *</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <MapPin className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Where will this event take place?"
-                    className="pl-10"
+                    className="ps-10"
                     required={!isVirtual}
                   />
                 </div>

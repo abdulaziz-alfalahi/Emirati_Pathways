@@ -71,12 +71,12 @@ export const ProgramExplorer: React.FC = () => {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search programs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="ps-10"
               />
             </div>
             
@@ -107,7 +107,7 @@ export const ProgramExplorer: React.FC = () => {
             </Select>
             
             <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-4 w-4 me-2" />
               Advanced Filters
             </Button>
           </div>
@@ -121,7 +121,7 @@ export const ProgramExplorer: React.FC = () => {
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Heart className="h-4 w-4 mr-1" />
+            <Heart className="h-4 w-4 me-1" />
             Saved ({programs.filter(p => p.saved).length})
           </Button>
           <Button variant="outline" size="sm">
@@ -153,7 +153,7 @@ export const ProgramExplorer: React.FC = () => {
                   <p className="text-gray-600 mb-4">{program.description}</p>
                 </div>
                 
-                <div className="text-right ml-6">
+                <div className="text-end ms-6">
                   <div className="flex items-center gap-1 mb-2">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-medium">{program.rating}</span>

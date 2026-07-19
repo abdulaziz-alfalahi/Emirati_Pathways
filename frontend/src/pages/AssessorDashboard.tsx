@@ -326,7 +326,7 @@ const AssessorDashboard: React.FC = () => {
               <TabsTrigger value="performance" className="font-dubai-medium">{t('Performance', 'الأداء')}</TabsTrigger>
               <TabsTrigger value="tools" className="font-dubai-medium">{t('Tools', 'الأدوات')}</TabsTrigger>
               <TabsTrigger value="messages" className="font-dubai-medium">
-                <MessageSquare className="h-4 w-4 mr-1" />
+                <MessageSquare className="h-4 w-4 me-1" />
                 {t('Messages', 'الرسائل')}
               </TabsTrigger>
             </TabsList>
@@ -492,7 +492,7 @@ const AssessorDashboard: React.FC = () => {
                   <div className="space-y-4">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className={`flex items-start gap-3 p-3 bg-slate-50 rounded-lg ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                        <div key={activity.id} className={`flex items-start gap-3 p-3 bg-slate-50 rounded-lg ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
                           <div className="flex-shrink-0">
                             {activity.type === 'assessment_completed' && (
                               <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
@@ -592,7 +592,7 @@ const AssessorDashboard: React.FC = () => {
                     variant="outline" 
                     className="font-dubai-medium border-slate-200 text-slate-700 hover:bg-slate-50"
                   >
-                    {appsLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                    {appsLoading ? <Loader2 size={16} className="animate-spin me-2" /> : null}
                     {t('Refresh List', 'تحديث القائمة')}
                   </Button>
                 </CardHeader>
@@ -611,14 +611,14 @@ const AssessorDashboard: React.FC = () => {
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse" dir={isRTL ? 'rtl' : 'ltr'}>
+                      <table className="w-full text-start border-collapse" dir={isRTL ? 'rtl' : 'ltr'}>
                         <thead>
                           <tr className="border-b border-slate-100 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                             <th className="py-3 px-4 text-slate-500">{t('Candidate', 'المرشح')}</th>
                             <th className="py-3 px-4 text-slate-500">{t('Assessment', 'التقييم')}</th>
                             <th className="py-3 px-4 text-slate-500">{t('Date Applied', 'تاريخ التقديم')}</th>
                             <th className="py-3 px-4 text-slate-500">{t('Status', 'الحالة')}</th>
-                            <th className="py-3 px-4 text-slate-500 text-right">{t('Actions', 'الإجراءات')}</th>
+                            <th className="py-3 px-4 text-slate-500 text-end">{t('Actions', 'الإجراءات')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -657,7 +657,7 @@ const AssessorDashboard: React.FC = () => {
                                   </Badge>
                                 )}
                               </td>
-                              <td className="py-4 px-4 text-right">
+                              <td className="py-4 px-4 text-end">
                                 <div className="flex gap-2 justify-end">
                                   {app.status === 'applied' && (
                                     <Button
@@ -690,7 +690,7 @@ const AssessorDashboard: React.FC = () => {
                                     </Button>
                                   )}
                                   {app.status === 'completed' && app.notes && (
-                                    <div className="text-xs text-slate-500 italic max-w-xs truncate text-right">
+                                    <div className="text-xs text-slate-500 italic max-w-xs truncate text-end">
                                       {app.notes}
                                     </div>
                                   )}

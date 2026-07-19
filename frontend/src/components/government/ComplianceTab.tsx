@@ -23,11 +23,11 @@ const companies = [
 const getStatusBadge = (status: string, b: (en: string, ar: string) => string) => {
     switch (status) {
         case 'compliant':
-            return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 mr-1 inline" />{b('Compliant', 'ممتثل')}</Badge>;
+            return <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium"><CheckCircle className="h-3 w-3 me-1 inline" />{b('Compliant', 'ممتثل')}</Badge>;
         case 'exemplary':
-            return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Award className="h-3 w-3 mr-1 inline" />{b('Exemplary', 'نموذجي')}</Badge>;
+            return <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-dubai-medium"><Award className="h-3 w-3 me-1 inline" />{b('Exemplary', 'نموذجي')}</Badge>;
         case 'non_compliant':
-            return <Badge className="bg-red-50 text-red-700 border-red-200 text-[10px] font-dubai-medium"><AlertTriangle className="h-3 w-3 mr-1 inline" />{b('Non-Compliant', 'غير ممتثل')}</Badge>;
+            return <Badge className="bg-red-50 text-red-700 border-red-200 text-[10px] font-dubai-medium"><AlertTriangle className="h-3 w-3 me-1 inline" />{b('Non-Compliant', 'غير ممتثل')}</Badge>;
         default:
             return null;
     }
@@ -73,12 +73,12 @@ const ComplianceTab: React.FC<ComplianceTabProps> = ({ isRTL, b }) => {
                     <table className="w-full text-sm" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                         <thead>
                             <tr className="border-b border-slate-100">
-                                <th className={`px-5 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Company', 'الشركة')}</th>
-                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Sector', 'القطاع')}</th>
-                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Rate', 'المعدل')}</th>
-                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Target', 'الهدف')}</th>
-                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Emiratis', 'إماراتيون')}</th>
-                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium ${isRTL ? 'text-right' : 'text-left'}`}>{b('Status', 'الحالة')}</th>
+                                <th className={`px-5 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Company', 'الشركة')}</th>
+                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Sector', 'القطاع')}</th>
+                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Rate', 'المعدل')}</th>
+                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Target', 'الهدف')}</th>
+                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Emiratis', 'إماراتيون')}</th>
+                                <th className={`px-3 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider font-dubai-medium text-start`}>{b('Status', 'الحالة')}</th>
                             </tr>
                         </thead>
                         <tbody>

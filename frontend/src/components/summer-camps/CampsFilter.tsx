@@ -141,7 +141,7 @@ const CampsFilter: React.FC<CampsFilterProps> = ({
                     />
                     <Label 
                       htmlFor={`category-${category.id}`}
-                      className="ml-2 text-sm"
+                      className="ms-2 text-sm"
                     >
                       {category.label}
                     </Label>
@@ -162,7 +162,7 @@ const CampsFilter: React.FC<CampsFilterProps> = ({
                     />
                     <Label 
                       htmlFor={`age-${ageGroup.id}`}
-                      className="ml-2 text-sm"
+                      className="ms-2 text-sm"
                     >
                       {ageGroup.label}
                     </Label>
@@ -183,7 +183,7 @@ const CampsFilter: React.FC<CampsFilterProps> = ({
                     />
                     <Label 
                       htmlFor={`location-${location.id}`}
-                      className="ml-2 text-sm"
+                      className="ms-2 text-sm"
                     >
                       {location.label}
                     </Label>

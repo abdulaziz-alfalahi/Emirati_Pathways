@@ -94,31 +94,31 @@ const ProgramCard: React.FC<ProgramCardProps> = ({
 
         <div className="space-y-2 text-sm">
           <div className="flex items-center text-muted-foreground">
-            <Star className="h-4 w-4 mr-2 text-blue-600" />
+            <Star className="h-4 w-4 me-2 text-blue-600" />
             <span className="font-medium">{program.field_of_study}</span>
           </div>
           
           {program.duration_years && (
             <div className="flex items-center text-muted-foreground">
-              <Clock className="h-4 w-4 mr-2 text-green-600" />
+              <Clock className="h-4 w-4 me-2 text-green-600" />
               <span>{program.duration_years} year{program.duration_years > 1 ? 's' : ''}</span>
             </div>
           )}
 
           <div className="flex items-center text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2 text-purple-600" />
+            <MapPin className="h-4 w-4 me-2 text-purple-600" />
             <span>{universityType} University</span>
           </div>
 
           <div className="flex items-center text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-2 text-orange-600" />
+            <Calendar className="h-4 w-4 me-2 text-orange-600" />
             <span className="text-xs">Deadline: {formatDeadline(program.application_deadline)}</span>
           </div>
         </div>
 
         {/* Estimated tuition placeholder */}
         <div className="flex items-center text-sm">
-          <DollarSign className="h-4 w-4 mr-2 text-green-600" />
+          <DollarSign className="h-4 w-4 me-2 text-green-600" />
           <span className="font-medium text-green-700">
             {isInternational ? 'From $25,000/year' : 'From AED 30,000/year'}
           </span>
@@ -131,7 +131,7 @@ const ProgramCard: React.FC<ProgramCardProps> = ({
             className="flex-1"
             onClick={() => program.program_url && window.open(program.program_url, '_blank')}
           >
-            <ExternalLink className="h-4 w-4 mr-1" />
+            <ExternalLink className="h-4 w-4 me-1" />
             Details
           </Button>
           {onApply && (

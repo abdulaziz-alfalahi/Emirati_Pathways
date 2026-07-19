@@ -191,7 +191,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   Add Goal
                 </Button>
               </DialogTrigger>
@@ -285,7 +285,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
                 Start by creating your first mentorship goal
               </p>
               <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 Create First Goal
               </Button>
             </div>
@@ -354,7 +354,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
                           onClick={() => handleCompleteGoal(goal.id)}
                           className="flex-1"
                         >
-                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <CheckCircle className="h-4 w-4 me-2" />
                           Mark Complete
                         </Button>
                         
@@ -363,7 +363,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
                           variant="outline"
                           onClick={() => handleUpdateGoalStatus(goal.id, 'paused')}
                         >
-                          <Pause className="h-4 w-4 mr-2" />
+                          <Pause className="h-4 w-4 me-2" />
                           Pause
                         </Button>
                       </div>

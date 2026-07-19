@@ -374,7 +374,7 @@ const MentorDashboard: React.FC = () => {
               <TabsTrigger value="impact" className="flex-grow md:flex-none font-dubai-medium">{t('Impact', 'التأثير')}</TabsTrigger>
               <TabsTrigger value="resources" className="flex-grow md:flex-none font-dubai-medium">{t('Resources', 'الموارد')}</TabsTrigger>
               <TabsTrigger value="messages" className="flex-grow md:flex-none font-dubai-medium">
-                <MessageSquare className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                <MessageSquare className={`h-4 w-4 me-1`} />
                 {t('Messages', 'الرسائل')}
               </TabsTrigger>
             </TabsList>
@@ -383,7 +383,7 @@ const MentorDashboard: React.FC = () => {
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-right' : ''}`}>
+                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-start' : ''}`}>
                   <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Active Mentees', 'المتدربون النشطون')}</CardTitle>
                     <Users className="h-4 w-4 text-blue-600" />
@@ -396,7 +396,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-right' : ''}`}>
+                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-start' : ''}`}>
                   <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Success Stories', 'قصص النجاح')}</CardTitle>
                     <Award className="h-4 w-4 text-green-600" />
@@ -409,7 +409,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-right' : ''}`}>
+                <Card className={`bg-card shadow-sm hover:shadow-md transition-shadow ${isRTL ? 'text-start' : ''}`}>
                   <CardHeader className={`flex flex-row items-center justify-between space-y-0 pb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Session Rating', 'تقييم الجلسات')}</CardTitle>
                     <Star className="h-4 w-4 text-yellow-600" />
@@ -429,7 +429,7 @@ const MentorDashboard: React.FC = () => {
               </div>
 
               {/* Mentoring Impact */}
-              <Card className={`bg-card shadow-sm ${isRTL ? 'text-right' : ''}`}>
+              <Card className={`bg-card shadow-sm ${isRTL ? 'text-start' : ''}`}>
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">{t('Mentoring Impact', 'تأثير الإرشاد')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -448,7 +448,7 @@ const MentorDashboard: React.FC = () => {
 
               {/* Expertise Areas */}
               <div className="grid grid-cols-1 gap-6">
-                <Card className={`bg-card shadow-sm ${isRTL ? 'text-right' : ''}`}>
+                <Card className={`bg-card shadow-sm ${isRTL ? 'text-start' : ''}`}>
                   <CardHeader>
                     <CardTitle className="font-dubai-bold text-slate-900">{t('Expertise Areas', 'مجالات الخبرة')}</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
@@ -469,7 +469,7 @@ const MentorDashboard: React.FC = () => {
               </div>
 
               {/* Recent Activity */}
-              <Card className={`bg-card shadow-sm ${isRTL ? 'text-right' : ''}`}>
+              <Card className={`bg-card shadow-sm ${isRTL ? 'text-start' : ''}`}>
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">{t('Recent Activity', 'النشاط الأخير')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -480,7 +480,7 @@ const MentorDashboard: React.FC = () => {
                   <div className="space-y-4">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className={`flex items-start gap-3 p-3 bg-slate-50 rounded-lg ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                        <div key={activity.id} className={`flex items-start gap-3 p-3 bg-slate-50 rounded-lg ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
                           <div className="flex-shrink-0">
                             {activity.type === 'mentee_success' && (
                               <Award className="h-5 w-5 text-green-500 mt-1" />
@@ -563,7 +563,7 @@ const MentorDashboard: React.FC = () => {
                     <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Session Management', 'إدارة الجلسات')}</h3>
                     <p className="text-slate-500 mb-6 font-dubai-medium">{t('Schedule, conduct, and track mentoring sessions', 'جدولة وإجراء وتتبّع جلسات الإرشاد')}</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                      <Plus className={`h-4 w-4 me-2`} />
                       {t('Schedule New Session', 'جدولة جلسة جديدة')}
                     </Button>
                   </div>
@@ -617,7 +617,7 @@ const MentorDashboard: React.FC = () => {
 
             {/* Skill Verifications Tab */}
             <TabsContent value="verifications" className="space-y-6">
-              <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-right' : ''}`}>
+              <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-start' : ''}`}>
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900 flex items-center gap-2">
                     <UserCheck className="h-5 w-5 text-teal-600" />
@@ -647,7 +647,7 @@ const MentorDashboard: React.FC = () => {
                       {pendingVerifications.map((item) => (
                         <div
                           key={item.skill_id}
-                          className={`p-5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col md:flex-row justify-between items-start gap-4 ${isRTL ? 'md:flex-row-reverse text-right' : ''}`}
+                          className={`p-5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/50 transition-colors flex flex-col md:flex-row justify-between items-start gap-4 ${isRTL ? 'md:flex-row-reverse text-start' : ''}`}
                         >
                           <div className="space-y-3 flex-1">
                             {/* Candidate Info */}
@@ -747,7 +747,7 @@ const MentorDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-6">
                   {/* Summary & Progress Card */}
-                  <Card className={`bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md border-0 ${isRTL ? 'text-right' : ''}`}>
+                  <Card className={`bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-md border-0 ${isRTL ? 'text-start' : ''}`}>
                     <CardContent className="p-6 md:p-8">
                       <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
                         <div className="space-y-2">
@@ -814,7 +814,7 @@ const MentorDashboard: React.FC = () => {
                           className={`p-4 rounded-xl border text-center relative ${tierItem.color} ${isCurrent ? 'ring-2 ring-teal-500 bg-white opacity-100 font-dubai-bold' : 'opacity-70 bg-white'}`}
                         >
                           {isCurrent && (
-                            <span className="absolute top-2 right-2 flex h-2 w-2">
+                            <span className="absolute top-2 end-2 flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
                             </span>
@@ -832,7 +832,7 @@ const MentorDashboard: React.FC = () => {
                   </div>
 
                   {/* History Logs */}
-                  <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-right' : ''}`}>
+                  <Card className={`bg-card shadow-sm border border-slate-100 ${isRTL ? 'text-start' : ''}`}>
                     <CardHeader>
                       <CardTitle className="font-dubai-bold text-slate-900 flex items-center gap-2">
                         <Award className="h-5 w-5 text-teal-600" />
@@ -850,7 +850,7 @@ const MentorDashboard: React.FC = () => {
                           </p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto pr-2">
+                        <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto pe-2">
                           {incentiveHistory.map((log) => (
                             <div key={log.id} className="py-3 flex justify-between items-center gap-4 text-sm font-dubai">
                               <div>

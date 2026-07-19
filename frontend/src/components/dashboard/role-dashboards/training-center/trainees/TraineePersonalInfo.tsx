@@ -72,7 +72,7 @@ const TraineePersonalInfo: React.FC<TraineePersonalInfoProps> = ({ trainee }) =>
 
 const InfoItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) => (
   <div className="flex items-start">
-    <div className="mt-0.5 mr-3 text-muted-foreground">
+    <div className="mt-0.5 me-3 text-muted-foreground">
       {icon}
     </div>
     <div>

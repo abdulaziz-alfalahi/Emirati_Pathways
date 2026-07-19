@@ -46,7 +46,7 @@ export const ConnectionManager: React.FC = () => {
                         {connection.status}
                       </Badge>
                     </div>
-                    <div className="text-right text-sm text-muted-foreground">
+                    <div className="text-end text-sm text-muted-foreground">
                       <div>Sessions: {connection.totalSessions}</div>
                       <div>Last contact: {connection.lastContact}</div>
                     </div>
@@ -63,15 +63,15 @@ export const ConnectionManager: React.FC = () => {
 
                   <div className="flex gap-2">
                     <Button size="sm" className="bg-ehrdc-teal hover:bg-ehrdc-dark-teal">
-                      <MessageSquare className="h-4 w-4 mr-1" />
+                      <MessageSquare className="h-4 w-4 me-1" />
                       Message
                     </Button>
                     <Button size="sm" variant="outline">
-                      <Video className="h-4 w-4 mr-1" />
+                      <Video className="h-4 w-4 me-1" />
                       Video Call
                     </Button>
                     <Button size="sm" variant="outline">
-                      <Calendar className="h-4 w-4 mr-1" />
+                      <Calendar className="h-4 w-4 me-1" />
                       Schedule
                     </Button>
                   </div>

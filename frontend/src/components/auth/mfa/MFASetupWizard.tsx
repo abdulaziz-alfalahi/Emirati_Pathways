@@ -113,10 +113,10 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
                   setSelectedMethod('totp');
                   setupTOTP();
                 }}
-                className="flex items-center p-4 border rounded-lg hover:bg-accent transition-colors text-left"
+                className="flex items-center p-4 border rounded-lg hover:bg-accent transition-colors text-start"
                 disabled={isLoading}
               >
-                <Smartphone className="h-8 w-8 mr-4 text-primary" />
+                <Smartphone className="h-8 w-8 me-4 text-primary" />
                 <div className="flex-1">
                   <h3 className="font-semibold">Authenticator App</h3>
                   <p className="text-sm text-muted-foreground">
@@ -128,10 +128,10 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
 
               <button
                 onClick={() => setSelectedMethod('phone')}
-                className="flex items-center p-4 border rounded-lg hover:bg-accent transition-colors text-left opacity-50 cursor-not-allowed"
+                className="flex items-center p-4 border rounded-lg hover:bg-accent transition-colors text-start opacity-50 cursor-not-allowed"
                 disabled
               >
-                <MessageSquare className="h-8 w-8 mr-4 text-muted-foreground" />
+                <MessageSquare className="h-8 w-8 me-4 text-muted-foreground" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-muted-foreground">SMS Verification</h3>
                   <p className="text-sm text-muted-foreground">
@@ -246,7 +246,7 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
                   }
                 }}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 Back
               </Button>
             )}

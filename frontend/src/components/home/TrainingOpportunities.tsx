@@ -64,11 +64,11 @@ const TrainingOpportunities: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm font-medium">Level:</span>
-                  <span className="text-sm text-gray-600 ml-1">{opportunity.level}</span>
+                  <span className="text-sm text-gray-600 ms-1">{opportunity.level}</span>
                 </div>
                 <div>
                   <span className="text-sm font-medium">Duration:</span>
-                  <span className="text-sm text-gray-600 ml-1">{opportunity.duration}</span>
+                  <span className="text-sm text-gray-600 ms-1">{opportunity.duration}</span>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
@@ -80,7 +80,7 @@ const TrainingOpportunities: React.FC = () => {
                 <Button asChild>
                   <a href={opportunity.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
                     Learn More
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ms-2 h-4 w-4" />
                   </a>
                 </Button>
               </div>
