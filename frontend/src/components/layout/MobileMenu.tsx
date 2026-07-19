@@ -79,7 +79,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ className }) => {
       
       <SheetContent 
         side="left" 
-        className="w-80 p-0 bg-white border-e border-ehrdc-neutral-light"
+        className="w-80 p-0 bg-card border-e border-ehrdc-neutral-light"
       >
         {/* Header */}
         <SheetHeader className="px-6 py-4 border-b border-ehrdc-neutral-light bg-ehrdc-teal">

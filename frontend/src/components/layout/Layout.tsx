@@ -16,14 +16,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <DubaiGovHeader />
 
       {/* Enhanced Navigation Bar */}
-      <nav id="navigation" className="bg-white border-b border-ehrdc-neutral-light">
+      <nav id="navigation" className="bg-card border-b border-ehrdc-neutral-light">
         <Navbar />
       </nav>
 
       <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
 
       {/* Dubai Government Standard Footer */}
-      <footer className="bg-[#111827] text-white border-t-2 border-[#006E6D]" role="contentinfo">
+      <footer className="bg-[#111827] text-white border-t-2 border-primary" role="contentinfo">
         {/* Main Footer Section */}
         <div className="py-12 px-6">
           <div className="dubai-container">
@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* EHRDC Information */}
               <div className="lg:col-span-2">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-[#006E6D] rounded-xl flex items-center justify-center me-4">
+                  <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center me-4">
                     <span className="text-white font-bold text-lg">EG</span>
                   </div>
                   <div>
@@ -43,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   Supporting UAE citizens throughout their journey from education to retirement,
                   fostering career development, skills enhancement, and professional growth.
                 </p>
-                <div className="flex items-center space-x-3 text-sm text-gray-500">
+                <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 flex-shrink-0" />
                   <span>Dubai, United Arab Emirates</span>
                 </div>
@@ -133,10 +133,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               {/* Copyright */}
               <div className="text-center lg:text-end">
-                <div className="text-gray-500 text-sm mb-2">
+                <div className="text-muted-foreground text-sm mb-2">
                   © {new Date().getFullYear()} Emirati Human Resources Development Council
                 </div>
-                <div className="flex flex-wrap justify-center lg:justify-end gap-4 text-xs text-gray-600">
+                <div className="flex flex-wrap justify-center lg:justify-end gap-4 text-xs text-muted-foreground">
                   <a href="/privacy" className="hover:text-white/80 transition-colors">Privacy Policy</a>
                   <a href="/terms" className="hover:text-white/80 transition-colors">Terms of Service</a>
                   <a href="/accessibility" className="hover:text-white/80 transition-colors">Accessibility</a>

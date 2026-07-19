@@ -229,7 +229,7 @@ const UserMenu: React.FC = () => {
         {/* Request New Role Shortcut */}
         <DropdownMenuItem
           onClick={() => navigate('/candidate/profile/identity')}
-          className="cursor-pointer text-teal-600 focus:text-teal-700"
+          className="cursor-pointer text-primary focus:text-primary"
         >
           <span className={`me-2`}>+</span> {t('Request New Role', 'طلب دور جديد')}
         </DropdownMenuItem>

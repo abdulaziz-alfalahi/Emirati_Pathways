@@ -15,11 +15,15 @@ import {
   RotateCcw, MinusCircle
 } from 'lucide-react';
 
-/* ── Brand tokens ── */
+/* ── Brand tokens ──
+   These were labelled "brand" but held #0D9488 — Tailwind's built-in teal-600,
+   NOT the EHRDC brand teal (#006E6D). The widget therefore rendered a
+   near-miss teal next to genuinely branded chrome. Pointed at the real tokens
+   so it tracks the design system instead of drifting from it. */
 const brand = {
-  primary: '#0D9488',
-  primaryDark: '#0F766E',
-  bubble: '#0D9488',
+  primary: 'var(--primary)',
+  primaryDark: 'var(--ehrdc-teal-700)',
+  bubble: 'var(--primary)',
 };
 
 const CATEGORIES = [

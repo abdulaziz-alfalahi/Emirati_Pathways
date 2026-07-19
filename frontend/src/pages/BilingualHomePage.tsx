@@ -86,14 +86,14 @@ const DashboardMockup: React.FC = () => (
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-slate-500 font-dubai">Career Dashboard</p>
-          <p className="text-sm font-dubai-medium text-slate-900">Performance Overview</p>
+          <p className="text-xs text-muted-foreground font-dubai">Career Dashboard</p>
+          <p className="text-sm font-dubai-medium text-foreground">Performance Overview</p>
         </div>
         {/* INTEGRITY: the figures below are a product preview, NOT reported
             platform outcomes. On a government service an unlabelled mock metric
             reads as a real claim, so it is labelled explicitly. Real platform
             numbers are shown in the stats bar, sourced from the API. */}
-        <span className="shrink-0 whitespace-nowrap rounded-pill border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+        <span className="shrink-0 whitespace-nowrap rounded-pill border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
           {'Illustrative'}
         </span>
       </div>
@@ -106,7 +106,9 @@ const DashboardMockup: React.FC = () => (
             className="flex-1 rounded-t-sm transition-all duration-700"
             style={{
               height: `${h}%`,
-              background: i >= 9 ? '#0d9488' : i >= 6 ? '#14b8a6' : '#99f6e4',
+              // Brand ramp, not Tailwind's teal — even a decorative mock reads
+              // as the product's colour to anyone looking at the landing page.
+              background: i >= 9 ? 'var(--ehrdc-teal-600)' : i >= 6 ? 'var(--ehrdc-teal-400)' : 'var(--ehrdc-teal-200)',
             }}
           />
         ))}
@@ -119,10 +121,10 @@ const DashboardMockup: React.FC = () => (
           { label: 'Applications', value: '12', icon: Zap },
           { label: 'Interviews', value: '5', icon: BarChart3 },
         ].map(({ label, value, icon: Icon }, i) => (
-          <div key={i} className="bg-slate-50 rounded-lg p-3 text-center">
-            <Icon className="w-4 h-4 text-teal-600 mx-auto mb-1" />
-            <p className="text-lg font-dubai-bold text-slate-900">{value}</p>
-            <p className="text-[10px] text-slate-500">{label}</p>
+          <div key={i} className="bg-muted rounded-lg p-3 text-center">
+            <Icon className="w-4 h-4 text-primary mx-auto mb-1" />
+            <p className="text-lg font-dubai-bold text-foreground">{value}</p>
+            <p className="text-[10px] text-muted-foreground">{label}</p>
           </div>
         ))}
       </div>
@@ -169,8 +171,8 @@ const BilingualHomePage: React.FC = () => {
       description: translations.personas?.jobSeeker?.description || 'Find your dream career with AI-powered job matching and personalized career guidance',
       icon: Users,
       color: 'bg-teal-500',
-      iconBg: 'bg-teal-100',
-      iconColor: 'text-teal-600',
+      iconBg: 'bg-accent',
+      iconColor: 'text-primary',
       features: [
         translations.personas?.jobSeeker?.features?.aiMatching || 'AI Job Matching',
         translations.personas?.jobSeeker?.features?.cvBuilder || 'CV Builder',
@@ -347,28 +349,28 @@ const BilingualHomePage: React.FC = () => {
             {/* Text column — in RTL, CSS grid auto-reverses so this goes right */}
             <div>
               {/* AI Badge */}
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal-100/80 text-teal-700 text-sm font-dubai-medium mb-8 border border-teal-200/50">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-teal-100/80 text-primary text-sm font-dubai-medium mb-8 border border-teal-200/50">
                 <Sparkles className="w-4 h-4 me-2" />
                 {translations.hero?.poweredBy || 'Powered by Advanced AI Technology'}
               </div>
 
               {/* Main Heading */}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-dubai-bold text-slate-900 mb-6 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-dubai-bold text-foreground mb-6 leading-tight">
                 {currentLanguage === 'ar' ? (
                   <>
                     تمكين المواطنين الإماراتيين لتحقيق{' '}
-                    <span className="text-teal-600">التميز المهني</span>
+                    <span className="text-primary">التميز المهني</span>
                   </>
                 ) : (
                   <>
                     Empowering UAE Nationals for{' '}
-                    <span className="text-teal-600">Career Excellence</span>
+                    <span className="text-primary">Career Excellence</span>
                   </>
                 )}
               </h1>
 
               {/* Subtitle */}
-              <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
+              <p className="text-lg md:text-xl text-muted-foreground mb-10 leading-relaxed max-w-xl">
                 {translations.hero?.subtitle ||
                   'The comprehensive AI-powered platform connecting UAE professionals, employers, educators, mentors, and assessors in one unified ecosystem for career development and growth.'}
               </p>
@@ -386,7 +388,7 @@ const BilingualHomePage: React.FC = () => {
                 </Link>
                 <Link
                   to="/our-mission"
-                  className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill border border-slate-300 bg-white px-7 py-3.5 text-base font-medium text-slate-700 transition-colors hover:border-brand-teal-600 hover:text-brand-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
+                  className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill border border-border bg-card px-7 py-3.5 text-base font-medium text-slate-700 transition-colors hover:border-brand-teal-600 hover:text-brand-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
                 >
                   {translations.hero?.secondaryCta || 'Explore the platform'}
                 </Link>
@@ -404,12 +406,12 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       {/*  STATS BAR                                                    */}
       {/* ============================================================ */}
-      <section className="py-12 bg-white border-y border-slate-100">
+      <section className="py-12 bg-card border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <p className="text-3xl md:text-4xl font-dubai-bold text-teal-600 mb-1">
+                <p className="text-3xl md:text-4xl font-dubai-bold text-primary mb-1">
                   {/* HONEST EMPTY STATE: these are real API figures, but the
                       counter appended a "+" unconditionally — so a missing or
                       zero value rendered as "0+", which reads as broken (or
@@ -421,7 +423,7 @@ const BilingualHomePage: React.FC = () => {
                     <span title="Not yet available">&mdash;</span>
                   )}
                 </p>
-                <p className="text-sm text-slate-500 font-dubai-medium">{stat.label}</p>
+                <p className="text-sm text-muted-foreground font-dubai-medium">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -431,13 +433,13 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       {/*  WHY CHOOSE / FEATURES                                        */}
       {/* ============================================================ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-dubai-bold text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-dubai-bold text-foreground mb-4">
               {translations.whyChoose?.title || 'Why Choose Emirati Human Development Platform?'}
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {translations.whyChoose?.subtitle ||
                 'Built specifically for the UAE market with advanced AI technology and cultural intelligence'}
             </p>
@@ -447,13 +449,13 @@ const BilingualHomePage: React.FC = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="text-center p-8 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 group"
+                className="text-center p-8 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md transition-all duration-300 group"
               >
-                <div className="w-16 h-16 bg-teal-50 group-hover:bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-5 transition-colors">
-                  <feature.icon className="w-8 h-8 text-teal-600" />
+                <div className="w-16 h-16 bg-accent group-hover:bg-accent rounded-2xl flex items-center justify-center mx-auto mb-5 transition-colors">
+                  <feature.icon className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-dubai-bold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed text-sm">{feature.description}</p>
+                <h3 className="text-lg font-dubai-bold text-foreground mb-3">{feature.title}</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -466,10 +468,10 @@ const BilingualHomePage: React.FC = () => {
       <section className="py-20 bg-gradient-to-br from-slate-50 to-teal-50/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-dubai-bold text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-dubai-bold text-foreground mb-4">
               {translations.pathways?.title || 'Choose Your Professional Path'}
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {translations.pathways?.subtitle ||
                 'Tailored experiences for every professional role in the UAE career ecosystem'}
             </p>
@@ -479,11 +481,11 @@ const BilingualHomePage: React.FC = () => {
             {personas.map((persona) => (
               <div
                 key={persona.id}
-                className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 relative group"
+                className="bg-card rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-all duration-300 relative group"
               >
                 {persona.popular && (
                   <div className={`absolute -top-3 start-6`}>
-                    <span className="bg-teal-600 text-white px-3 py-1 rounded-full text-sm font-dubai-medium">
+                    <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-dubai-medium">
                       {translations.pathways?.mostPopular || 'Most Popular'}
                     </span>
                   </div>
@@ -493,13 +495,13 @@ const BilingualHomePage: React.FC = () => {
                   <persona.icon className={`w-7 h-7 ${persona.iconColor}`} />
                 </div>
 
-                <h3 className="text-xl font-dubai-bold text-slate-900 mb-3">{persona.title}</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed text-sm">{persona.description}</p>
+                <h3 className="text-xl font-dubai-bold text-foreground mb-3">{persona.title}</h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed text-sm">{persona.description}</p>
 
                 <div className="space-y-2.5 mb-8">
                   {persona.features.map((feature, index) => (
                     <div key={index} className="flex items-center">
-                      <CheckCircle className={`w-4 h-4 text-teal-500 flex-shrink-0 me-3`} />
+                      <CheckCircle className={`w-4 h-4 text-primary flex-shrink-0 me-3`} />
                       <span className="text-slate-700 text-sm">{feature}</span>
                     </div>
                   ))}
@@ -521,13 +523,13 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       {/*  TESTIMONIALS                                                 */}
       {/* ============================================================ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-dubai-bold text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-dubai-bold text-foreground mb-4">
               {translations.testimonials?.title || 'Success Stories'}
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {translations.testimonials?.subtitle ||
                 'Hear from professionals who transformed their careers'}
             </p>
@@ -537,12 +539,12 @@ const BilingualHomePage: React.FC = () => {
             {testimonials.map((testimonial: any, index: number) => (
               <div
                 key={index}
-                className="bg-slate-50 rounded-2xl p-8 border border-slate-100 hover:border-slate-200 transition-all duration-300 relative"
+                className="bg-muted rounded-2xl p-8 border border-slate-100 hover:border-border transition-all duration-300 relative"
               >
                 {/* Stars */}
                 <div className="flex gap-1 mb-5">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-teal-500 fill-teal-500" />
+                    <Star key={i} className="w-4 h-4 text-primary fill-teal-500" />
                   ))}
                 </div>
 
@@ -554,14 +556,14 @@ const BilingualHomePage: React.FC = () => {
 
                 {/* Author */}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                    <span className="text-teal-700 font-dubai-bold text-sm">
+                  <div className="w-10 h-10 bg-accent rounded-full flex items-center justify-center">
+                    <span className="text-primary font-dubai-bold text-sm">
                       {testimonial.name?.charAt(0)}
                     </span>
                   </div>
                   <div>
-                    <p className="font-dubai-bold text-slate-900 text-sm">{testimonial.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-dubai-bold text-foreground text-sm">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {testimonial.role} · {testimonial.company}
                     </p>
                   </div>
@@ -575,7 +577,7 @@ const BilingualHomePage: React.FC = () => {
       {/* ============================================================ */}
       {/*  CTA SECTION                                                  */}
       {/* ============================================================ */}
-      <section className="py-20 bg-gradient-to-br from-teal-600 to-teal-700 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-brand-teal-600 to-brand-teal-700 relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-0 end-0 w-64 h-64 bg-teal-500/30 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3 pointer-events-none" />
         <div className="absolute bottom-0 start-0 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl -translate-x-1/4 translate-y-1/3 pointer-events-none" />
@@ -584,14 +586,14 @@ const BilingualHomePage: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-dubai-bold text-white mb-6">
             {translations.cta?.title || 'Ready to Transform Your Career?'}
           </h2>
-          <p className="text-lg text-teal-100 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg text-brand-teal-100 mb-10 max-w-2xl mx-auto">
             {translations.cta?.subtitle ||
               'Join thousands of UAE professionals already using the platform to advance their careers'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               to="/auth"
-              className="bg-white text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
+              className="bg-card text-primary hover:bg-accent px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
             >
               {translations.cta?.primaryButton || 'Create Free Account'}
               <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180`} />
@@ -628,7 +630,7 @@ const BilingualHomePage: React.FC = () => {
                   <a
                     key={platform}
                     href="#"
-                    className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-teal-600 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-primary flex items-center justify-center transition-colors"
                     aria-label={platform}
                   >
                     <span className="text-xs text-slate-400 hover:text-white font-dubai-medium">
@@ -663,7 +665,9 @@ const BilingualHomePage: React.FC = () => {
             <p className="text-xs">
               {translations.footer?.copyright || '© 2025 Emirati Human Development Platform. All rights reserved.'}
             </p>
-            <p className="text-xs text-teal-500">
+            {/* On the dark footer the brand teal is only 2.9:1 — light end of the
+                ramp instead, which reads as brand AND passes AA. */}
+            <p className="text-xs text-brand-teal-300">
               {translations.footer?.government || 'A Dubai Government Initiative in partnership with EHRDC'}
             </p>
           </div>

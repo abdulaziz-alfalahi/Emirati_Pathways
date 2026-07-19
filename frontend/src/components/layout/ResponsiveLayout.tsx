@@ -296,7 +296,7 @@ const DesktopSidebar: React.FC<{
 
   return (
     <div className={cn(
-      'h-full bg-white border-e border-gray-200 transition-all duration-300',
+      'h-full bg-card border-e border-border transition-all duration-300',
       collapsed ? 'w-16' : 'w-64'
     )}>
       <ScrollArea className="h-full">
@@ -385,7 +385,7 @@ const TopHeader: React.FC<{
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4">
       <div className="flex items-center space-x-4">
         {isMobile && (
           <Button variant="ghost" size="sm" onClick={onMenuClick}>
@@ -394,7 +394,7 @@ const TopHeader: React.FC<{
         )}
 
         <div className="flex items-center space-x-2">
-          <h1 className="text-xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-foreground">
             {isMobile ? 'EHD Platform' : 'Emirati Human Development Platform'}
           </h1>
           {!isMobile && (
@@ -420,7 +420,7 @@ const TopHeader: React.FC<{
         {/* User Menu */}
         <div className="flex items-center space-x-2">
           {!isMobile && userName && (
-            <span className="text-sm text-gray-600 hidden md:block">
+            <span className="text-sm text-muted-foreground hidden md:block">
               {userName}
             </span>
           )}
@@ -479,7 +479,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   }, [isTablet, isMobile]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-muted">
       {/* Top Header */}
       <TopHeader
         userName={userName}
@@ -537,7 +537,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
       {/* Mobile Bottom Navigation (Optional) */}
       {isMobile && (
-        <div className="bg-white border-t border-gray-200 p-2">
+        <div className="bg-card border-t border-border p-2">
           <div className="flex justify-around">
             {navigationItems.slice(0, 4).map((item) => (
               <Button
