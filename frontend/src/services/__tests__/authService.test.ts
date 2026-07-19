@@ -53,9 +53,13 @@ describe('authService', () => {
     });
 
     test('contains student role', () => {
-      const student = AVAILABLE_ROLES.find(r => r.id === 'candidate');
+      // 'Student' is a presentation variant of the candidate persona, NOT a distinct
+      // role id: there is no 'student' in the UserRole union, in ROLE_DASHBOARD_MAP,
+      // or in normalizeRole's alias table, and /student-dashboard is guarded by
+      // allowedRoles={['candidate']}. So look it up by name and assert the fold.
+      const student = AVAILABLE_ROLES.find(r => r.name === 'Student');
       expect(student).toBeDefined();
-      expect(student!.name).toBe('Student');
+      expect(student!.id).toBe('candidate');
       expect(student!.dashboard).toBe('/student-dashboard');
     });
 

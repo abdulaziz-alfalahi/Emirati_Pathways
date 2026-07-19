@@ -3,7 +3,9 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 // Mock tokenUtils before importing apiClient so the interceptor picks up the mock
 vi.mock('@/utils/tokenUtils', () => ({
   getAuthToken: vi.fn(() => null),
+  getAuthHeaders: vi.fn(() => ({})),
   clearAuthTokens: vi.fn(),
+  getCookie: vi.fn(() => null),
 }));
 
 import apiClient from '@/services/apiClient';

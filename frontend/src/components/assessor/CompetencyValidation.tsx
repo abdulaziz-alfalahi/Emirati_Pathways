@@ -562,6 +562,7 @@ const CompetencyValidation: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <span className="text-sm w-16">Score:</span>
                         <Slider
+                          aria-label={`Score for ${criterion.criterion}`}
                           value={[criterion.score]}
                           onValueChange={(value) => updateValidationScore(criterion.id, value[0])}
                           max={criterion.maxScore}

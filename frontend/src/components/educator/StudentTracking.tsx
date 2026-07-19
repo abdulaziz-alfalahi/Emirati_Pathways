@@ -320,7 +320,7 @@ const StudentTracking: React.FC = () => {
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
+                <SelectTrigger id="status">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>

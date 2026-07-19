@@ -78,6 +78,11 @@ interface MobileJobSearchProps {
   userProfile?: any;
 }
 
+// Radix's Select throws if a SelectItem has value="", so the "no filter" option
+// needs a sentinel. It is mapped back to '' in state, which the query builder
+// already treats as "omit this filter".
+const ALL_FILTER_VALUE = '__all__';
+
 const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
   authToken,
   userProfile
@@ -489,14 +494,14 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
             <div>
               <Label className="text-sm font-medium mb-2 block">Location</Label>
               <Select
-                value={searchFilters.location}
-                onValueChange={(value) => setSearchFilters(prev => ({ ...prev, location: value }))}
+                value={searchFilters.location || ALL_FILTER_VALUE}
+                onValueChange={(value) => setSearchFilters(prev => ({ ...prev, location: value === ALL_FILTER_VALUE ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Locations</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>All Locations</SelectItem>
                   <SelectItem value="Dubai">Dubai</SelectItem>
                   <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
                   <SelectItem value="Sharjah">Sharjah</SelectItem>
@@ -509,14 +514,14 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
             <div>
               <Label className="text-sm font-medium mb-2 block">Employment Type</Label>
               <Select
-                value={searchFilters.employment_type}
-                onValueChange={(value) => setSearchFilters(prev => ({ ...prev, employment_type: value }))}
+                value={searchFilters.employment_type || ALL_FILTER_VALUE}
+                onValueChange={(value) => setSearchFilters(prev => ({ ...prev, employment_type: value === ALL_FILTER_VALUE ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>All Types</SelectItem>
                   <SelectItem value="Full-time">Full-time</SelectItem>
                   <SelectItem value="Part-time">Part-time</SelectItem>
                   <SelectItem value="Contract">Contract</SelectItem>
@@ -632,6 +637,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
           <Button
             variant="outline"
             size="sm"
+            aria-label="Filter jobs"
             onClick={() => setShowFilters(true)}
           >
             <SlidersHorizontal className="h-4 w-4" />

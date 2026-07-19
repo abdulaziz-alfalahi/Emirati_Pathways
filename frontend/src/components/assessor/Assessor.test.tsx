@@ -1,6 +1,20 @@
 import React from 'react';
+import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+
+// These components fake an API call with `await new Promise(r => setTimeout(r, 1000))`,
+// which exactly ties RTL's default 1000ms waitFor timeout and so loses the race
+// deterministically. Give the load room to finish.
+const LOAD_TIMEOUT = { timeout: 5000 };
+
+// Radix TabsContent unmounts inactive panels, and TabsTrigger activates on
+// pointer/mousedown rather than a bare synthetic click, so anything outside the
+// default tab must be revealed with a real user-event click first.
+const selectTab = async (name: string) => {
+  await userEvent.click(screen.getByRole('tab', { name }));
+};
 
 import AssessorDashboard from './AssessorDashboard';
 import AssessmentPlanning from './AssessmentPlanning';
@@ -17,7 +31,7 @@ describe('Assessor Persona Frontend Components', () => {
       // Wait for data to load
       await waitFor(() => {
         expect(screen.getByText('Total Assessments')).toBeInTheDocument();
-      });
+      }, LOAD_TIMEOUT);
 
       expect(screen.getByText('Average Score')).toBeInTheDocument();
       expect(screen.getByText('Quality Rating')).toBeInTheDocument();
@@ -28,23 +42,30 @@ describe('Assessor Persona Frontend Components', () => {
       render(<AssessorDashboard />);
       await waitFor(() => {
         expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument();
-      });
+      }, LOAD_TIMEOUT);
     });
   });
 
   // Test AssessmentPlanning component
   describe('AssessmentPlanning', () => {
-    test('renders assessment planning form', () => {
+    test('renders assessment planning form', async () => {
       render(<AssessmentPlanning />);
+      // 'Assessment Title *' lives in the default 'Basic Info' tab.
       expect(screen.getByLabelText('Assessment Title *')).toBeInTheDocument();
+      // 'Select Competencies' lives in the 'Competencies' tab.
+      await selectTab('Competencies');
       expect(screen.getByText('Select Competencies')).toBeInTheDocument();
     });
 
-    test('allows selecting competencies and methods', () => {
+    test('allows selecting competencies and methods', async () => {
       render(<AssessmentPlanning />);
-      fireEvent.click(screen.getByLabelText('Technical Problem Solving'));
-      fireEvent.click(screen.getByLabelText('Multiple Choice Questions'));
+
+      await selectTab('Competencies');
+      await userEvent.click(screen.getByLabelText('Technical Problem Solving'));
       expect(screen.getByLabelText('Technical Problem Solving')).toBeChecked();
+
+      await selectTab('Methods');
+      await userEvent.click(screen.getByLabelText('Multiple Choice Questions'));
       expect(screen.getByLabelText('Multiple Choice Questions')).toBeChecked();
     });
   });
@@ -59,12 +80,27 @@ describe('Assessor Persona Frontend Components', () => {
       expect(screen.getByText('Technical Problem Solving')).toBeInTheDocument();
     });
 
-    test('allows updating validation scores', () => {
+    test('allows updating validation scores', async () => {
       render(<CompetencyValidation />);
+
+      // The score sliders live in the 'Validation' tab, not the default 'Assessment' tab.
+      await selectTab('Validation');
+
       const scoreSlider = screen.getAllByRole('slider')[0];
-      fireEvent.change(scoreSlider, { target: { value: 95 } });
-      // This is a simplified interaction. In a real scenario, you would need to simulate the slider drag.
-      // For now, we just check if the component renders without crashing on interaction.
+      // Every score slider must expose an accessible name, otherwise screen-reader
+      // users cannot tell which criterion they are scoring.
+      expect(scoreSlider).toHaveAccessibleName();
+
+      const before = Number(scoreSlider.getAttribute('aria-valuenow'));
+
+      // Radix's slider thumb is a <span>, not <input type="range">, so fireEvent.change
+      // is a no-op; it responds to keyboard/pointer input.
+      scoreSlider.focus();
+      await userEvent.keyboard('{ArrowRight}');
+
+      await waitFor(() => {
+        expect(Number(scoreSlider.getAttribute('aria-valuenow'))).toBe(before + 1);
+      });
     });
   });
 

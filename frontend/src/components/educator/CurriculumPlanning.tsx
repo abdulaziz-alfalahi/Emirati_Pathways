@@ -34,7 +34,8 @@ import {
   Globe,
   Star,
   Users,
-  BarChart3
+  BarChart3,
+  Bell
 } from 'lucide-react';
 
 interface UAEStandard {

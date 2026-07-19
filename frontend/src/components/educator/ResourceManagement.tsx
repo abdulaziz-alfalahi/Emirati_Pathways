@@ -328,7 +328,11 @@ const ResourceManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div
+          role="status"
+          aria-label="Loading resources"
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+        ></div>
       </div>
     );
   }
@@ -526,7 +530,7 @@ const ResourceManagement: React.FC = () => {
             <div>
               <Label htmlFor="filter-type">Filter by Type</Label>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
+                <SelectTrigger id="filter-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

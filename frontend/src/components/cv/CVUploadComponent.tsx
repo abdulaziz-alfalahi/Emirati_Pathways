@@ -360,6 +360,7 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`Remove ${uploadedFile.file.name}`}
                     onClick={() => removeFile(uploadedFile.id)}
                   >
                     <X className="h-4 w-4" />
