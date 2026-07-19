@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Filter,
   Eye,
-  Settings
+  Settings,
+  Edit
 } from 'lucide-react';
 import {
   LineChart,

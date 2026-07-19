@@ -388,7 +388,7 @@ const TopHeader: React.FC<{
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
       <div className="flex items-center space-x-4">
         {isMobile && (
-          <Button variant="ghost" size="sm" onClick={onMenuClick}>
+          <Button variant="ghost" size="sm" aria-label="Open navigation menu" onClick={onMenuClick}>
             <Menu className="h-5 w-5" />
           </Button>
         )}

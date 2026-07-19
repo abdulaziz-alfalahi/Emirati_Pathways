@@ -323,9 +323,9 @@ const PerformanceAnalytics: React.FC = () => {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Time Period</label>
+              <label htmlFor="time-period" className="text-sm font-medium mb-2 block">Time Period</label>
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger>
+                <SelectTrigger id="time-period">
                   <SelectValue placeholder="Select Period" />
                 </SelectTrigger>
                 <SelectContent>

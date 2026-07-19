@@ -1,14 +1,45 @@
 import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
 
 import AdvancedAnalyticsDashboard from './analytics/AdvancedAnalyticsDashboard';
 import ResponsiveLayout from './layout/ResponsiveLayout';
 import MobileJobSearch from './mobile/MobileJobSearch';
+import { restClient } from '@/utils/api';
+import { NotificationProvider } from '@/components/notifications/NotificationSystem';
+import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 
-const mock = new MockAdapter(axios);
+// These components call `restClient` (a dedicated axios instance from @/utils/api),
+// not the default axios export — so the previous `new MockAdapter(axios)` setup
+// never intercepted a single request. Mock the module the components actually use.
+vi.mock('@/utils/api', () => ({
+  restClient: { get: vi.fn(), post: vi.fn(), delete: vi.fn(), put: vi.fn() },
+}));
+
+// Radix TabsTrigger activates on pointer/mousedown, not a bare synthetic click.
+const selectTab = async (name: string) => {
+  await userEvent.click(screen.getByRole('tab', { name }));
+};
+
+// Minimal URL-matched GET router standing in for axios-mock-adapter's onGet().
+const getRoutes = new Map<string, unknown>();
+const mock = {
+  onGet: (url: string) => ({
+    reply: (_status: number, body: unknown) => getRoutes.set(url, body),
+  }),
+};
+
+beforeEach(() => {
+  getRoutes.clear();
+  vi.mocked(restClient.get).mockImplementation((url: string) => {
+    for (const [route, body] of getRoutes) {
+      if (url.split('?')[0] === route) return Promise.resolve({ data: body });
+    }
+    return Promise.reject(new Error(`Unmocked GET ${url}`));
+  });
+});
 
 describe('Advanced Features Frontend Components', () => {
 
@@ -40,15 +71,23 @@ describe('Advanced Features Frontend Components', () => {
             render(<AdvancedAnalyticsDashboard userType="admin" authToken="test-token" />);
             
             await waitFor(() => {
-                fireEvent.click(screen.getByText('Employment'));
-                expect(screen.getByText('Sector Performance')).toBeInTheDocument();
+                expect(screen.getByText('Advanced Analytics')).toBeInTheDocument();
             });
+
+            await selectTab('Employment');
+            expect(screen.getByText('Sector Performance')).toBeInTheDocument();
         });
     });
 
     describe('ResponsiveLayout', () => {
         it('renders the responsive layout with sidebar on desktop', () => {
-            render(<ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>);
+            render(
+                <MemoryRouter>
+                    <NotificationProvider>
+                        <ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>
+                    </NotificationProvider>
+                </MemoryRouter>
+            );
             expect(screen.getByText('Dashboard')).toBeInTheDocument();
             expect(screen.getByText('Test Content')).toBeInTheDocument();
         });
@@ -56,9 +95,18 @@ describe('Advanced Features Frontend Components', () => {
         it('renders the responsive layout with a mobile menu button on smaller screens', () => {
             // Mock window width
             Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
-            render(<ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>);
-            expect(screen.getByText('EJ Platform')).toBeInTheDocument(); // Mobile title
-            expect(screen.queryByText('Dashboard')).not.toBeInTheDocument(); // Sidebar not visible
+            render(
+                <MemoryRouter>
+                    <NotificationProvider>
+                        <ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>
+                    </NotificationProvider>
+                </MemoryRouter>
+            );
+            expect(screen.getByText('EHD Platform')).toBeInTheDocument(); // Mobile title (Emirati Human Development)
+            // The mobile layout swaps the desktop sidebar for a menu button that opens
+            // the navigation sheet. (Asserting 'Dashboard' is absent would be wrong:
+            // the mobile bottom nav legitimately renders the first four nav items.)
+            expect(screen.getByRole('button', { name: /open navigation menu/i })).toBeInTheDocument();
         });
     });
 
@@ -86,7 +134,7 @@ describe('Advanced Features Frontend Components', () => {
         it('opens the filter sheet when the filter button is clicked', async () => {
             render(<MobileJobSearch authToken="test-token" />);
             
-            fireEvent.click(screen.getByRole('button', { name: /slidershorizontal/i }));
+            fireEvent.click(screen.getByRole('button', { name: /filter jobs/i }));
 
             await waitFor(() => {
                 expect(screen.getByText('Filter Jobs')).toBeInTheDocument();

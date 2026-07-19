@@ -1,10 +1,19 @@
 import React from 'react';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CVUploadComponent from './CVUploadComponent';
+import CVAnalysisResults from './CVAnalysisResults';
+import userEvent from '@testing-library/user-event';
+
+// Radix TabsTrigger activates on pointer/mousedown, not on a bare synthetic click,
+// so fireEvent.click() leaves the panel unmounted. userEvent fires the full sequence.
+const selectTab = async (name: string) => {
+  await userEvent.click(screen.getByRole('tab', { name }));
+};
 
 // Mock API calls
-global.fetch = jest.fn(() =>
+global.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({
@@ -16,14 +25,14 @@ global.fetch = jest.fn(() =>
       profile_completion: 90
     }),
   })
-) as jest.Mock;
+) as ReturnType<typeof vi.fn>;
 
 describe('CVUploadComponent', () => {
-  const onUploadSuccess = jest.fn();
-  const onUploadError = jest.fn();
+  const onUploadSuccess = vi.fn();
+  const onUploadError = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders correctly with file upload and text input tabs', () => {
@@ -53,7 +62,7 @@ describe('CVUploadComponent', () => {
 
     await waitFor(() => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
-      expect(screen.getByText('CV processed successfully!')).toBeInTheDocument();
+      expect(screen.getByText(/CV processed successfully!/)).toBeInTheDocument();
       expect(onUploadSuccess).toHaveBeenCalledTimes(1);
     });
   });
@@ -68,7 +77,7 @@ describe('CVUploadComponent', () => {
 
     await waitFor(() => {
       expect(screen.getByText('test.pdf')).toBeInTheDocument();
-      expect(screen.getByText('CV processed successfully!')).toBeInTheDocument();
+      expect(screen.getByText(/CV processed successfully!/)).toBeInTheDocument();
       expect(onUploadSuccess).toHaveBeenCalledTimes(1);
     });
   });
@@ -104,7 +113,7 @@ describe('CVUploadComponent', () => {
 
   test('handles text input upload', async () => {
     render(<CVUploadComponent onUploadSuccess={onUploadSuccess} />);
-    fireEvent.click(screen.getByText('Text Input'));
+    await selectTab('Text Input');
 
     const textarea = screen.getByPlaceholderText('Copy and paste your CV content here...');
     fireEvent.change(textarea, { target: { value: 'This is a test CV with enough content to be valid.' } });
@@ -118,9 +127,9 @@ describe('CVUploadComponent', () => {
     });
   });
 
-  test('disables text upload button for short text', () => {
+  test('disables text upload button for short text', async () => {
     render(<CVUploadComponent />);
-    fireEvent.click(screen.getByText('Text Input'));
+    await selectTab('Text Input');
 
     const textarea = screen.getByPlaceholderText('Copy and paste your CV content here...');
     fireEvent.change(textarea, { target: { value: 'short' } });
@@ -170,8 +179,6 @@ describe('CVUploadComponent', () => {
     });
   });
 });
-  });
-});
 
 describe('CVAnalysisResults', () => {
   const mockCvData = {
@@ -203,23 +210,23 @@ describe('CVAnalysisResults', () => {
     expect(screen.getByText('Analysis')).toBeInTheDocument();
   });
 
-  test('displays personal information in overview tab', () => {
+  test('displays personal information in overview tab', async () => {
     render(<CVAnalysisResults cvData={mockCvData} />);
-    fireEvent.click(screen.getByText('Overview'));
+    await selectTab('Overview');
     expect(screen.getByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
   });
 
-  test('displays experience details in experience tab', () => {
+  test('displays experience details in experience tab', async () => {
     render(<CVAnalysisResults cvData={mockCvData} />);
-    fireEvent.click(screen.getByText('Experience'));
+    await selectTab('Experience');
     expect(screen.getByText('Developer')).toBeInTheDocument();
     expect(screen.getByText('Test Inc.')).toBeInTheDocument();
   });
 
-  test('displays analysis details in analysis tab', () => {
+  test('displays analysis details in analysis tab', async () => {
     render(<CVAnalysisResults cvData={mockCvData} />);
-    fireEvent.click(screen.getByText('Analysis'));
+    await selectTab('Analysis');
     expect(screen.getByText('Overall CV Score')).toBeInTheDocument();
     expect(screen.getByText('85/100')).toBeInTheDocument();
     expect(screen.getByText('Good experience')).toBeInTheDocument();

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, MapPin, Briefcase, GraduationCap, Users, UserPlus, Loader2 } from 'lucide-react';
+import { Search, MapPin, Briefcase, GraduationCap, Users, UserPlus, Loader2, MessageSquare } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
