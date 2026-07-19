@@ -31,7 +31,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
     <div className={`flex items-center ${language === 'ar' ? 'space-x-reverse space-x-6' : 'space-x-6'}`}>
       {/* Logo */}
       <Link to="/" className={`flex items-center ${language === 'ar' ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
-        <div className="font-bold text-xl text-ehrdc-teal">{t('emiratiGateway')}</div>
+        <div className="font-bold text-xl text-primary">{t('emiratiGateway')}</div>
       </Link>
 
       {/* Navigation Menu */}
@@ -39,21 +39,21 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
         <NavigationMenuList className={language === 'ar' ? 'flex-row-reverse' : ''}>
           {orderedNavGroups.map((group) => (
             <NavigationMenuItem key={group.id}>
-              <NavigationMenuTrigger className={`text-ehrdc-neutral-dark hover:text-ehrdc-teal ${language === 'ar' ? 'text-end' : 'text-start'}`}>
+              <NavigationMenuTrigger className="text-foreground hover:text-primary">
                 {t(`groups.${group.id}.title`)}
               </NavigationMenuTrigger>
               <NavigationMenuContent>
-                <div className={`grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr] ${language === 'ar' ? 'text-end' : 'text-start'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <div className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                   <div className="row-span-3">
                     <NavigationMenuLink asChild>
                       <Link
                         className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-ehrdc-light-teal/50 to-ehrdc-teal p-6 no-underline outline-none focus:shadow-md"
                         to={group.items[0]?.href || '/'}
                       >
-                        <div className={`mb-2 mt-4 text-lg font-medium text-white ${language === 'ar' ? 'text-end' : 'text-start'}`}>
+                        <div className="mb-2 mt-4 text-lg font-medium text-white">
                           {t(`groups.${group.id}.title`)}
                         </div>
-                        <p className={`text-sm leading-tight text-white/90 ${language === 'ar' ? 'text-end' : 'text-start'}`}>
+                        <p className="text-sm leading-tight text-white/90">
                           {t(`groups.${group.id}.description`)}
                         </p>
                       </Link>
@@ -100,12 +100,12 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
                       <NavigationMenuLink key={item.name} asChild>
                         <Link
                           to={item.href}
-                          className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-ehrdc-light-teal/10 hover:text-ehrdc-teal focus:bg-ehrdc-light-teal/10 focus:text-ehrdc-teal ${language === 'ar' ? 'text-end' : 'text-start'}`}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                         >
-                          <div className={`text-sm font-medium leading-none ${language === 'ar' ? 'text-end' : 'text-start'}`}>
+                          <div className="text-sm font-medium leading-none">
                             {t(`groups.${group.id}.items.${itemKey}.title`)}
                           </div>
-                          <p className={`line-clamp-2 text-sm leading-snug text-muted-foreground ${language === 'ar' ? 'text-end' : 'text-start'}`}>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             {t(`groups.${group.id}.items.${itemKey}.description`)}
                           </p>
                         </Link>
@@ -127,8 +127,8 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
         {user && (
           <Link
             to="/dashboard"
-            className={`text-sm font-medium transition-colors hover:text-ehrdc-teal ${location.pathname === '/dashboard' ? 'text-ehrdc-teal' : 'text-ehrdc-neutral-dark'
-              } ${language === 'ar' ? 'text-end' : 'text-start'}`}
+            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-foreground'
+              }`}
           >
             {t('dashboard')}
           </Link>

@@ -225,7 +225,7 @@ const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string;
                 placeholder="Type your response here..."
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
-                className="min-h-[60px] text-xs bg-white border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
+                className="min-h-[60px] text-xs bg-card border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
                 disabled={isSubmitting}
             />
             <div className="flex justify-end">
@@ -545,7 +545,7 @@ export const FeedbackWidget = () => {
                     onClick={() => setIsOpen(true)}
                     aria-label="Send feedback or report an issue"
                     title="Send feedback or report an issue"
-                    className="relative flex items-center justify-center rounded-full h-14 min-w-14 px-4 shadow-xl bg-primary hover:bg-primary/90 text-white border-2 border-white/20 transition-transform motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
+                    className="relative flex items-center justify-center rounded-full h-14 min-w-14 px-4 shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-white/20 transition-transform motion-safe:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
                 >
                     <MessageSquare className="h-6 w-6 shrink-0" />
                     <span
@@ -662,7 +662,7 @@ export const FeedbackWidget = () => {
                                             value={reproSteps}
                                             onChange={(e) => setReproSteps(e.target.value)}
                                             placeholder="1. Go to page X&#10;2. Click on button Y&#10;3. See error Z"
-                                            className="col-span-3 min-h-[100px] font-mono text-sm bg-slate-50"
+                                            className="col-span-3 min-h-[100px] font-mono text-sm bg-muted"
                                         />
                                     </div>
                                 )}
@@ -684,7 +684,7 @@ export const FeedbackWidget = () => {
                                                         capturePageScreenshot();
                                                     }
                                                 }}
-                                                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                                className="h-4 w-4 rounded border-input text-primary focus:ring-ring cursor-pointer"
                                             />
                                             <label htmlFor="include-screenshot" className="text-xs text-muted-foreground font-medium select-none cursor-pointer">
                                                 Include screenshot of the current page
@@ -692,10 +692,10 @@ export const FeedbackWidget = () => {
                                         </div>
                                         
                                         {includeScreenshot && (
-                                            <div className="relative border rounded-md overflow-hidden bg-slate-50 h-24 flex items-center justify-center group/screenshot">
+                                            <div className="relative border rounded-md overflow-hidden bg-muted h-24 flex items-center justify-center group/screenshot">
                                                 {isCapturingScreenshot ? (
                                                     <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1">
-                                                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                                                         <span>Capturing page...</span>
                                                     </div>
                                                 ) : screenshot ? (
@@ -710,7 +710,7 @@ export const FeedbackWidget = () => {
                                                                 type="button"
                                                                 size="sm"
                                                                 variant="secondary"
-                                                                className="h-7 text-[10px] px-2 py-0 bg-white hover:bg-slate-100 text-black border-none"
+                                                                className="h-7 text-[10px] px-2 py-0 bg-card hover:bg-muted text-foreground border-none"
                                                                 onClick={capturePageScreenshot}
                                                             >
                                                                 Retake
@@ -719,7 +719,7 @@ export const FeedbackWidget = () => {
                                                                 href={screenshot}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="h-7 text-[10px] px-2 py-1 bg-white text-black rounded hover:bg-slate-100 flex items-center justify-center font-medium"
+                                                                className="h-7 text-[10px] px-2 py-1 bg-card text-foreground rounded hover:bg-muted flex items-center justify-center font-medium"
                                                             >
                                                                 View
                                                             </a>

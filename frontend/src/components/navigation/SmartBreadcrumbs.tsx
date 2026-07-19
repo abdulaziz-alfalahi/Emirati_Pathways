@@ -190,12 +190,12 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 ms-4 ps-4 border-s border-gray-200">
+            <div className="flex items-center gap-2 ms-4 ps-4 border-s border-border">
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: phaseData.color }}
               />
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-muted-foreground">
                 {phaseData.name}
               </span>
               <Info className="h-4 w-4 text-gray-400" />
@@ -204,7 +204,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
           <TooltipContent>
             <div className="max-w-xs">
               <p className="font-medium">{phaseData.name}</p>
-              <p className="text-sm text-gray-600 mt-1">{phaseData.description}</p>
+              <p className="text-sm text-muted-foreground mt-1">{phaseData.description}</p>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -247,7 +247,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   return (
-    <nav className="flex items-center justify-between py-3 px-4 bg-white border-b border-gray-200">
+    <nav className="flex items-center justify-between py-3 px-4 bg-card border-b border-border">
       <div className="flex items-center flex-1">
         {/* Back Button */}
         {showBackButton && (
@@ -255,7 +255,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
             variant="ghost"
             size="sm"
             onClick={goBack}
-            className="me-4 text-gray-600 hover:text-gray-900"
+            className="me-4 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4 me-2" />
             Back
@@ -274,13 +274,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
                 {item.href ? (
                   <Link
                     to={item.href}
-                    className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {index === 0 && <Home className="h-4 w-4 me-1" />}
                     {item.label}
                   </Link>
                 ) : (
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-foreground">
                     {item.label}
                   </span>
                 )}
