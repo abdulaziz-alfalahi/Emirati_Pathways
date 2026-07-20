@@ -56,6 +56,8 @@ interface Company {
   healthScore: number; // 0-100
   tradeLicense: boolean;
   mohrRegistered: boolean;
+  /** Operator approval — gates job publishing platform-wide (#96). */
+  isVerified: boolean;
   leadSource: string; // nafis_import | manual | magic_link
 }
 
@@ -88,6 +90,7 @@ const toCompany = (c: any): Company => ({
   healthScore: c.isVerified ? 80 : (c.status === 'active' ? 60 : c.status === 'signing_up' ? 40 : 20),
   tradeLicense: !!c.tradeLicense,
   mohrRegistered: c.isVerified || false,
+  isVerified: c.isVerified || false,
   leadSource: c.leadSource || 'manual',
 });
 
@@ -141,6 +144,32 @@ const GrowthOperatorDashboard: React.FC = () => {
       console.error('Error fetching recruiter performance:', err);
     } finally {
       setPerfLoading(false);
+    }
+  };
+
+  // Approve / revoke a company — the write side of the publish gate (#96).
+  // Revoking is deliberate and confirmed: it stops the company publishing
+  // NEW jobs (already-published ones stay live).
+  const [verifyingCompanyId, setVerifyingCompanyId] = useState('');
+  const handleVerifyCompany = async (companyId: string, verified: boolean) => {
+    if (!verified && !window.confirm(t(
+      'Revoke approval? The company will no longer be able to publish new jobs.',
+      'إلغاء الاعتماد؟ لن تتمكن الشركة من نشر وظائف جديدة.'
+    ))) return;
+    setVerifyingCompanyId(companyId);
+    try {
+      const res = await restClient.post(`/api/growth/companies/${companyId}/verify`, { verified });
+      const r = (res as any).data || res;
+      if (r.success) {
+        await fetchDashboardStats();
+      } else {
+        alert(r.error || t('Failed to update company approval', 'فشل تحديث اعتماد الشركة'));
+      }
+    } catch (err: any) {
+      console.error('Verify company failed:', err);
+      alert(err?.response?.data?.error || t('Failed to update company approval', 'فشل تحديث اعتماد الشركة'));
+    } finally {
+      setVerifyingCompanyId('');
     }
   };
 
@@ -557,6 +586,18 @@ const GrowthOperatorDashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                 {getStatusBadge(company.status)}
                 <div style={{ display: 'flex', gap: 6 }}>
+                  {/* Approval gate (#96): a company that finished signing up
+                      still cannot publish jobs until an operator approves it. */}
+                  {company.status === 'signing_up' && !company.isVerified && (
+                    <button
+                      onClick={() => handleVerifyCompany(company.id, true)}
+                      disabled={verifyingCompanyId === company.id}
+                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.greenText, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      <ShieldCheck size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} />
+                      {verifyingCompanyId === company.id ? t('Approving...', 'جاري الاعتماد...') : t('Approve', 'اعتماد')}
+                    </button>
+                  )}
                   {/* Recover the magic link for any open invitation — before
                       this, a link was only visible in the dialog that
                       generated it, and closing that dialog lost it. */}
@@ -654,6 +695,27 @@ const GrowthOperatorDashboard: React.FC = () => {
                     <span style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{company.name}</span>
                     {company.leadSource === 'nafis_import' && (
                       <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8' }}>NAFIS</span>
+                    )}
+                    {/* Approval gate control (#96): approval is what lets this
+                        company publish jobs; revoke needs a click + confirm. */}
+                    {company.isVerified ? (
+                      <button
+                        onClick={() => handleVerifyCompany(company.id, false)}
+                        disabled={verifyingCompanyId === company.id}
+                        title={t('Approved to publish jobs — click to revoke', 'معتمدة لنشر الوظائف — انقر للإلغاء')}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: colors.greenBg, color: colors.greenText, border: 'none', cursor: 'pointer' }}
+                      >
+                        <ShieldCheck size={11} /> {t('APPROVED', 'معتمدة')}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleVerifyCompany(company.id, true)}
+                        disabled={verifyingCompanyId === company.id}
+                        title={t('Not yet approved — this company cannot publish jobs', 'غير معتمدة بعد — لا يمكن لهذه الشركة نشر الوظائف')}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: colors.yellowBg, color: colors.yellowText, border: `1px dashed ${colors.yellowText}`, cursor: 'pointer' }}
+                      >
+                        <ShieldCheck size={11} /> {verifyingCompanyId === company.id ? t('APPROVING...', 'جاري الاعتماد...') : t('APPROVE TO PUBLISH', 'اعتماد للنشر')}
+                      </button>
                     )}
                   </div>
                   <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>

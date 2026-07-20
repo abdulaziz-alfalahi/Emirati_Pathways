@@ -260,13 +260,66 @@ def run_growth_flow_tests():
         results.skip("4.9 Bad Token Rejected", f"no DB access: {e}")
 
     # ── 4.10 Dashboard After Changes ─────────────────────────
+    testco_id = None
     r = api('GET', '/api/growth/dashboard-stats')
     if r.status_code < 400:
         body = r.json()
         activity = body.get('recentActivity', [])
         results.ok("4.10 Dashboard After Changes", f"Activity items: {len(activity)}")
+        for c in body.get('companies', []):
+            if c.get('name') == 'TestCo Alpha':
+                testco_id = c.get('id')
+                break
     else:
         results.fail("4.10 Dashboard After Changes", f"HTTP {r.status_code}")
+
+    # ── 4.11 Company approval gate — operator verify endpoint (#96) ──
+    # companies.is_verified is now load-bearing: publish paths refuse jobs
+    # from unverified companies. Assert the operator endpoint persists the
+    # flag + audit columns, then restore the original value.
+    if testco_id:
+        try:
+            import psycopg2, psycopg2.extras
+            conn = psycopg2.connect(
+                host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'),
+                dbname=os.getenv('DB_NAME'), user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+            )
+            conn.autocommit = True
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("SELECT is_verified FROM companies WHERE id::text = %s", (testco_id,))
+            original = cur.fetchone()['is_verified']
+
+            r = api('POST', f'/api/growth/companies/{testco_id}/verify', json={'verified': True})
+            if r.status_code < 400 and r.json().get('success'):
+                cur.execute(
+                    "SELECT is_verified, verified_by, verified_at FROM companies WHERE id::text = %s",
+                    (testco_id,),
+                )
+                row = cur.fetchone()
+                if row['is_verified'] and row['verified_at'] is not None:
+                    results.ok("4.11 Operator verify persists",
+                               f"is_verified=True, verified_by={row['verified_by']}, verified_at set")
+                else:
+                    results.fail("4.11 Operator verify persists", f"durable state wrong: {dict(row)}")
+                # Restore whatever the company had before the test.
+                api('POST', f'/api/growth/companies/{testco_id}/verify', json={'verified': bool(original)})
+            else:
+                results.fail("4.11 Operator verify persists", f"HTTP {r.status_code}: {r.text[:200]}")
+            cur.close(); conn.close()
+        except Exception as e:
+            results.skip("4.11 Operator verify persists", f"no DB access: {e}")
+    else:
+        results.skip("4.11 Operator verify persists", "TestCo Alpha id not found")
+
+    # ── 4.12 The in-memory verify endpoint is retired (#96/#97) ──
+    # It wrote to a dict, checked no privilege (TODO comment), and vanished
+    # on restart — while looking successful to the caller.
+    r = api('POST', f'/api/companies/{testco_id or "any-id"}/verify', json={'notes': 'x'})
+    if r.status_code == 410:
+        results.ok("4.12 In-memory verify retired", "HTTP 410, points to operator endpoint")
+    else:
+        results.fail("4.12 In-memory verify retired", f"Expected 410, got {r.status_code}")
 
     # Cleanup
     try:
