@@ -36,6 +36,25 @@ class GrowthSystem:
             logger.error(f"Failed to connect to DB: {e}")
             raise
 
+    # Roles an invitation may ever confer. employer_admin is deliberately NOT
+    # self-selectable by the invitee (issue #89) — it carries
+    # workspace.manage_employees, i.e. the ability to add and remove team
+    # members. It can only be set by the operator who creates the invitation.
+    ALLOWED_INVITE_ROLES = ('recruiter', 'employer_admin')
+    DEFAULT_INVITE_ROLE = 'recruiter'
+
+    @classmethod
+    def _validate_role(cls, role):
+        """Return role if it is an allowed invite role, else the safe default.
+
+        Never raises: an operator typo must not break invite generation, and an
+        invitee-supplied value must never widen privileges. Anything unknown
+        degrades to the least-privileged role.
+        """
+        if isinstance(role, str) and role.strip() in cls.ALLOWED_INVITE_ROLES:
+            return role.strip()
+        return cls.DEFAULT_INVITE_ROLE
+
     def _generate_synthetic_eid(self, cur):
         """Generate a unique 15-character synthetic EID for users without one."""
         cur.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
@@ -469,8 +488,8 @@ class GrowthSystem:
                             INSERT INTO company_invitations (
                                 token, company_name, company_code, company_email,
                                 company_phone, company_sector, trade_license,
-                                invited_by, status, is_used, expires_at
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending', FALSE, %s)
+                                invited_by, status, is_used, expires_at, intended_role
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending', FALSE, %s, %s)
                             RETURNING id, token, company_name, company_email
                         """, (
                             token,
@@ -482,6 +501,10 @@ class GrowthSystem:
                             company.get('tradeLicense', ''),
                             invited_by,
                             expires_at,
+                            # The role is decided by the OPERATOR at invite time and
+                            # validated here — never taken from the invitee. See the
+                            # allow-list check in accept_company_invitation.
+                            self._validate_role(company.get('role')),
                         ))
 
                         record = cur.fetchone()
@@ -536,7 +559,7 @@ class GrowthSystem:
                 cur.execute("""
                     SELECT id, token, company_name, company_code, company_email,
                            company_phone, company_sector, trade_license,
-                           status, is_used, expires_at, created_at
+                           status, is_used, expires_at, created_at, intended_role
                     FROM company_invitations
                     WHERE token = %s AND is_used = FALSE AND expires_at > NOW()
                 """, (token,))
@@ -588,8 +611,23 @@ class GrowthSystem:
                 email = user_data.get('email') or invitation.get('company_email', '')
                 first_name = user_data.get('first_name', '')
                 last_name = user_data.get('last_name', '')
-                role = user_data.get('role', 'recruiter')
                 position_title = user_data.get('position_title', '')
+
+                # ROLE IS SERVER-DETERMINED (issue #89).
+                #
+                # This used to be `user_data.get('role', 'recruiter')` — i.e. taken
+                # straight from the request body and written into the users table
+                # with no allow-list. The onboarding wizard offered "HR Manager"
+                # (employer_admin) as a self-service choice, so anyone holding a
+                # recruiter invite link could grant themselves the role that owns
+                # workspace.manage_employees for that company.
+                #
+                # The operator decides the role when they create the invitation; it
+                # is stored on the invitation row and read back here. The client's
+                # value is ignored entirely rather than compared, so there is
+                # nothing to bypass. Legacy invitations created before this column
+                # existed fall back to the least-privileged role.
+                role = self._validate_role(invitation.get('intended_role'))
 
                 # 2. Check if user already exists (by phone)
                 cur.execute("SELECT id, email, user_type FROM users WHERE phone = %s", (phone,))
