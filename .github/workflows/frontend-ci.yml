@@ -1,12 +1,15 @@
 name: Frontend CI
 
 on:
+  # Manual trigger. paths filters do not apply to workflow_dispatch,
+  # so this is the way to exercise a CI change on demand.
+  workflow_dispatch:
   push:
     branches: [main, develop, production-readiness]
-    paths: ['frontend/**']
+    paths: ['frontend/**', '.github/workflows/frontend-ci.yml']
   pull_request:
     branches: [main, production-readiness]
-    paths: ['frontend/**']
+    paths: ['frontend/**', '.github/workflows/frontend-ci.yml']
 
 jobs:
   build-and-test:

@@ -1,12 +1,15 @@
 name: Backend CI
 
 on:
+  # Manual trigger. paths filters do not apply to workflow_dispatch,
+  # so this is the way to exercise a CI change on demand.
+  workflow_dispatch:
   push:
     branches: [main, develop, production-readiness]
-    paths: ['backend/**']
+    paths: ['backend/**', '.github/workflows/backend-ci.yml']
   pull_request:
     branches: [main, production-readiness]
-    paths: ['backend/**']
+    paths: ['backend/**', '.github/workflows/backend-ci.yml']
 
 jobs:
   lint-and-test:
