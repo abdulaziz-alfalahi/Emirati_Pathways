@@ -598,25 +598,52 @@ class GrowthSystem:
                 user_id = None
                 if existing_user:
                     user_id = existing_user['id']
-                    # Update role if needed
+                    # GRANT the invited role as an ADDITIONAL role — never replace
+                    # the primary one.
+                    #
+                    # This used to be `UPDATE users SET user_type = %s`, which was
+                    # wrong twice over. First, `user_type` is not the column the
+                    # platform authorises on: access_control.resolve_roles reads
+                    # `role` + `secondary_roles`, so writing user_type granted
+                    # nothing. Second, overwriting the primary role destroys the
+                    # account's existing identity — and because this branch is
+                    # reached by a PHONE-NUMBER match alone, redeeming a link with
+                    # someone else's number silently rewrote that person's role.
+                    #
+                    # Appending to secondary_roles matches how the platform already
+                    # models people who hold several personas, and resolve_roles
+                    # unions the two, so access works without the destruction.
                     cur.execute("""
-                        UPDATE users SET user_type = %s, updated_at = NOW()
+                        UPDATE users
+                        SET secondary_roles = COALESCE((
+                                SELECT jsonb_agg(DISTINCT r)
+                                FROM jsonb_array_elements_text(
+                                    COALESCE(secondary_roles, '[]'::jsonb) || to_jsonb(%s::text)
+                                ) AS t(r)
+                            ), '[]'::jsonb),
+                            updated_at = NOW()
                         WHERE id = %s
                     """, (role, user_id))
                 else:
                     # Create new user — no password (OTP-only login)
                     user_id = self._generate_synthetic_eid(cur)
+                    # Write `role` — the column access_control.resolve_roles and the
+                    # UAE Pass callback actually read. `user_type` is kept in sync as
+                    # the legacy alias (auth_manager_fixed.py does the same). Writing
+                    # only user_type left `role` at its 'candidate' default, so the
+                    # account was a recruiter for exactly one session and landed on
+                    # the candidate dashboard on every subsequent sign-in.
                     cur.execute("""
                         INSERT INTO users (
                             id, email, first_name, last_name,
-                            user_type, phone, is_active,
+                            role, user_type, phone, is_active,
                             password_hash, created_at
                         ) VALUES (
                             %s, %s, %s, %s,
-                            %s, %s, TRUE,
+                            %s, %s, %s, TRUE,
                             'otp_only', NOW()
                         ) RETURNING id
-                    """, (user_id, email, first_name, last_name, role, phone))
+                    """, (user_id, email, first_name, last_name, role, role, phone))
                     user_id = cur.fetchone()['id']
 
                 # 3. Find or create company link
