@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notifications/NotificationSystem';
 import { AccessibilityToolbar } from '@/components/accessibility/AccessibilityToolbar';
 import { normalizeRole, getDashboardRoute, ROLE_DISPLAY_NAMES } from '@/types/auth';
-import { roleLabel, langOf } from '@/utils/enumLabels';
 import { useNavigate } from 'react-router-dom';
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 
@@ -187,21 +186,54 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
   // Function to get human-readable role display names
   const getRoleDisplayName = (role: string): string => {
-    // Single source of truth: src/utils/enumLabels.ts.
-    //
-    // This used to carry its own roleMapEn/roleMapAr pair. Those had drifted
-    // from the UserRole union and were missing EVERY operator persona
-    // (board_member, platform_operator, compliance_auditor, the *_operator
-    // family...). Unmapped roles fell through to the title-case fallback, which
-    // SYNTHESISES an English string from the role token — so the Arabic role
-    // switcher rendered a mix of Arabic and English, and no translation pass
-    // could have caught it because those strings never existed as copy.
-    const canonical = String(normalizeRole(role) || role);
-    const label = roleLabel(canonical, langOf(isRTL));
-    // roleLabel echoes the raw value when unmapped; title-case that as before.
-    return label === canonical
-      ? canonical.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-      : label;
+    const roleMapEn: Record<string, string> = {
+      'candidate': 'Job Seeker',
+      'recruiter': 'Recruiter',
+      'employer_admin': 'HR Manager',
+      'parent': 'Parent',
+      'mentor': 'Mentor',
+      'assessor': 'Assessor',
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'training_center': 'Training Center',
+      'educational_institution': 'Educational Institution',
+      'government_entity': 'Government Entity',
+      'private_sector': 'Private Sector',
+      'advisor': 'Academic Advisor',
+      'coach': 'Career Coach',
+      'internship_coordinator': 'Internship Coordinator',
+      'training_provider': 'Training Center',
+      'call_center_agent': 'Call Center Agent',
+    };
+    const roleMapAr: Record<string, string> = {
+      'candidate': 'باحث عن عمل',
+      'recruiter': 'مسؤول توظيف',
+      'employer_admin': 'مدير الموارد البشرية',
+      'parent': 'ولي أمر',
+      'mentor': 'مرشد',
+      'assessor': 'مُقيّم',
+      'operator': 'مشغّل',
+      'admin': 'مسؤول النظام',
+      'training_center': 'مركز تدريب',
+      'educational_institution': 'مؤسسة تعليمية',
+      'government_entity': 'جهة حكومية',
+      'private_sector': 'قطاع خاص',
+      'advisor': 'مستشار أكاديمي',
+      'coach': 'مدرب مهني',
+      'internship_coordinator': 'منسق تدريب عملي',
+      'training_provider': 'مركز تدريب',
+      'call_center_agent': 'موظف مركز اتصال',
+    };
+    const roleMap = isRTL ? roleMapAr : roleMapEn;
+    // Normalise aliases before lookup. The DB stores this persona as
+    // `job_seeker` while the maps are keyed `candidate`, so the raw lookup
+    // missed and fell through to the title-case fallback — which manufactured
+    // the English string "Job Seeker" and rendered it even in Arabic.
+    // normalizeRole already knows every alias; use it rather than adding keys.
+    const key = String(normalizeRole(role) || role).toLowerCase();
+    return roleMap[key]
+        || roleMap[role.toLowerCase()]
+        || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const itemKeyByHref: Record<string, { name: string; desc: string }> = {
