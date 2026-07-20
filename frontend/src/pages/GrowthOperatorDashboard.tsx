@@ -10,7 +10,7 @@ import {
   Users, Briefcase, CheckCircle, Clock, AlertTriangle, Eye, Edit,
   RefreshCw, Download, Upload, TrendingUp, BarChart3, Target,
   Activity, ArrowUpRight, ArrowDownRight, ShieldCheck,
-  Building, Flag, ChevronRight, ExternalLink,
+  Building, Flag, ChevronRight, ExternalLink, Copy,
   Handshake, PieChart, Award, MessageSquare, Loader2
 } from 'lucide-react';
 
@@ -119,6 +119,10 @@ const GrowthOperatorDashboard: React.FC = () => {
     setSearchParams({ tab }, { replace: true });
   };
   const [companies, setCompanies] = useState<Company[]>([]);
+  // Open invitations keyed by company name, so a magic link stays
+  // recoverable after the dialog that generated it is closed.
+  const [pendingInvites, setPendingInvites] = useState<Record<string, { magic_link: string; intended_role: string; expires_at: string | null }>>({});
+  const [copiedCompany, setCopiedCompany] = useState('');
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [perfData, setPerfData] = useState<any[]>([]);
   const [perfLoading, setPerfLoading] = useState(false);
@@ -223,8 +227,40 @@ const GrowthOperatorDashboard: React.FC = () => {
     }
   };
 
+  const fetchPendingInvites = async () => {
+    try {
+      const res = await restClient.get('/api/growth/invitations');
+      const d = (res as any).data || res;
+      if (d.invitations) {
+        const map: Record<string, { magic_link: string; intended_role: string; expires_at: string | null }> = {};
+        // Newest-first from the API; keep the first (latest) per company.
+        d.invitations.forEach((inv: any) => {
+          if (!map[inv.company_name]) {
+            map[inv.company_name] = {
+              magic_link: inv.magic_link,
+              intended_role: inv.intended_role,
+              expires_at: inv.expires_at,
+            };
+          }
+        });
+        setPendingInvites(map);
+      }
+    } catch (err) {
+      console.error('Failed to load pending invitations:', err);
+    }
+  };
+
+  const copyInviteLink = (companyName: string) => {
+    const inv = pendingInvites[companyName];
+    if (!inv) return;
+    navigator.clipboard.writeText(inv.magic_link);
+    setCopiedCompany(companyName);
+    setTimeout(() => setCopiedCompany(''), 2000);
+  };
+
   useEffect(() => {
     fetchDashboardStats();
+    fetchPendingInvites();
   }, []);
 
   // ─── Computed Metrics ───
@@ -521,9 +557,26 @@ const GrowthOperatorDashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                 {getStatusBadge(company.status)}
                 <div style={{ display: 'flex', gap: 6 }}>
+                  {/* Recover the magic link for any open invitation — before
+                      this, a link was only visible in the dialog that
+                      generated it, and closing that dialog lost it. */}
+                  {pendingInvites[company.name] && (
+                    <button
+                      onClick={() => copyInviteLink(company.name)}
+                      title={pendingInvites[company.name].intended_role === 'employer_admin' ? t('Grants: HR Manager', 'يمنح: مدير موارد بشرية') : t('Grants: Recruiter', 'يمنح: مسؤول توظيف')}
+                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: copiedCompany === company.name ? colors.greenBg : colors.primary, border: 'none', color: copiedCompany === company.name ? colors.greenText : '#fff', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      {copiedCompany === company.name
+                        ? <><CheckCircle size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {t('Copied!', 'تم النسخ!')}</>
+                        : <><Copy size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> {t('Copy Link', 'نسخ الرابط')}</>}
+                    </button>
+                  )}
                   {['invited', 'link_opened'].includes(company.status) && (
-                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: '#fff', border: `1px solid ${colors.border}`, color: colors.text, cursor: 'pointer', fontWeight: 600 }}>
-                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                    <button
+                      onClick={() => handleNudgeCompany(company.id)}
+                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: '#fff', border: `1px solid ${colors.border}`, color: colors.text, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} />
                       {t('Nudge', 'تذكير')}
                     </button>
                   )}
