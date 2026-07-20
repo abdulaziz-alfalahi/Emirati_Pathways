@@ -409,15 +409,18 @@ def remove_company_user():
 
 @company_bp.route('/<company_id>/verify', methods=['POST'])
 @jwt_required()
-def verify_company():
+def verify_company(company_id):
     """
     RETIRED (issue #96). This wrote a "verification" into an in-memory dict —
     it looked successful, checked no privilege (the admin check was a TODO),
     and vanished on restart while the real gate column, companies.is_verified,
     stayed untouched. The real endpoint is operator-gated and persists:
     POST /api/growth/companies/<company_id>/verify.
+
+    (The original handler also took no `company_id` argument, so Flask raised
+    TypeError and every authenticated call 500'd — the fake success below it
+    was unreachable all along.)
     """
-    company_id = request.view_args['company_id']
     return jsonify({
         'success': False,
         'message': 'Company verification moved to the operator API.',
