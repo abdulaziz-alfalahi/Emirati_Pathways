@@ -45,6 +45,15 @@ const UAEPassCallback: React.FC = () => {
       const role = params.get('role');
       const returnUrl = params.get('return_url');
 
+      // Company-invitation redemption (magic link → UAE Pass handoff, #90).
+      // The backend redeems the invitation inside the OAuth callback and
+      // reports the outcome here; a failed redemption does NOT fail the
+      // sign-in itself.
+      const invitationAccepted = params.get('invitation') === 'accepted';
+      const invitedRole = params.get('invited_role');
+      const invitationCompany = params.get('company');
+      const invitationError = params.get('invitation_error');
+
       // Secure cookie delivery means the browser holds the JWT.
       // We set a placeholder in localStorage so existing frontend auth guards pass.
       const accessToken = 'cookie_authenticated';
@@ -108,14 +117,31 @@ const UAEPassCallback: React.FC = () => {
       setUser(userData);
 
       setStatus('success');
-      setMessage('Authentication successful! Redirecting...');
+      if (invitationAccepted) {
+        setMessage(
+          invitationCompany
+            ? `Welcome to ${invitationCompany}! Your account is ready — redirecting...`
+            : 'Invitation accepted! Redirecting...'
+        );
+      } else if (invitationError) {
+        // Signed in fine, but the invitation link was stale/used — say so
+        // instead of silently landing them on a candidate dashboard.
+        setMessage(`Signed in, but your invitation could not be applied: ${invitationError}`);
+      } else {
+        setMessage('Authentication successful! Redirecting...');
+      }
 
       // Clean the URL (remove hash fragment with tokens)
       window.history.replaceState(null, '', '/auth/uaepass/callback');
 
       // Redirect based on user status
       timeoutRef.current = setTimeout(async () => {
-        if (isNewUser) {
+        if (invitationAccepted) {
+          // Invited company staff go straight to their working dashboard —
+          // /welcome's role selection does not apply (the operator already
+          // fixed the role on the invitation, #89).
+          navigate(invitedRole === 'employer_admin' ? '/hr-dashboard' : '/recruiter-dashboard', { replace: true });
+        } else if (isNewUser) {
           // New users go to welcome/role selection
           navigate('/welcome', { replace: true });
         } else if (returnUrl) {
@@ -130,7 +156,7 @@ const UAEPassCallback: React.FC = () => {
             navigate('/candidate-dashboard', { replace: true });
           }
         }
-      }, 1500);
+      }, invitationError ? 3500 : 1500);
 
     } catch (error: any) {
       console.error('UAE Pass callback error:', error);

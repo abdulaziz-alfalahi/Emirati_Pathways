@@ -170,9 +170,16 @@ def uaepass_login():
 
         # Store state for CSRF validation on callback
         return_url = request.args.get('return_url', '')
+        # Magic-link → UAE Pass handoff (issues #90/#103): the company
+        # onboarding wizard passes its invitation token here, and the callback
+        # redeems it against the identity UAE Pass proves. Carried in the
+        # server-side state blob — not the OAuth redirect — so the invitee
+        # cannot detach or swap it mid-flow.
+        invitation_token = request.args.get('invitation_token', '')
         _store_state(state, {
             'return_url': return_url,
-            'nonce': nonce
+            'nonce': nonce,
+            'invitation_token': invitation_token
         })
 
         # Clean up old states (> 10 minutes)
@@ -275,8 +282,34 @@ def uaepass_callback():
         if not user_data:
             raise UAEPassError("Failed to find or create user in database")
 
-        # Step 5: Issue our JWT tokens
+        # Step 4b: Redeem a company invitation against the PROVEN identity
+        # (issues #90/#103). The old flow accepted invitations from an
+        # unauthenticated body and matched accounts by phone; here the only
+        # identity input is the user _find_or_create_user resolved from UAE
+        # Pass. A redemption failure (expired/used link) must not fail the
+        # sign-in itself — the user is who they say they are — so it degrades
+        # to an error message on the frontend callback page.
         user_id = str(user_data['id']).strip()  # Now EID CHAR(15)
+        invitation_token = state_data.get('invitation_token', '')
+        invitation_result = None
+        invitation_error = ''
+        if invitation_token:
+            try:
+                from growth_system import GrowthSystem
+                invitation_result = GrowthSystem().redeem_invitation_for_user(
+                    invitation_token, user_id, is_new_user=is_new_user
+                )
+                # New accounts take the invited role as primary — reflect that
+                # in the JWT claim rather than the pre-redemption 'candidate'.
+                if invitation_result.get('primary_role'):
+                    user_data['role'] = invitation_result['primary_role']
+            except ValueError as e:
+                invitation_error = str(e)
+            except Exception as e:
+                logger.error(f"Invitation redemption failed for {mask_eid(user_id)}: {e}")
+                invitation_error = 'Invitation could not be redeemed'
+
+        # Step 5: Issue our JWT tokens
         additional_claims = {
             'role': user_data.get('role', 'candidate'),
             'auth_method': 'uaepass'
@@ -296,13 +329,21 @@ def uaepass_callback():
         return_url = state_data.get('return_url', '')
         redirect_path = '/auth/uaepass/callback'
 
+        import urllib.parse
         query_params = (
             f"is_new_user={str(is_new_user).lower()}"
             f"&role={user_data.get('role', 'candidate')}"
         )
         if return_url:
-            import urllib.parse
             query_params += f"&return_url={urllib.parse.quote(return_url)}"
+        if invitation_result:
+            query_params += (
+                f"&invitation=accepted"
+                f"&invited_role={urllib.parse.quote(invitation_result['role'])}"
+                f"&company={urllib.parse.quote(invitation_result.get('company_name', ''))}"
+            )
+        elif invitation_error:
+            query_params += f"&invitation_error={urllib.parse.quote(invitation_error[:150])}"
 
         redirect_url = f"{frontend_url}{redirect_path}?{query_params}"
 

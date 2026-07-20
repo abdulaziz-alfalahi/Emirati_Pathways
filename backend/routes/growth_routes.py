@@ -220,74 +220,23 @@ def get_invitation_details(token):
 @growth_bp.route('/api/public/invitation/<token>/accept', methods=['POST'])
 def accept_invitation(token):
     """
-    Public endpoint: Accept a company invitation.
-    Creates user account and HR profile.
-    Expects JSON: {
-        "first_name": "...",
-        "last_name": "...",
-        "phone": "...",
-        "email": "...",
-        "position_title": "..."
-    }
+    RETIRED (issue #90). This endpoint used to create accounts from an
+    unauthenticated request body and matched existing accounts by PHONE
+    NUMBER alone — so redeeming a link with someone else's number captured
+    their account. Invitations are now redeemed by signing in with UAE Pass:
+    the wizard sends the invitee to /api/auth/uaepass/login with the
+    invitation token, and the OAuth callback binds the invitation to the
+    identity UAE Pass proved (growth_system.redeem_invitation_for_user).
 
-    NOTE: "role" is NOT accepted from the client. It is fixed by the operator
-    when the invitation is created and read from the invitation row
-    (issue #89) — sending it here has no effect.
-
-    Returns JWT tokens for auto-login.
+    410 rather than 404 so an old bookmarked wizard or cached client gets an
+    actionable pointer instead of "not found".
     """
-    try:
-        payload = request.json
-        if not payload:
-            return jsonify({'success': False, 'error': 'Missing request body'}), 400
-
-        # 'role' deliberately absent: it comes from the invitation, not the caller.
-        required = ['first_name', 'last_name', 'phone']
-        for field in required:
-            if not payload.get(field):
-                return jsonify({
-                    'success': False,
-                    'error': f'Missing required field: {field}'
-                }), 400
-
-        # Accept the invitation and create user
-        user_data = growth_sys.accept_company_invitation(token, payload)
-
-        # Generate JWT tokens for auto-login
-        try:
-            from flask_jwt_extended import create_access_token, create_refresh_token
-            user_id = str(user_data['id'])
-            # 'role' is the column the platform authorises on (see #93).
-            role = user_data.get('role') or user_data.get('user_type') or 'recruiter'
-
-            access_token = create_access_token(
-                identity=user_id,
-                additional_claims={'role': role}
-            )
-            refresh_token = create_refresh_token(identity=user_id)
-
-            return jsonify({
-                'success': True,
-                'message': 'Registration complete! Welcome to Emirati Pathways.',
-                'data': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token,
-                    'user': user_data,
-                }
-            })
-        except ImportError:
-            # If JWT is not available, just return user data
-            return jsonify({
-                'success': True,
-                'message': 'Registration complete!',
-                'data': {'user': user_data}
-            })
-
-    except ValueError as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-    except Exception as e:
-        logger.error(f"Invitation acceptance error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify({
+        'success': False,
+        'error': 'This invitation is redeemed by signing in with UAE Pass. '
+                 'Open your invitation link again and choose "Continue with UAE PASS".',
+        'uaepass_login': f'/api/auth/uaepass/login?invitation_token={token}',
+    }), 410
 
 
 @growth_bp.route('/api/growth/recruiter-performance', methods=['GET'])

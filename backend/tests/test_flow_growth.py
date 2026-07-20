@@ -137,65 +137,105 @@ def run_growth_flow_tests():
     else:
         results.skip("4.6 Validate Invitation", "No token available")
 
-    # ── 4.7 Accept Company Invitation ────────────────────────
+    # ── 4.7 Body-based accept endpoint is RETIRED (issue #90) ─
+    # The old POST accepted an unauthenticated body and matched existing
+    # accounts by phone number alone — redeeming a link with someone else's
+    # number captured their account. Invitations are now redeemed inside the
+    # UAE Pass OAuth callback against the identity UAE Pass proved, so this
+    # endpoint must refuse EVERY request, well-formed or not.
     if invitation_token:
         r = api('POST', f'/api/public/invitation/{invitation_token}/accept', json={
             'first_name': 'Ali',
             'last_name': 'Al Hashimi Test',
             'phone': '+971509999999',
             'email': 'ali.test@testco-alpha.ae',
-            'position_title': 'HR Manager',
-            'role': 'recruiter'
         })
-        if r.status_code < 400:
-            body = r.json()
-            has_token = bool(body.get('data', {}).get('access_token'))
-            results.ok("4.7 Accept Invitation", f"JWT returned: {has_token}")
+        if r.status_code == 410:
+            points_to_uaepass = 'uaepass' in r.text.lower()
+            results.ok("4.7 Accept endpoint retired", f"HTTP 410, points to UAE Pass: {points_to_uaepass}")
+        else:
+            results.fail(
+                "4.7 Accept endpoint retired",
+                f"Expected 410 Gone, got {r.status_code}: {r.text[:200]} — "
+                f"the phone-match account-takeover surface (#90) is back",
+            )
+    else:
+        results.skip("4.7 Accept endpoint retired", "No token available")
 
-            # ── 4.7b The invited role must land in users.role (issue #93) ──
-            # The platform authorises on `role` (+ `secondary_roles`), NOT on
-            # `user_type`. Onboarding previously wrote only `user_type`, leaving
-            # `role` at its 'candidate' default — so the account was a recruiter
-            # for exactly one session (the auto-login JWT) and was treated as a
-            # candidate on every sign-in afterwards. Assert the durable state,
-            # not the response body, because the response is built in memory.
+    # ── 4.7b Redemption binds to a proven identity (issue #90) ──
+    # Exercise growth_system.redeem_invitation_for_user directly, the way the
+    # UAE Pass callback calls it: with a user id that already exists. Assert
+    # the DURABLE state — role grant, team membership the ACL honours, and
+    # invitation consumption — not any in-memory response.
+    if invitation_token:
+        test_user_id = '784999900000010'  # synthetic EID, cleaned up below
+        try:
+            import psycopg2, psycopg2.extras
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from growth_system import GrowthSystem
+
+            conn = psycopg2.connect(
+                host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'),
+                dbname=os.getenv('DB_NAME'), user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+            )
+            conn.autocommit = True
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             try:
-                import psycopg2, psycopg2.extras
-                conn = psycopg2.connect(
-                    host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'),
-                    dbname=os.getenv('DB_NAME'), user=os.getenv('DB_USER'),
-                    password=os.getenv('DB_PASSWORD'),
+                # An EXISTING candidate account (the UAE Pass callback has
+                # already created/linked it by the time redemption runs).
+                cur.execute("DELETE FROM users WHERE id = %s", (test_user_id,))
+                cur.execute("""
+                    INSERT INTO users (id, email, first_name, last_name, role, is_active, created_at)
+                    VALUES (%s, 'redeem.test@testco-alpha.ae', 'Redeem', 'Test', 'candidate', TRUE, NOW())
+                """, (test_user_id,))
+
+                redeemed = GrowthSystem().redeem_invitation_for_user(
+                    invitation_token, test_user_id, is_new_user=False
                 )
-                with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    cur.execute(
-                        "SELECT role, user_type FROM users WHERE phone = %s",
-                        ('+971509999999',),
-                    )
-                    row = cur.fetchone()
-                conn.close()
-                if not row:
-                    results.fail("4.7b Invited role persisted", "user row not found by phone")
-                elif row['role'] == 'recruiter':
+
+                cur.execute(
+                    "SELECT role, secondary_roles FROM users WHERE id = %s",
+                    (test_user_id,),
+                )
+                row = cur.fetchone()
+                cur.execute("""
+                    SELECT invitation_status FROM company_team_members
+                    WHERE user_id = %s AND company_id = %s
+                """, (test_user_id, redeemed['company_id']))
+                ctm = cur.fetchone()
+                cur.execute(
+                    "SELECT is_used FROM company_invitations WHERE token = %s",
+                    (invitation_token,),
+                )
+                inv = cur.fetchone()
+
+                secondary = row.get('secondary_roles') or []
+                if (row['role'] == 'candidate'          # primary NEVER replaced
+                        and redeemed['role'] in secondary
+                        and ctm and ctm['invitation_status'] == 'accepted'
+                        and inv and inv['is_used']):
                     results.ok(
-                        "4.7b Invited role persisted",
-                        f"role={row['role']} user_type={row['user_type']}",
+                        "4.7b EID-model redemption",
+                        f"primary kept, secondary={secondary}, membership accepted, invitation consumed",
                     )
                 else:
                     results.fail(
-                        "4.7b Invited role persisted",
-                        f"authorising column is wrong: role={row['role']!r} "
-                        f"(user_type={row['user_type']!r}) — expected 'recruiter'",
+                        "4.7b EID-model redemption",
+                        f"role={row['role']!r} secondary={secondary!r} "
+                        f"ctm={ctm!r} is_used={inv and inv['is_used']!r}",
                     )
-            except Exception as e:
-                results.skip("4.7b Invited role persisted", f"no DB access: {e}")
-        else:
-            # May fail if invitation already accepted — that's OK
-            if r.status_code == 400 and 'already' in r.text.lower():
-                results.ok("4.7 Accept Invitation", "Already accepted (idempotent)")
-            else:
-                results.fail("4.7 Accept Invitation", f"HTTP {r.status_code}: {r.text[:200]}")
+            finally:
+                # Remove everything the redemption attached to the test user.
+                cur.execute("UPDATE job_postings SET recruiter_id = NULL, created_by = NULL WHERE recruiter_id = %s", (test_user_id,))
+                cur.execute("DELETE FROM company_team_members WHERE user_id = %s", (test_user_id,))
+                cur.execute("DELETE FROM hr_profiles WHERE user_id = %s", (test_user_id,))
+                cur.execute("DELETE FROM users WHERE id = %s", (test_user_id,))
+                cur.close(); conn.close()
+        except Exception as e:
+            results.skip("4.7b EID-model redemption", f"no DB access: {e}")
     else:
-        results.skip("4.7 Accept Invitation", "No token available")
+        results.skip("4.7b EID-model redemption", "No token available")
 
     # ── 4.8 Invalid Token (Negative) ─────────────────────────
     r = api('GET', '/api/public/invitation/completely_fake_token_abc123')
@@ -204,20 +244,20 @@ def run_growth_flow_tests():
     else:
         results.fail("4.8 Invalid Token Rejected", f"Expected 404, got {r.status_code}")
 
-    # ── 4.9 Missing Fields (Negative) ────────────────────────
-    if invitation_token:
-        r = api('POST', f'/api/public/invitation/{invitation_token}/accept', json={
-            'first_name': 'Test'
-            # Missing: last_name, phone, role
-        })
-        if r.status_code in (400, 422):
-            results.ok("4.9 Missing Fields Rejected", f"HTTP {r.status_code}")
-        elif r.status_code == 404:
-            results.ok("4.9 Missing Fields Rejected", "Token already consumed (acceptable)")
-        else:
-            results.fail("4.9 Missing Fields Rejected", f"Expected 400, got {r.status_code}")
-    else:
-        results.skip("4.9 Missing Fields Rejected", "No token")
+    # ── 4.9 Redemption rejects a bad token (Negative) ────────
+    # A consumed/fake token must raise, not attach anyone to a company.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from growth_system import GrowthSystem
+        try:
+            GrowthSystem().redeem_invitation_for_user(
+                'completely_fake_token_abc123', '784999900000010', is_new_user=False
+            )
+            results.fail("4.9 Bad Token Rejected", "redeem accepted a fake token")
+        except ValueError:
+            results.ok("4.9 Bad Token Rejected", "ValueError raised")
+    except Exception as e:
+        results.skip("4.9 Bad Token Rejected", f"no DB access: {e}")
 
     # ── 4.10 Dashboard After Changes ─────────────────────────
     r = api('GET', '/api/growth/dashboard-stats')
