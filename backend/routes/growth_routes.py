@@ -227,9 +227,13 @@ def accept_invitation(token):
         "last_name": "...",
         "phone": "...",
         "email": "...",
-        "position_title": "...",
-        "role": "recruiter" | 'employer_admin'
+        "position_title": "..."
     }
+
+    NOTE: "role" is NOT accepted from the client. It is fixed by the operator
+    when the invitation is created and read from the invitation row
+    (issue #89) — sending it here has no effect.
+
     Returns JWT tokens for auto-login.
     """
     try:
@@ -237,7 +241,8 @@ def accept_invitation(token):
         if not payload:
             return jsonify({'success': False, 'error': 'Missing request body'}), 400
 
-        required = ['first_name', 'last_name', 'phone', 'role']
+        # 'role' deliberately absent: it comes from the invitation, not the caller.
+        required = ['first_name', 'last_name', 'phone']
         for field in required:
             if not payload.get(field):
                 return jsonify({
@@ -252,7 +257,8 @@ def accept_invitation(token):
         try:
             from flask_jwt_extended import create_access_token, create_refresh_token
             user_id = str(user_data['id'])
-            role = user_data.get('user_type', 'recruiter')
+            # 'role' is the column the platform authorises on (see #93).
+            role = user_data.get('role') or user_data.get('user_type') or 'recruiter'
 
             access_token = create_access_token(
                 identity=user_id,

@@ -26,6 +26,9 @@ const colors = {
 type Step = 'loading' | 'welcome' | 'details' | 'otp' | 'success' | 'error';
 
 interface InvitationData {
+    /** Role fixed by the operator who issued this invitation. The invitee cannot
+     *  change it — the server ignores any role sent from the client (#89). */
+    intended_role?: 'recruiter' | 'employer_admin';
     id: string;
     token: string;
     company_name: string;
@@ -53,6 +56,8 @@ const CompanyOnboardingWizard: React.FC = () => {
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [positionTitle, setPositionTitle] = useState('');
+    // Mirrors the invitation's intended_role purely for display; the server
+    // decides the real value and ignores anything sent from here (#89).
     const [role, setRole] = useState<'recruiter' | 'employer_admin'>('recruiter');
 
     // Step 3 — OTP
@@ -78,6 +83,7 @@ const CompanyOnboardingWizard: React.FC = () => {
                 const res = await axios.get(`${API}/api/public/invitation/${token}`);
                 if (res.data?.success && res.data?.data) {
                     setInvitation(res.data.data);
+                    if (res.data.data?.intended_role) setRole(res.data.data.intended_role);
                     setEmail(res.data.data.company_email || '');
                     setStep('welcome');
                 } else {
@@ -140,7 +146,8 @@ const CompanyOnboardingWizard: React.FC = () => {
                 phone,
                 email,
                 position_title: positionTitle,
-                role,
+                // 'role' intentionally not sent — the server takes it from the
+                // invitation and ignores client input (#89).
             });
 
             if (acceptRes.data?.success) {
@@ -366,32 +373,31 @@ const CompanyOnboardingWizard: React.FC = () => {
 
                         {/* Role Selector */}
                         <div style={{ marginBottom: 24 }}>
-                            <label style={labelStyle}>Your Role on the Platform *</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 6 }}>
-                                {([
-                                    { value: 'recruiter', label: 'Recruiter', desc: 'Post jobs, source & assess candidates', icon: <User size={20} /> },
-                                    { value: 'employer_admin', label: 'HR Manager', desc: 'Manage hiring pipeline & team', icon: <Briefcase size={20} /> },
-                                ] as const).map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => setRole(opt.value)}
-                                        style={{
-                                            padding: '14px 16px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                                            border: role === opt.value ? `2px solid ${colors.primary}` : `2px solid ${colors.border}`,
-                                            background: role === opt.value ? colors.primaryLight : colors.card,
-                                            transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ color: role === opt.value ? colors.primary : colors.textSecondary }}>{opt.icon}</div>
-                                            <div>
-                                                <div style={{ fontWeight: 700, fontSize: 14, color: role === opt.value ? colors.primary : colors.text }}>{opt.label}</div>
-                                                <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{opt.desc}</div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
+                            {/* Read-only. The role is set by the operator who issued
+                                the invitation and enforced server-side; the wizard used
+                                to let the invitee pick "HR Manager" for themselves,
+                                which was a privilege self-elevation (#89). */}
+                            <label style={labelStyle}>Your Role on the Platform</label>
+                            <div style={{
+                                marginTop: 6, padding: '14px 16px', borderRadius: 12,
+                                border: `2px solid ${colors.border}`, background: colors.surfaceAlt || 'transparent',
+                                display: 'flex', alignItems: 'center', gap: 10,
+                            }}>
+                                {role === 'employer_admin' ? <Briefcase size={20} /> : <User size={20} />}
+                                <div>
+                                    <div style={{ fontWeight: 600 }}>
+                                        {role === 'employer_admin' ? 'HR Manager' : 'Recruiter'}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: colors.textSecondary }}>
+                                        {role === 'employer_admin'
+                                            ? 'Manage hiring pipeline & team'
+                                            : 'Post jobs, source & assess candidates'}
+                                    </div>
+                                </div>
                             </div>
+                            <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6 }}>
+                                Assigned by your organisation's onboarding contact.
+                            </p>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
