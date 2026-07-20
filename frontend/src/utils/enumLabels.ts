@@ -248,6 +248,23 @@ const ROLES: Domain = {
   'call center agent': { en: 'Call Center Agent', ar: 'موظف مركز اتصال' },
   student: { en: 'Student', ar: 'طالب' },
   'new member': { en: 'New Member', ar: 'عضو جديد' },
+
+  // Operator / governance personas. These are all in the UserRole union in
+  // src/types/auth.ts but were absent from every role map in the app, so in
+  // Arabic they fell through to the title-case fallback and rendered as
+  // English inside an otherwise-Arabic role switcher.
+  'board member': { en: 'Board Member', ar: 'عضو مجلس الإدارة' },
+  'platform operator': { en: 'Platform Operator', ar: 'مشغّل المنصة' },
+  'career services operator': { en: 'Career Services Operator', ar: 'مشغّل الخدمات المهنية' },
+  'employer relations': { en: 'Employer Relations', ar: 'علاقات أصحاب العمل' },
+  'professional dev operator': { en: 'Professional Dev Operator', ar: 'مشغّل التطوير المهني' },
+  'compliance auditor': { en: 'Compliance Auditor', ar: 'مدقق الامتثال' },
+  'talent operator': { en: 'Talent Operator', ar: 'مشغّل المواهب' },
+  'mentorship operator': { en: 'Mentorship Operator', ar: 'مشغّل الإرشاد' },
+  'education operator': { en: 'Education Operator', ar: 'مشغّل التعليم' },
+  'assessment operator': { en: 'Assessment Operator', ar: 'مشغّل التقييم' },
+  'community operator': { en: 'Community Operator', ar: 'مشغّل المجتمع' },
+  'growth operator': { en: 'Growth Operator', ar: 'مشغّل النمو' },
 };
 
 export const roleLabel = (raw: string | null | undefined, lang: Lang): string =>
