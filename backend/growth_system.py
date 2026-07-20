@@ -490,7 +490,7 @@ class GrowthSystem:
                                 company_phone, company_sector, trade_license,
                                 invited_by, status, is_used, expires_at, intended_role
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending', FALSE, %s, %s)
-                            RETURNING id, token, company_name, company_email
+                            RETURNING id, token, company_name, company_email, intended_role
                         """, (
                             token,
                             company.get('name', ''),
@@ -529,6 +529,7 @@ class GrowthSystem:
                             'token': record['token'],
                             'company_name': record['company_name'],
                             'company_email': record['company_email'],
+                            'intended_role': record['intended_role'],
                             'magic_link': link,
                         })
 
@@ -547,6 +548,42 @@ class GrowthSystem:
             raise e
 
         return results
+
+    def get_pending_invitations(self):
+        """
+        All open (unused, unexpired) invitations, with their magic links,
+        for the operator dashboard. Before this existed, a magic link was
+        only visible in the one dialog that generated it — closing that
+        dialog meant the operator had to reissue the invitation.
+
+        Operator-facing only: the route serving this is gated on
+        OPERATOR_ROLES. The token is intentionally included — the operator
+        is the person who delivers the link.
+        """
+        conn = self._get_db_connection()
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, token, company_name, company_email,
+                           intended_role, expires_at, created_at
+                    FROM company_invitations
+                    WHERE is_used = FALSE AND expires_at > NOW()
+                    ORDER BY created_at DESC
+                """)
+                rows = cur.fetchall()
+                return [{
+                    'id': str(r['id']),
+                    'company_name': r['company_name'],
+                    'company_email': r['company_email'] or '',
+                    'intended_role': r['intended_role'] or 'recruiter',
+                    'magic_link': f"{frontend_url}/join/{r['token']}",
+                    'expires_at': r['expires_at'].isoformat() if r['expires_at'] else None,
+                    'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                } for r in rows]
+        except Exception as e:
+            logger.error(f"Pending invitations query failed: {e}")
+            raise e
 
     def validate_company_invitation(self, token):
         """

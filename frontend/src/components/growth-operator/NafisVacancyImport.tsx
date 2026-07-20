@@ -127,6 +127,8 @@ function parseCSVLine(line: string): string[] {
 // ─── Component ───
 const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // Kept so a failed platform sync can be retried without re-picking the file.
+    const lastFileRef = useRef<File | null>(null);
     const [jobs, setJobs] = useState<NafisJob[]>([]);
     const [dragOver, setDragOver] = useState(false);
     const [fileName, setFileName] = useState('');
@@ -138,6 +140,21 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
     const [inviteSending, setInviteSending] = useState(false);
     const [inviteResults, setInviteResults] = useState<any[] | null>(null);
     const [inviteError, setInviteError] = useState('');
+    // Platform sync: the CSV must also reach POST /api/growth/import — that is
+    // what creates the companies (lead_source='nafis_import') and their NAFIS
+    // job postings in the DB. Without it the funnel has no leads and there is
+    // nothing to auto-assign to the recruiter who redeems an invitation.
+    // The in-browser parse below is only the preview/filter working set.
+    const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'failed'>('idle');
+    const [syncReport, setSyncReport] = useState<any>(null);
+    const [syncError, setSyncError] = useState('');
+    // Role each selected company's invitation will confer — decided by the
+    // OPERATOR here (#89). The invitee cannot change it.
+    const [inviteRoles, setInviteRoles] = useState<Record<string, 'recruiter' | 'employer_admin'>>({});
+    // NAFIS company names that already exist on the platform — badged so the
+    // operator does not re-invite an active employer (a name-matched
+    // re-invite spawns a duplicate "shadow" company, #99).
+    const [existingCompanies, setExistingCompanies] = useState<Set<string>>(new Set());
     const [sortField, setSortField] = useState<string>('totalVacancies');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -166,6 +183,50 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
         }
     }, []);
 
+    // ─── Which of these employers are already on the platform? ───
+    // Runs on every loaded file (including sessionStorage restore) so the
+    // "On platform" badges are always current. Failure is non-fatal — the
+    // badges simply don't render.
+    useEffect(() => {
+        if (jobs.length === 0) {
+            setExistingCompanies(new Set());
+            return;
+        }
+        const names = Array.from(new Set(jobs.map(j => j.CompanyName || j['Company Code'] || 'Unknown')));
+        (async () => {
+            try {
+                const res = await restClient.post('/api/growth/check-companies', { companies: names });
+                setExistingCompanies(new Set((res.data?.existing || []) as string[]));
+            } catch (err) {
+                console.error('check-companies failed:', err);
+            }
+        })();
+    }, [jobs]);
+
+    // ─── Platform sync ───
+    const syncToPlatform = useCallback(async (file: File) => {
+        setSyncState('syncing');
+        setSyncError('');
+        setSyncReport(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await restClient.post('/api/growth/import', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (response.data?.success) {
+                setSyncReport(response.data.report || null);
+                setSyncState('synced');
+            } else {
+                setSyncError(response.data?.error || t('Import failed', 'فشل الاستيراد'));
+                setSyncState('failed');
+            }
+        } catch (err: any) {
+            setSyncError(err?.response?.data?.error || err?.message || t('Import failed', 'فشل الاستيراد'));
+            setSyncState('failed');
+        }
+    }, [t]);
+
     // ─── File Handling ───
     const handleFile = useCallback((file: File) => {
         if (!file.name.endsWith('.csv')) {
@@ -173,6 +234,9 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
             return;
         }
         setFileName(file.name);
+        lastFileRef.current = file;
+        // Upload the SAME file to the platform importer — see syncState note.
+        syncToPlatform(file);
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target?.result as string;
@@ -195,7 +259,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
             }
         };
         reader.readAsText(file);
-    }, [t]);
+    }, [t, syncToPlatform]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -450,12 +514,49 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                     </span>
                 </div>
                 <button
-                    onClick={() => { setJobs([]); setFileName(''); setSelectedCompanies(new Set()); sessionStorage.removeItem('nafis_import_data'); sessionStorage.removeItem('nafis_import_filename'); }}
+                    onClick={() => { setJobs([]); setFileName(''); setSelectedCompanies(new Set()); setInviteRoles({}); setSyncState('idle'); setSyncReport(null); setSyncError(''); lastFileRef.current = null; sessionStorage.removeItem('nafis_import_data'); sessionStorage.removeItem('nafis_import_filename'); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', fontSize: 13, color: colors.textSecondary }}
                 >
                     <X size={14} /> {t('Clear', 'مسح')}
                 </button>
             </div>
+
+            {/* Platform Sync Status — the CSV must reach the platform importer,
+                not just this browser tab; say clearly which of the two happened. */}
+            {syncState === 'syncing' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 12, background: colors.blueBg, color: colors.blueText, fontSize: 13 }}>
+                    <Loader2 size={15} className="animate-spin" />
+                    {t('Uploading to the platform — creating company leads and vacancy records...', 'جاري الرفع إلى المنصة — إنشاء سجلات الشركات والشواغر...')}
+                </div>
+            )}
+            {syncState === 'synced' && syncReport && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 12, background: colors.greenBg, color: colors.greenText, fontSize: 13 }}>
+                    <CheckCircle size={15} />
+                    {t(
+                        `Synced to platform: ${syncReport.companies_created ?? 0} new companies, ${syncReport.jobs_created ?? 0} new vacancies (${syncReport.total_rows ?? 0} rows processed).`,
+                        `تمت المزامنة مع المنصة: ${syncReport.companies_created ?? 0} شركة جديدة، ${syncReport.jobs_created ?? 0} شاغر جديد (${syncReport.total_rows ?? 0} صف تمت معالجته).`
+                    )}
+                </div>
+            )}
+            {syncState === 'failed' && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 16px', borderRadius: 12, background: colors.yellowBg, color: colors.yellowText, fontSize: 13 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <AlertTriangle size={15} />
+                        {t(
+                            `Platform sync failed — you are previewing locally only. Invitations will still work, but the funnel and vacancy auto-assignment will not reflect this file. (${syncError})`,
+                            `فشلت المزامنة مع المنصة — أنت تعاين محليًا فقط. ستعمل الدعوات، لكن خط الإلحاق وإسناد الشواغر لن يعكسا هذا الملف. (${syncError})`
+                        )}
+                    </span>
+                    {lastFileRef.current && (
+                        <button
+                            onClick={() => lastFileRef.current && syncToPlatform(lastFileRef.current)}
+                            style={{ padding: '6px 14px', borderRadius: 8, border: `1px solid ${colors.yellowText}`, background: 'transparent', color: colors.yellowText, cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
+                        >
+                            {t('Retry', 'إعادة المحاولة')}
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Stats Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
@@ -689,7 +790,17 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                                 />
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
-                                                <div style={{ fontWeight: 600, color: colors.text, fontSize: 13 }}>{company.name}</div>
+                                                <div style={{ fontWeight: 600, color: colors.text, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    {company.name}
+                                                    {existingCompanies.has(company.name) && (
+                                                        <span
+                                                            title={t('This employer is already registered on the platform — check the pipeline before re-inviting', 'صاحب العمل هذا مسجل بالفعل على المنصة — تحقق من خط الإلحاق قبل إعادة الدعوة')}
+                                                            style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: colors.greenBg, color: colors.greenText, letterSpacing: '0.03em', flexShrink: 0 }}
+                                                        >
+                                                            {t('ON PLATFORM', 'على المنصة')}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>{company.tradeLicense || '—'}</div>
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
@@ -862,9 +973,16 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                             border: `1px solid ${colors.border}`,
                                         }}>
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 600, fontSize: 13, color: colors.text }}>
-                                                    <CheckCircle size={14} color={colors.greenText} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                                                <div style={{ fontWeight: 600, fontSize: 13, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <CheckCircle size={14} color={colors.greenText} />
                                                     {inv.company_name}
+                                                    <span style={{
+                                                        fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
+                                                        background: inv.intended_role === 'employer_admin' ? colors.purpleBg : colors.blueBg,
+                                                        color: inv.intended_role === 'employer_admin' ? colors.purpleText : colors.blueText,
+                                                    }}>
+                                                        {inv.intended_role === 'employer_admin' ? t('HR MANAGER', 'مدير موارد بشرية') : t('RECRUITER', 'مسؤول توظيف')}
+                                                    </span>
                                                 </div>
                                                 <div style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {inv.magic_link}
@@ -915,16 +1033,46 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                                 background: i % 2 === 0 ? '#F8FAFC' : colors.card,
                                                 border: `1px solid ${colors.border}`,
                                             }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 600, fontSize: 13, color: colors.text }}>{name}</div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: 13, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        {name}
+                                                        {existingCompanies.has(name) && (
+                                                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: colors.yellowBg, color: colors.yellowText, flexShrink: 0 }}>
+                                                                {t('ALREADY ON PLATFORM', 'مسجلة بالفعل')}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div style={{ fontSize: 12, color: colors.textSecondary }}>
                                                         {company?.sector} • {company?.email || t('No email', 'لا يوجد بريد')} • {company?.totalVacancies} {t('vacancies', 'شواغر')}
                                                     </div>
                                                 </div>
+                                                {/* Role this invitation will confer — the operator's
+                                                    decision (#89); the invitee cannot change it. */}
+                                                <div style={{ display: 'flex', gap: 4, marginLeft: 8, flexShrink: 0 }}>
+                                                    {([['recruiter', t('Recruiter', 'مسؤول توظيف')], ['employer_admin', t('HR Manager', 'مدير موارد بشرية')]] as const).map(([value, label]) => {
+                                                        const active = (inviteRoles[name] || 'recruiter') === value;
+                                                        return (
+                                                            <button
+                                                                key={value}
+                                                                disabled={inviteSending}
+                                                                onClick={() => setInviteRoles(prev => ({ ...prev, [name]: value }))}
+                                                                style={{
+                                                                    padding: '5px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                                                                    border: `1px solid ${active ? colors.primary : colors.border}`,
+                                                                    background: active ? colors.primaryLight : colors.card,
+                                                                    color: active ? colors.primary : colors.textSecondary,
+                                                                    cursor: inviteSending ? 'default' : 'pointer',
+                                                                }}
+                                                            >
+                                                                {label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                                 <button
                                                     onClick={() => toggleCompanySelection(name)}
                                                     disabled={inviteSending}
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.textSecondary, padding: 4 }}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.textSecondary, padding: 4, marginLeft: 4 }}
                                                 >
                                                     <X size={14} />
                                                 </button>
@@ -939,8 +1087,8 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                     background: colors.blueBg, color: colors.blueText, fontSize: 13,
                                 }}>
                                     {t(
-                                        'Each company will receive a magic link to join as a Recruiter or HR Manager. They will choose their role during registration.',
-                                        'ستتلقى كل شركة رابطًا سحريًا للانضمام كمسؤول توظيف أو مدير موارد بشرية. سيختارون دورهم أثناء التسجيل.'
+                                        'Each magic link grants exactly the role you choose above — the invitee cannot change it. They activate their account by signing in with UAE PASS.',
+                                        'يمنح كل رابط سحري الدور الذي تختاره أعلاه بالضبط — ولا يمكن للمدعو تغييره. يقوم المدعو بتفعيل حسابه عبر تسجيل الدخول بالهوية الرقمية.'
                                     )}
                                 </div>
 
@@ -968,6 +1116,8 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                                         phone: c?.phone || '',
                                                         sector: c?.sector || '',
                                                         tradeLicense: c?.tradeLicense || '',
+                                                        // Operator-chosen role this invitation confers (#89).
+                                                        role: inviteRoles[name] || 'recruiter',
                                                     };
                                                 });
 

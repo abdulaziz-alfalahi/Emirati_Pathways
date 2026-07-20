@@ -155,10 +155,14 @@ def invite_companies():
     Expects JSON: {
         "companies": [
             { "name": "...", "code": "...", "email": "...", "phone": "...",
-              "sector": "...", "tradeLicense": "..." },
+              "sector": "...", "tradeLicense": "...",
+              "role": "recruiter" | "employer_admin" },
             ...
         ]
     }
+    "role" is what the invitation will confer on whoever redeems it (#89) —
+    chosen by the OPERATOR here, validated against an allow-list, and never
+    changeable by the invitee. Omitted/invalid values degrade to 'recruiter'.
     Returns list of invitation results with magic links.
     """
     try:
@@ -191,6 +195,20 @@ def invite_companies():
 
     except Exception as e:
         logger.error(f"Invite companies error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@growth_bp.route('/api/growth/invitations', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def list_pending_invitations():
+    """
+    Open invitations with their magic links, so the operator can recover a
+    link after the generation dialog is closed (previously impossible).
+    """
+    try:
+        return jsonify({'success': True, 'invitations': growth_sys.get_pending_invitations()})
+    except Exception as e:
+        logger.error(f"Pending invitations error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
