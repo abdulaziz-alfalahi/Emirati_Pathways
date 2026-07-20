@@ -151,6 +151,43 @@ def run_growth_flow_tests():
             body = r.json()
             has_token = bool(body.get('data', {}).get('access_token'))
             results.ok("4.7 Accept Invitation", f"JWT returned: {has_token}")
+
+            # ── 4.7b The invited role must land in users.role (issue #93) ──
+            # The platform authorises on `role` (+ `secondary_roles`), NOT on
+            # `user_type`. Onboarding previously wrote only `user_type`, leaving
+            # `role` at its 'candidate' default — so the account was a recruiter
+            # for exactly one session (the auto-login JWT) and was treated as a
+            # candidate on every sign-in afterwards. Assert the durable state,
+            # not the response body, because the response is built in memory.
+            try:
+                import psycopg2, psycopg2.extras
+                conn = psycopg2.connect(
+                    host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'),
+                    dbname=os.getenv('DB_NAME'), user=os.getenv('DB_USER'),
+                    password=os.getenv('DB_PASSWORD'),
+                )
+                with conn, conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute(
+                        "SELECT role, user_type FROM users WHERE phone = %s",
+                        ('+971509999999',),
+                    )
+                    row = cur.fetchone()
+                conn.close()
+                if not row:
+                    results.fail("4.7b Invited role persisted", "user row not found by phone")
+                elif row['role'] == 'recruiter':
+                    results.ok(
+                        "4.7b Invited role persisted",
+                        f"role={row['role']} user_type={row['user_type']}",
+                    )
+                else:
+                    results.fail(
+                        "4.7b Invited role persisted",
+                        f"authorising column is wrong: role={row['role']!r} "
+                        f"(user_type={row['user_type']!r}) — expected 'recruiter'",
+                    )
+            except Exception as e:
+                results.skip("4.7b Invited role persisted", f"no DB access: {e}")
         else:
             # May fail if invitation already accepted — that's OK
             if r.status_code == 400 and 'already' in r.text.lower():
