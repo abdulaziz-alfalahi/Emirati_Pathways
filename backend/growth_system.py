@@ -503,7 +503,7 @@ class GrowthSystem:
                             expires_at,
                             # The role is decided by the OPERATOR at invite time and
                             # validated here — never taken from the invitee. See the
-                            # allow-list check in accept_company_invitation.
+                            # allow-list check in redeem_invitation_for_user.
                             self._validate_role(company.get('role')),
                         ))
 
@@ -582,17 +582,32 @@ class GrowthSystem:
             logger.error(f"Invitation validation error: {e}")
             raise e
 
-    def accept_company_invitation(self, token, user_data):
+    def redeem_invitation_for_user(self, token, user_id, is_new_user=False):
         """
-        Accept a company invitation:
-        1. Validate the token
-        2. Create or find user account (by phone number)
-        3. Create HR profile linked to the company
-        4. Mark invitation as used
-        
-        user_data should contain: first_name, last_name, phone, email,
-                                   position_title, role (recruiter/hr_manager)
-        Returns: user record dict
+        Redeem a company invitation for an ALREADY-AUTHENTICATED user
+        (issues #90, #103).
+
+        The magic link no longer creates accounts from client-supplied data.
+        Instead the wizard hands off to UAE Pass, and the OAuth callback calls
+        this with the identity UAE Pass proved. That closes the takeover in the
+        old flow, which matched an existing account by PHONE NUMBER from an
+        unauthenticated request body — redeeming a link with someone else's
+        number captured their account. Here there is nothing to spoof: the only
+        identity input is the user id the callback resolved from UAE Pass.
+
+        Role handling follows the owner's identity model:
+          - a brand-new account (created moments ago by this same callback,
+            hardcoded to 'candidate') takes the invited role as its PRIMARY
+            role — this person joined the platform as invited staff;
+          - an existing account KEEPS its primary role and the invited role is
+            APPENDED to secondary_roles — identity is proven by UAE Pass, so
+            linking is safe where the phone version was not, and
+            resolve_roles unions the two columns.
+
+        The role itself comes from the invitation's operator-set intended_role
+        (issue #89); there is no caller-supplied role to validate.
+
+        Returns: dict with user id, granted role, and company info.
         """
         conn = self._get_db_connection()
         try:
@@ -607,50 +622,31 @@ class GrowthSystem:
                 if not invitation:
                     raise ValueError("Invalid, expired, or already used invitation token")
 
-                phone = user_data.get('phone', '')
-                email = user_data.get('email') or invitation.get('company_email', '')
-                first_name = user_data.get('first_name', '')
-                last_name = user_data.get('last_name', '')
-                position_title = user_data.get('position_title', '')
-
-                # ROLE IS SERVER-DETERMINED (issue #89).
-                #
-                # This used to be `user_data.get('role', 'recruiter')` — i.e. taken
-                # straight from the request body and written into the users table
-                # with no allow-list. The onboarding wizard offered "HR Manager"
-                # (employer_admin) as a self-service choice, so anyone holding a
-                # recruiter invite link could grant themselves the role that owns
-                # workspace.manage_employees for that company.
-                #
-                # The operator decides the role when they create the invitation; it
-                # is stored on the invitation row and read back here. The client's
-                # value is ignored entirely rather than compared, so there is
-                # nothing to bypass. Legacy invitations created before this column
-                # existed fall back to the least-privileged role.
                 role = self._validate_role(invitation.get('intended_role'))
 
-                # 2. Check if user already exists (by phone)
-                cur.execute("SELECT id, email, user_type FROM users WHERE phone = %s", (phone,))
-                existing_user = cur.fetchone()
+                # 2. The user must already exist — created or linked by the UAE
+                #    Pass callback before this is called. Lock the row so two
+                #    concurrent redemptions cannot interleave role writes.
+                cur.execute(
+                    "SELECT id, email, role, user_type FROM users WHERE id = %s FOR UPDATE",
+                    (user_id,),
+                )
+                user = cur.fetchone()
+                if not user:
+                    raise ValueError("User account not found for invitation redemption")
+                email = user.get('email') or invitation.get('company_email', '')
 
-                user_id = None
-                if existing_user:
-                    user_id = existing_user['id']
-                    # GRANT the invited role as an ADDITIONAL role — never replace
-                    # the primary one.
-                    #
-                    # This used to be `UPDATE users SET user_type = %s`, which was
-                    # wrong twice over. First, `user_type` is not the column the
-                    # platform authorises on: access_control.resolve_roles reads
-                    # `role` + `secondary_roles`, so writing user_type granted
-                    # nothing. Second, overwriting the primary role destroys the
-                    # account's existing identity — and because this branch is
-                    # reached by a PHONE-NUMBER match alone, redeeming a link with
-                    # someone else's number silently rewrote that person's role.
-                    #
-                    # Appending to secondary_roles matches how the platform already
-                    # models people who hold several personas, and resolve_roles
-                    # unions the two, so access works without the destruction.
+                if is_new_user:
+                    # Fresh account from this same OAuth callback: the invited
+                    # role becomes primary, with user_type mirrored as the
+                    # legacy alias (#93).
+                    cur.execute("""
+                        UPDATE users
+                        SET role = %s, user_type = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (role, role, user_id))
+                else:
+                    # Existing account: ADD the invited role, never replace.
                     cur.execute("""
                         UPDATE users
                         SET secondary_roles = COALESCE((
@@ -662,27 +658,6 @@ class GrowthSystem:
                             updated_at = NOW()
                         WHERE id = %s
                     """, (role, user_id))
-                else:
-                    # Create new user — no password (OTP-only login)
-                    user_id = self._generate_synthetic_eid(cur)
-                    # Write `role` — the column access_control.resolve_roles and the
-                    # UAE Pass callback actually read. `user_type` is kept in sync as
-                    # the legacy alias (auth_manager_fixed.py does the same). Writing
-                    # only user_type left `role` at its 'candidate' default, so the
-                    # account was a recruiter for exactly one session and landed on
-                    # the candidate dashboard on every subsequent sign-in.
-                    cur.execute("""
-                        INSERT INTO users (
-                            id, email, first_name, last_name,
-                            role, user_type, phone, is_active,
-                            password_hash, created_at
-                        ) VALUES (
-                            %s, %s, %s, %s,
-                            %s, %s, %s, TRUE,
-                            'otp_only', NOW()
-                        ) RETURNING id
-                    """, (user_id, email, first_name, last_name, role, role, phone))
-                    user_id = cur.fetchone()['id']
 
                 # 3. Find or create company link
                 company_name = invitation.get('company_name', '')
@@ -718,7 +693,22 @@ class GrowthSystem:
                     cur.execute("""
                         INSERT INTO hr_profiles (user_id, company_id, position_title)
                         VALUES (%s, %s, %s)
-                    """, (user_id, str(company_id), position_title or role.replace('_', ' ').title()))
+                    """, (user_id, str(company_id), role.replace('_', ' ').title()))
+
+                # 4a. Team membership. The ACL reads company_team_members, not
+                #     hr_profiles (workspace_middleware.get_company_context), so
+                #     without this row the new member 403s on every workspace
+                #     endpoint despite having an HR profile. Vocabulary is the
+                #     middleware's ROLE_PERMISSIONS keys: employer_admin
+                #     invitations confer 'admin', everything else 'recruiter'.
+                #     'accepted' is the only status the ACL honours (#91).
+                ctm_role = 'admin' if role == 'employer_admin' else 'recruiter'
+                cur.execute("""
+                    INSERT INTO company_team_members
+                        (id, company_id, user_id, role, invitation_status, joined_at, permissions)
+                    VALUES (%s, %s, %s, %s, 'accepted', NOW(), '{}')
+                    ON CONFLICT (company_id, user_id) DO NOTHING
+                """, (str(uuid.uuid4()), str(company_id), user_id, ctm_role))
 
                 # 4b. Auto-assign company's unassigned NAFIS jobs to the new recruiter
                 cur.execute("""
@@ -741,21 +731,20 @@ class GrowthSystem:
 
                 conn.commit()
 
-                # Return user data for token generation
                 return {
                     'id': user_id,
                     'email': email,
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'phone': phone,
-                    'user_type': role,
+                    'role': role,
+                    # Primary role only changes for brand-new accounts; the
+                    # callback uses this for the JWT role claim.
+                    'primary_role': role if is_new_user else user.get('role'),
                     'company_name': company_name,
                     'company_id': str(company_id),
                 }
 
         except Exception as e:
             conn.rollback()
-            logger.error(f"Invitation acceptance failed: {e}")
+            logger.error(f"Invitation redemption failed: {e}")
             raise e
 
     # =====================================================
