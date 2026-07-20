@@ -95,7 +95,15 @@ class CompanyTeamSystem:
                     cur.execute("""
                         INSERT INTO company_team_members 
                         (id, company_id, user_id, role, invited_by, invitation_status, joined_at)
-                        VALUES (%s, %s, %s, %s, %s, 'active', NOW())
+                        -- 'accepted' is the ONLY value the permission layer honours:
+                        -- workspace_middleware.py:83 and assessor_routes.py:745 both
+                        -- filter on it. This previously wrote 'active', so every
+                        -- member added here was granted nothing while the UI showed
+                        -- a green "Active" badge. The DDL default stays 'pending'
+                        -- (= no access), which is correct for a genuine unaccepted
+                        -- invite; this path attaches an existing user directly, so
+                        -- the membership is effective immediately.
+                        VALUES (%s, %s, %s, %s, %s, 'accepted', NOW())
                         RETURNING id
                     """, (record_id, company_id, user_id, role, invited_by_user_id))
                     

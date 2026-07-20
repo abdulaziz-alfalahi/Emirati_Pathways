@@ -67,7 +67,8 @@ def backfill_team_members():
             cur.execute("""
                 INSERT INTO company_team_members 
                 (id, company_id, user_id, role, invitation_status, joined_at, permissions)
-                VALUES (%s, %s, %s, %s, 'active', NOW(), '{}')
+                -- must match workspace_middleware.py:83, which requires 'accepted'
+                VALUES (%s, %s, %s, %s, 'accepted', NOW(), '{}')
             """, (new_id, company_id, user_id, team_role))
             
             added_count += 1

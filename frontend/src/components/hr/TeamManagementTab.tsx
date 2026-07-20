@@ -190,7 +190,14 @@ export const TeamManagementTab: React.FC = () => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {member.invitation_status === 'active' ? (
+                                            {/* 'accepted' is the value the permission layer honours
+                                                (workspace_middleware.py:83). This used to compare
+                                                against 'active', which meant the badge and the
+                                                actual access could disagree: members were shown as
+                                                Active while every workspace endpoint 403'd them.
+                                                'active' is still accepted here so rows written
+                                                before the fix don't display as Pending. */}
+                                            {['accepted', 'active'].includes(member.invitation_status) ? (
                                                 <div className="flex items-center text-green-600 text-sm">
                                                     <CheckCircle className="h-4 w-4 me-1" /> Active
                                                 </div>
