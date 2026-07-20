@@ -549,6 +549,45 @@ class GrowthSystem:
 
         return results
 
+    def set_company_verification(self, company_id, verified, verified_by=None):
+        """
+        The operator-side write of the company approval gate (#96):
+        `companies.is_verified` is what _unverified_company_block reads before
+        any job posting may be published. Records who flipped it and when
+        (migration 009 adds the columns) — this is an approval decision, not
+        a display flag.
+
+        Returns the updated company summary, or None if the id is unknown.
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    UPDATE companies
+                    SET is_verified = %s,
+                        verified_by = %s,
+                        verified_at = CASE WHEN %s THEN NOW() ELSE NULL END
+                    WHERE id::text = %s
+                    RETURNING id, company_name, is_verified, verified_by, verified_at
+                """, (bool(verified), str(verified_by) if verified_by else None,
+                      bool(verified), str(company_id)))
+                row = cur.fetchone()
+                if not row:
+                    conn.rollback()
+                    return None
+                conn.commit()
+                return {
+                    'id': str(row['id']),
+                    'company_name': row['company_name'],
+                    'is_verified': row['is_verified'],
+                    'verified_by': row['verified_by'],
+                    'verified_at': row['verified_at'].isoformat() if row['verified_at'] else None,
+                }
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Company verification update failed: {e}")
+            raise e
+
     def get_pending_invitations(self):
         """
         All open (unused, unexpired) invitations, with their magic links,

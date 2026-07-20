@@ -411,47 +411,18 @@ def remove_company_user():
 @jwt_required()
 def verify_company():
     """
-    Verify a company
-    Requires: Platform admin
+    RETIRED (issue #96). This wrote a "verification" into an in-memory dict —
+    it looked successful, checked no privilege (the admin check was a TODO),
+    and vanished on restart while the real gate column, companies.is_verified,
+    stayed untouched. The real endpoint is operator-gated and persists:
+    POST /api/growth/companies/<company_id>/verify.
     """
-    try:
-        current_user_id = get_jwt_identity()
-        company_id = request.view_args['company_id']
-        data = request.get_json()
-        
-        company = companies_db.get(company_id)
-        if not company:
-            return jsonify({
-                'success': False,
-                'message': 'Company not found'
-            }), 404
-        
-        # TODO: Check if user is platform admin
-        
-        notes = data.get('notes')
-        
-        # Verify the company
-        company.verify_company(current_user_id, notes)
-        
-        # Save to mock database
-        companies_db[company_id] = company
-        
-        logger.info(f"Company verified: {company_id} by admin {current_user_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Company verified successfully',
-            'data': {
-                'company': company.to_dict()
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error verifying company: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to verify company'
-        }), 500
+    company_id = request.view_args['company_id']
+    return jsonify({
+        'success': False,
+        'message': 'Company verification moved to the operator API.',
+        'operator_endpoint': f'/api/growth/companies/{company_id}/verify',
+    }), 410
 
 @company_bp.route('/search', methods=['GET'])
 def search_companies():

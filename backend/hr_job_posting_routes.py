@@ -233,6 +233,35 @@ def _is_valid_uuid(val):
     import re
     return bool(re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', str(val)))
 
+def _unverified_company_block(cursor, company_id):
+    """
+    The company approval gate (issue #96). A job may only be PUBLISHED by a
+    company an operator has verified — `companies.is_verified` existed but
+    nothing read it, so any account that reached a recruiter role could put
+    postings in front of candidates with no human ever having looked at the
+    company. Drafts are unaffected: recruiters can prepare everything and
+    publish the moment approval lands.
+
+    Returns None when the company is verified, otherwise a (response, 403)
+    tuple. Fails CLOSED: a missing company row blocks rather than allows.
+    """
+    cursor.execute(
+        "SELECT is_verified FROM companies WHERE id::text = %s",
+        (str(company_id),),
+    )
+    row = cursor.fetchone()
+    verified = bool(row['is_verified']) if row and row.get('is_verified') is not None else False
+    if verified:
+        return None
+    return (jsonify({
+        'success': False,
+        'error_code': 'company_not_verified',
+        'message': 'Your company has not been approved to publish jobs yet. '
+                   'The posting is kept as a draft — it will be publishable '
+                   'once platform operations verifies your company.',
+    }), 403)
+
+
 def _resolve_job(cursor, job_id, current_user_id):
     """
     Resolves job_id (can be numeric id or string jd_id) and checks permission.
@@ -302,7 +331,7 @@ def get_job_postings():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -505,7 +534,7 @@ def create_job_postings_batch():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json() or {}
         jobs = data.get('jobs', [])
@@ -519,6 +548,13 @@ def create_job_postings_batch():
             company_id = _get_company_id_for_user(cursor, current_user_id)
             if not company_id:
                 return jsonify({'success': False, 'message': 'No company associated with your profile'}), 400
+
+            # Approval gate (#96): a batch may only carry 'published' items if
+            # the company is verified. Checked once — same company for all.
+            if any(j.get('status', 'draft') == 'published' for j in jobs):
+                blocked = _unverified_company_block(cursor, company_id)
+                if blocked:
+                    return blocked
 
             for job in jobs:
                 if not job.get('title') or not job.get('description'):
@@ -604,7 +640,7 @@ def create_job_posting():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -634,7 +670,15 @@ def create_job_posting():
                 }), 400
             
             company_id = hr_profile['company_id']
-            
+
+            # Approval gate (#96): only verified companies may create a job
+            # directly in 'published' status. Anything else (draft etc.) is
+            # allowed — preparation is fine, exposure to candidates is not.
+            if data.get('status', 'draft') == 'published':
+                blocked = _unverified_company_block(cursor, company_id)
+                if blocked:
+                    return blocked
+
             # Run UAE compliance check
             compliance_result = UAEComplianceChecker.check_job_posting_compliance(data)
             
@@ -783,7 +827,7 @@ def upload_job_document(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         if 'file' not in request.files:
@@ -1034,7 +1078,7 @@ def update_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -1047,7 +1091,14 @@ def update_job_posting(job_id):
             if err:
                 return err
             resolved_job_id = job['id']
-            
+
+            # Approval gate (#96): 'status' is a client-updatable field, so a
+            # plain PUT was a fourth way to go live. Same rule as /publish.
+            if data.get('status') == 'published' and job.get('status') != 'published':
+                blocked = _unverified_company_block(cursor, job.get('company_id'))
+                if blocked:
+                    return blocked
+
             # Run compliance check if content changed
             compliance_result = None
             if any(field in data for field in ['title', 'description', 'requirements']):
@@ -1151,7 +1202,7 @@ def publish_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
             
         conn = get_db_connection()
@@ -1170,7 +1221,13 @@ def publish_job_posting(job_id):
                     'success': False,
                     'message': 'Job posting is already published'
                 }), 400
-            
+
+            # Approval gate (#96): the company must be operator-verified
+            # before its postings go in front of candidates.
+            blocked = _unverified_company_block(cursor, job.get('company_id'))
+            if blocked:
+                return blocked
+
             # Run final compliance check
             job_data = dict(job)
             compliance_result = UAEComplianceChecker.check_job_posting_compliance(job_data)
@@ -1231,7 +1288,7 @@ def publish_and_match(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1244,6 +1301,10 @@ def publish_and_match(job_id):
 
             # Publish if needed
             if job['status'] != 'published':
+                # Approval gate (#96) — same rule as /publish.
+                blocked = _unverified_company_block(cursor, job.get('company_id'))
+                if blocked:
+                    return blocked
                 expires_at = job['expires_at'] or (datetime.now().date() + timedelta(days=30))
                 cursor.execute("""
                     UPDATE job_postings 
@@ -1364,7 +1425,7 @@ def add_to_shortlist(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         payload = request.get_json() or {}
@@ -1434,7 +1495,7 @@ def remove_from_shortlist(job_id, candidate_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1467,7 +1528,7 @@ def check_compliance(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1517,7 +1578,7 @@ def get_job_templates():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1581,7 +1642,7 @@ def create_job_template():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if (claims or {}).get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         data = request.get_json() or {}

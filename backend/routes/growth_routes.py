@@ -198,6 +198,36 @@ def invite_companies():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@growth_bp.route('/api/growth/companies/<company_id>/verify', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def verify_company(company_id):
+    """
+    Approve (or revoke approval of) a company — the write side of the
+    approval gate (#96). Body: {"verified": true|false} (defaults true).
+    Persisted to companies.is_verified with verified_by/verified_at; the
+    job-posting publish paths read it and refuse to publish for
+    unverified companies.
+    """
+    try:
+        payload = request.json or {}
+        verified = bool(payload.get('verified', True))
+
+        verified_by = None
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            verified_by = get_jwt_identity()
+        except Exception:
+            pass
+
+        result = growth_sys.set_company_verification(company_id, verified, verified_by=verified_by)
+        if result is None:
+            return jsonify({'success': False, 'error': 'Company not found'}), 404
+        return jsonify({'success': True, 'company': result})
+    except Exception as e:
+        logger.error(f"Verify company error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @growth_bp.route('/api/growth/invitations', methods=['GET'])
 @require_roles(*OPERATOR_ROLES)
 def list_pending_invitations():
