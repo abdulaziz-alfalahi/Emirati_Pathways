@@ -73,10 +73,11 @@ def provision_workspace():
     if conn_check:
         try:
             cur_check = conn_check.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cur_check.execute("SELECT user_type FROM users WHERE id = %s", (provisioner_id,))
+            # role is authoritative, user_type the legacy mirror (#93).
+            cur_check.execute("SELECT role, user_type FROM users WHERE id = %s", (provisioner_id,))
             caller = cur_check.fetchone()
             cur_check.close(); conn_check.close()
-            if not caller or caller['user_type'] not in GROWTH_OPERATOR_ROLES:
+            if not caller or not ({caller.get('role'), caller.get('user_type')} & GROWTH_OPERATOR_ROLES):
                 return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
         except Exception:
             conn_check.close()
@@ -135,8 +136,12 @@ def provision_workspace():
                 ON CONFLICT (company_id, user_id) DO UPDATE SET role = 'admin'
             """, (company_id, admin_user_id))
 
-            # Set their current_company_id
-            cur.execute("UPDATE users SET current_company_id = %s WHERE id = %s", (company_id, admin_user_id))
+            # NOTE (#92): no users.current_company_id write. Migration 001
+            # declares that column but it was never deployed, so this UPDATE
+            # raised UndefinedColumn and 500'd EVERY provision with an
+            # admin_user_id — which is why all workspace_enabled companies
+            # have provisioned_by NULL. Membership lives in
+            # company_team_members (the store the ACL reads), written above.
 
         conn.commit()
         cur.close(); conn.close()
@@ -274,8 +279,10 @@ def add_employee(company_id):
         ))
         employee = cur.fetchone()
 
-        # Set user's current_company_id
-        cur.execute("UPDATE users SET current_company_id = %s WHERE id = %s", (company_id, user_id))
+        # NOTE (#92): no users.current_company_id write — the column does
+        # not exist in the live DB, and the UndefinedColumn error was
+        # 500ing every add_employee call. company_employees is the record
+        # of employment; the ACL reads company_team_members.
 
         conn.commit()
         cur.close(); conn.close()
@@ -324,8 +331,9 @@ def remove_employee(company_id, user_id):
             cur.close(); conn.close()
             return jsonify({"error": "Employee not found or already terminated"}), 404
 
-        # Clear user's current_company_id
-        cur.execute("UPDATE users SET current_company_id = NULL WHERE id = %s AND current_company_id::text = %s", (user_id, company_id))
+        # NOTE (#92): no users.current_company_id clear — column not in the
+        # live DB; this statement was 500ing every termination before any
+        # cascade ran.
 
         # Fetch company name for notification text
         company_name = None

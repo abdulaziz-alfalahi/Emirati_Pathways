@@ -122,6 +122,38 @@ def send_emails():
         logger.error(f"Send emails error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@growth_bp.route('/api/growth/companies', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def list_companies():
+    """
+    Slim companies list for operator tooling — notably the workspace
+    provisioning picker (issue #92), which previously called a
+    /api/growth-operator/companies route that never existed, got a
+    swallowed 404, and rendered an empty dropdown with no error.
+    """
+    try:
+        conn = growth_sys._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, company_name, is_verified,
+                           COALESCE(workspace_enabled, FALSE) AS workspace_enabled
+                    FROM companies
+                    ORDER BY company_name ASC
+                """)
+                companies = [
+                    {'id': str(r[0]), 'company_name': r[1],
+                     'is_verified': bool(r[2]), 'workspace_enabled': bool(r[3])}
+                    for r in cur.fetchall()
+                ]
+        finally:
+            conn.close()
+        return jsonify({'success': True, 'companies': companies})
+    except Exception as e:
+        logger.error(f"List companies error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to list companies'}), 500
+
+
 @growth_bp.route('/api/growth/check-companies', methods=['POST'])
 @require_roles(*OPERATOR_ROLES)
 def check_companies():

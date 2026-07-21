@@ -856,21 +856,30 @@ const GrowthOperatorDashboard: React.FC = () => {
     const [provisionCompanyId, setProvisionCompanyId] = useState('');
     const [provisioning, setProvisioning] = useState(false);
     const [wsSearch, setWsSearch] = useState('');
+    // #92: failures used to be swallowed (console.error inside
+    // Promise.allSettled) — the picker rendered an empty dropdown with no
+    // hint that its data source had 404'd.
+    const [wsError, setWsError] = useState('');
+    const [provisionError, setProvisionError] = useState('');
 
     useEffect(() => {
       async function load() {
+        const errors: string[] = [];
         try {
           const [wsRes, compRes] = await Promise.allSettled([
             restClient.get('/api/workspace/list'),
-            restClient.get('/api/growth-operator/companies'),
+            restClient.get('/api/growth/companies'),
           ]);
           if (wsRes.status === 'fulfilled') setWorkspaces((wsRes.value as any).data.workspaces || []);
+          else errors.push(t('Failed to load workspaces', 'فشل تحميل مساحات العمل'));
           if (compRes.status === 'fulfilled') {
-            const comps = (compRes.value as any).data.companies || (compRes.value as any).data || [];
+            const comps = (compRes.value as any).data?.companies || (compRes.value as any).companies || [];
             setAllCompanies(Array.isArray(comps) ? comps : []);
+          } else {
+            errors.push(t('Failed to load the companies list', 'فشل تحميل قائمة الشركات'));
           }
-        } catch (err) { console.error(err); }
-        finally { setWsLoading(false); }
+        } catch (err) { console.error(err); errors.push(t('Failed to load data', 'فشل تحميل البيانات')); }
+        finally { setWsError(errors.join(' · ')); setWsLoading(false); }
       }
       load();
     }, []);
@@ -878,13 +887,18 @@ const GrowthOperatorDashboard: React.FC = () => {
     const handleProvision = async () => {
       if (!provisionCompanyId) return;
       setProvisioning(true);
+      setProvisionError('');
       try {
         await restClient.post('/api/workspace/provision', { company_id: provisionCompanyId });
         // Reload workspaces
         const res = await restClient.get('/api/workspace/list');
         setWorkspaces((res as any).data.workspaces || []);
         setShowProvisionModal(false); setProvisionCompanyId('');
-      } catch (err) { console.error('Provision error:', err); }
+      } catch (err: any) {
+        console.error('Provision error:', err);
+        const detail = err?.response?.data?.error || err?.message || '';
+        setProvisionError(`${t('Provisioning failed', 'فشل إنشاء مساحة العمل')}${detail ? `: ${detail}` : ''}`);
+      }
       finally { setProvisioning(false); }
     };
 
@@ -926,6 +940,13 @@ const GrowthOperatorDashboard: React.FC = () => {
             {t('Provision Workspace', 'تفعيل مساحة عمل')}
           </button>
         </div>
+
+        {/* Load errors — never fail silently into an empty picker (#92) */}
+        {wsError && (
+          <div style={{ background: colors.redBg, color: colors.redText, borderRadius: 10, padding: '10px 16px', fontSize: 13, marginBottom: 12 }}>
+            {wsError}
+          </div>
+        )}
 
         {/* Workspace Cards */}
         {wsLoading ? (
@@ -1006,6 +1027,17 @@ const GrowthOperatorDashboard: React.FC = () => {
                   </option>
                 ))}
               </select>
+
+              {unprovisionedCompanies.length === 0 && !wsError && (
+                <p style={{ fontSize: 12, color: colors.textSecondary, marginTop: -12, marginBottom: 16 }}>
+                  {t('No companies available to provision.', 'لا توجد شركات متاحة للتفعيل.')}
+                </p>
+              )}
+              {provisionError && (
+                <p style={{ fontSize: 13, color: colors.redText, marginTop: -8, marginBottom: 16 }}>
+                  {provisionError}
+                </p>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <button
