@@ -41,6 +41,22 @@ def display_company_name(name):
     return re.sub(r"\s+", " ", (name or "").strip())
 
 
+def clean_trade_license(value):
+    """Sanity-clean a trade licence number for storage; None if unusable.
+
+    There is no cross-emirate registry format to validate against, so this
+    is deliberately light (issue #98): trim, collapse inner whitespace,
+    require 3–64 characters with at least one alphanumeric. Uniqueness is
+    enforced by migration 011's partial unique index on btrim().
+    """
+    cleaned = re.sub(r"\s+", " ", (value or "").strip())
+    if len(cleaned) < 3 or len(cleaned) > 64:
+        return None
+    if not re.search(r"[0-9A-Za-z]", cleaned):
+        return None
+    return cleaned
+
+
 def find_company_id(cur, company_name, trade_license=None):
     """Resolve an existing company id by trade licence, then normalised name.
 
