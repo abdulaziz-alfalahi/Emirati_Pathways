@@ -245,17 +245,16 @@ class TestFindOrCreateUser:
         mock_conn.cursor.return_value = mock_cursor
         mock_get_db.return_value = mock_conn
 
-        # Mock results
-        # 1. First SELECT uaepass_uuid -> None (new user)
-        # 2. Second SELECT email -> None (not found)
-        # 3. Third SELECT MAX(CAST(...)) -> {'max_seq': 42}
-        # 4. Fourth INSERT RETURNING * -> {'id': '784000000000430', 'role': 'candidate'}
+        # Mock results (post-#95 matching: email/phone tiers use fetchall)
+        # 1. SELECT uaepass_uuid -> None (new user)
+        # 2. SELECT MAX(CAST(...)) -> {'max_seq': 42}
+        # 3. INSERT RETURNING * -> {'id': '784000000000430', 'role': 'candidate'}
         mock_cursor.fetchone.side_effect = [
             None,                  # SELECT uaepass_uuid (not found)
-            None,                  # SELECT email (not found)
             {'max_seq': 42},       # SELECT MAX(CAST(...)) (max synthetic sequence)
             {'id': '784000000000430', 'role': 'candidate'} # INSERT RETURNING * (new user data)
         ]
+        mock_cursor.fetchall.return_value = []  # email/phone tiers find nothing
 
         profile = {
             'uaepass_uuid': '6f5b3da6-3fe1-453a-81e3-aa3c5291a125',

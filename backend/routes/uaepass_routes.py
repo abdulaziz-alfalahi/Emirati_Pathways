@@ -28,6 +28,16 @@ import psycopg2.extras
 
 from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassConfig, UAEPassError
 from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
+from backend.utils.contact_identity import canonical_email, canonical_phone, phone_match_variants
+from backend.auth.access_control import ADMIN_ROLES, HR_ROLES, OPERATOR_ROLES
+
+# Roles that must never be acquired through an unverified contact-point
+# match (issue #95). An email or phone claim from UAE Pass proves the
+# caller controls a UAE Pass account — NOT that they own the platform
+# account carrying that address (onboarding has seeded shared company
+# addresses like info@company.ae). Candidate accounts may auto-link;
+# anything privileged requires the invitation flow or an operator.
+PRIVILEGED_LINK_ROLES = (ADMIN_ROLES | HR_ROLES | OPERATOR_ROLES) - {'candidate'}
 
 logger = logging.getLogger(__name__)
 
@@ -510,9 +520,60 @@ def _migrate_user_id(cursor, old_id: str, new_id: str):
     logger.info(f"Migration from {old_id} to {new_id} completed successfully")
 
 
+def _refuse_contact_link(cursor, matched_row, match_kind: str) -> bool:
+    """Decide whether auto-linking UAE Pass into this account must be refused.
+
+    Issue #95: a contact-point match (email/phone) is an UNVERIFIED claim of
+    account ownership. Linking a candidate account is low-risk and keeps
+    returning users out of duplicate-account hell; linking an account that
+    holds privileges (HR/operator/admin roles, secondary roles, or any
+    accepted company membership) would let any UAE Pass holder whose profile
+    carries a shared address (info@company.ae) silently take over an
+    employer account. Those refusals fall through to a fresh candidate
+    account; the legitimate owner regains privileged access via the
+    invitation flow or an operator, both of which bind to the proven EID.
+    """
+    roles = {matched_row.get('role'), matched_row.get('user_type')}
+    secondary = matched_row.get('secondary_roles') or []
+    if isinstance(secondary, str):
+        try:
+            secondary = json.loads(secondary)
+        except (ValueError, TypeError):
+            secondary = [secondary]
+    roles.update(secondary or [])
+    roles.discard(None)
+
+    if roles & PRIVILEGED_LINK_ROLES:
+        logger.warning(
+            f"REFUSED UAE Pass auto-link by {match_kind} into privileged account "
+            f"{mask_eid(matched_row['id'])} (roles={sorted(r for r in roles if r)})"
+        )
+        return True
+
+    cursor.execute("""
+        SELECT 1 FROM company_team_members
+        WHERE user_id = %s AND invitation_status = 'accepted'
+        LIMIT 1
+    """, (matched_row['id'],))
+    if cursor.fetchone():
+        logger.warning(
+            f"REFUSED UAE Pass auto-link by {match_kind} into account "
+            f"{mask_eid(matched_row['id'])} holding company membership"
+        )
+        return True
+    return False
+
+
 def _find_or_create_user(profile: dict) -> tuple:
     """
-    Find existing user by uaepass_uuid, or create a new one.
+    Find existing user by uaepass_uuid → Emirates ID → email → phone,
+    or create a new candidate account.
+
+    Matching order (issue #95): the uuid and Emirates ID tiers are
+    government-verified identity and always link. Email/phone are
+    unverified contact-point claims: they are canonicalised on both
+    sides, refuse ambiguous matches, and never link into privileged
+    accounts (_refuse_contact_link).
 
     Args:
         profile: Normalized profile dict from UAEPassOAuth.normalize_profile()
@@ -572,8 +633,8 @@ def _find_or_create_user(profile: dict) -> tuple:
                 profile.get('first_name'),
                 profile.get('last_name'),
                 profile.get('full_name'),
-                profile.get('email'),
-                profile.get('phone'),
+                canonical_email(profile.get('email')),
+                canonical_phone(profile.get('phone')),
                 eid_encrypted,
                 profile.get('fullname_ar'),
                 profile.get('nationality'),
@@ -592,13 +653,82 @@ def _find_or_create_user(profile: dict) -> tuple:
             logger.info(f"Existing user found and updated: {mask_eid(user_id_to_update)}")
             return dict(updated), False
 
-        # 2. Try to find by email (link existing account)
-        if profile.get('email'):
+        # 1b. Try to find by Emirates ID (issue #95: the strongest key after
+        #     uuid — the EID is government-verified identity of THIS caller,
+        #     so a PK match is definitionally their account; no privilege
+        #     guard applies). Previously idn was never used for matching,
+        #     only to rewrite the PK after a weaker match succeeded.
+        if raw_eid and is_valid_eid(raw_eid):
             cursor.execute(
-                "SELECT * FROM users WHERE email = %s",
-                (profile['email'].lower().strip(),)
+                "SELECT * FROM users WHERE id = %s",
+                (strip_eid_hyphens(raw_eid),)
             )
-            email_match = cursor.fetchone()
+            eid_match = cursor.fetchone()
+            if eid_match:
+                cursor.execute("""
+                    UPDATE users SET
+                        uaepass_uuid = %s,
+                        first_name = COALESCE(NULLIF(%s, ''), first_name),
+                        last_name = COALESCE(NULLIF(%s, ''), last_name),
+                        full_name = COALESCE(NULLIF(%s, ''), full_name),
+                        email = COALESCE(NULLIF(%s, ''), email),
+                        phone = COALESCE(NULLIF(%s, ''), phone),
+                        emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
+                        fullname_ar = COALESCE(%s, fullname_ar),
+                        nationality_ar = COALESCE(%s, nationality_ar),
+                        id_type = COALESCE(%s, id_type),
+                        uaepass_usertype = COALESCE(%s, uaepass_usertype),
+                        title_en = COALESCE(%s, title_en),
+                        auth_method = 'uaepass',
+                        uaepass_verified_at = NOW(),
+                        last_login = NOW(),
+                        updated_at = NOW()
+                    WHERE id = %s
+                    RETURNING *
+                """, (
+                    profile['uaepass_uuid'],
+                    profile.get('first_name'),
+                    profile.get('last_name'),
+                    profile.get('full_name'),
+                    canonical_email(profile.get('email')),
+                    canonical_phone(profile.get('phone')),
+                    eid_encrypted,
+                    profile.get('fullname_ar'),
+                    profile.get('nationality_ar'),
+                    profile.get('id_type'),
+                    profile.get('uaepass_usertype'),
+                    profile.get('title_en'),
+                    eid_match['id']
+                ))
+                linked = cursor.fetchone()
+                conn.commit()
+                cursor.close()
+                conn.close()
+                logger.info(
+                    f"Linked UAE Pass to existing user: "
+                    f"{mask_eid(eid_match['id'])} (Emirates ID match)"
+                )
+                return dict(linked), False
+
+        # 2. Try to find by email (link existing account). Canonicalised on
+        #    both sides; ambiguous (email is NOT unique in the live table)
+        #    and privileged matches are refused (#95).
+        profile_email = canonical_email(profile.get('email'))
+        if profile_email and not profile_email.endswith('@uaepass.local'):
+            cursor.execute(
+                "SELECT * FROM users WHERE lower(btrim(email)) = %s",
+                (profile_email,)
+            )
+            email_matches = cursor.fetchall()
+
+            email_match = email_matches[0] if len(email_matches) == 1 else None
+            if len(email_matches) > 1:
+                logger.warning(
+                    f"REFUSED UAE Pass auto-link by email: {len(email_matches)} "
+                    f"accounts share this address — ambiguous"
+                )
+            if email_match and _refuse_contact_link(cursor, email_match, 'email'):
+                email_match = None
 
             if email_match:
                 user_id_to_update = email_match['id']
@@ -634,7 +764,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                     profile.get('first_name'),
                     profile.get('last_name'),
                     profile.get('full_name'),
-                    profile.get('phone'),
+                    canonical_phone(profile.get('phone')),
                     eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
@@ -655,14 +785,28 @@ def _find_or_create_user(profile: dict) -> tuple:
                 )
                 return dict(linked), False
 
-        # 3. Try to find by phone (link existing account)
-        if profile.get('phone'):
-            clean_phone = profile['phone'].replace(' ', '').replace('-', '')
+        # 3. Try to find by phone (link existing account). Matched against
+        #    the canonical form AND the legacy spellings still in the table
+        #    ('05…', '+971…', '971…'); ambiguous and privileged matches are
+        #    refused (#95). The old code stripped only spaces/hyphens, so
+        #    '0501234567' vs '+971501234567' never matched and every wizard
+        #    user got a duplicate candidate account on their next sign-in.
+        variants = phone_match_variants(profile.get('phone'))
+        if variants:
             cursor.execute(
-                "SELECT * FROM users WHERE phone = %s",
-                (clean_phone,)
+                "SELECT * FROM users WHERE phone = ANY(%s)",
+                (variants,)
             )
-            phone_match = cursor.fetchone()
+            phone_matches = cursor.fetchall()
+
+            phone_match = phone_matches[0] if len(phone_matches) == 1 else None
+            if len(phone_matches) > 1:
+                logger.warning(
+                    f"REFUSED UAE Pass auto-link by phone: {len(phone_matches)} "
+                    f"accounts share this number — ambiguous"
+                )
+            if phone_match and _refuse_contact_link(cursor, phone_match, 'phone'):
+                phone_match = None
 
             if phone_match:
                 user_id_to_update = phone_match['id']
@@ -697,7 +841,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                     profile.get('first_name'),
                     profile.get('last_name'),
                     profile.get('full_name'),
-                    profile.get('email'),
+                    canonical_email(profile.get('email')),
                     eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
@@ -761,11 +905,11 @@ def _find_or_create_user(profile: dict) -> tuple:
             RETURNING *
         """, (
             eid_for_pk,
-            profile.get('email', '').lower().strip() or f"{profile['uaepass_uuid']}@uaepass.local",
+            canonical_email(profile.get('email')) or f"{profile['uaepass_uuid']}@uaepass.local",
             profile.get('first_name', ''),
             profile.get('last_name', ''),
             profile.get('full_name', ''),
-            profile.get('phone', ''),
+            canonical_phone(profile.get('phone')),
             profile.get('nationality', 'UAE'),
             profile.get('nationality_ar', ''),
             profile['uaepass_uuid'],
