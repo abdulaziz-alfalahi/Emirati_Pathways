@@ -13,12 +13,14 @@ try:
         NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
         find_company_id,
     )
+    from backend.company_identity import clean_trade_license
     from backend.utils.contact_identity import canonical_email
 except ImportError:
     from company_identity import (
         NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
         find_company_id,
     )
+    from company_identity import clean_trade_license
     from utils.contact_identity import canonical_email
 
 # Configure logging
@@ -116,7 +118,9 @@ class GrowthSystem:
                         
                         # New fields for Advanced Targeting
                         industry = row.get('CompanySector') or row.get('Company Sector')
-                        trade_license = row.get('TradeLicenseNo') or row.get('Trade License No')
+                        trade_license = clean_trade_license(
+                            row.get('TradeLicenseNo') or row.get('Trade License No'))
+                        company_code = (row.get('CompanyCode') or row.get('Company Code') or '').strip() or None
                         phone = row.get('CompanyPhone') or row.get('Company Phone')
                         emirate = row.get('JobEmirate') or row.get('Job Emirate') or row.get('Emirate')
                         city = row.get('JobCity') or row.get('Job City')
@@ -135,30 +139,31 @@ class GrowthSystem:
                         if company_id:
                             # Optional: Update existing company with new details if missing
                             cur.execute("""
-                                UPDATE companies 
+                                UPDATE companies
                                 SET industry = COALESCE(industry, %s),
                                     trade_license_no = COALESCE(trade_license_no, %s),
+                                    company_code = COALESCE(company_code, %s),
                                     phone = COALESCE(phone, %s),
                                     emirate = COALESCE(emirate, %s),
                                     city = COALESCE(city, %s),
                                     business_type = COALESCE(business_type, %s)
                                 WHERE id = %s
-                            """, (industry, trade_license, phone, emirate, city, business_type, company_id))
+                            """, (industry, trade_license, company_code, phone, emirate, city, business_type, company_id))
                         else:
                             # Create Shadow Company with new details
                             cur.execute("""
                                 INSERT INTO public.companies (
                                     company_name, name, contact_email, is_verified, description,
-                                    industry, trade_license_no, phone, emirate, city, business_type,
-                                    lead_source
+                                    industry, trade_license_no, company_code, phone, emirate, city,
+                                    business_type, lead_source
                                 )
-                                VALUES (%s, %s, %s, FALSE, 'Imported from Nafis', %s, %s, %s, %s, %s, %s,
+                                VALUES (%s, %s, %s, FALSE, 'Imported from Nafis', %s, %s, %s, %s, %s, %s, %s,
                                         'nafis_import')
                                 RETURNING id
                             """, (
                                 display_company_name(company_name),
                                 display_company_name(company_name), company_email,
-                                industry, trade_license, phone, emirate, city, business_type
+                                industry, trade_license, company_code, phone, emirate, city, business_type
                             ))
                             company_id = cur.fetchone()['id']
                             report['companies_created'] += 1
@@ -530,11 +535,14 @@ class GrowthSystem:
                         """, (
                             token,
                             company.get('name', ''),
-                            company.get('code', ''),
+                            (company.get('code') or '').strip(),
                             company.get('email', ''),
                             company.get('phone', ''),
                             company.get('sector', ''),
-                            company.get('tradeLicense', ''),
+                            # Sanity-cleaned; junk becomes '' rather than a
+                            # licence-shaped string that later pollutes
+                            # companies.trade_license_no (#98).
+                            clean_trade_license(company.get('tradeLicense')) or '',
                             invited_by,
                             expires_at,
                             # The role is decided by the OPERATOR at invite time and
@@ -774,17 +782,35 @@ class GrowthSystem:
                 # 3. Find or create company link — resolved by trade licence /
                 #    normalised name, not exact string (#99)
                 company_name = invitation.get('company_name', '')
-                company_id = find_company_id(
-                    cur, company_name, invitation.get('trade_license'))
+                trade_license = clean_trade_license(invitation.get('trade_license'))
+                company_id = find_company_id(cur, company_name, trade_license)
 
-                if not company_id:
+                if company_id:
+                    # Existing company: persist the operator's corrections
+                    # instead of silently discarding every invite field (#98).
+                    # COALESCE — fill gaps, never overwrite existing values.
+                    cur.execute("""
+                        UPDATE companies
+                        SET trade_license_no = COALESCE(trade_license_no, %s),
+                            company_code = COALESCE(company_code, %s),
+                            industry = COALESCE(industry, %s),
+                            phone = COALESCE(NULLIF(phone, ''), %s)
+                        WHERE id = %s
+                    """, (
+                        trade_license,
+                        (invitation.get('company_code') or '').strip() or None,
+                        invitation.get('company_sector') or None,
+                        invitation.get('company_phone') or None,
+                        company_id,
+                    ))
+                else:
                     # Create shadow company
                     cur.execute("""
                         INSERT INTO companies (
                             company_name, name, contact_email, phone,
-                            industry, trade_license_no, is_verified, description,
-                            lead_source
-                        ) VALUES (%s, %s, %s, %s, %s, %s, FALSE, 'Invited via Growth Operator',
+                            industry, trade_license_no, company_code,
+                            is_verified, description, lead_source
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, FALSE, 'Invited via Growth Operator',
                                   'magic_link')
                         RETURNING id
                     """, (
@@ -792,7 +818,8 @@ class GrowthSystem:
                         display_company_name(company_name),
                         email, invitation.get('company_phone', ''),
                         invitation.get('company_sector', ''),
-                        invitation.get('trade_license', ''),
+                        trade_license,
+                        (invitation.get('company_code') or '').strip() or None,
                     ))
                     company_id = cur.fetchone()['id']
 
