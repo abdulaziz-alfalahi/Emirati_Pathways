@@ -91,11 +91,37 @@ def remove_member():
         if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
             return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
 
-        success = team_system.remove_member(company_id, user_id)
-        if success:
-             return jsonify({'success': True, 'message': 'Member removed'}), 200
-        else:
-             return jsonify({'success': False, 'message': 'Failed to remove'}), 400
-             
+        result = team_system.remove_member(company_id, user_id, removed_by=current_user_id)
+        status = result.pop('status', 200 if result.get('success') else 400)
+        return jsonify(result), status
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@company_team_bp.route('/role', methods=['POST'])
+@jwt_required()
+def change_member_role():
+    """Change a member's team role in place (issue #100)."""
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.json or {}
+
+        company_id = data.get('company_id')
+        user_id = data.get('user_id')
+        new_role = data.get('role')
+
+        if not company_id or not user_id or not new_role:
+            return jsonify({'success': False, 'error': 'company_id, user_id and role are required'}), 400
+
+        # ACL: verify workspace.manage_employees permission
+        context = get_company_context(current_user_id, company_id)
+        if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
+            return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
+
+        result = team_system.change_member_role(company_id, user_id, new_role, changed_by=current_user_id)
+        status = result.pop('status', 200 if result.get('success') else 400)
+        return jsonify(result), status
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
