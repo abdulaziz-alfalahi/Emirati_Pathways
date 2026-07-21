@@ -184,8 +184,14 @@ class AuthenticationManager:
             if not user.get('is_active', False):
                 return False, "Account is not active. Please contact support.", None
             
+            # Passwordless (UAE Pass) accounts: NULL/empty hash or legacy
+            # 'otp_only' sentinel — bcrypt would raise ValueError (#94).
+            stored_hash = user.get('password_hash') or ''
+            if not stored_hash.startswith('$2'):
+                return False, "This account signs in with UAE Pass. Please use the 'Sign in with UAE Pass' button.", None
+
             # Verify password
-            if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            if not bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
                 self._increment_failed_attempts(email)
                 return False, "Invalid email or password", None
             
