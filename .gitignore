@@ -228,3 +228,7 @@ __pycache__/
 *.patch
 =
 frontend/VERSION
+
+# Claude Code — personal/local state (skills are committed)
+.claude/settings.local.json
+.claude/worktrees/
