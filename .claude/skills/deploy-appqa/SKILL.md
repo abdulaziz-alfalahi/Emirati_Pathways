@@ -21,6 +21,10 @@ description: Deploy the backend or frontend to APPQA staging and verify it. Use 
    - restarting edge nginx (it caches the upstream IP; skipping this 502s /api and /socket.io)
 4. If the deploy includes a migration, run it BEFORE recreating the container (see the live-db-migration skill).
 
+## Frontend deploy (discovered 2026-07-21 — read before touching containers)
+- **The public frontend on staging is a Vite DEV server**, not the static container: a host `vite` process serves `~/Emirati_Pathways/frontend` (WAF routes `/` to it; Vite's proxy forwards `/api`/`/socket.io` to :5005). So a staging frontend deploy is just **`git pull` on APPQA** — Vite picks up the working tree immediately. Verify with `curl -sk https://stg-emirati.ehrdc.gov.ae/src/pages/<File>.tsx | grep <marker>`.
+- The `emirati_frontend` container (nginx, owns :80) serves the static `dist/` build AND is the API edge proxy the backend script restarts. To rebuild it: `dist/` in the repo checkout is root-owned (docker is userns-remapped — container root cannot delete it, and sudo needs a password). Build locally (`npm run build`, node 20 — APPQA has node 12), tar+scp to APPQA, assemble a fresh context in `~/frontend-build/` (dist + frontend/Dockerfile + frontend/nginx.conf), `docker build -t emirati_frontend:latest .`, then stop/rename old as `emirati_frontend_old` and `docker run -d --name emirati_frontend --network emirati_net -p 80:80 --restart always emirati_frontend:latest`.
+
 ## Post-deploy verification (all of these, every time)
 - `curl -fsS http://127.0.0.1:5005/health` on the host (script does it) AND the public URL through the WAF.
 - Socket.IO handshake returns a sid: `curl 'https://stg-emirati.ehrdc.gov.ae/socket.io/?EIO=4&transport=polling'`.
