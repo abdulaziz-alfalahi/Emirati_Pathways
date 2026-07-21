@@ -9,7 +9,7 @@ description: Deploy the backend or frontend to APPQA staging and verify it. Use 
 - Public URL `https://stg-emirati.ehrdc.gov.ae` routes through a WAF to **APPQA = 10.228.145.5**. Single server, no load balancer. (NOT APPDEV.)
 - Backend: docker container `backend`, port 5005, image `emirati_backend:latest`. Edge nginx runs in the `emirati_frontend` container.
 - Live DB (shared by staging AND production data): `dghr_prod` @ 10.228.145.66:5454 — creds in `backend/.env`.
-- Access: `ssh aalfalahi.d@10.228.145.5` — **password prompt, no key installed**. Interactive steps must be run by the user (suggest the `! ssh ...` prefix) or in a terminal; BatchMode fails.
+- Access: `ssh appqa` (alias in ~/.ssh/config → aalfalahi.d@10.228.145.5, ed25519 key installed 2026-07-21) — fully non-interactive, safe for BatchMode.
 
 ## Backend deploy procedure
 1. **Preflight on APPQA**: `df -h` — especially `/var` (Docker lives there; a full /var has broken apt AND dockerd on this host before). Check on EVERY deploy.
