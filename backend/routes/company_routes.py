@@ -1,14 +1,32 @@
 """
 Company Management Routes for Emirati Journey Platform
-Comprehensive company profile and management functionality
+
+Persisted against the real `companies` table (issue #97). This blueprint
+previously kept every company in a module-level dict (`companies_db = {}`),
+so operator registrations from the Growth dashboard looked successful and
+vanished on every backend restart — while every read endpoint served from
+an always-empty dict.
+
+Column mapping note: the live `companies` table has no name_arabic or
+company_size columns, so those request fields are accepted but not stored;
+`company_type` is stored as `business_type` and `trade_license_number` as
+`trade_license_no`.
 """
 
-from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models.company import Company, CompanySize, CompanyType, SubscriptionTier, CompanyStatus, CompanyLocation, CompanyContact, EmiratiZationInfo, CompanyVerification
-from datetime import datetime, date
+from flask import Blueprint, request, jsonify
 import logging
-import uuid
+import psycopg2
+import psycopg2.extras
+import uuid as uuid_lib
+
+try:
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+    from backend.company_identity import find_company_id, display_company_name
+    from backend.db_utils import get_db, execute_query
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, OPERATOR_ROLES
+    from company_identity import find_company_id, display_company_name
+    from db_utils import get_db, execute_query
 
 # Create blueprint
 company_bp = Blueprint('companies', __name__, url_prefix='/api/companies')
@@ -16,127 +34,121 @@ company_bp = Blueprint('companies', __name__, url_prefix='/api/companies')
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-# Mock database storage (to be replaced with actual database integration)
-companies_db = {}
+
+def _company_to_dict(row):
+    """Serialize a companies row (RealDictRow) for API responses."""
+    return {
+        'id': str(row['id']),
+        'name': row.get('name') or row.get('company_name'),
+        'company_name': row.get('company_name'),
+        'description': row.get('description'),
+        'industry': row.get('industry'),
+        'business_type': row.get('business_type'),
+        'trade_license_no': row.get('trade_license_no'),
+        'emirate': row.get('emirate'),
+        'city': row.get('city'),
+        'phone': row.get('phone'),
+        'website': row.get('website'),
+        'contact_email': row.get('contact_email'),
+        'is_verified': bool(row.get('is_verified')),
+        'lead_source': row.get('lead_source'),
+        'verified_at': row['verified_at'].isoformat() if row.get('verified_at') else None,
+    }
+
+
+_COMPANY_COLUMNS = """
+    id, name, company_name, description, industry, business_type,
+    trade_license_no, emirate, city, phone, website, contact_email,
+    is_verified, lead_source, verified_at
+"""
+
 
 @company_bp.route('/create', methods=['POST'])
-@jwt_required()
+@require_roles(*OPERATOR_ROLES)
 def create_company():
     """
-    Create a new company profile
-    Requires: Admin or authorized user
+    Register a new company (operator-only).
+
+    Persists to the companies table. Company identity is enforced (#99):
+    if the trade licence or normalised name already belongs to a company,
+    this returns 409 with the existing id instead of forking a duplicate.
     """
+    data = request.get_json(silent=True) or {}
+
+    for field in ('name', 'industry'):
+        if not data.get(field):
+            return jsonify({
+                'success': False,
+                'message': f'Missing required field: {field}'
+            }), 400
+
+    name = display_company_name(data['name'])
+    trade_license = (data.get('trade_license_number') or data.get('trade_license_no') or '').strip()
+
+    locations = data.get('locations') or []
+    headquarters = next(
+        (loc for loc in locations if loc.get('is_headquarters')),
+        locations[0] if locations else {},
+    )
+    contact = data.get('contact') or {}
+
+    conn = get_db()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database unavailable'}), 503
+
     try:
-        current_user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['name', 'company_type', 'industry']
-        for field in required_fields:
-            if not data.get(field):
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            existing_id = find_company_id(cur, name, trade_license or None)
+            if existing_id:
                 return jsonify({
                     'success': False,
-                    'message': f'Missing required field: {field}'
-                }), 400
-        
-        # Create company ID
-        company_id = str(uuid.uuid4())
-        
-        # Parse location data
-        locations = []
-        for loc_data in data.get('locations', []):
-            location = CompanyLocation(
-                emirate=loc_data.get('emirate', ''),
-                city=loc_data.get('city', ''),
-                area=loc_data.get('area'),
-                street_address=loc_data.get('street_address'),
-                po_box=loc_data.get('po_box'),
-                postal_code=loc_data.get('postal_code'),
-                is_headquarters=loc_data.get('is_headquarters', True)
-            )
-            locations.append(location)
-        
-        # Parse contact data
-        contact_data = data.get('contact', {})
-        contact = None
-        if contact_data:
-            contact = CompanyContact(
-                primary_email=contact_data.get('primary_email', ''),
-                secondary_email=contact_data.get('secondary_email'),
-                phone=contact_data.get('phone'),
-                mobile=contact_data.get('mobile'),
-                fax=contact_data.get('fax'),
-                website=contact_data.get('website'),
-                linkedin=contact_data.get('linkedin'),
-                twitter=contact_data.get('twitter')
-            )
-        
-        # Parse Emiratization data
-        emiratization_data = data.get('emiratization', {})
-        emiratization = EmiratiZationInfo(
-            current_emiratization_rate=emiratization_data.get('current_emiratization_rate'),
-            target_emiratization_rate=emiratization_data.get('target_emiratization_rate'),
-            total_employees=emiratization_data.get('total_employees'),
-            emirati_employees=emiratization_data.get('emirati_employees'),
-            compliance_status=emiratization_data.get('compliance_status', 'unknown')
-        )
-        
-        # Create company object
-        company = Company(
-            id=company_id,
-            name=data.get('name'),
-            name_arabic=data.get('name_arabic'),
-            description=data.get('description', ''),
-            description_arabic=data.get('description_arabic'),
-            company_type=CompanyType(data.get('company_type')),
-            company_size=CompanySize(data.get('company_size', 'medium')),
-            industry=data.get('industry'),
-            sub_industry=data.get('sub_industry'),
-            founded_year=data.get('founded_year'),
-            trade_license_number=data.get('trade_license_number'),
-            commercial_registration=data.get('commercial_registration'),
-            tax_registration_number=data.get('tax_registration_number'),
-            establishment_card=data.get('establishment_card'),
-            locations=locations,
-            contact=contact,
-            emiratization=emiratization,
-            subscription_tier=SubscriptionTier(data.get('subscription_tier', 'basic')),
-            logo_url=data.get('logo_url'),
-            banner_url=data.get('banner_url'),
-            brand_colors=data.get('brand_colors', []),
-            auto_approve_jobs=data.get('auto_approve_jobs', False),
-            allow_direct_applications=data.get('allow_direct_applications', True),
-            show_salary_ranges=data.get('show_salary_ranges', True),
-            require_cover_letter=data.get('require_cover_letter', False),
-            admin_users=[current_user_id]  # Creator becomes admin
-        )
-        
-        # Save to mock database
-        companies_db[company_id] = company
-        
-        logger.info(f"Company created successfully: {company_id} by user {current_user_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Company created successfully',
-            'data': {
-                'company_id': company_id,
-                'company': company.to_dict()
-            }
-        }), 201
-        
-    except ValueError as e:
-        logger.error(f"Invalid enum value in company creation: {str(e)}")
+                    'message': 'A company with this name or trade licence already exists',
+                    'data': {'company_id': str(existing_id)},
+                }), 409
+
+            cur.execute(f"""
+                INSERT INTO companies (
+                    name, company_name, description, industry, business_type,
+                    trade_license_no, emirate, city, phone, website,
+                    contact_email, is_verified, lead_source
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, 'operator_manual')
+                RETURNING {_COMPANY_COLUMNS}
+            """, (
+                name, name,
+                data.get('description', ''),
+                data.get('industry'),
+                data.get('company_type') or data.get('business_type'),
+                trade_license or None,
+                headquarters.get('emirate'),
+                headquarters.get('city'),
+                contact.get('phone') or data.get('phone'),
+                contact.get('website') or data.get('website'),
+                contact.get('primary_email') or data.get('contact_email'),
+            ))
+            company = cur.fetchone()
+            conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        # Race with a concurrent insert — migration 011's unique indexes hold.
+        conn.rollback()
         return jsonify({
             'success': False,
-            'message': f'Invalid value provided: {str(e)}'
-        }), 400
-    except Exception as e:
-        logger.error(f"Error creating company: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to create company'
-        }), 500
+            'message': 'A company with this name or trade licence already exists',
+        }), 409
+    except psycopg2.Error as e:
+        conn.rollback()
+        logger.error(f"Error creating company: {e}")
+        return jsonify({'success': False, 'message': 'Failed to create company'}), 500
+
+    logger.info(f"Company created: {company['id']} ({name})")
+    return jsonify({
+        'success': True,
+        'message': 'Company created successfully',
+        'data': {
+            'company_id': str(company['id']),
+            'company': _company_to_dict(company),
+        }
+    }), 201
+
 
 @company_bp.route('/<company_id>', methods=['GET'])
 def get_company(company_id):
@@ -145,270 +157,59 @@ def get_company(company_id):
     Public endpoint for basic info
     """
     try:
-        company = companies_db.get(company_id)
-        if not company:
-            return jsonify({
-                'success': False,
-                'message': 'Company not found'
-            }), 404
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'company': company.to_dict()
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving company {company_id}: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to retrieve company'
-        }), 500
+        uuid_lib.UUID(company_id)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Company not found'}), 404
+
+    row = execute_query(
+        f"SELECT {_COMPANY_COLUMNS} FROM companies WHERE id = %s",
+        (company_id,), fetch_one=True,
+    )
+    if not row:
+        return jsonify({'success': False, 'message': 'Company not found'}), 404
+
+    return jsonify({'success': True, 'data': {'company': _company_to_dict(row)}}), 200
+
 
 @company_bp.route('/<company_id>', methods=['PUT'])
-@jwt_required()
 def update_company(company_id):
     """
-    Update company details
-    Requires: Company admin
+    RETIRED (issue #97). This edited an in-memory dict — updates looked
+    successful and vanished on restart. Company records are maintained
+    through the operator flows (growth import/registration and
+    POST /api/growth/companies/<id>/verify).
     """
-    try:
-        current_user_id = get_jwt_identity()
-        company = companies_db.get(company_id)
-        
-        if not company:
-            return jsonify({
-                'success': False,
-                'message': 'Company not found'
-            }), 404
-        
-        # Check permissions
-        if not company.user_is_admin(current_user_id):
-            return jsonify({
-                'success': False,
-                'message': 'Unauthorized to update this company'
-            }), 403
-        
-        data = request.get_json()
-        
-        # Update basic fields
-        updatable_fields = [
-            'name', 'name_arabic', 'description', 'description_arabic',
-            'sub_industry', 'founded_year', 'trade_license_number',
-            'commercial_registration', 'tax_registration_number',
-            'establishment_card', 'logo_url', 'banner_url', 'brand_colors',
-            'auto_approve_jobs', 'allow_direct_applications',
-            'show_salary_ranges', 'require_cover_letter'
-        ]
-        
-        for field in updatable_fields:
-            if field in data:
-                setattr(company, field, data[field])
-        
-        # Update enums
-        if 'company_type' in data:
-            company.company_type = CompanyType(data['company_type'])
-        if 'company_size' in data:
-            company.company_size = CompanySize(data['company_size'])
-        if 'subscription_tier' in data:
-            company.subscription_tier = SubscriptionTier(data['subscription_tier'])
-        
-        # Update locations
-        if 'locations' in data:
-            locations = []
-            for loc_data in data['locations']:
-                location = CompanyLocation(
-                    emirate=loc_data.get('emirate', ''),
-                    city=loc_data.get('city', ''),
-                    area=loc_data.get('area'),
-                    street_address=loc_data.get('street_address'),
-                    po_box=loc_data.get('po_box'),
-                    postal_code=loc_data.get('postal_code'),
-                    is_headquarters=loc_data.get('is_headquarters', True)
-                )
-                locations.append(location)
-            company.locations = locations
-        
-        # Update contact
-        if 'contact' in data:
-            contact_data = data['contact']
-            company.contact = CompanyContact(
-                primary_email=contact_data.get('primary_email', ''),
-                secondary_email=contact_data.get('secondary_email'),
-                phone=contact_data.get('phone'),
-                mobile=contact_data.get('mobile'),
-                fax=contact_data.get('fax'),
-                website=contact_data.get('website'),
-                linkedin=contact_data.get('linkedin'),
-                twitter=contact_data.get('twitter')
-            )
-        
-        # Update Emiratization info
-        if 'emiratization' in data:
-            emiratization_data = data['emiratization']
-            company.emiratization.current_emiratization_rate = emiratization_data.get('current_emiratization_rate')
-            company.emiratization.target_emiratization_rate = emiratization_data.get('target_emiratization_rate')
-            company.emiratization.total_employees = emiratization_data.get('total_employees')
-            company.emiratization.emirati_employees = emiratization_data.get('emirati_employees')
-            company.emiratization.compliance_status = emiratization_data.get('compliance_status', 'unknown')
-            company.emiratization.last_updated = datetime.utcnow()
-        
-        company.updated_at = datetime.utcnow()
-        
-        # Save to mock database
-        companies_db[company_id] = company
-        
-        logger.info(f"Company updated successfully: {company_id} by user {current_user_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Company updated successfully',
-            'data': {
-                'company': company.to_dict()
-            }
-        }), 200
-        
-    except ValueError as e:
-        logger.error(f"Invalid enum value in company update: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Invalid value provided: {str(e)}'
-        }), 400
-    except Exception as e:
-        logger.error(f"Error updating company {company_id}: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to update company'
-        }), 500
+    return jsonify({
+        'success': False,
+        'message': 'Company updates moved to the operator API.',
+    }), 410
+
 
 @company_bp.route('/<company_id>/users', methods=['POST'])
-@jwt_required()
-def add_company_user():
+def add_company_user(company_id):
     """
-    Add user to company with specific role
-    Requires: Company admin
+    RETIRED (issue #97). This wrote memberships into an in-memory dict the
+    ACL never read. Team membership is managed by the HR team endpoints,
+    which write company_team_members — the store the ACL actually reads.
     """
-    try:
-        current_user_id = get_jwt_identity()
-        company_id = request.view_args['company_id']
-        data = request.get_json()
-        
-        company = companies_db.get(company_id)
-        if not company:
-            return jsonify({
-                'success': False,
-                'message': 'Company not found'
-            }), 404
-        
-        # Check permissions
-        if not company.user_is_admin(current_user_id):
-            return jsonify({
-                'success': False,
-                'message': 'Unauthorized to manage company users'
-            }), 403
-        
-        # Validate required fields
-        required_fields = ['user_id', 'role']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False,
-                    'message': f'Missing required field: {field}'
-                }), 400
-        
-        user_id = data.get('user_id')
-        role = data.get('role')
-        
-        # Validate role
-        valid_roles = ['admin', 'employer_admin', 'recruiter']
-        if role not in valid_roles:
-            return jsonify({
-                'success': False,
-                'message': f'Invalid role. Must be one of: {", ".join(valid_roles)}'
-            }), 400
-        
-        # Add user to company
-        company.add_user(user_id, role)
-        
-        # Save to mock database
-        companies_db[company_id] = company
-        
-        logger.info(f"User {user_id} added to company {company_id} with role {role} by user {current_user_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': f'User added to company with {role} role',
-            'data': {
-                'company': company.to_dict()
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error adding user to company: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to add user to company'
-        }), 500
+    return jsonify({
+        'success': False,
+        'message': 'Team membership moved to the HR team API.',
+        'team_endpoint': '/api/hr/team',
+    }), 410
+
 
 @company_bp.route('/<company_id>/users/<user_id>', methods=['DELETE'])
-@jwt_required()
-def remove_company_user():
-    """
-    Remove user from company
-    Requires: Company admin
-    """
-    try:
-        current_user_id = get_jwt_identity()
-        company_id = request.view_args['company_id']
-        user_id = request.view_args['user_id']
-        
-        company = companies_db.get(company_id)
-        if not company:
-            return jsonify({
-                'success': False,
-                'message': 'Company not found'
-            }), 404
-        
-        # Check permissions
-        if not company.user_is_admin(current_user_id):
-            return jsonify({
-                'success': False,
-                'message': 'Unauthorized to manage company users'
-            }), 403
-        
-        # Don't allow removing the last admin
-        if user_id in company.admin_users and len(company.admin_users) == 1:
-            return jsonify({
-                'success': False,
-                'message': 'Cannot remove the last admin user'
-            }), 400
-        
-        # Remove user from company
-        company.remove_user(user_id)
-        
-        # Save to mock database
-        companies_db[company_id] = company
-        
-        logger.info(f"User {user_id} removed from company {company_id} by user {current_user_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'User removed from company',
-            'data': {
-                'company': company.to_dict()
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error removing user from company: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to remove user from company'
-        }), 500
+def remove_company_user(company_id, user_id):
+    """RETIRED (issue #97) — see add_company_user."""
+    return jsonify({
+        'success': False,
+        'message': 'Team membership moved to the HR team API.',
+        'team_endpoint': '/api/hr/team',
+    }), 410
+
 
 @company_bp.route('/<company_id>/verify', methods=['POST'])
-@jwt_required()
 def verify_company(company_id):
     """
     RETIRED (issue #96). This wrote a "verification" into an in-memory dict —
@@ -427,127 +228,74 @@ def verify_company(company_id):
         'operator_endpoint': f'/api/growth/companies/{company_id}/verify',
     }), 410
 
+
 @company_bp.route('/search', methods=['GET'])
 def search_companies():
     """
     Search companies with filters
     Public endpoint
     """
-    try:
-        # Get query parameters
-        query = request.args.get('q', '')
-        emirate = request.args.get('emirate')
-        industry = request.args.get('industry')
-        company_size = request.args.get('company_size')
-        company_type = request.args.get('company_type')
-        is_verified = request.args.get('is_verified')
-        page = request.args.get('page', 1, type=int)
-        per_page = min(request.args.get('per_page', 20, type=int), 100)
-        
-        # Filter companies
-        filtered_companies = []
-        for company in companies_db.values():
-            # Only show active companies
-            if company.status != CompanyStatus.ACTIVE:
-                continue
-            
-            # Apply filters
-            if query and query.lower() not in company.name.lower() and query.lower() not in company.description.lower():
-                continue
-            
-            if emirate:
-                primary_location = company.get_primary_location()
-                if not primary_location or primary_location.emirate != emirate:
-                    continue
-            
-            if industry and company.industry != industry:
-                continue
-            
-            if company_size and company.company_size.value != company_size:
-                continue
-            
-            if company_type and company.company_type.value != company_type:
-                continue
-            
-            if is_verified:
-                is_verified_bool = is_verified.lower() == 'true'
-                if company.verification.is_verified != is_verified_bool:
-                    continue
-            
-            filtered_companies.append(company)
-        
-        # Sort by verification status and name
-        filtered_companies.sort(key=lambda x: (not x.verification.is_verified, x.name))
-        
-        # Pagination
-        total = len(filtered_companies)
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_companies = filtered_companies[start:end]
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'companies': [company.to_dict() for company in paginated_companies],
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'total': total,
-                    'pages': (total + per_page - 1) // per_page
-                },
-                'filters_applied': {
-                    'query': query,
-                    'emirate': emirate,
-                    'industry': industry,
-                    'company_size': company_size,
-                    'company_type': company_type,
-                    'is_verified': is_verified
-                }
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error searching companies: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to search companies'
-        }), 500
+    query = request.args.get('q', '').strip()
+    emirate = request.args.get('emirate')
+    industry = request.args.get('industry')
+    business_type = request.args.get('company_type') or request.args.get('business_type')
+    is_verified = request.args.get('is_verified')
+    page = max(request.args.get('page', 1, type=int), 1)
+    per_page = min(request.args.get('per_page', 20, type=int), 100)
 
-@company_bp.route('/user/<user_id>', methods=['GET'])
-@jwt_required()
-def get_user_companies(user_id):
-    """
-    Get all companies where user has access
-    Requires: User access or admin
-    """
-    try:
-        current_user_id = get_jwt_identity()
-        
-        # Check permissions (simplified)
-        if user_id != current_user_id:
-            # TODO: Add admin check
-            pass
-        
-        # Filter companies by user access
-        user_companies = [company for company in companies_db.values() if company.user_has_access(user_id)]
-        
-        # Sort by name
-        user_companies.sort(key=lambda x: x.name)
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'companies': [company.to_dict() for company in user_companies],
-                'total': len(user_companies)
+    where = ["TRUE"]
+    params = []
+    if query:
+        where.append("(company_name ILIKE %s OR description ILIKE %s)")
+        params.extend([f"%{query}%", f"%{query}%"])
+    if emirate:
+        where.append("emirate = %s")
+        params.append(emirate)
+    if industry:
+        where.append("industry = %s")
+        params.append(industry)
+    if business_type:
+        where.append("business_type = %s")
+        params.append(business_type)
+    if is_verified is not None and is_verified != '':
+        where.append("is_verified = %s")
+        params.append(is_verified.lower() == 'true')
+
+    where_sql = " AND ".join(where)
+
+    count_row = execute_query(
+        f"SELECT COUNT(*) AS total FROM companies WHERE {where_sql}",
+        tuple(params), fetch_one=True,
+    )
+    total = count_row['total'] if count_row else 0
+
+    rows = execute_query(f"""
+        SELECT {_COMPANY_COLUMNS} FROM companies
+        WHERE {where_sql}
+        ORDER BY is_verified DESC, company_name ASC
+        LIMIT %s OFFSET %s
+    """, tuple(params) + (per_page, (page - 1) * per_page)) or []
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'companies': [_company_to_dict(r) for r in rows],
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page,
+            },
+            'filters_applied': {
+                'query': query,
+                'emirate': emirate,
+                'industry': industry,
+                'company_type': business_type,
+                'is_verified': is_verified,
             }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving user companies: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to retrieve user companies'
-        }), 500
+        }
+    }), 200
+
 
 @company_bp.route('/stats', methods=['GET'])
 def get_company_stats():
@@ -555,55 +303,45 @@ def get_company_stats():
     Get platform company statistics
     Public endpoint
     """
-    try:
-        total_companies = len(companies_db)
-        verified_companies = len([c for c in companies_db.values() if c.verification.is_verified])
-        active_companies = len([c for c in companies_db.values() if c.status == CompanyStatus.ACTIVE])
-        
-        # Group by emirate
-        emirate_stats = {}
-        for company in companies_db.values():
-            primary_location = company.get_primary_location()
-            if primary_location and company.status == CompanyStatus.ACTIVE:
-                emirate = primary_location.emirate
-                emirate_stats[emirate] = emirate_stats.get(emirate, 0) + 1
-        
-        # Group by industry
-        industry_stats = {}
-        for company in companies_db.values():
-            if company.industry and company.status == CompanyStatus.ACTIVE:
-                industry = company.industry
-                industry_stats[industry] = industry_stats.get(industry, 0) + 1
-        
-        # Group by size
-        size_stats = {}
-        for company in companies_db.values():
-            if company.status == CompanyStatus.ACTIVE:
-                size = company.company_size.value
-                size_stats[size] = size_stats.get(size, 0) + 1
-        
-        # Emiratization compliance
-        compliant_companies = len([c for c in companies_db.values() if c.is_emiratization_compliant()])
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'total_companies': total_companies,
-                'verified_companies': verified_companies,
-                'active_companies': active_companies,
-                'emiratization_compliant': compliant_companies,
-                'emirate_distribution': emirate_stats,
-                'industry_distribution': industry_stats,
-                'size_distribution': size_stats
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving company stats: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to retrieve company statistics'
-        }), 500
+    totals = execute_query("""
+        SELECT COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE is_verified) AS verified
+        FROM companies
+    """, fetch_one=True) or {'total': 0, 'verified': 0}
+
+    emirate_rows = execute_query("""
+        SELECT emirate, COUNT(*) AS n FROM companies
+        WHERE emirate IS NOT NULL AND emirate <> ''
+        GROUP BY emirate
+    """) or []
+    industry_rows = execute_query("""
+        SELECT industry, COUNT(*) AS n FROM companies
+        WHERE industry IS NOT NULL AND industry <> ''
+        GROUP BY industry
+    """) or []
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_companies': totals['total'],
+            'verified_companies': totals['verified'],
+            'emirate_distribution': {r['emirate']: r['n'] for r in emirate_rows},
+            'industry_distribution': {r['industry']: r['n'] for r in industry_rows},
+        }
+    }), 200
+
+
+@company_bp.route('/user/<user_id>', methods=['GET'])
+def get_user_companies(user_id):
+    """
+    RETIRED (issue #97). This filtered an in-memory dict that was always
+    empty, using membership data nothing ever wrote. The caller's company
+    context comes from company_team_members via the workspace middleware.
+    """
+    return jsonify({
+        'success': False,
+        'message': 'User-company membership is served by the workspace API.',
+    }), 410
 
 
 @company_bp.route('/progression', methods=['GET'])
@@ -629,7 +367,7 @@ def get_company_progression():
     row = None
     if company_id:
         row = execute_query("""
-            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
                    cp.career_path, cp.promotion_criteria, cp.emiratisation_support
             FROM company_career_progressions cp
             JOIN companies c ON c.id = cp.company_id
@@ -639,7 +377,7 @@ def get_company_progression():
         # Normalize name: e.g. "Amazon (AWS)" -> "Amazon"
         normalized_name = name.split('(')[0].strip()
         row = execute_query("""
-            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
                    cp.career_path, cp.promotion_criteria, cp.emiratisation_support
             FROM company_career_progressions cp
             JOIN companies c ON c.id = cp.company_id
@@ -649,11 +387,11 @@ def get_company_progression():
         if not row:
             # Try fuzzy/prefix match
             row = execute_query("""
-                SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+                SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
                        cp.career_path, cp.promotion_criteria, cp.emiratisation_support
                 FROM company_career_progressions cp
                 JOIN companies c ON c.id = cp.company_id
-                WHERE c.name ILIKE %s OR c.company_name ILIKE %s 
+                WHERE c.name ILIKE %s OR c.company_name ILIKE %s
                    OR %s ILIKE CONCAT(c.name, '%%')
             """, (f"%{normalized_name}%", f"%{normalized_name}%", normalized_name), fetch_one=True)
 
@@ -684,5 +422,3 @@ def get_company_progression():
             'emiratisation_support': row['emiratisation_support']
         }
     }), 200
-
-
