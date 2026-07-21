@@ -19,6 +19,7 @@ import psycopg2
 import psycopg2.extras
 from flask_jwt_extended import create_access_token, create_refresh_token
 from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
+from backend.company_identity import find_company_id, display_company_name
 try:
     from twilio.rest import Client
     from twilio.base.exceptions import TwilioRestException
@@ -876,21 +877,18 @@ class AuthenticationManager:
                     if role in ['recruiter', 'recruiter', 'employer_admin']:
                         company_name = additional_data.get('company_name')
                         if company_name:
-                            # Check if company exists
-                            cursor.execute("SELECT id FROM companies WHERE company_name ILIKE %s", (company_name,))
-                            company = cursor.fetchone()
-                            
-                            company_id = None
-                            if company:
-                                company_id = company['id']
-                            else:
-                                # Create new company
+                            # Resolve by normalised name, not raw ILIKE (#99):
+                            # ILIKE handled case but " Acme  LLC" still forked
+                            # a shadow company on whitespace alone.
+                            company_id = find_company_id(cursor, company_name)
+                            if not company_id:
                                 company_id = str(uuid.uuid4())
                                 cursor.execute("""
-                                    INSERT INTO companies (id, company_name, is_verified)
-                                    VALUES (%s, %s, false)
+                                    INSERT INTO companies (id, company_name, name, is_verified, lead_source)
+                                    VALUES (%s, %s, %s, false, 'role_change')
                                     RETURNING id
-                                """, (company_id, company_name))
+                                """, (company_id, display_company_name(company_name),
+                                      display_company_name(company_name)))
                                 company_id = cursor.fetchone()['id']
                             
                             # Upsert HR Profile

@@ -8,6 +8,17 @@ from datetime import datetime, timedelta
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+try:
+    from backend.company_identity import (
+        NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
+        find_company_id,
+    )
+except ImportError:
+    from company_identity import (
+        NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
+        find_company_id,
+    )
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,14 +125,12 @@ class GrowthSystem:
                             cur.execute("RELEASE SAVEPOINT sp_row")
                             continue
                             
-                        # 2. Find or Create Shadow Company
+                        # 2. Find or Create Shadow Company — resolved by trade
+                        #    licence / normalised name, not exact string (#99)
                         logger.info(f"Processing company: {company_name}")
-                        cur.execute("SELECT id FROM public.companies WHERE company_name = %s", (company_name,))
-                        company = cur.fetchone()
-                        
-                        company_id = None
-                        if company:
-                            company_id = company['id']
+                        company_id = find_company_id(cur, company_name, trade_license)
+
+                        if company_id:
                             # Optional: Update existing company with new details if missing
                             cur.execute("""
                                 UPDATE companies 
@@ -145,7 +154,8 @@ class GrowthSystem:
                                         'nafis_import')
                                 RETURNING id
                             """, (
-                                company_name, company_name, company_email, 
+                                display_company_name(company_name),
+                                display_company_name(company_name), company_email,
                                 industry, trade_license, phone, emirate, city, business_type
                             ))
                             company_id = cur.fetchone()['id']
@@ -230,24 +240,41 @@ class GrowthSystem:
 
     def check_existing_companies(self, company_names):
         """
-        Check which of the provided company names already exist in the DB.
-        Returns a list of existing company names.
+        Check which of the provided company names already exist in the DB,
+        matching case/whitespace-insensitively (#99).
+
+        Returns the CALLER'S spellings, not the stored ones: both frontends
+        (NafisVacancyImport, GrowthTools) flag rows via
+        `existingSet.has(row.companyName)`, so returning the DB's casing
+        would silently unflag every row that differs only in case.
         """
         if not company_names:
             return []
-            
+
+        normalized_to_inputs = {}
+        for name in company_names:
+            normalized = normalize_company_name(name)
+            if normalized:
+                normalized_to_inputs.setdefault(normalized, []).append(name)
+        if not normalized_to_inputs:
+            return []
+
         conn = self._get_db_connection()
         try:
             with conn.cursor() as cur:
-                # Use ANY for efficient bulk check
-                cur.execute("""
-                    SELECT company_name 
-                    FROM companies 
-                    WHERE company_name = ANY(%s)
-                """, (list(company_names),))
-                
-                existing = [row[0] for row in cur.fetchall()]
-                return existing
+                cur.execute(f"""
+                    SELECT DISTINCT {NORMALIZED_NAME_SQL}
+                    FROM companies
+                    WHERE {NORMALIZED_NAME_SQL} = ANY(%s)
+                """, (list(normalized_to_inputs.keys()),))
+
+                hits = {row[0] for row in cur.fetchall()}
+                return [
+                    original
+                    for normalized, originals in normalized_to_inputs.items()
+                    if normalized in hits
+                    for original in originals
+                ]
         finally:
             conn.close()
 
@@ -735,15 +762,13 @@ class GrowthSystem:
                         WHERE id = %s
                     """, (role, user_id))
 
-                # 3. Find or create company link
+                # 3. Find or create company link — resolved by trade licence /
+                #    normalised name, not exact string (#99)
                 company_name = invitation.get('company_name', '')
-                cur.execute("SELECT id FROM companies WHERE company_name = %s", (company_name,))
-                company_row = cur.fetchone()
+                company_id = find_company_id(
+                    cur, company_name, invitation.get('trade_license'))
 
-                company_id = None
-                if company_row:
-                    company_id = company_row['id']
-                else:
+                if not company_id:
                     # Create shadow company
                     cur.execute("""
                         INSERT INTO companies (
@@ -754,7 +779,8 @@ class GrowthSystem:
                                   'magic_link')
                         RETURNING id
                     """, (
-                        company_name, company_name,
+                        display_company_name(company_name),
+                        display_company_name(company_name),
                         email, invitation.get('company_phone', ''),
                         invitation.get('company_sector', ''),
                         invitation.get('trade_license', ''),
@@ -883,10 +909,13 @@ class GrowthSystem:
                 """)
                 invitations = cur.fetchall()
 
-                # Build invitation lookup by company name
+                # Build invitation lookup by normalised company name (#99) —
+                # invitations store a name snapshot from the operator's CSV,
+                # which may differ from the stored company row in case or
+                # whitespace only.
                 invitation_map = {}
                 for inv in invitations:
-                    name = inv['company_name']
+                    name = normalize_company_name(inv['company_name'])
                     if name not in invitation_map:
                         invitation_map[name] = inv  # latest invitation per company
 
@@ -905,7 +934,7 @@ class GrowthSystem:
                 }
 
                 for c in companies_raw:
-                    name = c['company_name']
+                    name = normalize_company_name(c['company_name'])
                     inv = invitation_map.get(name)
 
                     # Determine funnel stage
