@@ -13,11 +13,13 @@ try:
         NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
         find_company_id,
     )
+    from backend.utils.contact_identity import canonical_email
 except ImportError:
     from company_identity import (
         NORMALIZED_NAME_SQL, normalize_company_name, display_company_name,
         find_company_id,
     )
+    from utils.contact_identity import canonical_email
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -343,13 +345,15 @@ class GrowthSystem:
                     raise ValueError("Invalid or used token")
 
                 job_id = token_record['job_id']
-                email = token_record['email']
-                
+                # Canonical on both sides (#95) — the token may carry any
+                # spelling the operator's CSV had.
+                email = canonical_email(token_record['email'])
+
                 # 2. Create/Get User
                 # Check if user exists with this email
-                cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+                cur.execute("SELECT id FROM users WHERE lower(btrim(email)) = %s", (email,))
                 user = cur.fetchone()
-                
+
                 user_id = None
                 if user:
                     user_id = user['id']
@@ -358,15 +362,20 @@ class GrowthSystem:
                     # Create new Recruiter User — hash password with bcrypt
                     import bcrypt
                     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    
+
                     user_id = self._generate_synthetic_eid(cur)
+                    # role AND user_type (#93): the authorizer and the JWT
+                    # claim read `role`; writing only user_type made this
+                    # account a candidate on every login after the first.
+                    # Phone is unknown here — store empty, not a '00000000'
+                    # sentinel that could collide in phone matching (#95).
                     cur.execute("""
                         INSERT INTO users (
-                            id, email, password_hash, first_name, last_name, 
-                            user_type, phone, is_active, created_at
+                            id, email, password_hash, first_name, last_name,
+                            role, user_type, phone, is_active, created_at
                         ) VALUES (
-                            %s, %s, %s, %s, 'Recruiter', 
-                            'recruiter', '00000000', TRUE, NOW()
+                            %s, %s, %s, %s, 'Recruiter',
+                            'recruiter', 'recruiter', '', TRUE, NOW()
                         ) RETURNING id
                     """, (user_id, email, hashed_pw, token_record['company_name_snapshot']))
                     user_id = cur.fetchone()['id']
