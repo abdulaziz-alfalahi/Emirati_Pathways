@@ -139,8 +139,19 @@ class AuthenticationManager:
                 self.logger.warning(f"Login blocked for locked account: {email}")
                 return False, f"Account temporarily locked due to too many failed attempts. Try again in {remaining} minute(s).", None
             
+            # UAE-Pass-native accounts have no password credential (issue
+            # #94): password_hash is NULL/empty, or a legacy 'otp_only'
+            # sentinel. bcrypt.checkpw would raise ValueError('Invalid
+            # salt'), swallowed into a generic failure — still fails
+            # closed, but support can't diagnose it and the user is never
+            # told the way back in.
+            stored_hash = user.get('password_hash') or ''
+            if not stored_hash.startswith('$2'):
+                self.logger.info(f"Password login attempted on passwordless (UAE Pass) account: {email}")
+                return False, "This account signs in with UAE Pass. Please use the 'Sign in with UAE Pass' button.", None
+
             # Verify password
-            if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            if not bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
                 self._increment_failed_attempts(email)
                 tracker = self._failed_login_tracker.get(email, {})
                 remaining_attempts = self.MAX_FAILED_ATTEMPTS - tracker.get('count', 0)
