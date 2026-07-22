@@ -1784,15 +1784,39 @@ def ensure_blockchain_tables():
         db.rollback()
 
 
+# Issue #26: there is NO real blockchain behind these endpoints — the rows
+# are illustrative seed data with fabricated tx hashes / 'Ethereum' network.
+# Every response is marked unmistakably as simulated so no caller (and no UI)
+# can present it as a genuine on-chain, verified government credential.
+_BLOCKCHAIN_DISCLAIMER = (
+    "SIMULATED SAMPLE DATA — not a real blockchain record. These credentials "
+    "are illustrative and are not cryptographically verified or on-chain."
+)
+
+
+def _mark_simulated(rows):
+    for r in rows or []:
+        if isinstance(r, dict):
+            r['simulated'] = True
+            # Never let a stored 'Ethereum'/'Verified' masquerade as real.
+            if 'network' in r:
+                r['network'] = 'Simulated'
+            if r.get('status') == 'Verified':
+                r['status'] = 'Sample'
+    return rows
+
+
 @education_bp.route('/blockchain/credentials', methods=['GET'])
 def get_blockchain_credentials():
     ensure_blockchain_tables()
     creds = query_all("SELECT * FROM blockchain_credentials ORDER BY is_primary DESC, verifications DESC")
-    return jsonify({'credentials': creds})
+    return jsonify({'credentials': _mark_simulated(creds), 'simulated': True,
+                    'disclaimer': _BLOCKCHAIN_DISCLAIMER})
 
 
 @education_bp.route('/blockchain/issuers', methods=['GET'])
 def get_blockchain_issuers():
     ensure_blockchain_tables()
     issuers = query_all("SELECT * FROM credential_issuers ORDER BY total_verified DESC")
-    return jsonify({'issuers': issuers})
+    return jsonify({'issuers': _mark_simulated(issuers), 'simulated': True,
+                    'disclaimer': _BLOCKCHAIN_DISCLAIMER})

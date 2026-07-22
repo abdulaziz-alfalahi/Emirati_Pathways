@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet } from 'lucide-react';
+import { Wallet, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { blockchainCredentialService } from '@/services/blockchain/blockchainCredentialService';
 import { auditLogger } from '@/services/blockchain/auditLogger';
@@ -211,6 +211,16 @@ const DigitalWallet: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Issue #26: this feature is not backed by a real blockchain — say so
+          plainly so simulated credentials are never taken as authoritative. */}
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+        <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+        <span>
+          <strong>Simulated feature.</strong> These credentials are sample data for
+          demonstration — they are not stored on a real blockchain and are not
+          cryptographically verified. Do not treat them as authoritative records.
+        </span>
+      </div>
       <Card>
         <WalletHeader />
         <CardContent>

@@ -16,14 +16,17 @@ class CredentialHashingService {
   }
 
   generateBlockchainData(credentialHash: string) {
+    // Issue #26: there is no real blockchain. Do NOT fabricate a plausible
+    // block number with a PRNG or a tx-hash-looking string — that presents
+    // simulated data as a genuine on-chain record. Emit explicit SIMULATED
+    // markers so callers/UI cannot mistake it for real.
     const merkleProof = this.generateMerkleProof(credentialHash);
-    const blockNumber = Math.floor(Math.random() * 1000000) + 1;
-    const transactionHash = `tx_${credentialHash}`;
-
     return {
+      simulated: true,
+      network: 'Simulated',
       merkleProof,
-      blockNumber,
-      transactionHash
+      blockNumber: null,
+      transactionHash: `SIMULATED-${credentialHash.substring(0, 12)}`,
     };
   }
 }
