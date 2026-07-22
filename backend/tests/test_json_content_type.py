@@ -12,6 +12,7 @@ auth/validation response, never a 500.
 import os
 import re
 import sys
+from unittest.mock import patch
 
 import pytest
 
@@ -45,13 +46,18 @@ def _auth(app, role='growth_operator'):
     return {'Authorization': f'Bearer {token}'}
 
 
-def test_verify_company_no_content_type_not_500(app, client):
-    # POST with NO Content-Type and NO body — used to 415→500.
-    r = client.post(
-        '/api/growth/companies/11111111-2222-3333-4444-555555555555/verify',
-        headers=_auth(app), data='')
-    assert r.status_code != 500
-    assert r.status_code != 415
+def test_verify_company_no_content_type_not_415(app, client):
+    # POST with NO Content-Type and NO body used to raise 415 (wrapped 500).
+    # Mock the DB-backed verification so the ONLY thing under test is that
+    # the handler parses past the missing Content-Type and reaches its
+    # normal logic (here: a clean 200), never a 415/500 from request.json.
+    with patch('backend.routes.growth_routes.growth_sys.set_company_verification',
+               return_value={'id': '11111111-2222-3333-4444-555555555555',
+                             'is_verified': True}):
+        r = client.post(
+            '/api/growth/companies/11111111-2222-3333-4444-555555555555/verify',
+            headers=_auth(app), data='')
+    assert r.status_code == 200, r.get_data(as_text=True)
 
 
 def test_no_bare_request_json_in_operator_routes():
