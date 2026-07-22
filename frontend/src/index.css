@@ -5,11 +5,26 @@
 @import './styles/ehrdc-tokens.css';
 @import './styles/dubai-font.css';
 /* Self-hosted OpenDyslexic for the .dyslexia-font a11y toggle below (#27).
-   Previously the family was referenced but never loaded (the only @import
-   was a non-existent Google Font in a dead CSS file), so the toggle fell
-   back to Comic Sans. @fontsource bundles the woff2 locally — no CDN/CORS. */
-@import '@fontsource/opendyslexic/400.css';
-@import '@fontsource/opendyslexic/700.css';
+   Font files live in the repo (src/assets/fonts) with a relative url() so
+   there is NO node_modules or CDN dependency — a bare `@import
+   '@fontsource/...'` broke Vite's dev PostCSS resolver (ENOENT) even though
+   the production build handled it. Vite hashes these into the build. */
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/opendyslexic-400.woff2') format('woff2'),
+       url('./assets/fonts/opendyslexic-400.woff') format('woff');
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/opendyslexic-700.woff2') format('woff2'),
+       url('./assets/fonts/opendyslexic-700.woff') format('woff');
+}
 /* OpenDyslexic retained for the accessibility font toggle. */
 @import url('https://fonts.googleapis.com/css2?family=Open+Dyslexic:wght@400;700&display=swap');
 
