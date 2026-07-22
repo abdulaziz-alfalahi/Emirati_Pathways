@@ -257,7 +257,7 @@ export const operationsNavGroup: NavGroup = {
     {
       name: 'Career Services',
       href: '/career-services-dashboard',
-      description: 'Manage salary benchmarks, startups, internships & gigs',
+      description: 'Candidate counselling pipeline: caseloads, call outcomes & notes',
       icon: DollarSign,
       allowedRoles: ['career_services_operator', 'admin', 'platform_operator']
     },

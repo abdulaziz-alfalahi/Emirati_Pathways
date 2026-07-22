@@ -218,8 +218,8 @@ export const roleLabels: Record<string, { en: string; ar: string; descEN: string
   career_services_operator: {
     en: 'Career Services Operator',
     ar: 'مشغّل الخدمات المهنية',
-    descEN: 'Operators managing career services CRM, job verification, and candidate pipeline.',
-    descAR: 'المشغّلون المسؤولون عن إدارة علاقات العملاء المهنية والتحقق من الوظائف ومسار المرشحين.',
+    descEN: 'Counselling caseworkers managing the candidate pipeline: caseloads, call outcomes, counselling notes and preferences.',
+    descAR: 'أخصائيو الإرشاد المهني المسؤولون عن مسار المرشحين: الحالات ونتائج الاتصال وملاحظات الإرشاد والتفضيلات.',
     icon: '🗂️',
   },
   employee: {

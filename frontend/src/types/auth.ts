@@ -205,7 +205,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'compliance_auditor': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'board_member': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'professional_dev_operator': ['manage_training', 'manage_certifications', 'onboard_mentors', 'onboard_assessment', 'manage_mentorship_programs', 'manage_assessment_centers', 'view_analytics'],
-  'career_services_operator': ['view_analytics'],
+  'career_services_operator': ['view_dashboard', 'manage_candidate_counselling', 'view_analytics'],
   'advisor': ['view_analytics', 'manage_profile'],
   'coach': ['view_analytics', 'manage_profile'],
   'internship_coordinator': ['view_analytics', 'manage_profile'],

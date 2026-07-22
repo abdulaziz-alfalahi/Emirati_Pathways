@@ -933,7 +933,7 @@ def get_role_permissions(role: str) -> list:
         ],
         'career_services_operator': [
             'view_dashboard',
-            'manage_growth',
+            'manage_candidate_counselling',
             'view_analytics'
         ],
         'call_center_agent': [
