@@ -877,30 +877,55 @@ const AppContent: React.FC = () => {
                 element={<RetireePage />}
               />
 
-              {/* Operator Dashboards */}
+              {/* Operator Dashboards — each guarded (P0 security fix: these
+                  six previously rendered with no ProtectedRoute). */}
               <Route
                 path="/nafis-talent-dashboard"
-                element={<NafisTalentDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['talent_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <NafisTalentDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/education-operator-dashboard"
-                element={<EducationOperatorDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['education_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <EducationOperatorDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/professional-dev-dashboard"
-                element={<ProfessionalDevDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['professional_dev_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <ProfessionalDevDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/community-operator-dashboard"
-                element={<CommunityOperatorDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['community_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <CommunityOperatorDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/assessment-operator-dashboard"
-                element={<AssessmentOperatorDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['assessment_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <AssessmentOperatorDashboard />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/mentorship-operator-dashboard"
-                element={<MentorshipOperatorDashboard />}
+                element={
+                  <ProtectedRoute allowedRoles={['mentorship_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                    <MentorshipOperatorDashboard />
+                  </ProtectedRoute>
+                }
               />
               {/* Operations Center is TWO surfaces sharing one data source:
                   the at-desk view below, and the command-room wall display.

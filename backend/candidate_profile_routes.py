@@ -16,6 +16,10 @@ from werkzeug.utils import secure_filename
 from typing import Dict, List, Any, Optional
 
 from backend.db import get_db_connection
+try:
+    from backend.auth.access_control import require_roles, CAREER_SERVICES_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import require_roles, CAREER_SERVICES_ROLES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -828,9 +832,15 @@ def upload_photo():
         }), 500
 
 @candidate_profile_bp.route('/crm-candidates', methods=['GET'])
-@jwt_required()
+@require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_candidates():
-    """Get all candidates for Career Services CRM"""
+    """Get all candidates for Career Services CRM.
+
+    Career-services staff only. This returns candidate PII (national_id,
+    phone, counselling notes); it was previously @jwt_required() with no
+    role check, so any authenticated user could enumerate the whole roster
+    (security fix, P0). require_roles resolves secondary_roles too.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -914,9 +924,14 @@ def get_crm_candidates():
         }), 500
 
 @candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
-@jwt_required()
+@require_roles(*CAREER_SERVICES_ROLES)
 def update_crm_candidate(user_id):
-    """Update CRM specific fields for a candidate"""
+    """Update CRM specific fields for a candidate.
+
+    Career-services staff only (P0 security fix — was @jwt_required() with
+    no role check, so any user could overwrite any candidate's counselling
+    record). require_roles resolves secondary_roles too.
+    """
     try:
         data = request.get_json()
         
