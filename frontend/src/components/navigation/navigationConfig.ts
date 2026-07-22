@@ -248,6 +248,13 @@ export const operationsNavGroup: NavGroup = {
   description: 'Operator dashboards and management tools',
   items: [
     {
+      name: 'NAFIS Talent',
+      href: '/nafis-talent-dashboard',
+      description: 'Import, audit and onboard NAFIS job seekers',
+      icon: Briefcase,
+      allowedRoles: ['talent_operator', 'admin', 'platform_operator', 'growth_operator']
+    },
+    {
       name: 'Career Services',
       href: '/career-services-dashboard',
       description: 'Manage salary benchmarks, startups, internships & gigs',

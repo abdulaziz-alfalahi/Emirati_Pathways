@@ -51,9 +51,37 @@ export interface UserRolesResponse {
 
 import {
   ROLE_DASHBOARD_MAP,
-  UserRole
+  UserRole,
+  normalizeRole
 } from '@/types/auth';
 import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils';
+
+// C2: at login the landing page must reflect the user's most privileged role,
+// not just the primary one. The self-serve grant loop writes operator roles
+// into secondary_roles, so an approved operator whose primary role is still
+// `candidate` was landed on the candidate dashboard. Higher index = higher
+// priority; the best-ranked role among ALL of the user's roles wins.
+const ROLE_LANDING_PRIORITY: string[] = [
+  'candidate', 'job_seeker', 'parent', 'student', 'mentor', 'assessor',
+  'internship_coordinator', 'call_center_agent', 'advisor', 'coach',
+  'training_provider', 'recruiter', 'employer_admin', 'hr_manager',
+  'compliance_auditor', 'board_member',
+  'career_services_operator', 'education_operator', 'assessment_operator',
+  'mentorship_operator', 'community_operator', 'professional_dev_operator',
+  'talent_operator', 'employer_relations', 'growth_operator',
+  'platform_operator', 'admin', 'super_admin', 'platform_administrator',
+];
+
+export function bestLandingRole(roles: string[]): string | null {
+  let best: string | null = null;
+  let bestRank = -1;
+  for (const r of roles) {
+    const n = String(normalizeRole(r) || r).toLowerCase();
+    const rank = ROLE_LANDING_PRIORITY.indexOf(n);
+    if (rank > bestRank) { bestRank = rank; best = n; }
+  }
+  return best;
+}
 
 // Available roles with metadata
 export const AVAILABLE_ROLES = [
@@ -455,9 +483,23 @@ class AuthService {
    */
   async getDashboardRoute(): Promise<string> {
     try {
-      const role = await this.getUserRole();
+      // C2: land on the most-privileged role's dashboard, not just the
+      // primary role. An operator whose primary role is still `candidate`
+      // (role granted into secondary_roles) otherwise landed on the
+      // candidate dashboard. An explicit role switch navigates via the
+      // synchronous getDashboardRoute(role) with the chosen role, so this
+      // login-time default doesn't override a deliberate switch.
+      const activeRole = await this.getUserRole();
+      const u = this.getUser() || {};
+      const allRoles = [
+        ...(u.roles || []),
+        u.role, u.user_type,
+        ...(u.secondary_roles || []),
+        activeRole,
+      ].filter(Boolean) as string[];
+      const role = bestLandingRole(allRoles) || activeRole;
 
-      console.log('AuthService: Determining dashboard route for role:', role);
+      console.log('AuthService: Determining dashboard route for role:', role, 'from', allRoles);
 
       // Use the role mapping for consistent routing
       const dashboardRoute = ROLE_DASHBOARD_MAP[role?.toLowerCase() || ''];

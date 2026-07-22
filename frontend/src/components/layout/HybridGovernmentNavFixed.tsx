@@ -57,6 +57,20 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
   // Get user role from authenticated user, fallback to prop
   const userRole = user?.role || propUserRole;
+  // C2: the nav must consider ALL of the user's roles (primary + user_type +
+  // roles[] + secondary_roles), not just the primary. The self-serve grant
+  // loop writes operator roles into secondary_roles only, so filtering on the
+  // primary role alone hid every operator surface from an approved operator.
+  const userRoles = React.useMemo(() => {
+    const raw = [
+      ...(user?.roles || []),
+      user?.role,
+      (user as any)?.user_type,
+      ...(user?.secondary_roles || []),
+      propUserRole,
+    ].filter(Boolean) as string[];
+    return Array.from(new Set(raw.map(r => String(normalizeRole(r) || r).toLowerCase())));
+  }, [user, propUserRole]);
 
   // ── Role-based nav filtering ──
   // Define which nav items should be HIDDEN for each role category
@@ -137,30 +151,32 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const hiddenPaths = hiddenPathsByRole[userRole.toLowerCase()] || [];
 
   // Determine if user is an operator/admin who should see the operations nav
-  const isOperatorRole = [
+  const OPERATOR_NAV_ROLES = [
     'operator', 'growth_operator', 'employer_relations', 'talent_operator',
     'education_operator', 'assessment_operator', 'mentorship_operator',
     'community_operator', 'platform_operator', 'career_services_operator',
-    'admin', 'board_member', 'compliance_auditor'
-  ].includes(userRole.toLowerCase());
+    'professional_dev_operator', 'admin', 'super_admin', 'platform_administrator',
+    'board_member', 'compliance_auditor'
+  ];
+  const isOperatorRole = userRoles.some(r => OPERATOR_NAV_ROLES.includes(r));
 
-  // Filter nav groups — remove blocked items, apply role-based allowedRoles, then remove empty groups
+  // Filter nav groups — remove blocked items, apply role-based allowedRoles, then remove empty groups.
+  // C2: an item is shown when ANY of the user's roles is allowed, not just the primary.
   const filteredNavigationGroups = useMemo(() => {
     const baseGroups = isOperatorRole ? [...navigationGroups, operationsNavGroup] : navigationGroups;
-    const role = userRole.toLowerCase();
     return baseGroups
       .map(group => ({
         ...group,
         items: group.items.filter(item => {
           // Hide if path is blocked for this role
           if (hiddenPaths.includes(item.href || '')) return false;
-          // If item has allowedRoles, only show if user's role is listed
-          if (item.allowedRoles && !item.allowedRoles.includes(role)) return false;
+          // If item has allowedRoles, show if ANY of the user's roles is listed
+          if (item.allowedRoles && !item.allowedRoles.some(r => userRoles.includes(String(r).toLowerCase()))) return false;
           return true;
         }),
       }))
       .filter(group => group.items.length > 0);
-  }, [userRole, hiddenPaths.length, isOperatorRole]);
+  }, [userRoles, hiddenPaths.length, isOperatorRole]);
 
   const groupKeyMap = useMemo(() => ({
     education: {
