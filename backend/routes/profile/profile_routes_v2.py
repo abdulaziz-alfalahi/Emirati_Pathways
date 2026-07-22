@@ -144,6 +144,11 @@ def update_identity():
 
         if 'expected_salary' in data: profile.expected_salary_range = data['expected_salary']
         if 'relocation' in data: profile.willing_to_relocate = data['relocation']
+        # Commute/work-mode preference (#32) — display/filter only, never scored (#12).
+        if 'max_commute_minutes' in data:
+            v = data['max_commute_minutes']
+            profile.max_commute_minutes = int(v) if v not in (None, '', 'none') else None
+        if 'remote_preferred' in data: profile.remote_preferred = bool(data['remote_preferred'])
         if 'notice_period' in data: profile.notice_period = data['notice_period']
         if 'english_proficiency' in data: profile.english_proficiency = data['english_proficiency']
         if 'video_intro_url' in data: profile.video_intro_url = data['video_intro_url']
