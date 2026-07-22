@@ -11,6 +11,10 @@ import psycopg2.extras
 import os
 import json
 import logging
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +29,13 @@ _MANAGER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'career_services_
 
 
 def _require_manager():
-    """Return a (response, 403) tuple if the caller lacks a manager role, else None."""
+    """Return a (response, 403) tuple if the caller lacks a manager role, else None.
+    Resolves secondary_roles (C1) so an operator holding the role as a secondary
+    role is not locked out."""
     try:
-        role = (get_jwt() or {}).get('role', '')
+        if not (resolve_roles() & _MANAGER_ROLES):
+            return jsonify({'success': False, 'message': 'Forbidden - manager access required'}), 403
     except Exception:
-        role = ''
-    if role not in _MANAGER_ROLES:
         return jsonify({'success': False, 'message': 'Forbidden - manager access required'}), 403
     return None
 
