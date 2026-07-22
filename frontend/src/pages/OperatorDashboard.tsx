@@ -25,10 +25,14 @@ const OperatorDashboard = () => {
 
     // Determine active operator roles
     const operatorType = React.useMemo(() => {
+        // Note: talent_operator is NOT handled here — its canonical home is the
+        // NAFIS Talent dashboard (/nafis-talent-dashboard). This generic
+        // operator surface previously claimed a "Candidate Onboarding" tab for
+        // it that actually rendered role requests, competing with the real
+        // dashboard (C6 consolidation).
         const roles = [user?.role, ...(user?.roles || []), ...(user?.secondary_roles || [])].filter(Boolean);
         return {
             isCompanyOps: roles.some(r => r === 'employer_relations'),
-            isCandidateOps: roles.some(r => r === 'talent_operator'),
             isMonitoringOps: roles.some(r => r === 'platform_operator'),
             isLegacyOps: roles.some(r => r === 'growth_operator')
         };
@@ -37,7 +41,6 @@ const OperatorDashboard = () => {
     // Determine default tab based on roles
     const defaultTab = React.useMemo(() => {
         if (operatorType.isCompanyOps) return 'company-onboarding';
-        if (operatorType.isCandidateOps) return 'candidate-onboarding';
         if (operatorType.isMonitoringOps) return 'monitoring';
         return 'ops';
     }, [operatorType]);
@@ -54,15 +57,14 @@ const OperatorDashboard = () => {
                     <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('Growth Operations', 'عمليات النمو')}</h2>
                     <p className="text-slate-500">
                         {operatorType.isCompanyOps && t('Manage company onboarding and verification.', 'إدارة تسجيل الشركات والتحقق منها.')}
-                        {operatorType.isCandidateOps && t('Manage candidate onboarding and support.', 'إدارة تسجيل المرشحين والدعم.')}
                         {operatorType.isMonitoringOps && t('Monitor platform activity and metrics.', 'مراقبة نشاط المنصة والمقاييس.')}
-                        {!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps && t('Manage platform growth operations.', 'إدارة عمليات نمو المنصة.')}
+                        {!operatorType.isCompanyOps && !operatorType.isMonitoringOps && t('Manage platform growth operations.', 'إدارة عمليات نمو المنصة.')}
                     </p>
                 </div>
 
                 <Tabs defaultValue={initialTab} className="space-y-6">
                     <TabsList className="grid w-full grid-cols-5 max-w-[900px]">
-                        {(operatorType.isLegacyOps || (!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps)) && (
+                        {(operatorType.isLegacyOps || (!operatorType.isCompanyOps && !operatorType.isMonitoringOps)) && (
                             <TabsTrigger value="ops">{t('Campaigns', 'الحملات')}</TabsTrigger>
                         )}
 
@@ -71,9 +73,11 @@ const OperatorDashboard = () => {
                             <TabsTrigger value="company-onboarding">{t('Company Onboarding', 'تسجيل الشركات')}</TabsTrigger>
                         )}
 
-                        {/* Candidate Ops View */}
-                        {(operatorType.isCandidateOps || operatorType.isLegacyOps) && (
-                            <TabsTrigger value="candidate-onboarding">{t('Candidate Onboarding', 'تسجيل المرشحين')}</TabsTrigger>
+                        {/* Role Requests (admin/legacy ops). This renders the role-request
+                            approval queue — it is NOT NAFIS candidate onboarding, which
+                            lives on the NAFIS Talent dashboard. */}
+                        {operatorType.isLegacyOps && (
+                            <TabsTrigger value="role-requests">{t('Role Requests', 'طلبات الأدوار')}</TabsTrigger>
                         )}
 
                         {/* Monitoring Ops View */}
@@ -104,10 +108,10 @@ const OperatorDashboard = () => {
                         </div>
                     </TabsContent>
 
-                    {/* Candidate Onboarding Content */}
-                    <TabsContent value="candidate-onboarding" className="space-y-4">
+                    {/* Role Requests Content — the role-approval queue. */}
+                    <TabsContent value="role-requests" className="space-y-4">
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('Candidate Onboarding Queue', 'قائمة تسجيل المرشحين')}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('Role Requests', 'طلبات الأدوار')}</h3>
                             <AdminRoleRequests />
                         </div>
                     </TabsContent>
@@ -115,19 +119,26 @@ const OperatorDashboard = () => {
                     {/* Monitoring Center Content */}
                     <TabsContent value="monitoring" className="space-y-4">
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('Monitoring Center', 'مركز المراقبة')}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('Monitoring Center', 'مركز المراقبة')}</h3>
+                            <p className="text-sm text-slate-500 mb-6">
+                                {t('Live platform metrics are on the Operations Center.', 'مقاييس المنصة المباشرة متوفرة في مركز العمليات.')}
+                                {' '}
+                                <a href="/operations-center" className="text-teal-600 underline">{t('Open Operations Center', 'فتح مركز العمليات')}</a>
+                            </p>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Placeholders — these were previously hardcoded fabricated
+                                    figures. Real metrics live on the Operations Center (#26). */}
                                 <div className="p-4 bg-muted rounded border border-border">
                                     <p className="text-sm text-slate-500">{t('Active Sessions', 'الجلسات النشطة')}</p>
-                                    <p className="text-3xl font-bold text-slate-900">1,248</p>
+                                    <p className="text-3xl font-bold text-slate-400">—</p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded border border-slate-100">
                                     <p className="text-sm text-slate-500">{t('System Health', 'صحة النظام')}</p>
-                                    <p className="text-3xl font-bold text-green-600">99.9%</p>
+                                    <p className="text-3xl font-bold text-slate-400">—</p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded border border-slate-100">
                                     <p className="text-sm text-slate-500">{t('Pending Alerts', 'التنبيهات المعلقة')}</p>
-                                    <p className="text-3xl font-bold text-amber-500">3</p>
+                                    <p className="text-3xl font-bold text-slate-400">—</p>
                                 </div>
                             </div>
                         </div>
