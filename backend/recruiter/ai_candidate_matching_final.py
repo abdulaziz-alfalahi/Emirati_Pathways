@@ -12,6 +12,7 @@ import sys
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 import json
 
 
@@ -81,7 +82,12 @@ class AICandidateMatchingEngineFinal:
     # (~4k live) took minutes and stalled the worker (issue #124). We
     # rule-score everyone cheaply, then AI-score only this many top rule
     # matches — env-overridable for tuning.
-    AI_SHORTLIST_CAP = int(os.getenv('MATCH_AI_SHORTLIST_CAP', '40'))
+    AI_SHORTLIST_CAP = int(os.getenv('MATCH_AI_SHORTLIST_CAP', '30'))
+    # Each AI score is one Qwen call (~5s of network wait). Score the
+    # shortlist concurrently — the gevent worker monkey-patches socket I/O
+    # so these overlap, turning ~30 × 5s sequential into a few seconds.
+    # Capped so we don't hammer the Qwen API. (#124)
+    AI_SCORING_WORKERS = int(os.getenv('MATCH_AI_SCORING_WORKERS', '10'))
 
     def match_candidates_for_job(
         self,
@@ -145,11 +151,14 @@ class AICandidateMatchingEngineFinal:
                 )
 
             # ── Stage 2: full scoring (AI if available) on the shortlist ──
-            scored_candidates = []
-            for candidate in shortlist:
+            # Each _score_candidate may make a blocking Qwen call; run them
+            # concurrently so the shortlist scores in ~one call's latency,
+            # not the sum (#124). A single candidate falling over must not
+            # sink the batch.
+            def _score_one(candidate):
                 try:
                     score_data = self._score_candidate(jd_data, candidate)
-                    scored_candidates.append({
+                    return {
                         'candidate': candidate,
                         'match_score': score_data['overall_score'],
                         'score_breakdown': score_data['breakdown'],
@@ -157,10 +166,18 @@ class AICandidateMatchingEngineFinal:
                         'missing_skills': score_data.get('missing_skills', []),
                         'strengths': score_data.get('strengths', []),
                         'concerns': score_data.get('concerns', [])
-                    })
+                    }
                 except Exception as e:
                     self.logger.error(f"Error scoring candidate {candidate.get('candidate_id')}: {e}")
-                    continue
+                    return None
+
+            if self.matching_engine and len(shortlist) > 1:
+                workers = max(1, min(self.AI_SCORING_WORKERS, len(shortlist)))
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    results = list(pool.map(_score_one, shortlist))
+            else:
+                results = [_score_one(c) for c in shortlist]
+            scored_candidates = [r for r in results if r is not None]
 
             # Sort by match score (descending)
             scored_candidates.sort(key=lambda x: x['match_score'], reverse=True)
