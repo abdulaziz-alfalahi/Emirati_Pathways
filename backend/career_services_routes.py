@@ -23,7 +23,13 @@ career_services_bp = Blueprint('career_services', __name__, url_prefix='/api/car
 # Roles permitted to manage operator/recruiter-owned content (BOLA hardening).
 # internships/gigs/salary_benchmarks/startup_programs have no per-row owner column,
 # so these are gated by role rather than ownership.
-_MANAGER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'career_services_operator',
+# Roles that MANAGE the opportunities marketplace (internships, gigs, salary
+# benchmarks, startups). career_services_operator is deliberately NOT here:
+# its identity is the candidate counselling caseworker (owns the counselling
+# CRM at /api/profile/crm-candidates), not marketplace management — that
+# belongs to internship_coordinator and recruiters. Its counselling surface
+# is gated separately by CAREER_SERVICES_ROLES.
+_MANAGER_ROLES = {'recruiter', 'employer_admin', 'hr_manager',
                   'internship_coordinator', 'talent_operator', 'education_operator',
                   'training_provider', 'coach', 'advisor', 'admin', 'super_admin'}
 
@@ -1047,7 +1053,10 @@ def register_startup():
 @career_services_bp.route('/internships', methods=['POST'])
 @jwt_required()
 def create_internship():
-    """Create a new internship (Recruiter)."""
+    """Create a new internship (marketplace managers only)."""
+    guard = _require_manager()  # was @jwt_required-only — any user could create
+    if guard:
+        return guard
     user_id = None
     try:
         user_id = get_jwt_identity()
@@ -1187,7 +1196,10 @@ def list_internship_applications(internship_id):
 @career_services_bp.route('/gigs', methods=['POST'])
 @jwt_required()
 def create_gig():
-    """Create a new gig (Recruiter)."""
+    """Create a new gig (marketplace managers only)."""
+    guard = _require_manager()  # was @jwt_required-only — any user could create
+    if guard:
+        return guard
     user_id = None
     try:
         user_id = get_jwt_identity()
