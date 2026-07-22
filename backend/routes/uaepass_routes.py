@@ -186,10 +186,15 @@ def uaepass_login():
         # server-side state blob — not the OAuth redirect — so the invitee
         # cannot detach or swap it mid-flow.
         invitation_token = request.args.get('invitation_token', '')
+        # invitation_type routes the callback to the right redeemer:
+        # 'company' (employer onboarding, default) or 'seeker' (NAFIS talent
+        # onboarding, which replaced its OTP flow with this handoff).
+        invitation_type = request.args.get('invitation_type', 'company')
         _store_state(state, {
             'return_url': return_url,
             'nonce': nonce,
-            'invitation_token': invitation_token
+            'invitation_token': invitation_token,
+            'invitation_type': invitation_type,
         })
 
         # Clean up old states (> 10 minutes)
@@ -301,14 +306,26 @@ def uaepass_callback():
         # to an error message on the frontend callback page.
         user_id = str(user_data['id']).strip()  # Now EID CHAR(15)
         invitation_token = state_data.get('invitation_token', '')
+        invitation_type = state_data.get('invitation_type', 'company')
         invitation_result = None
         invitation_error = ''
         if invitation_token:
             try:
-                from growth_system import GrowthSystem
-                invitation_result = GrowthSystem().redeem_invitation_for_user(
-                    invitation_token, user_id, is_new_user=is_new_user
-                )
+                if invitation_type == 'seeker':
+                    # NAFIS seeker onboarding — links the imported seeker to
+                    # this proven candidate account (replaces the OTP flow).
+                    try:
+                        from backend.nafis_talent_system import NafisTalentSystem
+                    except ImportError:
+                        from nafis_talent_system import NafisTalentSystem
+                    invitation_result = NafisTalentSystem().redeem_seeker_invitation_for_user(
+                        invitation_token, user_id, is_new_user=is_new_user
+                    )
+                else:
+                    from growth_system import GrowthSystem
+                    invitation_result = GrowthSystem().redeem_invitation_for_user(
+                        invitation_token, user_id, is_new_user=is_new_user
+                    )
                 # New accounts take the invited role as primary — reflect that
                 # in the JWT claim rather than the pre-redemption 'candidate'.
                 if invitation_result.get('primary_role'):

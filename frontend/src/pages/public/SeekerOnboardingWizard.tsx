@@ -2,28 +2,33 @@
  * SeekerOnboardingWizard.tsx
  *
  * Public page accessible via magic link: /register/:token
- * Flow: Validate token → Confirm info → Mobile OTP verification → Create account.
+ * Flow: Validate token → Review NAFIS profile → Continue with UAE PASS.
+ *
+ * The phone-OTP step was retired: onboarding now hands off to UAE Pass, and
+ * the UAE Pass callback redeems the seeker invitation against the
+ * government-verified identity (mirrors the employer flow, PR #105). No
+ * account is created here — the callback does it.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { restClient } from '@/utils/api';
 import {
-    User, Mail, Phone, Briefcase, GraduationCap, CheckCircle,
-    Loader2, AlertTriangle, MapPin, BookOpen, ShieldCheck, ArrowLeft
+    User, Mail, Briefcase, GraduationCap, CheckCircle,
+    Loader2, AlertTriangle, MapPin, BookOpen, ShieldCheck, ArrowRight
 } from 'lucide-react';
+
+const API = ''; // same-origin proxy
 
 const colors = {
     primary: '#0A4D68',
-    primaryGradient: 'linear-gradient(135deg, #0A4D68, #088395)',
     accent: '#05BFDB',
-    bg: '#F4F6F8',
-    card: '#FFFFFF',
     text: '#1A1F36',
     textSec: '#5A6B7B',
     border: '#E2E8F0',
     greenBg: '#ECFDF5', greenText: '#059669',
-    redBg: '#FEF2F2', redText: '#DC2626',
+    redText: '#DC2626',
     blueBg: '#EFF6FF', blueText: '#2563EB',
 };
 
@@ -43,7 +48,7 @@ interface SeekerInfo {
     email: string | null;
 }
 
-type WizardStep = 'loading' | 'confirm' | 'otp' | 'success' | 'error';
+type WizardStep = 'loading' | 'confirm' | 'redirecting' | 'success' | 'error';
 
 const SeekerOnboardingWizard: React.FC = () => {
     const { token } = useParams<{ token: string }>();
@@ -52,26 +57,6 @@ const SeekerOnboardingWizard: React.FC = () => {
     const [step, setStep] = useState<WizardStep>('loading');
     const [seekerData, setSeekerData] = useState<SeekerInfo | null>(null);
     const [errorMsg, setErrorMsg] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-
-    // Editable fields
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-
-    // OTP fields
-    const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-    const [otpError, setOtpError] = useState('');
-    const [phoneMasked, setPhoneMasked] = useState('');
-    const [resending, setResending] = useState(false);
-    const [cooldown, setCooldown] = useState(0);
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-    // ─── Cooldown timer ───
-    useEffect(() => {
-        if (cooldown <= 0) return;
-        const timer = setTimeout(() => setCooldown(c => c - 1), 1000);
-        return () => clearTimeout(timer);
-    }, [cooldown]);
 
     // ─── Validate token on mount ───
     useEffect(() => {
@@ -87,158 +72,38 @@ const SeekerOnboardingWizard: React.FC = () => {
         try {
             const res = await restClient.get(`/api/nafis-talent/public/invitation/${token}`);
             if (res.data.success) {
-                const d = res.data.data;
-                setSeekerData(d);
-                setEmail(d.email || '');
-                setPhone(d.phone || '');
+                setSeekerData(res.data.data);
                 setStep('confirm');
             } else {
                 setErrorMsg(res.data.error || 'Invalid invitation link.');
                 setStep('error');
             }
         } catch (err: any) {
-            const msg = err.response?.data?.error || 'This invitation link is invalid or has expired.';
-            setErrorMsg(msg);
+            setErrorMsg(err.response?.data?.error || 'This invitation link is invalid or has expired.');
             setStep('error');
         }
     };
 
-    // ─── Send OTP ───
-    const handleSendOtp = async () => {
-        if (!phone) {
-            alert('Please provide your phone number.');
-            return;
-        }
-        if (!email) {
-            alert('Please provide your email address.');
-            return;
-        }
-        setSubmitting(true);
+    // ─── Hand off to UAE Pass ───
+    // The invitation token rides in the server-side OAuth state; the callback
+    // redeems it against the proven identity and creates/links the account.
+    const handleUaePassHandoff = async () => {
+        setStep('redirecting');
         try {
-            const res = await restClient.post(`/api/nafis-talent/public/invitation/${token}/send-otp`, { phone });
-            if (res.data.success) {
-                setPhoneMasked(res.data.phone_masked || phone);
-                setOtpDigits(['', '', '', '', '', '']);
-                setOtpError('');
-                setStep('otp');
-                setCooldown(60);
-                setTimeout(() => inputRefs.current[0]?.focus(), 100);
-            } else {
-                alert(res.data.error || 'Failed to send verification code.');
-            }
-        } catch (err: any) {
-            alert(err.response?.data?.error || 'Failed to send verification code.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    // ─── Resend OTP ───
-    const handleResendOtp = async () => {
-        setResending(true);
-        try {
-            const res = await restClient.post(`/api/nafis-talent/public/invitation/${token}/send-otp`, { phone });
-            if (res.data.success) {
-                setOtpDigits(['', '', '', '', '', '']);
-                setOtpError('');
-                setCooldown(60);
-                setTimeout(() => inputRefs.current[0]?.focus(), 100);
-            } else {
-                setOtpError(res.data.error || 'Failed to resend code.');
-            }
-        } catch (err: any) {
-            setOtpError(err.response?.data?.error || 'Failed to resend code.');
-        } finally {
-            setResending(false);
-        }
-    };
-
-    // ─── Verify OTP and create account ───
-    const handleVerifyOtp = async (codeOverride?: string) => {
-        const code = codeOverride || otpDigits.join('');
-        if (code.length !== 6) {
-            setOtpError('Please enter the full 6-digit code.');
-            return;
-        }
-        setSubmitting(true);
-        setOtpError('');
-        try {
-            // Step 1: Verify OTP
-            const verifyRes = await restClient.post(`/api/nafis-talent/public/invitation/${token}/verify-otp`, { code });
-            if (!verifyRes.data.success) {
-                setOtpError(verifyRes.data.error || 'Verification failed.');
-                setSubmitting(false);
-                return;
-            }
-
-            // Step 2: Accept invitation and create account
-            const res = await restClient.post(`/api/nafis-talent/public/invitation/${token}/accept`, {
-                email,
-                phone,
+            const res = await axios.get(`${API}/api/auth/uaepass/login`, {
+                params: { invitation_token: token, invitation_type: 'seeker' },
+                headers: { Accept: 'application/json' },
             });
-            if (res.data.success) {
-                const d = res.data.data;
-                if (d.access_token) {
-                    localStorage.setItem('token', d.access_token);
-                    if (d.refresh_token) localStorage.setItem('refresh_token', d.refresh_token);
-                    if (d.user) {
-                        localStorage.setItem('user', JSON.stringify(d.user));
-                        localStorage.setItem('userRole', d.user.role || 'candidate');
-                    }
-                }
-                setStep('success');
+            const url = res.data?.data?.authorization_url;
+            if (url) {
+                window.location.href = url;
             } else {
-                setOtpError(res.data.error || 'Registration failed.');
+                setErrorMsg('Could not start UAE PASS sign-in. Please try again.');
+                setStep('error');
             }
         } catch (err: any) {
-            setOtpError(err.response?.data?.error || 'Something went wrong. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    // ─── OTP input handlers ───
-    const handleOtpChange = (index: number, value: string) => {
-        if (!/^\d*$/.test(value)) return; // digits only
-        const newDigits = [...otpDigits];
-        newDigits[index] = value.slice(-1);
-        setOtpDigits(newDigits);
-        setOtpError('');
-
-        // Auto-advance or auto-submit
-        if (value && index < 5) {
-            inputRefs.current[index + 1]?.focus();
-        }
-        if (value && index === 5) {
-            // All 6 digits entered — pass code directly to avoid stale state
-            const code = newDigits.join('');
-            if (code.length === 6) {
-                setTimeout(() => handleVerifyOtp(code), 200);
-            }
-        }
-    };
-
-    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
-
-    const handleOtpPaste = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        if (paste.length > 0) {
-            const newDigits = [...otpDigits];
-            for (let i = 0; i < 6; i++) {
-                newDigits[i] = paste[i] || '';
-            }
-            setOtpDigits(newDigits);
-            if (paste.length === 6) {
-                // Pass code directly to avoid stale state
-                setTimeout(() => handleVerifyOtp(paste), 200);
-            } else {
-                inputRefs.current[paste.length]?.focus();
-            }
+            setErrorMsg(err?.response?.data?.message || 'Could not start UAE PASS sign-in. Please try again.');
+            setStep('error');
         }
     };
 
@@ -249,11 +114,8 @@ const SeekerOnboardingWizard: React.FC = () => {
 
     // ───────────────── Render ─────────────────
 
-    // Branded header shown on all steps
     const PlatformBanner = () => (
-        <div style={{
-            textAlign: 'center', marginBottom: 24, width: '100%', maxWidth: 560,
-        }}>
+        <div style={{ textAlign: 'center', marginBottom: 24, width: '100%', maxWidth: 560 }}>
             <div style={{
                 background: 'linear-gradient(135deg, #0A4D68, #088395)',
                 borderRadius: 16, padding: '24px 20px', marginBottom: 4,
@@ -270,7 +132,6 @@ const SeekerOnboardingWizard: React.FC = () => {
         </div>
     );
 
-    // Loading
     if (step === 'loading') {
         return (
             <div style={pageStyle}>
@@ -284,7 +145,19 @@ const SeekerOnboardingWizard: React.FC = () => {
         );
     }
 
-    // Error
+    if (step === 'redirecting') {
+        return (
+            <div style={pageStyle}>
+                <PlatformBanner />
+                <div style={cardStyle}>
+                    <Loader2 size={40} color={colors.accent} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+                    <h2 style={{ color: colors.text, textAlign: 'center' }}>Redirecting to UAE PASS…</h2>
+                </div>
+                <style>{spinKeyframes}</style>
+            </div>
+        );
+    }
+
     if (step === 'error') {
         return (
             <div style={pageStyle}>
@@ -301,7 +174,6 @@ const SeekerOnboardingWizard: React.FC = () => {
         );
     }
 
-    // Success
     if (step === 'success') {
         return (
             <div style={pageStyle}>
@@ -325,137 +197,21 @@ const SeekerOnboardingWizard: React.FC = () => {
         );
     }
 
-    // ─── OTP Step ───
-    if (step === 'otp') {
-        return (
-            <div style={pageStyle}>
-                <PlatformBanner />
-                <div style={{ ...cardStyle, maxWidth: 440 }}>
-                    {/* Back button */}
-                    <button
-                        onClick={() => setStep('confirm')}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 4, background: 'none',
-                            border: 'none', cursor: 'pointer', color: colors.textSec, fontSize: 13,
-                            fontWeight: 500, marginBottom: 20, padding: 0,
-                        }}
-                    >
-                        <ArrowLeft size={14} /> Back
-                    </button>
-
-                    {/* Icon */}
-                    <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                        <div style={{
-                            width: 64, height: 64, borderRadius: '50%', background: colors.blueBg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
-                        }}>
-                            <ShieldCheck size={32} color={colors.blueText} />
-                        </div>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 6 }}>
-                            Verify Your Phone Number
-                        </h2>
-                        <p style={{ color: colors.textSec, fontSize: 14 }}>
-                            We sent a 6-digit verification code to <strong>{phoneMasked}</strong>
-                        </p>
-                    </div>
-
-                    {/* OTP Input Boxes */}
-                    <div
-                        style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 16 }}
-                        onPaste={handleOtpPaste}
-                    >
-                        {otpDigits.map((digit, i) => (
-                            <input
-                                key={i}
-                                ref={el => { inputRefs.current[i] = el; }}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={1}
-                                value={digit}
-                                onChange={e => handleOtpChange(i, e.target.value)}
-                                onKeyDown={e => handleOtpKeyDown(i, e)}
-                                style={{
-                                    width: 48, height: 56, textAlign: 'center', fontSize: 22,
-                                    fontWeight: 700, borderRadius: 12,
-                                    border: otpError ? `2px solid ${colors.redText}` : `2px solid ${digit ? colors.primary : colors.border}`,
-                                    outline: 'none', transition: 'border 0.2s',
-                                    color: colors.text,
-                                }}
-                                autoFocus={i === 0}
-                            />
-                        ))}
-                    </div>
-
-                    {/* Error message */}
-                    {otpError && (
-                        <p style={{ color: colors.redText, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
-                            {otpError}
-                        </p>
-                    )}
-
-                    {/* Verify button */}
-                    <button
-                        onClick={() => handleVerifyOtp()}
-                        disabled={submitting || otpDigits.join('').length !== 6}
-                        style={{
-                            ...primaryBtn, marginBottom: 16,
-                            opacity: submitting || otpDigits.join('').length !== 6 ? 0.7 : 1,
-                            cursor: submitting ? 'not-allowed' : 'pointer',
-                        }}
-                    >
-                        {submitting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <ShieldCheck size={16} />}
-                        {submitting ? 'Verifying...' : 'Verify & Create Account'}
-                    </button>
-
-                    {/* Resend */}
-                    <div style={{ textAlign: 'center' }}>
-                        {cooldown > 0 ? (
-                            <p style={{ fontSize: 13, color: colors.textSec }}>
-                                Resend code in <strong>{cooldown}s</strong>
-                            </p>
-                        ) : (
-                            <button
-                                onClick={handleResendOtp}
-                                disabled={resending}
-                                style={{
-                                    background: 'none', border: 'none', cursor: 'pointer',
-                                    color: colors.blueText, fontWeight: 600, fontSize: 13,
-                                    textDecoration: 'underline',
-                                }}
-                            >
-                                {resending ? 'Sending...' : 'Resend Code'}
-                            </button>
-                        )}
-                    </div>
-
-                    <p style={{ textAlign: 'center', fontSize: 11, color: colors.textSec, marginTop: 20 }}>
-                        💡 Check the <strong>backend terminal</strong> for the mock SMS with your verification code.
-                    </p>
-                </div>
-                <style>{spinKeyframes}</style>
-            </div>
-        );
-    }
-
-    // ─── Confirm Step ───
+    // ─── Confirm step: review NAFIS profile → Continue with UAE PASS ───
     return (
         <div style={pageStyle}>
             <PlatformBanner />
             <div style={{ ...cardStyle, maxWidth: 560 }}>
-                {/* Header */}
                 <div style={{ textAlign: 'center', marginBottom: 24 }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: colors.blueBg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                         <User size={28} color={colors.blueText} />
                     </div>
-                    <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 4 }}>Complete Your Registration</h2>
-                    <p style={{ color: colors.textSec, fontSize: 14 }}>Please review your information and confirm to continue.</p>
-                </div>
-
-                {/* Step indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
-                    <div style={{ ...stepDot, background: colors.primary, color: '#fff' }}>1</div>
-                    <div style={stepLine} />
-                    <div style={{ ...stepDot, background: colors.border, color: colors.textSec }}>2</div>
+                    <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
+                        Welcome, {seekerData?.full_name || 'Job Seeker'}!
+                    </h2>
+                    <p style={{ color: colors.textSec, fontSize: 14 }}>
+                        You've been invited to join the platform through NAFIS.
+                    </p>
                 </div>
 
                 {/* Pre-filled NAFIS data */}
@@ -479,41 +235,17 @@ const SeekerOnboardingWizard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Editable fields */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
-                    <div>
-                        <label style={labelStyle}><Mail size={13} style={{ marginRight: 6 }} /> Email Address</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="your.email@example.com"
-                            style={inputStyle}
-                        />
-                    </div>
-                    <div>
-                        <label style={labelStyle}><Phone size={13} style={{ marginRight: 6 }} /> Phone Number</label>
-                        <input
-                            type="tel"
-                            value={phone}
-                            onChange={e => setPhone(e.target.value)}
-                            placeholder="+971 XX XXX XXXX"
-                            style={inputStyle}
-                        />
-                        <p style={{ fontSize: 11, color: colors.textSec, marginTop: 4 }}>
-                            A verification code will be sent to this number.
-                        </p>
-                    </div>
+                {/* UAE Pass explanation */}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: colors.blueBg, borderRadius: 12, padding: '14px 16px', marginBottom: 20 }}>
+                    <ShieldCheck size={18} color={colors.blueText} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontSize: 13, color: colors.text, margin: 0, lineHeight: 1.5 }}>
+                        Sign in with <strong>UAE PASS</strong> to verify your identity and activate your account —
+                        no forms, no codes. Your name and contact details come from your verified UAE PASS profile.
+                    </p>
                 </div>
 
-                {/* Continue to OTP */}
-                <button
-                    onClick={handleSendOtp}
-                    disabled={submitting || !email || !phone}
-                    style={{ ...primaryBtn, opacity: submitting || !email || !phone ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
-                >
-                    {submitting ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Phone size={16} />}
-                    {submitting ? 'Sending Code...' : 'Send Verification Code'}
+                <button onClick={handleUaePassHandoff} style={primaryBtn}>
+                    Continue with UAE PASS <ArrowRight size={16} />
                 </button>
                 <p style={{ textAlign: 'center', fontSize: 12, color: colors.textSec, marginTop: 12 }}>
                     By continuing, you agree to the platform's Terms of Service and Privacy Policy.
@@ -551,27 +283,6 @@ const primaryBtn: React.CSSProperties = {
     gap: 8, padding: '12px 24px', borderRadius: 12,
     background: 'linear-gradient(135deg, #0A4D68, #088395)',
     color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer',
-};
-
-const labelStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', fontSize: 13,
-    fontWeight: 600, color: '#1A1F36', marginBottom: 6,
-};
-
-const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: 10,
-    border: '1px solid #E2E8F0', fontSize: 14, outline: 'none',
-    boxSizing: 'border-box',
-};
-
-const stepDot: React.CSSProperties = {
-    width: 28, height: 28, borderRadius: '50%', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    fontSize: 13, fontWeight: 700,
-};
-
-const stepLine: React.CSSProperties = {
-    width: 40, height: 2, background: '#E2E8F0',
 };
 
 const spinKeyframes = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;

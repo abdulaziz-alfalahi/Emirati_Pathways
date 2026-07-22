@@ -241,16 +241,13 @@ def invite_seekers():
 # ─────────────────────────────────────────────
 
 
-# ────────────────────────────────────────────────────────────
-# In-memory OTP store  { token: { code, phone, expires_at } }
-# In production this would use Redis / SMS gateway.
-# ────────────────────────────────────────────────────────────
-import random, time as _time
-_otp_store: dict = {}
-
 @nafis_talent_bp.route('/public/invitation/<token>', methods=['GET'])
 def get_seeker_invitation(token):
-    """Validate a seeker invitation token. Returns seeker data."""
+    """Validate a seeker invitation token. Returns seeker data.
+
+    Still used: the onboarding wizard shows the seeker their imported details
+    before handing off to UAE Pass.
+    """
     try:
         system = _get_system()
         data = system.validate_seeker_invitation(token)
@@ -262,110 +259,33 @@ def get_seeker_invitation(token):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ────────────────────────────────────────────────────────────
+# RETIRED: OTP onboarding. Seeker onboarding now hands off to UAE Pass —
+# the wizard calls GET /api/auth/uaepass/login?invitation_token=<t>&
+# invitation_type=seeker, and the UAE Pass callback redeems the invitation
+# against the government-verified identity (NafisTalentSystem.
+# redeem_seeker_invitation_for_user). This retires the in-memory OTP store
+# and the mock SMS sender, and binds the account to the EID rather than an
+# unverified phone. Mirrors the employer flow (PR #105).
+# ────────────────────────────────────────────────────────────
+_RETIRED_OTP_MSG = {
+    'success': False,
+    'message': 'Phone OTP onboarding has been replaced by UAE Pass. '
+               'Start onboarding via /api/auth/uaepass/login?invitation_type=seeker.',
+}
+
+
 @nafis_talent_bp.route('/public/invitation/<token>/send-otp', methods=['POST'])
 def send_otp(token):
-    """Generate a 6-digit OTP and 'send' it via mock SMS (printed to terminal)."""
-    try:
-        payload = request.json or {}
-        phone = payload.get('phone', '').strip()
-        if not phone:
-            return jsonify({'success': False, 'error': 'Phone number is required'}), 400
-
-        # Validate the invitation token first
-        system = _get_system()
-        data = system.validate_seeker_invitation(token)
-        if not data:
-            return jsonify({'success': False, 'error': 'Invalid or expired invitation link'}), 404
-
-        code = f"{random.randint(100000, 999999)}"
-        _otp_store[token] = {
-            'code': code,
-            'phone': phone,
-            'expires_at': _time.time() + 600,  # 10 minutes
-        }
-
-        # Mock SMS — print to terminal
-        print(f"\n📱 [MOCK SMS TO {phone}] ──────────────────────────────────────")
-        print(f"   Your verification code is: {code}")
-        print(f"   (This code expires in 10 minutes)")
-        print(f"──────────────────────────────────────────────────────────────────\n")
-
-        return jsonify({
-            'success': True,
-            'message': 'Verification code sent to your phone.',
-            'phone_masked': phone[:4] + '****' + phone[-3:] if len(phone) > 7 else '****',
-        })
-    except Exception as e:
-        logger.error(f"OTP send error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify(_RETIRED_OTP_MSG), 410
 
 
 @nafis_talent_bp.route('/public/invitation/<token>/verify-otp', methods=['POST'])
 def verify_otp(token):
-    """Verify the 6-digit OTP code."""
-    try:
-        payload = request.json or {}
-        code = payload.get('code', '').strip()
-        if not code:
-            return jsonify({'success': False, 'error': 'Verification code is required'}), 400
-
-        entry = _otp_store.get(token)
-        if not entry:
-            return jsonify({'success': False, 'error': 'No verification code found. Please request a new one.'}), 400
-
-        if _time.time() > entry['expires_at']:
-            del _otp_store[token]
-            return jsonify({'success': False, 'error': 'Verification code has expired. Please request a new one.'}), 400
-
-        if entry['code'] != code:
-            return jsonify({'success': False, 'error': 'Incorrect verification code. Please try again.'}), 400
-
-        # OTP verified — clean up
-        del _otp_store[token]
-        return jsonify({'success': True, 'message': 'Phone number verified successfully.'})
-
-    except Exception as e:
-        logger.error(f"OTP verify error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify(_RETIRED_OTP_MSG), 410
 
 
 @nafis_talent_bp.route('/public/invitation/<token>/accept', methods=['POST'])
 def accept_seeker_invitation(token):
-    """Accept invitation, create candidate account, return JWT."""
-    try:
-        payload = request.json or {}
-
-        system = _get_system()
-        user_data = system.accept_seeker_invitation(token, payload)
-
-        # Generate JWT tokens for auto-login
-        try:
-            from flask_jwt_extended import create_access_token, create_refresh_token
-            user_id = str(user_data['id'])
-            access_token = create_access_token(
-                identity=user_id,
-                additional_claims={'role': 'candidate'}
-            )
-            refresh_token = create_refresh_token(identity=user_id)
-
-            return jsonify({
-                'success': True,
-                'message': 'Registration complete! Welcome to Emirati Pathways.',
-                'data': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token,
-                    'user': user_data,
-                }
-            })
-        except ImportError:
-            return jsonify({
-                'success': True,
-                'message': 'Registration complete!',
-                'data': {'user': user_data}
-            })
-
-    except ValueError as e:
-        return jsonify({'success': False, 'error': str(e)}), 400
-    except Exception as e:
-        logger.error(f"Seeker invitation accept error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    """RETIRED — onboarding is completed by the UAE Pass callback now. 410."""
+    return jsonify(_RETIRED_OTP_MSG), 410
