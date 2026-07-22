@@ -30,6 +30,10 @@ class CandidateProfile(db.Model):
     willing_to_relocate = Column(Boolean, default=False)
     expected_salary_range = Column(String(100))
     notice_period = Column(String(50))
+    # Commute/work-mode preference (#32) — recruiter display/filter only,
+    # NEVER a scoring input (#12).
+    max_commute_minutes = Column(Integer, nullable=True)
+    remote_preferred = Column(Boolean, nullable=True)
     
     # Counseling CRM Structured Fields
     preferred_locations = Column(JSON)
@@ -111,7 +115,9 @@ class CandidateProfile(db.Model):
                     'target_roles': self.target_roles or [],
                     'relocation': self.willing_to_relocate,
                     'salary': self.expected_salary_range,
-                    'notice_period': self.notice_period
+                    'notice_period': self.notice_period,
+                    'max_commute_minutes': self.max_commute_minutes,
+                    'remote_preferred': self.remote_preferred
                 },
                 'experience': [e.to_dict() for e in self.experience],
                 'education': [e.to_dict() for e in self.education],

@@ -16,7 +16,11 @@ export const CareerCompassModule = () => {
         relocation: false,
         salary: '',
         noticePeriod: '',
-        preferredCity: ''
+        preferredCity: '',
+        // Commute/work-mode preference (#32) — shown to recruiters as
+        // information/filter only; never affects any match score.
+        maxCommuteMinutes: '' as string,
+        remotePreferred: false
     });
 
     const [roleInput, setRoleInput] = useState('');
@@ -40,7 +44,9 @@ export const CareerCompassModule = () => {
                     relocation: compass.relocation || false,
                     salary: compass.salary || '',
                     noticePeriod: compass.notice_period || '',
-                    preferredCity: savedCity || res.data.contact?.location || ''
+                    preferredCity: savedCity || res.data.contact?.location || '',
+                    maxCommuteMinutes: compass.max_commute_minutes != null ? String(compass.max_commute_minutes) : '',
+                    remotePreferred: compass.remote_preferred || false
                 });
             }
         } catch (e) {
@@ -58,7 +64,9 @@ export const CareerCompassModule = () => {
                 expected_salary: preferences.salary,
                 relocation: preferences.relocation,
                 notice_period: preferences.noticePeriod,
-                preferred_city: preferences.preferredCity
+                preferred_city: preferences.preferredCity,
+                max_commute_minutes: preferences.maxCommuteMinutes || null,
+                remote_preferred: preferences.remotePreferred
             } as any);
 
             toast({ title: t("Preferences Saved", "تم حفظ التفضيلات"), description: t("Your career compass has been updated.", "تم تحديث بوصلتك المهنية.") });
@@ -208,6 +216,38 @@ export const CareerCompassModule = () => {
                                 <span className="text-gray-700">{t('No, current city only', 'لا، المدينة الحالية فقط')}</span>
                             </label>
                         </div>
+                    </div>
+
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Clock size={18} className="text-gray-500" />
+                            <label className="font-semibold text-gray-700">{t('Maximum Commute', 'أقصى مدة تنقل')}</label>
+                        </div>
+                        <select
+                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none"
+                            value={preferences.maxCommuteMinutes}
+                            onChange={(e) => setPreferences({ ...preferences, maxCommuteMinutes: e.target.value })}
+                        >
+                            <option value="">{t('No preference', 'لا يوجد تفضيل')}</option>
+                            <option value="15">{t('Up to 15 minutes', 'حتى 15 دقيقة')}</option>
+                            <option value="30">{t('Up to 30 minutes', 'حتى 30 دقيقة')}</option>
+                            <option value="45">{t('Up to 45 minutes', 'حتى 45 دقيقة')}</option>
+                            <option value="60">{t('Up to 1 hour', 'حتى ساعة واحدة')}</option>
+                            <option value="90">{t('Up to 1.5 hours', 'حتى ساعة ونصف')}</option>
+                        </select>
+                        <label className="flex items-center cursor-pointer gap-2 mt-3">
+                            <input
+                                type="checkbox"
+                                checked={preferences.remotePreferred}
+                                onChange={(e) => setPreferences({ ...preferences, remotePreferred: e.target.checked })}
+                                className="w-4 h-4 text-teal-600"
+                            />
+                            <span className="text-gray-700">{t('I prefer remote work', 'أفضّل العمل عن بُعد')}</span>
+                        </label>
+                        <p className="text-xs text-gray-400 mt-1">
+                            {t('Shown to recruiters as information only — it never changes your match score.',
+                               'تُعرض للمسؤولين عن التوظيف كمعلومة فقط — لا تؤثر أبداً على درجة توافقك.')}
+                        </p>
                     </div>
 
                     <div>

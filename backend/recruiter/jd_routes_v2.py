@@ -882,6 +882,8 @@ def match_candidates(jd_id):
                     cp.expected_salary_range as compass_expected_salary_range,
                     cp.notice_period as compass_notice_period,
                     cp.location as compass_preferred_location,
+                    cp.max_commute_minutes as compass_max_commute_minutes,
+                    cp.remote_preferred as compass_remote_preferred,
                     cp.english_proficiency
                 FROM job_applications a
                 JOIN users u ON a.candidate_id = u.id
@@ -890,8 +892,10 @@ def match_candidates(jd_id):
             """, (str(job_posting_int_id),))
             applicants = [dict(c) for c in cur.fetchall()]
         
-        # Get applicant IDs to exclude from general search (as integers)
-        applicant_ids = [int(a['candidate_id']) for a in applicants]
+        # Get applicant IDs to exclude from general search. users.id is a
+        # CHAR(15) EID — int() would strip nothing today but the comparison
+        # column is character, so keep them as strings (issue #122).
+        applicant_ids = [str(a['candidate_id']) for a in applicants]
         
         # 2. Fetch PASSIVE MATCHES (General pool)
         # Build query based on employment status filter
@@ -925,36 +929,43 @@ def match_candidates(jd_id):
                 cp.expected_salary_range as compass_expected_salary_range,
                 cp.notice_period as compass_notice_period,
                 cp.location as compass_preferred_location,
+                cp.max_commute_minutes as compass_max_commute_minutes,
+                cp.remote_preferred as compass_remote_preferred,
                 cp.english_proficiency
             FROM users u
             LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
             WHERE u.role IN ('candidate', 'job_seeker')
                 AND u.is_active = true
                 AND u.is_visible = true
-            ORDER BY (CASE WHEN EXISTS (SELECT 1 FROM candidate_skills WHERE user_id = u.id::varchar) THEN 1 ELSE 0 END) DESC, u.id DESC
         """
-        
+
         params = []
-        
-        # Exclude already applied
+
+        # Filters belong in the WHERE clause — they used to be appended AFTER
+        # the ORDER BY, so any applicant or status filter produced invalid SQL
+        # and the whole match call failed (issue #122).
+        # Exclude already applied. u.id is CHAR(15) EID — compare as strings.
         if applicant_ids:
-            query += " AND id NOT IN %s"
-            params.append(tuple(applicant_ids))
-        
+            query += " AND u.id NOT IN %s"
+            params.append(tuple(str(a) for a in applicant_ids))
+
         # G22/G23: Employment status filter for Stealth Headhunter
         if employment_status_filter and employment_status_filter.lower() != 'all':
             if employment_status_filter.lower() == 'candidate':
-                query += " AND employment_status = 'candidate'"
+                query += " AND u.employment_status = 'candidate'"
             elif employment_status_filter.lower() == 'employed_open':
-                query += " AND employment_status = 'employed_open'"
-                query += " AND available_for_recruitment = true"
+                query += " AND u.employment_status = 'employed_open'"
+                query += " AND u.available_for_recruitment = true"
             elif employment_status_filter.lower() == 'passive':
-                query += " AND employment_status IN ('employed_open', 'freelancer')"
-                query += " AND available_for_recruitment = true"
+                query += " AND u.employment_status IN ('employed_open', 'freelancer')"
+                query += " AND u.available_for_recruitment = true"
             elif employment_status_filter.lower() == 'freelancer':
-                query += " AND employment_status = 'freelancer'"
-        
-        query += " LIMIT 1000"  # Limit to reasonable number for matching
+                query += " AND u.employment_status = 'freelancer'"
+
+        query += """
+            ORDER BY (CASE WHEN EXISTS (SELECT 1 FROM candidate_skills WHERE user_id = u.id::varchar) THEN 1 ELSE 0 END) DESC, u.id DESC
+            LIMIT 1000
+        """  # Limit to reasonable number for matching
         
         cur.execute(query, tuple(params))
         passive_candidates = [dict(c) for c in cur.fetchall()]
@@ -1022,33 +1033,38 @@ def match_candidates(jd_id):
             else:
                 ai_passive.append(match)
 
-        # Calculate Distances
-        def haversine_distance(lat1, lon1, lat2, lon2):
-            import math
-            if not lat1 or not lon1 or not lat2 or not lon2:
-                return None
-            
-            R = 6371  # Earth radius in km
-            dLat = math.radians(lat2 - lat1)
-            dLon = math.radians(lon2 - lon1)
-            a = math.sin(dLat/2) * math.sin(dLat/2) + \
-                math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
-                math.sin(dLon/2) * math.sin(dLon/2)
-            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-            return round(R * c, 1)
+        # Commute facts — INFORMATIONAL ONLY, never a scoring input (#12/#32).
+        # Real coordinates when both sides have them (rare — 4/4092 candidate
+        # profiles live), else emirate centroids; None when neither exists.
+        try:
+            from backend.services.commute_calculator import commute_info
+        except ImportError:
+            from services.commute_calculator import commute_info
 
-        jd_lat = jd_data.get('basic_info', {}).get('latitude')
-        jd_lon = jd_data.get('basic_info', {}).get('longitude')
-        
-        # Add distance to all matches
+        jd_basic = jd_data.get('basic_info', {})
+        jd_lat = jd_basic.get('latitude')
+        jd_lon = jd_basic.get('longitude')
+        jd_emirate = jd_basic.get('emirate') or jd_basic.get('location')
+
         for match in ai_applicants + ai_passive:
             cand = match.get('candidate', {})
-            cand_lat = cand.get('latitude')
-            cand_lon = cand.get('longitude')
-            
-            dist = haversine_distance(jd_lat, jd_lon, cand_lat, cand_lon)
+            commute = commute_info(
+                cand.get('latitude'), cand.get('longitude'), cand.get('emirate'),
+                jd_lat, jd_lon, jd_emirate,
+            )
+            match['commute'] = commute
+            cand['commute'] = commute
+            # Back-compat field for the existing distance line in the wizard.
+            dist = commute['distance_km'] if commute and commute['basis'] == 'coordinates' else None
             match['distance_km'] = dist
-            cand['distance_km'] = dist # Add to candidate object too for frontend convenience
+            cand['distance_km'] = dist
+            # Relocation preference — candidate-set, display/filter only (#32).
+            cand['relocation'] = {
+                'willing_to_relocate': cand.get('compass_willing_to_relocate'),
+                'preferred_location': cand.get('compass_preferred_location'),
+                'max_commute_minutes': cand.get('compass_max_commute_minutes'),
+                'remote_preferred': cand.get('compass_remote_preferred'),
+            }
 
                 
         # 2. Check for any applicants that were missed by AI (because of limit)
@@ -1070,8 +1086,67 @@ def match_candidates(jd_id):
              final_matches.extend(ai_passive[remaining_slots:remaining_slots+extra_needed])
 
         logger.info(f"DEBUG: returning {len(final_matches)} matches ({len(ai_applicants)} applicants)")
-        
+
         matches = final_matches
+
+        # ── National Development Priority axis (#12/#32) ────────────────
+        # A separate, disclosed axis next to Job Fit — same engine and the
+        # same batch-signal pattern as GET /api/hr/candidates/match. Fail-
+        # neutral: any missing table just means no priority points.
+        try:
+            try:
+                from backend.national_priority_engine import (
+                    ensure_weights_table, load_weights, compute_national_priority)
+            except ImportError:
+                from national_priority_engine import (
+                    ensure_weights_table, load_weights, compute_national_priority)
+
+            np_conn = get_db_connection()
+            cand_ids = [str(m.get('candidate', {}).get('candidate_id') or
+                            m.get('candidate', {}).get('user_id')) for m in matches]
+            stage_map, cert_map, training_map = {}, {}, {}
+            try:
+                ensure_weights_table(np_conn)
+            except Exception as e:
+                logger.warning(f"national_priority weights init failed: {e}")
+                try:
+                    np_conn.rollback()
+                except Exception:
+                    pass
+            np_weights = load_weights(np_conn)
+            if cand_ids:
+                pcur = np_conn.cursor()
+                for sql, target in (
+                    ("SELECT user_id, stage FROM user_lifecycle_stage WHERE user_id = ANY(%s)", 'stage'),
+                    ("SELECT user_id, COUNT(*) FROM candidate_certifications WHERE user_id = ANY(%s) GROUP BY user_id", 'cert'),
+                    ("SELECT user_id, COUNT(*) FROM course_enrollments WHERE user_id = ANY(%s) AND completion_date IS NOT NULL GROUP BY user_id", 'train'),
+                ):
+                    try:
+                        pcur.execute(sql, (cand_ids,))
+                        for row in pcur.fetchall():
+                            {'stage': stage_map, 'cert': cert_map, 'train': training_map}[target][str(row[0])] = row[1]
+                    except Exception as e:
+                        logger.warning(f"national_priority signal '{target}' unavailable: {e}")
+                        try:
+                            np_conn.rollback()
+                        except Exception:
+                            pass
+                pcur.close()
+            np_conn.close()
+
+            for m in matches:
+                cand = m.get('candidate', {})
+                _cid = str(cand.get('candidate_id') or cand.get('user_id'))
+                np_result = compute_national_priority(
+                    cand, np_weights,
+                    stage=stage_map.get(_cid),
+                    cert_count=cert_map.get(_cid, 0),
+                    training_count=training_map.get(_cid, 0),
+                )
+                m['national_priority'] = np_result
+                cand['national_priority'] = np_result
+        except Exception as e:
+            logger.warning(f"national_priority axis unavailable for JD {jd_id}: {e}")
         
         # Log payload
         try:

@@ -55,3 +55,58 @@ def estimate_peak_hour_commute(distance_km):
         'peak_difference': peak_time - normal_time
     }
 
+
+
+# ── Emirate-centroid fallback (issue #32) ────────────────────────────────
+# Coordinate coverage is sparse (live 2026-07-22: 4/4092 candidate profiles,
+# 8/28 jobs), so commute display falls back to emirate centroids when either
+# side lacks lat/lon. Centroids are the main population centre of each
+# emirate, not the geographic centre — commute estimates are city-to-city.
+EMIRATE_CENTROIDS = {
+    'abu dhabi': (24.4539, 54.3773),
+    'dubai': (25.2048, 55.2708),
+    'sharjah': (25.3463, 55.4209),
+    'ajman': (25.4052, 55.5136),
+    'umm al quwain': (25.5647, 55.5534),
+    'ras al khaimah': (25.8007, 55.9762),
+    'fujairah': (25.1288, 56.3265),
+    # common spelling variants seen in the data
+    'abudhabi': (24.4539, 54.3773),
+    'uaq': (25.5647, 55.5534),
+    'rak': (25.8007, 55.9762),
+}
+
+
+def _emirate_centroid(name):
+    if not name:
+        return (None, None)
+    return EMIRATE_CENTROIDS.get(str(name).strip().lower(), (None, None))
+
+
+def commute_info(cand_lat, cand_lon, cand_emirate, job_lat, job_lon, job_emirate):
+    """Informational commute block for match displays (issue #32).
+
+    NEVER a scoring input (owner rule, #12) — display only. Uses real
+    coordinates when both sides have them, else emirate centroids; returns
+    None when neither basis is available. `basis` tells the UI how rough
+    the estimate is.
+    """
+    basis = 'coordinates'
+    if cand_lat is None or cand_lon is None:
+        cand_lat, cand_lon = _emirate_centroid(cand_emirate)
+        basis = 'emirate'
+    if job_lat is None or job_lon is None:
+        job_lat, job_lon = _emirate_centroid(job_emirate)
+        basis = 'emirate'
+
+    distance = haversine(cand_lat, cand_lon, job_lat, job_lon)
+    if distance is None:
+        return None
+
+    peak = estimate_peak_hour_commute(distance)
+    return {
+        'distance_km': round(distance, 1),
+        'commute_mins': peak['normal_mins'],
+        'peak_commute_mins': peak['peak_mins'],
+        'basis': basis,
+    }

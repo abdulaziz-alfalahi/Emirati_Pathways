@@ -258,6 +258,18 @@ interface MatchedCandidate {
   missing_skills: string[];
   strengths: string[];
   concerns: string[];
+  /** National Development Priority — a separate, disclosed axis (#12/#32). */
+  national_priority?: {
+    score: number;
+    reasons: Array<{ code: string; label: string; points: number; category?: string }>;
+  };
+  /** Informational commute facts — never a scoring input (#12/#32). */
+  commute?: {
+    distance_km: number;
+    commute_mins: number;
+    peak_commute_mins: number;
+    basis: 'coordinates' | 'emirate';
+  } | null;
 }
 
 const JobDescriptionWizard: React.FC<JDWizardProps> = ({
@@ -413,6 +425,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
   const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
   const [matchingLoading, setMatchingLoading] = useState(false);
+  // #32: filter on the candidate's own commute/relocation preference —
+  // display/filter only, never a score input (#12).
+  const [respectCommutePrefs, setRespectCommutePrefs] = useState(false);
 
   // Update state when initialData changes (e.g. after async load)
   useEffect(() => {
@@ -1760,10 +1775,28 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               AI-matched candidates based on your job description
               {employmentStatusFilter !== 'all' && ` (${employmentStatusFilter})`}
             </DialogDescription>
+            <label className="flex items-center gap-2 text-sm mt-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={respectCommutePrefs}
+                onChange={(e) => setRespectCommutePrefs(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Hide candidates whose own commute preference this job exceeds
+              <span className="text-xs text-muted-foreground">(filter only — scores are unaffected)</span>
+            </label>
           </DialogHeader>
 
           <div className="space-y-4">
-            {matchedCandidates.map((match, index) => (
+            {matchedCandidates.filter((match) => {
+              if (!respectCommutePrefs) return true;
+              const pref = match.candidate?.relocation;
+              // Only filterable when the candidate set a max commute AND we
+              // have a commute estimate; relocation/remote preference opts out.
+              if (!pref?.max_commute_minutes || !match.commute) return true;
+              if (pref.willing_to_relocate || pref.remote_preferred) return true;
+              return match.commute.commute_mins <= pref.max_commute_minutes;
+            }).map((match, index) => (
               <Card key={index}>
                 <CardContent className="pt-4">
                   <div className="flex justify-between items-start">
@@ -1775,15 +1808,56 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                         {match.candidate.current_position || 'Position not specified'}
                       </p>
                     </div>
-                    <Badge variant={match.match_score >= 80 ? "default" : "secondary"}>
-                      {match.match_score.toFixed(0)}% Match
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={match.match_score >= 80 ? "default" : "secondary"}>
+                        Job Fit {match.match_score.toFixed(0)}%
+                      </Badge>
+                      {match.national_priority != null && (
+                        <Badge variant="outline" className="border-emerald-600 text-emerald-700">
+                          National Priority {match.national_priority.score}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
-                  {match.candidate.distance_km != null && (
+                  {(match.national_priority?.reasons?.length ?? 0) > 0 && (
+                    <div className="mt-2">
+                      <span className="text-xs font-medium text-emerald-700">Why this candidate is a national development priority:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {match.national_priority!.reasons.map((r, i) => (
+                          <Badge key={i} variant="outline" className="text-xs text-emerald-700 border-emerald-200 bg-emerald-50">
+                            {r.label} (+{r.points})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {match.commute != null && (
                     <div className="flex items-center mt-2 text-sm text-blue-600 font-medium bg-blue-50 w-fit px-2 py-1 rounded">
                       <MapPin className="h-3 w-3 me-1" />
-                      Candidate's residence is {match.candidate.distance_km} km away
+                      ~{match.commute.distance_km} km · ~{match.commute.commute_mins} min drive
+                      ({match.commute.peak_commute_mins} min at peak)
+                      {match.commute.basis === 'emirate' && (
+                        <span className="ms-1 text-xs text-blue-400">— estimated from emirate centres</span>
+                      )}
+                      <span className="ms-1 text-xs text-blue-400">· informational only, not scored</span>
+                    </div>
+                  )}
+
+                  {(match.candidate.relocation?.willing_to_relocate === true ||
+                    match.candidate.relocation?.remote_preferred === true ||
+                    match.candidate.relocation?.max_commute_minutes != null) && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {[
+                        match.candidate.relocation?.willing_to_relocate === true
+                          ? `Open to relocation${match.candidate.relocation.preferred_location ? ` (prefers ${match.candidate.relocation.preferred_location})` : ''}`
+                          : null,
+                        match.candidate.relocation?.remote_preferred === true ? 'Prefers remote work' : null,
+                        match.candidate.relocation?.max_commute_minutes != null
+                          ? `Max commute preference: ${match.candidate.relocation.max_commute_minutes} min`
+                          : null,
+                      ].filter(Boolean).join(' · ')}
                     </div>
                   )}
 
