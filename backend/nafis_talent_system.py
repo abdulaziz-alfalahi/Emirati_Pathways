@@ -664,6 +664,95 @@ class NafisTalentSystem:
             except Exception:
                 pass
 
+    def redeem_seeker_invitation_for_user(self, token, user_id, is_new_user=False):
+        """Redeem a seeker invitation against a UAE-Pass-PROVEN identity.
+
+        Replaces the OTP/accept flow (retired): the UAE Pass callback has
+        already created or resolved the candidate account, so the only
+        identity input here is `user_id` — never a phone or a body field.
+        Links the imported NAFIS seeker to that account and marks the
+        invitation used. Idempotent on re-entry. Mirrors
+        growth_system.redeem_invitation_for_user for the employer side.
+        """
+        self.ensure_tables()
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Lock the invitation so two concurrent callbacks can't
+                # double-redeem.
+                cur.execute("""
+                    SELECT i.id, i.seeker_id, i.is_used, s.full_name, s.emirates_id
+                    FROM seeker_invitations i
+                    JOIN nafis_job_seekers s ON i.seeker_id = s.id
+                    WHERE i.token = %s AND i.expires_at > NOW()
+                    FOR UPDATE OF i
+                """, (token,))
+                inv = cur.fetchone()
+                if not inv:
+                    raise ValueError("Invalid, expired, or already used invitation link")
+                if inv['is_used']:
+                    # Already redeemed — return a benign summary rather than error,
+                    # so a double UAE Pass callback doesn't surface a scary message.
+                    return {
+                        'id': str(user_id),
+                        'role': 'candidate',
+                        'primary_role': 'candidate',
+                        'seeker_name': inv.get('full_name'),
+                        'seeker_id': str(inv['seeker_id']),
+                        'already_redeemed': True,
+                    }
+
+                # The proven UAE Pass user must exist (callback created/linked it).
+                cur.execute("SELECT id FROM users WHERE id = %s", (str(user_id),))
+                if not cur.fetchone():
+                    raise ValueError("User account not found for seeker invitation redemption")
+
+                # Link the NAFIS seeker record to the proven account and advance
+                # its lifecycle. Match by the invitation's seeker_id (the operator
+                # chose this person); the account already carries the real EID.
+                cur.execute("""
+                    UPDATE nafis_job_seekers
+                    SET user_id = %s, status = 'profile_created', updated_at = NOW()
+                    WHERE id = %s
+                """, (str(user_id), inv['seeker_id']))
+
+                cur.execute("""
+                    UPDATE seeker_invitations
+                    SET is_used = TRUE, status = 'accepted'
+                    WHERE id = %s
+                """, (inv['id'],))
+
+                conn.commit()
+                logger.info(
+                    f"Seeker invitation redeemed for user {user_id} "
+                    f"(seeker {inv['seeker_id']}, new_user={is_new_user})"
+                )
+                return {
+                    'id': str(user_id),
+                    'role': 'candidate',
+                    'primary_role': 'candidate',
+                    'seeker_name': inv.get('full_name'),
+                    'seeker_id': str(inv['seeker_id']),
+                }
+        except ValueError:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            raise
+        except Exception as e:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            logger.error(f"Seeker invitation redemption failed: {e}")
+            raise
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
     # ══════════════════════════════════════════════════════════
     # Queries
     # ══════════════════════════════════════════════════════════
