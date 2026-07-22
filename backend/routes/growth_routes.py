@@ -78,7 +78,7 @@ def get_verification_details(token):
 @growth_bp.route('/api/public/verify-job/<token>/confirm', methods=['POST'])
 def confirm_verification(token):
     try:
-        payload = request.json
+        payload = request.get_json(silent=True) or {}
         job_data = payload.get('job_data')
         password = payload.get('password') # User sets a password to claim account
         
@@ -111,7 +111,7 @@ def get_candidates():
 @require_roles(*OPERATOR_ROLES)
 def send_emails():
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         company_ids = data.get('company_ids', [])
         if not company_ids:
             return jsonify({'success': False, 'error': 'No companies selected'}), 400
@@ -163,7 +163,7 @@ def check_companies():
     Returns: { "existing": ["Company A"] }
     """
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         companies = data.get('companies', [])
         
         # Reuse the existing GrowthSystem instance
@@ -198,7 +198,7 @@ def invite_companies():
     Returns list of invitation results with magic links.
     """
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         companies = data.get('companies', [])
         if not companies:
             return jsonify({'success': False, 'error': 'No companies provided'}), 400
@@ -241,7 +241,7 @@ def verify_company(company_id):
     unverified companies.
     """
     try:
-        payload = request.json or {}
+        payload = request.get_json(silent=True) or {}
         verified = bool(payload.get('verified', True))
 
         verified_by = None

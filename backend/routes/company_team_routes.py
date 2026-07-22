@@ -49,7 +49,7 @@ def get_team_members():
 def invite_member():
     try:
         current_user_id = get_jwt_identity()
-        data = request.json
+        data = request.get_json(silent=True) or {}
         
         company_id = data.get('company_id')
         email = data.get('email')
@@ -78,7 +78,7 @@ def invite_member():
 def remove_member():
     try:
         current_user_id = get_jwt_identity()
-        data = request.json
+        data = request.get_json(silent=True) or {}
         
         company_id = data.get('company_id')
         user_id = data.get('user_id')
@@ -105,7 +105,7 @@ def change_member_role():
     """Change a member's team role in place (issue #100)."""
     try:
         current_user_id = get_jwt_identity()
-        data = request.json or {}
+        data = request.get_json(silent=True) or {}
 
         company_id = data.get('company_id')
         user_id = data.get('user_id')
