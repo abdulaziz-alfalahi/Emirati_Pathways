@@ -903,7 +903,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
         cursor.execute("""
             INSERT INTO users (
-                id, email, first_name, last_name, full_name, phone, role,
+                id, email, first_name, last_name, full_name, phone, role, user_type,
                 emirate, nationality, nationality_ar,
                 is_active, is_verified,
                 uaepass_uuid, emirates_id_enc, fullname_ar,
@@ -911,7 +911,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                 auth_method, uaepass_verified_at,
                 last_login, created_at, updated_at
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, 'candidate',
+                %s, %s, %s, %s, %s, %s, 'candidate', 'candidate',
                 '', %s, %s,
                 TRUE, TRUE,
                 %s, %s, %s,

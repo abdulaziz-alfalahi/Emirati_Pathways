@@ -575,10 +575,14 @@ def assign_domains(user_id):
                 new_secondary_roles = [f"growth_operator_{d}" for d in domains]
                 try:
                     cursor.execute("SAVEPOINT update_secondary_roles")
+                    # users.secondary_roles is jsonb on the live DB — the old
+                    # ::text[] cast silently failed inside this savepoint, so
+                    # domain assignments never reached the users table (P3/C5).
+                    import json as _json
                     cursor.execute("""
-                        UPDATE users SET secondary_roles = %s::text[]
+                        UPDATE users SET secondary_roles = %s::jsonb
                         WHERE id = %s
-                    """, (new_secondary_roles, user_id))
+                    """, (_json.dumps(new_secondary_roles), user_id))
                     cursor.execute("RELEASE SAVEPOINT update_secondary_roles")
                     logger.info(f"Updated secondary_roles for user {user_id}: {new_secondary_roles}")
                 except Exception as sr_err:
