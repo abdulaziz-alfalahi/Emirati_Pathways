@@ -1195,12 +1195,13 @@ def get_candidate_offers():
                     jo.created_at,
                     jo.updated_at,
                     jp.title as job_title,
-                    jp.company_id as company_name,
+                    COALESCE(comp.name, 'Unknown Company') as company_name,
                     r.first_name as recruiter_first_name,
                     r.last_name as recruiter_last_name,
                     r.email as recruiter_email
                 FROM job_offers jo
                 LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+                LEFT JOIN companies comp ON jp.company_id = comp.id
                 LEFT JOIN users r ON jo.recruiter_id::text = r.id::text
                 WHERE jo.candidate_id::text = %s
                 ORDER BY jo.created_at DESC
@@ -1369,13 +1370,14 @@ def get_candidate_offer_details(offer_id):
                     jo.created_at,
                     jo.updated_at,
                     jp.title as job_title_db,
-                    jp.company_id as company_name,
+                    COALESCE(comp.name, 'Unknown Company') as company_name,
                     jp.description as job_description,
                     r.first_name as recruiter_first_name,
                     r.last_name as recruiter_last_name,
                     r.email as recruiter_email
                 FROM job_offers jo
                 LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+                LEFT JOIN companies comp ON jp.company_id = comp.id
                 LEFT JOIN users r ON jo.recruiter_id::text = r.id::text
                 WHERE jo.offer_id = %s
             """, (offer_id,))

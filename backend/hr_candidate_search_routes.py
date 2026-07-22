@@ -581,7 +581,7 @@ def get_candidate_details(candidate_id):
                     c.name as company_name
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
-                LEFT JOIN companies c ON jp.company_id::text = c.id::text
+                LEFT JOIN companies c ON jp.company_id = c.id
                 WHERE ja.candidate_id::text = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5
@@ -659,7 +659,7 @@ def match_candidates_to_job(job_id):
             cursor.execute("""
                 SELECT jp.*, hp.id as hr_profile_id
                 FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
                 WHERE jp.id::text = %s AND hp.user_id::text = %s
             """, (job_id, current_user_id))
             

@@ -926,7 +926,7 @@ class GrowthSystem:
                             0 AS total_hired
                         FROM job_postings
                         GROUP BY company_id
-                    ) j ON c.id::text = j.company_id
+                    ) j ON c.id = j.company_id
                     ORDER BY c.company_name ASC
                 """)
                 companies_raw = cur.fetchall()
@@ -1034,7 +1034,7 @@ class GrowthSystem:
                             c.company_name || ' posted job: ' || jp.title AS text,
                             jp.created_at AS event_time
                         FROM job_postings jp
-                        JOIN companies c ON c.id::text = jp.company_id
+                        JOIN companies c ON c.id = jp.company_id
                         WHERE jp.status = 'published'
                         ORDER BY jp.created_at DESC
                         LIMIT 5

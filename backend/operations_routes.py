@@ -291,7 +291,7 @@ def get_operations_stats():
             cur.execute("""
                 SELECT jp.title, c.company_name, jp.created_at
                 FROM job_postings jp 
-                LEFT JOIN companies c ON jp.company_id = c.id::text
+                LEFT JOIN companies c ON jp.company_id = c.id
                 WHERE jp.created_at IS NOT NULL
                 ORDER BY jp.created_at DESC LIMIT 3
             """)

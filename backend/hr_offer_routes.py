@@ -35,7 +35,7 @@ def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:
         """
         SELECT 1
         FROM job_postings jp
-        INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id::text
+        INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
         WHERE jp.jd_id = %s AND hp.user_id = %s
         """,
         (job_posting_id, user_id),

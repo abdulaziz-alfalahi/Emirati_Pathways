@@ -703,7 +703,7 @@ def get_market_overview():
                 SELECT jp.title, jp.emirate, jp.department, jp.created_at,
                        c.name as company_name
                 FROM job_postings jp
-                LEFT JOIN companies c ON jp.company_id = c.id::text
+                LEFT JOIN companies c ON jp.company_id = c.id
                 ORDER BY jp.created_at DESC LIMIT 10
             """)
             for r in cur.fetchall():
