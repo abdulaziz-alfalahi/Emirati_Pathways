@@ -9,6 +9,7 @@ import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AuditLogTab from '@/components/admin/AuditLogTab';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
+import NationalPriorityWeightsTab from '@/components/admin/NationalPriorityWeightsTab';
 import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -433,6 +434,7 @@ const AdminDashboard = () => {
                   <Shield className="h-3.5 w-3.5" />
                   {b('Audit Log', 'سجل التدقيق')}
                 </TabsTrigger>
+                <TabsTrigger value="priority-weights" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Priority Weights', 'أوزان الأولوية')}</TabsTrigger>
                 <TabsTrigger value="system" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('System', 'النظام')}</TabsTrigger>
                 <TabsTrigger value="security" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Security', 'الأمان')}</TabsTrigger>
               </TabsList>
@@ -1278,6 +1280,10 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
               {/* Audit Log Tab (G13) */}
               <TabsContent value="audit" className="space-y-6">
                 <AuditLogTab />
+              </TabsContent>
+
+              <TabsContent value="priority-weights" className="space-y-6">
+                <NationalPriorityWeightsTab />
               </TabsContent>
 
               {/* System Health Tab */}
