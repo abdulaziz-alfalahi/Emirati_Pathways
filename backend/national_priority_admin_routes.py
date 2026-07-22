@@ -16,6 +16,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from backend.db import get_db_connection
 from backend.national_priority_engine import ensure_weights_table
+from backend.priority_fairness import compute_fairness_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,30 @@ def list_weights():
         return jsonify({"weights": rows, "total": len(rows)}), 200
     except Exception as e:
         conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@national_priority_admin_bp.route('/fairness', methods=['GET'])
+@jwt_required()
+def fairness_snapshot():
+    """Priority-score distribution + reason firing across the candidate pool
+    (#34). Read-only, admin-gated, computed live; never uses geography."""
+    guard = _require_admin()
+    if guard:
+        return guard
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        snapshot = compute_fairness_snapshot(conn)
+        conn.close()
+        return jsonify(snapshot), 200
+    except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        logger.error(f"fairness snapshot failed: {e}")
         return jsonify({"error": str(e)}), 500
 
 

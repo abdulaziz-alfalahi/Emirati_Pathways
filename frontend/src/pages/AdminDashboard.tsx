@@ -10,6 +10,7 @@ import AuditLogTab from '@/components/admin/AuditLogTab';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
 import NationalPriorityWeightsTab from '@/components/admin/NationalPriorityWeightsTab';
+import PriorityFairnessPanel from '@/components/admin/PriorityFairnessPanel';
 import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1282,8 +1283,11 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                 <AuditLogTab />
               </TabsContent>
 
-              <TabsContent value="priority-weights" className="space-y-6">
+              <TabsContent value="priority-weights" className="space-y-8">
                 <NationalPriorityWeightsTab />
+                <div className="border-t border-gray-100 pt-6">
+                  <PriorityFairnessPanel />
+                </div>
               </TabsContent>
 
               {/* System Health Tab */}
