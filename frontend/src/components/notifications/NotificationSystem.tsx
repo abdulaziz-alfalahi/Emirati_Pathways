@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, createContext, useCallback } fr
 import { io, Socket } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { getDashboardRoute, ROLE_DASHBOARD_MAP, normalizeRole } from '@/types/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -548,30 +549,21 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     const isHRManager = user?.role === 'employer_admin' || user?.role === 'employer_admin' || user?.user_type === 'employer_admin' || user?.user_type === 'employer_admin';
     const userRole = user?.role || user?.user_type || '';
 
-    // Operator role → dashboard path mapping
-    // Use centralized map and add local-only entries not in ROLE_DASHBOARD_MAP
-    const operatorDashboardMap: Record<string, string> = {
-      'mentor': '/mentor-dashboard',
-      'assessor': '/assessor-dashboard',
-      'growth_operator': '/growth-operator-dashboard',
-      'talent_operator': '/growth-operator-dashboard',
-      'employer_relations': '/growth-operator-dashboard',
-      'education_operator': '/growth-operator-dashboard',
-      'assessment_operator': '/growth-operator-dashboard',
-      'mentorship_operator': '/growth-operator-dashboard',
-      'community_operator': '/growth-operator-dashboard',
-      'platform_operator': '/growth-operator-dashboard',
-      'operator': '/growth-operator-dashboard',
-      'call_center_agent': '/call-center-dashboard',
-      'advisor': '/advisor-dashboard',
-      'coach': '/coach-dashboard',
-      'internship_coordinator': '/internship-coordinator-dashboard',
-      'training_provider': '/training-center-dashboard',
-    };
-    // Fallback: any growth_operator_* sub-role not in the map → growth-operator-dashboard
-    const operatorDashboard = operatorDashboardMap[userRole]
-      || (userRole.startsWith('growth_operator') ? '/growth-operator-dashboard' : undefined);
-    const isOperator = !!operatorDashboard;
+    // Operator role → dashboard path. Defer to the canonical ROLE_DASHBOARD_MAP
+    // (getDashboardRoute) instead of a local copy — the old local map sent
+    // talent_operator / education / assessment / mentorship / community
+    // operators all to /growth-operator-dashboard, conflicting with the
+    // canonical map that routes each to its own dashboard (C6).
+    const normalizedUserRole = String(normalizeRole(userRole) || userRole).toLowerCase();
+    const isOperator = (Object.keys(ROLE_DASHBOARD_MAP).includes(normalizedUserRole)
+        && !['candidate', 'job_seeker'].includes(normalizedUserRole)
+        && !isRecruiter && !isHRManager && !isAdmin)
+      || userRole.startsWith('growth_operator');
+    const operatorDashboard = isOperator
+      ? (userRole.startsWith('growth_operator') && !ROLE_DASHBOARD_MAP[normalizedUserRole]
+          ? '/growth-operator-dashboard'
+          : getDashboardRoute(userRole))
+      : undefined;
     const isCallCenter = userRole === 'call_center_agent';
     // Default to isCandidate if not any other known role
     const isCandidate = !isRecruiter && !isHRManager && !isAdmin && !isOperator;
