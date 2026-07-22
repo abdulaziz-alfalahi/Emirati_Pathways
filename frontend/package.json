@@ -15,7 +15,6 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@fontsource/opendyslexic": "^5.3.0",
     "@headlessui/react": "^1.7.0",
     "@heroicons/react": "^2.0.0",
     "@hookform/resolvers": "^3.3.0",
