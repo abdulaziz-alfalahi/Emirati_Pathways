@@ -183,6 +183,18 @@ def chat_completion(
         for msg in messages
     ]
 
+    # DashScope compatible-mode (like OpenAI) rejects response_format
+    # json_object with 400 InvalidParameter unless the word "json" appears
+    # somewhere in the messages. The match/score prompts don't contain it,
+    # so every AI scoring call 400'd and the engine silently fell back to
+    # heuristics (issue #127). Inject a minimal system nudge when needed.
+    if response_format and response_format.get("type") == "json_object":
+        if not any("json" in (m.get("content") or "").lower() for m in messages):
+            messages = [
+                {"role": "system", "content": "Respond only with a valid JSON object."},
+                *messages,
+            ]
+
     last_error: Optional[Exception] = None
     raw_text = ""
 
@@ -237,6 +249,12 @@ def chat_completion(
         except APIError as e:
             logger.error(f"[Qwen] ❌ API error (attempt {attempt}): {e}")
             last_error = e
+            # A 4xx (bad request / auth / invalid param) is deterministic —
+            # retrying just burns time and wedged the match path (#127).
+            status = getattr(e, "status_code", None)
+            if isinstance(status, int) and 400 <= status < 500:
+                logger.error(f"[Qwen] Non-retryable {status}; failing fast.")
+                break
             if attempt < max_retries:
                 time.sleep(2 ** attempt)
 
