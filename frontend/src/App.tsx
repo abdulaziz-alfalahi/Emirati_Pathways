@@ -101,7 +101,9 @@ const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityPr
 const KnowledgeCampsPage = lazy(() => import('./pages/summer-camps'));
 const ScholarshipsPage = lazy(() => import('./pages/scholarships'));
 const GraduateProgramsPage = lazy(() => import('./pages/graduate-programs'));
-const LMSPage = lazy(() => import('./pages/lms'));
+// LMS retired: the whole /lms module was frontend-only with no backend
+// (fabricated courses/services). The route redirects to Coming Soon and the
+// nav item is gated off via the page_lms feature flag.
 const ComingSoonPage = lazy(() => import('@/pages/ComingSoonPage'));
 
 // Other key pages
@@ -695,7 +697,7 @@ const AppContent: React.FC = () => {
 
               <Route
                 path="/lms"
-                element={<LMSPage />}
+                element={<Navigate to="/coming-soon?module=Learning%20Management%20System&desc=A%20full%20learning%20management%20system%20is%20planned%20but%20not%20yet%20available." replace />}
               />
 
               {/* Core Feature Routes */}
