@@ -77,6 +77,23 @@ const statusMeta: Record<string, { color: string; bg: string; labelEN: string; l
 const TEAL = '#006E6D';
 const TEAL_LIGHT = '#ecfdf5';
 const TEAL_600 = '#059669';
+const TEAL_DEEP = '#0A4D4C';
+const INK = '#0f2b2a';        // near-black with a teal bias, not pure slate
+const INK_MUTED = '#5b7573';
+const FONT = '"Readex Pro", "Dubai", system-ui, -apple-system, sans-serif';
+
+// Harmonised, teal-anchored palette for the 14 service groups. The catalog
+// data stores Tailwind-ish colour NAMES (teal/amber/cyan/rose/…) that were
+// rendered directly as CSS, producing a clashing neon rainbow. This maps each
+// to a deep, muted hue that reads as one system alongside the EHRDC teal and
+// works on white. Semantic status colours (active/partial/gap) stay separate.
+const GROUP_PALETTE: Record<string, string> = {
+  teal: '#006E6D', emerald: '#0B7A6A', green: '#2F7D4F', cyan: '#0E7490',
+  sky: '#0B6BA8', blue: '#1E5A9C', indigo: '#3F4EA8', violet: '#6A54A6',
+  purple: '#7A548F', rose: '#A65468', orange: '#BC5A2E', amber: '#A9740F',
+  slate: '#4A5A6B', gray: '#64748B',
+};
+const gcHex = (name?: string) => GROUP_PALETTE[(name || '').toLowerCase()] || '#4A5A6B';
 
 const tabDefs = [
   { key: 'overview',  en: 'Overview',                           ar: 'نظرة عامة' },
@@ -115,18 +132,20 @@ const Field: React.FC<{ label: string; value: string }> = ({ label, value }) => 
 
 const StatCard: React.FC<{ value: number | string; label: string; color: string; iconEl?: React.ReactNode; small?: boolean; border?: string }> = ({ value, label, color, iconEl, small, border }) => (
   <div style={{
-    background: '#fff', border: `1px solid ${border || '#e2e8f0'}`, borderRadius: 12,
-    padding: small ? '14px 18px' : '18px 22px', flex: 1, minWidth: small ? 140 : 180,
+    position: 'relative', overflow: 'hidden',
+    background: '#fff', border: `1px solid ${border || '#e6ecec'}`, borderRadius: 14,
+    padding: small ? '15px 18px' : '19px 22px', flex: 1, minWidth: small ? 140 : 180,
     display: 'flex', flexDirection: 'column', gap: 6,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    boxShadow: '0 1px 2px rgba(10,45,44,.04), 0 6px 16px rgba(10,45,44,.05)',
     transition: 'box-shadow 0.2s, transform 0.2s',
   }}>
+    <div style={{ position: 'absolute', insetInlineStart: 0, top: 0, bottom: 0, width: 3, background: color }} />
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div>
-        <div style={{ fontSize: small ? 11 : 12, fontWeight: 500, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{label}</div>
-        <span style={{ fontSize: small ? 24 : 32, fontWeight: 800, color: '#0f172a' }}>{value}</span>
+        <div style={{ fontSize: small ? 10.5 : 11.5, fontWeight: 600, color: INK_MUTED, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>{label}</div>
+        <span style={{ fontSize: small ? 25 : 34, fontWeight: 800, color: INK, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
-      {iconEl && <div style={{ padding: small ? 8 : 10, background: `${color}12`, borderRadius: 12 }}>{iconEl}</div>}
+      {iconEl && <div style={{ padding: small ? 8 : 10, background: `${color}14`, borderRadius: 12, display: 'flex' }}>{iconEl}</div>}
     </div>
   </div>
 );
@@ -168,27 +187,33 @@ const ServiceCatalog: React.FC = () => {
   );
 
   const groupByCode = (code: string) => serviceGroups.find(g => g.code === code);
-  const gc = (s: ServiceItem) => groupByCode(s.groupCode)?.color || '#64748b';
+  const gc = (s: ServiceItem) => gcHex(groupByCode(s.groupCode)?.color);
   const sm = (s: ServiceItem) => statusMeta[s.platformStatus] || statusMeta.active;
   const coverageRate = ((serviceStats.activeServices / serviceStats.totalServices) * 100).toFixed(1);
 
   /* ─── RENDER ────────────────────────────────────────────────────── */
   return (
-    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Dubai, Inter, system-ui, sans-serif', background: '#FAFBFC', minHeight: '100vh', textAlign: isRTL ? 'right' : 'left' }}>
+    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: FONT, background: '#F4F7F7', minHeight: '100vh', textAlign: isRTL ? 'right' : 'left' }}>
       {/* ─── Header ─── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '14px 28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, margin: '0 auto' }}>
-          <button onClick={() => navigate('/dashboard')} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: '#475569', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.04)', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL}, ${TEAL_600})` }} />
+      <div style={{ background: '#fff', borderBottom: '1px solid #e6ecec', padding: '16px 28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, margin: '0 auto', gap: 16 }}>
+          <button onClick={() => navigate('/dashboard')} style={{ background: '#fff', border: '1px solid #e6ecec', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: INK_MUTED, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(10,45,44,0.04)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f4f8f8'; e.currentTarget.style.borderColor = '#cfe0df'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e6ecec'; }}
           >
             {isRTL ? '→' : '←'} {t('Back to Platform', 'العودة للمنصة')}
           </button>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{t('EHRDC Service Catalog', 'دليل خدمات منصة تنمية الموارد البشرية')}</div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{t('Emirati Human Resources Development Council', 'مجلس تنمية الموارد البشرية الإماراتية')}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 13, minWidth: 0 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 11, background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${TEAL}33` }}>
+              <IconClipboard color="#fff" size={20} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 19, fontWeight: 700, color: INK, letterSpacing: '-0.01em', lineHeight: 1.15 }}>{t('EHRDC Service Catalog', 'دليل خدمات منصة تنمية الموارد البشرية')}</div>
+              <div style={{ fontSize: 12, color: INK_MUTED, marginTop: 1 }}>{t('Emirati Human Resources Development Council', 'مجلس تنمية الموارد البشرية الإماراتية')}</div>
+            </div>
           </div>
-          <button onClick={toggleLanguage} style={{ background: TEAL_LIGHT, color: TEAL, border: `1px solid ${TEAL}30`, borderRadius: 10, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}
+          <button onClick={toggleLanguage} style={{ background: TEAL_LIGHT, color: TEAL, border: `1px solid ${TEAL}30`, borderRadius: 10, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.15s', whiteSpace: 'nowrap' }}
             onMouseEnter={e => { e.currentTarget.style.background = TEAL; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = TEAL_LIGHT; e.currentTarget.style.color = TEAL; }}
           >
@@ -300,7 +325,7 @@ const ServiceCatalog: React.FC = () => {
                         <div style={{ flex: 1, height: 22, background: '#f1f5f9', borderRadius: 6, overflow: 'hidden' }}>
                           <div style={{
                             width: `${(g.services.length / maxCount) * 100}%`, height: '100%',
-                            background: g.color, borderRadius: 6, transition: 'width 0.5s ease',
+                            background: gcHex(g.color), borderRadius: 6, transition: 'width 0.5s ease',
                             display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingInlineEnd: 8,
                           }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{g.services.length}</span>
@@ -384,12 +409,12 @@ const ServiceCatalog: React.FC = () => {
                   </div>
                   {serviceGroups.map(g => (
                     <div key={g.code} onClick={() => setSelectedGroup(g.code)}
-                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: selectedGroup === g.code ? 700 : 400, background: selectedGroup === g.code ? `${g.color}10` : 'transparent', color: selectedGroup === g.code ? g.color : '#334155', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: selectedGroup === g.code ? 700 : 400, background: selectedGroup === g.code ? `${gcHex(g.color)}12` : 'transparent', color: selectedGroup === g.code ? gcHex(g.color) : '#334155', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: gcHex(g.color), flexShrink: 0 }} />
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gn(g)}</span>
                       </div>
-                      <span style={{ fontSize: 10, background: `${g.color}18`, color: g.color, borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{g.services.length}</span>
+                      <span style={{ fontSize: 10, background: `${gcHex(g.color)}18`, color: gcHex(g.color), borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{g.services.length}</span>
                     </div>
                   ))}
                 </div>
@@ -613,7 +638,7 @@ const ServiceCatalog: React.FC = () => {
                   <tr>
                     <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left', borderBottom: '2px solid #e2e8f0', color: '#64748b', fontWeight: 600, position: 'sticky', insetInlineStart: 0, background: '#fff', minWidth: 140 }}>{t('Role', 'الدور')}</th>
                     {serviceGroups.map(g => (
-                      <th key={g.code} style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: g.color, fontWeight: 700, fontSize: 10, writingMode: 'vertical-rl', height: 80 }}>{g.code}</th>
+                      <th key={g.code} style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: gcHex(g.color), fontWeight: 700, fontSize: 10, writingMode: 'vertical-rl', height: 80 }}>{g.code}</th>
                     ))}
                     <th style={{ padding: '8px 10px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: '#0f172a', fontWeight: 700 }}>{t('Total', 'المجموع')}</th>
                   </tr>
@@ -636,7 +661,7 @@ const ServiceCatalog: React.FC = () => {
                             <td key={g.code} style={{ padding: 4, textAlign: 'center' }}>
                               <div style={{
                                 width: 28, height: 28, borderRadius: 6, margin: '0 auto',
-                                background: count > 0 ? g.color : '#f1f5f9', opacity: count > 0 ? opacity : 1,
+                                background: count > 0 ? gcHex(g.color) : '#f1f5f9', opacity: count > 0 ? opacity : 1,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: count > 0 ? '#fff' : '#cbd5e1', fontWeight: 700, fontSize: 11,
                               }}>{count || '·'}</div>
