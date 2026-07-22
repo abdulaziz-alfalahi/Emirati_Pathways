@@ -672,6 +672,7 @@ _additional_blueprints = [
     ('backend.career_passport_routes', 'career_passport_bp', None, 'Career Passport'),
     ('backend.advisor_routes', 'advisor_bp', None, 'Advisor'),
     ('backend.coach_routes', 'coach_bp', None, 'Coach'),
+    ('backend.routes.caseload_assignment_routes', 'caseload_bp', None, 'Caseload Assignment'),
     ('backend.parent_routes', 'parent_bp', None, 'Parent Dashboard'),
     ('backend.internship_coordinator_routes', 'internship_coord_bp', None, 'Internship Coordinator'),
     ('backend.training_center_routes', 'training_center_bp', None, 'Training Center'),
