@@ -509,15 +509,22 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <AlertDescription className="text-amber-700">
               <p className="mt-2">{error}</p>
               <p className="mt-2 text-sm">
-                {t('To get accurate, AI-powered job matches based on your skills and experience, please upload your CV first.', 'للحصول على مطابقات وظيفية دقيقة بالذكاء الاصطناعي بناءً على مهاراتك وخبراتك، يرجى رفع سيرتك الذاتية أولاً.')}
+                {t('To get accurate, AI-powered job matches, either upload your CV or complete your profile — either one is enough to start matching.', 'للحصول على مطابقات وظيفية دقيقة بالذكاء الاصطناعي، ارفع سيرتك الذاتية أو أكمل ملفك الشخصي — أيٌّ منهما كافٍ لبدء المطابقة.')}
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Button
                   onClick={() => navigate('/cv-builder')}
                   className="bg-amber-600 hover:bg-amber-700"
                 >
                   <FileText className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
                   {t('Upload or Create CV', 'ارفع أو أنشئ السيرة الذاتية')}
+                </Button>
+                <Button
+                  onClick={() => navigate('/candidate/profile')}
+                  variant="outline"
+                  className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                >
+                  {t('Complete My Profile', 'أكمل ملفي الشخصي')}
                 </Button>
               </div>
             </AlertDescription>

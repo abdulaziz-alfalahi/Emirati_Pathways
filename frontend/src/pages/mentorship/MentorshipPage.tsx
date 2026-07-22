@@ -68,7 +68,10 @@ const MentorshipPage: React.FC = () => {
                     })));
                 }
             } catch (e) {
-                console.warn('Mentors API not available, using static data', e);
+                // Leave the list empty → an honest empty state renders. Do NOT
+                // substitute fabricated mentors (#26).
+                console.warn('Mentors API unavailable', e);
+                if (!cancelled) setMentors([]);
             }
         }
         async function loadStats() {
@@ -98,17 +101,12 @@ const MentorshipPage: React.FC = () => {
 
     /* ──────────────────────── DATA ──────────────────────── */
 
-    // Static mentorship data (user-specific, not from API yet)
-
-    const myMentorships = [
-        { mentor: t('Dr. Fatima Al Mazrouei', 'د. فاطمة المزروعي'), topic: t('Cloud Architecture Career Path', 'مسار مهنة هندسة السحابة'), status: 'Active', statusLabel: t('Active', 'نشط'), nextSession: t('Wed, Feb 19 · 3:00 PM', 'الأربعاء 19 فبراير · 3:00 م'), totalSessions: 8, completed: 5, progress: 62 },
-        { mentor: t('Ahmed Al Dhaheri', 'أحمد الظاهري'), topic: t('Fintech Startup Guidance', 'إرشاد شركات التكنولوجيا المالية الناشئة'), status: 'Active', statusLabel: t('Active', 'نشط'), nextSession: t('Thu, Feb 20 · 10:00 AM', 'الخميس 20 فبراير · 10:00 ص'), totalSessions: 6, completed: 2, progress: 33 },
-    ];
-
-    const pastMentorships = [
-        { mentor: t('Sara Al Shamsi', 'سارة الشامسي'), topic: t('AI/ML Career Transition', 'الانتقال المهني إلى الذكاء الاصطناعي'), sessions: 12, period: t('Jun – Nov 2025', 'يونيو – نوفمبر 2025'), outcome: t('Landed AI Engineer role', 'حصل على وظيفة مهندس ذكاء اصطناعي'), rating: 5.0 },
-        { mentor: t('Khalid Al Falasi', 'خالد الفلاسي'), topic: t('DevOps Best Practices', 'أفضل ممارسات DevOps'), sessions: 8, period: t('Mar – Jun 2025', 'مارس – يونيو 2025'), outcome: t('Promoted to Senior Engineer', 'تمت ترقيته إلى مهندس أول'), rating: 4.8 },
-    ];
+    // A candidate's own mentorships. There is no backend for these yet
+    // (no mentorship_relationships table), so they stay empty and render an
+    // honest empty state — rather than showing fabricated "your mentorships"
+    // to every user (#26).
+    const myMentorships: any[] = [];
+    const pastMentorships: any[] = [];
 
     const resources = [
         { title: t('Effective Mentoring in the UAE Workplace', 'الإرشاد الفعّال في بيئة العمل الإماراتية'), type: t('Guide', 'دليل'), readTime: t('12 min', '12 دقيقة'), icon: '📖' },
@@ -139,12 +137,17 @@ const MentorshipPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Connect with 300+ experienced UAE professionals across technology, finance, energy, aviation, and government — all ready to help you grow.',
-                    'تواصل مع أكثر من 300 محترف إماراتي ذو خبرة في التكنولوجيا والمالية والطاقة والطيران والحكومة — جميعهم مستعدون لمساعدتك على النمو.'
+                    'Connect with experienced UAE professionals across technology, finance, energy, aviation, and government — ready to help you grow.',
+                    'تواصل مع محترفين إماراتيين ذوي خبرة في التكنولوجيا والمالية والطاقة والطيران والحكومة — مستعدين لمساعدتك على النمو.'
                 )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+                {mentors.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('No mentors are available right now. Please check back soon.', 'لا يوجد مرشدون متاحون حالياً. يرجى المراجعة قريباً.')}
+                    </div>
+                )}
                 {mentors.map((m, i) => (
                     <div
                         key={i}
@@ -221,6 +224,11 @@ const MentorshipPage: React.FC = () => {
             {/* Active */}
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Active', 'نشطة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+                {myMentorships.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('You have no active mentorships yet. Browse mentors above to request one.', 'ليس لديك أي إرشاد نشط بعد. تصفّح المرشدين أعلاه لطلب إرشاد.')}
+                    </div>
+                )}
                 {myMentorships.map((m, i) => (
                     <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -254,6 +262,11 @@ const MentorshipPage: React.FC = () => {
             {/* Past Mentorships */}
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Completed', 'مكتملة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {pastMentorships.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('No completed mentorships yet.', 'لا توجد جلسات إرشاد مكتملة بعد.')}
+                    </div>
+                )}
                 {pastMentorships.map((m, i) => (
                     <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
