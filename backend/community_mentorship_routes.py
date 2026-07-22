@@ -199,18 +199,29 @@ def get_community_events():
 # ─────────────────────────────────────────────
 @community_mentorship_bp.route('/mentors', methods=['GET'])
 def get_mentors():
-    """Return all mentor profiles."""
+    """Return all mentor profiles.
+
+    Queried against the DEPLOYED mentor_profiles schema (user_id +
+    professional_* columns, name via users) — the previous query named a
+    phantom denormalised DDL (full_name/title/bio/...) that doesn't exist
+    on the live table, so it 500'd and the page silently showed static
+    mentors. There are no _ar/avatar/location columns on this table, so
+    those are returned null rather than faked.
+    """
     try:
         conn = _get_conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
-            SELECT id, full_name, full_name_ar, title, title_ar,
-                   company, company_ar, expertise_areas, expertise_areas_ar,
-                   rating, total_sessions, location, location_ar,
-                   available, avatar, is_uae_national, years_experience,
-                   bio, bio_ar
-            FROM mentor_profiles
-            ORDER BY rating DESC, total_sessions DESC
+            SELECT mp.id, mp.user_id,
+                   u.full_name,
+                   mp.professional_title, mp.current_company, mp.industry,
+                   mp.expertise_areas, mp.rating, mp.total_sessions,
+                   mp.is_available, mp.years_of_experience,
+                   mp.professional_summary,
+                   COALESCE(u.is_uae_national, FALSE) AS is_uae_national
+            FROM mentor_profiles mp
+            LEFT JOIN users u ON u.id = mp.user_id
+            ORDER BY mp.rating DESC, mp.total_sessions DESC
         """)
         rows = cur.fetchall()
         cur.close()
@@ -221,23 +232,24 @@ def get_mentors():
             mentors.append({
                 'id': r['id'],
                 'name': r['full_name'],
-                'name_ar': r['full_name_ar'],
-                'title': r['title'],
-                'title_ar': r['title_ar'],
-                'company': r['company'],
-                'company_ar': r['company_ar'],
+                'name_ar': None,
+                'title': r['professional_title'],
+                'title_ar': None,
+                'company': r['current_company'],
+                'company_ar': None,
+                'industry': r['industry'],
                 'expertise': _safe_json(r['expertise_areas']),
-                'expertise_ar': _safe_json(r['expertise_areas_ar']),
+                'expertise_ar': [],
                 'rating': float(r['rating']) if r['rating'] else 0,
-                'sessions': r['total_sessions'],
-                'location': r['location'],
-                'location_ar': r['location_ar'],
-                'available': r['available'],
-                'avatar': r['avatar'],
-                'isUaeNational': r['is_uae_national'],
-                'yearsExperience': r['years_experience'],
-                'bio': r['bio'],
-                'bio_ar': r['bio_ar'],
+                'sessions': r['total_sessions'] or 0,
+                'location': None,
+                'location_ar': None,
+                'available': bool(r['is_available']),
+                'avatar': None,
+                'isUaeNational': bool(r['is_uae_national']),
+                'yearsExperience': r['years_of_experience'] or 0,
+                'bio': r['professional_summary'],
+                'bio_ar': None,
             })
 
         return jsonify({
@@ -260,24 +272,37 @@ def get_mentorship_stats():
         conn = _get_conn()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # Mentor count
-        cur.execute("SELECT count(*) as cnt FROM mentor_profiles WHERE available = TRUE")
-        available_mentors = cur.fetchone()['cnt']
-
-        cur.execute("SELECT count(*) as cnt FROM mentor_profiles")
-        total_mentors = cur.fetchone()['cnt']
-
-        # Total sessions & avg rating
-        cur.execute("SELECT COALESCE(SUM(total_sessions), 0) as total_sessions, COALESCE(AVG(rating), 0) as avg_rating FROM mentor_profiles")
+        # Mentor counts + aggregates (live schema uses is_available).
+        cur.execute("""
+            SELECT count(*) AS total_mentors,
+                   count(*) FILTER (WHERE is_available) AS available_mentors,
+                   COALESCE(SUM(total_sessions), 0) AS total_sessions,
+                   COALESCE(AVG(NULLIF(rating, 0)), 0) AS avg_rating
+            FROM mentor_profiles
+        """)
         agg = cur.fetchone()
 
-        # Mentorship programs: total mentees enrolled
-        cur.execute("SELECT COALESCE(SUM(current_mentees), 0) as total_mentees FROM mentorship_programs WHERE status = 'active'")
-        total_mentees = cur.fetchone()['total_mentees']
+        # Optional aggregates — each guarded so a missing table (schema drift,
+        # e.g. communities does not exist on live) yields 0 rather than 500ing
+        # the whole stats endpoint.
+        def _scalar(sql, default=0):
+            try:
+                cur.execute("SAVEPOINT s")
+                cur.execute(sql)
+                cur.execute("RELEASE SAVEPOINT s")
+                row = cur.fetchone()
+                return list(row.values())[0] if row else default
+            except Exception:
+                try:
+                    cur.execute("ROLLBACK TO SAVEPOINT s")
+                except Exception:
+                    pass
+                return default
 
-        # Community stats
-        cur.execute("SELECT count(*) as cnt, COALESCE(SUM(members), 0) as total_members FROM communities")
-        comm = cur.fetchone()
+        total_mentees = _scalar(
+            "SELECT COALESCE(SUM(current_mentees), 0) AS v FROM mentorship_programs WHERE status = 'active'")
+        total_communities = _scalar("SELECT count(*) AS v FROM communities")
+        total_community_members = _scalar("SELECT COALESCE(SUM(members), 0) AS v FROM communities")
 
         cur.close()
         conn.close()
@@ -285,13 +310,13 @@ def get_mentorship_stats():
         return jsonify({
             'success': True,
             'stats': {
-                'total_mentors': total_mentors,
-                'available_mentors': available_mentors,
+                'total_mentors': agg['total_mentors'],
+                'available_mentors': agg['available_mentors'],
                 'total_mentees': total_mentees,
                 'total_sessions': agg['total_sessions'],
                 'avg_rating': round(float(agg['avg_rating']), 1),
-                'total_communities': comm['cnt'],
-                'total_community_members': comm['total_members'],
+                'total_communities': total_communities,
+                'total_community_members': total_community_members,
             }
         })
     except Exception as e:
