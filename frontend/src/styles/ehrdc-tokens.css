@@ -119,7 +119,9 @@
   --secondary:#F4F5F7;
   --secondary-foreground:#1A1A1A;
   --muted:#F4F5F7;
-  --muted-foreground:#6B7280;
+  /* #6B7280 was 4.43:1 on the muted bg (#f4f5f7) — just under WCAG AA 4.5:1.
+     #5D6570 clears it at 5.41:1 while staying a muted grey (#27). */
+  --muted-foreground:#5D6570;
   --accent:#E6F5F5;
   --accent-foreground:var(--ehrdc-teal-600);
   --destructive:var(--ehrdc-danger);
