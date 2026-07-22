@@ -88,10 +88,18 @@ export default function CareerServicesDashboard() {
   };
 
   const fetchOperators = async () => {
+    // C3: real operator source so candidates can be assigned to a caseload.
+    // The CRM is staffed by career-services operators and call-centre agents.
     try {
-      // No operators endpoint is available yet. Show an empty list rather than
-      // fabricating operator names. Bind to a real endpoint when one exists.
-      setOperators([]);
+      const roles = ['career_services_operator', 'call_center_agent'];
+      const results = await Promise.all(
+        roles.map(r => restClient.get(`/api/caseload/operators?role=${r}`)
+          .then(res => (res as any).data?.operators || (res as any).operators || [])
+          .catch(() => []))
+      );
+      const byId: Record<string, any> = {};
+      results.flat().forEach((op: any) => { if (op?.id) byId[op.id] = op; });
+      setOperators(Object.values(byId));
     } catch (e) {
       console.error("Failed to fetch operators", e);
       setOperators([]);
