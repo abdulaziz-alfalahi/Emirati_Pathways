@@ -9,6 +9,10 @@ from flask import Blueprint, request, jsonify
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
 import logging
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +48,10 @@ def _operator_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         verify_jwt_in_request()
-        role = (get_jwt() or {}).get('role', '')
-        if role not in _OPERATOR_ROLES:
+        # resolve_roles() honours primary claim + secondary_roles (claim + DB),
+        # so an operator holding the role as a SECONDARY role is not locked out
+        # of its own tooling (C1). Reading only get_jwt()['role'] did that.
+        if not (resolve_roles() & _OPERATOR_ROLES):
             return jsonify({'success': False, 'message': 'Forbidden - operator access required'}), 403
         return fn(*args, **kwargs)
     return wrapper

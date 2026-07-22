@@ -13,6 +13,10 @@ import psycopg2.extras
 import os
 import json
 import logging
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 
 logger = logging.getLogger(__name__)
 coach_bp = Blueprint('coach', __name__, url_prefix='/api/coach')
@@ -32,12 +36,12 @@ _COACH_ROLES = {'coach', 'advisor', 'admin', 'super_admin'}
 
 
 def _require_coach_role():
-    """Return a (response, 403) if the caller lacks a coach role, else None."""
+    """Return a (response, 403) if the caller lacks a coach role, else None.
+    Resolves secondary_roles (C1)."""
     try:
-        role = (get_jwt() or {}).get('role', '')
+        if not (resolve_roles() & _COACH_ROLES):
+            return jsonify({"error": "Forbidden - coach access required"}), 403
     except Exception:
-        role = ''
-    if role not in _COACH_ROLES:
         return jsonify({"error": "Forbidden - coach access required"}), 403
     return None
 

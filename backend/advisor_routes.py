@@ -13,6 +13,10 @@ import psycopg2.extras
 import os
 import json
 import logging
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 
 logger = logging.getLogger(__name__)
 advisor_bp = Blueprint('advisor', __name__, url_prefix='/api/advisor')
@@ -32,12 +36,12 @@ _ADVISOR_ROLES = {'advisor', 'admin', 'super_admin'}
 
 
 def _require_advisor_role():
-    """Return a (response, 403) if the caller isn't an advisor, else None."""
+    """Return a (response, 403) if the caller isn't an advisor, else None.
+    Resolves secondary_roles (C1)."""
     try:
-        role = (get_jwt() or {}).get('role', '')
+        if not (resolve_roles() & _ADVISOR_ROLES):
+            return jsonify({"error": "Forbidden - advisor access required"}), 403
     except Exception:
-        role = ''
-    if role not in _ADVISOR_ROLES:
         return jsonify({"error": "Forbidden - advisor access required"}), 403
     return None
 
