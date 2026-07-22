@@ -76,6 +76,13 @@ class AICandidateMatchingEngineFinal:
             return [s.strip() for s in skills_raw.replace('{','').replace('}','').split(',') if s.strip()]
         return []
     
+    # Cap on how many candidates get the expensive AI pass. The AI scorer
+    # makes one Qwen LLM call per candidate, so scoring the full pool
+    # (~4k live) took minutes and stalled the worker (issue #124). We
+    # rule-score everyone cheaply, then AI-score only this many top rule
+    # matches — env-overridable for tuning.
+    AI_SHORTLIST_CAP = int(os.getenv('MATCH_AI_SHORTLIST_CAP', '40'))
+
     def match_candidates_for_job(
         self,
         jd_data: Dict[str, Any],
@@ -115,10 +122,31 @@ class AICandidateMatchingEngineFinal:
                 f"Matching {len(filtered_candidates)} candidates "
                 f"(filtered from {len(candidates)}) for job: {jd_data.get('basic_info', {}).get('title', 'Unknown')}"
             )
-            
-            # Score each candidate
+
+            # ── Stage 1: cheap rule-based pre-filter (no LLM) ──────────────
+            # Rank everyone by the fast rules scorer, then only the top
+            # AI_SHORTLIST_CAP get the expensive AI pass. Below the cap this
+            # is a no-op, so small pools behave exactly as before (#124).
+            shortlist = filtered_candidates
+            if self.matching_engine and len(filtered_candidates) > self.AI_SHORTLIST_CAP:
+                prelim = []
+                for candidate in filtered_candidates:
+                    try:
+                        rule_data = self._score_with_rules(jd_data, candidate)
+                        prelim.append((rule_data['overall_score'], candidate))
+                    except Exception as e:
+                        self.logger.error(f"Rule pre-score failed for {candidate.get('candidate_id')}: {e}")
+                # Stable: preserve the SQL ordering (skills-first) within ties.
+                prelim.sort(key=lambda x: x[0], reverse=True)
+                shortlist = [c for _, c in prelim[:self.AI_SHORTLIST_CAP]]
+                self.logger.info(
+                    f"Pre-filtered {len(filtered_candidates)} → {len(shortlist)} "
+                    f"for AI scoring (cap={self.AI_SHORTLIST_CAP})"
+                )
+
+            # ── Stage 2: full scoring (AI if available) on the shortlist ──
             scored_candidates = []
-            for candidate in filtered_candidates:
+            for candidate in shortlist:
                 try:
                     score_data = self._score_candidate(jd_data, candidate)
                     scored_candidates.append({
@@ -133,10 +161,10 @@ class AICandidateMatchingEngineFinal:
                 except Exception as e:
                     self.logger.error(f"Error scoring candidate {candidate.get('candidate_id')}: {e}")
                     continue
-            
+
             # Sort by match score (descending)
             scored_candidates.sort(key=lambda x: x['match_score'], reverse=True)
-            
+
             # Get top N
             top_candidates = scored_candidates[:top_n]
             
@@ -148,6 +176,7 @@ class AICandidateMatchingEngineFinal:
                 'job_title': jd_data.get('basic_info', {}).get('title'),
                 'total_candidates_reviewed': len(candidates),
                 'filtered_candidates': len(filtered_candidates),
+                'ai_scored_candidates': len(scored_candidates),
                 'employment_status_filter': employment_status_filter,
                 'top_matches': top_candidates,
                 'match_count': len(top_candidates),
