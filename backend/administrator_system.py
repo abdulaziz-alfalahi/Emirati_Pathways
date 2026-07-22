@@ -647,12 +647,17 @@ class AdministratorSystem:
             # The first role in the requested list becomes primary
             primary_role = roles[0] if roles else original_role or 'candidate'
             
+            # Keep user_type in sync with role (P3/C5). user_type is the legacy
+            # mirror of role (migration 006); leaving it stale here re-created
+            # the exact split 006 repaired, breaking analytics/display that
+            # still read user_type.
             update_role_query = """
-                UPDATE users 
-                SET role = %s, secondary_roles = %s::jsonb, updated_at = CURRENT_TIMESTAMP
+                UPDATE users
+                SET role = %s, user_type = %s, secondary_roles = %s::jsonb,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
             """
-            self._execute_query(update_role_query, (primary_role, json.dumps(all_roles), user_id), fetch=False)
+            self._execute_query(update_role_query, (primary_role, primary_role, json.dumps(all_roles), user_id), fetch=False)
             
             # Also try to sync with admin_user_roles join table (best-effort)
             try:

@@ -165,11 +165,25 @@ class AuthenticationManager:
             # Update last login
             self._update_last_login(user['id'])
             
-            # Generate JWT tokens (identity is now EID CHAR(15))
+            # Generate JWT tokens (identity is now EID CHAR(15)).
+            # Include the role claim (P3/C5): the UAE Pass and refresh paths
+            # both mint a `role` claim, but password login did not, so any
+            # consumer reading get_jwt()['role'] saw nothing for password
+            # sessions. secondary_roles is added so resolve_roles() has them
+            # from the claim too.
             user_eid = str(user['id']).strip()
+            _sec = user.get('secondary_roles') or []
+            if isinstance(_sec, str):
+                try:
+                    import json as _json
+                    _sec = _json.loads(_sec)
+                except Exception:
+                    _sec = [_sec]
             access_token = create_access_token(
                 identity=user_eid,
-                expires_delta=timedelta(hours=24)
+                expires_delta=timedelta(hours=24),
+                additional_claims={'role': user.get('role', 'candidate'),
+                                   'secondary_roles': _sec}
             )
             refresh_token = create_refresh_token(
                 identity=user_eid,
