@@ -435,7 +435,7 @@ def get_job_postings():
                     jp.remote_option,
                     jp.applications_count,
                     jp.views_count,
-                    COALESCE(NULLIF(NULLIF(c.name, 'company_default'), 'unknown'), NULLIF(NULLIF(jp.company_id, 'company_default'), 'unknown'), 'Unknown Company') as company_name,
+                    COALESCE(c.name, 'Unknown Company') as company_name,
                     {user_display_name('created_by_name')},
                     COALESCE(app_counts.application_count, 0) as application_count,
                     COALESCE(app_counts.new_applications, 0) as new_applications

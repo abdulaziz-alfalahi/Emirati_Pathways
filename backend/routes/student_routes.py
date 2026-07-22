@@ -178,7 +178,7 @@ def get_student_programs():
                    j.employment_type, j.salary_range_min, j.salary_range_max, 
                    j.posted_date as date
             FROM job_postings j
-            LEFT JOIN companies c ON j.company_id = c.id::text
+            LEFT JOIN companies c ON j.company_id = c.id
             WHERE j.employment_type ILIKE '%internship%' 
                OR j.employment_type ILIKE '%summer%'
                OR j.title ILIKE '%intern%'

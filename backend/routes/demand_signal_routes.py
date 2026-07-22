@@ -131,7 +131,9 @@ def get_demand_signals():
             params.append(f"%{sector}%")
 
         if search:
-            where_clauses.append("jp.company_id ILIKE %s")
+            # company_id is a uuid FK since migration 015 (#14) — search the
+            # company NAME, which is what this always pretended to do.
+            where_clauses.append("c.company_name ILIKE %s")
             params.append(f"%{search}%")
 
         where_sql = " AND ".join(where_clauses)
@@ -140,7 +142,7 @@ def get_demand_signals():
         query = f"""
             SELECT
                 jp.company_id,
-                jp.company_id AS company_name,
+                COALESCE(c.company_name, 'Unknown Company') AS company_name,
                 COUNT(DISTINCT jp.id) AS job_count,
                 MAX(jp.department) AS sector,
                 MAX(jp.emirate) AS emirate,
@@ -154,8 +156,9 @@ def get_demand_signals():
                       AND u.is_visible = true
                 ) AS matching_candidates_count
             FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id = c.id
             WHERE {where_sql}
-            GROUP BY jp.company_id
+            GROUP BY jp.company_id, c.company_name
             ORDER BY COUNT(DISTINCT jp.id) DESC, MIN(jp.published_at) DESC
             LIMIT %s OFFSET %s
         """
@@ -186,13 +189,14 @@ def get_demand_signals():
             count_params.append(f"%{sector}%")
             count_params.append(f"%{sector}%")
         if search:
-            count_where_clauses.append("jp.company_id ILIKE %s")
+            count_where_clauses.append("c.company_name ILIKE %s")
             count_params.append(f"%{search}%")
 
         count_where_sql = " AND ".join(count_where_clauses)
         count_query = f"""
             SELECT COUNT(DISTINCT jp.company_id) AS total
             FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id = c.id
             WHERE {count_where_sql}
         """
         cur.execute(count_query, tuple(count_params))

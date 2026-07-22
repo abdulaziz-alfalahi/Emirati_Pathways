@@ -450,12 +450,11 @@ def get_jd_list_enhanced():
                             jp.jd_id,
                             jp.title,
                             COALESCE(
-                                NULLIF(NULLIF(c.name, 'company_default'), 'unknown'),
-                                NULLIF(NULLIF(hp_c.name, 'company_default'), 'unknown'),
-                                NULLIF(NULLIF(ctm_c.name, 'company_default'), 'unknown'),
+                                c.name,
+                                hp_c.name,
+                                ctm_c.name,
                                 NULLIF(u.company, ''),
                                 NULLIF(u.profile_data->>'companyName', ''),
-                                NULLIF(NULLIF(jp.company_id, 'company_default'), 'unknown'),
                                 'Company'
                             ) as company,
                             COALESCE(
@@ -1677,11 +1676,12 @@ def get_recent_applicants():
                 ja.submitted_at,
                 ja.cover_letter,
                 jp.title as job_title,
-                COALESCE(jp.company_id, 'Unknown Company') as company_name,
+                COALESCE(comp.name, 'Unknown Company') as company_name,
                 COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), u.email, CONCAT('Candidate ', SUBSTRING(CAST(ja.candidate_id AS TEXT), 1, 8))) as candidate_name,
                 u.email as candidate_email
             FROM job_applications ja
             LEFT JOIN job_postings jp ON (ja.job_id::text = jp.id::text OR ja.job_id::text = jp.jd_id)
+            LEFT JOIN companies comp ON jp.company_id = comp.id
             LEFT JOIN users u ON ja.candidate_id::text = u.id::text
             WHERE ja.submitted_at >= NOW() - INTERVAL '%s days'
         """

@@ -342,7 +342,7 @@ def get_job(job_id):
                 COALESCE(c.company_name, c.name, 'Unknown') as company,
                 COUNT(DISTINCT a.id) as application_count
             FROM job_postings j
-            LEFT JOIN companies c ON j.company_id = c.id::text
+            LEFT JOIN companies c ON j.company_id = c.id
             LEFT JOIN job_applications a ON j.id = a.job_id
             WHERE j.id = %s
             GROUP BY j.id, c.company_name, c.name
@@ -402,7 +402,7 @@ def get_saved_jobs():
                 s.created_at as saved_at
             FROM saved_jobs s
             JOIN job_postings j ON s.job_id = j.id
-            LEFT JOIN companies c ON j.company_id = c.id::text
+            LEFT JOIN companies c ON j.company_id = c.id
             WHERE s.user_id = %s
             ORDER BY s.created_at DESC
         """
@@ -553,7 +553,7 @@ def get_application(application_id):
                 j.description as job_description
             FROM job_applications a
             JOIN job_postings j ON a.job_id = j.id
-            LEFT JOIN companies c ON j.company_id = c.id::text
+            LEFT JOIN companies c ON j.company_id = c.id
             WHERE a.id = %s
         """
         
