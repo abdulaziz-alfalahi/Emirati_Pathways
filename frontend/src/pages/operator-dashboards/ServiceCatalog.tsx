@@ -198,7 +198,7 @@ const ServiceCatalog: React.FC = () => {
       <div style={{ height: 3, background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL}, ${TEAL_600})` }} />
       <div style={{ background: '#fff', borderBottom: '1px solid #e6ecec', padding: '16px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, margin: '0 auto', gap: 16 }}>
-          <button onClick={() => navigate('/dashboard')} style={{ background: '#fff', border: '1px solid #e6ecec', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: INK_MUTED, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(10,45,44,0.04)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+          <button onClick={() => navigate('/')} style={{ background: '#fff', border: '1px solid #e6ecec', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: INK_MUTED, display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(10,45,44,0.04)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f4f8f8'; e.currentTarget.style.borderColor = '#cfe0df'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e6ecec'; }}
           >
