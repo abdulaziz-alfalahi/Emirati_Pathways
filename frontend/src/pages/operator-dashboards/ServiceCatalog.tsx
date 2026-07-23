@@ -218,7 +218,7 @@ const PlatformMindMap: React.FC<{
       const raw = localStorage.getItem(MM_STORE);
       if (raw) return new Set(JSON.parse(raw));
     } catch { /* ignore */ }
-    return new Set(['root', 'catalog']); // sensible default: platform + catalog open
+    return new Set(['root']); // compact default: platform + its four main branches
   });
   useEffect(() => {
     try { localStorage.setItem(MM_STORE, JSON.stringify([...expanded])); } catch { /* ignore */ }
