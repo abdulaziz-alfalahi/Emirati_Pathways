@@ -10,6 +10,7 @@ import {
     Calendar, DollarSign, Shield, Target, Sparkles, PenTool, Loader2
 } from 'lucide-react';
 import { getGigs, applyForGig, type Gig } from '@/services/careerServicesAPI';
+import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +23,30 @@ const brand = {
     red: '#FEE2E2', redText: '#991B1B', blue: '#DBEAFE', blueText: '#1E40AF',
     purple: '#F3E8FF', purpleText: '#6B21A8', pink: '#FCE7F3', pinkText: '#9D174D',
 };
+
+// Shape returned by GET /api/career-services/my-applications
+interface MyApplication {
+    application_id: number;
+    jobTitle: string;
+    company: string;
+    location?: string;
+    appliedDate?: string | null;
+    lastUpdate?: string | null;
+    status: string;               // pending | reviewed | offer | rejected | withdrawn
+    application_type: 'internship' | 'gig';
+    description?: string;
+    duration?: string;
+    skills?: string[];
+    // gig-specific
+    budget?: string;
+    category?: string;
+    posted_at?: string | null;
+    // internship-specific
+    deadline?: string | null;
+    sector?: string;
+    stipend?: string;
+    internship_type?: string;
+}
 
 const GigMarketplacePage: React.FC = () => {
     const { i18n } = useTranslation();
@@ -66,6 +91,40 @@ const GigMarketplacePage: React.FC = () => {
     const [activeCat, setActiveCat] = useState(0);
     const [reviewGig, setReviewGig] = useState<number | null>(null);
 
+    // ── My Applications state (GET /api/career-services/my-applications) ──
+    const [myApps, setMyApps] = useState<MyApplication[]>([]);
+    const [myAppsLoading, setMyAppsLoading] = useState(false);
+    const [myAppsError, setMyAppsError] = useState(false);
+    const [myAppsLoaded, setMyAppsLoaded] = useState(false);
+
+    const fetchMyApplications = async () => {
+        setMyAppsLoading(true);
+        setMyAppsError(false);
+        try {
+            const resp = await restClient.get('/api/career-services/my-applications');
+            setMyApps(resp.data?.data?.applications || []);
+        } catch (err) {
+            console.error('Failed to load my applications:', err);
+            setMyAppsError(true);
+        }
+        setMyAppsLoading(false);
+        setMyAppsLoaded(true);
+    };
+
+    // Lazy-load applications when the My Applications or Profile tab is opened
+    useEffect(() => {
+        if ((activeTab === 1 || activeTab === 3) && !myAppsLoaded && !myAppsLoading) {
+            fetchMyApplications();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, myAppsLoaded]);
+
+    // ── Post a Gig form state (POST /api/career-services/gigs) ──
+    const emptyGigForm = { title: '', title_ar: '', company: '', description: '', skills: '', budget: '', duration: '', category: '' };
+    const [gigForm, setGigForm] = useState(emptyGigForm);
+    const [postingGig, setPostingGig] = useState(false);
+    const [postForbidden, setPostForbidden] = useState(false);
+
     const catColorMap: Record<string, { bg: string; color: string }> = {
         'Technology': { bg: brand.blue, color: brand.blueText },
         'Marketing': { bg: brand.green, color: brand.greenText },
@@ -109,6 +168,7 @@ const GigMarketplacePage: React.FC = () => {
         try {
             await applyForGig(gigId, user?.id ? Number(user.id) : undefined);
             setAppliedGigs(prev => new Set(prev).add(gigId));
+            setMyAppsLoaded(false); // refresh My Applications on next visit
             toast.success(t('Application submitted!', 'تم تقديم الطلب!'));
         } catch (err: any) {
             const msg = err?.response?.data?.error || '';
@@ -122,11 +182,13 @@ const GigMarketplacePage: React.FC = () => {
         setApplyingGigId(null);
     };
 
+    // Honest stats only — derived from live data on this page (no fabricated
+    // platform-wide figures; audit issue #26).
     const stats = [
-        { value: `${gigs.length}+`, label: t('Active Gigs', 'فرصة عمل حرّة'), icon: Briefcase },
-        { value: '3,400+', label: t('Freelancers', 'مستقلين'), icon: Users },
-        { value: t('AED 8,500', '8,500 د.إ'), label: t('Avg. Earnings', 'متوسط الأرباح'), icon: DollarSign },
-        { value: '500+', label: t('Companies', 'شركة'), icon: Award },
+        { value: `${gigs.length}`, label: t('Active Gigs', 'فرصة عمل حرّة'), icon: Briefcase },
+        { value: `${new Set(gigs.map((g: any) => g.company).filter(Boolean)).size}`, label: t('Companies', 'شركة'), icon: Award },
+        { value: `${new Set(gigs.flatMap((g: any) => g.skills || [])).size}`, label: t('Skills in demand', 'مهارة مطلوبة'), icon: Users },
+        { value: `${new Set(gigs.map((g: any) => g.category).filter(Boolean)).size}`, label: t('Categories', 'فئة'), icon: DollarSign },
     ];
 
     const tabs = [
@@ -270,47 +332,246 @@ const GigMarketplacePage: React.FC = () => {
     );
 
     /* ── TAB 3: Post a Gig ── */
+    const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', fontSize: 14, color: brand.textPrimary, background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 10, outline: 'none' };
+    const labelStyle: React.CSSProperties = { display: 'block', fontSize: 13, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 };
+    const fieldWrap: React.CSSProperties = { marginBottom: 16 };
+
+    const handleGigField = (field: keyof typeof emptyGigForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        setGigForm(prev => ({ ...prev, [field]: e.target.value }));
+
+    const handlePostGig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!gigForm.title.trim() || !gigForm.description.trim()) {
+            toast.error(t('Title and description are required', 'العنوان والوصف مطلوبان'));
+            return;
+        }
+        setPostingGig(true);
+        try {
+            await restClient.post('/api/career-services/gigs', {
+                title: gigForm.title.trim(),
+                title_ar: gigForm.title_ar.trim(),
+                company: gigForm.company.trim(),
+                description: gigForm.description.trim(),
+                budget: gigForm.budget.trim(),
+                duration: gigForm.duration.trim(),
+                category: gigForm.category.trim(),
+                skills: gigForm.skills.split(',').map(s => s.trim()).filter(Boolean),
+            });
+            toast.success(t('Gig posted successfully!', 'تم نشر الفرصة بنجاح!'));
+            setGigForm(emptyGigForm);
+            try {
+                const data = await getGigs();
+                setGigs(data);
+            } catch { /* list refresh is best-effort */ }
+        } catch (err: any) {
+            if (err?.response?.status === 403) {
+                setPostForbidden(true);
+            } else {
+                toast.error(t('Failed to post gig', 'فشل نشر الفرصة'));
+            }
+        }
+        setPostingGig(false);
+    };
+
     const postTab = (
-        <div>
+        <div style={{ maxWidth: 720 }}>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Post a Gig Opportunity', 'أنشر فرصة عمل حرّة')}</h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24 }}>{t('Connect with top UAE talent for your project needs.', 'تواصل مع أفضل المواهب الإماراتية لاحتياجات مشروعك.')}</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                {[
-                    { icon: PenTool, title: t('Describe Your Project', 'صف مشروعك'), desc: t('Detail scope, deliverables, timeline, and budget for your gig.', 'حدد نطاق العمل والمخرجات والجدول الزمني والميزانية.') },
-                    { icon: Target, title: t('Set Requirements', 'حدّد المتطلبات'), desc: t('Specify skills, experience level, and location preferences.', 'حدد المهارات ومستوى الخبرة وتفضيلات الموقع.') },
-                    { icon: Sparkles, title: t('AI Matching', 'المطابقة الذكية'), desc: t('Our AI instantly matches your gig with qualified freelancers.', 'ذكاؤنا الاصطناعي يطابق فرصتك مع مستقلين مؤهلين فوراً.') },
-                    { icon: Shield, title: t('Secure & Compliant', 'آمن ومتوافق'), desc: t('Escrow payments and UAE labor law compliance built in.', 'مدفوعات مضمونة وامتثال مدمج لقوانين العمل الإماراتية.') },
-                ].map((s, i) => (
-                    <div key={i} style={card}>
-                        <div style={{ width: 48, height: 48, borderRadius: 12, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                            <s.icon size={24} color={brand.primary} />
-                        </div>
-                        <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{s.title}</h3>
-                        <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.6 }}>{s.desc}</p>
+
+            {postForbidden && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: brand.amber, color: brand.amberText, border: '1px solid #FDE68A', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
+                    <Shield size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span>{t('Posting gigs requires an employer/operator account.', 'نشر الأعمال يتطلب حساب صاحب عمل أو مشغّل.')}</span>
+                </div>
+            )}
+
+            <form onSubmit={handlePostGig} style={{ ...card }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div style={fieldWrap}>
+                        <label style={labelStyle}>{t('Title (English)', 'العنوان (بالإنجليزية)')} *</label>
+                        <input style={inputStyle} value={gigForm.title} onChange={handleGigField('title')} placeholder={t('e.g. React Developer for Dashboard', 'مثال: مطوّر React للوحة تحكم')} />
                     </div>
-                ))}
-            </div>
-            <button style={{ marginTop: 20, padding: '14px 32px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Send size={16} /> {t('Post Your Gig', 'أنشر فرصتك')}
-            </button>
+                    <div style={fieldWrap}>
+                        <label style={labelStyle}>{t('Title (Arabic)', 'العنوان (بالعربية)')}</label>
+                        <input style={inputStyle} dir="rtl" value={gigForm.title_ar} onChange={handleGigField('title_ar')} placeholder="مثال: مطوّر React للوحة تحكم" />
+                    </div>
+                </div>
+                <div style={fieldWrap}>
+                    <label style={labelStyle}>{t('Company', 'الشركة')}</label>
+                    <input style={inputStyle} value={gigForm.company} onChange={handleGigField('company')} placeholder={t('Company or client name', 'اسم الشركة أو العميل')} />
+                </div>
+                <div style={fieldWrap}>
+                    <label style={labelStyle}>{t('Description', 'الوصف')} *</label>
+                    <textarea style={{ ...inputStyle, minHeight: 110, resize: 'vertical' as const, fontFamily: 'inherit' }} value={gigForm.description} onChange={handleGigField('description')} placeholder={t('Scope, deliverables, and expectations', 'نطاق العمل والمخرجات والتوقعات')} />
+                </div>
+                <div style={fieldWrap}>
+                    <label style={labelStyle}>{t('Skills (comma-separated)', 'المهارات (مفصولة بفواصل)')}</label>
+                    <input style={inputStyle} value={gigForm.skills} onChange={handleGigField('skills')} placeholder={t('e.g. React, TypeScript, Figma', 'مثال: React, TypeScript, Figma')} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                    <div style={fieldWrap}>
+                        <label style={labelStyle}>{t('Budget', 'الميزانية')}</label>
+                        <input style={inputStyle} value={gigForm.budget} onChange={handleGigField('budget')} placeholder={t('e.g. AED 5,000', 'مثال: 5,000 د.إ')} />
+                    </div>
+                    <div style={fieldWrap}>
+                        <label style={labelStyle}>{t('Duration', 'المدة')}</label>
+                        <input style={inputStyle} value={gigForm.duration} onChange={handleGigField('duration')} placeholder={t('e.g. 4 weeks', 'مثال: 4 أسابيع')} />
+                    </div>
+                    <div style={fieldWrap}>
+                        <label style={labelStyle}>{t('Category', 'الفئة')}</label>
+                        <input style={inputStyle} value={gigForm.category} onChange={handleGigField('category')} placeholder={t('e.g. Technology', 'مثال: Technology')} />
+                    </div>
+                </div>
+                <button type="submit" disabled={postingGig} style={{ marginTop: 4, padding: '12px 32px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: postingGig ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: postingGig ? 0.7 : 1 }}>
+                    {postingGig
+                        ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('Posting...', 'جارٍ النشر...')}</>
+                        : <><Send size={16} /> {t('Post Your Gig', 'أنشر فرصتك')}</>}
+                </button>
+            </form>
         </div>
     );
 
-    /* ── TAB 2: My Applications (placeholder) ── */
+    /* ── TAB 2: My Applications ── */
+    const statusBadge = (status: string): { bg: string; color: string; label: string } => {
+        switch (status) {
+            case 'reviewed': return { bg: brand.blue, color: brand.blueText, label: t('Reviewed', 'تمت المراجعة') };
+            case 'offer': return { bg: brand.green, color: brand.greenText, label: t('Offer', 'عرض') };
+            case 'rejected': return { bg: brand.red, color: brand.redText, label: t('Rejected', 'مرفوض') };
+            case 'withdrawn': return { bg: '#F3F4F6', color: brand.textSecondary, label: t('Withdrawn', 'منسحب') };
+            default: return { bg: brand.amber, color: brand.amberText, label: t('Pending', 'قيد الانتظار') };
+        }
+    };
+    const fmtDate = (iso?: string | null) => iso ? new Date(iso).toLocaleDateString(isRTL ? 'ar-AE' : 'en-AE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
     const appsTab = (
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <Briefcase style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('My Gig Applications', 'طلبات العمل الحرّ')}</h3>
-            <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Your gig applications will appear here once you apply.', 'ستظهر طلبات العمل الحر هنا بمجرد أن تتقدم.')}</p>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>{t('My Applications', 'طلباتي')}</h2>
+                {myAppsLoaded && !myAppsError && (
+                    <span style={{ fontSize: 13, color: brand.textSecondary }}>{myApps.length} {t('applications', 'طلب')}</span>
+                )}
+            </div>
+            {myAppsLoading ? (
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                    <Loader2 style={{ width: 32, height: 32, color: brand.primary, margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+                    <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Loading your applications...', 'جارٍ تحميل طلباتك...')}</p>
+                </div>
+            ) : myAppsError ? (
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                    <Briefcase style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+                    <p style={{ color: brand.textSecondary, fontSize: 14, marginBottom: 12 }}>{t('Could not load your applications.', 'تعذّر تحميل طلباتك.')}</p>
+                    <button onClick={fetchMyApplications} style={{ padding: '8px 20px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                        {t('Retry', 'إعادة المحاولة')}
+                    </button>
+                </div>
+            ) : myApps.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                    <Briefcase style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('No applications yet', 'لا توجد طلبات بعد')}</h3>
+                    <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Your gig applications will appear here once you apply.', 'ستظهر طلبات العمل الحر هنا بمجرد أن تتقدم.')}</p>
+                </div>
+            ) : (
+                myApps.map((a) => {
+                    const sb = statusBadge(a.status);
+                    const isGig = a.application_type === 'gig';
+                    return (
+                        <div key={`${a.application_type}-${a.application_id}`} style={card}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                                <div style={{ flex: 1, minWidth: 200 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary }}>{a.jobTitle}</span>
+                                        <span style={badge(isGig ? brand.primarySurface : brand.purple, isGig ? brand.primary : brand.purpleText)}>
+                                            {isGig ? t('Gig', 'عمل حرّ') : t('Internship', 'تدريب')}
+                                        </span>
+                                        <span style={badge(sb.bg, sb.color)}>{sb.label}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap' }}>
+                                        <span style={{ fontWeight: 500, color: brand.textPrimary }}>{a.company}</span>
+                                        {a.location && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {a.location}</span>}
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={13} /> {t('Applied', 'تاريخ التقديم')}: {fmtDate(a.appliedDate)}</span>
+                                    </div>
+                                    {(a.skills && a.skills.length > 0) && (
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                                            {a.skills.map((s, j) => <span key={j} style={badge('#F3F4F6', brand.textSecondary)}>{s}</span>)}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 110 }}>
+                                    {isGig
+                                        ? (a.budget && <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{a.budget}</div>)
+                                        : (a.stipend && <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{a.stipend}</div>)}
+                                    {a.duration && <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>{a.duration}</div>}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })
+            )}
         </div>
     );
 
-    /* ── TAB 4: My Profile (placeholder) ── */
+    /* ── TAB 4: My Profile ── */
+    const gigAppCount = myApps.filter(a => a.application_type === 'gig').length;
+    const verifiedSkillCount = userSkills.filter(s => s.verified).length;
     const profileTab = (
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <Users style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Freelancer Profile', 'ملف المستقل')}</h3>
-            <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Complete your profile to start receiving gig matches.', 'أكمل ملفك الشخصي لبدء تلقي فرص العمل الحر.')}</p>
+        <div style={{ maxWidth: 720 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Freelancer Profile', 'ملف المستقل')}</h2>
+
+            {/* Activity summary — real data only */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
+                <div style={{ ...card, textAlign: 'center', marginBottom: 0 }}>
+                    <Briefcase size={22} color={brand.primary} style={{ marginBottom: 6 }} />
+                    <div style={{ fontSize: 22, fontWeight: 700, color: brand.textPrimary }}>{myAppsLoading ? '…' : gigAppCount}</div>
+                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{t('Gig Applications', 'طلبات العمل الحر')}</div>
+                </div>
+                <div style={{ ...card, textAlign: 'center', marginBottom: 0 }}>
+                    <Award size={22} color={brand.primary} style={{ marginBottom: 6 }} />
+                    <div style={{ fontSize: 22, fontWeight: 700, color: brand.textPrimary }}>{userSkills.length}</div>
+                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{t('Skills', 'المهارات')}</div>
+                </div>
+                <div style={{ ...card, textAlign: 'center', marginBottom: 0 }}>
+                    <CheckCircle size={22} color={brand.primary} style={{ marginBottom: 6 }} />
+                    <div style={{ fontSize: 22, fontWeight: 700, color: brand.textPrimary }}>{verifiedSkillCount}</div>
+                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{t('Verified Skills', 'مهارات موثّقة')}</div>
+                </div>
+            </div>
+
+            {/* Skills */}
+            <div style={card}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('My Skills', 'مهاراتي')}</h3>
+                {userSkills.length === 0 ? (
+                    <p style={{ fontSize: 14, color: brand.textSecondary }}>
+                        {t('No skills in your profile yet. Add skills to your profile to improve gig matching.', 'لا توجد مهارات في ملفك بعد. أضف مهارات إلى ملفك لتحسين مطابقة الفرص.')}
+                    </p>
+                ) : (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {userSkills.map((s) => (
+                            <span key={s.skill_id} style={{ ...badge(s.verified ? brand.green : '#F3F4F6', s.verified ? brand.greenText : brand.textSecondary), display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                {s.verified && <CheckCircle size={12} />}
+                                {s.skill_name}
+                                {s.proficiency && <span style={{ fontWeight: 400, opacity: 0.8 }}>· {s.proficiency}</span>}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Gig application activity */}
+            <div style={card}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Gig Activity', 'نشاط العمل الحر')}</h3>
+                {myAppsLoading ? (
+                    <p style={{ fontSize: 14, color: brand.textSecondary }}>{t('Loading...', 'جارٍ التحميل...')}</p>
+                ) : gigAppCount === 0 ? (
+                    <p style={{ fontSize: 14, color: brand.textSecondary }}>{t('No gig applications yet. Browse gigs to get started.', 'لا توجد طلبات عمل حر بعد. تصفّح الفرص للبدء.')}</p>
+                ) : (
+                    <div style={{ fontSize: 14, color: brand.textSecondary }}>
+                        {t(`You have applied to ${gigAppCount} gig${gigAppCount === 1 ? '' : 's'}.`, `لقد تقدمت إلى ${gigAppCount} من فرص العمل الحر.`)}
+                        <button onClick={() => setActiveTab(1)} style={{ background: 'none', border: 'none', color: brand.primary, fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: 0, marginInlineStart: 6 }}>
+                            {t('View applications', 'عرض الطلبات')}
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 

@@ -62,15 +62,19 @@ const TrainingPage: React.FC = () => {
     const [programs, setPrograms] = useState<any[]>([]);
     const [userCerts, setUserCerts] = useState<any[]>([]);
     const [userAssessments, setUserAssessments] = useState<any[]>([]);
+    const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+    const [enrollingId, setEnrollingId] = useState<string | null>(null);
+    const [copiedCertIdx, setCopiedCertIdx] = useState<number | null>(null);
 
     useEffect(() => {
         let cancelled = false;
         async function fetchData() {
             setLoading(true);
             try {
-                const [programsRes, progressRes] = await Promise.allSettled([
+                const [programsRes, progressRes, enrolmentsRes] = await Promise.allSettled([
                     restClient.get('/api/skills-development/training-programs'),
                     restClient.get('/api/skills-development/user-progress'),
+                    restClient.get('/api/skills-development/training-programs/my-enrolments'),
                 ]);
                 if (cancelled) return;
 
@@ -91,6 +95,12 @@ const TrainingPage: React.FC = () => {
                         setUserAssessments(d.data.assessments || []);
                     }
                 }
+                if (enrolmentsRes.status === 'fulfilled') {
+                    const d = enrolmentsRes.value.data as any;
+                    if (Array.isArray(d?.data)) {
+                        setEnrolledIds(new Set<string>(d.data.map((e: any) => String(e.program_id))));
+                    }
+                }
             } catch (e) {
                 console.warn('Training API not available', e);
             } finally {
@@ -101,13 +111,43 @@ const TrainingPage: React.FC = () => {
         return () => { cancelled = true; };
     }, []);
 
+    /* ──────────────────────── ACTIONS ──────────────────────── */
+
+    const handleEnrol = async (programId: string) => {
+        if (!programId || enrolledIds.has(programId) || enrollingId) return;
+        setEnrollingId(programId);
+        try {
+            const res = await restClient.post(`/api/skills-development/training-programs/${programId}/enrol`, {});
+            const d = res.data as any;
+            if (d?.success) {
+                setEnrolledIds(prev => new Set(prev).add(programId));
+            }
+        } catch (e) {
+            console.warn('Enrolment failed', e);
+        } finally {
+            setEnrollingId(null);
+        }
+    };
+
+    const handleShareCert = async (idx: number) => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopiedCertIdx(idx);
+            setTimeout(() => setCopiedCertIdx(prev => (prev === idx ? null : prev)), 2000);
+        } catch (e) {
+            console.warn('Clipboard unavailable', e);
+        }
+    };
+
     /* ──────────────────────── DATA ──────────────────────── */
 
+    // Honest stats only — derived from live data on this page (no fabricated
+    // platform-wide figures; audit issue #26).
     const stats = [
-        { value: programs.length > 0 ? `${programs.length}` : '200+', label: t('Programs', 'برنامج'), icon: BookOpen },
-        { value: '8,500+', label: t('Graduates', 'خريج'), icon: Users },
-        { value: '94%', label: t('Placement', 'نسبة التوظيف'), icon: TrendingUp },
-        { value: '50+', label: t('Partners', 'شريك'), icon: Building },
+        { value: `${programs.length}`, label: t('Programs', 'برنامج'), icon: BookOpen },
+        { value: `${new Set(programs.map((p: any) => p.provider).filter(Boolean)).size}`, label: t('Providers', 'جهة تدريب'), icon: Building },
+        { value: `${new Set(programs.map((p: any) => p.category).filter(Boolean)).size}`, label: t('Categories', 'فئة'), icon: TrendingUp },
+        { value: `${enrolledIds.size}`, label: t('My Enrolments', 'تسجيلاتي'), icon: Users },
     ];
 
     /* ── Tab 1: Available Programs ── */
@@ -143,6 +183,9 @@ const TrainingPage: React.FC = () => {
                     {programs.map((p, i) => {
                         const catStyle = CATEGORY_STYLES[p.category] || { bg: brand.primarySurface, color: brand.primary };
                         const levelStyle = LEVEL_STYLES[p.level] || { bg: '#F3F4F6', color: brand.textSecondary };
+                        const pid = p.id != null ? String(p.id) : '';
+                        const isEnrolled = enrolledIds.has(pid);
+                        const isEnrolling = enrollingId === pid;
                         return (
                             <div
                                 key={p.id || i}
@@ -191,12 +234,30 @@ const TrainingPage: React.FC = () => {
                                     ) : (
                                         <span style={{ fontSize: 12, color: brand.textSecondary }}>{p.relevance_score ? `${p.relevance_score}% ${t('relevance', 'ملاءمة')}` : ''}</span>
                                     )}
-                                    <button style={{
-                                        background: brand.primary, color: '#fff', border: 'none',
-                                        padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                    }}>
-                                        {t('Apply Now', 'قدّم الآن')}
-                                    </button>
+                                    {p.source === 'lms' ? (
+                                        /* LMS rows are supplementary content — not enrolable via
+                                           the training-programs endpoint (would 404). */
+                                        <span style={{ fontSize: 11, color: brand.textSecondary, fontWeight: 600 }}>
+                                            {t('Self-paced course', 'مساق ذاتي')}
+                                        </span>
+                                    ) : (
+                                        <button
+                                            disabled={isEnrolled || isEnrolling}
+                                            onClick={(e) => { e.stopPropagation(); handleEnrol(pid); }}
+                                            style={{
+                                                background: isEnrolled ? brand.green : brand.primary,
+                                                color: isEnrolled ? brand.greenText : '#fff', border: 'none',
+                                                padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                                                cursor: isEnrolled ? 'default' : 'pointer',
+                                                opacity: isEnrolling ? 0.7 : 1,
+                                            }}>
+                                            {isEnrolled
+                                                ? t('Enrolled ✓', 'مسجّل ✓')
+                                                : isEnrolling
+                                                    ? t('Enrolling…', 'جارٍ التسجيل…')
+                                                    : t('Apply Now', 'قدّم الآن')}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -257,17 +318,14 @@ const TrainingPage: React.FC = () => {
                                     {c.expiry_date && <span>{t('Expires:', 'تنتهي:')} {new Date(c.expiry_date).toLocaleDateString()}</span>}
                                 </div>
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                    <button style={{
-                                        background: 'transparent', color: brand.primary, border: `1px solid ${brand.primary}`,
-                                        padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                    }}>
-                                        {t('Download', 'تحميل')}
-                                    </button>
-                                    <button style={{
-                                        background: brand.primary, color: '#fff', border: 'none',
-                                        padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                    }}>
-                                        {t('Share', 'مشاركة')}
+                                    <button
+                                        onClick={() => handleShareCert(i)}
+                                        style={{
+                                            background: copiedCertIdx === i ? brand.green : brand.primary,
+                                            color: copiedCertIdx === i ? brand.greenText : '#fff', border: 'none',
+                                            padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                        }}>
+                                        {copiedCertIdx === i ? t('Copied ✓', 'تم النسخ ✓') : t('Share', 'مشاركة')}
                                     </button>
                                 </div>
                             </div>

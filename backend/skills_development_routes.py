@@ -132,6 +132,7 @@ def get_training_programs():
         for row in cur.fetchall():
             programs.append({
                 'id': str(row['id']),
+                'source': 'program',  # enrolable via /training-programs/<id>/enrol
                 'title': safe_str(row['title']),
                 'title_ar': safe_str(row['title_ar']),
                 'provider': safe_str(row['provider']),
@@ -157,6 +158,7 @@ def get_training_programs():
         for row in cur.fetchall():
             lms_courses.append({
                 'id': str(row['id']),
+                'source': 'lms',  # NOT enrolable via the training-programs enrol endpoint
                 'title': safe_str(row['title']),
                 'title_ar': safe_str(row['title_ar']),
                 'provider': safe_str(row['provider']),
@@ -501,3 +503,124 @@ def get_user_progress():
     except Exception as e:
         logger.error(f"User progress error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ════════════════════════════════════════════════════════════════════
+# Enrolment + assessment booking (2026-07 catalog audit: the Apply and
+# Take Assessment actions had no backend — TD-01 / EN-02).
+# training_program_enrollments: migration 018. Assessment requests are
+# rows in the live `assessments` table (status 'pending'); the assessor
+# dashboard picks them up, schedules and completes them.
+# ════════════════════════════════════════════════════════════════════
+
+@skills_dev_bp.route('/training-programs/<int:program_id>/enrol', methods=['POST'])
+@jwt_required()
+def enrol_training_program(program_id):
+    """Enrol the authenticated user in a training program."""
+    try:
+        user_id = get_jwt_identity()
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id, title FROM training_programs WHERE id = %s AND active", (program_id,))
+        prog = cur.fetchone()
+        if not prog:
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Training program not found'}), 404
+        cur.execute(
+            """INSERT INTO training_program_enrollments (program_id, user_id)
+               VALUES (%s, %s)
+               ON CONFLICT (program_id, user_id)
+               DO UPDATE SET status = 'enrolled', enrolled_at = NOW()
+               RETURNING id""",
+            (program_id, user_id))
+        enr = cur.fetchone()
+        conn.commit(); cur.close(); conn.close()
+        return jsonify({'success': True, 'message': 'Enrolled successfully',
+                        'data': {'enrollment_id': enr['id'], 'program_id': program_id,
+                                 'title': prog['title'], 'status': 'enrolled'}}), 201
+    except Exception as e:
+        logger.error(f"Enrolment error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to enrol'}), 500
+
+
+@skills_dev_bp.route('/training-programs/my-enrolments', methods=['GET'])
+@jwt_required()
+def my_training_enrolments():
+    try:
+        user_id = get_jwt_identity()
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """SELECT e.id, e.program_id, e.status, e.enrolled_at, p.title, p.provider
+               FROM training_program_enrollments e
+               JOIN training_programs p ON p.id = e.program_id
+               WHERE e.user_id = %s ORDER BY e.enrolled_at DESC""", (user_id,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'data': [{
+            'enrollment_id': r['id'], 'program_id': r['program_id'], 'status': r['status'],
+            'title': r['title'], 'provider': r['provider'],
+            'enrolled_at': r['enrolled_at'].isoformat() if r['enrolled_at'] else None,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"My enrolments error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load enrolments'}), 500
+
+
+@skills_dev_bp.route('/assessments/request', methods=['POST'])
+@jwt_required()
+def request_assessment():
+    """Candidate requests an assessment; it lands in the assessor pending pool."""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json(silent=True) or {}
+        title = (str(data.get('title') or '').strip())[:250]
+        if not title:
+            return jsonify({'success': False, 'message': 'title is required'}), 400
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """SELECT id FROM assessments
+               WHERE candidate_id = %s AND assessment_title = %s
+                 AND status IN ('pending', 'scheduled', 'in_progress')""",
+            (user_id, title))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'You already have an open request for this assessment'}), 409
+        cur.execute(
+            """INSERT INTO assessments (assessment_code, candidate_id, assessment_title,
+                                        assessment_purpose, status, created_at, updated_at)
+               VALUES ('REQ-' || to_char(NOW(), 'YYYYMMDDHH24MISS'), %s, %s,
+                       'Candidate-requested skill assessment', 'pending', NOW(), NOW())
+               RETURNING id""",
+            (user_id, title))
+        row = cur.fetchone()
+        conn.commit(); cur.close(); conn.close()
+        return jsonify({'success': True, 'message': 'Assessment requested — an assessor will schedule it',
+                        'data': {'id': row['id'], 'title': title, 'status': 'pending'}}), 201
+    except Exception as e:
+        logger.error(f"Assessment request error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to request assessment'}), 500
+
+
+@skills_dev_bp.route('/assessments/my-requests', methods=['GET'])
+@jwt_required()
+def my_assessment_requests():
+    try:
+        user_id = get_jwt_identity()
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            """SELECT id, assessment_title, status, scheduled_date, percentage_score, pass_fail_status
+               FROM assessments WHERE candidate_id = %s ORDER BY created_at DESC""", (user_id,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        return jsonify({'success': True, 'data': [{
+            'id': r['id'], 'title': r['assessment_title'], 'status': r['status'],
+            'scheduled_at': r['scheduled_date'].isoformat() if r['scheduled_date'] else None,
+            'score': float(r['percentage_score']) if r['percentage_score'] is not None else None,
+            'result': r['pass_fail_status'],
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"My assessment requests error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load requests'}), 500

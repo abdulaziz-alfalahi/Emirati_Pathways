@@ -53,15 +53,18 @@ const AssessmentsPage: React.FC = () => {
     const [userAssessments, setUserAssessments] = useState<any[]>([]);
     const [userSkills, setUserSkills] = useState<any[]>([]);
     const [totalSkills, setTotalSkills] = useState(0);
+    const [myRequests, setMyRequests] = useState<any[]>([]);
+    const [requestingTitle, setRequestingTitle] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
         async function fetchData() {
             setLoading(true);
             try {
-                const [assessRes, progressRes] = await Promise.allSettled([
+                const [assessRes, progressRes, requestsRes] = await Promise.allSettled([
                     restClient.get('/api/skills-development/assessments'),
                     restClient.get('/api/skills-development/user-progress'),
+                    restClient.get('/api/skills-development/assessments/my-requests'),
                 ]);
                 if (cancelled) return;
                 if (assessRes.status === 'fulfilled') {
@@ -80,6 +83,10 @@ const AssessmentsPage: React.FC = () => {
                         setUserSkills(d.data.skills || []);
                     }
                 }
+                if (requestsRes.status === 'fulfilled') {
+                    const d = requestsRes.value.data as any;
+                    if (Array.isArray(d?.data)) setMyRequests(d.data);
+                }
             } catch (e) {
                 console.warn('Assessments API not available', e);
             } finally {
@@ -96,6 +103,68 @@ const AssessmentsPage: React.FC = () => {
         { value: userAssessments.length > 0 ? `${userAssessments.length}` : '0', label: t('Completed', 'مكتمل'), icon: CheckCircle },
         { value: '95%', label: t('Accuracy', 'دقة'), icon: Target },
     ];
+
+    /* ── Assessment requests (candidate → assessor pending pool) ── */
+    // Latest request per title (my-requests is ordered newest first).
+    const requestByTitle: Record<string, any> = {};
+    myRequests.forEach((r: any) => {
+        if (r?.title && !requestByTitle[r.title]) requestByTitle[r.title] = r;
+    });
+
+    const formatDate = (iso: string | null | undefined) => {
+        if (!iso) return '';
+        try {
+            return new Date(iso).toLocaleDateString(isRTL ? 'ar-AE' : 'en-AE', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch {
+            return '';
+        }
+    };
+
+    const requestAssessment = async (title: string) => {
+        if (!title || requestingTitle) return;
+        setRequestingTitle(title);
+        try {
+            const res = await restClient.post('/api/skills-development/assessments/request', { title });
+            const d = res.data as any;
+            if (d?.data) setMyRequests(prev => [d.data, ...prev]);
+        } catch (e: any) {
+            if (e?.response?.status === 409) {
+                // An open request already exists — reflect its state.
+                try {
+                    const res = await restClient.get('/api/skills-development/assessments/my-requests');
+                    const d = res.data as any;
+                    if (Array.isArray(d?.data)) setMyRequests(d.data);
+                    else setMyRequests(prev => [{ id: -1, title, status: 'pending', scheduled_at: null, score: null, result: null }, ...prev]);
+                } catch {
+                    setMyRequests(prev => [{ id: -1, title, status: 'pending', scheduled_at: null, score: null, result: null }, ...prev]);
+                }
+            } else {
+                console.warn('Assessment request failed', e);
+            }
+        } finally {
+            setRequestingTitle(null);
+        }
+    };
+
+    const requestStatusChip = (r: any) => {
+        let bg = brand.amber, fg = brand.amberText, label = t('Requested — awaiting assessor', 'مطلوب — بانتظار المقيّم');
+        if (r.status === 'scheduled' || r.status === 'in_progress') {
+            bg = brand.blue; fg = brand.blueText;
+            label = `${t('Scheduled', 'مجدول')}${r.scheduled_at ? ` ${formatDate(r.scheduled_at)}` : ''}`;
+        } else if (r.status === 'completed') {
+            const passed = r.result === 'pass' || r.result === 'passed';
+            bg = passed ? brand.green : (r.result ? brand.red : brand.green);
+            fg = passed ? brand.greenText : (r.result ? brand.redText : brand.greenText);
+            const scorePart = r.score !== null && r.score !== undefined ? `${Math.round(r.score)}%` : '';
+            const resultPart = r.result ? (passed ? t('Passed', 'ناجح') : t('Failed', 'راسب')) : t('Completed', 'مكتمل');
+            label = scorePart ? `${scorePart} · ${resultPart}` : resultPart;
+        }
+        return (
+            <span style={{ background: bg, color: fg, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {label}
+            </span>
+        );
+    };
 
     /* ── Tab 1: Skill Domains ── */
     const domainsTab = (
@@ -161,9 +230,26 @@ const AssessmentsPage: React.FC = () => {
                                         <span key={j} style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 11, padding: '3px 8px', borderRadius: 4 }}>{s}</span>
                                     ))}
                                 </div>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer' }}>
-                                    {t('Take Assessment', 'ابدأ التقييم')} <ChevronIcon size={14} />
-                                </span>
+                                {requestByTitle[d.name] ? (
+                                    requestStatusChip(requestByTitle[d.name])
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => requestAssessment(d.name)}
+                                        disabled={requestingTitle === d.name}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600,
+                                            color: brand.primary, cursor: requestingTitle === d.name ? 'wait' : 'pointer',
+                                            background: 'none', border: 'none', padding: 0,
+                                            opacity: requestingTitle === d.name ? 0.6 : 1,
+                                        }}
+                                    >
+                                        {requestingTitle === d.name
+                                            ? <Loader2 className="animate-spin" size={14} />
+                                            : null}
+                                        {t('Take Assessment', 'ابدأ التقييم')} <ChevronIcon size={14} />
+                                    </button>
+                                )}
                             </div>
                         );
                     })}
@@ -175,6 +261,43 @@ const AssessmentsPage: React.FC = () => {
     /* ── Tab 2: My Assessment Results ── */
     const resultsTab = (
         <div>
+            <div style={{ marginBottom: 28 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+                    {t('My assessment requests', 'طلبات التقييم الخاصة بي')}
+                </h2>
+                <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 16, lineHeight: 1.6 }}>
+                    {t('Assessments you have requested — an assessor will schedule and conduct them.', 'التقييمات التي طلبتها — سيقوم مقيّم بجدولتها وإجرائها.')}
+                </p>
+                {loading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                        <Loader2 className="animate-spin" size={24} style={{ color: brand.primary }} />
+                    </div>
+                ) : myRequests.length === 0 ? (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
+                        {t('No assessment requests yet — use "Take Assessment" on a skill domain to request one.', 'لا توجد طلبات تقييم بعد — استخدم "ابدأ التقييم" في أحد مجالات المهارات لطلب تقييم.')}
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {myRequests.map((r: any, i: number) => (
+                            <div key={r.id ?? i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                <div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{r.title}</div>
+                                    <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>
+                                        {r.scheduled_at
+                                            ? `${t('Scheduled for', 'مجدول في')} ${formatDate(r.scheduled_at)}`
+                                            : t('Not scheduled yet', 'لم تتم الجدولة بعد')}
+                                        {r.score !== null && r.score !== undefined
+                                            ? ` · ${t('Score:', 'النتيجة:')} ${Math.round(r.score)}%`
+                                            : ''}
+                                    </div>
+                                </div>
+                                {requestStatusChip(r)}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('My Assessment Results', 'نتائج تقييماتي')}
             </h2>
