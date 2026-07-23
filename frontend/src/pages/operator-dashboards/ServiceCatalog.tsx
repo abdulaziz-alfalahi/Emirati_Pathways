@@ -256,9 +256,15 @@ const PlatformMindMap: React.FC<{
   const setNodeRef = (id: string) => (el: HTMLDivElement | null) => {
     if (el) nodeRefs.current.set(id, el); else nodeRefs.current.delete(id);
   };
+  const stageRef = useRef<HTMLDivElement>(null);
   const [links, setLinks] = useState<{ d: string; color: string; dim: boolean }[]>([]);
   const [svgSize, setSvgSize] = useState({ w: 0, h: 0 });
   const [fullscreen, setFullscreen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2, ZOOM_STEP = 0.25;
+  const zoomIn = () => setZoom(z => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
+  const zoomOut = () => setZoom(z => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
+  const resetZoom = () => setZoom(1);
 
   // Visible parent→child pairs given the current expand state.
   const pairs = useMemo(() => {
@@ -277,9 +283,15 @@ const PlatformMindMap: React.FC<{
   }, [tree, expanded]);
 
   const recompute = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const c = canvas.getBoundingClientRect();
+    const stage = stageRef.current;
+    if (!stage) return;
+    // Measure in the stage's UNSCALED local coordinates: getBoundingClientRect
+    // returns on-screen (scaled) pixels, so subtract the stage's top-left
+    // (which, with transform-origin 0 0, is where local (0,0) renders) and
+    // divide by the zoom factor. The SVG lives inside the same scaled stage,
+    // so paths drawn in these local units line up at any zoom.
+    const s = stage.getBoundingClientRect();
+    const z = zoom || 1;
     const next: { d: string; color: string; dim: boolean }[] = [];
     pairs.forEach(({ parent, child, color, branch }) => {
       const pe = nodeRefs.current.get(parent);
@@ -287,10 +299,10 @@ const PlatformMindMap: React.FC<{
       if (!pe || !ce) return;
       const p = pe.getBoundingClientRect();
       const q = ce.getBoundingClientRect();
-      const sx = (isRTL ? p.left : p.right) - c.left + canvas.scrollLeft;
-      const sy = p.top + p.height / 2 - c.top + canvas.scrollTop;
-      const ex = (isRTL ? q.right : q.left) - c.left + canvas.scrollLeft;
-      const ey = q.top + q.height / 2 - c.top + canvas.scrollTop;
+      const sx = ((isRTL ? p.left : p.right) - s.left) / z;
+      const sy = (p.top + p.height / 2 - s.top) / z;
+      const ex = ((isRTL ? q.right : q.left) - s.left) / z;
+      const ey = (q.top + q.height / 2 - s.top) / z;
       const mx = (sx + ex) / 2;
       next.push({
         d: `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ey}, ${ex} ${ey}`,
@@ -299,12 +311,15 @@ const PlatformMindMap: React.FC<{
       });
     });
     setLinks(next);
-    setSvgSize({ w: canvas.scrollWidth, h: canvas.scrollHeight });
-  }, [pairs, isRTL, activeBranch]);
+    setSvgSize({ w: stage.scrollWidth, h: stage.scrollHeight });
+  }, [pairs, isRTL, activeBranch, zoom]);
 
   // Recompute connectors on layout, on window resize, and whenever the
-  // fullscreen state flips (the canvas changes size without a resize event).
+  // fullscreen state or zoom changes (the canvas changes size without a
+  // resize event).
   useLayoutEffect(() => { recompute(); }, [recompute, fullscreen]);
+  // Leaving full screen returns to 1:1 (zoom is a full-screen-only control).
+  useEffect(() => { if (!fullscreen) setZoom(1); }, [fullscreen]);
   useEffect(() => {
     window.addEventListener('resize', recompute);
     return () => window.removeEventListener('resize', recompute);
@@ -449,17 +464,47 @@ const PlatformMindMap: React.FC<{
           flex: fullscreen ? 1 : undefined,
           boxShadow: 'inset 0 1px 3px rgba(10,45,44,.04)',
         }}>
-        <svg width={svgSize.w || '100%'} height={svgSize.h || '100%'}
-          style={{ position: 'absolute', top: 0, insetInlineStart: 0, pointerEvents: 'none', zIndex: 1, overflow: 'visible' }}>
-          {links.map((l, i) => (
-            <path key={i} d={l.d} fill="none" stroke={l.color} strokeWidth={2} strokeLinecap="round"
-              style={{ opacity: l.dim ? 0.18 : 0.6, transition: 'opacity 0.25s' }} />
-          ))}
-        </svg>
-        <div style={{ position: 'relative', zIndex: 2, display: 'inline-flex', alignItems: 'center', minWidth: '100%', minHeight: 448 }}>
-          <Branch node={tree} level={0} branchId={null} />
+        {/* Sizer: reserves the scaled footprint so the scroll area tracks zoom */}
+        <div style={{
+          position: 'relative', minWidth: '100%',
+          width: svgSize.w ? svgSize.w * zoom : '100%',
+          height: svgSize.h ? svgSize.h * zoom : (fullscreen ? '100%' : 448),
+        }}>
+          {/* Stage: scaled by zoom from the top-left; holds the connectors + nodes */}
+          <div ref={stageRef} style={{
+            position: 'absolute', top: 0, left: 0,
+            transform: `scale(${zoom})`, transformOrigin: '0 0', width: 'max-content',
+          }}>
+            <svg width={svgSize.w || '100%'} height={svgSize.h || '100%'}
+              style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: 1, overflow: 'visible' }}>
+              {links.map((l, i) => (
+                <path key={i} d={l.d} fill="none" stroke={l.color} strokeWidth={2} strokeLinecap="round"
+                  style={{ opacity: l.dim ? 0.18 : 0.6, transition: 'opacity 0.25s' }} />
+              ))}
+            </svg>
+            <div style={{ position: 'relative', zIndex: 2, display: 'inline-flex', alignItems: 'center', minHeight: 448 }}>
+              <Branch node={tree} level={0} branchId={null} />
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Zoom controls — full screen only */}
+      {fullscreen && (
+        <div style={{
+          position: 'absolute', bottom: 26, left: 26, zIndex: 4,
+          display: 'flex', alignItems: 'center', gap: 2,
+          background: '#fff', border: '1px solid #e6ecec', borderRadius: 12,
+          boxShadow: '0 6px 20px rgba(10,45,44,.14)', padding: 5,
+        }}>
+          <button onClick={zoomOut} disabled={zoom <= ZOOM_MIN} title={t('Zoom out', 'تصغير')}
+            style={{ width: 34, height: 34, borderRadius: 8, border: 'none', background: 'transparent', color: zoom <= ZOOM_MIN ? '#c3d2d1' : TEAL, fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: zoom <= ZOOM_MIN ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+          <button onClick={resetZoom} title={t('Reset zoom', 'إعادة الضبط')}
+            style={{ minWidth: 52, height: 34, borderRadius: 8, border: 'none', background: 'transparent', color: INK, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
+          <button onClick={zoomIn} disabled={zoom >= ZOOM_MAX} title={t('Zoom in', 'تكبير')}
+            style={{ width: 34, height: 34, borderRadius: 8, border: 'none', background: 'transparent', color: zoom >= ZOOM_MAX ? '#c3d2d1' : TEAL, fontSize: 20, fontWeight: 700, lineHeight: 1, cursor: zoom >= ZOOM_MAX ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+        </div>
+      )}
 
       {/* Legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 14, fontSize: 11.5, color: INK_MUTED }}>
