@@ -181,7 +181,7 @@ from backend.db_utils import DATABASE_CONFIG, close_db, execute_query  # noqa: E
 # Initialize SocketIO (lazy — will attach to app below)
 # IMPORTANT: cors_allowed_origins MUST be in the constructor.
 # Setting it as a property after init_app() is silently ignored.
-_socketio_allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'https://emirati.ehrdc.gov.ae').split(',')
+_socketio_allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'https://emirati.ehrdc.gov.ae,https://stg-emirati.ehrdc.gov.ae').split(',')
 if os.getenv('FLASK_ENV', 'production') != 'production':
     _socketio_allowed_origins.extend(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5005'])
 # Cross-worker message queue: gunicorn runs multiple GeventWebSocket workers, so a
