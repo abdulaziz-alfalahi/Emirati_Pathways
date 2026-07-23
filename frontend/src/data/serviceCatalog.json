@@ -290,7 +290,7 @@
           "ربط الشهادات تلقائياً بجواز السفر المهني (/career-passport → /credentials?tab=passport)",
           "متابعة الأداء عبر لوحة تحكم مركز التدريب (/training-center-dashboard) — لمقدمي التدريب"
         ],
-        "channels": "القناة الأساسية: صفحة التدريب (/training) عبر 4 تبويبات. نظام إدارة التعلم: /lms. المهارات الرقمية: /digital-skills. لوحة مقدم التدريب: /training-center-dashboard. واجهة البرمجة: /api/skills-development/training-programs.",
+        "channels": "القناة الأساسية: صفحة التدريب (/training) عبر 4 تبويبات. المهارات الرقمية: /digital-skills. لوحة مقدم التدريب: /training-center-dashboard. واجهة البرمجة: /api/skills-development/training-programs.",
         "duration": "تتوقف على مدة البرنامج التدريبي.",
         "fees": "تتفاوت حسب البرنامج؛ بعضها مجاني.",
         "outputs": "1) شهادة إتمام البرنامج. 2) تحديث تلقائي لجواز السفر المهني. 3) تعزيز الملف الشخصي.",
@@ -300,7 +300,7 @@
         "platformStatus": "active",
         "platformModule": "/training",
         "platformPath": "/training",
-        "gapNotes": "المنصة تتضمن 4 تبويبات (البرامج المتاحة، شهاداتي، تقييماتي، شركاء التدريب) بدلاً من مسار خطي. يتوفر ربط تلقائي بجواز السفر المهني (/credentials?tab=passport) ولوحة تحكم لمقدمي التدريب (/training-center-dashboard) ونظام إدارة التعلم (/lms). تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "المنصة تتضمن 4 تبويبات (البرامج المتاحة، شهاداتي، تقييماتي، شركاء التدريب) بدلاً من مسار خطي. يتوفر ربط تلقائي بجواز السفر المهني (/credentials?tab=passport) ولوحة تحكم لمقدمي التدريب (/training-center-dashboard). تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -362,14 +362,14 @@
         "platformStatus": "active",
         "platformModule": "/digital-skills",
         "platformPath": "/digital-skills",
-        "gapNotes": "المسار /digital-skills-development يوجّه تلقائياً إلى /training. المسار /digital-skills هو المسار المستقل النشط. يتوفر نظام إدارة التعلم (/lms) كقناة إضافية.",
+        "gapNotes": "المسار /digital-skills-development يوجّه تلقائياً إلى /training. المسار /digital-skills هو المسار المستقل النشط.",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
           "candidate"
         ],
         "aiModel": "نموذج تقييم المهارات الرقمية",
-        "relatedForms": "/digital-skills, /digital-skills-development, /lms",
+        "relatedForms": "/digital-skills, /digital-skills-development",
         "nameEN": "Digital Skills Development",
         "descriptionEN": "Provides interactive courses and workshops for developing digital and technology skills essential for the modern workforce.",
         "goalEN": "Bridge the digital skills gap and prepare users for technology-driven careers.",
@@ -754,7 +754,6 @@
           "employer_admin",
           "recruiter",
           "growth_operator",
-          "employee",
           "employer_relations"
         ],
         "aiModel": "نموذج تحليل التوطين والأداء",
