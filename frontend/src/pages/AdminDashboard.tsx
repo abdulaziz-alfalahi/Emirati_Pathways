@@ -165,7 +165,17 @@ const AdminDashboard = () => {
   }, [activeTab]);
 
   const getUserDisplayName = () => {
-    return user?.full_name || user?.email || 'Administrator';
+    // Names can arrive with a null part stringified as "None"/"null" (e.g.
+    // a first name with no last name → "Administrator None"). Drop those
+    // tokens so we never render the literal word "None".
+    const bad = new Set(['none', 'null', 'undefined', '']);
+    const clean = (v?: string) =>
+      (v ?? '')
+        .split(' ')
+        .filter(tok => !bad.has(tok.trim().toLowerCase()))
+        .join(' ')
+        .trim();
+    return clean(user?.full_name) || clean(user?.email) || 'Administrator';
   };
 
   const handleLogout = async () => {

@@ -48,6 +48,30 @@ restClient.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// One-time, loop-safe handling for a genuinely dead session: the access
+// token has expired AND a refresh attempt came back 401/422 (the refresh
+// credential — bearer token or UAE Pass cookie — is invalid). This runs ONLY
+// after an actual refresh attempt fails that way, so a stray 401 on a still-
+// valid session (which refreshes successfully) never reaches here and the old
+// bounce loop is not reintroduced. Sends the admin to a clean re-login instead
+// of leaving authenticated tabs silently broken with 401s.
+let sessionExpiredHandled = false;
+function handleSessionExpired() {
+  if (sessionExpiredHandled) return;
+  sessionExpiredHandled = true;
+  clearAuthTokens();
+  localStorage.removeItem('user');
+  // Let other tabs/components react to the auth change.
+  window.dispatchEvent(new Event('storage'));
+  // Redirect once, preserving where the user was so they return after login.
+  if (!window.location.pathname.startsWith('/auth')) {
+    try {
+      localStorage.setItem('returnUrl', window.location.pathname + window.location.search);
+    } catch { /* ignore */ }
+    window.location.href = '/auth?expired=1';
+  }
+}
+
 // Response interceptor for 401 handling
 restClient.interceptors.response.use(
   (response) => response,
@@ -76,7 +100,15 @@ restClient.interceptors.response.use(
               { withCredentials: true, headers: csrf ? { 'X-CSRF-TOKEN': csrf } : {} }
             );
             return restClient(originalRequest);
-          } catch (cookieRefreshError) {
+          } catch (cookieRefreshError: any) {
+            // A 401/422 from the refresh endpoint itself means the refresh
+            // cookie is dead — the UAE Pass session has genuinely expired.
+            // Prompt a clean re-login. Other failures (network, 5xx) are
+            // transient: fail just this request and keep the session.
+            const s = cookieRefreshError?.response?.status;
+            if (s === 401 || s === 422) {
+              handleSessionExpired();
+            }
             return Promise.reject(error);
           }
         }
@@ -110,15 +142,10 @@ restClient.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        // Clear auth and redirect
-        clearAuthTokens();
-        localStorage.removeItem('user');
-
-        // Dispatch storage event so other tabs/components know
-        window.dispatchEvent(new Event('storage'));
-
-        // Hard redirect to auth if needed, or let the app handle the 401
-        window.location.href = '/auth';
+        // Bearer-token session with a failed refresh: the session is dead.
+        // Route through the shared, loop-guarded handler (clears auth,
+        // preserves returnUrl, redirects once).
+        handleSessionExpired();
         return Promise.reject(refreshError);
       }
     }
