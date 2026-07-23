@@ -472,6 +472,77 @@ const StatCard: React.FC<{ value: number | string; label: string; color: string;
   </div>
 );
 
+/* ─── Hero banner (brought over from the design reference, on the
+   light EHRDC teal theme) ─────────────────────────────────────────── */
+const CatalogHero: React.FC<{
+  isRTL: boolean;
+  t: (en: string, ar: string) => string;
+  onBrowse: () => void;
+  onMap: () => void;
+  onRoles: () => void;
+}> = ({ t, onBrowse, onMap, onRoles }) => (
+  <div style={{
+    position: 'relative', overflow: 'hidden', borderRadius: 20, marginBottom: 22,
+    background: `linear-gradient(135deg, ${TEAL_DEEP} 0%, ${TEAL} 58%, #0a615f 100%)`,
+    padding: '34px 36px', color: '#fff', boxShadow: `0 16px 40px ${TEAL}33`,
+  }}>
+    {/* decorative rings */}
+    <div style={{ position: 'absolute', top: -70, insetInlineEnd: -30, width: 230, height: 230, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+    <div style={{ position: 'absolute', bottom: -90, insetInlineStart: '28%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+    <div style={{ position: 'relative', zIndex: 1, maxWidth: 740 }}>
+      <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.15)', padding: '5px 13px', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+        {t('Curated Service Guide', 'دليل الخدمات المنسّق')}
+      </span>
+      <div style={{ fontSize: 27, fontWeight: 800, lineHeight: 1.25, marginTop: 13, letterSpacing: '-0.01em' }}>
+        {t('EHRDC Platform Services Guide', 'دليل خدمات منصة تنمية الموارد البشرية')}
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.75, marginTop: 11, opacity: 0.92, maxWidth: 660 }}>
+        {t(
+          'A complete guide to the platform’s services — every documented service card with its authorized roles, delivery steps, and platform mapping. Browse the catalog, explore the interactive map, or review roles.',
+          'دليل شامل لخدمات المنصة، يوثّق بطاقات الخدمة الكاملة مع الأدوار المخوّلة وخطوات التقديم وربطها بالمنصة. استعرض الكتالوج، أو استكشف الخريطة التفاعلية، أو راجع الأدوار.'
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap' }}>
+        <button onClick={onBrowse}
+          style={{ background: '#fff', color: TEAL, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 4px 14px rgba(0,0,0,0.14)', transition: 'transform 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
+          <IconClipboard color={TEAL} size={17} /> {t('Browse Services', 'استعراض الخدمات')}
+        </button>
+        <button onClick={onMap}
+          style={{ background: 'rgba(255,255,255,0.13)', color: '#fff', border: '1px solid rgba(255,255,255,0.32)', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, transition: 'background 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; }}>
+          <IconExpand color="#fff" size={16} /> {t('Explore the Map', 'استكشف الخريطة')}
+        </button>
+        <button onClick={onRoles}
+          style={{ background: 'rgba(255,255,255,0.13)', color: '#fff', border: '1px solid rgba(255,255,255,0.32)', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, transition: 'background 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; }}>
+          <IconUsers color="#fff" size={16} /> {t('Roles & Responsibilities', 'الأدوار والصلاحيات')}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+/* Solid-fill stat card in the reference's treatment, using our
+   harmonised teal-family palette (not the mock's neon fills). */
+const HeroStatCard: React.FC<{ value: number | string; label: string; sub: string; color: string; iconEl: React.ReactNode }> = ({ value, label, sub, color, iconEl }) => (
+  <div style={{
+    position: 'relative', overflow: 'hidden', flex: '1 1 150px', minWidth: 152,
+    background: color, backgroundImage: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18), transparent 62%)',
+    borderRadius: 16, padding: '17px 19px', color: '#fff', boxShadow: `0 8px 20px ${color}30`,
+  }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+      <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{value}</span>
+      <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 11, padding: 8, display: 'flex' }}>{iconEl}</div>
+    </div>
+    <div style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
+    <div style={{ fontSize: 10.5, opacity: 0.85, marginTop: 2, lineHeight: 1.4 }}>{sub}</div>
+  </div>
+);
+
 /* ─── Main Component ─────────────────────────────────────────────── */
 const ServiceCatalog: React.FC = () => {
   const navigate = useNavigate();
@@ -591,20 +662,23 @@ const ServiceCatalog: React.FC = () => {
         {/* ═══════════════ TAB 1: OVERVIEW ═══════════════ */}
         {activeTab === 'overview' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            {/* Hero Stats */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color={TEAL} iconEl={<IconClipboard color={TEAL} size={28} />} />
-              <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" iconEl={<IconCheck color="#059669" size={28} />} />
-              <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" iconEl={<IconAlert color="#d97706" size={28} />} />
-              <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" iconEl={<IconCircle color="#dc2626" size={28} />} />
-            </div>
+            {/* Hero banner */}
+            <CatalogHero
+              isRTL={isRTL}
+              t={t}
+              onBrowse={() => setActiveTab('services')}
+              onMap={() => setActiveTab('map')}
+              onRoles={() => setActiveTab('roles')}
+            />
 
-            {/* Secondary Stats */}
+            {/* Stat band (reference treatment, harmonised teal palette) */}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 32 }}>
-              <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" iconEl={<IconFolder color="#6366f1" size={22} />} />
-              <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" iconEl={<IconSparkle color="#0d9488" size={22} />} />
-              <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" iconEl={<IconCpu color="#9333ea" size={22} />} />
-              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color={TEAL} iconEl={<IconUsers color={TEAL} size={22} />} />
+              <HeroStatCard value={serviceStats.totalServices} label={t('Service Cards', 'بطاقات الخدمة')} sub={t('Documented in the guide', 'خدمة موثّقة في الدليل')} color={TEAL_DEEP} iconEl={<IconClipboard color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمة')} sub={t('Main service groups', 'مجموعة خدمية رئيسية')} color={TEAL} iconEl={<IconFolder color="#fff" size={20} />} />
+              <HeroStatCard value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} sub={t('Roles across the platform', 'دوراً على المنصة')} color="#1E5A9C" iconEl={<IconUsers color="#fff" size={20} />} />
+              <HeroStatCard value={aiModelCount} label={t('AI Models', 'نماذج الذكاء الاصطناعي')} sub={t('AI models in service', 'نموذج ذكاء اصطناعي مفعّل')} color="#6A54A6" iconEl={<IconCpu color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} sub={t('Fully active services', 'خدمة مفعّلة بالكامل')} color="#2F7D4F" iconEl={<IconCheck color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} sub={t('Newly added services', 'خدمة مضافة حديثاً')} color="#A9740F" iconEl={<IconSparkle color="#fff" size={20} />} />
             </div>
 
             {/* Coverage Donut + Group Bar Chart side by side */}
