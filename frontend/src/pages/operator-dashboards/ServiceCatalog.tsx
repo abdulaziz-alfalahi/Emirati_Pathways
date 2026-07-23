@@ -124,6 +124,16 @@ const IconExpand: React.FC<{ color: string; size?: number }> = ({ color, size = 
     <path d="M3 8V5a2 2 0 0 1 2-2h3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M21 16v3a2 2 0 0 1-2 2h-3" />
   </svg>
 );
+const IconMaximize: React.FC<{ color: string; size?: number }> = ({ color, size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+  </svg>
+);
+const IconMinimize: React.FC<{ color: string; size?: number }> = ({ color, size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+  </svg>
+);
 
 /* ─── Interactive Platform Map (mind map) ──────────────────────────
    A branching map of the platform: root → main areas → the 14 service
@@ -248,6 +258,7 @@ const PlatformMindMap: React.FC<{
   };
   const [links, setLinks] = useState<{ d: string; color: string; dim: boolean }[]>([]);
   const [svgSize, setSvgSize] = useState({ w: 0, h: 0 });
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Visible parent→child pairs given the current expand state.
   const pairs = useMemo(() => {
@@ -291,11 +302,26 @@ const PlatformMindMap: React.FC<{
     setSvgSize({ w: canvas.scrollWidth, h: canvas.scrollHeight });
   }, [pairs, isRTL, activeBranch]);
 
-  useLayoutEffect(() => { recompute(); }, [recompute]);
+  // Recompute connectors on layout, on window resize, and whenever the
+  // fullscreen state flips (the canvas changes size without a resize event).
+  useLayoutEffect(() => { recompute(); }, [recompute, fullscreen]);
   useEffect(() => {
     window.addEventListener('resize', recompute);
     return () => window.removeEventListener('resize', recompute);
   }, [recompute]);
+
+  // Fullscreen: lock body scroll and allow Esc to exit.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [fullscreen]);
 
   /* ─── Node box ─── */
   const NodeBox: React.FC<{ node: MapNode; level: number; branchId: string | null }> = ({ node, level, branchId }) => {
@@ -373,8 +399,12 @@ const PlatformMindMap: React.FC<{
   };
 
   return (
-    <div>
-      {/* Header row: title + expand-all */}
+    <div style={fullscreen ? {
+      position: 'fixed', inset: 0, zIndex: 3000, background: '#eef4f4',
+      padding: '18px 22px', display: 'flex', flexDirection: 'column',
+      direction: isRTL ? 'rtl' : 'ltr', fontFamily: FONT,
+    } : undefined}>
+      {/* Header row: title + controls */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: INK, display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -384,16 +414,28 @@ const PlatformMindMap: React.FC<{
             {t('Explore the full platform structure — click a node to expand, click a leaf to open it in the catalog.', 'استعرض هيكل المنصة الكامل — انقر على عقدة لتوسيعها، وانقر على ورقة لفتحها في الدليل.')}
           </div>
         </div>
-        <button onClick={expandAll}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
-            fontSize: 12.5, fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap',
-            background: allExpanded ? TEAL : '#fff', color: allExpanded ? '#fff' : TEAL,
-            border: `1.5px solid ${allExpanded ? TEAL : `${TEAL}40`}`,
-          }}>
-          <IconExpand color={allExpanded ? '#fff' : TEAL} size={15} />
-          {allExpanded ? t('Collapse all', 'طي الكل') : t('Expand all', 'توسيع الكل')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={expandAll}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
+              fontSize: 12.5, fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap',
+              background: allExpanded ? TEAL : '#fff', color: allExpanded ? '#fff' : TEAL,
+              border: `1.5px solid ${allExpanded ? TEAL : `${TEAL}40`}`,
+            }}>
+            <IconExpand color={allExpanded ? '#fff' : TEAL} size={15} />
+            {allExpanded ? t('Collapse all', 'طي الكل') : t('Expand all', 'توسيع الكل')}
+          </button>
+          <button onClick={() => setFullscreen(f => !f)}
+            title={fullscreen ? t('Exit full screen (Esc)', 'إنهاء ملء الشاشة (Esc)') : t('Full screen', 'ملء الشاشة')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
+              fontSize: 12.5, fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap',
+              background: '#fff', color: TEAL, border: `1.5px solid ${TEAL}40`,
+            }}>
+            {fullscreen ? <IconMinimize color={TEAL} size={15} /> : <IconMaximize color={TEAL} size={15} />}
+            {fullscreen ? t('Exit full screen', 'إنهاء ملء الشاشة') : t('Full screen', 'ملء الشاشة')}
+          </button>
+        </div>
       </div>
 
       {/* Canvas */}
@@ -402,7 +444,9 @@ const PlatformMindMap: React.FC<{
           position: 'relative', overflow: 'auto', borderRadius: 16,
           border: '1px solid #e6ecec', background: '#f7fbfb',
           backgroundImage: 'radial-gradient(#d7e3e2 1px, transparent 1px)', backgroundSize: '22px 22px',
-          padding: '36px 44px', minHeight: 520, maxHeight: 720,
+          padding: '36px 44px',
+          minHeight: fullscreen ? 0 : 520, maxHeight: fullscreen ? 'none' : 720,
+          flex: fullscreen ? 1 : undefined,
           boxShadow: 'inset 0 1px 3px rgba(10,45,44,.04)',
         }}>
         <svg width={svgSize.w || '100%'} height={svgSize.h || '100%'}
