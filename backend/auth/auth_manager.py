@@ -278,8 +278,12 @@ class AuthenticationManager:
             conn.close()
             
             if user_row:
-                # Combine first_name and last_name for full_name compatibility
-                full_name = f"{user_row['first_name']} {user_row['last_name']}".strip()
+                # Combine first_name and last_name for full_name compatibility.
+                # Guard against NULL parts so a missing last name never renders
+                # as the literal string "None" (e.g. "Administrator None").
+                _fn = (user_row['first_name'] or '').strip()
+                _ln = (user_row['last_name'] or '').strip()
+                full_name = f"{_fn} {_ln}".strip()
                 
                 return {
                     'id': user_row['id'],

@@ -488,7 +488,10 @@ def get_profile():
             profile_data['role'] = user_data.get('role')
             profile_data['user_type'] = user_data.get('role')
             profile_data['email'] = user_data.get('email')
-            profile_data['full_name'] = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip()
+            # NULL-safe: a missing last name must not render as the literal "None".
+            _fn = (user_data.get('first_name') or '').strip()
+            _ln = (user_data.get('last_name') or '').strip()
+            profile_data['full_name'] = f"{_fn} {_ln}".strip()
             profile_data['first_name'] = user_data.get('first_name')
             profile_data['last_name'] = user_data.get('last_name')
             profile_data['phone'] = user_data.get('phone')
