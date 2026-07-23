@@ -87,6 +87,32 @@ interface GovernmentData {
   activity: ActivityItem[];
 }
 
+// Honest empty state — shown before load and whenever live data is
+// unavailable. Never contains fabricated figures (audit IP-01 / issue #26).
+const EMPTY_GOVERNMENT_DATA: GovernmentData = {
+  emiratization: {
+    overallRate: null,
+    targetRate: null,
+    totalEmiratiEmployees: 0,
+    monthlyGrowth: null,
+    sectorBreakdown: []
+  },
+  workforce: {
+    totalWorkforce: 0,
+    unemploymentRate: 0,
+    skillsGapIndex: 0,
+    trainingPrograms: 0
+  },
+  initiatives: {
+    activePrograms: 0,
+    beneficiaries: 0,
+    completionRate: 0,
+    successStories: 0,
+    list: []
+  },
+  activity: []
+};
+
 // ── Component ──────────────────────────────────────────────────────
 const GovernmentDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -116,29 +142,8 @@ const GovernmentDashboard: React.FC = () => {
   };
 
   // ── Dashboard Data ─────────────────────────────────────────────
-  const [dashboardData, setDashboardData] = useState<GovernmentData>({
-    emiratization: {
-      overallRate: 0,
-      targetRate: 75,
-      totalEmiratiEmployees: 0,
-      monthlyGrowth: 0,
-      sectorBreakdown: []
-    },
-    workforce: {
-      totalWorkforce: 0,
-      unemploymentRate: 0,
-      skillsGapIndex: 0,
-      trainingPrograms: 0
-    },
-    initiatives: {
-      activePrograms: 0,
-      beneficiaries: 0,
-      completionRate: 0,
-      successStories: 0,
-      list: []
-    },
-    activity: []
-  });
+  const [dashboardData, setDashboardData] = useState<GovernmentData>(EMPTY_GOVERNMENT_DATA);
+  const [dataUnavailable, setDataUnavailable] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -170,43 +175,18 @@ const GovernmentDashboard: React.FC = () => {
           initiatives: { ...prev.initiatives, ...apiData.initiatives, list: apiData.initiatives?.list || prev.initiatives.list },
           activity: apiData.activity || prev.activity,
         }));
+        setDataUnavailable(false);
       } else {
-        setMockData();
+        // API returned no usable data — show the honest empty state, never
+        // fabricated figures (audit IP-01 / issue #26).
+        setDashboardData(EMPTY_GOVERNMENT_DATA);
+        setDataUnavailable(true);
       }
     } catch {
-      console.log('⚠️ Using fallback data for government dashboard');
-      setMockData();
+      console.warn('Government dashboard data unavailable — showing empty state');
+      setDashboardData(EMPTY_GOVERNMENT_DATA);
+      setDataUnavailable(true);
     }
-  };
-
-  const setMockData = () => {
-    setDashboardData({
-      emiratization: {
-        // On API failure, show "Not available" — never fabricated compliance figures.
-        overallRate: null,
-        targetRate: null,
-        totalEmiratiEmployees: 0,
-        monthlyGrowth: null,
-        sectorBreakdown: []
-      },
-      // On API failure, show honest-empty values — never fabricated national
-      // workforce figures, initiatives, or activity. Empty lists render as
-      // "Data not available" empty states rather than a fake national picture.
-      workforce: {
-        totalWorkforce: 0,
-        unemploymentRate: 0,
-        skillsGapIndex: 0,
-        trainingPrograms: 0
-      },
-      initiatives: {
-        activePrograms: 0,
-        beneficiaries: 0,
-        completionRate: 0,
-        successStories: 0,
-        list: []
-      },
-      activity: []
-    });
   };
 
   // ── Dynamic Greeting ───────────────────────────────────────────
@@ -301,6 +281,20 @@ const GovernmentDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* ─── Data Unavailable Notice ─── */}
+          {dataUnavailable && (
+            <div
+              className="mb-6 flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl"
+              style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+              role="status"
+            >
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+              <p className="text-sm font-dubai-medium text-amber-800">
+                {b('Live data unavailable — showing empty state', 'البيانات المباشرة غير متاحة — عرض حالة فارغة')}
+              </p>
+            </div>
+          )}
 
           {/* ─── Header ─── */}
           <div className="mb-6">
