@@ -9,6 +9,7 @@ import {
     Target, Zap, FileText, Loader2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -112,6 +113,17 @@ const TrainingPage: React.FC = () => {
     /* ── Tab 1: Available Programs ── */
     const programsTab = (
         <div>
+            <AiAssistPanel
+                feature="training_recommendations"
+                title="AI training recommendations"
+                titleAr="توصيات تدريبية بالذكاء الاصطناعي"
+                getContext={() => ({
+                    completed_courses: userCerts.map((c: any) => c.title || c.name).filter(Boolean).slice(0, 20),
+                    skills: programs.slice(0, 15).flatMap((p: any) => p.skills_covered || []).slice(0, 30),
+                    goal: 'career growth on the EHRDC platform',
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Available Training Programs', 'البرامج التدريبية المتاحة')}
             </h2>

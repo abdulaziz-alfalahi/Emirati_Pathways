@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, Award, BookOpen, User, Calendar, ExternalLink } from "lucide-react";
 
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -96,6 +97,21 @@ export const StudentDashboard = () => {
                     </div>
                     <UserMenu />
                 </div>
+
+                {/* AI study pathway advice */}
+                <AiAssistPanel
+                    feature="study_pathway"
+                    title="AI study pathway advice"
+                    titleAr="إرشاد المسار الدراسي بالذكاء الاصطناعي"
+                    getContext={() => ({
+                        grade_level: 'not_specified',
+                        interests: [
+                            ...scholarships.slice(0, 10).map((p: any) => p.scholarship_type || p.type),
+                            ...camps.slice(0, 10).map((p: any) => p.category),
+                            ...gradPrograms.slice(0, 10).map((p: any) => p.program_type || p.type_label),
+                        ].filter(Boolean).slice(0, 30),
+                    })}
+                />
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

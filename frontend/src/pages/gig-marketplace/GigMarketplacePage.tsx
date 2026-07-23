@@ -10,6 +10,7 @@ import {
     Calendar, DollarSign, Shield, Target, Sparkles, PenTool, Loader2
 } from 'lucide-react';
 import { getGigs, applyForGig, type Gig } from '@/services/careerServicesAPI';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -168,6 +169,16 @@ const GigMarketplacePage: React.FC = () => {
     /* ── TAB 1: Browse Gigs ── */
     const browseTab = (
         <div>
+            <AiAssistPanel
+                feature="gig_tips"
+                title="AI freelance tips"
+                titleAr="نصائح العمل الحر بالذكاء الاصطناعي"
+                getContext={() => ({
+                    skills: userSkills.map(s => s.skill_name).filter(Boolean).slice(0, 30),
+                    categories: Array.from(catSet).filter(Boolean).slice(0, 30),
+                })}
+                className="mb-6"
+            />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
                 {categories.map((c, i) => (
                     <button key={i} onClick={() => setActiveCat(i)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: activeCat === i ? 600 : 400, background: activeCat === i ? brand.primarySurface : '#F9FAFB', color: activeCat === i ? brand.primary : brand.textSecondary, border: activeCat === i ? `1px solid ${brand.primary}` : `1px solid ${brand.border}`, cursor: 'pointer' }}>

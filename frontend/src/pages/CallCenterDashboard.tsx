@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { useNotifications } from '@/components/notifications/NotificationSystem';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 /* ── Brand Tokens ── */
 const brand = {
@@ -743,6 +744,19 @@ const CallCenterDashboard: React.FC = () => {
                         <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 mb-6">
                           <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTicket.description}</p>
                         </div>
+                        {/* AI reply draft — sends only non-identifying ticket fields */}
+                        <AiAssistPanel
+                          feature="support_reply"
+                          title="AI reply draft"
+                          titleAr="مسودة رد بالذكاء الاصطناعي"
+                          getContext={() => ({
+                            ticket_subject: String(selectedTicket?.subject || ''),
+                            ticket_description: String(selectedTicket?.description || '').slice(0, 2000),
+                            category: selectedTicket?.category || 'general',
+                            status: selectedTicket?.status || 'open',
+                          })}
+                          className="mb-6"
+                        />
                         {/* Messages */}
                         <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                           <MessageSquare className="h-4 w-4 text-slate-400" />{b('Conversation', 'المحادثة')}

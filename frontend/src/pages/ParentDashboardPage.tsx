@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessmentOverview';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import {
     Users, GraduationCap, Calendar, BookOpen, MapPin, Clock,
     ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Award, Star, Heart,
@@ -175,6 +176,23 @@ const ParentDashboardPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* ── AI guidance for guardians (no child names/identifiers are sent) ── */}
+                <AiAssistPanel
+                    feature="study_pathway"
+                    title="AI guidance for guardians"
+                    titleAr="إرشاد لأولياء الأمور بالذكاء الاصطناعي"
+                    getContext={() => ({
+                        grade_level: childrenData.map((c: any) => c.grade).filter(Boolean).slice(0, 30),
+                        interests: [
+                            ...childrenData.flatMap((c: any) => c.activities || []),
+                            ...childApplications.map((a: any) => a.type),
+                        ].filter(Boolean).slice(0, 30),
+                        strengths: childrenData
+                            .flatMap((c: any) => (c.subjects || []).map((s: any) => s.name))
+                            .filter(Boolean).slice(0, 30),
+                    })}
+                />
 
                 {/* ── Stats Grid ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

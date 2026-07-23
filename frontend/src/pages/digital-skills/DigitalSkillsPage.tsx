@@ -9,6 +9,7 @@ import {
     Award, BarChart3, Layers, Cpu, Loader2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const brand = {
     primary: '#0D9488',
@@ -107,6 +108,18 @@ const DigitalSkillsPage: React.FC = () => {
     /* ── Tab 1: Course Catalog ── */
     const catalogTab = (
         <div>
+            <AiAssistPanel
+                feature="training_recommendations"
+                title="AI skill recommendations"
+                titleAr="توصيات مهارات بالذكاء الاصطناعي"
+                getContext={() => ({
+                    skills: userSkills.map((s: any) => s.name).filter(Boolean).slice(0, 30),
+                    completed_courses: userCerts.map((c: any) => c.name).filter(Boolean).slice(0, 20),
+                    goal: 'digital skills development',
+                    category: 'digital skills',
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Course Catalog', 'كتالوج الدورات')}
             </h2>

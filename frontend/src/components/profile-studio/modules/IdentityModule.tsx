@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { UnifiedProfileHeader } from '../UnifiedProfileHeader';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { useTranslation } from 'react-i18next';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 export const IdentityModule = () => {
     const [profile, setProfile] = useState<CandidateProfile | null>(null);
@@ -180,6 +181,17 @@ export const IdentityModule = () => {
         <div className="space-y-6 animate-fade-in">
             {/* Unified Profile Header (Role Switcher) */}
             <UnifiedProfileHeader initialProfile={profile} cvUploaded={cvs.length > 0} />
+
+            {/* AI profile suggestions — sends only non-identifying fields (headline/bio) */}
+            <AiAssistPanel
+                feature="profile_enhancement"
+                title="AI profile suggestions"
+                titleAr="اقتراحات الملف بالذكاء الاصطناعي"
+                getContext={() => ({
+                    headline: formData.headline,
+                    summary: formData.bio,
+                })}
+            />
 
             {/* Profile Actions Bar */}
             <div className="bg-card rounded-xl shadow-sm border border-border p-4 flex justify-between items-center">

@@ -35,6 +35,7 @@ import {
 import { applicationService, Application } from '@/services/applicationService';
 import QuickMessageDialog from '@/components/messaging/QuickMessageDialog';
 import { useToast } from '@/hooks/use-toast';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const ApplicationsPage: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -259,6 +260,24 @@ const ApplicationsPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        <AiAssistPanel
+          feature="application_insights"
+          title="AI application insights"
+          titleAr="رؤى الطلبات بالذكاء الاصطناعي"
+          getContext={() => {
+            const byStatus: Record<string, number> = {};
+            applications.forEach(app => {
+              byStatus[app.status] = (byStatus[app.status] || 0) + 1;
+            });
+            return {
+              applications_summary: { total: applications.length, by_status: byStatus },
+              target_roles: Array.from(new Set(applications.map(a => a.job_title).filter(Boolean))).slice(0, 30),
+              statuses: Object.keys(byStatus).slice(0, 30),
+            };
+          }}
+          className="mb-6"
+        />
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (

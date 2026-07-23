@@ -8,6 +8,7 @@ import {
     Layers, Brain, Star, Clock, Loader2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const brand = {
     primary: '#0D9488',
@@ -99,6 +100,25 @@ const AssessmentsPage: React.FC = () => {
     /* ── Tab 1: Skill Domains ── */
     const domainsTab = (
         <div>
+            <AiAssistPanel
+                feature="skills_gap"
+                title="AI skills-gap analysis"
+                titleAr="تحليل فجوة المهارات بالذكاء الاصطناعي"
+                getContext={() => ({
+                    assessment_results: userAssessments.slice(0, 30).map((a: any) => ({
+                        title: a.title,
+                        score: a.score,
+                        max_score: a.max_score,
+                        status: a.status,
+                    })),
+                    skills: userSkills
+                        .map((s: any) => (typeof s === 'string' ? s : s?.name))
+                        .filter(Boolean)
+                        .slice(0, 30),
+                    target_role: 'career growth on the EHRDC platform',
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Skill Domains & Taxonomy', 'مجالات المهارات والتصنيف')}
             </h2>

@@ -36,7 +36,7 @@
         "platformStatus": "active",
         "platformModule": "/candidate/profile/identity",
         "platformPath": "/candidate/profile/identity",
-        "gapNotes": "تدقيق 2026-07: وحدة الهوية حيّة؛ /cv-upload يعرض تحليلاً تجريبياً ثابتاً فوق /api/cv/upload الحقيقي. | المنصة تستخدم استوديو الملف الشخصي (Profile Studio) بدلاً من منشئ سيرة ذاتية مستقل. المسار /cv-builder يوجّه تلقائياً إلى /candidate/profile/identity. تتوفر 3 مسارات: /cv-builder، /resume-builder، /cv-upload. تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "تدقيق 2026-07: وحدة الهوية حيّة؛ /cv-upload يعرض تحليلاً تجريبياً ثابتاً فوق /api/cv/upload الحقيقي. | المنصة تستخدم استوديو الملف الشخصي (Profile Studio) بدلاً من منشئ سيرة ذاتية مستقل. المسار /cv-builder يوجّه تلقائياً إلى /candidate/profile/identity. تتوفر 3 مسارات: /cv-builder، /resume-builder، /cv-upload. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -58,7 +58,7 @@
         "limitationsEN": "1) Output accuracy depends on the quality of entered data. 2) AI suggestion quality may vary across different specializations. 3) Resume template design is currently limited.",
         "partnersEN": "Employers, training centers, and educational institutions.",
         "kpisEN": "1) Number of resumes created. 2) Profile completion rate. 3) User satisfaction. 4) Download rate.",
-        "gapNotesEN": "AUDIT 2026-07: profile identity module is live; /cv-upload overlays hardcoded sample analysis over the real /api/cv/upload. | The platform uses Profile Studio instead of a standalone CV builder.",
+        "gapNotesEN": "AUDIT 2026-07: profile identity module is live; /cv-upload overlays hardcoded sample analysis over the real /api/cv/upload. | The platform uses Profile Studio instead of a standalone CV builder. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Professional Content Enhancement Model",
         "stepsEN": [
           "Log in to the platform and select Resume Builder service (/cv-builder)",
@@ -97,7 +97,7 @@
         "platformStatus": "active",
         "platformModule": "/career-hub",
         "platformPath": "/career-hub",
-        "gapNotes": "تم دمج استكشاف الصناعات ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع: التخطيط المهني، الإرشاد المهني، محاكاة المسار، واستكشاف الصناعات. المسار /industry-exploration يوجّه تلقائياً إلى /career-hub.",
+        "gapNotes": "تم دمج استكشاف الصناعات ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع: التخطيط المهني، الإرشاد المهني، محاكاة المسار، واستكشاف الصناعات. المسار /industry-exploration يوجّه تلقائياً إلى /career-hub. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -119,7 +119,7 @@
         "limitationsEN": "1) Recommendations depend on profile completeness. 2) Some emerging industries may not be fully covered yet.",
         "partnersEN": "Industry bodies, educational institutions, and professional associations.",
         "kpisEN": "1) Number of explorations. 2) User engagement time. 3) Conversion to training enrollment.",
-        "gapNotesEN": "Fully integrated into the Career Hub.",
+        "gapNotesEN": "Fully integrated into the Career Hub. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Career Path Analysis Engine",
         "stepsEN": [
           "Navigate to Career Hub (/career-hub)",
@@ -166,7 +166,7 @@
         "platformStatus": "active",
         "platformModule": "/career-hub",
         "platformPath": "/career-hub",
-        "gapNotes": "تم دمج الإرشاد المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-advisory يوجّه تلقائياً إلى /career-hub. تتوفر لوحتان للمتخصصين: /advisor-dashboard و /coach-dashboard.",
+        "gapNotes": "تم دمج الإرشاد المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-advisory يوجّه تلقائياً إلى /career-hub. تتوفر لوحتان للمتخصصين: /advisor-dashboard و /coach-dashboard. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -190,7 +190,7 @@
         "limitationsEN": "1) Advisor availability varies by specialization. 2) Follow-up scheduling depends on demand.",
         "partnersEN": "Certified career counselors and educational institutions.",
         "kpisEN": "1) Number of counseling sessions. 2) User satisfaction. 3) Career outcome improvements.",
-        "gapNotesEN": "Consolidated into Career Hub as advisory module.",
+        "gapNotesEN": "Consolidated into Career Hub as advisory module. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Career Counseling Assistant",
         "stepsEN": [
           "Access career counseling through Career Hub",
@@ -228,7 +228,7 @@
         "platformStatus": "active",
         "platformModule": "/career-hub",
         "platformPath": "/career-hub",
-        "gapNotes": "تم دمج محاكاة المسار المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-simulator يوجّه تلقائياً إلى /career-hub.",
+        "gapNotes": "تم دمج محاكاة المسار المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-simulator يوجّه تلقائياً إلى /career-hub. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -250,7 +250,7 @@
         "limitationsEN": "1) Simulation accuracy depends on market data currency. 2) Limited to mapped career paths.",
         "partnersEN": "Industry research firms and labor market data providers.",
         "kpisEN": "1) Number of simulations run. 2) User engagement. 3) Conversion to training enrollment.",
-        "gapNotesEN": "Integrated into Career Hub.",
+        "gapNotesEN": "Integrated into Career Hub. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Career Simulation Engine",
         "stepsEN": [
           "Access Career Path Simulator from Career Hub",
@@ -300,7 +300,7 @@
         "platformStatus": "partial",
         "platformModule": "/training",
         "platformPath": "/training",
-        "gapNotes": "تدقيق 2026-07: تُحمّل البرامج، لكن إجراء التسجيل غير مربوط و/training-center-dashboard يُعيد خطأ 500. | المنصة تتضمن 4 تبويبات (البرامج المتاحة، شهاداتي، تقييماتي، شركاء التدريب) بدلاً من مسار خطي. يتوفر ربط تلقائي بجواز السفر المهني (/credentials?tab=passport) ولوحة تحكم لمقدمي التدريب (/training-center-dashboard). تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "تدقيق 2026-07: إصلاح جزئي — نقاط مركز التدريب أُصلحت؛ زر التسجيل من جهة المرشح غير مربوط بعد. | المنصة تتضمن 4 تبويبات (البرامج المتاحة، شهاداتي، تقييماتي، شركاء التدريب) بدلاً من مسار خطي. يتوفر ربط تلقائي بجواز السفر المهني (/credentials?tab=passport) ولوحة تحكم لمقدمي التدريب (/training-center-dashboard). تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -324,7 +324,7 @@
         "limitationsEN": "1) Program availability varies by season. 2) Some programs have capacity limits.",
         "partnersEN": "Certified training providers, educational institutions, and industry bodies.",
         "kpisEN": "1) Enrollment rate. 2) Completion rate. 3) Post-training employment rate.",
-        "gapNotesEN": "AUDIT 2026-07: programs load, but the enrol/Apply action is not wired and /training-center-dashboard returns 500. | Fully active on the platform.",
+        "gapNotesEN": "AUDIT 2026-07: PARTIALLY FIXED — training-center profile/programs endpoints repaired (CHAR(15) user id, migration 017); the candidate Apply/enrol action is still not wired. | Fully active on the platform. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Training Recommendation Engine",
         "stepsEN": [
           "Browse available training programs on Training Hub",
@@ -362,7 +362,7 @@
         "platformStatus": "active",
         "platformModule": "/digital-skills",
         "platformPath": "/digital-skills",
-        "gapNotes": "المسار /digital-skills-development يوجّه تلقائياً إلى /training. المسار /digital-skills هو المسار المستقل النشط.",
+        "gapNotes": "المسار /digital-skills-development يوجّه تلقائياً إلى /training. المسار /digital-skills هو المسار المستقل النشط. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -383,7 +383,7 @@
         "limitationsEN": "1) Some advanced courses require prerequisite completion. 2) Content is primarily in Arabic.",
         "partnersEN": "Technology companies, educational platforms, and certification bodies.",
         "kpisEN": "1) Course completion rate. 2) Skill assessment scores. 3) User engagement metrics.",
-        "gapNotesEN": "Active with dedicated Digital Skills section.",
+        "gapNotesEN": "Active with dedicated Digital Skills section. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "Adaptive Learning AI System",
         "stepsEN": [
           "Access Digital Skills Hub",
@@ -432,7 +432,7 @@
         "platformStatus": "active",
         "platformModule": "/job-matching",
         "platformPath": "/job-matching",
-        "gapNotes": "المنصة تتضمن 4 تبويبات (مطابقات AI، محفوظة، طلباتي، توصيات) مع تحليل المسافة والتنقل وتقييم قوة الملف الشخصي. تتوفر خدمة المقابلات المرئية كخطوة متكاملة. تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "المنصة تتضمن 4 تبويبات (مطابقات AI، محفوظة، طلباتي، توصيات) مع تحليل المسافة والتنقل وتقييم قوة الملف الشخصي. تتوفر خدمة المقابلات المرئية كخطوة متكاملة. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -453,7 +453,7 @@
         "limitationsEN": "1) Match quality depends on profile completeness. 2) Some employers may have external application processes.",
         "partnersEN": "Employers across public and private sectors.",
         "kpisEN": "1) Number of applications submitted. 2) Match acceptance rate. 3) Placement rate.",
-        "gapNotesEN": "Fully active with AI matching.",
+        "gapNotesEN": "Fully active with AI matching. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Job Matching Algorithm",
         "stepsEN": [
           "Access Job Matching Hub",
@@ -487,10 +487,10 @@
         "limitations": "1) تتوقف على استجابة أصحاب العمل.",
         "partners": "أصحاب العمل.",
         "kpis": "1) عدد الطلبات المتابَعة. 2) معدل الاستجابة للإشعارات.",
-        "platformStatus": "partial",
+        "platformStatus": "active",
         "platformModule": "/applications",
         "platformPath": "/applications",
-        "gapNotes": "تدقيق 2026-07: نقطة /api/applications/my-applications تُعيد 404 — قائمة الطلبات لا تُحمّل. | المنصة تتضمن نظام تتبع طلبات متكامل مع إشعارات فورية.",
+        "gapNotes": "تدقيق 2026-07: تم الإصلاح — واجهة /api/applications حقيقية الآن (قائمة/تقديم/سحب/حالة)؛ تبويب إدارة الطلبات للمسؤول لا يزال نائباً. | المنصة تتضمن نظام تتبع طلبات متكامل مع إشعارات فورية. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -511,7 +511,7 @@
         "limitationsEN": "1) Status updates depend on employer response times. 2) Some external applications may not sync automatically.",
         "partnersEN": "Employers and HR systems.",
         "kpisEN": "1) Application response rate. 2) Average time to hiring decision. 3) User engagement.",
-        "gapNotesEN": "AUDIT 2026-07: /api/applications/my-applications returns 404 — the applications list does not load; the recruiter manage tab is a placeholder. | Fully active.",
+        "gapNotesEN": "AUDIT 2026-07: FIXED — a real /api/applications API now serves list/apply/withdraw/status against live data; the recruiter manage tab remains a placeholder. | Fully active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "Application Tracking AI System",
         "stepsEN": [
           "View all applications on Applications Dashboard",
@@ -548,7 +548,7 @@
         "platformStatus": "active",
         "platformModule": "/recruiter/video-interview",
         "platformPath": "/recruiter/video-interview",
-        "gapNotes": "خدمة مفعّلة بالكامل في المنصة مع تحليل ذكاء اصطناعي. لم تُذكر في الدليل الأصلي.",
+        "gapNotes": "خدمة مفعّلة بالكامل في المنصة مع تحليل ذكاء اصطناعي. لم تُذكر في الدليل الأصلي. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -571,7 +571,7 @@
         "limitationsEN": "1) Requires stable internet connection. 2) AI analysis is supplementary to human judgment.",
         "partnersEN": "HR technology providers and recruitment firms.",
         "kpisEN": "1) Number of interviews conducted. 2) Interview completion rate. 3) Hiring conversion rate.",
-        "gapNotesEN": "Fully active with AI analysis.",
+        "gapNotesEN": "Fully active with AI analysis. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Interview Analysis Engine",
         "stepsEN": [
           "Schedule or join video interview session",
@@ -609,7 +609,7 @@
         "platformStatus": "partial",
         "platformModule": "/gig-marketplace",
         "platformPath": "/gig-marketplace",
-        "gapNotes": "تدقيق 2026-07: قائمة الأعمال والتقديم يعملان، لكن 3 من 4 تبويبات عبارة عن عناصر نائبة. | خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي.",
+        "gapNotes": "تدقيق 2026-07: قائمة الأعمال والتقديم يعملان؛ 3 من 4 تبويبات نائبة. نصائح العمل الحر بالذكاء الاصطناعي متاحة الآن. | خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": true,
         "platformRoles": [
@@ -630,7 +630,7 @@
         "limitationsEN": "1) Project availability varies by industry. 2) Payment terms set by project scope.",
         "partnersEN": "SMEs, startups, and enterprise clients.",
         "kpisEN": "1) Number of projects posted. 2) Match rate. 3) Project completion rate. 4) User earnings.",
-        "gapNotesEN": "AUDIT 2026-07: gig list + apply work, but 3 of 4 tabs (My Applications, Post a Gig, Profile) are placeholders. | Active marketplace.",
+        "gapNotesEN": "AUDIT 2026-07: gig list + apply work; 3 of 4 tabs (My Applications, Post a Gig, Profile) are placeholders. AI freelance tips now live. | Active marketplace. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Freelance Matching Algorithm",
         "stepsEN": [
           "Browse available gig projects",
@@ -681,7 +681,7 @@
         "platformStatus": "active",
         "platformModule": "/recruiter",
         "platformPath": "/recruiter",
-        "gapNotes": "المنصة تتضمن لوحة تحكم شاملة بـ 7 تبويبات و13 مسار فرعي بدلاً من 3 خطوات في الدليل الأصلي. تتوفر أدوات متقدمة: منشئ الوصف الوظيفي بالذكاء الاصطناعي، قوالب جاهزة، مطابقة ذكية، مقابلات مرئية، تحليلات، رفع دفعات، سلسلة موافقات، وتوزيع خارجي. تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "المنصة تتضمن لوحة تحكم شاملة بـ 7 تبويبات و13 مسار فرعي بدلاً من 3 خطوات في الدليل الأصلي. تتوفر أدوات متقدمة: منشئ الوصف الوظيفي بالذكاء الاصطناعي، قوالب جاهزة، مطابقة ذكية، مقابلات مرئية، تحليلات، رفع دفعات، سلسلة موافقات، وتوزيع خارجي. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -703,7 +703,7 @@
         "limitationsEN": "1) Posting visibility depends on plan level. 2) Some verification steps required for first-time employers.",
         "partnersEN": "Government entities and private sector employers.",
         "kpisEN": "1) Number of jobs posted. 2) Application-to-hire ratio. 3) Time to fill.",
-        "gapNotesEN": "Fully active.",
+        "gapNotesEN": "Fully active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Job Description Optimizer",
         "stepsEN": [
           "Access Recruiter Dashboard",
@@ -747,7 +747,7 @@
         "platformStatus": "active",
         "platformModule": "/workspace/:companyId",
         "platformPath": "/workspace/:companyId",
-        "gapNotes": "المنصة تتضمن 11 وحدة فرعية في مساحة عمل الشركة بدلاً من 5 خطوات في الدليل الأصلي. تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "المنصة تتضمن 11 وحدة فرعية في مساحة عمل الشركة بدلاً من 5 خطوات في الدليل الأصلي. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -771,7 +771,7 @@
         "limitationsEN": "1) Advanced analytics require premium features. 2) Data import from external HR systems may require configuration.",
         "partnersEN": "Government regulatory bodies and HR technology providers.",
         "kpisEN": "1) Company onboarding rate. 2) Compliance score. 3) Workforce data completeness.",
-        "gapNotesEN": "Fully active.",
+        "gapNotesEN": "Fully active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Workforce Analytics Engine",
         "stepsEN": [
           "Access company workspace",
@@ -808,7 +808,7 @@
         "platformStatus": "active",
         "platformModule": "/government-dashboard?tab=compliance",
         "platformPath": "/government-dashboard?tab=compliance",
-        "gapNotes": "تم دمج متابعة مؤشرات التوطين ضمن اللوحة الحكومية كتبويب الامتثال. يتوفر أيضاً على مستوى الشركة (/workspace/:companyId/emiratisation) ولوحة نافس المستقلة (/nafis-talent-dashboard). المسار /emiratization-tracker يوجّه تلقائياً.",
+        "gapNotes": "تم دمج متابعة مؤشرات التوطين ضمن اللوحة الحكومية كتبويب الامتثال. يتوفر أيضاً على مستوى الشركة (/workspace/:companyId/emiratisation) ولوحة نافس المستقلة (/nafis-talent-dashboard). المسار /emiratization-tracker يوجّه تلقائياً. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -834,7 +834,7 @@
         "limitationsEN": "1) Data accuracy depends on employer reporting. 2) Some metrics have reporting lag.",
         "partnersEN": "Government regulatory bodies (Nafis, MOHRE).",
         "kpisEN": "1) Emiratization rate. 2) Compliance adherence. 3) Employer onboarding to compliance tracking.",
-        "gapNotesEN": "Active on government dashboard.",
+        "gapNotesEN": "Active on government dashboard. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Emiratization Analytics Engine",
         "stepsEN": [
           "Access compliance tracking on Government Dashboard",
@@ -880,7 +880,7 @@
         "platformStatus": "active",
         "platformModule": "/credentials?tab=passport",
         "platformPath": "/credentials?tab=passport",
-        "gapNotes": "تم دمج جواز السفر المهني ضمن مركز الاعتمادات الموحّد (/credentials) كتبويب. المسار /career-passport يوجّه تلقائياً إلى /credentials?tab=passport.",
+        "gapNotes": "تم دمج جواز السفر المهني ضمن مركز الاعتمادات الموحّد (/credentials) كتبويب. المسار /career-passport يوجّه تلقائياً إلى /credentials?tab=passport. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -901,7 +901,7 @@
         "limitationsEN": "1) Credential verification depends on issuing institution integration. 2) Some legacy certificates may need manual entry.",
         "partnersEN": "Educational institutions, certification bodies, and employers.",
         "kpisEN": "1) Number of passports created. 2) Credentials verified. 3) Employer verification requests.",
-        "gapNotesEN": "Active with blockchain verification.",
+        "gapNotesEN": "Active with blockchain verification. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Credential Verification System",
         "stepsEN": [
           "Access Credentials Center",
@@ -938,7 +938,7 @@
         "platformStatus": "active",
         "platformModule": "/credentials",
         "platformPath": "/credentials",
-        "gapNotes": "المنصة تتضمن دعم Blockchain للشهادات.",
+        "gapNotes": "المنصة تتضمن دعم Blockchain للشهادات. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -959,7 +959,7 @@
         "limitationsEN": "1) Not all certification bodies are currently integrated. 2) International certifications may require manual verification.",
         "partnersEN": "Professional certification bodies and regulatory agencies.",
         "kpisEN": "1) Number of certifications registered. 2) Renewal compliance rate. 3) Verification requests.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Certification Tracking System",
         "stepsEN": [
           "Access Credentials Center",
@@ -1006,7 +1006,7 @@
         "platformStatus": "active",
         "platformModule": "/career-hub",
         "platformPath": "/career-hub",
-        "gapNotes": "تم توحيد التخطيط المهني ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع 4 خدمات في صفحة واحدة شاملة. المسار /career-planning-hub يوجّه تلقائياً إلى /career-hub.",
+        "gapNotes": "تم توحيد التخطيط المهني ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع 4 خدمات في صفحة واحدة شاملة. المسار /career-planning-hub يوجّه تلقائياً إلى /career-hub. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1027,7 +1027,7 @@
         "limitationsEN": "1) Plan effectiveness depends on user engagement. 2) Labor market forecasts have inherent uncertainty.",
         "partnersEN": "Career counselors and industry advisory boards.",
         "kpisEN": "1) Plans created. 2) Milestone achievement rate. 3) Career progression metrics.",
-        "gapNotesEN": "Integrated into Career Hub.",
+        "gapNotesEN": "Integrated into Career Hub. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Career Planning Assistant",
         "stepsEN": [
           "Access career planning in Career Hub",
@@ -1064,7 +1064,7 @@
         "platformStatus": "active",
         "platformModule": "/financial-planning",
         "platformPath": "/financial-planning",
-        "gapNotes": "خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي.",
+        "gapNotes": "خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -1085,7 +1085,7 @@
         "limitationsEN": "1) Salary data is based on reported figures. 2) Financial advice is educational, not professional advisory.",
         "partnersEN": "Financial institutions and compensation research firms.",
         "kpisEN": "1) Tool usage rate. 2) User satisfaction. 3) Financial literacy improvement.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Financial Advisory Model",
         "stepsEN": [
           "Access Financial Planning Hub",
@@ -1132,7 +1132,7 @@
         "platformStatus": "active",
         "platformModule": "/mentorship",
         "platformPath": "/mentorship",
-        "gapNotes": "تدقيق 2026-07: /mentorship يعمل؛ نقاط لوحة الموجّه (/api/mentor/progress/*) تُعيد 404. | المنصة تتضمن منظومة إرشاد متكاملة: محرك مطابقة بالذكاء الاصطناعي، جدولة جلسات، متابعة التقدم، نظام تواصل، لوحة تحكم للموجّه، ولوحة للمشغل. الخلفية تتضمن 8+ ملفات مسارات مخصصة للإرشاد.",
+        "gapNotes": "تدقيق 2026-07: تم الإصلاح — نقاط تحقق الموجّه من المهارات تعمل، والاعتماد يختم جواز السفر المهني. | المنصة تتضمن منظومة إرشاد متكاملة: محرك مطابقة بالذكاء الاصطناعي، جدولة جلسات، متابعة التقدم، نظام تواصل، لوحة تحكم للموجّه، ولوحة للمشغل. الخلفية تتضمن 8+ ملفات مسارات مخصصة للإرشاد. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1155,7 +1155,7 @@
         "limitationsEN": "1) Mentor availability varies by industry. 2) Matching depends on profile compatibility.",
         "partnersEN": "Industry leaders, professional associations, and corporate mentorship programs.",
         "kpisEN": "1) Active mentorship pairs. 2) Session completion rate. 3) Mentee career advancement.",
-        "gapNotesEN": "AUDIT 2026-07: /mentorship works; the mentor-side /mentor-dashboard endpoints (/api/mentor/progress/*) return 404. | Active.",
+        "gapNotesEN": "AUDIT 2026-07: FIXED — mentor skill-verification endpoints live (pending/incentives/verify, migration 017); approvals stamp the career passport. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Mentor Matching Algorithm",
         "stepsEN": [
           "Access Mentorship Hub",
@@ -1192,7 +1192,7 @@
         "platformStatus": "partial",
         "platformModule": "/assessments",
         "platformPath": "/assessments",
-        "gapNotes": "تدقيق 2026-07: تُحمّل التقييمات، لكن إجراء أداء التقييم غير مربوط و/api/assessor/dashboard يُعيد 404. | المنصة تتضمن منظومة تقييم متكاملة: لوحة تحكم للمقيّم (/assessor-dashboard)، ذكاء اصطناعي للتقييمات، إطار تحقق من الكفاءات، ونظام ضمان جودة. الخلفية تتضمن محركات متقدمة بحجم إجمالي يتجاوز 132KB.",
+        "gapNotes": "تدقيق 2026-07: إصلاح جزئي — لوحة المُقيّم والجدولة والإكمال تعمل الآن؛ أداء التقييم من جهة المرشح غير مربوط بعد. | المنصة تتضمن منظومة تقييم متكاملة: لوحة تحكم للمقيّم (/assessor-dashboard)، ذكاء اصطناعي للتقييمات، إطار تحقق من الكفاءات، ونظام ضمان جودة. الخلفية تتضمن محركات متقدمة بحجم إجمالي يتجاوز 132KB. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -1215,7 +1215,7 @@
         "limitationsEN": "1) Assessor availability varies. 2) Some specialized assessments have limited scheduling.",
         "partnersEN": "Certified assessment bodies and professional evaluation firms.",
         "kpisEN": "1) Assessments completed. 2) User skills improvement. 3) Employer acceptance of assessment results.",
-        "gapNotesEN": "AUDIT 2026-07: assessments load, but assessment-taking is not wired and /api/assessor/dashboard returns 404. | Active.",
+        "gapNotesEN": "AUDIT 2026-07: PARTIALLY FIXED — assessor dashboard/schedule/complete now real against live assessments; candidate assessment-taking is still not wired. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Assessment Analytics Engine",
         "stepsEN": [
           "Access Assessment Center",
@@ -1262,7 +1262,7 @@
         "platformStatus": "active",
         "platformModule": "/school-programs",
         "platformPath": "/school-programs",
-        "gapNotes": "المنصة تتضمن 5 صفحات للبرامج التعليمية: /school-programs، /university-programs، /scholarships، /graduate-programs، /knowledge-camps. يتوفر أيضاً لوحة إدارية (/admin/school-programs) مع واجهة برمجة متكاملة.",
+        "gapNotes": "المنصة تتضمن 5 صفحات للبرامج التعليمية: /school-programs، /university-programs، /scholarships، /graduate-programs، /knowledge-camps. يتوفر أيضاً لوحة إدارية (/admin/school-programs) مع واجهة برمجة متكاملة. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1286,7 +1286,7 @@
         "limitationsEN": "1) Program availability varies by institution. 2) Requires institutional partnership for full features.",
         "partnersEN": "Schools, universities, KHDA, and educational authorities.",
         "kpisEN": "1) Participating institutions. 2) Student enrollment. 3) Career readiness scores.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Educational Analytics Engine",
         "stepsEN": [
           "Institution registers on School Programs Hub",
@@ -1323,7 +1323,7 @@
         "platformStatus": "active",
         "platformModule": "/guardian-dashboard",
         "platformPath": "/guardian-dashboard",
-        "gapNotes": "خدمة مفعّلة مع دور مستقل (guardian/parent) ولوحة تحكم مخصصة.",
+        "gapNotes": "خدمة مفعّلة مع دور مستقل (guardian/parent) ولوحة تحكم مخصصة. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
@@ -1344,7 +1344,7 @@
         "limitationsEN": "1) Student privacy settings may limit some data visibility. 2) Requires student consent for detailed data.",
         "partnersEN": "Educational institutions and family support services.",
         "kpisEN": "1) Guardian engagement rate. 2) Student progress visibility. 3) Parent satisfaction.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Student Progress Tracking Model",
         "stepsEN": [
           "Access Guardian Dashboard",
@@ -1387,10 +1387,10 @@
         "limitations": "1) تتوقف على نشاط أعضاء المجتمع.",
         "partners": "الجهات المهنية، والجمعيات المتخصصة.",
         "kpis": "1) عدد الأعضاء. 2) معدل التفاعل. 3) رضا الأعضاء.",
-        "platformStatus": "partial",
+        "platformStatus": "active",
         "platformModule": "/communities",
         "platformPath": "/communities",
-        "gapNotes": "تدقيق 2026-07: الصفحة تُعرض لكن نقاط بيانات المجتمعات والفعاليات والمحتوى تُعيد 500 (جداول غير موجودة). | تم دمج القيادة الفكرية (/thought-leadership) وقصص النجاح (/share-success-stories) ضمن صفحة المجتمعات الموحّدة (/communities). كلا المسارين يوجّهان تلقائياً إلى /communities.",
+        "gapNotes": "تدقيق 2026-07: تم الإصلاح — أُنشئت جداول المجتمع (ترحيل 017) وأصبحت النقاط تعمل؛ 5 مجتمعات تأسيسية بعدادات صفرية صادقة. | تم دمج القيادة الفكرية (/thought-leadership) وقصص النجاح (/share-success-stories) ضمن صفحة المجتمعات الموحّدة (/communities). كلا المسارين يوجّهان تلقائياً إلى /communities. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -1414,7 +1414,7 @@
         "limitationsEN": "1) Community activity depends on member engagement. 2) Some premium communities may have access requirements.",
         "partnersEN": "Industry associations, professional bodies, and corporate partners.",
         "kpisEN": "1) Active communities. 2) Member engagement. 3) Knowledge sharing metrics.",
-        "gapNotesEN": "AUDIT 2026-07: page renders but /api/community-mentorship/communities, /community-events and /community-feed all return 500 (missing tables). | Active.",
+        "gapNotesEN": "AUDIT 2026-07: FIXED — community tables created (migration 017); communities/events/feed endpoints live; 5 starter communities seeded with honest zero counters. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Community Engagement Engine",
         "stepsEN": [
           "Access Communities Hub",
@@ -1448,10 +1448,10 @@
         "limitations": "1) تتوقف على مشاركة المجتمع.",
         "partners": "الجهات المجتمعية، والمؤسسات الثقافية.",
         "kpis": "1) عدد المشاركين. 2) عدد قصص النجاح. 3) معدل التفاعل.",
-        "platformStatus": "partial",
+        "platformStatus": "active",
         "platformModule": "/communities",
         "platformPath": "/communities",
-        "gapNotes": "تدقيق 2026-07: نقاط بيانات المجتمع تُعيد 500 (جداول غير موجودة)؛ محتوى تنمية الشباب يعمل. | تم دمج التوجيه المجتمعي والقيادة الفكرية ضمن صفحة المجتمعات الموحّدة (/communities). المسار /thought-leadership يوجّه تلقائياً إلى /communities. تتوفر صفحة مستقلة لتنمية الشباب (/youth-development).",
+        "gapNotes": "تدقيق 2026-07: تم الإصلاح — نقاط بيانات المجتمع تعمل (ترحيل 017)؛ محتوى تنمية الشباب يعمل. | تم دمج التوجيه المجتمعي والقيادة الفكرية ضمن صفحة المجتمعات الموحّدة (/communities). المسار /thought-leadership يوجّه تلقائياً إلى /communities. تتوفر صفحة مستقلة لتنمية الشباب (/youth-development). | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -1473,7 +1473,7 @@
         "limitationsEN": "1) Group size limits may apply. 2) Facilitator availability varies.",
         "partnersEN": "Community leaders and professional development organizations.",
         "kpisEN": "1) Group participation rate. 2) Peer satisfaction. 3) Learning outcomes.",
-        "gapNotesEN": "AUDIT 2026-07: community data endpoints return 500 (missing tables); youth-development content works. | Active.",
+        "gapNotesEN": "AUDIT 2026-07: FIXED — community data endpoints live (migration 017); youth-development content works. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Peer Matching System",
         "stepsEN": [
           "Access community guidance module",
@@ -1519,7 +1519,7 @@
         "platformStatus": "active",
         "platformModule": "/call-center-dashboard",
         "platformPath": "/call-center-dashboard",
-        "gapNotes": "المنصة تتضمن لوحة تحكم مخصصة لوكيل مركز الاتصال (/call-center-dashboard).",
+        "gapNotes": "المنصة تتضمن لوحة تحكم مخصصة لوكيل مركز الاتصال (/call-center-dashboard). | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1541,7 +1541,7 @@
         "limitationsEN": "1) Complex issues may require escalation. 2) Response times vary by demand.",
         "partnersEN": "Internal support teams and technology vendors.",
         "kpisEN": "1) Ticket resolution rate. 2) Average response time. 3) User satisfaction.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Support Chatbot",
         "stepsEN": [
           "Contact support through Call Center or chat",
@@ -1580,7 +1580,7 @@
         "platformStatus": "active",
         "platformModule": "/admin/role-requests",
         "platformPath": "/admin/role-requests",
-        "gapNotes": "المنصة تدعم 11 دوراً قابلاً للطلب ومعالجة عبر واجهة إدارية. يتوفر أيضاً مدير المستخدمين (/admin/user-roles) لإدارة الأدوار النشطة. الخلفية تتضمن role_routes.py (23KB). تم تحديث الدليل ليعكس الواقع.",
+        "gapNotes": "المنصة تدعم 11 دوراً قابلاً للطلب ومعالجة عبر واجهة إدارية. يتوفر أيضاً مدير المستخدمين (/admin/user-roles) لإدارة الأدوار النشطة. الخلفية تتضمن role_routes.py (23KB). تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1603,7 +1603,7 @@
         "limitationsEN": "1) Approval timelines depend on verification requirements. 2) Some roles require periodic re-verification.",
         "partnersEN": "Certification bodies and professional licensing authorities.",
         "kpisEN": "1) Role applications. 2) Approval rate. 3) Processing time.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Credential Verification System",
         "stepsEN": [
           "Access Role Requests page",
@@ -1649,7 +1649,7 @@
         "platformStatus": "active",
         "platformModule": "/call-center-dashboard",
         "platformPath": "/call-center-dashboard",
-        "gapNotes": "المنصة تتضمن نظام رسائل متكامل (/messages) للتواصل الداخلي.",
+        "gapNotes": "المنصة تتضمن نظام رسائل متكامل (/messages) للتواصل الداخلي. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1670,7 +1670,7 @@
         "limitationsEN": "1) Complex inquiries may require research time. 2) Specialized questions may need escalation.",
         "partnersEN": "Internal support teams.",
         "kpisEN": "1) Inquiry volume. 2) Response time. 3) Resolution rate. 4) User satisfaction.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Inquiry Response System",
         "stepsEN": [
           "Submit inquiry through call center or chat",
@@ -1708,7 +1708,7 @@
         "platformStatus": "active",
         "platformModule": "/call-center-dashboard",
         "platformPath": "/call-center-dashboard",
-        "gapNotes": "المنصة تتضمن مكون ملاحظات عالمي (FeedbackWidget) متاح في جميع الصفحات بالإضافة إلى معالجة الشكاوى عبر مركز الاتصال.",
+        "gapNotes": "المنصة تتضمن مكون ملاحظات عالمي (FeedbackWidget) متاح في جميع الصفحات بالإضافة إلى معالجة الشكاوى عبر مركز الاتصال. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1730,7 +1730,7 @@
         "limitationsEN": "1) Resolution timelines depend on complaint complexity. 2) Some suggestions may require review periods.",
         "partnersEN": "Quality assurance teams and customer experience departments.",
         "kpisEN": "1) Complaint resolution rate. 2) Average resolution time. 3) Suggestion implementation rate.",
-        "gapNotesEN": "Active.",
+        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Sentiment Analysis & Routing System",
         "stepsEN": [
           "Submit complaint, feedback, or suggestion",
@@ -1838,7 +1838,7 @@
         "platformStatus": "partial",
         "platformModule": "/startup-launchpad",
         "platformPath": "/startup-launchpad",
-        "gapNotes": "تدقيق 2026-07: نقاط الشركات الناشئة والخدمة الوطنية تُعيد 500 (جداول غير موجودة). | المنصة تتضمن /startup-launchpad للشركات الناشئة و /national-service لخدمة الوطن.",
+        "gapNotes": "تدقيق 2026-07: إصلاح جزئي — أُصلحت نقاط الشركات الناشئة والخدمة الوطنية؛ المحتوى بانتظار الإدخال التشغيلي. | المنصة تتضمن /startup-launchpad للشركات الناشئة و /national-service لخدمة الوطن. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -1859,7 +1859,7 @@
         "limitationsEN": "1) Program availability is seasonal. 2) Capacity limits may apply.",
         "partnersEN": "Innovation hubs, incubators, and government initiative bodies.",
         "kpisEN": "1) Enrollments. 2) Completion rate. 3) Participant outcomes.",
-        "gapNotesEN": "AUDIT 2026-07: /api/career-services/startups and /api/lifelong/national-service/* return 500 (startup_programs and ns_* tables missing). | Active.",
+        "gapNotesEN": "AUDIT 2026-07: PARTIALLY FIXED — startup and national-service endpoints repaired (tables created, migration 017); content catalogues are empty pending operations. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Program Recommendation Engine",
         "stepsEN": [
           "Browse available initiatives and programs",
