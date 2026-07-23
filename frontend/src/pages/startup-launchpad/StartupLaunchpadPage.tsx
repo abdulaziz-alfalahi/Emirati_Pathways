@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { getStartupPrograms, type StartupProgram } from '@/services/careerServicesAPI';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import {
     Rocket, Building2, Banknote, Users, BookOpen, ChevronRight, ChevronLeft, Star,
     TrendingUp, CheckCircle, Target, Sparkles, Shield, Award, Heart,
@@ -116,6 +117,19 @@ const StartupLaunchpadPage: React.FC = () => {
     /* ── TAB 1: Explore Programs (API-driven) ── */
     const programsTab = (
         <div>
+            <AiAssistPanel
+                feature="startup_guidance"
+                title="AI startup guidance"
+                titleAr="إرشاد ريادي بالذكاء الاصطناعي"
+                getContext={() => ({
+                    idea_stage: 'exploring',
+                    sector: Array.from(new Set(programs.slice(0, 30).flatMap((p: any) =>
+                        Array.isArray(p.focus) ? p.focus : typeof p.focus === 'string' ? [p.focus] : []
+                    ))).slice(0, 30),
+                    needs: Array.from(new Set(programs.slice(0, 30).map((p: any) => p.type).filter(Boolean))).slice(0, 30),
+                })}
+                className="mb-6"
+            />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>{t('UAE Startup Programs', 'برامج الشركات الناشئة في الإمارات')}</h2>
                 <span style={{ fontSize: 13, color: brand.textSecondary }}>{programs.length} {t('programs', 'برنامج')}</span>

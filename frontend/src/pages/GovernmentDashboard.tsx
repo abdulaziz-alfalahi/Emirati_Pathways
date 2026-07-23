@@ -10,6 +10,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { getDisplayName } from '@/utils/nameUtils';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import ComplianceTab from '@/components/government/ComplianceTab';
 import NafisTab from '@/components/government/NafisTab';
 import MegaProjectsTab from '@/components/government/MegaProjectsTab';
@@ -373,6 +374,30 @@ const GovernmentDashboard: React.FC = () => {
                               OVERVIEW TAB
                ═══════════════════════════════════════════════════════ */}
             <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+              {/* ─── AI compliance summary — aggregate numeric metrics only ─── */}
+              <AiAssistPanel
+                feature="compliance_summary"
+                title="AI compliance summary"
+                titleAr="ملخص الامتثال بالذكاء الاصطناعي"
+                getContext={() => ({
+                  metrics: {
+                    emiratization_rate: dashboardData.emiratization.overallRate,
+                    target_rate: dashboardData.emiratization.targetRate,
+                    total_emirati_employees: dashboardData.emiratization.totalEmiratiEmployees,
+                    monthly_growth: dashboardData.emiratization.monthlyGrowth,
+                    sectors_tracked: dashboardData.emiratization.sectorBreakdown.length,
+                    sectors_on_target: dashboardData.emiratization.sectorBreakdown.filter(s => s.rate >= s.target).length,
+                    total_workforce: dashboardData.workforce.totalWorkforce,
+                    unemployment_rate: dashboardData.workforce.unemploymentRate,
+                    skills_gap_index: dashboardData.workforce.skillsGapIndex,
+                    training_programs: dashboardData.workforce.trainingPrograms,
+                    active_programs: dashboardData.initiatives.activePrograms,
+                    beneficiaries: dashboardData.initiatives.beneficiaries,
+                    completion_rate: dashboardData.initiatives.completionRate,
+                  },
+                })}
+              />
 
               {/* ─── Stat Cards ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

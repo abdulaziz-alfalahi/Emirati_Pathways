@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import JobApplicationDialog from '@/components/applications/JobApplicationDialog';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -220,6 +221,20 @@ const JobMatchingPage: React.FC = () => {
     /* ── Tab 1: AI Matches ── */
     const matchesTab = (
         <div>
+            <AiAssistPanel
+                feature="job_match_explain"
+                title="AI match insights"
+                titleAr="رؤى التوافق بالذكاء الاصطناعي"
+                getContext={() => {
+                    const top = jobs[0];
+                    if (!top) return {};
+                    return {
+                        job_title: top.title,
+                        required_skills: (top.skills || []).filter(Boolean).slice(0, 30),
+                    };
+                }}
+                className="mb-6"
+            />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>
                     {t('AI-Powered Job Matches', 'وظائف مطابقة بالذكاء الاصطناعي')}

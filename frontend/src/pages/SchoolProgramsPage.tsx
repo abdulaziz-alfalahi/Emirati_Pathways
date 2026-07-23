@@ -19,6 +19,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import { schoolProgramsAPIService } from '../services/schoolProgramsServiceAPI';
 import { useTranslation } from 'react-i18next';
 
@@ -172,6 +173,18 @@ const SchoolProgramsPage: React.FC = () => {
   // Programs grid content (shared across tabs)
   const programsContent = (
     <div>
+      <AiAssistPanel
+        feature="study_pathway"
+        title="AI study pathway advice"
+        titleAr="إرشاد المسار الدراسي بالذكاء الاصطناعي"
+        getContext={() => ({
+          interests: (selectedCategory !== 'all'
+            ? [selectedCategory]
+            : [...new Set(filteredPrograms.map((p: any) => p.category).filter(Boolean))]
+          ).slice(0, 30),
+        })}
+        className="mb-6"
+      />
       {/* Search and filter bar */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginBottom: 24 }}>
         {/* Search */}

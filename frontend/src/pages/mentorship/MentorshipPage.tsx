@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { careerLifecycleAPI } from '@/services/intelligenceAPI';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens
 const brand = {
@@ -132,6 +133,16 @@ const MentorshipPage: React.FC = () => {
     /* ── Tab 1: Find Mentors ── */
     const findTab = (
         <div>
+            <AiAssistPanel
+                feature="mentorship_prep"
+                title="AI mentorship prep"
+                titleAr="التحضير للإرشاد بالذكاء الاصطناعي"
+                getContext={() => ({
+                    goals: ['career growth on the EHRDC platform'],
+                    mentor_expertise: [...new Set(mentors.flatMap((m: any) => m.expertise || []))].slice(0, 30),
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Find a Mentor', 'ابحث عن مرشد')}
             </h2>

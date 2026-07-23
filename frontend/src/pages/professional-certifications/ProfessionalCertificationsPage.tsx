@@ -8,6 +8,7 @@ import {
     ExternalLink, Shield, Briefcase, Calendar, Loader2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const brand = {
     primary: '#0D9488',
@@ -112,6 +113,17 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
     /* ── Tab 1: Available Certifications ── */
     const availableTab = (
         <div>
+            <AiAssistPanel
+                feature="credentials_next_steps"
+                title="AI credential guidance"
+                titleAr="إرشاد الاعتمادات بالذكاء الاصطناعي"
+                getContext={() => ({
+                    certifications: earnedCerts.map((c: any) => c.name).filter(Boolean).slice(0, 30),
+                    skills: [...new Set(certPrograms.map((p: any) => p.category).filter(Boolean))].slice(0, 30),
+                    target_role: 'career growth on the EHRDC platform',
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Certification Programs', 'برامج الشهادات')}
             </h2>

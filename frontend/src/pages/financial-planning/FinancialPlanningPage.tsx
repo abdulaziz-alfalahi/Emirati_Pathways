@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { restClient } from '@/utils/api';
 import { careerLifecycleAPI, type CareerStage } from '@/services/intelligenceAPI';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import {
     Banknote, TrendingUp, Calculator, Shield,
     Target, ChevronRight, BookOpen, BarChart3, Users,
@@ -153,6 +154,16 @@ const FinancialPlanningPage: React.FC = () => {
     /* ── Tab 1: Budget & Planning ── */
     const budgetTab = (
         <div>
+            <AiAssistPanel
+                feature="financial_tips"
+                title="AI financial guidance"
+                titleAr="إرشاد مالي بالذكاء الاصطناعي"
+                getContext={() => ({
+                    career_stage: careerStage ? careerStage.current_stage : undefined,
+                    goals: data.savings_goals.map(g => g.title).filter(Boolean).slice(0, 30),
+                })}
+                className="mb-6"
+            />
             {/* Career Stage Context */}
             {careerStage && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: brand.primarySurface, border: `1px solid ${brand.primary}22`, borderRadius: 12, marginBottom: 20 }}>

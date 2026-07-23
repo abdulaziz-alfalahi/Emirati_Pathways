@@ -9,6 +9,7 @@ import {
     Globe, UserCheck, Share2, BookOpen, Loader2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens
 const brand = {
@@ -164,6 +165,17 @@ const CommunitiesPage2: React.FC = () => {
     /* ── Tab 1: Discover ── */
     const discoverTab = (
         <div>
+            <AiAssistPanel
+                feature="community_engagement"
+                title="AI engagement tips"
+                titleAr="نصائح المشاركة بالذكاء الاصطناعي"
+                getContext={() => ({
+                    role: 'candidate',
+                    interests: communities.filter((c: any) => c.joined).flatMap((c: any) => c.tags || []).slice(0, 30),
+                    communities: communities.slice(0, 30).map((c: any) => `${c.name} (${c.category})`),
+                })}
+                className="mb-6"
+            />
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Discover Communities', 'اكتشف المجتمعات')}
             </h2>

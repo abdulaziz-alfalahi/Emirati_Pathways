@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens
 const brand = {
@@ -819,6 +820,16 @@ const FunctionalCareerPlanningHub: React.FC = () => {
      ════════════════════════════════════════════════════════════ */
   const exploreTab = (
     <div>
+      <AiAssistPanel
+        feature="career_path"
+        title="AI career suggestions"
+        titleAr="اقتراحات مهنية بالذكاء الاصطناعي"
+        getContext={() => ({
+          skills: userSkills.map(s => s.skill_name).filter(Boolean).slice(0, 30),
+          interests: selectedSector !== 'All' ? [selectedSector] : [],
+        })}
+        className="mb-6"
+      />
       {/* Search and filter bar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 200 }}>

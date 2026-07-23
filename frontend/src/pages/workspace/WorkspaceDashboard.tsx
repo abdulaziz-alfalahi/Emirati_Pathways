@@ -6,6 +6,7 @@ import {
   Users, BookOpen, Briefcase, TrendingUp, Award, Loader2,
   UserCheck, Clock, AlertTriangle
 } from 'lucide-react';
+import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -90,6 +91,20 @@ const WorkspaceDashboard: React.FC = () => {
           {workspace?.company_name} — {t('Overview of your company workspace', 'نظرة عامة على مساحة عمل شركتك')}
         </p>
       </div>
+
+      {/* AI hiring insights — aggregate workspace stats only, no personal data */}
+      <AiAssistPanel
+        feature="hiring_insights"
+        title="AI hiring insights"
+        titleAr="رؤى التوظيف بالذكاء الاصطناعي"
+        getContext={() => ({
+          open_roles: stats?.jobs?.published ?? 0,
+          team_size: stats?.employees?.active_employees ?? 0,
+          sector: workspace?.industry || '',
+          emiratization_target: workspace?.workspace_settings?.emiratization_target ?? stats?.emiratization_percentage ?? 0,
+        })}
+        className="mb-6"
+      />
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
