@@ -37,7 +37,11 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS training_center_profiles (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id) UNIQUE,
+            -- users.id is CHAR(15) (Emirates ID); the earlier INTEGER FK made
+            -- this CREATE fail on every request, so the table never existed
+            -- and /profile //programs 500'd (audit 2026-07-23; migration 017
+            -- now owns the real table — this stays only for fresh DBs/CI).
+            user_id CHAR(15) REFERENCES users(id) UNIQUE,
             center_name VARCHAR(255) NOT NULL DEFAULT '',
             accreditations JSONB DEFAULT '[]',
             specializations JSONB DEFAULT '[]',

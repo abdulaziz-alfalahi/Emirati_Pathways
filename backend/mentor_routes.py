@@ -635,4 +635,119 @@ def internal_error(error):
         'message': 'An internal error occurred in the mentor system'
     }), 500
 
+# ═══════════════════════════════════════════
+# MENTOR PROGRESS / SKILL VERIFICATION
+# (backed by mentor_skill_verifications, migration 017 — the frontend
+#  MentorDashboard has always called these paths; they 404'd before)
+# ═══════════════════════════════════════════
+
+from flask_jwt_extended import jwt_required, get_jwt_identity  # noqa: E402
+
+try:
+    from backend.db_utils import execute_query as _msv_query
+except ImportError:
+    from db_utils import execute_query as _msv_query
+
+_INCENTIVE_POINTS_PER_VERIFICATION = 10
+_INCENTIVE_TIERS = [(200, 'Gold'), (80, 'Silver'), (0, 'Bronze')]
+
+
+@mentor_bp.route('/progress/pending-verifications', methods=['GET'])
+@jwt_required()
+def pending_verifications():
+    """Skill-verification requests awaiting a mentor decision."""
+    try:
+        rows = _msv_query(
+            """SELECT v.id, v.skill_name, v.skill_level, v.skill_category,
+                      TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS candidate_name,
+                      v.requested_at
+               FROM mentor_skill_verifications v
+               JOIN users u ON u.id = v.candidate_id
+               WHERE v.status = 'pending'
+               ORDER BY v.requested_at ASC""") or []
+        return jsonify({'success': True, 'pending': [{
+            'skill_id': r['id'],
+            'skill_name': r['skill_name'],
+            'skill_level': r['skill_level'],
+            'skill_category': r['skill_category'],
+            'candidate_name': r['candidate_name'] or 'Candidate',
+            'requested_at': r['requested_at'].isoformat() if r['requested_at'] else None,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"pending-verifications failed: {e}")
+        return jsonify({'success': False, 'error': 'Failed to load pending verifications'}), 500
+
+
+@mentor_bp.route('/progress/incentives', methods=['GET'])
+@jwt_required()
+def mentor_incentives():
+    """Honest incentive figures derived from this mentor's real activity."""
+    try:
+        mentor_id = get_jwt_identity()
+        rows = _msv_query(
+            """SELECT id, skill_name, status, decided_at
+               FROM mentor_skill_verifications
+               WHERE mentor_id = %s AND status IN ('approved', 'rejected')
+               ORDER BY decided_at DESC LIMIT 50""", (mentor_id,)) or []
+        approved = sum(1 for r in rows if r['status'] == 'approved')
+        points = approved * _INCENTIVE_POINTS_PER_VERIFICATION
+        tier = next(name for threshold, name in _INCENTIVE_TIERS if points >= threshold)
+        return jsonify({
+            'success': True,
+            'incentive_points': points,
+            'incentive_tier': tier,
+            'history': [{
+                'skill_name': r['skill_name'],
+                'action': r['status'],
+                'points': _INCENTIVE_POINTS_PER_VERIFICATION if r['status'] == 'approved' else 0,
+                'date': r['decided_at'].isoformat() if r['decided_at'] else None,
+            } for r in rows],
+        })
+    except Exception as e:
+        logger.error(f"incentives failed: {e}")
+        return jsonify({'success': False, 'error': 'Failed to load incentives'}), 500
+
+
+@mentor_bp.route('/progress/verify-skill', methods=['POST'])
+@jwt_required()
+def verify_skill():
+    """Approve/reject a pending skill verification; approval stamps the
+    candidate's career passport when one exists."""
+    try:
+        mentor_id = get_jwt_identity()
+        data = request.get_json(silent=True) or {}
+        skill_id = data.get('skill_id')
+        approved = bool(data.get('is_approved'))
+        if not skill_id:
+            return jsonify({'success': False, 'error': 'skill_id is required'}), 400
+        row = _msv_query("SELECT id, candidate_id, skill_name, status FROM mentor_skill_verifications WHERE id = %s",
+                         (skill_id,), fetch_one=True)
+        if not row:
+            return jsonify({'success': False, 'error': 'Verification request not found'}), 404
+        if row['status'] != 'pending':
+            return jsonify({'success': False, 'error': 'Request already decided'}), 409
+        new_status = 'approved' if approved else 'rejected'
+        _msv_query(
+            "UPDATE mentor_skill_verifications SET status = %s, mentor_id = %s, decided_at = NOW() WHERE id = %s",
+            (new_status, mentor_id, skill_id), fetch_all=False)
+        if approved:
+            try:
+                passport = _msv_query("SELECT id FROM career_passports WHERE user_id = %s",
+                                      (row['candidate_id'],), fetch_one=True)
+                if passport:
+                    _msv_query(
+                        """INSERT INTO passport_stamps (id, passport_id, category, title_en, title_ar,
+                               description_en, issuer, icon, color, earned_at, verified)
+                           VALUES (gen_random_uuid(), %s, 'skill', %s, %s,
+                                   'Skill verified by a platform mentor', 'Mentor verification',
+                                   'award', '#006E6D', NOW(), TRUE)""",
+                        (passport['id'], row['skill_name'], row['skill_name']), fetch_all=False)
+            except Exception as stamp_err:
+                logger.warning(f"passport stamp on verification skipped: {stamp_err}")
+        return jsonify({'success': True,
+                        'message': 'Skill verified successfully' if approved else 'Skill verification rejected'})
+    except Exception as e:
+        logger.error(f"verify-skill failed: {e}")
+        return jsonify({'success': False, 'error': 'Failed to process verification'}), 500
+
 logger.info("✅ Mentor routes loaded successfully")
