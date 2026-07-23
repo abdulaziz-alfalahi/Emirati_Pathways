@@ -492,7 +492,7 @@ const PlatformMindMap: React.FC<{
       {/* Zoom controls — full screen only */}
       {fullscreen && (
         <div style={{
-          position: 'absolute', bottom: 26, insetInlineEnd: 26, zIndex: 4,
+          position: 'absolute', bottom: 26, left: 26, zIndex: 4,
           display: 'flex', alignItems: 'center', gap: 2,
           background: '#fff', border: '1px solid #e6ecec', borderRadius: 12,
           boxShadow: '0 6px 20px rgba(10,45,44,.14)', padding: 5,
