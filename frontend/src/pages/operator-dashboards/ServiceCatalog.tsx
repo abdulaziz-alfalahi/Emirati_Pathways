@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
@@ -97,6 +97,7 @@ const gcHex = (name?: string) => GROUP_PALETTE[(name || '').toLowerCase()] || '#
 
 const tabDefs = [
   { key: 'overview',  en: 'Overview',                           ar: 'نظرة عامة' },
+  { key: 'map',       en: 'Platform Map',                       ar: 'خريطة المنصة' },
   { key: 'services',  en: 'Service Cards',                      ar: 'بطاقات الخدمات' },
   { key: 'roles',     en: 'Roles & Responsibilities',           ar: 'الأدوار والمسؤوليات' },
   { key: 'gap',       en: 'Mapping Matrix & Gap Analysis',      ar: 'مصفوفة الربط وتحليل الفجوات' },
@@ -111,6 +112,327 @@ const consolidations = [
   { title: 'Profile Studio', titleAR: 'استوديو الملف الشخصي', canonical: '/candidate/profile/*', routes: ['/cv-builder', '/resume-builder'] },
   { title: 'Government Dashboard', titleAR: 'اللوحة الحكومية', canonical: '/government-dashboard', routes: ['/emiratization-tracker'] },
 ];
+
+const IconChevron: React.FC<{ color: string; size?: number; open?: boolean }> = ({ color, size = 16, open }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transition: 'transform 0.2s ease', transform: open ? 'rotate(90deg)' : 'none' }}>
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
+const IconExpand: React.FC<{ color: string; size?: number }> = ({ color, size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 8V5a2 2 0 0 1 2-2h3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M21 16v3a2 2 0 0 1-2 2h-3" />
+  </svg>
+);
+
+/* ─── Interactive Platform Map (mind map) ──────────────────────────
+   A branching map of the platform: root → main areas → the 14 service
+   groups / roles / status buckets. Curved SVG connectors on a dotted
+   canvas, expand/collapse (with an "expand all" toggle), inactive
+   branches dim to focus attention, every leaf jumps into the relevant
+   catalog tab, and the open/closed state persists in localStorage.
+   Rendered on the light EHRDC theme (the reference mock was dark; the
+   platform is light-only — PR #82). */
+type MapNode = {
+  id: string;
+  label: string;
+  sub?: string;
+  color: string;
+  count?: number;
+  children?: MapNode[];
+  onOpen?: () => void;
+};
+
+const MM_STORE = 'ehrdc-sc-mindmap-v1';
+
+const PlatformMindMap: React.FC<{
+  isRTL: boolean;
+  t: (en: string, ar: string) => string;
+  onOpenGroup: (code: string) => void;
+  onOpenRole: (role: string) => void;
+  onOpenTab: (tab: string) => void;
+}> = ({ isRTL, t, onOpenGroup, onOpenRole, onOpenTab }) => {
+  const BRANCH = { catalog: TEAL, roles: '#1E5A9C', matrix: '#2F7D4F', overview: '#3F4EA8' };
+
+  /* Build the tree (localised) */
+  const tree = useMemo<MapNode>(() => {
+    const gnl = (g: ServiceGroup) => isRTL ? g.name : (g.nameEN || g.name);
+    const catalog: MapNode = {
+      id: 'catalog', color: BRANCH.catalog,
+      label: t('Service Catalog', 'كتالوج الخدمات'),
+      sub: t(`${serviceStats.totalGroups} groups · ${serviceStats.totalServices} cards`, `${serviceStats.totalGroups} مجموعة · ${serviceStats.totalServices} بطاقة`),
+      children: serviceGroups.map(g => ({
+        id: `g-${g.code}`, label: gnl(g), color: gcHex(g.color), count: g.services.length,
+        sub: t(`${g.services.length} services`, `${g.services.length} خدمات`),
+        onOpen: () => onOpenGroup(g.code),
+      })),
+    };
+    const roles: MapNode = {
+      id: 'roles', color: BRANCH.roles,
+      label: t('Roles & Responsibilities', 'الأدوار والصلاحيات'),
+      sub: t(`${allRoles.length} platform roles`, `${allRoles.length} دوراً على المنصة`),
+      children: allRoles.map(r => {
+        const rl = roleLabels[r];
+        return {
+          id: `r-${r}`, label: rl ? (isRTL ? rl.ar : rl.en) : r, color: BRANCH.roles,
+          count: roleServiceMap[r]?.length || 0,
+          sub: t(`${roleServiceMap[r]?.length || 0} services`, `${roleServiceMap[r]?.length || 0} خدمة`),
+          onOpen: () => onOpenRole(r),
+        };
+      }),
+    };
+    const matrix: MapNode = {
+      id: 'matrix', color: BRANCH.matrix,
+      label: t('Mapping Matrix', 'مصفوفة الربط'),
+      sub: t('Coverage & gaps', 'التغطية والفجوات'),
+      children: [
+        { id: 'm-active',  label: t('Active', 'مفعّل'),  color: statusMeta.active.color,  count: serviceStats.activeServices,  onOpen: () => onOpenTab('gap') },
+        { id: 'm-partial', label: t('Partial', 'جزئي'), color: statusMeta.partial.color, count: serviceStats.partialServices, onOpen: () => onOpenTab('gap') },
+        { id: 'm-gap',     label: t('Gap', 'فجوة'),      color: statusMeta.gap.color,     count: serviceStats.gapServices,     onOpen: () => onOpenTab('gap') },
+      ],
+    };
+    const overview: MapNode = {
+      id: 'overview', color: BRANCH.overview,
+      label: t('Overview', 'نظرة عامة'),
+      sub: t('Coverage dashboard', 'لوحة التغطية'),
+      onOpen: () => onOpenTab('overview'),
+    };
+    return {
+      id: 'root', color: TEAL,
+      label: t('EHRDC Platform', 'منصة تنمية الموارد البشرية'),
+      sub: t(`${serviceStats.totalServices} services · ${serviceStats.totalGroups} groups · ${allRoles.length} roles`, `${serviceStats.totalServices} خدمة · ${serviceStats.totalGroups} مجموعة · ${allRoles.length} دوراً`),
+      children: [catalog, roles, matrix, overview],
+    };
+  }, [isRTL]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const expandableIds = useMemo(() => {
+    const ids: string[] = [];
+    const walk = (n: MapNode) => { if (n.children?.length) { ids.push(n.id); n.children.forEach(walk); } };
+    walk(tree);
+    return ids;
+  }, [tree]);
+
+  /* Expand state (persisted) */
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(MM_STORE);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch { /* ignore */ }
+    return new Set(['root']); // compact default: platform + its four main branches
+  });
+  useEffect(() => {
+    try { localStorage.setItem(MM_STORE, JSON.stringify([...expanded])); } catch { /* ignore */ }
+  }, [expanded]);
+
+  const toggle = useCallback((id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const allExpanded = expandableIds.every(id => expanded.has(id));
+  const expandAll = () => setExpanded(allExpanded ? new Set(['root']) : new Set(expandableIds));
+
+  /* Which top-level branch is solo-open → dim the siblings */
+  const topBranches = tree.children || [];
+  const openExpandableTop = topBranches.filter(b => b.children?.length && expanded.has(b.id));
+  const activeBranch = openExpandableTop.length === 1 ? openExpandableTop[0].id : null;
+
+  /* ─── Connector geometry (measured) ─── */
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const setNodeRef = (id: string) => (el: HTMLDivElement | null) => {
+    if (el) nodeRefs.current.set(id, el); else nodeRefs.current.delete(id);
+  };
+  const [links, setLinks] = useState<{ d: string; color: string; dim: boolean }[]>([]);
+  const [svgSize, setSvgSize] = useState({ w: 0, h: 0 });
+
+  // Visible parent→child pairs given the current expand state.
+  const pairs = useMemo(() => {
+    const out: { parent: string; child: string; color: string; branch: string }[] = [];
+    const walk = (n: MapNode, branch: string) => {
+      if (n.children?.length && expanded.has(n.id)) {
+        n.children.forEach(c => {
+          const b = n.id === 'root' ? c.id : branch;
+          out.push({ parent: n.id, child: c.id, color: c.color, branch: b });
+          walk(c, b);
+        });
+      }
+    };
+    walk(tree, 'root');
+    return out;
+  }, [tree, expanded]);
+
+  const recompute = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const c = canvas.getBoundingClientRect();
+    const next: { d: string; color: string; dim: boolean }[] = [];
+    pairs.forEach(({ parent, child, color, branch }) => {
+      const pe = nodeRefs.current.get(parent);
+      const ce = nodeRefs.current.get(child);
+      if (!pe || !ce) return;
+      const p = pe.getBoundingClientRect();
+      const q = ce.getBoundingClientRect();
+      const sx = (isRTL ? p.left : p.right) - c.left + canvas.scrollLeft;
+      const sy = p.top + p.height / 2 - c.top + canvas.scrollTop;
+      const ex = (isRTL ? q.right : q.left) - c.left + canvas.scrollLeft;
+      const ey = q.top + q.height / 2 - c.top + canvas.scrollTop;
+      const mx = (sx + ex) / 2;
+      next.push({
+        d: `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ey}, ${ex} ${ey}`,
+        color,
+        dim: !!activeBranch && branch !== activeBranch,
+      });
+    });
+    setLinks(next);
+    setSvgSize({ w: canvas.scrollWidth, h: canvas.scrollHeight });
+  }, [pairs, isRTL, activeBranch]);
+
+  useLayoutEffect(() => { recompute(); }, [recompute]);
+  useEffect(() => {
+    window.addEventListener('resize', recompute);
+    return () => window.removeEventListener('resize', recompute);
+  }, [recompute]);
+
+  /* ─── Node box ─── */
+  const NodeBox: React.FC<{ node: MapNode; level: number; branchId: string | null }> = ({ node, level, branchId }) => {
+    const hasChildren = !!node.children?.length;
+    const isOpen = expanded.has(node.id);
+    const dim = !!activeBranch && level >= 1 && branchId !== null && branchId !== activeBranch;
+    const isRoot = level === 0;
+    const isLeaf = !hasChildren;
+
+    const handle = () => { if (hasChildren) toggle(node.id); else node.onOpen?.(); };
+
+    return (
+      <div
+        ref={setNodeRef(node.id)}
+        onClick={handle}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handle(); } }}
+        title={hasChildren ? t('Click to expand / collapse', 'انقر للتوسيع / الطي') : t('Open in catalog →', 'فتح في الدليل ←')}
+        style={{
+          position: 'relative', zIndex: 2, cursor: 'pointer', userSelect: 'none',
+          opacity: dim ? 0.38 : 1, transition: 'opacity 0.25s, transform 0.15s, box-shadow 0.15s',
+          display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap',
+          padding: isRoot ? '16px 22px' : level === 1 ? '13px 18px' : '9px 14px',
+          borderRadius: isRoot ? 16 : level === 1 ? 13 : 10,
+          background: isRoot
+            ? `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})`
+            : level === 1 ? '#fff' : '#fff',
+          color: isRoot ? '#fff' : INK,
+          border: isRoot ? 'none' : `1.5px solid ${level === 1 ? node.color : `${node.color}33`}`,
+          borderInlineStart: isLeaf && !isRoot ? `3px solid ${node.color}` : undefined,
+          boxShadow: isRoot
+            ? `0 10px 28px ${TEAL}44`
+            : level === 1 ? `0 4px 14px ${node.color}1f` : '0 1px 3px rgba(10,45,44,.06)',
+        }}
+        onMouseEnter={e => { if (!isRoot) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = level === 1 ? `0 8px 22px ${node.color}33` : `0 4px 12px ${node.color}2a`; } }}
+        onMouseLeave={e => { if (!isRoot) { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = level === 1 ? `0 4px 14px ${node.color}1f` : '0 1px 3px rgba(10,45,44,.06)'; } }}
+      >
+        {!isRoot && level >= 2 && <span style={{ width: 9, height: 9, borderRadius: '50%', background: node.color, flexShrink: 0 }} />}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isRoot ? 3 : 1, minWidth: 0 }}>
+          <span style={{ fontSize: isRoot ? 16 : level === 1 ? 14 : 12.5, fontWeight: isRoot ? 800 : level === 1 ? 700 : 600, color: isRoot ? '#fff' : (level === 1 ? node.color : INK), letterSpacing: isRoot ? '-0.01em' : 0 }}>
+            {node.label}
+          </span>
+          {node.sub && (
+            <span style={{ fontSize: isRoot ? 11.5 : 10.5, fontWeight: 500, color: isRoot ? 'rgba(255,255,255,.85)' : INK_MUTED, fontVariantNumeric: 'tabular-nums' }}>
+              {node.sub}
+            </span>
+          )}
+        </div>
+        {typeof node.count === 'number' && level >= 2 && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: node.color, background: `${node.color}18`, borderRadius: 9, padding: '2px 8px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{node.count}</span>
+        )}
+        {hasChildren && !isRoot && <IconChevron color={level === 1 ? node.color : INK_MUTED} open={isOpen} size={16} />}
+        {hasChildren && isRoot && <IconChevron color="#fff" open={isOpen} size={18} />}
+      </div>
+    );
+  };
+
+  /* ─── Recursive branch (node + its children column) ─── */
+  const Branch: React.FC<{ node: MapNode; level: number; branchId: string | null }> = ({ node, level, branchId }) => {
+    const isOpen = expanded.has(node.id);
+    const showKids = !!node.children?.length && isOpen;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 56 }}>
+        <NodeBox node={node} level={level} branchId={branchId} />
+        {showKids && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {node.children!.map(c => (
+              <Branch key={c.id} node={c} level={level + 1} branchId={level === 0 ? c.id : branchId} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {/* Header row: title + expand-all */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: INK, display: 'flex', alignItems: 'center', gap: 9 }}>
+            <IconExpand color={TEAL} size={19} /> {t('Interactive Platform Map', 'خريطة المنصة التفاعلية')}
+          </div>
+          <div style={{ fontSize: 12.5, color: INK_MUTED, marginTop: 4 }}>
+            {t('Explore the full platform structure — click a node to expand, click a leaf to open it in the catalog.', 'استعرض هيكل المنصة الكامل — انقر على عقدة لتوسيعها، وانقر على ورقة لفتحها في الدليل.')}
+          </div>
+        </div>
+        <button onClick={expandAll}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
+            fontSize: 12.5, fontWeight: 700, transition: 'all 0.15s', whiteSpace: 'nowrap',
+            background: allExpanded ? TEAL : '#fff', color: allExpanded ? '#fff' : TEAL,
+            border: `1.5px solid ${allExpanded ? TEAL : `${TEAL}40`}`,
+          }}>
+          <IconExpand color={allExpanded ? '#fff' : TEAL} size={15} />
+          {allExpanded ? t('Collapse all', 'طي الكل') : t('Expand all', 'توسيع الكل')}
+        </button>
+      </div>
+
+      {/* Canvas */}
+      <div ref={canvasRef}
+        style={{
+          position: 'relative', overflow: 'auto', borderRadius: 16,
+          border: '1px solid #e6ecec', background: '#f7fbfb',
+          backgroundImage: 'radial-gradient(#d7e3e2 1px, transparent 1px)', backgroundSize: '22px 22px',
+          padding: '36px 44px', minHeight: 520, maxHeight: 720,
+          boxShadow: 'inset 0 1px 3px rgba(10,45,44,.04)',
+        }}>
+        <svg width={svgSize.w || '100%'} height={svgSize.h || '100%'}
+          style={{ position: 'absolute', top: 0, insetInlineStart: 0, pointerEvents: 'none', zIndex: 1, overflow: 'visible' }}>
+          {links.map((l, i) => (
+            <path key={i} d={l.d} fill="none" stroke={l.color} strokeWidth={2} strokeLinecap="round"
+              style={{ opacity: l.dim ? 0.18 : 0.6, transition: 'opacity 0.25s' }} />
+          ))}
+        </svg>
+        <div style={{ position: 'relative', zIndex: 2, display: 'inline-flex', alignItems: 'center', minWidth: '100%', minHeight: 448 }}>
+          <Branch node={tree} level={0} branchId={null} />
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 14, fontSize: 11.5, color: INK_MUTED }}>
+        {[
+          { c: BRANCH.catalog, l: t('Service Catalog', 'كتالوج الخدمات') },
+          { c: BRANCH.roles, l: t('Roles', 'الأدوار') },
+          { c: BRANCH.matrix, l: t('Mapping Matrix', 'مصفوفة الربط') },
+          { c: BRANCH.overview, l: t('Overview', 'نظرة عامة') },
+        ].map(x => (
+          <span key={x.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: x.c }} /> {x.l}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /* ─── Helper Components ──────────────────────────────────────────── */
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -147,6 +469,77 @@ const StatCard: React.FC<{ value: number | string; label: string; color: string;
       </div>
       {iconEl && <div style={{ padding: small ? 8 : 10, background: `${color}14`, borderRadius: 12, display: 'flex' }}>{iconEl}</div>}
     </div>
+  </div>
+);
+
+/* ─── Hero banner (brought over from the design reference, on the
+   light EHRDC teal theme) ─────────────────────────────────────────── */
+const CatalogHero: React.FC<{
+  isRTL: boolean;
+  t: (en: string, ar: string) => string;
+  onBrowse: () => void;
+  onMap: () => void;
+  onRoles: () => void;
+}> = ({ t, onBrowse, onMap, onRoles }) => (
+  <div style={{
+    position: 'relative', overflow: 'hidden', borderRadius: 20, marginBottom: 22,
+    background: `linear-gradient(135deg, ${TEAL_DEEP} 0%, ${TEAL} 58%, #0a615f 100%)`,
+    padding: '34px 36px', color: '#fff', boxShadow: `0 16px 40px ${TEAL}33`,
+  }}>
+    {/* decorative rings */}
+    <div style={{ position: 'absolute', top: -70, insetInlineEnd: -30, width: 230, height: 230, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+    <div style={{ position: 'absolute', bottom: -90, insetInlineStart: '28%', width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+    <div style={{ position: 'relative', zIndex: 1, maxWidth: 740 }}>
+      <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.15)', padding: '5px 13px', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+        {t('Curated Service Guide', 'دليل الخدمات المنسّق')}
+      </span>
+      <div style={{ fontSize: 27, fontWeight: 800, lineHeight: 1.25, marginTop: 13, letterSpacing: '-0.01em' }}>
+        {t('EHRDC Platform Services Guide', 'دليل خدمات منصة تنمية الموارد البشرية')}
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.75, marginTop: 11, opacity: 0.92, maxWidth: 660 }}>
+        {t(
+          'A complete guide to the platform’s services — every documented service card with its authorized roles, delivery steps, and platform mapping. Browse the catalog, explore the interactive map, or review roles.',
+          'دليل شامل لخدمات المنصة، يوثّق بطاقات الخدمة الكاملة مع الأدوار المخوّلة وخطوات التقديم وربطها بالمنصة. استعرض الكتالوج، أو استكشف الخريطة التفاعلية، أو راجع الأدوار.'
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap' }}>
+        <button onClick={onBrowse}
+          style={{ background: '#fff', color: TEAL, border: 'none', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, boxShadow: '0 4px 14px rgba(0,0,0,0.14)', transition: 'transform 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
+          <IconClipboard color={TEAL} size={17} /> {t('Browse Services', 'استعراض الخدمات')}
+        </button>
+        <button onClick={onMap}
+          style={{ background: 'rgba(255,255,255,0.13)', color: '#fff', border: '1px solid rgba(255,255,255,0.32)', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, transition: 'background 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; }}>
+          <IconExpand color="#fff" size={16} /> {t('Explore the Map', 'استكشف الخريطة')}
+        </button>
+        <button onClick={onRoles}
+          style={{ background: 'rgba(255,255,255,0.13)', color: '#fff', border: '1px solid rgba(255,255,255,0.32)', borderRadius: 11, padding: '11px 22px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7, transition: 'background 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.22)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; }}>
+          <IconUsers color="#fff" size={16} /> {t('Roles & Responsibilities', 'الأدوار والصلاحيات')}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+/* Solid-fill stat card in the reference's treatment, using our
+   harmonised teal-family palette (not the mock's neon fills). */
+const HeroStatCard: React.FC<{ value: number | string; label: string; sub: string; color: string; iconEl: React.ReactNode }> = ({ value, label, sub, color, iconEl }) => (
+  <div style={{
+    position: 'relative', overflow: 'hidden', flex: '1 1 150px', minWidth: 152,
+    background: color, backgroundImage: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18), transparent 62%)',
+    borderRadius: 16, padding: '17px 19px', color: '#fff', boxShadow: `0 8px 20px ${color}30`,
+  }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+      <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{value}</span>
+      <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 11, padding: 8, display: 'flex' }}>{iconEl}</div>
+    </div>
+    <div style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
+    <div style={{ fontSize: 10.5, opacity: 0.85, marginTop: 2, lineHeight: 1.4 }}>{sub}</div>
   </div>
 );
 
@@ -269,20 +662,23 @@ const ServiceCatalog: React.FC = () => {
         {/* ═══════════════ TAB 1: OVERVIEW ═══════════════ */}
         {activeTab === 'overview' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
-            {/* Hero Stats */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color={TEAL} iconEl={<IconClipboard color={TEAL} size={28} />} />
-              <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" iconEl={<IconCheck color="#059669" size={28} />} />
-              <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" iconEl={<IconAlert color="#d97706" size={28} />} />
-              <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" iconEl={<IconCircle color="#dc2626" size={28} />} />
-            </div>
+            {/* Hero banner */}
+            <CatalogHero
+              isRTL={isRTL}
+              t={t}
+              onBrowse={() => setActiveTab('services')}
+              onMap={() => setActiveTab('map')}
+              onRoles={() => setActiveTab('roles')}
+            />
 
-            {/* Secondary Stats */}
+            {/* Stat band (reference treatment, harmonised teal palette) */}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 32 }}>
-              <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" iconEl={<IconFolder color="#6366f1" size={22} />} />
-              <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" iconEl={<IconSparkle color="#0d9488" size={22} />} />
-              <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" iconEl={<IconCpu color="#9333ea" size={22} />} />
-              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color={TEAL} iconEl={<IconUsers color={TEAL} size={22} />} />
+              <HeroStatCard value={serviceStats.totalServices} label={t('Service Cards', 'بطاقات الخدمة')} sub={t('Documented in the guide', 'خدمة موثّقة في الدليل')} color={TEAL_DEEP} iconEl={<IconClipboard color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمة')} sub={t('Main service groups', 'مجموعة خدمية رئيسية')} color={TEAL} iconEl={<IconFolder color="#fff" size={20} />} />
+              <HeroStatCard value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} sub={t('Roles across the platform', 'دوراً على المنصة')} color="#1E5A9C" iconEl={<IconUsers color="#fff" size={20} />} />
+              <HeroStatCard value={aiModelCount} label={t('AI Models', 'نماذج الذكاء الاصطناعي')} sub={t('AI models in service', 'نموذج ذكاء اصطناعي مفعّل')} color="#6A54A6" iconEl={<IconCpu color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} sub={t('Fully active services', 'خدمة مفعّلة بالكامل')} color="#2F7D4F" iconEl={<IconCheck color="#fff" size={20} />} />
+              <HeroStatCard value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} sub={t('Newly added services', 'خدمة مضافة حديثاً')} color="#A9740F" iconEl={<IconSparkle color="#fff" size={20} />} />
             </div>
 
             {/* Coverage Donut + Group Bar Chart side by side */}
@@ -359,6 +755,19 @@ const ServiceCatalog: React.FC = () => {
                 <div style={{ fontSize: 12, color: '#64748b' }}>{t('AI models powering platform intelligence across services', 'نموذج ذكاء اصطناعي يعمل عبر خدمات المنصة')}</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════════ TAB: PLATFORM MAP (mind map) ═══════════════ */}
+        {activeTab === 'map' && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            <PlatformMindMap
+              isRTL={isRTL}
+              t={t}
+              onOpenGroup={code => { setSelectedGroup(code); setStatusFilter('all'); setSearchQuery(''); setActiveTab('services'); }}
+              onOpenRole={role => { setSelectedRole(role); setActiveTab('roles'); }}
+              onOpenTab={tab => setActiveTab(tab as TabKey)}
+            />
           </div>
         )}
 
