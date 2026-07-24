@@ -218,7 +218,10 @@ def register_all_blueprints(app: Flask):
     _register_safe(app, 'backend.routes.board_portal_routes', 'board_portal_bp', 'Board Portal')
 
     # 16. Assessor Modules
-    _register_safe(app, 'backend.routes.assessor_routes', 'assessor_bp', 'Assessor Dashboard', url_prefix=None)
+    # NOTE: the legacy backend.routes.assessor_routes blueprint was removed —
+    # it never registered (bad `require_role` import) and is superseded by
+    # backend.routes.assessor_dashboard_api (registered in app.py). Its unique
+    # /operator/stats endpoint was ported there.
     _register_safe(app, 'backend.assessment_analytics_qa_routes', 'assessment_analytics_qa_bp', 'Assessment Analytics & QA')
     _register_safe(app, 'backend.routes.assessment_center_routes', 'assessment_center_bp', 'Assessment Center Core', url_prefix=None)
 

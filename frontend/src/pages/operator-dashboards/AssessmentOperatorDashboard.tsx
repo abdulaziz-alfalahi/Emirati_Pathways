@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 import {
     ClipboardCheck, Building2, Award, Calendar, Settings, Users,
     CheckCircle, Clock, TrendingUp, Plus, Search, Eye, BarChart3
@@ -15,8 +16,6 @@ const brand = {
     redBg: '#FEF2F2', redText: '#DC2626',
     amberBg: '#FEF3C7', amberText: '#D97706',
 };
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const AssessmentOperatorDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();
@@ -34,14 +33,14 @@ const AssessmentOperatorDashboard: React.FC = () => {
         (async () => {
             setLoading(true);
             try {
-                const resp = await fetch(`${API_BASE}/api/assessor/operator/stats`);
-                if (resp.ok && !cancelled) {
-                    const d = await resp.json();
-                    if (d.success) {
-                        setStats(d.stats || {});
-                        setTemplates(d.templates || []);
-                        setRecentAssessments(d.recent_assessments || []);
-                    }
+                // restClient injects the Authorization bearer + CSRF header and
+                // sends credentials, so the gated endpoint is called authenticated.
+                const res = await restClient.get('/api/assessor/operator/stats');
+                const d = res.data || {};
+                if (!cancelled && d.success) {
+                    setStats(d.stats || {});
+                    setTemplates(d.templates || []);
+                    setRecentAssessments(d.recent_assessments || []);
                 }
             } catch (err) { console.error('Assessment operator fetch error:', err); }
             finally { if (!cancelled) setLoading(false); }
