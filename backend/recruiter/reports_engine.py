@@ -139,7 +139,7 @@ def generate_candidate_status_report(
                 s.notes,
                 s.created_at as application_date,
                 COUNT(i.id) as interviews_count,
-                MAX(i.scheduled_time) as last_interview_date,
+                MAX(i.scheduled_time)::text as last_interview_date,
                 o.status as offer_status,
                 o.created_at as offer_date
             FROM job_shortlists s
@@ -209,7 +209,7 @@ def generate_interview_feedback_report(
                 jp.title as job_title,
                 COALESCE(co.name, co.company_name) as company_name,
                 i.interview_type,
-                i.scheduled_time,
+                i.scheduled_time::text as scheduled_time,
                 i.status,
                 i.feedback,
                 i.rating,

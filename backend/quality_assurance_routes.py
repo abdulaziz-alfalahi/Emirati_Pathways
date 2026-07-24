@@ -6,6 +6,7 @@ Wraps quality_assurance_system for recruiter/admin review workflows.
 import os
 import logging
 from datetime import datetime
+from urllib.parse import quote_plus
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
@@ -23,7 +24,11 @@ def _conn_string() -> str:
     name = os.getenv("DB_NAME", "emirati_journey")
     user = os.getenv("DB_USER", "emirati_user")
     pwd = os.getenv("DB_PASSWORD", "emirati_secure_password")
-    return f"postgresql://{user}:{pwd}@{host}:{port}/{name}"
+    # The live DB password contains '@' (and other URL-reserved characters),
+    # which corrupts the host portion of a libpq URL unless percent-encoded.
+    # Without this the QA endpoints 500 at connect time ("could not translate
+    # host name ...@10.228.145.66").
+    return f"postgresql://{quote_plus(user)}:{quote_plus(pwd)}@{host}:{port}/{name}"
 
 
 @qa_bp.route("/health", methods=["GET"])
