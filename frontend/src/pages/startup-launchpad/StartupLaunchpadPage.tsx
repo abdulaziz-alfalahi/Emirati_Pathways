@@ -5,10 +5,10 @@ import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLay
 import { getStartupPrograms, type StartupProgram } from '@/services/careerServicesAPI';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import {
-    Rocket, Building2, Banknote, Users, BookOpen, ChevronRight, ChevronLeft, Star,
+    Rocket, Building2, Banknote, Users, BookOpen, ChevronRight, ChevronLeft,
     TrendingUp, CheckCircle, Target, Sparkles, Shield, Award, Heart,
     Lightbulb, MapPin, Calendar, Clock, DollarSign, BarChart3, Globe,
-    FileText, Download, ExternalLink, ArrowRight, Zap, Eye, Send, MessageSquare,
+    FileText, Download, ExternalLink, ArrowRight, Zap, Eye, Send,
     Loader2
 } from 'lucide-react';
 
@@ -68,12 +68,11 @@ const StartupLaunchpadPage: React.FC = () => {
     /* ── Shared styles ── */
     const card: React.CSSProperties = { background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 16 };
     const badgeStyle = (bg: string, color: string): React.CSSProperties => ({ background: bg, color, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' as const });
-    const renderStars = (r: number) => <span style={{ display: 'inline-flex', gap: 2 }}>{[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill={i <= r ? '#F59E0B' : 'none'} stroke={i <= r ? '#F59E0B' : '#D1D5DB'} />)}</span>;
 
     /* ── DATA ── */
 
     const journeyStages = [
-        { stage: t('Ideation', 'التفكير'), icon: Lightbulb, color: brand.blue, textColor: brand.blueText, desc: t('Validate your business idea, conduct market research, and define your value proposition', 'تحقق من فكرة مشروعك، أجرِ بحث السوق، وحدد عرض القيمة الخاص بك'), tasks: [{ text: t('Complete Business Idea Canvas', 'أكمل نموذج فكرة المشروع'), done: true }, { text: t('Market Size Research', 'بحث حجم السوق'), done: true }, { text: t('Competitor Analysis', 'تحليل المنافسين'), done: false }, { text: t('Customer Interviews (10+)', 'مقابلات العملاء (10+)'), done: false }] },
+        { stage: t('Ideation', 'التفكير'), icon: Lightbulb, color: brand.blue, textColor: brand.blueText, desc: t('Validate your business idea, conduct market research, and define your value proposition', 'تحقق من فكرة مشروعك، أجرِ بحث السوق، وحدد عرض القيمة الخاص بك'), tasks: [{ text: t('Complete Business Idea Canvas', 'أكمل نموذج فكرة المشروع'), done: false }, { text: t('Market Size Research', 'بحث حجم السوق'), done: false }, { text: t('Competitor Analysis', 'تحليل المنافسين'), done: false }, { text: t('Customer Interviews (10+)', 'مقابلات العملاء (10+)'), done: false }] },
         { stage: t('Validation', 'التحقق'), icon: Target, color: brand.amber, textColor: brand.amberText, desc: t('Build your MVP, test with real customers, and refine your business model', 'ابنِ المنتج الأولي، اختبر مع عملاء حقيقيين، وطوّر نموذج عملك'), tasks: [{ text: t('Build MVP', 'بناء المنتج الأولي'), done: false }, { text: t('Beta User Testing', 'اختبار مع المستخدمين'), done: false }, { text: t('Financial Model', 'النموذج المالي'), done: false }, { text: t('Pitch Deck v1', 'العرض التقديمي v1'), done: false }] },
         { stage: t('Launch', 'الإطلاق'), icon: Rocket, color: brand.green, textColor: brand.greenText, desc: t('Launch your product, acquire first customers, and establish operations', 'أطلق منتجك، واكتسب أول العملاء، وأسّس العمليات'), tasks: [{ text: t('Trade License Registration', 'تسجيل الرخصة التجارية'), done: false }, { text: t('Go-to-Market Strategy', 'استراتيجية دخول السوق'), done: false }, { text: t('First 100 Customers', 'أول 100 عميل'), done: false }, { text: t('Seed Funding Round', 'جولة التمويل الأولي'), done: false }] },
         { stage: t('Growth', 'النمو'), icon: TrendingUp, color: brand.purple, textColor: brand.purpleText, desc: t('Scale operations, expand your team, and prepare for next funding round', 'وسّع العمليات، كبّر فريقك، واستعد لجولة التمويل التالية'), tasks: [{ text: t('Hire Key Team Members', 'توظيف أعضاء رئيسيين'), done: false }, { text: t('Series A Preparation', 'التحضير للسلسلة أ'), done: false }, { text: t('Market Expansion Plan', 'خطة التوسع في السوق'), done: false }, { text: t('Strategic Partnerships', 'شراكات استراتيجية'), done: false }] },
@@ -86,14 +85,6 @@ const StartupLaunchpadPage: React.FC = () => {
         { name: t('Dubai Future Accelerators', 'مسرّعات دبي المستقبل'), amount: t('AED 500K – 1M', '500 ألف – 1 مليون د.إ'), type: t('Grant + Pilot Contract', 'منحة + عقد تجريبي'), eligibility: t('Innovative solutions for government challenges', 'حلول مبتكرة لتحديات حكومية'), deadline: t('Mar 2026', 'مارس 2026'), catBg: brand.amber, catColor: brand.amberText },
         { name: t('Sheraa Seed Fund', 'صندوق شراع الأولي'), amount: t('AED 100K – 300K', '100 – 300 ألف د.إ'), type: t('Equity Investment', 'استثمار بالأسهم'), eligibility: t('Early-stage startups, Sheraa alumni', 'شركات ناشئة مبكرة، خريجو شراع'), deadline: t('Ongoing', 'مستمر'), catBg: brand.pink, catColor: brand.pinkText },
         { name: t('Mohammed bin Rashid Innovation Fund', 'صندوق محمد بن راشد للابتكار'), amount: t('AED 500K – 5M', '500 ألف – 5 مليون د.إ'), type: t('Innovation Grant', 'منحة ابتكار'), eligibility: t('UAE-based startups with innovative solutions', 'شركات ناشئة في الإمارات بحلول مبتكرة'), deadline: t('Apr 2026', 'أبريل 2026'), catBg: brand.orange, catColor: brand.orangeText },
-    ];
-
-    const mentors = [
-        { name: t('Dr. Sara Al Madani', 'د. سارة المدني'), title: t('Serial Entrepreneur & Board Member', 'رائدة أعمال متسلسلة وعضو مجلس إدارة'), expertise: [t('E-commerce', 'التجارة الإلكترونية'), t('Fashion Tech', 'تكنولوجيا الأزياء'), t('Scaling', 'التوسع')], rating: 4.9, sessions: 87, available: true },
-        { name: t('Ahmed Al Falasi', 'أحمد الفلاسي'), title: t('Managing Director, Venture Capital', 'مدير عام، رأس المال الجريء'), expertise: [t('FinTech', 'التقنية المالية'), t('Fundraising', 'جمع التمويل'), t('Strategy', 'الاستراتيجية')], rating: 4.8, sessions: 64, available: true },
-        { name: t('Fatima Al Jaber', 'فاطمة الجابر'), title: t('CEO, Construction Tech Startup', 'الرئيس التنفيذي، شركة تقنيات البناء'), expertise: [t('PropTech', 'تقنيات العقارات'), t('B2B Sales', 'مبيعات B2B'), t('Operations', 'العمليات')], rating: 4.7, sessions: 42, available: false },
-        { name: t('Khalid Al Ameri', 'خالد العامري'), title: t('Content Creator & Social Entrepreneur', 'صانع محتوى ورائد أعمال اجتماعي'), expertise: [t('Media', 'الإعلام'), t('Social Impact', 'الأثر الاجتماعي'), t('Branding', 'بناء العلامة')], rating: 4.9, sessions: 95, available: true },
-        { name: t('Noura Al Kaabi', 'نورة الكعبي'), title: t('Investment Advisor & Board Director', 'مستشارة استثمار وعضو مجلس إدارة'), expertise: [t('HealthTech', 'التقنية الصحية'), t('Governance', 'الحوكمة'), t('Investment', 'الاستثمار')], rating: 4.6, sessions: 38, available: true },
     ];
 
     const resources = [
@@ -109,9 +100,7 @@ const StartupLaunchpadPage: React.FC = () => {
     const uniqueLocations = new Set(programs.map(p => p.location || p.location_ar));
     const stats = [
         { value: String(programs.length), label: t('Programs', 'برنامج'), icon: Rocket },
-        { value: t('AED 5B+', '5 مليار+ د.إ'), label: t('Funding Available', 'تمويل متاح'), icon: DollarSign },
         { value: String(uniqueLocations.size), label: t('Emirates', 'إمارات'), icon: MapPin },
-        { value: String(mentors.length), label: t('Mentors', 'مرشدين'), icon: Users },
     ];
 
     /* ── TAB 1: Explore Programs (API-driven) ── */
@@ -265,30 +254,10 @@ const StartupLaunchpadPage: React.FC = () => {
     const mentorTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Mentor Network', 'شبكة المرشدين')}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-                {mentors.map((m, i) => (
-                    <div key={i} style={card}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                            <div>
-                                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 2 }}>{m.name}</h3>
-                                <p style={{ fontSize: 13, color: brand.textSecondary }}>{m.title}</p>
-                            </div>
-                            <span style={badgeStyle(m.available ? brand.green : brand.red, m.available ? brand.greenText : brand.redText)}>
-                                {m.available ? t('Available', 'متاح') : t('Busy', 'مشغول')}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-                            {m.expertise.map((e, j) => <span key={j} style={badgeStyle(brand.blue, brand.blueText)}>{e}</span>)}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{renderStars(Math.round(m.rating))} <span style={{ fontSize: 13, fontWeight: 600 }}>{m.rating}</span></div>
-                            <span style={{ fontSize: 12, color: brand.textSecondary }}>{m.sessions} {t('sessions', 'جلسة')}</span>
-                        </div>
-                        <button disabled={!m.available} style={{ width: '100%', padding: '10px 0', background: m.available ? brand.primary : '#E5E7EB', color: m.available ? '#fff' : brand.textSecondary, border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: m.available ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                            <MessageSquare size={15} /> {t('Book Session', 'احجز جلسة')}
-                        </button>
-                    </div>
-                ))}
+            <div style={{ ...card, textAlign: 'center', padding: 48 }}>
+                <Users size={40} style={{ color: brand.textSecondary, margin: '0 auto 12px' }} />
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{t('Mentor profiles coming soon', 'ملفات المرشدين قريباً')}</h3>
+                <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, maxWidth: 420, margin: '0 auto' }}>{t('We are building a network of verified mentors. Check back soon to connect with experienced entrepreneurs.', 'نعمل على بناء شبكة من المرشدين الموثّقين. عد قريباً للتواصل مع رواد أعمال ذوي خبرة.')}</p>
             </div>
         </div>
     );

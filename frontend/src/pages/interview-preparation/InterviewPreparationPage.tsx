@@ -115,26 +115,15 @@ const InterviewPreparationPage: React.FC = () => {
         { title: t('Highlight Multilingual Skills', 'أبرز مهاراتك اللغوية'), desc: t('Arabic proficiency is valued — mention language skills and cross-cultural experience', 'إتقان العربية محل تقدير — اذكر مهاراتك اللغوية وتجربتك بين الثقافات') },
     ];
 
-    const feedbackMetrics = [
-        { label: t('Overall Score', 'الدرجة الإجمالية'), value: 82, max: 100 },
-        { label: t('Communication', 'التواصل'), value: 78, max: 100 },
-        { label: t('Confidence', 'الثقة'), value: 85, max: 100 },
-        { label: t('Clarity', 'الوضوح'), value: 80, max: 100 },
-        { label: t('Relevance', 'الصلة بالموضوع'), value: 88, max: 100 },
-        { label: t('Professionalism', 'المهنية'), value: 90, max: 100 },
-    ];
+    // Per-user results (feedbackMetrics, sessionHistory) were removed — no
+    // interview engine is wired yet, so the Performance tab shows an honest
+    // empty state instead of fabricated scores 82/78/... and dated sessions.
 
-    const sessionHistory = [
-        { date: t('15 Feb 2026', '15 فبراير 2026'), type: t('Full Interview', 'مقابلة كاملة'), score: 82, industry: t('Technology', 'التكنولوجيا') },
-        { date: t('10 Feb 2026', '10 فبراير 2026'), type: t('Quick Practice', 'تمرين سريع'), score: 76, industry: t('Banking', 'المصارف') },
-        { date: t('5 Feb 2026', '5 فبراير 2026'), type: t('Standard Session', 'جلسة قياسية'), score: 88, industry: t('Government', 'الحكومة') },
-    ];
-
+    // Categories/modes are real counts of the arrays above. The fabricated
+    // "500+" question bank and "85%" success rate were removed.
     const stats = [
-        { value: '500+', label: t('Questions', 'سؤال'), icon: BookOpen },
-        { value: '6', label: t('Categories', 'فئات'), icon: Target },
-        { value: '4', label: t('Sim. Modes', 'أوضاع المحاكاة'), icon: Video },
-        { value: '85%', label: t('Success Rate', 'نسبة النجاح'), icon: TrendingUp },
+        { value: String(questionCategories.length), label: t('Categories', 'فئات'), icon: Target },
+        { value: String(simulatorModes.length), label: t('Sim. Modes', 'أوضاع المحاكاة'), icon: Video },
     ];
 
     /* ── Tab 1: Question Bank ── */
@@ -220,9 +209,7 @@ const InterviewPreparationPage: React.FC = () => {
                                 <cat.Icon size={22} style={{ color: cat.catColor }} />
                             </div>
                             <div style={{ display: 'flex', gap: 6 }}>
-                                <span style={{ background: brand.primarySurface, color: brand.primary, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                    {cat.count} {t('Qs', 'س')}
-                                </span>
+                                {/* Fabricated per-category question count removed — no bank exists yet. */}
                                 <span style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 6 }}>
                                     {cat.level}
                                 </span>
@@ -427,61 +414,14 @@ const InterviewPreparationPage: React.FC = () => {
                 )}
             </p>
 
-            {/* Score Metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
-                {feedbackMetrics.map((m, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, textAlign: 'center' }}>
-                        <span style={{ fontSize: 13, color: brand.textSecondary, fontWeight: 500 }}>{m.label}</span>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: m.value >= 85 ? brand.greenText : m.value >= 75 ? brand.primary : brand.amberText, margin: '4px 0 8px' }}>
-                            {m.value}%
-                        </div>
-                        <div style={{ height: 6, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
-                            <div style={{ width: `${m.value}%`, height: '100%', background: m.value >= 85 ? '#22C55E' : m.value >= 75 ? brand.primary : '#F59E0B', borderRadius: 99 }} />
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Session History */}
-            <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 14 }}>{t('Session History', 'سجل الجلسات')}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 1fr', gap: 12, padding: '8px 0', borderBottom: `1px solid ${brand.border}`, fontSize: 12, fontWeight: 600, color: brand.textSecondary }}>
-                        <span>{t('Date', 'التاريخ')}</span><span>{t('Type', 'النوع')}</span><span>{t('Score', 'الدرجة')}</span><span>{t('Industry', 'القطاع')}</span>
-                    </div>
-                    {sessionHistory.map((s, i) => (
-                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 1fr', gap: 12, padding: '12px 0', borderBottom: i < sessionHistory.length - 1 ? `1px solid ${brand.border}` : 'none', fontSize: 13, alignItems: 'center' }}>
-                            <span style={{ color: brand.textPrimary, fontWeight: 500 }}>{s.date}</span>
-                            <span style={{ color: brand.textSecondary }}>{s.type}</span>
-                            <span style={{
-                                fontWeight: 600,
-                                color: s.score >= 85 ? brand.greenText : s.score >= 75 ? brand.primary : brand.amberText,
-                            }}>{s.score}%</span>
-                            <span style={{ background: brand.primarySurface, color: brand.primary, fontSize: 11, fontWeight: 500, padding: '2px 10px', borderRadius: 6, width: 'fit-content' }}>{s.industry}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Improvement Suggestions */}
-            <div style={{ marginTop: 16, background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <TrendingUp size={18} style={{ color: brand.primary }} />
-                    <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Areas for Improvement', 'مجالات التحسين')}</h4>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                        t('Practice structuring answers using the STAR method', 'تدرّب على هيكلة إجاباتك باستخدام طريقة STAR'),
-                        t('Work on maintaining eye contact during video interviews', 'اعمل على الحفاظ على التواصل البصري أثناء المقابلات المرئية'),
-                        t('Prepare more specific examples for behavioral questions', 'حضّر أمثلة أكثر تحديداً للأسئلة السلوكية'),
-                    ].map((tip, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <ChevronIcon size={14} style={{ color: brand.primary }} />
-                            <span style={{ fontSize: 13, color: brand.textSecondary }}>{tip}</span>
-                        </div>
-                    ))}
-                </div>
+            {/* Per-user performance appears after a real mock interview. No
+                interview engine is wired yet, so this is an honest empty state
+                (previously showed fabricated scores 82/78/... and dated sessions). */}
+            <div style={{ background: "#fff", borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 48, textAlign: "center" }}>
+                <BarChart3 size={28} style={{ color: brand.textSecondary, marginBottom: 10 }} />
+                <p style={{ fontSize: 14, color: brand.textSecondary, margin: 0 }}>
+                    {t('No mock interviews completed yet. Your scores and session history will appear here once you complete a session.', 'لم تُكمل أي مقابلة تجريبية بعد. ستظهر درجاتك وسجل جلساتك هنا بمجرد إكمال جلسة.')}
+                </p>
             </div>
         </div>
     );

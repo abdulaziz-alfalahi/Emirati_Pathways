@@ -40,29 +40,18 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
 
     /* ──────────────────────── DATA ──────────────────────── */
 
-    const fallbackCredentials: Array<{ title: string; issuer: string; date: string; txHash: string; network: string; status: string; verifications: number; badge: string; primary: boolean }> = [
-        { title: t('Bachelor of Computer Science', 'بكالوريوس علوم الحاسوب'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Feb 2026', 'فبراير 2026'), txHash: '0x8c4b...f12e', network: 'Ethereum', status: t('Verified', 'مُوثّقة'), verifications: 28, badge: '🎓', primary: true },
-        { title: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), issuer: t('Amazon Web Services', 'خدمات أمازون السحابية'), date: t('Nov 2025', 'نوفمبر 2025'), txHash: '0x7f3a...e82d', network: 'Polygon', status: t('Verified', 'مُوثّقة'), verifications: 12, badge: '☁️', primary: false },
-    ];
+    // Fabricated blockchain data removed (data-honesty audit) — the page previously
+    // seeded fake on-chain txHashes (0x8c4b…f12e), a fabricated verification log
+    // ("Emirates Group HR verified…"), and invented issuer counts (MOE 85/42000).
+    // Start empty; render only what the real API returns.
+    type CredRow = { title: string; issuer: string; date: string; txHash: string; network: string; status: string; verifications: number; badge: string; primary: boolean };
+    type IssuerRow = { name: string; credentials: number; verified: number; network: string; region: string; tier: string; tierLabel: string };
+    type LogRow = { credential: string; verifier: string; date: string; purpose: string };
 
-    const [myCredentials, setMyCredentials] = useState(fallbackCredentials);
-
-    const verificationLog = [
-        { credential: t('Bachelor of Computer Science (MOE)', 'بكالوريوس علوم الحاسوب (وزارة التعليم)'), verifier: t('Emirates Group HR', 'الموارد البشرية لمجموعة الإمارات'), date: t('Feb 16, 2026', '16 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
-        { credential: t('Higher Education Equivalency (MOHESR)', 'معادلة التعليم العالي (وزارة التعليم العالي)'), verifier: t('Dubai Government HR', 'الموارد البشرية لحكومة دبي'), date: t('Feb 14, 2026', '14 فبراير 2026'), purpose: t('Credential Check', 'فحص الاعتماد') },
-        { credential: t('UAE Teaching License (MOE)', 'رخصة التدريس الإماراتية (وزارة التعليم)'), verifier: t('Dubai Education Council', 'مجلس دبي للتعليم'), date: t('Feb 12, 2026', '12 فبراير 2026'), purpose: t('License Validation', 'التحقق من الرخصة') },
-        { credential: t('Bachelor of Computer Science (MOE)', 'بكالوريوس علوم الحاسوب (وزارة التعليم)'), verifier: t('Etisalat Digital', 'اتصالات ديجيتال'), date: t('Feb 10, 2026', '10 فبراير 2026'), purpose: t('Interview', 'مقابلة') },
-        { credential: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), verifier: t('Dubai Digital Authority', 'هيئة دبي الرقمية'), date: t('Feb 8, 2026', '8 فبراير 2026'), purpose: t('Vendor Pre-qual', 'تأهيل موردين') },
-        { credential: t('Higher Education Equivalency (MOHESR)', 'معادلة التعليم العالي (وزارة التعليم العالي)'), verifier: t('University of Dubai', 'جامعة دبي'), date: t('Feb 5, 2026', '5 فبراير 2026'), purpose: t('Graduate Admission', 'قبول دراسات عليا') },
-        { credential: t('Google Data Analytics', 'تحليلات بيانات Google'), verifier: t('Careem Engineering', 'هندسة كريم'), date: t('Feb 3, 2026', '3 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
-    ];
-
-    const fallbackIssuers: Array<{ name: string; credentials: number; verified: number; network: string; region: string; tier: string; tierLabel: string }> = [
-        { name: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), credentials: 85, verified: 42000, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary', tierLabel: t('Primary', 'رئيسي') },
-        { name: t('Amazon Web Services', 'خدمات أمازون السحابية'), credentials: 45, verified: 12400, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry', tierLabel: t('Industry', 'قطاعي') },
-    ];
-
-    const [issuers, setIssuers] = useState(fallbackIssuers);
+    const [myCredentials, setMyCredentials] = useState<CredRow[]>([]);
+    const [verificationLog, setVerificationLog] = useState<LogRow[]>([]);
+    const [issuers, setIssuers] = useState<IssuerRow[]>([]);
+    const [simulatedNotice, setSimulatedNotice] = useState<string>('');
 
     useEffect(() => {
         const fetchBlockchain = async () => {
@@ -74,6 +63,11 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
                 ]);
                 if (credsRes.ok) {
                     const data = await credsRes.json();
+                    // Surface the backend's own simulated/disclaimer marker instead of
+                    // silently rendering demo data as real on-chain credentials.
+                    if (data.simulated && data.disclaimer) {
+                        setSimulatedNotice(isRTL ? (data.disclaimer_ar || data.disclaimer) : data.disclaimer);
+                    }
                     const creds = (data.credentials || []).map((c: any) => ({
                         title: isRTL ? (c.title_ar || c.title) : c.title,
                         issuer: isRTL ? (c.issuer_ar || c.issuer) : c.issuer,
@@ -85,7 +79,7 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
                         badge: c.badge || '🎓',
                         primary: c.is_primary || false,
                     }));
-                    if (creds.length > 0) setMyCredentials(creds);
+                    setMyCredentials(creds);
                 }
                 if (issuersRes.ok) {
                     const data = await issuersRes.json();
@@ -98,23 +92,30 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
                         tier: (i.tier || 'Government') as string,
                         tierLabel: isRTL ? (i.tier_label_ar || i.tier_label) : i.tier_label,
                     }));
-                    if (iss.length > 0) setIssuers(iss);
+                    setIssuers(iss);
                 }
             } catch (e) { console.error('Error fetching blockchain data:', e); }
         };
         fetchBlockchain();
     }, [isRTL]);
 
+    // Honest stats derived from the real loaded data (0 when empty) — no fabricated
+    // 6 / 103 / 150+ / 100% figures.
+    const totalVerifications = myCredentials.reduce((sum, c) => sum + (c.verifications || 0), 0);
     const stats = [
-        { value: '6', label: t('My Credentials', 'اعتماداتي'), icon: Award },
-        { value: '103', label: t('Verifications', 'عمليات التحقق'), icon: CheckCircle },
-        { value: '150+', label: t('Issuers', 'جهة مصدّرة'), icon: Building2 },
-        { value: '100%', label: t('On-Chain', 'على السلسلة'), icon: Shield },
+        { value: String(myCredentials.length), label: t('My Credentials', 'اعتماداتي'), icon: Award },
+        { value: String(totalVerifications), label: t('Verifications', 'عمليات التحقق'), icon: CheckCircle },
+        { value: String(issuers.length), label: t('Issuers', 'جهة مصدّرة'), icon: Building2 },
     ];
 
     /* ── Tab 1: My Credentials ── */
     const credentialsTab = (
         <div>
+            {simulatedNotice && (
+                <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#92400E' }}>
+                    ⚠️ {simulatedNotice}
+                </div>
+            )}
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('My Blockchain Credentials', 'اعتماداتي على البلوكتشين')}
             </h2>
@@ -126,6 +127,11 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {myCredentials.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                        {t('No blockchain credentials yet.', 'لا توجد اعتمادات بلوكتشين بعد.')}
+                    </div>
+                )}
                 {myCredentials.map((c, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
@@ -188,10 +194,10 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
             {/* Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                 {[
-                    { label: t('Total Verifications', 'إجمالي التحققات'), value: '41', Icon: CheckCircle },
-                    { label: t('This Month', 'هذا الشهر'), value: '5', Icon: Clock },
-                    { label: t('Unique Verifiers', 'جهات فريدة'), value: '12', Icon: Users },
-                    { label: t('Job Applications', 'طلبات التوظيف'), value: '8', Icon: FileText },
+                    { label: t('Total Verifications', 'إجمالي التحققات'), value: String(totalVerifications), Icon: CheckCircle },
+                    { label: t('Log Entries', 'إدخالات السجل'), value: String(verificationLog.length), Icon: Clock },
+                    { label: t('Unique Verifiers', 'جهات فريدة'), value: String(new Set(verificationLog.map(v => v.verifier)).size), Icon: Users },
+                    { label: t('Job Applications', 'طلبات التوظيف'), value: String(verificationLog.filter(v => v.purpose === t('Job Application', 'طلب توظيف')).length), Icon: FileText },
                 ].map((s, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, textAlign: 'center' }}>
                         <s.Icon size={20} style={{ color: brand.primary, margin: '0 auto 6px' }} />
@@ -203,6 +209,11 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
 
             {/* Log entries */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {verificationLog.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 10, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                        {t('No verification activity yet.', 'لا يوجد نشاط تحقق بعد.')}
+                    </div>
+                )}
                 {verificationLog.map((v, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 36, height: 36, borderRadius: 8, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -239,6 +250,11 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                {issuers.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                        {t('No issuers to display yet.', 'لا توجد جهات مصدّرة للعرض بعد.')}
+                    </div>
+                )}
                 {issuers.map((iss, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>

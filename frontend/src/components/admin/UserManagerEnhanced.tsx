@@ -549,16 +549,19 @@ const UserManagerEnhanced: React.FC = () => {
         setUsers(response.data.data);
         setTotalUsers(response.data.data.length);
       } else {
-        // Fallback mock data for development
-        setUsers(generateMockUsers());
-        setTotalUsers(50);
-        setTotalPages(3);
+        // Honest empty state — never show fabricated users an admin could act on.
+        setUsers([]);
+        setTotalUsers(0);
+        setTotalPages(1);
       }
       fetchUserStats();
     } catch (err) {
       console.error('Failed to fetch users:', err);
-      setError('Failed to load users. Using sample data.');
-      setUsers(generateMockUsers());
+      // Honest error state — do NOT substitute invented "sample" users.
+      setError('Failed to load users. Please try again.');
+      setUsers([]);
+      setTotalUsers(0);
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
@@ -624,14 +627,14 @@ const UserManagerEnhanced: React.FC = () => {
         setActivityLogs(response.data.data.activities || []);
         setUserSessions(response.data.data.sessions || []);
       } else {
-        // Mock activity data
-        setActivityLogs(generateMockActivity(userId));
-        setUserSessions(generateMockSessions(userId));
+        // Honest empty — do not fabricate audit activity/sessions.
+        setActivityLogs([]);
+        setUserSessions([]);
       }
     } catch (err) {
       console.error('Failed to fetch user activity:', err);
-      setActivityLogs(generateMockActivity(userId));
-      setUserSessions(generateMockSessions(userId));
+      setActivityLogs([]);
+      setUserSessions([]);
     }
   };
 
@@ -945,67 +948,10 @@ const UserManagerEnhanced: React.FC = () => {
     fetchUserActivity(user.id);
     setShowActivityModal(true);
   };
-
-  // ============================================
-  // MOCK DATA GENERATORS
-  // ============================================
-
-  const generateMockUsers = (): User[] => {
-    const names = [
-      'Ahmed Al Maktoum', 'Fatima Al Nahyan', 'Mohammed Al Qasimi',
-      'Sara Al Falasi', 'Khalid Al Mazrouei', 'Noura Al Shamsi',
-      'Omar Al Suwaidi', 'Aisha Al Ketbi', 'Rashid Al Muhairi',
-      'Hessa Al Mansoori', 'Sultan Al Dhaheri', 'Mariam Al Zaabi'
-    ];
-
-    const roles = ['candidate', 'recruiter', 'employer_admin', 'growth_operator', 'platform_administrator', 'advisor', 'coach', 'internship_coordinator', 'training_provider', 'call_center_agent'];
-    const departments = ['Engineering', 'HR', 'Marketing', 'Operations', 'Finance'];
-
-    return names.map((name, i) => ({
-      id: i + 1,
-      username: name.toLowerCase().replace(/\s+/g, '.'),
-      email: `${name.toLowerCase().replace(/\s+/g, '.')}@emiratipathways.ae`,
-      full_name: name,
-      roles: [roles[i % roles.length]],
-      is_active: i % 5 !== 0,
-      last_login: i % 3 === 0 ? undefined : new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-      updated_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      profile_data: {
-        phone: `+971 50 ${Math.floor(Math.random() * 9000000 + 1000000)}`,
-        department: departments[i % departments.length],
-        position: i % 3 === 0 ? 'Manager' : i % 3 === 1 ? 'Senior Specialist' : 'Specialist',
-        location: i % 2 === 0 ? 'Dubai' : 'Abu Dhabi'
-      },
-      activity_count: Math.floor(Math.random() * 100),
-      session_count: Math.floor(Math.random() * 5)
-    }));
-  };
-
-  const generateMockActivity = (userId: number): ActivityLog[] => {
-    const actions = ['login', 'logout', 'profile_update', 'password_change', 'role_change', 'document_upload'];
-    return Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      user_id: userId,
-      action: actions[i % actions.length],
-      details: `User performed ${actions[i % actions.length]} action`,
-      ip_address: `192.168.1.${Math.floor(Math.random() * 255)}`,
-      user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
-      created_at: new Date(Date.now() - i * 3600000).toISOString()
-    }));
-  };
-
-  const generateMockSessions = (userId: number): UserSession[] => {
-    return Array.from({ length: 3 }, (_, i) => ({
-      id: `session-${userId}-${i}`,
-      user_id: userId,
-      ip_address: `192.168.1.${Math.floor(Math.random() * 255)}`,
-      user_agent: i === 0 ? 'Chrome on Windows' : i === 1 ? 'Safari on macOS' : 'Mobile App',
-      created_at: new Date(Date.now() - i * 86400000).toISOString(),
-      last_activity: new Date(Date.now() - i * 3600000).toISOString(),
-      is_current: i === 0
-    }));
-  };
+  // NOTE: mock user/activity/session generators removed (data-honesty audit)
+  // — admins must never see fabricated users/audit records. Real data comes
+  // from /api/admin/users and /api/admin/users/<id>/activity; on failure the UI
+  // shows an honest empty/error state.
 
   const getDefaultRoles = (): Role[] => [
     // Administrative

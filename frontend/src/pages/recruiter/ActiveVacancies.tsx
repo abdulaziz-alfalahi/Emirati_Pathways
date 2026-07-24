@@ -145,10 +145,11 @@ const ActiveVacancies: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {activeVacancies.map((vacancy: any) => {
-                        // Mock data for demonstration - in real app would come from backend
-                        const stage = vacancy.stage || 'Screening';
-                        const progress = vacancy.progress || 45;
-                        const applications = vacancy.applications_count || Math.floor(Math.random() * 50) + 5;
+                        // Honest values from the vacancy record — no fabricated
+                        // stage/progress/application counts (was Math.random + '45').
+                        const stage = vacancy.stage || '—';
+                        const progress = vacancy.progress ?? 0;
+                        const applications = vacancy.applications_count ?? 0;
 
                         return (
                           <TableRow

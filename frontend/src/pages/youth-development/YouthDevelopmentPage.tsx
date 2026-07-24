@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Users, Target, BookOpen, Award, Calendar, Heart,
-    Star, TrendingUp, ChevronRight, ChevronLeft, CheckCircle, Clock,
+    Star, ChevronRight, ChevronLeft, CheckCircle, Clock,
     Briefcase, GraduationCap, Lightbulb, Globe, Rocket,
     Shield, Zap, ArrowRight, ArrowLeft
 } from 'lucide-react';
@@ -90,17 +90,8 @@ const YouthDevelopmentPage2: React.FC = () => {
 
     const skillLevels = [t('Beginner', 'مبتدئ'), t('Intermediate', 'متوسط'), t('Advanced', 'متقدم'), t('Beginner', 'مبتدئ')];
 
-    const successStories = [
-        { name: t('Omar Al Zaabi', 'عمر الزعابي'), age: 22, program: t('Future Leaders Initiative', 'مبادرة قادة المستقبل'), outcome: t('Appointed to Youth Federal Council', 'عُيّن في المجلس الاتحادي للشباب'), quote: t('The program gave me the confidence and skills to represent my generation at the national level.', 'منحني البرنامج الثقة والمهارات لتمثيل جيلي على المستوى الوطني.'), avatar: '👨‍🎓' },
-        { name: t('Layla Al Suwaidi', 'ليلى السويدي'), age: 20, program: t('Youth Entrepreneurship Lab', 'مختبر ريادة الأعمال الشبابي'), outcome: t('Founded social enterprise impacting 500+ families', 'أسّست مؤسسة اجتماعية أثّرت في أكثر من 500 عائلة'), quote: t('From idea to AED 100K funding in 6 months — the mentors were incredible.', 'من الفكرة إلى تمويل 100 ألف درهم في 6 أشهر — المرشدون كانوا رائعين.'), avatar: '👩‍💼' },
-        { name: t('Khalid Al Rashid', 'خالد الراشد'), age: 24, program: t('STEM Excellence Academy', 'أكاديمية التميز في العلوم والتكنولوجيا'), outcome: t('Full scholarship to MIT', 'منحة كاملة لجامعة MIT'), quote: t('The research experience and international competitions opened doors I never imagined.', 'التجربة البحثية والمسابقات الدولية فتحت أبواباً لم أتخيلها.'), avatar: '👨‍🔬' },
-    ];
-
     const stats = [
-        { value: '12,500+', label: t('Participants', 'مشارك'), icon: Users },
-        { value: '85+', label: t('Programs', 'برنامج'), icon: Target },
-        { value: '200+', label: t('Mentors', 'مرشد'), icon: Award },
-        { value: '94%', label: t('Success Rate', 'معدل النجاح'), icon: TrendingUp },
+        { value: String(programs.length), label: t('Programs', 'برنامج'), icon: Target },
     ];
 
     /* ── Tab 1: Programs ── */
@@ -111,7 +102,7 @@ const YouthDevelopmentPage2: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Explore 85+ youth development programs across leadership, technology, entrepreneurship, culture, and national service — all designed for young Emiratis.',
+                    'Explore youth development programs across leadership, technology, entrepreneurship, culture, and national service — all designed for young Emiratis.',
                     'استكشف أكثر من 85 برنامجاً لتطوير الشباب في مجالات القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — جميعها مصممة للشباب الإماراتي.'
                 )}
             </p>
@@ -302,30 +293,17 @@ const YouthDevelopmentPage2: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Real stories from young Emiratis who transformed their futures through our development programs.',
-                    'قصص حقيقية من شباب إماراتيين غيّروا مستقبلهم من خلال برامجنا التطويرية.'
+                    'Success stories from programme participants will be featured here as they are shared.',
+                    'ستُعرض هنا قصص نجاح المشاركين في البرامج عند مشاركتها.'
                 )}
             </p>
 
+            {/* Fabricated "Real stories" (Omar Al Zaabi/Layla Al Suwaidi/Khalid Al Rashid
+                with invented outcomes and quotes) removed — data-honesty audit. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
-                {successStories.map((s, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 24 }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
-                            <span style={{ fontSize: 36 }}>{s.avatar}</span>
-                            <div>
-                                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{s.name}</h3>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{t('Age', 'العمر')} {s.age} · {s.program}</div>
-                            </div>
-                        </div>
-                        <blockquote style={{ fontSize: 14, color: brand.textPrimary, fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 14px', paddingLeft: isRTL ? 0 : 16, paddingRight: isRTL ? 16 : 0, borderLeft: isRTL ? 'none' : `3px solid ${brand.primary}`, borderRight: isRTL ? `3px solid ${brand.primary}` : 'none' }}>
-                            "{s.quote}"
-                        </blockquote>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <CheckCircle size={16} style={{ color: brand.primary }} />
-                            <span style={{ fontSize: 13, fontWeight: 600, color: brand.greenText }}>{s.outcome}</span>
-                        </div>
-                    </div>
-                ))}
+                <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 32, textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                    {t('No success stories to show yet.', 'لا توجد قصص نجاح لعرضها بعد.')}
+                </div>
             </div>
 
             {/* Apply CTA */}
@@ -334,8 +312,8 @@ const YouthDevelopmentPage2: React.FC = () => {
                 <h3 style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary, margin: '0 0 6px' }}>{t('Start Your Journey', 'ابدأ رحلتك')}</h3>
                 <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '0 0 16px', maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
                     {t(
-                        'Join 12,500+ young Emiratis building their futures. Apply to a program, find a mentor, and start developing the skills that matter.',
-                        'انضم إلى أكثر من 12,500 شاب إماراتي يبنون مستقبلهم. قدّم لبرنامج، ابحث عن مرشد، وابدأ بتطوير المهارات المهمة.'
+                        'Join young Emiratis building their futures. Apply to a program, find a mentor, and start developing the skills that matter.',
+                        'انضم إلى الشباب الإماراتي الذين يبنون مستقبلهم. قدّم لبرنامج، ابحث عن مرشد، وابدأ بتطوير المهارات المهمة.'
                     )}
                 </p>
                 <button style={{ background: brand.primary, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -358,7 +336,7 @@ const YouthDevelopmentPage2: React.FC = () => {
         <EducationPathwayLayout
             title={t('Youth Development', 'تطوير الشباب')}
             description={t(
-                "Empowering young Emiratis through 85+ development programs in leadership, technology, entrepreneurship, culture, and national service — building the UAE's future workforce",
+                "Empowering young Emiratis through development programs in leadership, technology, entrepreneurship, culture, and national service — building the UAE's future workforce",
                 'تمكين الشباب الإماراتي من خلال أكثر من 85 برنامجاً تطويرياً في القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — بناء القوى العاملة المستقبلية للإمارات'
             )}
             icon={<Users className="h-6 w-6" />}
