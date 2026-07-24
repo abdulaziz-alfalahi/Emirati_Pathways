@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import internshipEngagementService, { Engagement, stageLabel } from '@/services/internshipEngagementService';
-import { Briefcase, Building2, ShieldCheck, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import internshipEngagementService, { Engagement, ConsentAuditEntry, stageLabel } from '@/services/internshipEngagementService';
+import { Briefcase, Building2, ShieldCheck, Loader2, AlertCircle, RefreshCw, History, ChevronDown, ChevronUp } from 'lucide-react';
 
 const stagePillClass: Record<Engagement['stage'], string> = {
     proposed: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -28,6 +28,12 @@ const ParentInternshipTracking: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [actingId, setActingId] = useState<number | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
+
+    // Phase 3 — lazy-loaded consent audit trail, keyed by engagement id.
+    const [openAudit, setOpenAudit] = useState<Record<number, boolean>>({});
+    const [auditData, setAuditData] = useState<Record<number, ConsentAuditEntry[]>>({});
+    const [auditLoading, setAuditLoading] = useState<Record<number, boolean>>({});
+    const [auditError, setAuditError] = useState<Record<number, boolean>>({});
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -56,6 +62,30 @@ const ParentInternshipTracking: React.FC = () => {
         } finally {
             setActingId(null);
         }
+    };
+
+    const toggleAudit = async (id: number) => {
+        const willOpen = !openAudit[id];
+        setOpenAudit((prev) => ({ ...prev, [id]: willOpen }));
+        // Lazy-load once, on first expand.
+        if (willOpen && auditData[id] === undefined && !auditLoading[id]) {
+            setAuditLoading((prev) => ({ ...prev, [id]: true }));
+            setAuditError((prev) => ({ ...prev, [id]: false }));
+            try {
+                const entries = await internshipEngagementService.consentAudit(id);
+                setAuditData((prev) => ({ ...prev, [id]: Array.isArray(entries) ? entries : [] }));
+            } catch {
+                setAuditError((prev) => ({ ...prev, [id]: true }));
+            } finally {
+                setAuditLoading((prev) => ({ ...prev, [id]: false }));
+            }
+        }
+    };
+
+    const fmtDate = (iso?: string) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? '' : d.toLocaleDateString(isRTL ? 'ar' : 'en', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
     const subStatusBadge = (status: string) => {
@@ -239,6 +269,79 @@ const ParentInternshipTracking: React.FC = () => {
                                             <p className="text-xs text-muted-foreground">
                                                 {t('Reason', 'السبب')}: {e.decline_reason}
                                             </p>
+                                        )}
+
+                                        {/* Phase 3 — consent audit trail, relevant only when consent was/is required */}
+                                        {e.parent_consent_status !== 'not_required' && (
+                                            <div className="pt-1 border-t border-border/60">
+                                                <button
+                                                    type="button"
+                                                    className="flex items-center gap-1.5 text-xs font-medium text-teal-700 hover:text-teal-800 pt-2"
+                                                    onClick={() => toggleAudit(e.id)}
+                                                    aria-expanded={!!openAudit[e.id]}
+                                                >
+                                                    <History className="h-3.5 w-3.5 shrink-0" />
+                                                    {t('Consent history', 'سجل الموافقات')}
+                                                    {openAudit[e.id]
+                                                        ? <ChevronUp className="h-3.5 w-3.5" />
+                                                        : <ChevronDown className="h-3.5 w-3.5" />}
+                                                </button>
+
+                                                {openAudit[e.id] && (
+                                                    <div className="mt-2">
+                                                        {auditLoading[e.id] ? (
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                {t('Loading history…', 'جارٍ تحميل السجل…')}
+                                                            </div>
+                                                        ) : auditError[e.id] ? (
+                                                            <div className="flex items-center justify-between gap-2 text-xs text-red-600 py-2">
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                                                    {t('Could not load consent history.', 'تعذّر تحميل سجل الموافقات.')}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="font-medium underline shrink-0"
+                                                                    onClick={() => toggleAudit(e.id)}
+                                                                >
+                                                                    {t('Retry', 'إعادة المحاولة')}
+                                                                </button>
+                                                            </div>
+                                                        ) : (auditData[e.id]?.length ?? 0) === 0 ? (
+                                                            <p className="text-xs text-muted-foreground py-2">
+                                                                {t('No consent decisions recorded yet.', 'لا توجد قرارات موافقة مسجّلة بعد.')}
+                                                            </p>
+                                                        ) : (
+                                                            <ul className="space-y-2">
+                                                                {auditData[e.id].map((a) => (
+                                                                    <li key={a.id} className="rounded-lg bg-muted/60 p-2.5 space-y-1">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            {a.decision === 'granted' ? (
+                                                                                <Badge variant="outline" className="text-[11px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                                                    {t('Granted', 'مُنِحت')}
+                                                                                </Badge>
+                                                                            ) : (
+                                                                                <Badge variant="outline" className="text-[11px] bg-red-50 text-red-600 border-red-200">
+                                                                                    {t('Denied', 'مرفوضة')}
+                                                                                </Badge>
+                                                                            )}
+                                                                            {fmtDate(a.created_at) && (
+                                                                                <span className="text-[11px] text-muted-foreground shrink-0">{fmtDate(a.created_at)}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        {a.reason && (
+                                                                            <p className="text-xs text-muted-foreground">
+                                                                                {t('Reason', 'السبب')}: {a.reason}
+                                                                            </p>
+                                                                        )}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </CardContent>
                                 </Card>

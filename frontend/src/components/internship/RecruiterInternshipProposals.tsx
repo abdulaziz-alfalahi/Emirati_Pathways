@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import internshipEngagementService, { Engagement, stageLabel } from '@/services/internshipEngagementService';
-import { GraduationCap, Loader2, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import internshipEngagementService, { Engagement, Evaluation, Report, stageLabel } from '@/services/internshipEngagementService';
+import { GraduationCap, Loader2, CheckCircle, XCircle, AlertCircle, RefreshCw, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 
 /* ─────────────── Helpers ─────────────── */
 
@@ -53,6 +53,20 @@ const RecruiterInternshipProposals: React.FC = () => {
     const [decliningId, setDecliningId] = useState<number | null>(null);
     const [declineReason, setDeclineReason] = useState('');
 
+    // Assessment & reports (expandable per engagement)
+    const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [assessLoading, setAssessLoading] = useState(false);
+    const [assessError, setAssessError] = useState(false);
+    const [evals, setEvals] = useState<Evaluation[]>([]);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [evalType, setEvalType] = useState<'mid' | 'final' | 'academic'>('mid');
+    const [evalRating, setEvalRating] = useState<number>(5);
+    const [evalFeedback, setEvalFeedback] = useState('');
+    const [submittingEval, setSubmittingEval] = useState(false);
+    const [reviewingReportId, setReviewingReportId] = useState<number | null>(null);
+    const [reviewFeedback, setReviewFeedback] = useState('');
+    const [reviewBusy, setReviewBusy] = useState(false);
+
     const load = useCallback(async () => {
         setLoading(true);
         setLoadError(false);
@@ -97,6 +111,78 @@ const RecruiterInternshipProposals: React.FC = () => {
             text: e.parent_consent_status === 'granted' ? b('Granted', 'ممنوحة') : e.parent_consent_status === 'denied' ? b('Denied', 'مرفوضة') : b('Pending', 'قيد الانتظار'),
         }] : []),
     ]);
+
+    const loadAssessment = async (engId: number) => {
+        setAssessLoading(true);
+        setAssessError(false);
+        try {
+            const [ev, rp] = await Promise.all([
+                internshipEngagementService.evaluations(engId),
+                internshipEngagementService.reports(engId),
+            ]);
+            setEvals(Array.isArray(ev) ? ev : []);
+            setReports(Array.isArray(rp) ? rp : []);
+        } catch {
+            setEvals([]);
+            setReports([]);
+            setAssessError(true);
+        }
+        setAssessLoading(false);
+    };
+
+    const toggleExpand = (engId: number) => {
+        if (expandedId === engId) { setExpandedId(null); return; }
+        setExpandedId(engId);
+        setReviewingReportId(null);
+        setReviewFeedback('');
+        setEvalType('mid');
+        setEvalRating(5);
+        setEvalFeedback('');
+        setEvals([]);
+        setReports([]);
+        loadAssessment(engId);
+    };
+
+    const submitEval = async (engId: number) => {
+        setSubmittingEval(true);
+        try {
+            await internshipEngagementService.submitEvaluation(engId, {
+                evaluation_type: evalType,
+                rating: evalRating,
+                feedback: evalFeedback.trim() || undefined,
+            });
+            toast({ title: b('Evaluation submitted', 'تم إرسال التقييم') });
+            setEvalFeedback('');
+            const ev = await internshipEngagementService.evaluations(engId);
+            setEvals(Array.isArray(ev) ? ev : []);
+        } catch {
+            toast({ title: b('Error', 'خطأ'), description: b('Could not submit the evaluation. Please try again.', 'تعذّر إرسال التقييم. يرجى المحاولة مرة أخرى.'), variant: 'destructive' });
+        }
+        setSubmittingEval(false);
+    };
+
+    const submitReview = async (engId: number, reportId: number) => {
+        setReviewBusy(true);
+        try {
+            await internshipEngagementService.reviewReport(reportId, reviewFeedback.trim());
+            toast({ title: b('Review submitted', 'تم إرسال المراجعة') });
+            setReviewingReportId(null);
+            setReviewFeedback('');
+            const rp = await internshipEngagementService.reports(engId);
+            setReports(Array.isArray(rp) ? rp : []);
+        } catch {
+            toast({ title: b('Error', 'خطأ'), description: b('Could not submit your review. Please try again.', 'تعذّر إرسال مراجعتك. يرجى المحاولة مرة أخرى.'), variant: 'destructive' });
+        }
+        setReviewBusy(false);
+    };
+
+    const evaluatorTypeLabel = (v: Evaluation['evaluator_type']) =>
+        v === 'recruiter' ? b('Recruiter', 'مسؤول التوظيف') : b('Coordinator', 'المنسق');
+    const evalTypeLabel = (v: Evaluation['evaluation_type']) =>
+        v === 'mid' ? b('Mid-term', 'منتصف المدة') : v === 'final' ? b('Final', 'نهائي') : b('Academic', 'أكاديمي');
+    const reportTypeLabel = (v: Report['report_type']) =>
+        v === 'final' ? b('Final report', 'التقرير النهائي') : b('Periodic report', 'تقرير دوري');
+    const fmtDate = (s?: string) => (s ? new Date(s).toLocaleDateString(isRTL ? 'ar' : 'en', { year: 'numeric', month: 'short', day: 'numeric' }) : '');
 
     /* ── Render ── */
     if (loading) {
@@ -222,6 +308,176 @@ const RecruiterInternshipProposals: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
+
+                                    {(e.stage === 'active' || e.stage === 'completed') && (
+                                        <div className="mt-3 pt-3 border-t border-slate-100">
+                                            <button
+                                                onClick={() => toggleExpand(e.id)}
+                                                className="inline-flex items-center gap-1.5 text-xs font-dubai-medium text-slate-600 hover:text-teal-700"
+                                            >
+                                                <ClipboardList className="h-3.5 w-3.5" />
+                                                {b('Assessment & reports', 'التقييم والتقارير')}
+                                                {expandedId === e.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                            </button>
+
+                                            {expandedId === e.id && (
+                                                <div className="mt-3">
+                                                    {assessError && (
+                                                        <div className="flex items-center gap-2 text-xs text-red-600 font-dubai mb-3">
+                                                            <AlertCircle className="h-4 w-4" />
+                                                            {b('Could not load assessment data', 'تعذّر تحميل بيانات التقييم')}
+                                                        </div>
+                                                    )}
+
+                                                    {assessLoading ? (
+                                                        <div className="flex items-center justify-center py-6">
+                                                            <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {/* Add evaluation */}
+                                                            <div className="rounded-lg bg-teal-50/60 p-3 mb-4">
+                                                                <p className="text-xs font-dubai-bold text-slate-700 mb-2">{b('Add evaluation', 'إضافة تقييم')}</p>
+                                                                <div className="flex gap-2 flex-wrap mb-2">
+                                                                    <select
+                                                                        value={evalType}
+                                                                        onChange={(ev) => setEvalType(ev.target.value as 'mid' | 'final' | 'academic')}
+                                                                        className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-dubai text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+                                                                        dir={isRTL ? 'rtl' : 'ltr'}
+                                                                    >
+                                                                        <option value="mid">{b('Mid-term', 'منتصف المدة')}</option>
+                                                                        <option value="final">{b('Final', 'نهائي')}</option>
+                                                                        <option value="academic">{b('Academic', 'أكاديمي')}</option>
+                                                                    </select>
+                                                                    <select
+                                                                        value={evalRating}
+                                                                        onChange={(ev) => setEvalRating(Number(ev.target.value))}
+                                                                        className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-dubai text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+                                                                        dir={isRTL ? 'rtl' : 'ltr'}
+                                                                    >
+                                                                        {[1, 2, 3, 4, 5].map((n) => (
+                                                                            <option key={n} value={n}>{b(`Rating ${n}/5`, `تقييم ${n}/5`)}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <textarea
+                                                                    value={evalFeedback}
+                                                                    onChange={(ev) => setEvalFeedback(ev.target.value)}
+                                                                    placeholder={b('Feedback (optional)', 'ملاحظات (اختياري)')}
+                                                                    rows={2}
+                                                                    className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-dubai focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+                                                                    dir={isRTL ? 'rtl' : 'ltr'}
+                                                                />
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="mt-2 h-8 px-3 text-xs bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium gap-1"
+                                                                    onClick={() => submitEval(e.id)}
+                                                                    disabled={submittingEval}
+                                                                >
+                                                                    {submittingEval && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                                                                    {b('Submit evaluation', 'إرسال التقييم')}
+                                                                </Button>
+                                                            </div>
+
+                                                            {/* Evaluations */}
+                                                            <p className="text-xs font-dubai-bold text-slate-700 mb-2">{b('Evaluations', 'التقييمات')}</p>
+                                                            {evals.length === 0 ? (
+                                                                <p className="text-xs text-slate-400 font-dubai mb-4">{b('No evaluations yet.', 'لا توجد تقييمات بعد.')}</p>
+                                                            ) : (
+                                                                <div className="space-y-2 mb-4">
+                                                                    {evals.map((ev) => (
+                                                                        <div key={ev.id} className="rounded-md border border-slate-200 p-2.5">
+                                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                                <Badge className="text-[10px] font-dubai-medium bg-blue-50 text-blue-700 border-blue-200">{evaluatorTypeLabel(ev.evaluator_type)}</Badge>
+                                                                                <Badge className="text-[10px] font-dubai-medium bg-teal-50 text-teal-700 border-teal-200">{evalTypeLabel(ev.evaluation_type)}</Badge>
+                                                                                {ev.rating != null && (
+                                                                                    <span className="text-xs font-dubai-bold text-slate-700">{b('Rating', 'التقييم')}: {ev.rating}/5</span>
+                                                                                )}
+                                                                                {ev.created_at && <span className="text-[10px] text-slate-400 font-dubai ms-auto">{fmtDate(ev.created_at)}</span>}
+                                                                            </div>
+                                                                            {ev.feedback && <p className="text-xs text-slate-600 font-dubai mt-1.5 whitespace-pre-wrap">{ev.feedback}</p>}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Student reports */}
+                                                            <p className="text-xs font-dubai-bold text-slate-700 mb-2">{b('Student reports', 'تقارير الطالب')}</p>
+                                                            {reports.length === 0 ? (
+                                                                <p className="text-xs text-slate-400 font-dubai">{b('No reports submitted yet.', 'لم يتم تقديم أي تقارير بعد.')}</p>
+                                                            ) : (
+                                                                <div className="space-y-2">
+                                                                    {reports.map((rp) => (
+                                                                        <div key={rp.id} className="rounded-md border border-slate-200 p-2.5">
+                                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                                <span className="text-xs font-dubai-bold text-slate-800">{rp.title || reportTypeLabel(rp.report_type)}</span>
+                                                                                {rp.period_label && <Badge className="text-[10px] font-dubai-medium bg-slate-50 text-slate-500 border-slate-200">{rp.period_label}</Badge>}
+                                                                                <Badge className={`text-[10px] font-dubai-medium ${rp.status === 'reviewed' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                                                                    {rp.status === 'reviewed' ? b('Reviewed', 'تمت المراجعة') : b('Submitted', 'مُقدَّم')}
+                                                                                </Badge>
+                                                                                {rp.created_at && <span className="text-[10px] text-slate-400 font-dubai ms-auto">{fmtDate(rp.created_at)}</span>}
+                                                                            </div>
+                                                                            {rp.content && <p className="text-xs text-slate-600 font-dubai mt-1.5 whitespace-pre-wrap">{rp.content}</p>}
+
+                                                                            {rp.status === 'reviewed' && rp.reviewer_feedback && (
+                                                                                <div className="mt-2 rounded-md bg-green-50 px-2.5 py-2 text-xs text-green-700 font-dubai">
+                                                                                    <span className="font-dubai-bold">{b('Reviewer feedback', 'ملاحظات المُراجع')}: </span>{rp.reviewer_feedback}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {rp.status === 'submitted' && (
+                                                                                reviewingReportId === rp.id ? (
+                                                                                    <div className="mt-2">
+                                                                                        <textarea
+                                                                                            value={reviewFeedback}
+                                                                                            onChange={(ev) => setReviewFeedback(ev.target.value)}
+                                                                                            placeholder={b('Your review feedback', 'ملاحظات مراجعتك')}
+                                                                                            rows={2}
+                                                                                            className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-dubai focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+                                                                                            dir={isRTL ? 'rtl' : 'ltr'}
+                                                                                        />
+                                                                                        <div className="flex gap-1.5 mt-2">
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                className="h-7 px-2 text-xs bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium gap-1"
+                                                                                                onClick={() => submitReview(e.id, rp.id)}
+                                                                                                disabled={reviewBusy || !reviewFeedback.trim()}
+                                                                                            >
+                                                                                                {reviewBusy && <Loader2 className="h-3 w-3 animate-spin" />}
+                                                                                                {b('Submit review', 'إرسال المراجعة')}
+                                                                                            </Button>
+                                                                                            <Button
+                                                                                                size="sm"
+                                                                                                variant="outline"
+                                                                                                className="h-7 px-2 text-xs font-dubai-medium"
+                                                                                                onClick={() => { setReviewingReportId(null); setReviewFeedback(''); }}
+                                                                                                disabled={reviewBusy}
+                                                                                            >
+                                                                                                {b('Cancel', 'إلغاء')}
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        variant="outline"
+                                                                                        className="mt-2 h-7 px-2.5 text-xs font-dubai-medium text-teal-700 border-teal-200 hover:bg-teal-50"
+                                                                                        onClick={() => { setReviewingReportId(rp.id); setReviewFeedback(''); }}
+                                                                                    >
+                                                                                        {b('Review', 'مراجعة')}
+                                                                                    </Button>
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         );

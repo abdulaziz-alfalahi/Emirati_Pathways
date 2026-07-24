@@ -16,12 +16,41 @@ import {
   XCircle,
   AlertTriangle,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Star,
+  Send,
 } from 'lucide-react';
 import internshipEngagementService, {
   Engagement,
   Internship,
+  Evaluation,
+  Report,
   stageLabel,
 } from '@/services/internshipEngagementService';
+
+/* Per-engagement lazy-loaded reports + evaluations. */
+interface FeedbackState {
+  loading: boolean;
+  error: boolean;
+  reports: Report[];
+  evaluations: Evaluation[];
+}
+
+interface ReportForm {
+  report_type: 'periodic' | 'final';
+  period_label: string;
+  title: string;
+  content: string;
+}
+
+const EMPTY_REPORT_FORM: ReportForm = {
+  report_type: 'periodic',
+  period_label: '',
+  title: '',
+  content: '',
+};
 
 /* Stage → pill colour. Labels come from the shared stageLabel() helper. */
 const STAGE_PILL: Record<Engagement['stage'], string> = {
@@ -45,6 +74,12 @@ const StudentInternshipEngagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [applyingId, setApplyingId] = useState<number | null>(null);
   const [decidingId, setDecidingId] = useState<number | null>(null);
+
+  // Phase 2 — reports & evaluations, lazy-loaded per engagement on expand.
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [feedback, setFeedback] = useState<Record<number, FeedbackState>>({});
+  const [reportForms, setReportForms] = useState<Record<number, ReportForm>>({});
+  const [submittingId, setSubmittingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -120,6 +155,109 @@ const StudentInternshipEngagement: React.FC = () => {
       });
     } finally {
       setDecidingId(null);
+    }
+  };
+
+  const loadFeedback = useCallback(async (engId: number) => {
+    setFeedback((prev) => ({
+      ...prev,
+      [engId]: {
+        loading: true,
+        error: false,
+        reports: prev[engId]?.reports || [],
+        evaluations: prev[engId]?.evaluations || [],
+      },
+    }));
+    const [reportsRes, evalsRes] = await Promise.allSettled([
+      internshipEngagementService.reports(engId),
+      internshipEngagementService.evaluations(engId),
+    ]);
+    setFeedback((prev) => ({
+      ...prev,
+      [engId]: {
+        loading: false,
+        error: reportsRes.status === 'rejected' && evalsRes.status === 'rejected',
+        reports: reportsRes.status === 'fulfilled' ? (reportsRes.value || []) : (prev[engId]?.reports || []),
+        evaluations: evalsRes.status === 'fulfilled' ? (evalsRes.value || []) : (prev[engId]?.evaluations || []),
+      },
+    }));
+  }, []);
+
+  const toggleExpand = (engId: number) => {
+    const willExpand = !expanded[engId];
+    setExpanded((prev) => ({ ...prev, [engId]: willExpand }));
+    if (willExpand && !feedback[engId]) {
+      loadFeedback(engId);
+    }
+  };
+
+  const reportFormFor = (engId: number): ReportForm => reportForms[engId] || EMPTY_REPORT_FORM;
+
+  const updateReportForm = (engId: number, patch: Partial<ReportForm>) => {
+    setReportForms((prev) => ({
+      ...prev,
+      [engId]: { ...(prev[engId] || EMPTY_REPORT_FORM), ...patch },
+    }));
+  };
+
+  const handleSubmitReport = async (engId: number) => {
+    const form = reportFormFor(engId);
+    if (!form.content.trim()) {
+      toast({
+        title: t('Report needs content', 'التقرير يحتاج إلى محتوى'),
+        description: t('Please write your report before submitting.', 'يرجى كتابة تقريرك قبل الإرسال.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSubmittingId(engId);
+    try {
+      await internshipEngagementService.submitReport(engId, {
+        report_type: form.report_type,
+        period_label: form.period_label.trim() || undefined,
+        title: form.title.trim() || undefined,
+        content: form.content.trim(),
+      });
+      toast({
+        title: t('Report submitted', 'تم إرسال التقرير'),
+        description: t(
+          'Your report was shared with your recruiter and coordinator.',
+          'تمت مشاركة تقريرك مع مسؤول التوظيف والمنسق.'
+        ),
+      });
+      setReportForms((prev) => ({ ...prev, [engId]: EMPTY_REPORT_FORM }));
+      await loadFeedback(engId);
+    } catch (err: any) {
+      toast({
+        title: t('Submission failed', 'فشل الإرسال'),
+        description: err?.response?.data?.error || t('Please try again.', 'يرجى المحاولة مرة أخرى.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const reportStatusBadge = (status: Report['status']) =>
+    status === 'reviewed'
+      ? 'bg-green-50 text-green-700 border-green-200'
+      : 'bg-amber-50 text-amber-700 border-amber-200';
+
+  const reportStatusLabel = (status: Report['status']) =>
+    status === 'reviewed' ? t('Reviewed', 'تمت المراجعة') : t('Submitted', 'تم الإرسال');
+
+  const reportTypeLabel = (type: Report['report_type']) =>
+    type === 'final' ? t('Final report', 'التقرير النهائي') : t('Periodic report', 'تقرير دوري');
+
+  const evaluatorLabel = (type: Evaluation['evaluator_type']) =>
+    type === 'recruiter' ? t('Recruiter', 'مسؤول التوظيف') : t('Coordinator', 'المنسق');
+
+  const evaluationTypeLabel = (type: Evaluation['evaluation_type']) => {
+    switch (type) {
+      case 'mid': return t('Mid-term', 'منتصف المدة');
+      case 'final': return t('Final', 'نهائي');
+      case 'academic': return t('Academic', 'أكاديمي');
+      default: return type;
     }
   };
 
@@ -274,6 +412,11 @@ const StudentInternshipEngagement: React.FC = () => {
               engagement.stage === 'proposed' &&
               engagement.initiated_by === 'coordinator' &&
               engagement.student_status === 'pending';
+            const showFeedback =
+              engagement.stage === 'active' || engagement.stage === 'completed';
+            const isExpanded = !!expanded[engagement.id];
+            const fb = feedback[engagement.id];
+            const form = reportFormFor(engagement.id);
             return (
               <div
                 key={engagement.id}
@@ -355,6 +498,192 @@ const StudentInternshipEngagement: React.FC = () => {
                       'اقترح منسقك المهني هذا التدريب لك.'
                     )}
                   </p>
+                )}
+
+                {showFeedback && (
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(engagement.id)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      aria-expanded={isExpanded}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      {t('Reports & feedback', 'التقارير والملاحظات')}
+                      {isExpanded
+                        ? <ChevronUp className="h-3.5 w-3.5" />
+                        : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="mt-3 space-y-4">
+                        {/* Submit a report — only while the internship is active */}
+                        {engagement.stage === 'active' && (
+                          <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+                            <p className="text-xs font-medium text-foreground">
+                              {t('Submit a report', 'إرسال تقرير')}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <select
+                                value={form.report_type}
+                                onChange={(e) => updateReportForm(engagement.id, {
+                                  report_type: e.target.value as ReportForm['report_type'],
+                                })}
+                                className="h-8 rounded-md border border-slate-200 bg-card px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-teal-300"
+                              >
+                                <option value="periodic">{t('Periodic', 'دوري')}</option>
+                                <option value="final">{t('Final', 'نهائي')}</option>
+                              </select>
+                              <input
+                                type="text"
+                                value={form.period_label}
+                                onChange={(e) => updateReportForm(engagement.id, { period_label: e.target.value })}
+                                placeholder={t('Period (e.g. Week 3)', 'الفترة (مثال: الأسبوع 3)')}
+                                className="h-8 flex-1 min-w-[120px] rounded-md border border-slate-200 bg-card px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-300"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={form.title}
+                              onChange={(e) => updateReportForm(engagement.id, { title: e.target.value })}
+                              placeholder={t('Title (optional)', 'العنوان (اختياري)')}
+                              className="h-8 w-full rounded-md border border-slate-200 bg-card px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-300"
+                            />
+                            <textarea
+                              value={form.content}
+                              onChange={(e) => updateReportForm(engagement.id, { content: e.target.value })}
+                              placeholder={t('What did you work on?', 'ماذا أنجزت؟')}
+                              rows={3}
+                              className="w-full rounded-md border border-slate-200 bg-card px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal-300 resize-y"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                size="sm"
+                                className="bg-primary hover:bg-primary text-white text-xs h-8 px-4"
+                                disabled={submittingId === engagement.id || !form.content.trim()}
+                                onClick={() => handleSubmitReport(engagement.id)}
+                              >
+                                <Send className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
+                                {submittingId === engagement.id
+                                  ? t('Submitting...', 'جاري الإرسال...')
+                                  : t('Submit report', 'إرسال التقرير')}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {fb?.loading ? (
+                          <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+                            <div className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                            {t('Loading reports & feedback...', 'جاري تحميل التقارير والملاحظات...')}
+                          </div>
+                        ) : fb?.error ? (
+                          <Alert className="border-red-200 bg-red-50/80">
+                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                            <AlertDescription className="text-red-700 flex items-center justify-between gap-2">
+                              <span className="text-xs">
+                                {t('Could not load reports & feedback.', 'تعذّر تحميل التقارير والملاحظات.')}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs border-red-200 text-red-700 hover:bg-red-50"
+                                onClick={() => loadFeedback(engagement.id)}
+                              >
+                                {t('Retry', 'إعادة المحاولة')}
+                              </Button>
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <>
+                            {/* My reports */}
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-foreground">
+                                {t('My reports', 'تقاريري')}
+                              </p>
+                              {fb && fb.reports.length > 0 ? fb.reports.map((report) => (
+                                <div key={report.id} className="rounded-md border border-slate-100 p-2.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-medium text-foreground">
+                                        {report.title || reportTypeLabel(report.report_type)}
+                                      </p>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                                        {reportTypeLabel(report.report_type)}
+                                        {report.period_label ? ` · ${report.period_label}` : ''}
+                                      </p>
+                                    </div>
+                                    <Badge className={`text-[10px] border flex-shrink-0 ${reportStatusBadge(report.status)}`}>
+                                      {reportStatusLabel(report.status)}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground mt-1.5 whitespace-pre-wrap">
+                                    {report.content}
+                                  </p>
+                                  {report.status === 'reviewed' && report.reviewer_feedback && (
+                                    <div className="mt-2 rounded-md bg-slate-50 border border-slate-100 p-2">
+                                      <p className="text-[10px] font-medium text-foreground">
+                                        {t('Reviewer feedback', 'ملاحظات المُراجِع')}
+                                        {report.reviewer_role ? ` · ${report.reviewer_role}` : ''}
+                                      </p>
+                                      <p className="text-[11px] text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                                        {report.reviewer_feedback}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )) : (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {t('No reports yet.', 'لا توجد تقارير بعد.')}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Evaluations of me */}
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-foreground">
+                                {t('Evaluations of me', 'تقييماتي')}
+                              </p>
+                              {fb && fb.evaluations.length > 0 ? fb.evaluations.map((evaluation) => (
+                                <div key={evaluation.id} className="rounded-md border border-slate-100 p-2.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-medium text-foreground">
+                                        {evaluatorLabel(evaluation.evaluator_type)}
+                                        <span className="text-muted-foreground font-normal">
+                                          {' · '}{evaluationTypeLabel(evaluation.evaluation_type)}
+                                        </span>
+                                      </p>
+                                      {evaluation.created_at && (
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                                          {new Date(evaluation.created_at).toLocaleDateString(isRTL ? 'ar' : 'en')}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {typeof evaluation.rating === 'number' && (
+                                      <Badge className="text-[10px] border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-0.5 flex-shrink-0">
+                                        <Star className="h-3 w-3" />
+                                        {evaluation.rating}/5
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {evaluation.feedback && (
+                                    <p className="text-[11px] text-muted-foreground mt-1.5 whitespace-pre-wrap">
+                                      {evaluation.feedback}
+                                    </p>
+                                  )}
+                                </div>
+                              )) : (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {t('No evaluations yet.', 'لا توجد تقييمات بعد.')}
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             );
