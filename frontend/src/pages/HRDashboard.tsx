@@ -375,16 +375,6 @@ const HRDashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
-  const setMockData = () => {
-    // Legacy mock data setting - keep for fallback if needed elsewhere
-    // but default state handles dashboard structure
-    setDashboardData(prev => ({
-      ...prev,
-      candidates: { ...prev.candidates, total: 156, shortlisted: 23 },
-      recruitment: { ...prev.recruitment, successRate: 72 }
-    }));
-  };
-
   if (isInitialLoad) {
     return (
       <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
