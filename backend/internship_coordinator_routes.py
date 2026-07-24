@@ -7,22 +7,27 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2, psycopg2.extras, os, json, logging
 
+try:
+    from backend.auth.access_control import resolve_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, ADMIN_ROLES
+
 logger = logging.getLogger(__name__)
 internship_coord_bp = Blueprint('internship_coord', __name__, url_prefix='/api/internship-coord')
 
 # Roles permitted to manage internship programs / placements / evaluations.
-_COORDINATOR_ROLES = {'internship_coordinator', 'education_operator', 'admin', 'super_admin'}
+_COORDINATOR_ROLES = ADMIN_ROLES | {'internship_coordinator', 'education_operator'}
 
 
 def _require_coordinator_role():
-    """Return a (response, 403) if the caller isn't an internship coordinator, else None."""
-    try:
-        role = (get_jwt() or {}).get('role', '')
-    except Exception:
-        role = ''
-    if role not in _COORDINATOR_ROLES:
-        return jsonify({"error": "Forbidden - internship coordinator access required"}), 403
-    return None
+    """Return a (response, 403) if the caller isn't an internship coordinator, else None.
+
+    Uses resolve_roles() (primary claim + secondary_roles + DB) rather than the
+    raw JWT 'role' claim, so a user who holds internship_coordinator as a SECONDARY
+    role — or any admin — is correctly allowed (feedback fb_1784892515; issue #96)."""
+    if resolve_roles() & _COORDINATOR_ROLES:
+        return None
+    return jsonify({"error": "Forbidden - internship coordinator access required"}), 403
 
 def get_db():
     try:

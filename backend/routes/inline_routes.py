@@ -19,9 +19,9 @@ import psycopg2.extras
 from pathlib import Path
 from datetime import datetime
 try:
-    from backend.auth.access_control import require_roles, ADMIN_ROLES, RECRUITER_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, RECRUITER_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import require_roles, ADMIN_ROLES, RECRUITER_ROLES
+    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, RECRUITER_ROLES
 from functools import wraps
 
 from flask import Flask, request, jsonify, g, send_file
@@ -73,7 +73,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
     @jwt_required()
     def list_vacancies():
         """List recruiter-uploaded vacancies (Using job_postings source of truth)."""
-        if get_jwt().get('role') not in _RECRUITER_ROLES:
+        if not (resolve_roles() & _RECRUITER_ROLES):
             return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             print("DEBUG: list_vacancies called")
@@ -2823,7 +2823,7 @@ Return only the JSON object, no additional text."""
     @jwt_required()
     def get_job_shortlist_count():
         """Get shortlist counts for all jobs"""
-        if get_jwt().get('role') not in _RECRUITER_ROLES:
+        if not (resolve_roles() & _RECRUITER_ROLES):
             return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             query = """
@@ -2879,7 +2879,7 @@ Return only the JSON object, no additional text."""
     @jwt_required()
     def get_offers_for_job(jd_id):
         """Get all offers for a specific job description"""
-        if get_jwt().get('role') not in _RECRUITER_ROLES:
+        if not (resolve_roles() & _RECRUITER_ROLES):
             return jsonify({'success': False, 'message': 'Forbidden - recruiter access required'}), 403
         try:
             # Query the offers table using job_posting_id (existing schema)
