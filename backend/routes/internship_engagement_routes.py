@@ -20,6 +20,7 @@ One engagement per (internship, student): UNIQUE index from migration 027.
 A declined engagement row is reused (re-propose resets the handshake).
 """
 
+import json
 import logging
 
 from flask import Blueprint, request, jsonify
@@ -35,6 +36,15 @@ except ImportError:  # pragma: no cover
     from auth.access_control import (
         require_roles, resolve_roles, ADMIN_ROLES, RECRUITER_ROLES,
     )
+
+try:
+    from backend.notification_helper import create_notification
+except ImportError:  # pragma: no cover
+    try:
+        from notification_helper import create_notification
+    except ImportError:  # notifications are best-effort — never block a transition
+        def create_notification(*_a, **_k):
+            return None
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +133,11 @@ def _maybe_confirm(engagement_id):
                VALUES (%s, %s, %s, %s, %s, 'confirmed')""",
             (e['user_id'], e['internship_id'], engagement_id, e['coordinator_id'],
              (intern or {}).get('title', ''),), fetch_all=False)
+    ef = _get_engagement(engagement_id)
+    _notify(_parties(ef, include_parents=True), 'internship_confirmed',
+            'Internship confirmed',
+            f"The internship \"{(ef or {}).get('internship_title', '')}\" is confirmed and ready to begin.",
+            {'engagement_id': engagement_id})
     return execute_query(
         "SELECT * FROM internship_applications WHERE id = %s",
         (engagement_id,), fetch_one=True)
@@ -135,6 +150,44 @@ def _serialize(e):
         if out.get(k) is not None:
             out[k] = str(out[k])
     return out
+
+
+def _placement_id(app_id):
+    row = execute_query(
+        "SELECT id FROM internship_placements WHERE application_id = %s ORDER BY id DESC LIMIT 1",
+        (app_id,), fetch_one=True)
+    return row['id'] if row else None
+
+
+def _parent_ids(student_id):
+    rows = execute_query(
+        "SELECT parent_user_id FROM parent_child_links "
+        "WHERE child_user_id = %s AND verified IS DISTINCT FROM FALSE",
+        (student_id,)) or []
+    return [r['parent_user_id'].strip() for r in rows if r.get('parent_user_id')]
+
+
+def _notify(user_ids, ntype, title, message='', meta=None):
+    """Best-effort notifications — never blocks a transition."""
+    for uid in {str(u).strip() for u in (user_ids or []) if u}:
+        try:
+            create_notification(uid, ntype, title, message, meta or {})
+        except Exception as ex:  # pragma: no cover
+            logger.warning(f"internship notify failed for {uid}: {ex}")
+
+
+def _parties(e, include_parents=False):
+    ids = set()
+    for k in ('user_id', 'recruiter_id', 'coordinator_id'):
+        v = (e.get(k) or '').strip()
+        if v:
+            ids.add(v)
+    posted = (e.get('internship_posted_by') or '').strip()
+    if posted:
+        ids.add(posted)
+    if include_parents and (e.get('user_id') or '').strip():
+        ids.update(_parent_ids(e['user_id'].strip()))
+    return ids
 
 
 def _upsert_engagement(internship_id, student_id, initiated_by, coordinator_id=None):
@@ -227,6 +280,12 @@ def coordinator_propose():
     eng, err = _upsert_engagement(internship_id, student_id, 'coordinator', coordinator_id=_me())
     if err:
         return err
+    minor = eng.get('parent_consent_status') == 'pending'
+    _notify(_parties(eng, include_parents=minor) - {_me()}, 'internship_proposed',
+            'Internship proposed',
+            f"A coordinator proposed the internship \"{eng.get('internship_title', '')}\" — "
+            "recruiter approval and student acceptance are pending.",
+            {'engagement_id': eng['id']})
     return jsonify({'success': True, 'data': _serialize(eng),
                     'message': 'Proposal sent — awaiting recruiter approval and student acceptance'}), 201
 
@@ -275,6 +334,9 @@ def coordinator_decision(eng_id):
             "stage='declined', decline_reason=%s, updated_at=NOW() WHERE id=%s",
             (_me(), data.get('reason'), eng_id), fetch_all=False)
         e = _get_engagement(eng_id)
+    _notify(_parties(e) - {_me()}, 'internship_update', 'Internship update',
+            f"The coordinator {decision}d the internship \"{(e or {}).get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
     return jsonify({'success': True, 'data': _serialize(e)})
 
 
@@ -328,6 +390,9 @@ def recruiter_decision(eng_id):
             "stage='declined', decline_reason=%s, updated_at=NOW() WHERE id=%s",
             (me, data.get('reason'), eng_id), fetch_all=False)
         e = _get_engagement(eng_id)
+    _notify(_parties(e) - {me}, 'internship_update', 'Internship update',
+            f"The recruiter {decision}d the internship \"{(e or {}).get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
     return jsonify({'success': True, 'data': _serialize(e)})
 
 
@@ -408,6 +473,9 @@ def student_decision(eng_id):
             "decline_reason=%s, updated_at=NOW() WHERE id=%s",
             (data.get('reason'), eng_id), fetch_all=False)
         e = _get_engagement(eng_id)
+    _notify(_parties(e) - {_me()}, 'internship_update', 'Internship update',
+            f"The student {decision}ed the internship \"{(e or {}).get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
     return jsonify({'success': True, 'data': _serialize(e)})
 
 
@@ -456,6 +524,12 @@ def parent_consent(eng_id):
     if e['parent_consent_status'] != 'pending':
         return jsonify({'success': False,
                         'message': f"Consent is {e['parent_consent_status']} — nothing to decide"}), 409
+    audit_decision = 'granted' if decision == 'grant' else 'denied'
+    execute_query(
+        "INSERT INTO internship_consent_audit (application_id, actor_id, student_id, decision, reason) "
+        "VALUES (%s, %s, %s, %s, %s)",
+        (eng_id, _me(), (e.get('user_id') or '').strip(), audit_decision, data.get('reason')),
+        fetch_all=False)
     if decision == 'grant':
         execute_query(
             "UPDATE internship_applications SET parent_consent_status='granted', updated_at=NOW() "
@@ -467,6 +541,9 @@ def parent_consent(eng_id):
             "decline_reason=%s, updated_at=NOW() WHERE id=%s",
             (data.get('reason'), eng_id), fetch_all=False)
         e = _get_engagement(eng_id)
+    _notify(_parties(e) - {_me()}, 'internship_update', f'Parent consent {audit_decision}',
+            f"A parent {audit_decision} consent for \"{(e or {}).get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
     return jsonify({'success': True, 'data': _serialize(e)})
 
 
@@ -498,7 +575,11 @@ def begin_engagement(eng_id):
     execute_query(
         "UPDATE internship_placements SET status='active', start_date=COALESCE(start_date, NOW()) "
         "WHERE application_id=%s", (eng_id,), fetch_all=False)
-    return jsonify({'success': True, 'data': _serialize(_get_engagement(eng_id))})
+    ef = _get_engagement(eng_id)
+    _notify(_parties(ef, include_parents=True) - {_me()}, 'internship_started', 'Internship started',
+            f"The internship \"{(ef or {}).get('internship_title', '')}\" has begun.",
+            {'engagement_id': eng_id})
+    return jsonify({'success': True, 'data': _serialize(ef)})
 
 
 @internship_engagement_bp.route('/<int:eng_id>/complete', methods=['POST'])
@@ -517,4 +598,176 @@ def complete_engagement(eng_id):
     execute_query(
         "UPDATE internship_placements SET status='completed', end_date=COALESCE(end_date, NOW()) "
         "WHERE application_id=%s", (eng_id,), fetch_all=False)
-    return jsonify({'success': True, 'data': _serialize(_get_engagement(eng_id))})
+    ef = _get_engagement(eng_id)
+    _notify(_parties(ef, include_parents=True) - {_me()}, 'internship_completed', 'Internship completed',
+            f"The internship \"{(ef or {}).get('internship_title', '')}\" is complete.",
+            {'engagement_id': eng_id})
+    return jsonify({'success': True, 'data': _serialize(ef)})
+
+
+# ── Party visibility helper (for read endpoints) ─────────────────────────────
+
+_ALL_PARTY_ROLES = tuple(
+    set(_COORDINATOR_ROLES) | set(_RECRUITER_ROLES) | set(_STUDENT_ROLES) | set(_PARENT_ROLES))
+
+
+def _is_party(e):
+    """True if the caller is the student, the recruiter (owner), the coordinator,
+    a parent of the student, or an admin."""
+    me = _me()
+    if resolve_roles() & ADMIN_ROLES:
+        return True
+    if (e.get('user_id') or '').strip() == me:
+        return True
+    if me in ((e.get('recruiter_id') or '').strip(), (e.get('internship_posted_by') or '').strip()):
+        return True
+    if (e.get('coordinator_id') or '').strip() == me:
+        return True
+    if (e.get('user_id') or '').strip() and me in _parent_ids((e['user_id'] or '').strip()):
+        return True
+    return False
+
+
+# ── Phase 2: assessment (internship_evaluations) ─────────────────────────────
+
+@internship_engagement_bp.route('/<int:eng_id>/evaluate', methods=['POST'])
+@require_roles(*(set(_COORDINATOR_ROLES) | set(_RECRUITER_ROLES)))
+def submit_evaluation(eng_id):
+    """Recruiter (performance) or coordinator (academic) evaluation of the placement."""
+    data = request.get_json() or {}
+    e = _get_engagement(eng_id)
+    if not e:
+        return jsonify({'success': False, 'message': 'Engagement not found'}), 404
+    if e['stage'] not in ('active', 'completed'):
+        return jsonify({'success': False, 'message': 'Evaluations open once the internship is active'}), 409
+    pid = _placement_id(eng_id)
+    if not pid:
+        return jsonify({'success': False, 'message': 'No placement to evaluate'}), 409
+    roles = resolve_roles()
+    evaluator_type = 'coordinator' if (roles & set(_COORDINATOR_ROLES)
+                                       and not (roles & set(_RECRUITER_ROLES))) else 'recruiter'
+    rating = data.get('rating')
+    try:
+        rating = int(rating) if rating is not None else None
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'rating must be an integer 1-5'}), 400
+    if rating is not None and not (1 <= rating <= 5):
+        return jsonify({'success': False, 'message': 'rating must be between 1 and 5'}), 400
+    row = execute_query(
+        """INSERT INTO internship_evaluations
+               (placement_id, evaluator_type, evaluator_id, evaluation_type, competencies, rating, feedback)
+           VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s) RETURNING id""",
+        (pid, evaluator_type, _me(), data.get('evaluation_type', 'final'),
+         json.dumps(data.get('competencies') or {}), rating, data.get('feedback', '')),
+        fetch_one=True)
+    _notify([(e.get('user_id') or '').strip()], 'internship_evaluation',
+            'Internship evaluation added',
+            f"An evaluation was recorded for \"{e.get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
+    return jsonify({'success': True, 'data': {'id': (row or {}).get('id'),
+                                              'evaluator_type': evaluator_type}}), 201
+
+
+@internship_engagement_bp.route('/<int:eng_id>/evaluations', methods=['GET'])
+@require_roles(*_ALL_PARTY_ROLES)
+def list_evaluations(eng_id):
+    e = _get_engagement(eng_id)
+    if not e:
+        return jsonify({'success': False, 'message': 'Engagement not found'}), 404
+    if not _is_party(e):
+        return jsonify({'success': False, 'message': 'Not a party to this engagement'}), 403
+    pid = _placement_id(eng_id)
+    rows = execute_query(
+        """SELECT id, evaluator_type, evaluation_type, competencies, rating, feedback,
+                  created_at::text AS created_at
+           FROM internship_evaluations WHERE placement_id = %s ORDER BY created_at DESC""",
+        (pid,)) or [] if pid else []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+# ── Phase 2: reporting (internship_reports) ──────────────────────────────────
+
+@internship_engagement_bp.route('/<int:eng_id>/reports', methods=['POST'])
+@require_roles(*_STUDENT_ROLES)
+def submit_report(eng_id):
+    """Student submits a periodic/final report during the internship."""
+    data = request.get_json() or {}
+    if not (data.get('content') or '').strip():
+        return jsonify({'success': False, 'message': 'content is required'}), 400
+    e = _get_engagement(eng_id)
+    if not e:
+        return jsonify({'success': False, 'message': 'Engagement not found'}), 404
+    if (e['user_id'] or '').strip() != _me() and not (resolve_roles() & ADMIN_ROLES):
+        return jsonify({'success': False, 'message': 'Not your engagement'}), 403
+    if e['stage'] not in ('active', 'completed'):
+        return jsonify({'success': False, 'message': 'Reports open once the internship is active'}), 409
+    row = execute_query(
+        """INSERT INTO internship_reports
+               (application_id, placement_id, author_id, author_role, report_type,
+                period_label, title, content)
+           VALUES (%s, %s, %s, 'student', %s, %s, %s, %s) RETURNING id""",
+        (eng_id, _placement_id(eng_id), _me(), data.get('report_type', 'periodic'),
+         data.get('period_label', ''), data.get('title', ''), data['content']),
+        fetch_one=True)
+    _notify(_parties(e) - {_me()}, 'internship_report', 'New internship report',
+            f"A new report was submitted for \"{e.get('internship_title', '')}\".",
+            {'engagement_id': eng_id})
+    return jsonify({'success': True, 'data': {'id': (row or {}).get('id')}}), 201
+
+
+@internship_engagement_bp.route('/<int:eng_id>/reports', methods=['GET'])
+@require_roles(*_ALL_PARTY_ROLES)
+def list_reports(eng_id):
+    e = _get_engagement(eng_id)
+    if not e:
+        return jsonify({'success': False, 'message': 'Engagement not found'}), 404
+    if not _is_party(e):
+        return jsonify({'success': False, 'message': 'Not a party to this engagement'}), 403
+    rows = execute_query(
+        """SELECT id, author_id, author_role, report_type, period_label, title, content,
+                  status, reviewer_role, reviewer_feedback, reviewed_at::text AS reviewed_at,
+                  created_at::text AS created_at
+           FROM internship_reports WHERE application_id = %s ORDER BY created_at DESC""",
+        (eng_id,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@internship_engagement_bp.route('/reports/<int:report_id>/review', methods=['POST'])
+@require_roles(*(set(_COORDINATOR_ROLES) | set(_RECRUITER_ROLES)))
+def review_report(report_id):
+    """Recruiter/coordinator acknowledges a student report with feedback."""
+    data = request.get_json() or {}
+    rep = execute_query(
+        "SELECT id, application_id, author_id FROM internship_reports WHERE id = %s",
+        (report_id,), fetch_one=True)
+    if not rep:
+        return jsonify({'success': False, 'message': 'Report not found'}), 404
+    roles = resolve_roles()
+    reviewer_role = 'coordinator' if (roles & set(_COORDINATOR_ROLES)
+                                      and not (roles & set(_RECRUITER_ROLES))) else 'recruiter'
+    execute_query(
+        """UPDATE internship_reports SET status='reviewed', reviewer_id=%s, reviewer_role=%s,
+               reviewer_feedback=%s, reviewed_at=NOW(), updated_at=NOW() WHERE id=%s""",
+        (_me(), reviewer_role, data.get('reviewer_feedback', ''), report_id), fetch_all=False)
+    _notify([(rep.get('author_id') or '').strip()], 'internship_report_reviewed',
+            'Your internship report was reviewed',
+            'A reviewer left feedback on your internship report.',
+            {'engagement_id': rep.get('application_id')})
+    return jsonify({'success': True, 'data': {'id': report_id, 'status': 'reviewed'}})
+
+
+# ── Phase 3: consent audit trail ─────────────────────────────────────────────
+
+@internship_engagement_bp.route('/<int:eng_id>/consent-audit', methods=['GET'])
+@require_roles(*(set(_COORDINATOR_ROLES) | set(_RECRUITER_ROLES) | set(_PARENT_ROLES)))
+def consent_audit(eng_id):
+    e = _get_engagement(eng_id)
+    if not e:
+        return jsonify({'success': False, 'message': 'Engagement not found'}), 404
+    if not _is_party(e):
+        return jsonify({'success': False, 'message': 'Not a party to this engagement'}), 403
+    rows = execute_query(
+        """SELECT id, actor_id, student_id, decision, reason, created_at::text AS created_at
+           FROM internship_consent_audit WHERE application_id = %s ORDER BY created_at DESC""",
+        (eng_id,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
