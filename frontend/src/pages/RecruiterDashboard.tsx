@@ -11,6 +11,7 @@ import OffersPage from '@/pages/recruiter/Offers';
 import Messages from '@/components/recruiter/Messages';
 import RecruiterInterviews from '@/components/recruiter/Interviews'; // Use standard component instead of page wrapper? 
 import RecruiterPostings from '@/components/recruiter/RecruiterPostings';
+import RecruiterInternshipProposals from '@/components/internship/RecruiterInternshipProposals';
 import RecruiterAnalyticsPage from '@/pages/recruiter/Analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -318,7 +319,7 @@ const RecruiterDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-8 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('overview')}>{b('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('jobs')}>{b('My Jobs', 'وظائفي')}</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('candidates')}>{b('Candidates', 'المرشحون')}</TabsTrigger>
@@ -333,6 +334,7 @@ const RecruiterDashboard: React.FC = () => {
               </TabsTrigger>
               <TabsTrigger value="offers" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('offers')}>{b('Offers', 'العروض')}</TabsTrigger>
               <TabsTrigger value="postings" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('postings')}>{b('Internships & Gigs', 'التدريب والعمل الحر')}</TabsTrigger>
+              <TabsTrigger value="internship-proposals" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('internship-proposals')}>{b('Internship Proposals', 'طلبات التدريب')}</TabsTrigger>
             </TabsList>
 
             {/* ════════════════════════════════════════════════════════════
@@ -532,6 +534,11 @@ const RecruiterDashboard: React.FC = () => {
             {/* Postings Tab */}
             <TabsContent value="postings" className="space-y-6">
               <RecruiterPostings />
+            </TabsContent>
+
+            {/* Internship Proposals Tab */}
+            <TabsContent value="internship-proposals" className="space-y-6">
+              <RecruiterInternshipProposals />
             </TabsContent>
 
             {/* Messages Tab */}

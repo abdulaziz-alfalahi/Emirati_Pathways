@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessmentOverview';
+import ParentInternshipTracking from '@/components/internship/ParentInternshipTracking';
 import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import {
@@ -267,6 +268,7 @@ const ParentDashboardPage: React.FC = () => {
                         <TabsTrigger value="assessments" className="flex-1">{t('Assessments', 'التقييمات')}</TabsTrigger>
                         <TabsTrigger value="resources" className="flex-1">{t('Resources', 'الموارد')}</TabsTrigger>
                         <TabsTrigger value="opportunities" className="flex-1">{t('Opportunities', 'الفرص')}</TabsTrigger>
+                        <TabsTrigger value="internships" className="flex-1">{t('Internships', 'التدريب')}</TabsTrigger>
                     </TabsList>
 
                     {/* ────── OVERVIEW TAB ────── */}
@@ -606,6 +608,15 @@ const ParentDashboardPage: React.FC = () => {
                                 ))}
                             </div>
                         )}
+                    </TabsContent>
+
+                    {/* ────── INTERNSHIPS TAB ────── */}
+                    <TabsContent value="internships" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div>
+                            <h2 className="text-lg font-semibold">{t("Your Children's Internships", 'تدريبات أبنائك')}</h2>
+                            <p className="text-sm text-muted-foreground">{t('Track internship progress and respond to consent requests for minors', 'تابع تقدّم التدريبات واستجب لطلبات الموافقة الخاصة بالقاصرين')}</p>
+                        </div>
+                        <ParentInternshipTracking />
                     </TabsContent>
                 </Tabs>
             </main>
