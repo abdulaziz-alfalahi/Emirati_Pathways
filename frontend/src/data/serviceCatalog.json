@@ -36,7 +36,7 @@
         "platformStatus": "active",
         "platformModule": "/candidate/profile/identity",
         "platformPath": "/candidate/profile/identity",
-        "gapNotes": "تدقيق 2026-07: وحدة الهوية حيّة؛ /cv-upload يعرض تحليلاً تجريبياً ثابتاً فوق /api/cv/upload الحقيقي. | المنصة تستخدم استوديو الملف الشخصي (Profile Studio) بدلاً من منشئ سيرة ذاتية مستقل. المسار /cv-builder يوجّه تلقائياً إلى /candidate/profile/identity. تتوفر 3 مسارات: /cv-builder، /resume-builder، /cv-upload. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
+        "gapNotes": "تحسين 2026-07: رفع السيرة الذاتية لم يعد يعرض تحليلاً تجريبياً — تُعرض مخرجات المحلل الحقيقية فقط مع حالة صادقة عند عدم توفر التحليل. | تدقيق 2026-07: وحدة الهوية حيّة؛ /cv-upload يعرض تحليلاً تجريبياً ثابتاً فوق /api/cv/upload الحقيقي. | المنصة تستخدم استوديو الملف الشخصي (Profile Studio) بدلاً من منشئ سيرة ذاتية مستقل. المسار /cv-builder يوجّه تلقائياً إلى /candidate/profile/identity. تتوفر 3 مسارات: /cv-builder، /resume-builder، /cv-upload. تم تحديث الدليل ليعكس الواقع. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -58,7 +58,7 @@
         "limitationsEN": "1) Output accuracy depends on the quality of entered data. 2) AI suggestion quality may vary across different specializations. 3) Resume template design is currently limited.",
         "partnersEN": "Employers, training centers, and educational institutions.",
         "kpisEN": "1) Number of resumes created. 2) Profile completion rate. 3) User satisfaction. 4) Download rate.",
-        "gapNotesEN": "AUDIT 2026-07: profile identity module is live; /cv-upload overlays hardcoded sample analysis over the real /api/cv/upload. | The platform uses Profile Studio instead of a standalone CV builder. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
+        "gapNotesEN": "POLISH 2026-07: /cv-upload no longer overlays sample analysis — it renders only the real parser output, with an honest state when analysis is unavailable. | AUDIT 2026-07: profile identity module is live; /cv-upload overlays hardcoded sample analysis over the real /api/cv/upload. | The platform uses Profile Studio instead of a standalone CV builder. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Professional Content Enhancement Model",
         "stepsEN": [
           "Log in to the platform and select Resume Builder service (/cv-builder)",
@@ -490,7 +490,7 @@
         "platformStatus": "active",
         "platformModule": "/applications",
         "platformPath": "/applications",
-        "gapNotes": "تدقيق 2026-07: تم الإصلاح — واجهة /api/applications حقيقية الآن (قائمة/تقديم/سحب/حالة)؛ تبويب إدارة الطلبات للمسؤول لا يزال نائباً. | المنصة تتضمن نظام تتبع طلبات متكامل مع إشعارات فورية. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
+        "gapNotes": "تحسين 2026-07: تبويب إدارة الطلبات للمسؤول أصبح حقيقياً (اختيار وظيفة ← طلبات حية ← تحويل الحالات). | تدقيق 2026-07: تم الإصلاح — واجهة /api/applications حقيقية الآن (قائمة/تقديم/سحب/حالة)؛ تبويب إدارة الطلبات للمسؤول لا يزال نائباً. | المنصة تتضمن نظام تتبع طلبات متكامل مع إشعارات فورية. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": true,
         "platformRoles": [
@@ -511,7 +511,7 @@
         "limitationsEN": "1) Status updates depend on employer response times. 2) Some external applications may not sync automatically.",
         "partnersEN": "Employers and HR systems.",
         "kpisEN": "1) Application response rate. 2) Average time to hiring decision. 3) User engagement.",
-        "gapNotesEN": "AUDIT 2026-07: FIXED — a real /api/applications API now serves list/apply/withdraw/status against live data; the recruiter manage tab remains a placeholder. | Fully active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
+        "gapNotesEN": "POLISH 2026-07: the recruiter Manage Applications tab is now real (job selector → live applications → status transitions via /api/applications). | AUDIT 2026-07: FIXED — a real /api/applications API now serves list/apply/withdraw/status against live data; the recruiter manage tab remains a placeholder. | Fully active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "Application Tracking AI System",
         "stepsEN": [
           "View all applications on Applications Dashboard",
@@ -1262,7 +1262,7 @@
         "platformStatus": "active",
         "platformModule": "/school-programs",
         "platformPath": "/school-programs",
-        "gapNotes": "المنصة تتضمن 5 صفحات للبرامج التعليمية: /school-programs، /university-programs، /scholarships، /graduate-programs، /knowledge-camps. يتوفر أيضاً لوحة إدارية (/admin/school-programs) مع واجهة برمجة متكاملة. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
+        "gapNotes": "تحسين 2026-07: صفحة المنح تقرأ الآن واجهة المنح الحية (مع ربط التقديم)؛ أُزيلت المبالغ المُصطنعة وتُعرض حالة فارغة صادقة حتى نشر منح حقيقية. | المنصة تتضمن 5 صفحات للبرامج التعليمية: /school-programs، /university-programs، /scholarships، /graduate-programs، /knowledge-camps. يتوفر أيضاً لوحة إدارية (/admin/school-programs) مع واجهة برمجة متكاملة. | الذكاء الاصطناعي 2026-07: مدعوم بالمساعد الموحد للمنصة (/api/ai/assist).",
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
@@ -1286,7 +1286,7 @@
         "limitationsEN": "1) Program availability varies by institution. 2) Requires institutional partnership for full features.",
         "partnersEN": "Schools, universities, KHDA, and educational authorities.",
         "kpisEN": "1) Participating institutions. 2) Student enrollment. 3) Career readiness scores.",
-        "gapNotesEN": "Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
+        "gapNotesEN": "POLISH 2026-07: /scholarships now reads the live scholarships API (apply action wired); fabricated award amounts removed — the list shows an honest empty state until real scholarships are published. | Active. | AI 2026-07: backed by the shared platform assistant (/api/ai/assist, Qwen).",
         "aiModelEN": "AI Educational Analytics Engine",
         "stepsEN": [
           "Institution registers on School Programs Hub",

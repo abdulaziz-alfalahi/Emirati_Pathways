@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { getAuthToken } from '@/utils/tokenUtils';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -13,12 +14,8 @@ import {
   FileCheck,
   Brain,
   Target,
-  TrendingUp,
   Users,
   Award,
-  MapPin,
-  Clock,
-  DollarSign,
   Sparkles
 } from 'lucide-react';
 
@@ -33,16 +30,19 @@ interface CVFile {
   analysis?: CVAnalysis;
 }
 
+// Shape of the honest analysis derived ONLY from fields actually returned by
+// POST /api/cv/upload (result.data = parsed CV, result.analysis.scores = backend
+// completeness heuristic). Every field is optional: absent data stays absent.
 interface CVAnalysis {
   personalInfo: {
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
   };
   experience: {
-    totalYears: number;
-    currentRole: string;
+    totalYears?: number;
+    currentRole?: string;
     companies: string[];
   };
   skills: {
@@ -50,21 +50,28 @@ interface CVAnalysis {
     soft: string[];
     languages: string[];
   };
-  education: {
-    degree: string;
-    institution: string;
-    year: string;
-  };
-  jobMatches: {
-    title: string;
-    company: string;
-    matchPercentage: number;
-    salary: string;
-    location: string;
-  }[];
-  recommendations: string[];
-  score: number;
+  score?: number;
 }
+
+// Raw shapes from the backend parser (backend/services/resume_parser.py)
+interface ParsedSkill {
+  name?: string;
+  category?: string;
+}
+
+interface ParsedExperience {
+  company?: string;
+  position?: string;
+  is_current?: boolean;
+}
+
+interface ParsedLanguage {
+  language?: string;
+  proficiency?: string;
+}
+
+const SECTION_UNAVAILABLE =
+  'Analysis for this section is not available yet / تحليل هذا القسم غير متاح بعد';
 
 const CVUploadPage: React.FC = () => {
   const { t } = useTranslation();
@@ -152,67 +159,66 @@ const CVUploadPage: React.FC = () => {
       }
 
       const result = await response.json();
-      
-      // Mock analysis data for demonstration (replace with actual API response)
-      const mockAnalysis: CVAnalysis = {
-        personalInfo: {
-          name: result.analysis?.personal_info?.name || 'Ahmed Al Mansouri',
-          email: result.analysis?.personal_info?.email || 'ahmed.almansouri@gmail.com',
-          phone: result.analysis?.personal_info?.phone || '+971 50 123 4567',
-          location: result.analysis?.personal_info?.location || 'Dubai, UAE'
-        },
-        experience: {
-          totalYears: result.analysis?.experience?.total_years || 5,
-          currentRole: result.analysis?.experience?.current_role || 'Senior Software Engineer',
-          companies: result.analysis?.experience?.companies || ['Emirates NBD', 'ADNOC Digital', 'Dubai Municipality']
-        },
-        skills: {
-          technical: result.analysis?.skills?.technical || ['React', 'Node.js', 'Python', 'AWS', 'Docker'],
-          soft: result.analysis?.skills?.soft || ['Leadership', 'Communication', 'Problem Solving'],
-          languages: result.analysis?.skills?.languages || ['Arabic (Native)', 'English (Fluent)']
-        },
-        education: {
-          degree: result.analysis?.education?.degree || 'Bachelor of Computer Science',
-          institution: result.analysis?.education?.institution || 'American University of Sharjah',
-          year: result.analysis?.education?.year || '2019'
-        },
-        jobMatches: result.job_matches || [
-          {
-            title: 'Lead Software Engineer',
-            company: 'Dubai Future Foundation',
-            matchPercentage: 95,
-            salary: 'AED 25,000 - 30,000',
-            location: 'Dubai'
-          },
-          {
-            title: 'Technical Lead',
-            company: 'Emirates Group',
-            matchPercentage: 88,
-            salary: 'AED 22,000 - 28,000',
-            location: 'Dubai'
-          },
-          {
-            title: 'Senior Developer',
-            company: 'ADNOC',
-            matchPercentage: 82,
-            salary: 'AED 20,000 - 25,000',
-            location: 'Abu Dhabi'
-          }
-        ],
-        recommendations: result.recommendations || [
-          'Consider adding cloud certifications (AWS/Azure)',
-          'Highlight UAE-specific project experience',
-          'Include Arabic language proficiency prominently'
-        ],
-        score: result.analysis?.score || 85
-      };
 
-      // Update with analysis results
-      setUploadedFiles(prev => 
-        prev.map(f => f.id === cvFile.id ? { 
-          ...f, 
+      // Honest mapping: use ONLY fields actually returned by the backend.
+      // result.data is the parsed CV; result.analysis.scores is the backend
+      // completeness heuristic. No invented fallbacks anywhere.
+      const parsed = result?.data;
+      const personalInfo = parsed?.personal_info;
+      const parsedSkills: ParsedSkill[] = Array.isArray(parsed?.skills) ? parsed.skills : [];
+      const parsedExperience: ParsedExperience[] = Array.isArray(parsed?.experience) ? parsed.experience : [];
+      const parsedLanguages: ParsedLanguage[] = Array.isArray(parsed?.languages) ? parsed.languages : [];
+
+      const hasParsedData = Boolean(
+        (personalInfo && (personalInfo.full_name || personalInfo.email || personalInfo.phone || personalInfo.location)) ||
+        parsedSkills.length > 0 ||
+        parsedExperience.length > 0
+      );
+
+      let analysis: CVAnalysis | undefined;
+      if (hasParsedData) {
+        const skillNamesByCategory = (predicate: (category: string) => boolean) =>
+          parsedSkills
+            .filter(s => predicate((s.category || '').toLowerCase()))
+            .map(s => s.name)
+            .filter((name): name is string => Boolean(name));
+
+        analysis = {
+          personalInfo: {
+            name: personalInfo?.full_name || undefined,
+            email: personalInfo?.email || undefined,
+            phone: personalInfo?.phone || undefined,
+            location: personalInfo?.location || undefined
+          },
+          experience: {
+            totalYears: typeof parsed?.total_experience_years === 'number' ? parsed.total_experience_years : undefined,
+            currentRole: parsedExperience.find(e => e.is_current)?.position || undefined,
+            companies: parsedExperience
+              .map(e => e.company)
+              .filter((company): company is string => Boolean(company))
+          },
+          skills: {
+            technical: skillNamesByCategory(c => c !== 'soft' && c !== 'language'),
+            soft: skillNamesByCategory(c => c === 'soft'),
+            languages: [
+              ...skillNamesByCategory(c => c === 'language'),
+              ...parsedLanguages
+                .filter(l => Boolean(l.language))
+                .map(l => (l.proficiency ? `${l.language} (${l.proficiency})` : l.language as string))
+            ]
+          },
+          score: typeof result?.analysis?.scores?.overall === 'number' ? result.analysis.scores.overall : undefined
+        };
+      }
+
+      // Update with analysis results (analysis stays undefined when the
+      // backend returned no usable parsed data — the UI shows an honest
+      // upload-only success state in that case).
+      setUploadedFiles(prev =>
+        prev.map(f => f.id === cvFile.id ? {
+          ...f,
           status: 'completed',
-          analysis: mockAnalysis 
+          analysis
         } : f)
       );
 
@@ -347,7 +353,7 @@ const CVUploadPage: React.FC = () => {
                       {file.status === 'completed' && (
                         <div className="flex items-center text-green-600">
                           <CheckCircle className="w-4 h-4 me-2" />
-                          Analysis Complete
+                          {file.analysis ? 'Analysis Complete' : 'Upload Complete'}
                         </div>
                       )}
                       {file.status === 'error' && (
@@ -381,24 +387,25 @@ const CVUploadPage: React.FC = () => {
                   {file.status === 'completed' && file.analysis && (
                     <div className="space-y-6">
                       {/* CV Score */}
-                      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-lg font-dubai-medium text-gray-900 mb-1">
-                              CV Analysis Score
-                            </h4>
-                            <p className="text-gray-600">
-                              Based on UAE job market standards
-                            </p>
-                          </div>
-                          <div className="text-end">
-                            <div className="text-3xl font-dubai-bold text-green-600">
-                              {file.analysis.score}%
+                      {typeof file.analysis.score === 'number' && (
+                        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-lg font-dubai-medium text-gray-900 mb-1">
+                                CV Parsing Score
+                              </h4>
+                              <p className="text-gray-600">
+                                Automated score based on the completeness of the information parsed from your CV
+                              </p>
                             </div>
-                            <div className="text-sm text-gray-500">Excellent</div>
+                            <div className="text-end">
+                              <div className="text-3xl font-dubai-bold text-green-600">
+                                {file.analysis.score}%
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Personal Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -407,12 +414,25 @@ const CVUploadPage: React.FC = () => {
                             <Users className="w-4 h-4 me-2" />
                             Personal Information
                           </h4>
-                          <div className="space-y-2 text-sm">
-                            <div><strong>Name:</strong> {file.analysis.personalInfo.name}</div>
-                            <div><strong>Email:</strong> {file.analysis.personalInfo.email}</div>
-                            <div><strong>Phone:</strong> {file.analysis.personalInfo.phone}</div>
-                            <div><strong>Location:</strong> {file.analysis.personalInfo.location}</div>
-                          </div>
+                          {(file.analysis.personalInfo.name || file.analysis.personalInfo.email ||
+                            file.analysis.personalInfo.phone || file.analysis.personalInfo.location) ? (
+                            <div className="space-y-2 text-sm">
+                              {file.analysis.personalInfo.name && (
+                                <div><strong>Name:</strong> {file.analysis.personalInfo.name}</div>
+                              )}
+                              {file.analysis.personalInfo.email && (
+                                <div><strong>Email:</strong> {file.analysis.personalInfo.email}</div>
+                              )}
+                              {file.analysis.personalInfo.phone && (
+                                <div><strong>Phone:</strong> {file.analysis.personalInfo.phone}</div>
+                              )}
+                              {file.analysis.personalInfo.location && (
+                                <div><strong>Location:</strong> {file.analysis.personalInfo.location}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">{SECTION_UNAVAILABLE}</p>
+                          )}
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-4">
@@ -420,11 +440,23 @@ const CVUploadPage: React.FC = () => {
                             <Award className="w-4 h-4 me-2" />
                             Experience Summary
                           </h4>
-                          <div className="space-y-2 text-sm">
-                            <div><strong>Total Experience:</strong> {file.analysis.experience.totalYears} years</div>
-                            <div><strong>Current Role:</strong> {file.analysis.experience.currentRole}</div>
-                            <div><strong>Companies:</strong> {file.analysis.experience.companies.join(', ')}</div>
-                          </div>
+                          {(typeof file.analysis.experience.totalYears === 'number' ||
+                            file.analysis.experience.currentRole ||
+                            file.analysis.experience.companies.length > 0) ? (
+                            <div className="space-y-2 text-sm">
+                              {typeof file.analysis.experience.totalYears === 'number' && (
+                                <div><strong>Total Experience:</strong> {file.analysis.experience.totalYears} years</div>
+                              )}
+                              {file.analysis.experience.currentRole && (
+                                <div><strong>Current Role:</strong> {file.analysis.experience.currentRole}</div>
+                              )}
+                              {file.analysis.experience.companies.length > 0 && (
+                                <div><strong>Companies:</strong> {file.analysis.experience.companies.join(', ')}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">{SECTION_UNAVAILABLE}</p>
+                          )}
                         </div>
                       </div>
 
@@ -434,85 +466,81 @@ const CVUploadPage: React.FC = () => {
                           <Target className="w-4 h-4 me-2" />
                           Skills Analysis
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <h5 className="font-dubai-medium text-gray-800 mb-2">Technical Skills</h5>
-                            <div className="flex flex-wrap gap-1">
-                              {file.analysis.skills.technical.map((skill, index) => (
-                                <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                                  {skill}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <h5 className="font-dubai-medium text-gray-800 mb-2">Soft Skills</h5>
-                            <div className="flex flex-wrap gap-1">
-                              {file.analysis.skills.soft.map((skill, index) => (
-                                <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                                  {skill}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <h5 className="font-dubai-medium text-gray-800 mb-2">Languages</h5>
-                            <div className="flex flex-wrap gap-1">
-                              {file.analysis.skills.languages.map((lang, index) => (
-                                <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                                  {lang}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Job Matches */}
-                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-                        <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                          <TrendingUp className="w-4 h-4 me-2" />
-                          Top Job Matches
-                        </h4>
-                        <div className="space-y-3">
-                          {file.analysis.jobMatches.map((job, index) => (
-                            <div key={index} className="bg-white rounded-lg p-4 flex items-center justify-between">
-                              <div className="flex-1">
-                                <h5 className="font-dubai-medium text-gray-900">{job.title}</h5>
-                                <p className="text-sm text-gray-600 flex items-center mt-1">
-                                  <MapPin className="w-3 h-3 me-1" />
-                                  {job.company} • {job.location}
-                                </p>
-                                <p className="text-sm text-green-600 flex items-center mt-1">
-                                  <DollarSign className="w-3 h-3 me-1" />
-                                  {job.salary}
-                                </p>
-                              </div>
-                              <div className="text-end">
-                                <div className="text-lg font-dubai-bold text-blue-600">
-                                  {job.matchPercentage}%
+                        {(file.analysis.skills.technical.length > 0 ||
+                          file.analysis.skills.soft.length > 0 ||
+                          file.analysis.skills.languages.length > 0) ? (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {file.analysis.skills.technical.length > 0 && (
+                              <div>
+                                <h5 className="font-dubai-medium text-gray-800 mb-2">Technical Skills</h5>
+                                <div className="flex flex-wrap gap-1">
+                                  {file.analysis.skills.technical.map((skill, index) => (
+                                    <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                      {skill}
+                                    </span>
+                                  ))}
                                 </div>
-                                <div className="text-xs text-gray-500">Match</div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            )}
+                            {file.analysis.skills.soft.length > 0 && (
+                              <div>
+                                <h5 className="font-dubai-medium text-gray-800 mb-2">Soft Skills</h5>
+                                <div className="flex flex-wrap gap-1">
+                                  {file.analysis.skills.soft.map((skill, index) => (
+                                    <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {file.analysis.skills.languages.length > 0 && (
+                              <div>
+                                <h5 className="font-dubai-medium text-gray-800 mb-2">Languages</h5>
+                                <div className="flex flex-wrap gap-1">
+                                  {file.analysis.skills.languages.map((lang, index) => (
+                                    <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                                      {lang}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">{SECTION_UNAVAILABLE}</p>
+                        )}
                       </div>
 
-                      {/* Recommendations */}
-                      <div className="bg-yellow-50 rounded-lg p-4">
-                        <h4 className="font-dubai-medium text-gray-900 mb-3 flex items-center">
-                          <Sparkles className="w-4 h-4 me-2" />
-                          AI Recommendations
-                        </h4>
-                        <ul className="space-y-2">
-                          {file.analysis.recommendations.map((rec, index) => (
-                            <li key={index} className="flex items-start">
-                              <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-gray-700">{rec}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      {/* Continue to profile */}
+                      <div className="flex justify-end">
+                        <Link
+                          to="/candidate/profile"
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-dubai-medium transition-colors duration-200"
+                        >
+                          Continue to Profile / المتابعة إلى الملف الشخصي
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Uploaded, but no analysis available */}
+                  {file.status === 'completed' && !file.analysis && (
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <CheckCircle className="w-5 h-5 text-green-600 me-3 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-800">
+                            CV uploaded successfully. Automatic analysis is not available for this file /
+                            {' '}تم رفع السيرة الذاتية بنجاح. التحليل التلقائي غير متاح لهذا الملف
+                          </p>
+                          <Link
+                            to="/candidate/profile"
+                            className="inline-block mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-dubai-medium transition-colors duration-200"
+                          >
+                            Continue to Profile / المتابعة إلى الملف الشخصي
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   )}
