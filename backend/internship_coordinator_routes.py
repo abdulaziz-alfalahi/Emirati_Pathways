@@ -4,7 +4,7 @@ Blueprint prefix: /api/internship-coord
 Full internship lifecycle: programs, matching, placements, evaluations.
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2, psycopg2.extras, os, json, logging
 
 try:
