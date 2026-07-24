@@ -27,7 +27,7 @@ import {
 } from 'recharts';
 import { restClient } from '@/utils/api';
 import {
-  TrendingUp, Target, Brain, FileText, CheckCircle, Clock,
+  Target, Brain, FileText, CheckCircle, Clock,
   Users, Building2, Briefcase, BarChart3, Award,
   Shield, Download, Activity, Loader2, Send, ArrowRight,
   Globe, Landmark, AlertTriangle, UserCheck, PieChart as PieChartIcon
@@ -266,7 +266,7 @@ const ExecutiveDashboard: React.FC = () => {
     },
     {
       label: b('Emiratisation Target', 'هدف التوطين'),
-      value: `${kpis.emiratization_target_progress || 0}%`,
+      value: kpis.emiratization_target_progress != null ? `${kpis.emiratization_target_progress}%` : '—',
       icon: Target, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100',
       sub: b('Vision 2071 Progress', 'تقدم رؤية 2071')
     },
@@ -276,12 +276,8 @@ const ExecutiveDashboard: React.FC = () => {
       icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100',
       sub: b('Private Sector Verified', 'القطاع الخاص — معتمدون')
     },
-    {
-      label: b('Growth Projection', 'توقعات النمو'),
-      value: '+18%',
-      icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100',
-      sub: b('Next Quarter · AI Forecast', 'الربع القادم · توقعات الذكاء الاصطناعي')
-    },
+    // NOTE: the "Growth Projection +18% · AI Forecast" card was removed
+    // (data-honesty audit) — it was a hardcoded fabrication with no model behind it.
   ];
 
   // ── Scorecard items for the Scorecards section ─────────────────
@@ -554,7 +550,7 @@ const ExecutiveDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-center">
-                      <p className="text-2xl font-dubai-bold text-emerald-700">{kpis.emiratization_target_progress || 0}%</p>
+                      <p className="text-2xl font-dubai-bold text-emerald-700">{kpis.emiratization_target_progress != null ? `${kpis.emiratization_target_progress}%` : '—'}</p>
                       <p className="text-[10px] text-emerald-600 font-dubai-medium">{b('Current', 'الحالي')}</p>
                     </div>
                     <div className="w-32">
@@ -831,7 +827,7 @@ const ExecutiveDashboard: React.FC = () => {
                       <p className="text-3xl font-dubai-bold text-emerald-700">—</p>
                       <p className="text-sm text-emerald-600 font-dubai-medium mt-1">{b('2025 Target', 'هدف 2025')}</p>
                       <Progress value={kpis.emiratization_target_progress || 0} className="h-2 mt-3" />
-                      <p className="text-xs text-emerald-500 mt-1 font-dubai">{kpis.emiratization_target_progress || 0}% {b('toward target', 'نحو الهدف')}</p>
+                      <p className="text-xs text-emerald-500 mt-1 font-dubai">{kpis.emiratization_target_progress != null ? `${kpis.emiratization_target_progress}% ${b('toward target', 'نحو الهدف')}` : b('Target not yet connected', 'الهدف غير متصل بعد')}</p>
                     </div>
                     <div className="p-6 rounded-xl bg-blue-50 border border-blue-100 text-center">
                       <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
@@ -1088,34 +1084,19 @@ const ExecutiveDashboard: React.FC = () => {
                   {b('AI Strategic Briefing', 'موجز استراتيجي ذكي')}
                 </DialogTitle>
                 <DialogDescription className="font-dubai-medium text-xs text-slate-400">
-                  {b('Real-time AI-powered assessment of national talent pipeline.', 'تقييم لحظي مدعوم بالذكاء الاصطناعي لمسار الكفاءات الوطنية.')}
+                  {b('AI-powered assessment of the national talent pipeline.', 'تقييم مدعوم بالذكاء الاصطناعي لمسار الكفاءات الوطنية.')}
                 </DialogDescription>
               </DialogHeader>
+              {/* NOTE: the three hardcoded "insight" blocks (invented +14/+18% growth,
+                  50% compliance, "12,000 completed profiles") were removed — they were
+                  fabricated narrative, not a real model output (data-honesty audit). */}
               <div className="space-y-4 my-4 font-dubai">
-                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <h4 className="text-xs font-dubai-bold text-emerald-800 uppercase tracking-wider mb-1">{b('High Performance Sectors', 'القطاعات الأعلى أداءً')}</h4>
-                  <p className="text-sm text-emerald-700 font-dubai-medium">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                  <Brain className="h-6 w-6 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-600 font-dubai-medium">
                     {b(
-                      'Technology and Finance sectors are exceeding target growth by +14% and +18% respectively, driven by NAFIS training incentives alignment.',
-                      'قطاعا التكنولوجيا والمالية يتجاوزان النمو المستهدف بنسبة +14% و +18% على التوالي، مدفوعين بمواءمة حوافز التدريب في "نافس".'
-                    )}
-                  </p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
-                  <h4 className="text-xs font-dubai-bold text-amber-800 uppercase tracking-wider mb-1">{b('Northern Emirates Outreach', 'التواصل في الإمارات الشمالية')}</h4>
-                  <p className="text-sm text-amber-700 font-dubai-medium">
-                    {b(
-                      'Focus is required on private sector onboarding in Northern Emirates (Sharjah, Fujairah, Ajman) where average compliance stands at 50% of the 2025 target.',
-                      'يتطلب التركيز على إشراك القطاع الخاص في الإمارات الشمالية (الشارقة، الفجيرة، عجمان) حيث يبلغ متوسط الامتثال 50% من هدف 2025.'
-                    )}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <h4 className="text-xs font-dubai-bold text-blue-800 uppercase tracking-wider mb-1">{b('Military Service Integration', 'دمج الخدمة الوطنية')}</h4>
-                  <p className="text-sm text-blue-700 font-dubai-medium">
-                    {b(
-                      'National Service integration is operating at high efficiency with 12,000 completed profiles ready for direct private sector placements.',
-                      'يعمل نظام دمج الخدمة الوطنية بكفاءة عالية مع توفر 12,000 ملف مكتمل جاهز للتعيين المباشر في القطاع الخاص.'
+                      'Strategic briefing is not yet connected to a live analytics model. Insights will appear here once real pipeline data is available.',
+                      'الموجز الاستراتيجي غير متصل بعد بنموذج تحليلي مباشر. ستظهر الرؤى هنا بمجرد توفر بيانات حقيقية لمسار الكفاءات.'
                     )}
                   </p>
                 </div>

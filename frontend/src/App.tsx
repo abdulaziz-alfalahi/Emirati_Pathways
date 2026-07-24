@@ -126,7 +126,6 @@ const StartupLaunchpadPage = lazy(() => import('@/pages/startup-launchpad/Startu
 const CareerPathwaySimulator = lazy(() => import('@/pages/career-simulator/CareerPathwaySimulator'));
 const CareerPassportPage = lazy(() => import('@/pages/career-passport/CareerPassportPage'));
 const InteractiveMapPage = lazy(() => import('@/pages/interactive-map/InteractiveMapPage'));
-const EmiratizationTrackerPage = lazy(() => import('@/pages/emiratization-tracker/EmiratizationTrackerPage'));
 const CredentialsCenterPage = lazy(() => import('@/pages/credentials/CredentialsCenterPage'));
 const AssessmentsPage2 = lazy(() => import('@/pages/assessments/AssessmentsPage'));
 const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));

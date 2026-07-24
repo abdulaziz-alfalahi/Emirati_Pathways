@@ -312,11 +312,11 @@ const BilingualHomePage: React.FC = () => {
     { value: realStats?.successful_placements ?? 0, label: translations.stats?.placements?.label || 'Successful Placements' },
   ];
 
-  const testimonials = translations.testimonials?.items || [
-    { quote: 'The AI-powered career matching helped me find my dream role in government technology within weeks.', name: 'Ahmed Al Maktoum', role: 'Software Engineer', company: 'Dubai Digital Authority' },
-    { quote: 'As a recruiter, this platform has transformed how we find and attract Emirati talent.', name: 'Fatima Al Hashimi', role: 'HR Director', company: 'Emirates NBD' },
-    { quote: 'The mentorship matching connected me with an incredible mentor who guided my transition seamlessly.', name: 'Omar Al Suwaidi', role: 'Business Analyst', company: 'Etisalat by e&' },
-  ];
+  // No real, consented testimonials exist yet. The fabricated quotes attributed
+  // to real firms (Emirates NBD, Etisalat, Dubai Digital Authority) were removed
+  // from here and from home-complete.json (data-honesty audit). The section below
+  // renders only when real testimonials are supplied.
+  const testimonials = translations.testimonials?.items || [];
 
   /* ---- render ---- */
   return (
@@ -521,8 +521,9 @@ const BilingualHomePage: React.FC = () => {
       </section>
 
       {/* ============================================================ */}
-      {/*  TESTIMONIALS                                                 */}
+      {/*  TESTIMONIALS (only when real, consented testimonials exist)  */}
       {/* ============================================================ */}
+      {testimonials.length > 0 && (
       <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -573,6 +574,7 @@ const BilingualHomePage: React.FC = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* ============================================================ */}
       {/*  CTA SECTION                                                  */}

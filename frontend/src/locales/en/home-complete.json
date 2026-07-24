@@ -151,26 +151,7 @@
   "testimonials": {
     "title": "Success Stories",
     "subtitle": "Hear from professionals who transformed their careers",
-    "items": [
-      {
-        "quote": "The AI-powered career matching helped me find my dream role in government technology within weeks. The platform understood exactly what I was looking for.",
-        "name": "Ahmed Al Mazrouei",
-        "role": "Software Engineer",
-        "company": "Dubai Digital Authority"
-      },
-      {
-        "quote": "As a recruiter, this platform has transformed how we find and attract Emirati talent. The analytics dashboard gives us insights we never had before.",
-        "name": "Fatima Al Hashimi",
-        "role": "HR Director",
-        "company": "Emirates NBD"
-      },
-      {
-        "quote": "The mentorship matching connected me with an incredible mentor who guided my transition from education to the private sector seamlessly.",
-        "name": "Omar Al Suwaidi",
-        "role": "Business Analyst",
-        "company": "Etisalat by e&"
-      }
-    ]
+    "items": []
   },
   "cta": {
     "title": "Ready to Transform Your Career?",
