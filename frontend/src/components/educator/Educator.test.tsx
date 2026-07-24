@@ -16,9 +16,19 @@ import ResourceManagement from './ResourceManagement';
 // ResourceManagement imports axios (though it currently serves seeded data), so the
 // module still has to resolve. No educator component imports recharts, so the old
 // recharts mock was dead weight and has been removed along with the chart tests.
-vi.mock('axios', () => ({
-  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
-}));
+// CurriculumPlanning now calls the shared restClient (utils/api), which does
+// `axios.create(...)` at import and registers interceptors — so the axios mock
+// must provide `create` returning an instance with get/post + interceptors.
+vi.mock('axios', () => {
+  const instance = {
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
+  };
+  return { default: { ...instance, create: vi.fn(() => instance) } };
+});
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

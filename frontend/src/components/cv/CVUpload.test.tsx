@@ -5,6 +5,13 @@ import '@testing-library/jest-dom';
 import CVUploadComponent from './CVUploadComponent';
 import CVAnalysisResults from './CVAnalysisResults';
 import userEvent from '@testing-library/user-event';
+import { restClient } from '@/utils/api';
+
+// The component now calls the shared restClient (axios), not window.fetch.
+vi.mock('@/utils/api', () => ({
+  restClient: { get: vi.fn(), post: vi.fn() },
+}));
+const mockPost = restClient.post as unknown as ReturnType<typeof vi.fn>;
 
 // Radix TabsTrigger activates on pointer/mousedown, not on a bare synthetic click,
 // so fireEvent.click() leaves the panel unmounted. userEvent fires the full sequence.
@@ -12,27 +19,24 @@ const selectTab = async (name: string) => {
   await userEvent.click(screen.getByRole('tab', { name }));
 };
 
-// Mock API calls
-global.fetch = vi.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({
-      success: true,
-      cv_id: 'cv_test_id_123',
-      data: { experience: [{ position: 'Developer' }], skills: [{ name: 'React' }] },
-      analysis: { cv_score: 85 },
-      job_matches: [{ job_id: 'job_1', title: 'React Developer' }],
-      profile_completion: 90
-    }),
-  })
-) as ReturnType<typeof vi.fn>;
-
 describe('CVUploadComponent', () => {
   const onUploadSuccess = vi.fn();
   const onUploadError = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: a successful upload/parse. restClient returns { data: <body> }; the
+    // component uses res.data, so the body sits under `data`.
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        cv_id: 'cv_test_id_123',
+        data: { experience: [{ position: 'Developer' }], skills: [{ name: 'React' }] },
+        analysis: { cv_score: 85 },
+        job_matches: [{ job_id: 'job_1', title: 'React Developer' }],
+        profile_completion: 90,
+      },
+    });
   });
 
   test('renders correctly with file upload and text input tabs', () => {
@@ -158,12 +162,7 @@ describe('CVUploadComponent', () => {
   });
 
   test('handles upload error from API', async () => {
-    global.fetch.mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: false,
-        json: () => Promise.resolve({ message: 'Server error' }),
-      })
-    );
+    mockPost.mockRejectedValueOnce({ response: { data: { message: 'Server error' } } });
 
     render(<CVUploadComponent onUploadError={onUploadError} />);
     const dropzone = screen.getByText('Drop your CV here or click to browse').closest('div');

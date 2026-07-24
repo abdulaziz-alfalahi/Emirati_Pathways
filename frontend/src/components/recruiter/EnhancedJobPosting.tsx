@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAuthToken } from '@/utils/tokenUtils';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -241,19 +241,12 @@ const EnhancedJobPosting = () => {
     }
 
     try {
-      const response = await fetch('/api/educational/enhance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
-        body: JSON.stringify({
-          description: formData.description,
-          opportunity_type: formData.employment_type
-        })
+      const res = await restClient.post('/api/educational/enhance', {
+        description: formData.description,
+        opportunity_type: formData.employment_type
       });
 
-      const result = await response.json();
+      const result = res.data;
 
       if (result.success) {
         const enhancement = result.enhancement;
@@ -290,19 +283,12 @@ const EnhancedJobPosting = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('/api/opportunities/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          status: action === 'draft' ? 'draft' : 'published'
-        })
+      const res = await restClient.post('/api/opportunities/create', {
+        ...formData,
+        status: action === 'draft' ? 'draft' : 'published'
       });
 
-      const result = await response.json();
+      const result = res.data;
 
       if (result.success) {
         toast({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAuthToken } from '@/utils/tokenUtils';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,45 +105,13 @@ const CurriculumPlanning: React.FC = () => {
 
   const fetchUAEStandards = async () => {
     try {
-      const response = await fetch('/api/curriculum/standards', {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUaeStandards(data.standards || []);
-      }
+      // restClient so cookie auth + CSRF work (was raw fetch + Bearer placeholder).
+      const res = await restClient.get('/api/curriculum/standards');
+      setUaeStandards(res.data?.standards || []);
     } catch (error) {
       console.error('Error fetching UAE standards:', error);
-      // Mock data for demonstration
-      setUaeStandards([
-        {
-          id: '1',
-          standardCode: 'UAE-MATH-G5-1.1',
-          subject: 'Mathematics',
-          gradeLevel: 5,
-          strand: 'Number and Operations',
-          description: 'Develop understanding of place value system up to millions and decimal places',
-          learningOutcome: 'Students will understand place value in whole numbers and decimals',
-          skillsDeveloped: ['number sense', 'place value', 'decimal understanding'],
-          ministryReference: 'MoE Math Curriculum Grade 5',
-          isCoreStandard: true
-        },
-        {
-          id: '2',
-          standardCode: 'UAE-AR-G5-4.1',
-          subject: 'Arabic',
-          gradeLevel: 5,
-          strand: 'القراءة والفهم',
-          description: 'قراءة وفهم النصوص المناسبة للمستوى مع الطلاقة والفهم المناسب',
-          learningOutcome: 'سيتمكن الطلاب من قراءة وفهم النصوص المناسبة لمستواهم',
-          skillsDeveloped: ['القراءة', 'الفهم', 'المفردات'],
-          ministryReference: 'منهج اللغة العربية الصف الخامس',
-          isCoreStandard: true
-        }
-      ]);
+      // Honest empty state — do not substitute fabricated curriculum standards.
+      setUaeStandards([]);
     } finally {
       setLoading(false);
     }
