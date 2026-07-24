@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download } from 'lucide-react';
-import { getAuthToken } from '@/utils/tokenUtils';
+import { restClient } from '@/utils/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -54,41 +54,25 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
   };
 
   const uploadFile = async (file: File): Promise<any> => {
+    // restClient (not raw fetch) so cookie auth + CSRF work; axios sets the
+    // multipart boundary for FormData.
     const formData = new FormData();
     formData.append('cv_file', file);
-
-    const response = await fetch('/api/cv/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Upload failed');
+    try {
+      const res = await restClient.post('/api/cv/upload', formData);
+      return res.data;
+    } catch (error: any) {
+      throw new Error(error?.response?.data?.message || 'Upload failed');
     }
-
-    return response.json();
   };
 
   const uploadCVText = async (text: string): Promise<any> => {
-    const response = await fetch('/api/cv/parse-text', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
-      body: JSON.stringify({ cv_text: text })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Text parsing failed');
+    try {
+      const res = await restClient.post('/api/cv/parse-text', { cv_text: text });
+      return res.data;
+    } catch (error: any) {
+      throw new Error(error?.response?.data?.message || 'Text parsing failed');
     }
-
-    return response.json();
   };
 
   const handleFileUpload = useCallback(async (files: FileList) => {
