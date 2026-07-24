@@ -149,15 +149,18 @@ class RecommendationEngine:
             return []
         try:
             cursor = self.db.cursor()
+            # Reads the live user_recommendations table (there is no
+            # `recommendations` table). Columns: recommendation_type, status,
+            # generated_at; a row is hidden once its status is 'dismissed'.
             query = """
-                SELECT * FROM recommendations
-                WHERE user_id = %s AND dismissed = FALSE
+                SELECT * FROM user_recommendations
+                WHERE user_id = %s AND status <> 'dismissed'
             """
-            params = [user_id]
+            params = [str(user_id)]
             if rec_type:
-                query += " AND type = %s"
+                query += " AND recommendation_type = %s"
                 params.append(rec_type)
-            query += " ORDER BY priority DESC, created_at DESC LIMIT %s"
+            query += " ORDER BY priority DESC, generated_at DESC LIMIT %s"
             params.append(limit)
             cursor.execute(query, params)
             rows = cursor.fetchall()
@@ -174,23 +177,26 @@ class RecommendationEngine:
             return {"status": "no_db"}
         try:
             cursor = self.db.cursor()
+            # Feedback is stored inline on user_recommendations (there is no
+            # separate recommendation_feedback table). A dismissed/completed
+            # action also flips status so the row drops out of active listings.
+            new_status = action if action in ('dismissed', 'completed') else None
             cursor.execute("""
-                INSERT INTO recommendation_feedback (user_id, recommendation_id, action, notes, created_at)
-                VALUES (%s, %s, %s, %s, NOW())
-            """, (user_id, recommendation_id, action, notes))
-
-            # Mark as dismissed/completed in recommendations table
-            if action in ['dismissed', 'completed']:
-                cursor.execute("""
-                    UPDATE recommendations SET dismissed = TRUE, updated_at = NOW()
-                    WHERE id = %s AND user_id = %s
-                """, (recommendation_id, user_id))
+                UPDATE user_recommendations
+                SET feedback = %s,
+                    feedback_notes = %s,
+                    acted_at = NOW(),
+                    status = COALESCE(%s, status)
+                WHERE id::text = %s AND user_id = %s
+            """, (action, notes, new_status, str(recommendation_id), str(user_id)))
 
             self.db.commit()
 
             # If completed, potentially update skill graph
             if action == 'completed' and self.skill_graph:
-                cursor.execute("SELECT type, gap_skill FROM recommendations WHERE id = %s", (recommendation_id,))
+                cursor.execute(
+                    "SELECT recommendation_type, gap_skill FROM user_recommendations WHERE id::text = %s",
+                    (str(recommendation_id),))
                 rec = cursor.fetchone()
                 if rec and rec[0] == 'training':
                     self.skill_graph.update_skills_from_training(
@@ -355,15 +361,17 @@ class RecommendationEngine:
         try:
             cursor = self.db.cursor()
             for rec in recommendations.get('recommendations', [])[:50]:  # Cap at 50
+                # Persists to the live user_recommendations table.
                 cursor.execute("""
-                    INSERT INTO recommendations (user_id, type, title, title_ar,
-                        description, gap_skill, priority, effort, action_url, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    INSERT INTO user_recommendations (user_id, recommendation_type, title,
+                        title_ar, description, gap_skill, priority, effort, action_url,
+                        provider, generated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                 """, (
-                    user_id, rec.get('type'), rec.get('title'), rec.get('title_ar', ''),
+                    str(user_id), rec.get('type'), rec.get('title'), rec.get('title_ar', ''),
                     rec.get('description', ''), rec.get('gap_skill', ''),
                     rec.get('priority', 0), rec.get('effort', ''),
-                    rec.get('action_url', '')
+                    rec.get('action_url', ''), rec.get('provider', '')
                 ))
             self.db.commit()
         except Exception as e:

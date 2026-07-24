@@ -239,6 +239,10 @@ class QualityAssuranceSystem:
                              date_to: datetime = None) -> Dict[str, Any]:
         """Detect various types of bias in assessor's evaluations"""
         try:
+            # assessments.assessor_id is character varying; the route passes an
+            # int path param. Compare as text so the query doesn't error on
+            # "character varying = integer".
+            assessor_id = str(assessor_id)
             if not date_from:
                 date_from = datetime.now() - timedelta(days=90)
             if not date_to:
@@ -246,17 +250,20 @@ class QualityAssuranceSystem:
             
             with self.connection.cursor() as cursor:
                 # Get assessment data with candidate demographics
+                # cp.gender / cp.age / cp.education_level / cp.years_experience
+                # do not exist on the live candidate_profiles table, so those
+                # bias dimensions are dropped from the SELECT rather than
+                # fabricated. The _analyze_* helpers each guard on the column
+                # being absent from the DataFrame and return a "none" result,
+                # so dropping them degrades cleanly. cp.nationality is real and
+                # kept.
                 query = """
-                SELECT 
+                SELECT
                     ar.assessment_id,
                     ar.competency_id,
                     ar.assessor_score,
                     a.candidate_id,
-                    cp.gender,
-                    cp.age,
                     cp.nationality,
-                    cp.education_level,
-                    cp.years_experience,
                     cm.competency_type
                 FROM assessment_results ar
                 JOIN assessments a ON ar.assessment_id = a.id
@@ -1023,6 +1030,10 @@ class QualityAssuranceSystem:
     def get_quality_dashboard(self, assessor_id: int = None) -> Dict[str, Any]:
         """Get quality assurance dashboard data"""
         try:
+            # assessor_id columns are character varying; the route passes an int
+            # path param. Compare as text to avoid a type-mismatch error.
+            if assessor_id is not None:
+                assessor_id = str(assessor_id)
             with self.connection.cursor() as cursor:
                 # Get overall quality metrics
                 if assessor_id:

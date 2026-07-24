@@ -234,9 +234,9 @@ def get_skill_gaps(client_id):
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         # Get client's current skills
         cur.execute("""
-            SELECT st.name, us.proficiency_level, us.source
+            SELECT st.name, us.proficiency AS proficiency_level, us.source
             FROM user_skills us
-            JOIN skill_taxonomy st ON st.id = us.skill_id
+            JOIN skill_taxonomy st ON st.skill_id = us.skill_id
             WHERE us.user_id = %s
         """, (client_id,))
         current_skills = [dict(r) for r in cur.fetchall()]

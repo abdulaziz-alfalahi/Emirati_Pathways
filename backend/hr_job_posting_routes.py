@@ -1670,14 +1670,14 @@ def create_job_template():
             cursor.execute(
                 """
                 INSERT INTO job_templates (
-                    id, company_id, created_by, title,
+                    id, company_id, created_by, template_name, title_template,
                     requirements_template, responsibilities_template, benefits_template,
                     is_public, created_at
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
                 RETURNING *
                 """,
                 (
-                    template_id, company_id, current_user_id, title,
+                    template_id, company_id, current_user_id, title, title,
                     json.dumps(requirements_template), json.dumps(responsibilities_template), json.dumps(benefits_template),
                     is_public,
                 ),

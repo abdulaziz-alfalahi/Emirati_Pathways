@@ -359,37 +359,35 @@ def create_scholarship():
 
     try:
         cursor = db.cursor()
+        # INSERT restricted to columns that actually exist on the live
+        # scholarships table (verified 2026-07-24). The old statement wrote
+        # phantom columns (title_ar, description_ar, provider_type, eligibility,
+        # skills_required, created_by) and 500'd on every create. eligible_majors
+        # is jsonb — pass a JSON array string.
+        eligible_majors = data.get('eligible_majors')
+        if not isinstance(eligible_majors, str):
+            eligible_majors = json.dumps(eligible_majors or [])
         cursor.execute("""
             INSERT INTO scholarships (
-                title, title_ar, description, description_ar,
-                provider_name, provider_type, amount, coverage_type,
+                title, description, provider_name, amount, coverage_type,
                 deadline, min_gpa, academic_level, eligible_majors,
-                eligibility, skills_required, application_link,
-                is_active, created_by
+                application_link, is_active
             ) VALUES (
+                %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, %s, %s, %s,
-                %s, %s, %s, %s,
-                %s, %s, %s,
-                TRUE, %s
+                %s, TRUE
             ) RETURNING id, created_at
         """, (
             title,
-            data.get('title_ar', ''),
             data.get('description', ''),
-            data.get('description_ar', ''),
             data.get('provider', data.get('provider_name', '')),
-            data.get('provider_type', 'compliance_auditor'),
             data.get('amount'),
-            data.get('currency', data.get('coverage_type', 'AED')),
+            data.get('coverage_type', data.get('currency')),
             data.get('application_deadline', data.get('deadline')),
             data.get('min_gpa'),
             data.get('academic_level'),
-            data.get('eligible_majors'),
-            json.dumps(data.get('eligibility_criteria', {})),
-            json.dumps(data.get('requirements', [])),
+            eligible_majors,
             data.get('website_url', data.get('application_link', '')),
-            user_id,
         ))
         db.commit()
         row = cursor.fetchone()
@@ -633,8 +631,9 @@ def get_my_progress():
     """, (user_id,))
 
     # Scholarship applications
+    # scholarships live columns: title, amount, provider_name (no title_ar/provider)
     scholarships = query_all("""
-        SELECT sa.*, s.title, s.title_ar, s.amount, s.provider
+        SELECT sa.*, s.title, s.amount, s.provider_name AS provider
         FROM scholarship_applications sa
         JOIN scholarships s ON sa.scholarship_id = s.id
         WHERE sa.user_id = %s ORDER BY sa.submitted_at DESC

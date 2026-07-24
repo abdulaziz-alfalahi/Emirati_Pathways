@@ -284,7 +284,7 @@ def search_conversation_messages(conversation_id):
                 cur.execute("""
                     SELECT m.id, m.conversation_id, m.sender_id, m.content,
                            m.message_type, m.metadata, m.status, m.created_at, m.read_at,
-                           COALESCE(u.full_name, u.name, 'User') as sender_name
+                           COALESCE(u.full_name, 'User') as sender_name
                     FROM messages m
                     LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT)
                     WHERE m.conversation_id = %s
