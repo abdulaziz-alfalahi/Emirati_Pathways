@@ -284,11 +284,14 @@ def get_students_list():
             SELECT s.id AS student_id, s.student_id AS student_code,
                    s.first_name || ' ' || s.last_name AS name,
                    s.arabic_name, s.email, s.phone, s.nationality,
-                   s.status, s.enrollment_date, s.graduation_date,
+                   s.status,
+                   (SELECT MIN(e.enrollment_date) FROM enrollments e
+                        WHERE e.student_id = s.id) AS enrollment_date,
+                   s.graduation_date,
                    COALESCE(
-                       (SELECT ROUND(AVG(CASE WHEN sp.max_score > 0
-                           THEN (sp.score / sp.max_score * 4.0) ELSE 0 END)::numeric, 2)
-                        FROM student_progress sp WHERE sp.student_id = s.id), 0
+                       (SELECT ROUND(AVG(CASE WHEN sar.max_score > 0
+                           THEN (sar.score / sar.max_score * 4.0) ELSE 0 END)::numeric, 2)
+                        FROM student_academic_records sar WHERE sar.student_id = s.id), 0
                    ) AS gpa,
                    COALESCE(
                        (SELECT ROUND(
@@ -399,9 +402,9 @@ def get_student_detail(student_id):
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT s.*, COALESCE(
-                (SELECT ROUND(AVG(CASE WHEN sp.max_score > 0
-                    THEN (sp.score / sp.max_score * 4.0) ELSE 0 END)::numeric, 2)
-                 FROM student_progress sp WHERE sp.student_id = s.id), 0
+                (SELECT ROUND(AVG(CASE WHEN sar.max_score > 0
+                    THEN (sar.score / sar.max_score * 4.0) ELSE 0 END)::numeric, 2)
+                 FROM student_academic_records sar WHERE sar.student_id = s.id), 0
             ) AS gpa
             FROM students s WHERE s.id::text = %s OR s.student_id = %s
         """, (student_id, student_id))
@@ -416,7 +419,7 @@ def get_student_detail(student_id):
         # Get progress records
         cur.execute("""
             SELECT subject, grade, score, max_score, assessment_type, assessment_date, feedback
-            FROM student_progress WHERE student_id = %s::uuid
+            FROM student_academic_records WHERE student_id = %s::uuid
             ORDER BY assessment_date DESC
         """, (student['id'],))
         student['progress'] = [dict(r) for r in cur.fetchall()]
@@ -460,7 +463,7 @@ def add_academic_record(student_id):
     try:
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO student_progress (student_id, subject, assessment_type,
+            INSERT INTO student_academic_records (student_id, subject, assessment_type,
                 score, max_score, grade, assessment_date, feedback)
             VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id

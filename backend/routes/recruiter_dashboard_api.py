@@ -2733,7 +2733,9 @@ def reject_offer(approval_id):
                 SET status = 'rejected',
                     updated_at = NOW()
                 WHERE id = %s::uuid
-                RETURNING id, position_title, job_title
+                RETURNING id, status,
+                          offer_data->>'position_title' AS position_title,
+                          offer_data->>'job_title' AS job_title
             """
             offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
@@ -2834,7 +2836,9 @@ def send_offer_to_candidate(offer_id):
             SET status = 'sent',
                 updated_at = NOW()
             WHERE id = %s::uuid
-            RETURNING id, candidate_id, position_title, job_title
+            RETURNING id, candidate_id,
+                      offer_data->>'position_title' AS position_title,
+                      offer_data->>'job_title' AS job_title
         """
         
         update_result = execute_query(update_query, (offer_id,), fetch_one=True)

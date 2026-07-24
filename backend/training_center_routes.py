@@ -128,15 +128,15 @@ def create_program():
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Live training_courses columns: name, name_ar, provider, enrolled, status, course_type
         cur.execute("""
-            INSERT INTO training_courses (title_en, title_ar, description_en, description_ar,
-                provider, category, duration, level, skills_covered, price, capacity, is_active)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,true) RETURNING id
-        """, (data.get('title_en',''), data.get('title_ar',''), data.get('description_en',''),
-              data.get('description_ar',''), data.get('provider',''), data.get('category',''),
-              data.get('duration',''), data.get('level','beginner'),
-              json.dumps(data.get('skills_covered', [])), data.get('price', 0),
-              data.get('capacity', 30)))
+            INSERT INTO training_courses (name, name_ar, provider, status, course_type)
+            VALUES (%s,%s,%s,%s,%s) RETURNING id
+        """, (data.get('title_en') or data.get('name', ''),
+              data.get('title_ar') or data.get('name_ar', ''),
+              data.get('provider', ''),
+              data.get('status', 'active'),
+              data.get('category') or data.get('course_type', 'General')))
         pid = cur.fetchone()[0]
         conn.commit(); cur.close(); conn.close()
         return jsonify({"program_id": pid}), 201

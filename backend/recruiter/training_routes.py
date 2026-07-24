@@ -41,12 +41,18 @@ def recommend_training():
                 # Simple keyword matching for now
                 # In a real system, we'd use vector search or a dedicated skills-to-course mapping
                 for skill in missing_skills:
+                    # Live table is curriculum_standards; alias columns to the keys the
+                    # response contract expects (curriculum_name, subject).
                     query = """
-                        SELECT id, curriculum_name, subject, grade_level, description
-                        FROM curricula
-                        WHERE 
-                            LOWER(curriculum_name) LIKE LOWER(%s) OR
-                            LOWER(subject) LIKE LOWER(%s) OR
+                        SELECT id,
+                               standard_name AS curriculum_name,
+                               subject_area AS subject,
+                               grade_level,
+                               description
+                        FROM curriculum_standards
+                        WHERE
+                            LOWER(standard_name) LIKE LOWER(%s) OR
+                            LOWER(subject_area) LIKE LOWER(%s) OR
                             LOWER(description) LIKE LOWER(%s)
                         LIMIT 3
                     """

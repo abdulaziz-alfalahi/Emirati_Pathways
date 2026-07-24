@@ -262,22 +262,25 @@ def get_all_approvals():
     """Get all approvals (pending, history) for the workflow tab"""
     try:
         # Fetch from offer_approval_requests
+        # position_title/salary_amount live on offer_approval_requests itself
+        # (the `offers` table has neither column); requested_at is the live
+        # timestamp column (there is no submitted_at). Aliased to submitted_at
+        # so the transform below is unchanged.
         query = """
-            SELECT 
+            SELECT
                 oar.id,
                 oar.offer_id,
                 oar.recruiter_id,
                 oar.status,
-                oar.submitted_at,
-                o.position_title,
-                o.salary_amount,
+                oar.requested_at AS submitted_at,
+                oar.position_title,
+                oar.salary_amount,
                 u.full_name as recruiter_name,
                 c.full_name as candidate_name
             FROM offer_approval_requests oar
-            LEFT JOIN offers o ON oar.offer_id = o.id
             LEFT JOIN users u ON oar.recruiter_id = u.id
-            LEFT JOIN users c ON o.candidate_id = c.id
-            ORDER BY oar.submitted_at DESC
+            LEFT JOIN users c ON oar.candidate_id = c.id
+            ORDER BY oar.requested_at DESC
         """
         approvals = execute_query(query)
         
@@ -316,17 +319,16 @@ def get_pending_approvals():
             SELECT
                 oar.id,
                 oar.status,
-                oar.submitted_at,
-                o.position_title,
-                o.salary_amount,
+                oar.requested_at AS submitted_at,
+                oar.position_title,
+                oar.salary_amount,
                 u.full_name as recruiter_name,
                 c.full_name as candidate_name
             FROM offer_approval_requests oar
-            LEFT JOIN offers o ON oar.offer_id = o.id
             LEFT JOIN users u ON oar.recruiter_id = u.id
-            LEFT JOIN users c ON o.candidate_id = c.id
+            LEFT JOIN users c ON oar.candidate_id = c.id
             WHERE oar.status = 'pending'
-            ORDER BY oar.submitted_at DESC
+            ORDER BY oar.requested_at DESC
         """
         approvals = execute_query(query) or []
         data = []
@@ -1119,7 +1121,7 @@ def get_hr_metrics():
         apps_query = """
             SELECT 
                 COUNT(*) as total,
-                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE) as new_today,
+                COUNT(*) FILTER (WHERE applied_at >= CURRENT_DATE) as new_today,
                 COUNT(*) FILTER (WHERE status = 'interview') as interviewing,
                 COUNT(*) FILTER (WHERE status = 'offered') as offered,
                 COUNT(*) FILTER (WHERE status = 'hired') as hired

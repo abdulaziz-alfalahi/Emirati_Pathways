@@ -1354,11 +1354,12 @@ def get_pending_approvals():
         cur.execute("""
             SELECT ia.id, ia.user_id, ia.internship_id AS opportunity_id,
                    ia.status, ia.educator_status, ia.educator_notes,
-                   ia.applied_at, ia.applicant_name, ia.applicant_email,
+                   ia.applied_at, u.full_name AS applicant_name, u.email AS applicant_email,
                    i.title, i.title_ar, i.company, i.company_ar, i.sector,
                    'internship' AS opportunity_type
             FROM internship_applications ia
             JOIN internships i ON i.id = ia.internship_id
+            LEFT JOIN users u ON u.id = ia.user_id
             WHERE ia.educator_status = 'pending' OR ia.educator_status IS NULL
             ORDER BY ia.applied_at DESC
         """)
@@ -1369,11 +1370,12 @@ def get_pending_approvals():
         cur.execute("""
             SELECT ga.id, ga.user_id, ga.gig_id AS opportunity_id,
                    ga.status, ga.educator_status, ga.educator_notes,
-                   ga.applied_at, ga.applicant_name, ga.applicant_email,
+                   ga.applied_at, u.full_name AS applicant_name, u.email AS applicant_email,
                    g.title, g.title_ar, g.company, g.company_ar, g.category AS sector,
                    'gig' AS opportunity_type
             FROM gig_applications ga
             JOIN gigs g ON g.id = ga.gig_id
+            LEFT JOIN users u ON u.id = ga.user_id
             WHERE ga.educator_status = 'pending' OR ga.educator_status IS NULL
             ORDER BY ga.applied_at DESC
         """)
