@@ -479,11 +479,32 @@ def record_candidate_response(offer_id, response, notes=''):
                 )
             elif response == 'rejected':
                 update_shortlist_status_from_offer(
-                    shortlist_id, 
-                    'rejected', 
+                    shortlist_id,
+                    'rejected',
                     f'Candidate rejected offer {offer_id}'
                 )
-        
+
+        # Phase A: on hire, mark the candidate employed and remove them from the
+        # active recruiter pool (availability_status='not_visible' + legacy flags in
+        # sync). Best-effort — never blocks the offer response. The candidate can
+        # re-open themselves anytime via /api/profile/availability.
+        if response == 'accepted':
+            try:
+                hire_conn = get_db_connection()
+                hire_cur = hire_conn.cursor()
+                hire_cur.execute("SELECT candidate_id FROM job_offers WHERE offer_id = %s", (offer_id,))
+                _hrow = hire_cur.fetchone()
+                _cid = _hrow[0] if _hrow else None
+                if _cid:
+                    hire_cur.execute(
+                        "UPDATE users SET currently_employed = TRUE, availability_status = 'not_visible', "
+                        "is_visible = FALSE, available_for_recruitment = FALSE WHERE id = %s", (str(_cid),))
+                    hire_conn.commit()
+                hire_cur.close()
+                hire_conn.close()
+            except Exception as _he:
+                logger.warning(f"could not flip candidate availability on hire: {_he}")
+
         # Create notification for the recruiter
         if recruiter_id:
             try:
