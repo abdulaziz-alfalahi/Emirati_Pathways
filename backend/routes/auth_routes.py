@@ -582,18 +582,12 @@ def get_profile():
         }), 200
         
     except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        logger.error(f"Profile retrieval error: {str(e)}")
-        try:
-            with open('backend/profile_error.log', 'w') as f:
-                f.write(f"Error: {str(e)}\nTraceback:\n{error_trace}")
-        except:
-            pass
+        # Log server-side only — never return the traceback or exception text
+        # to the client (audit: info disclosure).
+        logger.error("Profile retrieval error", exc_info=True)
         return jsonify({
             'success': False,
-            'message': f'Profile retrieval failed: {str(e)}',
-            'debug_trace': error_trace
+            'message': 'Profile retrieval failed'
         }), 500
 
     except Exception as e:

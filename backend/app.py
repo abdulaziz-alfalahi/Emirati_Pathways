@@ -216,6 +216,12 @@ _jwt_secret = os.getenv('JWT_SECRET_KEY')
 if not _jwt_secret:
     raise RuntimeError("FATAL: JWT_SECRET_KEY environment variable is required.")
 app.config['JWT_SECRET_KEY'] = _jwt_secret
+# Hardening (audit): flag a weak/shared signing secret at boot. Advisory only —
+# does not block — but a low-entropy or dictionary secret lets anyone with the
+# repo/.env forge admin tokens. Provision a random >=32-byte per-environment
+# secret from a secrets manager.
+if len(_jwt_secret) < 32 or _jwt_secret.lower().startswith(('emirat', 'dev', 'test', 'secret', 'change')):
+    logger.critical("SECURITY: JWT_SECRET_KEY appears low-entropy/known — rotate to a random >=32-byte per-env secret.")
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # T4.1: short-lived access token
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
@@ -243,9 +249,16 @@ if not _uaepass_eid_key:
     if os.getenv('FLASK_ENV', 'production') == 'production':
         raise RuntimeError("FATAL: UAEPASS_EID_KEY environment variable is required in production.")
     else:
-        logger.warning("⚠️  UAEPASS_EID_KEY not set. Using dev default key (non-production).")
+        # Hardening (audit BLOCKER-3): NEVER fall back to a committed/known key —
+        # that key is public in the repo, so any EID encrypted under it is
+        # effectively plaintext. Use an EPHEMERAL random per-process key instead.
+        # Consequence: EID ciphertext is not portable across restarts in dev —
+        # acceptable for synthetic staging data; production MUST set a stable
+        # UAEPASS_EID_KEY (enforced by the fail-fast above).
         import base64
-        os.environ['UAEPASS_EID_KEY'] = base64.b64encode(b'dev_uaepass_eid_key_32bytes_long').decode('utf-8')
+        logger.warning("⚠️  UAEPASS_EID_KEY not set — generating an EPHEMERAL random key (non-production). "
+                       "EID ciphertext will NOT survive a restart; set UAEPASS_EID_KEY for stable/production use.")
+        os.environ['UAEPASS_EID_KEY'] = base64.b64encode(secrets.token_bytes(32)).decode('utf-8')
 
 # CORS Configuration
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
@@ -262,19 +275,19 @@ if _is_production:
     cors_origins.extend(allowed_origin_list)
     logger.info(f"CORS: Production mode — allowed origins: {cors_origins}")
 else:
-    # Development: allow localhost + ngrok + configured origins
+    # Development: localhost only. The wildcard ngrok regexes were REMOVED
+    # (audit BLOCKER-2): `*.ngrok-free.app` etc. are attacker-registerable and,
+    # with supports_credentials=True + cookie JWTs, allowed credentialed
+    # cross-origin API access from any such subdomain. Add a specific tunnel
+    # origin via ALLOWED_ORIGINS when genuinely needed.
     cors_origins = [
         "http://localhost:8081",
         "http://localhost:3000",
         "http://localhost:8089",
         "http://localhost:5173",
-        r"https?://.*\.ngrok\.io",
-        r"https?://.*\.ngrok\.app",
-        r"https?://.*\.ngrok-free\.app",
-        r"https?://.*\.ngrok-free\.dev",
     ]
     cors_origins.extend(allowed_origin_list)
-    logger.info("CORS: Development mode — localhost + ngrok origins ENABLED")
+    logger.info(f"CORS: Development mode — localhost + configured origins only: {cors_origins}")
 
 # Note: socketio cors_allowed_origins is now restricted (see constructor above).
 # The Flask CORS below handles API route CORS separately.
@@ -340,10 +353,27 @@ def add_security_headers(response):
     response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
     # Remove server header
     response.headers.pop('Server', None)
+    # HSTS — force HTTPS (safe on any HTTPS deployment incl. staging behind the WAF)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    # Defense-in-depth (audit HIGH): never leak DB/stack internals to clients on
+    # a 5xx, regardless of which handler produced the body. ~1,123 endpoints do
+    # `jsonify({'error': str(e)})` with raw psycopg2/SQL text; scrub any 5xx JSON
+    # body carrying DB/stack signatures and log the original server-side.
+    try:
+        if response.status_code >= 500 and response.is_json:
+            raw = response.get_data(as_text=True)
+            low = raw.lower()
+            _sigs = ('does not exist', 'psycopg2', 'traceback', 'syntax error', 'relation "',
+                     'column "', 'duplicate key', 'violates', 'null value', ' from ', ' select ')
+            if any(sig in low for sig in _sigs):
+                logger.error(f"[scrubbed-5xx-leak] {raw[:800]}")
+                response.set_data(json.dumps({'success': False, 'error': 'Internal server error'}))
+                response.headers['Content-Type'] = 'application/json'
+    except Exception:
+        pass
 
     if _is_production:
-        # HSTS — force HTTPS
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         # Content Security Policy — tightened (no unsafe-eval)
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
@@ -378,10 +408,9 @@ def method_not_allowed_error(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    if _is_production:
-        logger.error(f"Internal server error: {error}")
-        return jsonify({'success': False, 'error': 'Internal server error'}), 500
-    return jsonify({'success': False, 'error': str(error)}), 500
+    # Never return internal error text to clients, in any environment (audit).
+    logger.error(f"Internal server error: {error}", exc_info=True)
+    return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 
 @app.errorhandler(429)
