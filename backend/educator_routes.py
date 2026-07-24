@@ -4,13 +4,18 @@ Blueprint prefix: /api/educator
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2
 import psycopg2.extras
 import os
 import json
 import logging
 from datetime import datetime
+
+try:
+    from backend.auth.access_control import resolve_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, ADMIN_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +36,19 @@ def get_db():
 
 
 # Roles permitted to operate the educator dashboard (student PII, grades, alerts).
-_EDUCATOR_ROLES = {'training_provider', 'training_center_rep', 'educator',
-                   'education_operator', 'admin', 'super_admin'}
+_EDUCATOR_ROLES = ADMIN_ROLES | {'training_provider', 'training_center_rep', 'educator',
+                                 'education_operator'}
 
 
 def _require_educator_role():
-    """Return a (response, 403) if the caller isn't an educator/provider, else None."""
-    try:
-        role = (get_jwt() or {}).get('role', '')
-    except Exception:
-        role = ''
-    if role not in _EDUCATOR_ROLES:
-        return jsonify({"error": "Forbidden - educator access required"}), 403
-    return None
+    """Return a (response, 403) if the caller isn't an educator/provider, else None.
+
+    Uses resolve_roles() (primary claim + secondary_roles + DB) rather than the raw
+    JWT 'role' claim, so a user holding an educator role as a SECONDARY role — or any
+    admin — is correctly allowed (feedback fb_1784892515; issue #96)."""
+    if resolve_roles() & _EDUCATOR_ROLES:
+        return None
+    return jsonify({"error": "Forbidden - educator access required"}), 403
 
 
 # ── Health check ─────────────────────────────────────────────────────────────
