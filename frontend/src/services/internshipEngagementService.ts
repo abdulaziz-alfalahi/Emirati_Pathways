@@ -38,6 +38,40 @@ export interface Engagement {
   completed_at?: string;
 }
 
+export interface Evaluation {
+  id: number;
+  evaluator_type: 'recruiter' | 'coordinator';
+  evaluation_type: 'mid' | 'final' | 'academic';
+  competencies?: Record<string, any>;
+  rating?: number;
+  feedback?: string;
+  created_at?: string;
+}
+
+export interface Report {
+  id: number;
+  author_id: string;
+  author_role: string;
+  report_type: 'periodic' | 'final';
+  period_label?: string;
+  title?: string;
+  content: string;
+  status: 'submitted' | 'reviewed';
+  reviewer_role?: string;
+  reviewer_feedback?: string;
+  reviewed_at?: string;
+  created_at?: string;
+}
+
+export interface ConsentAuditEntry {
+  id: number;
+  actor_id: string;
+  student_id: string;
+  decision: 'granted' | 'denied';
+  reason?: string;
+  created_at?: string;
+}
+
 const BASE = '/api/internship-engagement';
 
 function data<T>(p: Promise<any>): Promise<T> {
@@ -76,6 +110,24 @@ export const internshipEngagementService = {
   // Lifecycle
   begin: (id: number) => restClient.post(`${BASE}/${id}/begin`),
   complete: (id: number) => restClient.post(`${BASE}/${id}/complete`),
+
+  // Phase 2 — assessment
+  submitEvaluation: (id: number, body: {
+    evaluation_type?: 'mid' | 'final' | 'academic'; rating?: number;
+    feedback?: string; competencies?: Record<string, any>;
+  }) => restClient.post(`${BASE}/${id}/evaluate`, body),
+  evaluations: (id: number) => data<Evaluation[]>(restClient.get(`${BASE}/${id}/evaluations`)),
+
+  // Phase 2 — reporting
+  submitReport: (id: number, body: {
+    report_type?: 'periodic' | 'final'; period_label?: string; title?: string; content: string;
+  }) => restClient.post(`${BASE}/${id}/reports`, body),
+  reports: (id: number) => data<Report[]>(restClient.get(`${BASE}/${id}/reports`)),
+  reviewReport: (reportId: number, reviewer_feedback: string) =>
+    restClient.post(`${BASE}/reports/${reportId}/review`, { reviewer_feedback }),
+
+  // Phase 3 — consent audit
+  consentAudit: (id: number) => data<ConsentAuditEntry[]>(restClient.get(`${BASE}/${id}/consent-audit`)),
 };
 
 export default internshipEngagementService;
