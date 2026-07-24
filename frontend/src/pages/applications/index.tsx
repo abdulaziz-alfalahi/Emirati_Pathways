@@ -36,6 +36,58 @@ import { applicationService, Application } from '@/services/applicationService';
 import QuickMessageDialog from '@/components/messaging/QuickMessageDialog';
 import { useToast } from '@/hooks/use-toast';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
+import { restClient } from '@/utils/api';
+
+// Frontend mirror of backend RECRUITER_ROLES (backend/auth/access_control.py):
+// ADMIN_ROLES | {recruiter, employer_admin, talent_operator, employer_relations}.
+// The backend remains the authority — this only decides which UI to render.
+const RECRUITER_CAPABLE_ROLES = [
+  'recruiter', 'employer_admin', 'talent_operator', 'employer_relations',
+  'admin', 'administrator', 'super_user', 'super_admin', 'platform_administrator',
+];
+
+// Read roles the way the rest of the app does: localStorage 'user' (role,
+// user_type mirror, secondary_roles, roles[]) plus the RoleSwitcher's 'activeRole'.
+const getStoredUserRoles = (): string[] => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const roles: unknown[] = [
+      user.role,
+      user.user_type,
+      ...(Array.isArray(user.roles) ? user.roles : []),
+      ...(Array.isArray(user.secondary_roles) ? user.secondary_roles : []),
+      localStorage.getItem('activeRole'),
+    ];
+    return roles.filter((r): r is string => typeof r === 'string' && r.length > 0)
+      .map(r => r.toLowerCase());
+  } catch {
+    return [];
+  }
+};
+
+interface RecruiterJob {
+  id: string;
+  title: string;
+  company?: string;
+  applications?: number;
+  status?: string;
+}
+
+// Statuses a recruiter may set via PUT /api/applications/<id>/status.
+const RECRUITER_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'shortlisted', label: 'Shortlisted' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'offer', label: 'Offer' },
+  { value: 'hired', label: 'Hired' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
+// Never show a full Emirates ID on screen — last 4 digits only.
+const maskCandidateId = (candidateId?: string): string => {
+  if (!candidateId) return '—';
+  return `•••• ${candidateId.slice(-4)}`;
+};
 
 const ApplicationsPage: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -48,9 +100,124 @@ const ApplicationsPage: React.FC = () => {
   const [selectedApplicationForMessage, setSelectedApplicationForMessage] = useState<Application | null>(null);
   const { toast } = useToast();
 
+  // Recruiter-side "Manage Applications" state (catalog EJ-02).
+  const isRecruiterView = getStoredUserRoles().some(r => RECRUITER_CAPABLE_ROLES.includes(r));
+  const [recruiterJobs, setRecruiterJobs] = useState<RecruiterJob[]>([]);
+  const [isJobsLoading, setIsJobsLoading] = useState(false);
+  const [jobsLoaded, setJobsLoaded] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState('');
+  const [jobApplications, setJobApplications] = useState<Application[]>([]);
+  const [isJobAppsLoading, setIsJobAppsLoading] = useState(false);
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
+
   useEffect(() => {
     loadApplications();
   }, []);
+
+  // Lazily load the recruiter's job postings the first time the manage tab opens.
+  useEffect(() => {
+    if (activeTab === 'manage-applications' && isRecruiterView && !jobsLoaded) {
+      loadRecruiterJobs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isRecruiterView, jobsLoaded]);
+
+  const loadRecruiterJobs = async () => {
+    setIsJobsLoading(true);
+    try {
+      // Same endpoint the recruiter dashboard uses for its job list.
+      const response = await restClient.get('/api/recruiter/jd/list');
+      const jobs: RecruiterJob[] = (response.data?.job_descriptions || [])
+        .filter((j: any) => j && j.id)
+        .map((j: any) => ({
+          id: String(j.id),
+          title: j.title || 'Untitled posting',
+          company: j.company,
+          applications: typeof j.applications === 'number' ? j.applications : undefined,
+          status: j.status,
+        }));
+      setRecruiterJobs(jobs);
+    } catch (error) {
+      console.error('Error loading recruiter job postings:', error);
+      setRecruiterJobs([]);
+      toast({
+        title: "Error",
+        description: "Failed to load your job postings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsJobsLoading(false);
+      setJobsLoaded(true);
+    }
+  };
+
+  const handleSelectJob = async (jobId: string) => {
+    setSelectedJobId(jobId);
+    setIsJobAppsLoading(true);
+    try {
+      const response = await applicationService.getJobApplications(jobId);
+      if (response.success) {
+        setJobApplications(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setJobApplications([]);
+        toast({
+          title: "Error",
+          description: response.error || "Failed to load applications for this job",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error loading job applications:', error);
+      setJobApplications([]);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while loading applications",
+        variant: "destructive",
+      });
+    } finally {
+      setIsJobAppsLoading(false);
+    }
+  };
+
+  const handleRecruiterStatusChange = async (applicationId: string, newStatus: string) => {
+    const previous = jobApplications;
+    setUpdatingApplicationId(applicationId);
+    // Optimistic update; rolled back on failure.
+    setJobApplications(prev =>
+      prev.map(app =>
+        app.id === applicationId
+          ? { ...app, status: newStatus, updated_at: new Date().toISOString() }
+          : app
+      )
+    );
+    try {
+      const response = await applicationService.updateApplicationStatus(applicationId, newStatus);
+      if (response.success) {
+        const label = RECRUITER_STATUS_OPTIONS.find(o => o.value === newStatus)?.label || newStatus;
+        toast({
+          title: "Status updated",
+          description: `Application moved to ${label}.`,
+        });
+      } else {
+        setJobApplications(previous);
+        toast({
+          title: "Error",
+          description: response.error || "Failed to update application status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      setJobApplications(previous);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingApplicationId(null);
+    }
+  };
 
   const loadApplications = async () => {
     setIsLoading(true);
@@ -164,6 +331,10 @@ const ApplicationsPage: React.FC = () => {
     switch (status) {
       case 'submitted': return 'bg-blue-100 text-blue-800';
       case 'reviewed': return 'bg-yellow-100 text-yellow-800';
+      case 'under_review': return 'bg-yellow-100 text-yellow-800';
+      case 'interview': return 'bg-orange-100 text-orange-800';
+      case 'offer': return 'bg-green-100 text-green-800';
+      case 'hired': return 'bg-green-200 text-green-900';
       case 'shortlisted': return 'bg-purple-100 text-purple-800';
       case 'interview_scheduled': return 'bg-orange-100 text-orange-800';
       case 'interview_completed': return 'bg-indigo-100 text-indigo-800';
@@ -181,6 +352,10 @@ const ApplicationsPage: React.FC = () => {
     switch (status) {
       case 'submitted': return <FileText className="h-4 w-4" />;
       case 'reviewed': return <Eye className="h-4 w-4" />;
+      case 'under_review': return <Eye className="h-4 w-4" />;
+      case 'interview': return <Calendar className="h-4 w-4" />;
+      case 'offer': return <TrendingUp className="h-4 w-4" />;
+      case 'hired': return <CheckCircle className="h-4 w-4" />;
       case 'shortlisted': return <Star className="h-4 w-4" />;
       case 'interview_scheduled': return <Calendar className="h-4 w-4" />;
       case 'interview_completed': return <CheckCircle className="h-4 w-4" />;
@@ -489,16 +664,138 @@ const ApplicationsPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="manage-applications" className="space-y-6">
-            <div className="text-center py-12">
-              <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Recruiter Application Management</h3>
-              <p className="text-gray-600 mb-6">
-                This section is for recruiters and HR managers to review and manage job applications.
-              </p>
-              <p className="text-sm text-gray-500">
-                Feature coming soon in the next phase of development.
-              </p>
-            </div>
+            {!isRecruiterView ? (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Recruiter Application Management</h3>
+                <p className="text-gray-600 mb-2">This view is for recruiters and HR managers.</p>
+                <p className="text-gray-600" dir="rtl">هذه الواجهة لمسؤولي التوظيف</p>
+              </div>
+            ) : (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Briefcase className="h-5 w-5" />
+                      <span>Your Job Postings</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isJobsLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-3 text-gray-600">Loading your job postings...</p>
+                      </div>
+                    ) : recruiterJobs.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Briefcase className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                        <h3 className="text-lg font-semibold mb-1">No job postings found</h3>
+                        <p className="text-gray-600">
+                          You don't have any job postings yet. Create one from the recruiter dashboard to manage applications.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select value={selectedJobId} onValueChange={handleSelectJob}>
+                        <SelectTrigger className="w-full md:w-96">
+                          <SelectValue placeholder="Select a job posting" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {recruiterJobs.map(job => (
+                            <SelectItem key={job.id} value={job.id}>
+                              {job.title}
+                              {typeof job.applications === 'number'
+                                ? ` (${job.applications} application${job.applications === 1 ? '' : 's'})`
+                                : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {selectedJobId && (
+                  isJobAppsLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Loading applications...</p>
+                    </div>
+                  ) : jobApplications.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No applications yet</h3>
+                      <p className="text-gray-600">No one has applied to this job posting yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {jobApplications.map(application => (
+                        <Card key={application.id}>
+                          <CardContent className="p-6">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                  <User className="h-5 w-5 text-gray-500" />
+                                  <span className="font-semibold">
+                                    Candidate {maskCandidateId(application.candidate_id)}
+                                  </span>
+                                  <Badge className={getStatusColor(application.status)}>
+                                    <div className="flex items-center space-x-1">
+                                      {getStatusIcon(application.status)}
+                                      <span className="capitalize">{application.status.replace(/_/g, ' ')}</span>
+                                    </div>
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    Applied: {application.created_at ? formatDate(application.created_at) : 'Unknown'}
+                                  </div>
+                                  {application.expected_salary && (
+                                    <div className="flex items-center gap-1">
+                                      <DollarSign className="h-4 w-4" />
+                                      Expected: {application.salary_currency} {application.expected_salary}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {application.status === 'withdrawn' ? (
+                                  <span className="text-sm text-gray-500">Withdrawn by candidate</span>
+                                ) : (
+                                  <>
+                                    <Label className="text-sm text-gray-600 whitespace-nowrap">Set status:</Label>
+                                    <Select
+                                      value=""
+                                      onValueChange={(value) => handleRecruiterStatusChange(application.id, value)}
+                                      disabled={updatingApplicationId === application.id}
+                                    >
+                                      <SelectTrigger className="w-44">
+                                        <SelectValue placeholder="Change status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {RECRUITER_STATUS_OPTIONS.map(option => (
+                                          <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                            disabled={option.value === application.status}
+                                          >
+                                            {option.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )
+                )}
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div >

@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { Award, Users, DollarSign, GraduationCap, Calendar, Clock, ExternalLink, CheckCircle, ArrowRight, ArrowLeft, Star, Globe, BookOpen } from 'lucide-react';
+import { restClient } from '@/utils/api';
+import { Award, Users, GraduationCap, Clock, ExternalLink, ArrowRight, ArrowLeft, Globe, BookOpen, Loader2, RefreshCw } from 'lucide-react';
 
 // Brand tokens
 const brand = {
@@ -14,13 +16,25 @@ const brand = {
   textSecondary: '#6B7280',
   amber: '#FEF3C7',
   amberText: '#92400E',
-  green: '#DCFCE7',
-  greenText: '#166534',
-  red: '#FEE2E2',
-  redText: '#991B1B',
   blue: '#DBEAFE',
   blueText: '#1E40AF',
 };
+
+// Real row shape from GET /api/education/scholarships (live `scholarships` table)
+interface Scholarship {
+  id: number;
+  title: string;
+  provider_name: string | null;
+  description: string | null;
+  amount: string | null;          // free-text varchar, shown verbatim
+  coverage_type: string | null;
+  deadline: string | null;        // "YYYY-MM-DD"
+  min_gpa: number | string | null;
+  academic_level: string | null;
+  eligible_majors: string[] | null;
+  application_link: string | null;
+  is_active: boolean;
+}
 
 const ScholarshipsPage: React.FC = () => {
 
@@ -28,388 +42,371 @@ const ScholarshipsPage: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
-  // Scholarship data (translated)
-  const scholarships = [
-    {
-      id: '1',
-      title: t('EHRDC Excellence Award', 'جائزة التميز من مؤسسة الإمارات للتنمية'),
-      description: t(
-        'Full scholarship for UAE nationals demonstrating outstanding academic achievement and community leadership.',
-        'منحة دراسية كاملة للمواطنين الإماراتيين الذين يُظهرون تميزاً أكاديمياً بارزاً وقيادة مجتمعية.'
-      ),
-      amount: t('AED 150,000', '150,000 د.إ'),
-      amountType: t('per year', 'سنوياً'),
-      eligibility: t('UAE nationals, GPA 3.7+', 'مواطنون إماراتيون، معدل 3.7+'),
-      deadline: t('March 31, 2026', '31 مارس 2026'),
-      category: 'Merit-Based',
-      categoryLabel: t('Merit-Based', 'قائمة على الجدارة'),
-      level: t('Undergraduate & Graduate', 'بكالوريوس وماجستير'),
-      spots: 25,
-      applicants: 180,
-      featured: true,
-      benefits: [
-        t('Full tuition coverage', 'تغطية الرسوم الدراسية كاملة'),
-        t('Living stipend', 'بدل معيشة'),
-        t('Research funding', 'تمويل البحث'),
-        t('Mentorship program', 'برنامج إرشادي'),
-      ],
-    },
-    {
-      id: '2',
-      title: t('STEM Innovation Scholarship', 'منحة الابتكار في العلوم والتكنولوجيا'),
-      description: t(
-        'Supporting the next generation of Emirati innovators in science, technology, engineering, and mathematics fields.',
-        'دعم الجيل القادم من المبتكرين الإماراتيين في مجالات العلوم والتكنولوجيا والهندسة والرياضيات.'
-      ),
-      amount: t('AED 120,000', '120,000 د.إ'),
-      amountType: t('per year', 'سنوياً'),
-      eligibility: t('STEM majors, GPA 3.5+', 'تخصصات STEM، معدل 3.5+'),
-      deadline: t('April 15, 2026', '15 أبريل 2026'),
-      category: 'Field-Specific',
-      categoryLabel: t('Field-Specific', 'حسب التخصص'),
-      level: t('Undergraduate', 'بكالوريوس'),
-      spots: 40,
-      applicants: 210,
-      featured: true,
-      benefits: [
-        t('Tuition support', 'دعم الرسوم الدراسية'),
-        t('Lab equipment allowance', 'بدل معدات المختبر'),
-        t('Industry internship', 'تدريب عملي في الصناعة'),
-        t('Conference sponsorship', 'رعاية المؤتمرات'),
-      ],
-    },
-    {
-      id: '3',
-      title: t('Community Leadership Grant', 'منحة القيادة المجتمعية'),
-      description: t(
-        'Recognizing UAE nationals who have made significant contributions to community development and social impact.',
-        'تقدير المواطنين الإماراتيين الذين قدموا مساهمات كبيرة في تنمية المجتمع والأثر الاجتماعي.'
-      ),
-      amount: t('AED 80,000', '80,000 د.إ'),
-      amountType: t('per year', 'سنوياً'),
-      eligibility: t('Community service record', 'سجل خدمة مجتمعية'),
-      deadline: t('May 1, 2026', '1 مايو 2026'),
-      category: 'Leadership',
-      categoryLabel: t('Leadership', 'قيادة'),
-      level: t('All Levels', 'جميع المستويات'),
-      spots: 30,
-      applicants: 95,
-      featured: false,
-      benefits: [
-        t('Partial tuition', 'رسوم دراسية جزئية'),
-        t('Community project funding', 'تمويل مشاريع مجتمعية'),
-        t('Leadership workshops', 'ورش عمل قيادية'),
-      ],
-    },
-    {
-      id: '4',
-      title: t('Women in Technology Award', 'جائزة المرأة في التكنولوجيا'),
-      description: t(
-        'Empowering Emirati women pursuing careers in technology, cybersecurity, AI, and data science.',
-        'تمكين المرأة الإماراتية الساعية لمسيرة مهنية في التكنولوجيا والأمن السيبراني والذكاء الاصطناعي وعلوم البيانات.'
-      ),
-      amount: t('AED 100,000', '100,000 د.إ'),
-      amountType: t('per year', 'سنوياً'),
-      eligibility: t('Female UAE nationals, Tech fields', 'مواطنات إماراتيات، تخصصات تقنية'),
-      deadline: t('April 30, 2026', '30 أبريل 2026'),
-      category: 'Diversity',
-      categoryLabel: t('Diversity', 'تنوع'),
-      level: t('Undergraduate & Graduate', 'بكالوريوس وماجستير'),
-      spots: 20,
-      applicants: 120,
-      featured: true,
-      benefits: [
-        t('Full tuition', 'رسوم دراسية كاملة'),
-        t('Networking events', 'فعاليات التواصل'),
-        t('Industry mentorship', 'إرشاد مهني'),
-        t('Career placement support', 'دعم التوظيف'),
-      ],
-    },
-    {
-      id: '5',
-      title: t('Graduate Research Fellowship', 'زمالة البحث للدراسات العليا'),
-      description: t(
-        'Supporting advanced research by Emirati graduate students in priority national development areas.',
-        'دعم البحث المتقدم لطلاب الدراسات العليا الإماراتيين في مجالات التنمية الوطنية ذات الأولوية.'
-      ),
-      amount: t('AED 200,000', '200,000 د.إ'),
-      amountType: t('total', 'إجمالي'),
-      eligibility: t("Master's or PhD candidates", 'مرشحون للماجستير أو الدكتوراه'),
-      deadline: t('June 15, 2026', '15 يونيو 2026'),
-      category: 'Research',
-      categoryLabel: t('Research', 'بحث'),
-      level: t('Graduate', 'دراسات عليا'),
-      spots: 15,
-      applicants: 65,
-      featured: false,
-      benefits: [
-        t('Research stipend', 'بدل بحثي'),
-        t('Travel grants', 'منح سفر'),
-        t('Publication support', 'دعم النشر'),
-        t('Lab access', 'الوصول للمختبرات'),
-      ],
-    },
-    {
-      id: '6',
-      title: t('Creative Arts & Culture Scholarship', 'منحة الفنون الإبداعية والثقافة'),
-      description: t(
-        'Fostering Emirati talent in visual arts, performing arts, heritage preservation, and creative industries.',
-        'رعاية المواهب الإماراتية في الفنون البصرية والأداء وحفظ التراث والصناعات الإبداعية.'
-      ),
-      amount: t('AED 75,000', '75,000 د.إ'),
-      amountType: t('per year', 'سنوياً'),
-      eligibility: t('Arts & Humanities majors', 'تخصصات الفنون والعلوم الإنسانية'),
-      deadline: t('May 15, 2026', '15 مايو 2026'),
-      category: 'Arts',
-      categoryLabel: t('Arts', 'فنون'),
-      level: t('Undergraduate', 'بكالوريوس'),
-      spots: 20,
-      applicants: 70,
-      featured: false,
-      benefits: [
-        t('Studio access', 'الوصول للاستوديو'),
-        t('Exhibition funding', 'تمويل المعارض'),
-        t('Cultural exchange trips', 'رحلات تبادل ثقافي'),
-      ],
-    },
-  ];
-
-  const categories = [
-    { key: 'All', label: t('All', 'الكل') },
-    { key: 'Merit-Based', label: t('Merit-Based', 'قائمة على الجدارة') },
-    { key: 'Field-Specific', label: t('Field-Specific', 'حسب التخصص') },
-    { key: 'Leadership', label: t('Leadership', 'قيادة') },
-    { key: 'Diversity', label: t('Diversity', 'تنوع') },
-    { key: 'Research', label: t('Research', 'بحث') },
-    { key: 'Arts', label: t('Arts', 'فنون') },
-  ];
-
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [applyingId, setApplyingId] = useState<number | null>(null);
+  const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
 
-  const filtered = scholarships.filter(s => {
-    const matchCat = selectedCategory === 'All' || s.category === selectedCategory;
-    const matchSearch = !searchQuery ||
-      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.categoryLabel.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const fetchScholarships = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await restClient.get('/api/education/scholarships');
+      const rows: Scholarship[] = Array.isArray(res.data?.scholarships) ? res.data.scholarships : [];
+      setScholarships(rows.filter(r => r.is_active !== false));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  useEffect(() => { fetchScholarships(); }, [fetchScholarships]);
+
+  const handleApply = async (s: Scholarship) => {
+    if (s.application_link) {
+      window.open(s.application_link, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    setApplyingId(s.id);
+    try {
+      await restClient.post(`/api/education/scholarships/${s.id}/apply`, {});
+      setAppliedIds(prev => new Set(prev).add(s.id));
+      toast.success(t('Application submitted successfully.', 'تم إرسال طلبك بنجاح.'));
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        setAppliedIds(prev => new Set(prev).add(s.id));
+        toast.info(t('You have already applied to this scholarship.', 'لقد تقدمت بالفعل لهذه المنحة.'));
+      } else if (status === 401 || status === 422) {
+        toast.error(t('Please sign in to apply for scholarships.', 'يرجى تسجيل الدخول للتقديم على المنح.'));
+      } else {
+        toast.error(t('Could not submit your application. Please try again.', 'تعذر إرسال طلبك. يرجى المحاولة مرة أخرى.'));
+      }
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  // Level filter options derived from real data
+  const levelOptions = useMemo(() => {
+    const levels = Array.from(new Set(
+      scholarships.map(s => (s.academic_level || '').trim()).filter(Boolean)
+    ));
+    return [{ key: 'All', label: t('All', 'الكل') }, ...levels.map(l => ({ key: l, label: l }))];
+  }, [scholarships, isRTL]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return scholarships.filter(s => {
+      const matchLevel = selectedLevel === 'All' || (s.academic_level || '').trim() === selectedLevel;
+      const matchSearch = !q ||
+        (s.title || '').toLowerCase().includes(q) ||
+        (s.provider_name || '').toLowerCase().includes(q) ||
+        (s.description || '').toLowerCase().includes(q);
+      return matchLevel && matchSearch;
+    });
+  }, [scholarships, selectedLevel, searchQuery]);
+
+  const providerCount = useMemo(
+    () => new Set(scholarships.map(s => (s.provider_name || '').trim()).filter(Boolean)).size,
+    [scholarships]
+  );
+
+  // Honest stats: counts derived from the live data only
   const stats = [
-    { value: '45+', label: t('Available Scholarships', 'المنح المتاحة'), icon: Award },
-    { value: '500+', label: t('Recipients Annually', 'مستفيدون سنوياً'), icon: Users },
-    { value: t('AED 12M+', '12 م+ د.إ'), label: t('Total Awards', 'إجمالي الجوائز'), icon: DollarSign },
-    { value: '30+', label: t('Partner Universities', 'الجامعات الشريكة'), icon: GraduationCap },
+    { value: loading || loadError ? '—' : String(scholarships.length), label: t('Available Scholarships', 'المنح المتاحة'), icon: Award },
+    { value: loading || loadError ? '—' : String(providerCount), label: t('Providers', 'الجهات المانحة'), icon: Users },
   ];
 
-  const getCategoryColor = (cat: string) => {
-    const map: Record<string, { bg: string; color: string }> = {
-      'Merit-Based': { bg: brand.amber, color: brand.amberText },
-      'Field-Specific': { bg: brand.blue, color: brand.blueText },
-      'Leadership': { bg: brand.green, color: brand.greenText },
-      'Diversity': { bg: '#F3E8FF', color: '#6B21A8' },
-      'Research': { bg: brand.primarySurface, color: brand.primary },
-      'Arts': { bg: '#FFF1F2', color: '#BE123C' },
-    };
-    return map[cat] || { bg: '#F3F4F6', color: brand.textSecondary };
+  const formatDeadline = (d: string) => {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
+    return date.toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const formatGpa = (g: Scholarship['min_gpa']) => {
+    const n = Number(g);
+    return isNaN(n) ? String(g) : n.toFixed(1).replace(/\.0$/, '') || String(g);
   };
 
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  const tabs = [
-    {
-      id: 'available', label: t('Available Scholarships', 'المنح المتاحة'),
-      icon: <Award className="h-4 w-4" />,
-      content: (
-        <div>
-          {/* Search and filter bar */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 200 }}>
-              <input
-                type="text"
-                placeholder={t('Search scholarships…', 'ابحث عن المنح الدراسية...')}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%', padding: '10px 14px 10px 38px', borderRadius: 12,
-                  border: `1px solid ${brand.border}`, fontSize: 14, outline: 'none',
-                  transition: 'border-color 150ms',
-                }}
-                onFocus={e => e.currentTarget.style.borderColor = brand.primary}
-                onBlur={e => e.currentTarget.style.borderColor = brand.border}
-              />
-              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: brand.textSecondary, pointerEvents: 'none', display: 'flex' }}>
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-              </span>
-            </div>
+  const availableContent = () => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+          <Loader2 className="animate-spin" style={{ width: 36, height: 36, color: brand.primary, margin: '0 auto 16px' }} />
+          <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Loading scholarships…', 'جارٍ تحميل المنح الدراسية...')}</p>
+        </div>
+      );
+    }
+
+    if (loadError) {
+      return (
+        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+          <Award style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+            {t("Couldn't load scholarships", 'تعذر تحميل المنح الدراسية')}
+          </h3>
+          <p style={{ color: brand.textSecondary, fontSize: 14, marginBottom: 20 }}>
+            {t('Something went wrong while fetching scholarships. Please try again.', 'حدث خطأ أثناء جلب المنح الدراسية. يرجى المحاولة مرة أخرى.')}
+          </p>
+          <button
+            onClick={fetchScholarships}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+              background: brand.primary, color: '#fff', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <RefreshCw style={{ width: 16, height: 16 }} /> {t('Retry', 'إعادة المحاولة')}
+          </button>
+        </div>
+      );
+    }
+
+    if (scholarships.length === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%', background: brand.primarySurface,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+          }}>
+            <Award style={{ width: 34, height: 34, color: brand.primary }} />
+          </div>
+          <h3 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+            {t('No scholarships are published yet', 'لا توجد منح منشورة بعد')}
+          </h3>
+          <p style={{ color: brand.textSecondary, fontSize: 14, maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
+            {t(
+              'New scholarship opportunities will appear here as soon as providers publish them. Check back soon.',
+              'ستظهر فرص المنح الجديدة هنا فور نشرها من قبل الجهات المانحة. عاود الزيارة قريباً.'
+            )}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {/* Search and filter bar */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 200 }}>
+            <input
+              type="text"
+              placeholder={t('Search scholarships…', 'ابحث عن المنح الدراسية...')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 14px 10px 38px', borderRadius: 12,
+                border: `1px solid ${brand.border}`, fontSize: 14, outline: 'none',
+                transition: 'border-color 150ms',
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = brand.primary}
+              onBlur={e => e.currentTarget.style.borderColor = brand.border}
+            />
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: brand.textSecondary, pointerEvents: 'none', display: 'flex' }}>
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+            </span>
+          </div>
+          {levelOptions.length > 1 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {categories.map(cat => (
+              {levelOptions.map(opt => (
                 <button
-                  key={cat.key}
-                  onClick={() => setSelectedCategory(cat.key)}
+                  key={opt.key}
+                  onClick={() => setSelectedLevel(opt.key)}
                   style={{
                     padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-                    border: selectedCategory === cat.key ? 'none' : `1px solid ${brand.border}`,
-                    background: selectedCategory === cat.key ? brand.primary : '#fff',
-                    color: selectedCategory === cat.key ? '#fff' : brand.textSecondary,
+                    border: selectedLevel === opt.key ? 'none' : `1px solid ${brand.border}`,
+                    background: selectedLevel === opt.key ? brand.primary : '#fff',
+                    color: selectedLevel === opt.key ? '#fff' : brand.textSecondary,
                     cursor: 'pointer', transition: 'all 150ms', whiteSpace: 'nowrap',
                   }}
                 >
-                  {cat.label}
+                  {opt.label}
                 </button>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Results count */}
+        <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20 }}>
+          {t(
+            `Showing ${filtered.length} scholarship${filtered.length !== 1 ? 's' : ''}`,
+            `عرض ${filtered.length} ${filtered.length === 1 ? 'منحة' : 'منح دراسية'}`
+          )}
+        </p>
+
+        {/* Scholarship cards */}
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <Award style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('No scholarships found', 'لم يتم العثور على منح')}</h3>
+            <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Try adjusting your search or filter criteria.', 'حاول تعديل معايير البحث أو التصفية.')}</p>
           </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+            {filtered.map(s => {
+              const majors = Array.isArray(s.eligible_majors) ? s.eligible_majors : [];
+              const applied = appliedIds.has(s.id);
+              const applying = applyingId === s.id;
+              return (
+                <div
+                  key={s.id}
+                  style={{
+                    background: '#fff', borderRadius: 16,
+                    border: `1px solid ${brand.border}`,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms',
+                    display: 'flex', flexDirection: 'column',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = brand.primary;
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = brand.border;
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                  }}
+                >
+                  {/* Card header accent */}
+                  <div style={{ height: 4, background: brand.primary }} />
 
-          {/* Results count */}
-          <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20 }}>
-            {t(
-              `Showing ${filtered.length} scholarship${filtered.length !== 1 ? 's' : ''}`,
-              `عرض ${filtered.length} ${filtered.length === 1 ? 'منحة' : 'منح دراسية'}`
-            )}
-          </p>
-
-          {/* Scholarship cards */}
-          {filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0' }}>
-              <Award style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('No scholarships found', 'لم يتم العثور على منح')}</h3>
-              <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Try adjusting your search or filter criteria.', 'حاول تعديل معايير البحث أو التصفية.')}</p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
-              {filtered.map(s => {
-                const catColor = getCategoryColor(s.category);
-                return (
-                  <div
-                    key={s.id}
-                    style={{
-                      background: '#fff', borderRadius: 16,
-                      border: `1px solid ${brand.border}`,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = brand.primary;
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = brand.border;
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-                    }}
-                  >
-                    {/* Card header accent */}
-                    <div style={{ height: 4, background: s.featured ? brand.primary : brand.border }} />
-
-                    <div style={{ padding: 22 }}>
-                      {/* Badges row */}
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+                  <div style={{ padding: 22, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    {/* Badges row */}
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+                      {s.academic_level && (
                         <span style={{
                           padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
-                          background: catColor.bg, color: catColor.color,
+                          background: brand.blue, color: brand.blueText,
                         }}>
-                          {s.categoryLabel}
+                          {s.academic_level}
                         </span>
+                      )}
+                      {s.coverage_type && (
                         <span style={{
                           padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
                           background: '#F3F4F6', color: brand.textSecondary,
                         }}>
-                          {s.level}
+                          {s.coverage_type}
                         </span>
-                        {s.featured && (
-                          <span style={{
-                            padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
-                            background: brand.amber, color: brand.amberText,
-                          }}>
-                            ★ {t('Featured', 'مميّزة')}
-                          </span>
-                        )}
-                      </div>
+                      )}
+                      {s.min_gpa != null && (
+                        <span style={{
+                          padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
+                          background: brand.amber, color: brand.amberText,
+                        }}>
+                          {t(`GPA ${formatGpa(s.min_gpa)}+`, `معدل ${formatGpa(s.min_gpa)}+`)}
+                        </span>
+                      )}
+                    </div>
 
-                      {/* Title & description */}
-                      <h3 style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>
-                        {s.title}
-                      </h3>
+                    {/* Title, provider & description */}
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary, marginBottom: 4 }}>
+                      {s.title}
+                    </h3>
+                    {s.provider_name && (
+                      <p style={{ fontSize: 13, fontWeight: 500, color: brand.primaryDark, marginBottom: 8 }}>
+                        {s.provider_name}
+                      </p>
+                    )}
+                    {s.description && (
                       <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 18 }}>
                         {s.description}
                       </p>
+                    )}
 
-                      {/* Award amount highlight */}
+                    {/* Award amount highlight (verbatim from provider) */}
+                    {s.amount && (
                       <div style={{
                         display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 16,
                         padding: '12px 16px', borderRadius: 12, background: brand.primarySurface,
                       }}>
-                        <span style={{ fontSize: 22, fontWeight: 700, color: brand.primary }}>{s.amount}</span>
-                        <span style={{ fontSize: 13, color: brand.primaryDark, fontWeight: 500 }}>{s.amountType}</span>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{s.amount}</span>
                       </div>
+                    )}
 
-                      {/* Benefits */}
+                    {/* Eligible majors */}
+                    {majors.length > 0 && (
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {s.benefits.map((b, i) => (
+                          {majors.map((m, i) => (
                             <span key={i} style={{
                               display: 'flex', alignItems: 'center', gap: 4,
                               fontSize: 12, color: brand.textSecondary,
                               padding: '3px 8px', borderRadius: 8, background: '#F9FAFB',
                             }}>
-                              <CheckCircle style={{ width: 12, height: 12, color: brand.primary }} />
-                              {b}
+                              <GraduationCap style={{ width: 12, height: 12, color: brand.primary }} />
+                              {m}
                             </span>
                           ))}
                         </div>
                       </div>
+                    )}
 
-                      {/* Meta row */}
+                    {/* Meta row */}
+                    {s.deadline && (
                       <div style={{
                         display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap',
                         padding: '10px 0', borderTop: `1px solid ${brand.border}`,
                       }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: brand.textSecondary }}>
-                          <GraduationCap style={{ width: 14, height: 14 }} /> {s.eligibility}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: brand.textSecondary }}>
-                          <Clock style={{ width: 14, height: 14 }} /> {t('Deadline:', 'الموعد النهائي:')} <strong style={{ color: '#DC2626' }}>{s.deadline}</strong>
+                          <Clock style={{ width: 14, height: 14 }} /> {t('Deadline:', 'الموعد النهائي:')} <strong style={{ color: '#DC2626' }}>{formatDeadline(s.deadline)}</strong>
                         </span>
                       </div>
+                    )}
 
-                      {/* Competition bar */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
-                          <span>{s.spots} {t('spots available', 'مقعد متاح')}</span>
-                          <span>{s.applicants} {t('applicants', 'متقدم')}</span>
-                        </div>
-                        <div style={{ height: 4, borderRadius: 2, background: '#F3F4F6' }}>
-                          <div style={{
-                            height: '100%', borderRadius: 2,
-                            background: (s.applicants / s.spots) > 5 ? '#DC2626' : brand.primary,
-                            width: `${Math.min(100, (s.applicants / (s.spots * 8)) * 100)}%`,
-                            transition: 'width 300ms',
-                          }} />
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div style={{ display: 'flex', justifyContent: isRTL ? 'flex-start' : 'flex-end' }}>
-                        <span style={{
+                    {/* Footer */}
+                    <div style={{ display: 'flex', justifyContent: isRTL ? 'flex-start' : 'flex-end', marginTop: 'auto' }}>
+                      <button
+                        onClick={() => handleApply(s)}
+                        disabled={applied || applying}
+                        style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6,
                           padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                          background: brand.primary, color: '#fff',
-                          cursor: 'pointer', transition: 'background 150ms',
-                          border: 'none',
-                        }}>
-                          {t('Apply Now', 'قدّم الآن')} <ArrowIcon style={{ width: 16, height: 16 }} />
-                        </span>
-                      </div>
+                          background: applied ? '#F3F4F6' : brand.primary,
+                          color: applied ? brand.textSecondary : '#fff',
+                          cursor: applied || applying ? 'default' : 'pointer',
+                          transition: 'background 150ms', border: 'none',
+                        }}
+                      >
+                        {applying ? (
+                          <>
+                            <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} /> {t('Submitting…', 'جارٍ الإرسال...')}
+                          </>
+                        ) : applied ? (
+                          t('Applied', 'تم التقديم')
+                        ) : s.application_link ? (
+                          <>
+                            {t('Apply on provider site', 'قدّم عبر موقع الجهة المانحة')} <ExternalLink style={{ width: 16, height: 16 }} />
+                          </>
+                        ) : (
+                          <>
+                            {t('Apply Now', 'قدّم الآن')} <ArrowIcon style={{ width: 16, height: 16 }} />
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const tabs = [
+    {
+      id: 'available', label: t('Available Scholarships', 'المنح المتاحة'),
+      icon: <Award className="h-4 w-4" />,
+      content: availableContent(),
     },
     {
       id: 'my-applications', label: t('My Applications', 'طلباتي'),
@@ -417,7 +414,7 @@ const ScholarshipsPage: React.FC = () => {
       content: (
         <div style={{ textAlign: 'center', padding: '48px 0' }}>
           <BookOpen style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('No applications yet', 'لا توجد طلبات بعد')}</h3>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Application tracking coming soon', 'تتبع الطلبات قادم قريباً')}</h3>
           <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Apply for scholarships to track your applications here.', 'قدّم على المنح الدراسية لتتبع طلباتك هنا.')}</p>
         </div>
       )
@@ -448,7 +445,6 @@ const ScholarshipsPage: React.FC = () => {
       defaultTab="available"
       actionButtonText={t('Browse Scholarships', 'تصفح المنح الدراسية')}
       actionButtonHref="#available"
-      academicYear="2025-2026"
     />
   );
 };
