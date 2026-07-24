@@ -30,6 +30,7 @@ import {
 
 // Import your existing components
 import CVProfile from '@/components/candidate/CVProfile';
+import CandidateAvailabilityControl from '@/components/candidate/CandidateAvailabilityControl';
 import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
@@ -421,6 +422,8 @@ const CandidateDashboard: React.FC = () => {
 
                 {/* Left Sidebar — Profile Status + Quick Actions */}
                 <div className="lg:col-span-3 space-y-6">
+                  {/* Availability / Open to work */}
+                  <CandidateAvailabilityControl />
                   {/* Profile Readiness */}
                   <Card className="bg-card border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
