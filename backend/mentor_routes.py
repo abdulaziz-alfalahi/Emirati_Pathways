@@ -17,10 +17,15 @@ from mentor_system import (
     AvailabilityStatus
 )
 
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 try:
-    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES
 except ImportError:
-    from auth.access_control import require_roles, OPERATOR_ROLES
+    from auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES
+
+# Who may act as a skill-verifying mentor / manage mentor profiles for others.
+_MENTOR_ROLES = tuple(OPERATOR_ROLES | {'mentor'})
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +33,25 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 mentor_bp = Blueprint('mentor', __name__, url_prefix='/api/mentor')
+
+
+def _caller_owns_or_manages_mentor(mentor_id: str) -> bool:
+    """True if the authenticated caller owns this mentor profile (its user_id
+    matches) or holds a mentor/operator/admin role. Fails closed."""
+    try:
+        if resolve_roles() & set(_MENTOR_ROLES):
+            return True
+        caller = str(get_jwt_identity())
+        profile = mentor_system.get_mentor_profile(mentor_id)
+        owner = None
+        if profile is not None:
+            d = profile.to_dict() if hasattr(profile, 'to_dict') else {}
+            owner = str(d.get('user_id')) if d.get('user_id') is not None else None
+        return owner is not None and owner == caller
+    except Exception as e:
+        logger.warning(f"mentor ownership check failed: {e}")
+        return False
+
 
 @mentor_bp.route('/health', methods=['GET'])
 def health_check():
@@ -59,18 +83,25 @@ def health_check():
         }), 500
 
 @mentor_bp.route('/profile', methods=['POST'])
+@jwt_required()
 def create_mentor_profile():
     """Create a new mentor profile"""
     try:
         data = request.get_json()
-        
+
         if not data:
             return jsonify({
                 'success': False,
                 'error': 'No profile data provided',
                 'message': 'Mentor profile data is required'
             }), 400
-        
+
+        # A user may only create their OWN mentor profile; operators/admins may
+        # create on behalf of others (audit B1 — this route was anonymous).
+        caller = str(get_jwt_identity())
+        if not (resolve_roles() & set(_MENTOR_ROLES)):
+            data['user_id'] = caller
+
         # Validate required fields
         required_fields = ['user_id', 'full_name', 'email', 'current_position', 'company', 'industry', 'total_experience_years']
         for field in required_fields:
@@ -130,18 +161,25 @@ def get_mentor_profile(mentor_id: str):
         }), 500
 
 @mentor_bp.route('/profile/<mentor_id>', methods=['PUT'])
+@jwt_required()
 def update_mentor_profile(mentor_id: str):
     """Update mentor profile"""
     try:
         data = request.get_json()
-        
+
         if not data:
             return jsonify({
                 'success': False,
                 'error': 'No update data provided',
                 'message': 'Update data is required'
             }), 400
-        
+
+        # Ownership: only the profile's own user, or an operator/admin, may
+        # edit it (audit B1 — this route was anonymous + unscoped).
+        if not _caller_owns_or_manages_mentor(mentor_id):
+            return jsonify({'success': False, 'error': 'Forbidden',
+                            'message': 'You may only edit your own mentor profile'}), 403
+
         # Update mentor profile
         success = mentor_system.update_mentor_profile(mentor_id, data)
         
@@ -447,11 +485,15 @@ def get_mentor_dashboard(mentor_id: str):
         }), 500
 
 @mentor_bp.route('/profile/<mentor_id>/availability', methods=['PUT'])
+@jwt_required()
 def update_mentor_availability(mentor_id: str):
     """Update mentor availability"""
     try:
+        if not _caller_owns_or_manages_mentor(mentor_id):
+            return jsonify({'success': False, 'error': 'Forbidden',
+                            'message': 'You may only edit your own mentor profile'}), 403
         data = request.get_json()
-        
+
         if not data:
             return jsonify({
                 'success': False,
@@ -653,7 +695,7 @@ _INCENTIVE_TIERS = [(200, 'Gold'), (80, 'Silver'), (0, 'Bronze')]
 
 
 @mentor_bp.route('/progress/pending-verifications', methods=['GET'])
-@jwt_required()
+@require_roles(*_MENTOR_ROLES)
 def pending_verifications():
     """Skill-verification requests awaiting a mentor decision."""
     try:
@@ -709,7 +751,7 @@ def mentor_incentives():
 
 
 @mentor_bp.route('/progress/verify-skill', methods=['POST'])
-@jwt_required()
+@require_roles(*_MENTOR_ROLES)
 def verify_skill():
     """Approve/reject a pending skill verification; approval stamps the
     candidate's career passport when one exists."""

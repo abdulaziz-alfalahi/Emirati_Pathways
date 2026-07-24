@@ -21,16 +21,27 @@ from flask_jwt_extended import get_jwt_identity
 
 try:
     from backend.db_utils import execute_query
-    from backend.auth.access_control import require_roles, ADMIN_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
     from db_utils import execute_query
-    from auth.access_control import require_roles, ADMIN_ROLES
+    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES
 
 logger = logging.getLogger(__name__)
 
 assessor_dash_bp = Blueprint('assessor_dashboard_api', __name__, url_prefix='/api/assessor')
 
 _ASSESSOR_ROLES = tuple(ADMIN_ROLES | {'assessor', 'assessment_operator'})
+# Supervisors who may act on any assessor's assessments; a plain 'assessor'
+# may only act on their own (or as-yet-unassigned) assessments.
+_ASSESSOR_SUPERVISOR_ROLES = ADMIN_ROLES | {'assessment_operator'}
+
+
+def _may_act_on(row_assessor_id, me):
+    """An assessment may be acted on by its assigned assessor, by anyone if it
+    is still unassigned, or by an assessment supervisor/admin."""
+    if row_assessor_id in (None, '', me):
+        return True
+    return bool(resolve_roles() & _ASSESSOR_SUPERVISOR_ROLES)
 
 
 @assessor_dash_bp.route('/dashboard', methods=['GET'])
@@ -130,9 +141,12 @@ def schedule(app_id):
         when = data.get('scheduled_at')
         if not when:
             return jsonify({'success': False, 'message': 'scheduled_at is required'}), 400
-        row = execute_query("SELECT id FROM assessments WHERE id::text = %s", (str(app_id),), fetch_one=True)
+        row = execute_query("SELECT id, assessor_id FROM assessments WHERE id::text = %s",
+                            (str(app_id),), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'message': 'Assessment not found'}), 404
+        if not _may_act_on(row.get('assessor_id'), me):
+            return jsonify({'success': False, 'message': 'This assessment is assigned to another assessor'}), 403
         execute_query(
             """UPDATE assessments SET scheduled_date = %s, status = 'scheduled',
                    assessor_id = COALESCE(assessor_id, %s), updated_at = NOW()
@@ -151,13 +165,26 @@ def complete(app_id):
     try:
         me = get_jwt_identity()
         data = request.get_json(silent=True) or {}
-        score = data.get('score')
+        # Validate score is a number in 0..100 (a string/None used to reach SQL
+        # and either 500 or silently mark 'fail' with a NULL score).
+        try:
+            score = float(data.get('score'))
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'score must be a number 0-100'}), 400
+        if not (0 <= score <= 100):
+            return jsonify({'success': False, 'message': 'score must be between 0 and 100'}), 400
         feedback = (data.get('feedback') or '')[:8000]
         skills = [s for s in (data.get('skills_to_verify') or []) if isinstance(s, str) and s.strip()][:20]
-        row = execute_query("SELECT id, candidate_id FROM assessments WHERE id::text = %s",
+        row = execute_query("SELECT id, candidate_id, status, assessor_id FROM assessments WHERE id::text = %s",
                             (str(app_id),), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'message': 'Assessment not found'}), 404
+        if not _may_act_on(row.get('assessor_id'), me):
+            return jsonify({'success': False, 'message': 'This assessment is assigned to another assessor'}), 403
+        # Guard against re-completion — otherwise re-POSTing duplicates the
+        # verified passport stamps.
+        if (row.get('status') or '') == 'completed':
+            return jsonify({'success': False, 'message': 'Assessment already completed'}), 409
         execute_query(
             """UPDATE assessments SET status = 'completed', percentage_score = %s,
                    pass_fail_status = CASE WHEN %s >= 60 THEN 'pass' ELSE 'fail' END,

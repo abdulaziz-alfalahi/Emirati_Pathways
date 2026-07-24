@@ -22,14 +22,39 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 try:
     from backend.db_utils import execute_query
-    from backend.auth.access_control import require_roles, RECRUITER_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+    from backend.workspace_middleware import get_company_context
 except ImportError:  # pragma: no cover — app also runs from backend/ as cwd
     from db_utils import execute_query
-    from auth.access_control import require_roles, RECRUITER_ROLES
+    from auth.access_control import require_roles, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+    from workspace_middleware import get_company_context
 
 logger = logging.getLogger(__name__)
 
 applications_bp = Blueprint('applications_api', __name__, url_prefix='/api/applications')
+
+
+def _company_of_job(job_id):
+    """Return the owning company_id (uuid) of a job posting, or None."""
+    row = execute_query("SELECT company_id FROM job_postings WHERE id::text = %s",
+                        (str(job_id),), fetch_one=True)
+    return row['company_id'] if row else None
+
+
+def _caller_may_manage_company(user_id, company_id):
+    """Recruiter-side authorization: the caller must be an accepted team member
+    (or growth operator) of the company that owns the job — or a platform admin.
+    Closes the cross-company BOLA (audit H1)."""
+    if resolve_roles() & ADMIN_ROLES:
+        return True
+    if not company_id:
+        return False
+    try:
+        ctx = get_company_context(user_id, str(company_id))
+    except Exception as e:  # never fail open
+        logger.warning(f"company context check failed: {e}")
+        return False
+    return bool(ctx and (ctx.get('is_member') or ctx.get('is_growth_operator')))
 
 # Statuses a candidate may see; transitions the candidate may set themselves.
 _CANDIDATE_SETTABLE = {'withdrawn'}
@@ -100,6 +125,10 @@ def apply():
                             (job_id,), fetch_one=True)
         if not job:
             return jsonify({'success': False, 'message': 'Job not found'}), 404
+        # Only published jobs are open to applications — not drafts or
+        # unverified-company postings (audit M1).
+        if (job.get('status') or '') != 'published':
+            return jsonify({'success': False, 'message': 'This job is not open for applications'}), 409
 
         dup = execute_query(
             "SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s AND status != 'withdrawn'",
@@ -172,10 +201,14 @@ def set_status(application_id):
         status = str(data.get('status') or '').strip()
         if status not in _VALID_STATUSES:
             return jsonify({'success': False, 'message': f'Invalid status: {status}'}), 400
-        row = execute_query("SELECT id FROM job_applications WHERE id = %s",
+        row = execute_query("SELECT id, job_id FROM job_applications WHERE id = %s",
                             (application_id,), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'message': 'Application not found'}), 404
+        # Company scoping: the recruiter must belong to the company that owns
+        # this application's job (audit H1 — cross-company BOLA).
+        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(row['job_id'])):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
         execute_query(
             "UPDATE job_applications SET status = %s, notes = COALESCE(%s, notes), updated_at = NOW() WHERE id = %s",
             (status, data.get('notes'), application_id), fetch_all=False)
@@ -190,6 +223,10 @@ def set_status(application_id):
 def job_applications(job_id):
     """Recruiter view: all applications for one job."""
     try:
+        # Company scoping: only staff of the job's company (or admin) may read
+        # its applicant pipeline (audit H1 — cross-company BOLA).
+        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(job_id)):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
         rows = execute_query(
             _BASE_SELECT + " WHERE ja.job_id = %s ORDER BY COALESCE(ja.applied_at, ja.submitted_at) DESC",
             (str(job_id),)) or []
