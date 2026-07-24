@@ -120,7 +120,6 @@ const FinancialPlanningPage = lazy(() => import('@/pages/financial-planning/Fina
 const PortfolioPage = lazy(() => import('@/pages/portfolio/PortfolioPage'));
 const InterviewPreparationPage2 = lazy(() => import('@/pages/interview-preparation/InterviewPreparationPage'));
 const InternshipsPage = lazy(() => import('@/pages/internships/InternshipsPage'));
-const CareerAdvisoryPage = lazy(() => import('@/pages/career-advisory/CareerAdvisoryPage'));
 const GigMarketplacePage = lazy(() => import('@/pages/gig-marketplace/GigMarketplacePage'));
 const StartupLaunchpadPage = lazy(() => import('@/pages/startup-launchpad/StartupLaunchpadPage'));
 const CareerPathwaySimulator = lazy(() => import('@/pages/career-simulator/CareerPathwaySimulator'));
