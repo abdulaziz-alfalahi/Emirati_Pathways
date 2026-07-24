@@ -589,112 +589,11 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 """,
                 fetch_all=False
             )
-            # Seed mock vacancies if table is empty
-            count = execute_query("SELECT COUNT(*) AS cnt FROM recruiter_vacancies", fetch_one=True)
-            if not count or int(count.get('cnt', 0)) == 0:
-                import random
-                samples = [
-                    {
-                        'title': 'Software Engineer',
-                        'employer_admin': 'Emirates Tech',
-                        'location': 'Dubai, UAE',
-                        'description': 'Build and maintain web applications in React and Node.js.',
-                        'requirements': ['react', 'node', 'typescript', 'api'],
-                        'tags': ['tech', 'web']
-                    },
-                    {
-                        'title': 'Data Analyst',
-                        'employer_admin': 'Dubai Analytics Lab',
-                        'location': 'Dubai, UAE',
-                        'description': 'Analyze datasets and build BI dashboards.',
-                        'requirements': ['sql', 'python', 'excel'],
-                        'tags': ['analytics']
-                    },
-                    {
-                        'title': 'IT Security Specialist',
-                        'employer_admin': 'Zayed University',
-                        'location': 'Abu Dhabi, UAE',
-                        'description': 'Implement security policies and monitor incidents.',
-                        'requirements': ['security', 'siem', 'network'],
-                        'tags': ['security']
-                    },
-                    {
-                        'title': 'Project Manager',
-                        'employer_admin': 'ADNOC',
-                        'location': 'Abu Dhabi, UAE',
-                        'description': 'Lead cross-functional projects and deliver on time.',
-                        'requirements': ['project management', 'communications'],
-                        'tags': ['management']
-                    },
-                    {
-                        'title': 'Mobile App Developer',
-                        'employer_admin': 'Careem',
-                        'location': 'Dubai, UAE',
-                        'description': 'Develop and maintain mobile applications.',
-                        'requirements': ['flutter', 'kotlin', 'swift'],
-                        'tags': ['mobile']
-                    },
-                    {
-                        'title': 'Cloud Engineer',
-                        'employer_admin': 'Etisalat',
-                        'location': 'Abu Dhabi, UAE',
-                        'description': 'Manage cloud infrastructure and CI/CD.',
-                        'requirements': ['aws', 'docker', 'kubernetes'],
-                        'tags': ['cloud']
-                    },
-                    {
-                        'title': 'Business Analyst',
-                        'employer_admin': 'Dubai Tourism',
-                        'location': 'Dubai, UAE',
-                        'description': 'Gather requirements and document business processes.',
-                        'requirements': ['requirements', 'process mapping'],
-                        'tags': ['business']
-                    },
-                    {
-                        'title': 'AI Researcher',
-                        'employer_admin': 'Mohammed bin Zayed University of AI',
-                        'location': 'Abu Dhabi, UAE',
-                        'description': 'Research AI models and publish results.',
-                        'requirements': ['python', 'ml', 'deep learning'],
-                        'tags': ['ai']
-                    },
-                    {
-                        'title': 'Frontend Developer',
-                        'employer_admin': 'Noon',
-                        'location': 'Dubai, UAE',
-                        'description': 'Build responsive UIs in React/Vue.',
-                        'requirements': ['react', 'html', 'css'],
-                        'tags': ['frontend']
-                    },
-                    {
-                        'title': 'Backend Developer',
-                        'employer_admin': 'Talabat',
-                        'location': 'Dubai, UAE',
-                        'description': 'Design REST APIs and microservices.',
-                        'requirements': ['node', 'java', 'rest'],
-                        'tags': ['backend']
-                    }
-                ]
-                # generate 20 by repeating with slight variations
-                to_insert = []
-                for i in range(20):
-                    base = samples[i % len(samples)].copy()
-                    base['title'] = f"{base['title']} ({i+1})"
-                    base['id'] = str(uuidlib.uuid4())
-                    to_insert.append(base)
-                for v in to_insert:
-                    execute_query(
-                        """
-                        INSERT INTO recruiter_vacancies (id, title, employer, location, description, requirements, tags)
-                        VALUES (%s::uuid, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
-                        """,
-                        (
-                            v['id'], v['title'], v.get('employer_admin'), v.get('location'), v.get('description'),
-                            json.dumps(v.get('requirements', [])), json.dumps(v.get('tags', []))
-                        ),
-                        fetch_all=False
-                    )
-                logger.info("Γ£à Seeded 20 mock vacancies")
+            # NOTE: fabricated-vacancy seeding removed (data-honesty audit).
+            # This previously INSERTed 20 invented vacancies attributed to real
+            # firms (ADNOC, Etisalat, Careem, MBZUAI, ...) into the live DB, and
+            # they fed the candidate job-matcher as if real. The table is created
+            # empty; real vacancies come from recruiters.
 
             logger.info("Γ£à Vacancy tables ensured")
         except Exception as e:
@@ -1795,35 +1694,9 @@ Return only the JSON object, no additional text."""
                 logger.error(f"Debug Save Error: {e}")
                 return jsonify({'success': False, 'message': str(e)}), 500
 
-    @_app.route('/api/cv/list-mock', methods=['GET'])
-    @jwt_required()
-    def list_cvs_mock():
-        """List user's uploaded CVs"""
-        try:
-            user_id = get_jwt_identity()
-
-            # Mock CV list
-            cvs = [
-                {
-                    'id': 'cv_001',
-                    'filename': 'Ahmed_Al_Mansouri_CV.pdf',
-                    'upload_date': '2025-09-22T15:20:00Z',
-                    'status': 'analyzed',
-                    'match_score': 95
-                }
-            ]
-
-            return jsonify({
-                'success': True,
-                'data': cvs
-            }), 200
-
-        except Exception as e:
-            logger.error(f"List CVs error: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': 'Failed to retrieve CVs'
-            }), 500
+    # NOTE: /api/cv/list-mock removed (data-honesty audit) — it returned a
+    # single fabricated CV ("Ahmed_Al_Mansouri_CV.pdf", match_score 95) as if
+    # real. It had no frontend consumer. The real CV list is served elsewhere.
 
 
 

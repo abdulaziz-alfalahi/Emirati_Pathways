@@ -57,31 +57,15 @@ def get_demographics_metrics():
         if excel_data:
             return jsonify({'success': True, 'data': excel_data})
 
-    # Legacy Mock fallback if parsing fails
+    # No real demographic source connected — return EMPTY structures with an
+    # honest marker rather than fabricated distributions the UI would show as
+    # real. (data-honesty audit; supersedes the #26 placeholder-marker approach)
     data = {
-        'source': 'placeholder',
-        'message': 'Demographics data not yet connected to real source',
-        'age_distribution': [
-            {'group': '18-25', 'male': 4500, 'female': 5200},
-            {'group': '26-35', 'male': 8200, 'female': 7800},
-            {'group': '36-45', 'male': 3100, 'female': 2900},
-            {'group': '46+', 'male': 1200, 'female': 800}
-        ],
-        'regional_spread': [
-            {'emirate': 'Abu Dhabi', 'candidates': 12500},
-            {'emirate': 'Dubai', 'candidates': 10200},
-            {'emirate': 'Sharjah', 'candidates': 6800},
-            {'emirate': 'Ajman', 'candidates': 1500},
-            {'emirate': 'Fujairah', 'candidates': 1100},
-            {'emirate': 'Ras Al Khaimah', 'candidates': 1300},
-            {'emirate': 'Umm Al Quwain', 'candidates': 300}
-        ],
-        'education_levels': [
-            {'level': 'High School', 'employed': 3500, 'seeking': 2100},
-            {'level': 'Diploma', 'employed': 4200, 'seeking': 1800},
-            {'level': 'Bachelor', 'employed': 12000, 'seeking': 4500},
-            {'level': 'Master+', 'employed': 3100, 'seeking': 800}
-        ]
+        'source': 'unavailable',
+        'message': 'Demographics data not yet connected to a real source',
+        'age_distribution': [],
+        'regional_spread': [],
+        'education_levels': []
     }
     return jsonify({'success': True, 'data': data})
 
@@ -93,89 +77,44 @@ def get_executive_impact_metrics():
     for the Board Members.
     """
     db_candidates, db_companies, db_offers = get_db_counts()
-    
-    excel_data = None
-    if get_cached_demographics:
-        excel_data = get_cached_demographics()
-        
+
+    excel_data = get_cached_demographics() if get_cached_demographics else None
+
     if excel_data:
-        registered_cnt = excel_data.get('registered', {}).get('total', 3054)
-        active_cnt = excel_data.get('active', {}).get('total', 1514)
+        # Derived from the master file (real) + real DB offer count. No fabricated
+        # baselines (the old 3054/1514 defaults were invented).
+        registered_cnt = excel_data.get('registered', {}).get('total', 0)
+        active_cnt = excel_data.get('active', {}).get('total', 0)
         total_placed = max(0, registered_cnt - active_cnt) + (db_offers or 0)
-        active_partners = db_companies
-        
-        # Map monthly rapid nomination data if available
         raw_nomination = excel_data.get('rapid_nomination', [])
-        strategic_impact = []
-        if raw_nomination:
-            for item in raw_nomination:
-                strategic_impact.append({
-                    'month': item.get('month', ''),
-                    'placements': item.get('nominated', 0),
-                    'target': item.get('vacancies', 0)
-                })
-        else:
-            strategic_impact = [
-                {'month': 'Jan', 'placements': 1200, 'target': 1000, 'source': 'placeholder'},
-                {'month': 'Feb', 'placements': 1450, 'target': 1100, 'source': 'placeholder'},
-                {'month': 'Mar', 'placements': 1600, 'target': 1200, 'source': 'placeholder'},
-                {'month': 'Apr', 'placements': 1350, 'target': 1300, 'source': 'placeholder'},
-                {'month': 'May', 'placements': 1800, 'target': 1400, 'source': 'placeholder'},
-                {'month': 'Jun', 'placements': 2100, 'target': 1500, 'source': 'placeholder'}
-            ]
-            
-        data = {
-            'kpis': {
-                'total_placed': total_placed,
-                'active_partners': active_partners,
-                'emiratization_target_progress': 82.5,
-                'economic_value_aed': "2.4B",
-                'source': 'placeholder',
-                'message': 'KPI values are illustrative — not yet connected to real aggregation'
-            },
-            'strategic_impact': strategic_impact,
-            'sector_distribution': [
-                {'name': 'Banking & Finance', 'value': 35},
-                {'name': 'Technology', 'value': 25},
-                {'name': 'Healthcare', 'value': 20},
-                {'name': 'Retail', 'value': 10},
-                {'name': 'Manufacturing', 'value': 10}
-            ],
-            'sector_distribution_source': 'placeholder'
-        }
+        strategic_impact = [
+            {'month': item.get('month', ''),
+             'placements': item.get('nominated', 0),
+             'target': item.get('vacancies', 0)}
+            for item in raw_nomination
+        ]
     else:
-        # Real counts only — no inflation baselines (was +24500/+1250). None
-        # surfaces as null "not available" when the DB read failed. (#26)
+        # Real DB counts only; None surfaces as "not available" when the read failed.
         total_placed = db_offers
-        active_partners = db_companies
-        
-        data = {
-            'kpis': {
-                'total_placed': total_placed,
-                'active_partners': active_partners,
-                'emiratization_target_progress': 82.5,
-                'economic_value_aed': "2.4B",
-                'source': 'placeholder',
-                'message': 'KPI values are illustrative — not yet connected to real aggregation'
-            },
-            'strategic_impact': [
-                {'month': 'Jan', 'placements': 1200, 'target': 1000, 'source': 'placeholder'},
-                {'month': 'Feb', 'placements': 1450, 'target': 1100, 'source': 'placeholder'},
-                {'month': 'Mar', 'placements': 1600, 'target': 1200, 'source': 'placeholder'},
-                {'month': 'Apr', 'placements': 1350, 'target': 1300, 'source': 'placeholder'},
-                {'month': 'May', 'placements': 1800, 'target': 1400, 'source': 'placeholder'},
-                {'month': 'Jun', 'placements': 2100, 'target': 1500, 'source': 'placeholder'}
-            ],
-            'sector_distribution': [
-                {'name': 'Banking & Finance', 'value': 35},
-                {'name': 'Technology', 'value': 25},
-                {'name': 'Healthcare', 'value': 20},
-                {'name': 'Retail', 'value': 10},
-                {'name': 'Manufacturing', 'value': 10}
-            ],
-            'sector_distribution_source': 'placeholder'
-        }
-        
+        strategic_impact = []
+
+    # emiratization % and economic value have NO real aggregation behind them —
+    # return null rather than the old fabricated 82.5% / "2.4B". sector_distribution
+    # likewise has no real source, so it is empty, not the invented 35/25/20/10/10.
+    data = {
+        'kpis': {
+            'total_placed': total_placed,
+            'active_partners': db_companies,
+            'emiratization_target_progress': None,
+            'economic_value_aed': None,
+            'source': 'partial',
+            'message': ('Placements and partners are real counts; emiratization % '
+                        'and economic value are not yet connected to a real source.')
+        },
+        'strategic_impact': strategic_impact,   # from the master file when present, else empty
+        'sector_distribution': [],
+        'sector_distribution_source': 'unavailable'
+    }
     return jsonify({'success': True, 'data': data})
 
 @strategic_metrics_bp.route('/operations-live', methods=['GET'])
@@ -194,23 +133,19 @@ def get_operations_live_metrics():
             'active_sessions': {'value': None, 'source': 'not_implemented', 'message': 'Real session count not yet connected'},
             'uptime_percent': {'value': None, 'source': 'not_implemented', 'message': 'Real uptime probe not yet connected'}
         },
-        'live_activity': [
-            {'time': '10:00', 'logins': 120, 'applications': 45},
-            {'time': '10:15', 'logins': 135, 'applications': 52},
-            {'time': '10:30', 'logins': 150, 'applications': 60},
-            {'time': '10:45', 'logins': 142, 'applications': 58},
-            {'time': '11:00', 'logins': 160, 'applications': 75},
-            {'time': '11:15', 'logins': 180, 'applications': 82}
-        ],
-        'live_activity_source': 'placeholder',
+        # No real activity/funnel telemetry connected — empty + null with honest
+        # markers instead of the old fabricated time-series and funnel counts.
+        'live_activity': [],
+        'live_activity_source': 'unavailable',
         'funnel_analytics': {
-            'signup': 5000,
-            'profile_completion': 3800,
-            'assessment_taken': 2900,
-            'job_applied': 2100,
-            'interviewed': 850,
-            'hired': 320,
-            'source': 'placeholder'
+            'signup': None,
+            'profile_completion': None,
+            'assessment_taken': None,
+            'job_applied': None,
+            'interviewed': None,
+            'hired': None,
+            'source': 'unavailable',
+            'message': 'Conversion funnel not yet connected to a real source'
         }
     }
     return jsonify({'success': True, 'data': data})
