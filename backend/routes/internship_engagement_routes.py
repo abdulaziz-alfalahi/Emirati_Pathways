@@ -277,6 +277,16 @@ def coordinator_propose():
     student = execute_query("SELECT id FROM users WHERE id = %s", (student_id,), fetch_one=True)
     if not student:
         return jsonify({'success': False, 'message': 'Student not found'}), 404
+    # Phase B: a coordinator may only propose to THEIR enrolled students (admin bypass).
+    if not (resolve_roles() & ADMIN_ROLES):
+        link = execute_query(
+            "SELECT 1 FROM advisor_student_assignments a JOIN students s ON s.user_id = a.student_id "
+            "WHERE a.advisor_id = %s AND a.student_id = %s AND COALESCE(a.status,'') <> 'inactive' "
+            "AND COALESCE(s.status,'') <> 'withdrawn' LIMIT 1",
+            (_me(), student_id), fetch_one=True)
+        if not link:
+            return jsonify({'success': False,
+                            'message': 'Not your enrolled student — enrol/assign them first via /api/students/enrol'}), 403
     eng, err = _upsert_engagement(internship_id, student_id, 'coordinator', coordinator_id=_me())
     if err:
         return err
