@@ -99,6 +99,11 @@ def resolve_roles():
                 roles.update(s or [])
     except Exception as e:
         logger.warning(f"resolve_roles DB lookup failed: {e}")
+    # `job_seeker` was collapsed into `candidate` (migration 029). Any lingering
+    # claim (e.g. a JWT minted before the migration) resolves to candidate so
+    # guards never fail closed during the transition.
+    if 'job_seeker' in roles:
+        roles.add('candidate')
     return roles
 
 

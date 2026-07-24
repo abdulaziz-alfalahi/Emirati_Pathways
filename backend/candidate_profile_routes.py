@@ -17,6 +17,10 @@ from typing import Dict, List, Any, Optional
 
 from backend.db import get_db_connection
 try:
+    from backend.db_utils import execute_query
+except ImportError:  # pragma: no cover
+    from db_utils import execute_query
+try:
     from backend.auth.access_control import require_roles, CAREER_SERVICES_ROLES
 except ImportError:  # pragma: no cover
     from auth.access_control import require_roles, CAREER_SERVICES_ROLES
@@ -1016,3 +1020,70 @@ def update_crm_candidate(user_id):
             'message': 'Failed to update CRM candidate'
         }), 500
 
+
+
+# ── Candidate availability (Phase A of the identity-model rework) ─────────────
+# `availability_status` is the single authoritative driver of recruiter
+# visibility (job_seeking | open_to_opportunities | not_visible); `currently_employed`
+# is an orthogonal fact ("employed but open"). We keep the legacy is_visible /
+# available_for_recruitment flags in sync so existing recruiter-facing queries
+# that still filter on them automatically respect the new status.
+
+_AVAILABILITY_VALUES = ('job_seeking', 'open_to_opportunities', 'not_visible')
+
+
+def _sync_availability(user_id, status=None, currently_employed=None):
+    """Set availability_status / currently_employed (whichever are provided) and
+    mirror them onto the legacy visibility flags. Returns the resulting row."""
+    sets, params = [], []
+    if status is not None:
+        sets.append("availability_status = %s")
+        params.append(status)
+        sets.append("is_visible = %s")
+        params.append(status != 'not_visible')
+        sets.append("available_for_recruitment = %s")
+        params.append(status in ('job_seeking', 'open_to_opportunities'))
+    if currently_employed is not None:
+        sets.append("currently_employed = %s")
+        params.append(bool(currently_employed))
+    if sets:
+        params.append(str(user_id))
+        execute_query(f"UPDATE users SET {', '.join(sets)} WHERE id = %s",
+                      tuple(params), fetch_all=False)
+    return execute_query(
+        "SELECT availability_status, currently_employed FROM users WHERE id = %s",
+        (str(user_id),), fetch_one=True)
+
+
+@candidate_profile_bp.route('/availability', methods=['GET'])
+@jwt_required()
+def get_availability():
+    me = str(get_jwt_identity())
+    row = execute_query(
+        "SELECT availability_status, currently_employed FROM users WHERE id = %s",
+        (me,), fetch_one=True) or {}
+    return jsonify({'success': True, 'data': {
+        'availability_status': row.get('availability_status') or 'job_seeking',
+        'currently_employed': bool(row.get('currently_employed')),
+        'options': list(_AVAILABILITY_VALUES),
+    }})
+
+
+@candidate_profile_bp.route('/availability', methods=['PUT'])
+@jwt_required()
+def set_availability():
+    """A candidate sets their own availability. Recruiter visibility follows it."""
+    data = request.get_json() or {}
+    status = data.get('availability_status')
+    employed = data.get('currently_employed')
+    if status is not None and status not in _AVAILABILITY_VALUES:
+        return jsonify({'success': False,
+                        'message': f"availability_status must be one of {_AVAILABILITY_VALUES}"}), 400
+    if status is None and employed is None:
+        return jsonify({'success': False, 'message': 'Nothing to update'}), 400
+    row = _sync_availability(get_jwt_identity(), status=status,
+                             currently_employed=(None if employed is None else bool(employed)))
+    return jsonify({'success': True, 'data': {
+        'availability_status': (row or {}).get('availability_status'),
+        'currently_employed': bool((row or {}).get('currently_employed')),
+    }})
