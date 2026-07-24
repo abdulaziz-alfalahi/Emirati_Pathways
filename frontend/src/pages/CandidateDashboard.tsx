@@ -35,6 +35,7 @@ import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
 import CandidateInterviews from '@/components/candidate/Interviews';
 import { CandidateOffers } from '@/components/candidate/CandidateOffers';
+import StudentInternshipEngagement from '@/components/internship/StudentInternshipEngagement';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
@@ -147,7 +148,7 @@ const CandidateDashboard: React.FC = () => {
     // Check for hash
     if (location.hash) {
       const tab = location.hash.replace('#', '');
-      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages', 'company'].includes(tab)) {
+      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'internships', 'messages', 'company'].includes(tab)) {
         setActiveTab(tab);
         return;
       }
@@ -161,7 +162,7 @@ const CandidateDashboard: React.FC = () => {
     // Check for query param
     const searchParams = new URLSearchParams(location.search);
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages', 'company'].includes(tab)) {
+    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'internships', 'messages', 'company'].includes(tab)) {
       setActiveTab(tab);
     } else if (tab === 'offers') {
       setActiveTab('applications');
@@ -386,13 +387,14 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-8' : 'grid-cols-7'} bg-card p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
+            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-9' : 'grid-cols-8'} bg-card p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
               <TabsTrigger value="overview" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="profile" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
               <TabsTrigger value="applications" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
               <TabsTrigger value="offers" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
               <TabsTrigger value="interviews" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="internships" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Internships', 'التدريب')}</TabsTrigger>
               <TabsTrigger value="messages" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">
                 {t('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
@@ -723,6 +725,10 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="interviews" className="space-y-6 mt-6">
               <CandidateInterviews />
+            </TabsContent>
+
+            <TabsContent value="internships" className="space-y-6 mt-6">
+              <StudentInternshipEngagement />
             </TabsContent>
 
             <TabsContent value="messages" className="space-y-6 mt-6">

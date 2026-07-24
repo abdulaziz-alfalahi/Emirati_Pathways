@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { Briefcase, Users, ClipboardList, Building2, Percent, Loader2 } from 'lucide-react';
+import { Briefcase, Users, ClipboardList, Building2, Percent, Loader2, Handshake } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
+import CoordinatorInternshipEngagement from '@/components/internship/CoordinatorInternshipEngagement';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -119,6 +120,7 @@ const InternshipCoordinatorDashboard: React.FC = () => {
   const tabs = [
     { id: 'programs', label: t('Programs', 'البرامج'), icon: <ClipboardList className="h-4 w-4" />, content: programsTab },
     { id: 'placements', label: t('Placements', 'التعيينات'), icon: <Users className="h-4 w-4" />, content: placementsTab },
+    { id: 'engagement', label: t('Assign & Track', 'الإسناد والمتابعة'), icon: <Handshake className="h-4 w-4" />, content: <CoordinatorInternshipEngagement /> },
   ];
 
   return (
