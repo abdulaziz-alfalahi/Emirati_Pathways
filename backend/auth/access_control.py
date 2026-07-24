@@ -46,6 +46,9 @@ OPERATOR_ROLES = ADMIN_ROLES | {
 # Career-services counselling CRM (candidate pipeline, counselling notes, PII).
 # Kept tight — this surface exposes candidate national IDs / phones.
 CAREER_SERVICES_ROLES = ADMIN_ROLES | {'career_services_operator', 'call_center_agent', 'operator'}
+# Enrolment-verified education role, and who may verify enrolment (Phase B).
+STUDENT_ROLES = ADMIN_ROLES | {'student'}
+ENROLMENT_ROLES = ADMIN_ROLES | {'education_operator', 'internship_coordinator'}
 # Governance / oversight surfaces (metrics, demographics, executive analytics).
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 
