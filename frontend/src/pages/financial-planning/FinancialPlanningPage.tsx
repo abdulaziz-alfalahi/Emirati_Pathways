@@ -110,29 +110,22 @@ const FinancialPlanningPage: React.FC = () => {
 
     /* ──────────────────────── STATIC DATA ──────────────────────── */
 
-    const savingsGoalsFallback = [
-        { title: t('Emergency Fund', 'صندوق الطوارئ'), target: 50000, current: 32000, pct: 64, Icon: Shield, desc: t('6 months of living expenses', '6 أشهر من نفقات المعيشة') },
-        { title: t('Home Down Payment', 'دفعة أولى للمنزل'), target: 200000, current: 85000, pct: 43, Icon: Landmark, desc: t('First property in the UAE', 'أول عقار في الإمارات') },
-        { title: t('Investment Portfolio', 'المحفظة الاستثمارية'), target: 100000, current: 47000, pct: 47, Icon: TrendingUp, desc: t('Long-term wealth building', 'بناء الثروة طويل الأمد') },
-        { title: t('Education Fund', 'صندوق التعليم'), target: 75000, current: 28000, pct: 37, Icon: GraduationCap, desc: t('Postgraduate studies or certifications', 'دراسات عليا أو شهادات مهنية') },
-    ];
-
     const investmentOptions = [
-        { title: t('UAE Equity Funds', 'صناديق أسهم الإمارات'), risk: t('Moderate', 'متوسط'), returns: '8–12%', min: t('AED 5,000', '5,000 د.إ'), desc: t('Diversified exposure to UAE stock market', 'تعرض متنوع لسوق الأسهم الإماراتية'), catBg: brand.blue, catColor: brand.blueText },
-        { title: t('National Bonds', 'السندات الوطنية'), risk: t('Low', 'منخفض'), returns: '3–5%', min: t('AED 1,000', '1,000 د.إ'), desc: t('Government-backed savings with Sharia compliance', 'ادخار مدعوم حكومياً ومتوافق مع الشريعة'), catBg: brand.green, catColor: brand.greenText },
-        { title: t('REIT (Real Estate)', 'صناديق العقارات (REIT)'), risk: t('Moderate', 'متوسط'), returns: '6–9%', min: t('AED 10,000', '10,000 د.إ'), desc: t('Property-backed income through listed REITs', 'دخل مدعوم بالعقارات عبر صناديق REIT المدرجة'), catBg: brand.amber, catColor: brand.amberText },
-        { title: t('Sukuk (Islamic Bonds)', 'الصكوك (سندات إسلامية)'), risk: t('Low', 'منخفض'), returns: '4–6%', min: t('AED 5,000', '5,000 د.إ'), desc: t('Fixed-income instruments compliant with Islamic principles', 'أدوات دخل ثابت متوافقة مع المبادئ الإسلامية'), catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Gold Savings Plan', 'خطة ادخار الذهب'), risk: t('Low-Moderate', 'منخفض-متوسط'), returns: '5–8%', min: t('AED 500', '500 د.إ'), desc: t('Physical gold accumulation through monthly purchases', 'تراكم الذهب الفعلي من خلال مشتريات شهرية'), catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Venture Capital', 'رأس المال المغامر'), risk: t('High', 'مرتفع'), returns: '15–25%', min: t('AED 50,000', '50,000 د.إ'), desc: t('Early-stage startup investments in UAE ecosystem', 'استثمارات في شركات ناشئة بالمنظومة الإماراتية'), catBg: brand.red, catColor: brand.redText },
+        { title: t('UAE Equity Funds', 'صناديق أسهم الإمارات'), risk: t('Moderate', 'متوسط'), desc: t('Diversified exposure to UAE stock market', 'تعرض متنوع لسوق الأسهم الإماراتية'), catBg: brand.blue, catColor: brand.blueText },
+        { title: t('National Bonds', 'السندات الوطنية'), risk: t('Low', 'منخفض'), desc: t('Government-backed savings with Sharia compliance', 'ادخار مدعوم حكومياً ومتوافق مع الشريعة'), catBg: brand.green, catColor: brand.greenText },
+        { title: t('REIT (Real Estate)', 'صناديق العقارات (REIT)'), risk: t('Moderate', 'متوسط'), desc: t('Property-backed income through listed REITs', 'دخل مدعوم بالعقارات عبر صناديق REIT المدرجة'), catBg: brand.amber, catColor: brand.amberText },
+        { title: t('Sukuk (Islamic Bonds)', 'الصكوك (سندات إسلامية)'), risk: t('Low', 'منخفض'), desc: t('Fixed-income instruments compliant with Islamic principles', 'أدوات دخل ثابت متوافقة مع المبادئ الإسلامية'), catBg: brand.purple, catColor: brand.purpleText },
+        { title: t('Gold Savings Plan', 'خطة ادخار الذهب'), risk: t('Low-Moderate', 'منخفض-متوسط'), desc: t('Physical gold accumulation through monthly purchases', 'تراكم الذهب الفعلي من خلال مشتريات شهرية'), catBg: brand.primarySurface, catColor: brand.primary },
+        { title: t('Venture Capital', 'رأس المال المغامر'), risk: t('High', 'مرتفع'), desc: t('Early-stage startup investments in UAE ecosystem', 'استثمارات في شركات ناشئة بالمنظومة الإماراتية'), catBg: brand.red, catColor: brand.redText },
     ];
 
     const govBenefits = [
-        { title: t('GPSSA Pension', 'معاش الهيئة العامة للمعاشات'), desc: t('Government pension scheme for UAE nationals in the public sector', 'نظام المعاشات الحكومي للمواطنين الإماراتيين في القطاع العام'), Icon: Shield, status: t('Eligible', 'مؤهل') },
-        { title: t('Housing Allowance', 'بدل السكن'), desc: t('Up to AED 800,000 housing loan for eligible nationals', 'قرض سكني يصل إلى 800,000 د.إ للمواطنين المؤهلين'), Icon: Landmark, status: t('Apply Now', 'قدّم الآن') },
-        { title: t('Marriage Grant', 'منحة الزواج'), desc: t('AED 70,000 grant for UAE national marriages', 'منحة 70,000 د.إ لزواج المواطنين الإماراتيين'), Icon: Users, status: t('Check Status', 'تحقق من الحالة') },
-        { title: t('Social Insurance (SIAL)', 'التأمين الاجتماعي (SIAL)'), desc: t('Unemployment insurance for private sector workers', 'تأمين ضد البطالة لموظفي القطاع الخاص'), Icon: BadgePercent, status: t('Active', 'نشط') },
-        { title: t('Education Sponsorship', 'الرعاية التعليمية'), desc: t('Full scholarship programs for higher education abroad', 'برامج منح دراسية كاملة للتعليم العالي في الخارج'), Icon: GraduationCap, status: t('Eligible', 'مؤهل') },
-        { title: t('Business Start-up Fund', 'صندوق تأسيس الأعمال'), desc: t('Khalifa Fund and SME support for entrepreneurial nationals', 'صندوق خليفة ودعم المشاريع الصغيرة والمتوسطة لرواد الأعمال المواطنين'), Icon: Award, status: t('Apply Now', 'قدّم الآن') },
+        { title: t('GPSSA Pension', 'معاش الهيئة العامة للمعاشات'), desc: t('Government pension scheme for UAE nationals in the public sector', 'نظام المعاشات الحكومي للمواطنين الإماراتيين في القطاع العام'), Icon: Shield },
+        { title: t('Housing Allowance', 'بدل السكن'), desc: t('Housing loan support for eligible nationals (indicative amounts vary by programme)', 'دعم القروض السكنية للمواطنين المؤهلين (المبالغ إرشادية وتختلف حسب البرنامج)'), Icon: Landmark },
+        { title: t('Marriage Grant', 'منحة الزواج'), desc: t('Marriage grant for UAE nationals (indicative amount, subject to eligibility)', 'منحة زواج للمواطنين الإماراتيين (المبلغ إرشادي ويخضع للأهلية)'), Icon: Users },
+        { title: t('Social Insurance (SIAL)', 'التأمين الاجتماعي (SIAL)'), desc: t('Unemployment insurance for private sector workers', 'تأمين ضد البطالة لموظفي القطاع الخاص'), Icon: BadgePercent },
+        { title: t('Education Sponsorship', 'الرعاية التعليمية'), desc: t('Full scholarship programs for higher education abroad', 'برامج منح دراسية كاملة للتعليم العالي في الخارج'), Icon: GraduationCap },
+        { title: t('Business Start-up Fund', 'صندوق تأسيس الأعمال'), desc: t('Khalifa Fund and SME support for entrepreneurial nationals', 'صندوق خليفة ودعم المشاريع الصغيرة والمتوسطة لرواد الأعمال المواطنين'), Icon: Award },
     ];
 
     const resources = [
@@ -234,22 +227,24 @@ const FinancialPlanningPage: React.FC = () => {
 
             {/* Savings Goals (from career plans or fallback) */}
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Savings Goals', 'أهداف الادخار')}</h3>
+            {data.savings_goals.length === 0 ? (
+                <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 32, textAlign: 'center' }}>
+                    <Target style={{ width: 32, height: 32, color: brand.textSecondary, margin: '0 auto 10px' }} />
+                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{t('No savings goals yet', 'لا توجد أهداف ادخار بعد')}</h4>
+                    <p style={{ fontSize: 13, color: brand.textSecondary, margin: 0 }}>{t('Set savings goals in your career plan to track your progress here.', 'حدّد أهداف الادخار في خطتك المهنية لتتبّع تقدمك هنا.')}</p>
+                </div>
+            ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                {(data.savings_goals.length > 0 ? data.savings_goals.map((g, i) => ({
-                    title: isRTL && g.title_ar ? g.title_ar : g.title,
-                    Icon: [Shield, Landmark, TrendingUp, GraduationCap][i % 4],
-                    desc: g.description || g.title,
-                    pct: g.progress,
-                    target: g.target_date || t('Ongoing', 'مستمر'),
-                    current: `${g.progress}%`,
-                })) : savingsGoalsFallback.map(g => ({
-                    title: g.title,
-                    Icon: g.Icon,
-                    desc: g.desc,
-                    pct: g.pct,
-                    target: fmtAED(g.target),
-                    current: fmtAED(g.current),
-                }))).map((goal, i) => (
+                {data.savings_goals.map((g, i) => {
+                    const goal = {
+                        title: isRTL && g.title_ar ? g.title_ar : g.title,
+                        Icon: [Shield, Landmark, TrendingUp, GraduationCap][i % 4],
+                        desc: g.description || g.title,
+                        pct: g.progress,
+                        target: g.target_date || t('Ongoing', 'مستمر'),
+                        current: `${g.progress}%`,
+                    };
+                    return (
                     <div
                         key={i}
                         style={{
@@ -281,8 +276,10 @@ const FinancialPlanningPage: React.FC = () => {
                             <div style={{ textAlign: isRTL ? 'left' : 'right', fontSize: 12, fontWeight: 600, color: brand.primary, marginTop: 4 }}>{goal.pct}%</div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
+            )}
         </div>
     );
 
@@ -299,6 +296,15 @@ const FinancialPlanningPage: React.FC = () => {
                 )}
             </p>
 
+            <div style={{ background: brand.amber, border: `1px solid ${brand.amberText}22`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                <p style={{ fontSize: 13, color: brand.amberText, lineHeight: 1.6, margin: 0 }}>
+                    {t(
+                        'These are general categories of investment vehicles shown for educational purposes only. This is not financial advice, no returns are guaranteed, and all investments carry risk. Consult a licensed financial advisor before investing.',
+                        'هذه فئات عامة من أدوات الاستثمار معروضة لأغراض تعليمية فقط. هذه ليست نصيحة مالية، ولا تُضمن أي عوائد، وكل استثمار ينطوي على مخاطر. استشر مستشاراً مالياً مرخّصاً قبل الاستثمار.'
+                    )}
+                </p>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {investmentOptions.map((opt, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
@@ -311,16 +317,6 @@ const FinancialPlanningPage: React.FC = () => {
                                 <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: opt.catBg, color: opt.catColor }}>{opt.risk}</span>
                             </div>
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{opt.desc}</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-                                <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.green, textAlign: 'center' }}>
-                                    <div style={{ fontSize: 15, fontWeight: 700, color: brand.greenText }}>{opt.returns}</div>
-                                    <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Annual Returns', 'العوائد السنوية')}</div>
-                                </div>
-                                <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.blue, textAlign: 'center' }}>
-                                    <div style={{ fontSize: 15, fontWeight: 700, color: brand.blueText }}>{opt.min}</div>
-                                    <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Min. Investment', 'الحد الأدنى')}</div>
-                                </div>
-                            </div>
                             <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                                 onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
                                 onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
@@ -376,9 +372,17 @@ const FinancialPlanningPage: React.FC = () => {
                 )}
             </p>
 
+            <div style={{ background: brand.blue, border: `1px solid ${brand.blueText}22`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                <p style={{ fontSize: 13, color: brand.blueText, lineHeight: 1.6, margin: 0 }}>
+                    {t(
+                        'Amounts shown are indicative and vary by programme. Your eligibility is determined by the relevant government authority — verify details with them directly.',
+                        'المبالغ الموضّحة إرشادية وتختلف حسب البرنامج. تُحدَّد أهليتك من قبل الجهة الحكومية المختصة — تحقّق من التفاصيل معها مباشرة.'
+                    )}
+                </p>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {govBenefits.map((ben, i) => {
-                    const isActive = ben.status === t('Active', 'نشط') || ben.status === t('Eligible', 'مؤهل');
                     return (
                         <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
@@ -388,9 +392,8 @@ const FinancialPlanningPage: React.FC = () => {
                                     <ben.Icon style={{ width: 22, height: 22 }} />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <div style={{ marginBottom: 4 }}>
                                         <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{ben.title}</h3>
-                                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: isActive ? brand.green : brand.blue, color: isActive ? brand.greenText : brand.blueText }}>{ben.status}</span>
                                     </div>
                                     <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{ben.desc}</p>
                                 </div>

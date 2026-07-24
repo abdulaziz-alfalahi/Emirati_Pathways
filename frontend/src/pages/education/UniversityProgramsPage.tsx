@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { GraduationCap, Users, Building, Target, MapPin, Star, Clock, CheckCircle, ArrowRight, ArrowLeft, Award, Globe, BookOpen, Briefcase, ExternalLink, Loader2 } from 'lucide-react';
+import { GraduationCap, Users, Building, MapPin, Star, Clock, CheckCircle, ArrowRight, ArrowLeft, Award, Globe, BookOpen, Briefcase, ExternalLink, Loader2 } from 'lucide-react';
 import { getPrograms, getUniversities, type UniversityProgram, type University } from '@/services/educationAPI';
 
 // Brand tokens
@@ -72,7 +72,8 @@ const UniversityProgramsPage: React.FC = () => {
   const stats = [
     { value: `${universities.length}+`, label: t('Universities & Colleges', 'الجامعات والكليات'), icon: Building },
     { value: `${programs.length}+`, label: t('Degree Programs', 'البرامج الأكاديمية'), icon: GraduationCap },
-    { value: '92%', label: t('Employment Rate', 'نسبة التوظيف'), icon: Target },
+    // Removed fabricated '92%' Employment Rate tile — no aggregate employment-rate
+    // source exists (employment_rate is a per-program field, not a page total). (data-honesty)
     { value: `${programs.reduce((sum, p) => sum + (p.enrolled || 0), 0).toLocaleString()}+`, label: t('Students Enrolled', 'طالب مسجّل'), icon: Users },
   ];
 

@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { Award, Shield, Stamp, BookOpen, Users, TrendingUp, Loader2 } from 'lucide-react';
+import { Award, Shield, Stamp, Loader2 } from 'lucide-react';
 
 // Lazy load the three credential sub-pages
 const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));
@@ -23,12 +23,9 @@ const CredentialsCenterPage: React.FC = () => {
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
   /* ── Stats ── */
-  const stats = [
-    { value: '150+', label: t('Certifications', 'شهادة'), icon: Award },
-    { value: '12K+', label: t('Credentialed', 'معتمد'), icon: Users },
-    { value: '96%', label: t('Pass Rate', 'نسبة النجاح'), icon: TrendingUp },
-    { value: '30+', label: t('Partners', 'شريك'), icon: BookOpen },
-  ];
+  // Header stat tiles removed: the previous 150+/12K+/96%/30+ figures were
+  // hardcoded fabrications with no aggregate API feeding them. (data-honesty)
+  const stats: never[] = [];
 
   /* ── Tabs — each sub-page is embedded (no duplicate nav/breadcrumbs) ── */
   const tabs = [

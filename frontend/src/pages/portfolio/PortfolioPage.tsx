@@ -44,14 +44,8 @@ const catColors: Record<string, { bg: string; color: string }> = {
     'default': { bg: '#F3F4F6', color: brand.textSecondary },
 };
 
-/* ── Fallback data ── */
-const FALLBACK_PROJECTS = [
-    { title: 'E-Commerce Platform', category: 'Web Development', description: 'Full-stack e-commerce solution with payment integration and real-time inventory', skills_demonstrated: ['React', 'Node.js', 'MongoDB'] },
-    { title: 'Brand Identity System', category: 'Design', description: 'Complete brand identity including logo, typography, and color system for a UAE startup', skills_demonstrated: ['Figma', 'Illustrator', 'InDesign'] },
-    { title: 'Smart City Dashboard', category: 'Data & Analytics', description: 'Real-time IoT dashboard for monitoring urban infrastructure across Dubai', skills_demonstrated: ['Python', 'D3.js', 'PostgreSQL'] },
-    { title: 'Mobile Banking App', category: 'Mobile Development', description: 'Fintech mobile application with biometric authentication and digital wallet', skills_demonstrated: ['Flutter', 'Firebase', 'Stripe'] },
-    { title: 'AI Content Generator', category: 'Machine Learning', description: 'NLP-based content generator fine-tuned for Arabic and English bilingual output', skills_demonstrated: ['Python', 'TensorFlow', 'FastAPI'] },
-];
+/* Fabricated FALLBACK_PROJECTS removed (data-honesty audit) — an empty portfolio
+   must render an honest empty state, never invented projects as the user's own. */
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
@@ -89,22 +83,12 @@ const PortfolioPage: React.FC = () => {
                         catColor: catColors[p.category || '']?.color || catColors.default.color,
                     })));
                 } else {
-                    // Use fallback if no projects in DB
-                    setProjects(FALLBACK_PROJECTS.map(p => ({
-                        ...p,
-                        tech: p.skills_demonstrated,
-                        catBg: catColors[p.category]?.bg || catColors.default.bg,
-                        catColor: catColors[p.category]?.color || catColors.default.color,
-                    })));
+                    // Honest empty — never show fabricated projects as the user's own.
+                    setProjects([]);
                 }
             } catch (err) {
                 console.error('Failed to load portfolio:', err);
-                setProjects(FALLBACK_PROJECTS.map(p => ({
-                    ...p,
-                    tech: p.skills_demonstrated,
-                    catBg: catColors[p.category]?.bg || catColors.default.bg,
-                    catColor: catColors[p.category]?.color || catColors.default.color,
-                })));
+                setProjects([]);
             } finally {
                 setLoading(false);
             }
@@ -271,6 +255,10 @@ const PortfolioPage: React.FC = () => {
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
                     <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto', color: brand.primary }} />
+                </div>
+            ) : projects.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 48, color: brand.textSecondary, background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}` }}>
+                    {t('No projects in your portfolio yet. Add your first project to get started.', 'لا توجد مشاريع في ملفك بعد. أضف أول مشروع للبدء.')}
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>

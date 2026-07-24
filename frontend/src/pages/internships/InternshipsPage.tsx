@@ -5,7 +5,7 @@ import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLay
 import {
     Briefcase, Building2, MapPin, Clock, Calendar,
     ChevronRight, ChevronLeft, Bookmark, CheckCircle, Search,
-    TrendingUp, Star, Users, Award, Shield,
+    TrendingUp, Star, Users, Shield,
     GraduationCap, Banknote, Globe, Zap, Filter, Loader2
 } from 'lucide-react';
 import { getInternships, applyForInternship, type Internship } from '@/services/careerServicesAPI';
@@ -142,8 +142,8 @@ const InternshipsPage: React.FC = () => {
     const stats = [
         { value: `${internships.length}+`, label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
         { value: `${partnerCompanies.length}+`, label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
-        { value: '1,200+', label: t('Placements', 'توظيف'), icon: Award },
-        { value: '72%', label: t('Full-time Conversion', 'التحويل لدوام كامل'), icon: TrendingUp },
+        // Removed fabricated '1,200+' Placements and '72%' Full-time Conversion tiles —
+        // neither figure was API-backed. Open Internships & Partner Companies are real. (data-honesty)
     ];
 
     // Loading state
