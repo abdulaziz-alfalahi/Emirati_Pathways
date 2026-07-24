@@ -251,36 +251,49 @@ def apply_to_program(program_id):
 
 @education_bp.route('/scholarships', methods=['GET'])
 def get_scholarships():
-    """Get available scholarships with filtering."""
-    category = request.args.get('category', '')
-    provider_type = request.args.get('provider_type', '')
+    """Get available scholarships with filtering.
+
+    Filters use ONLY live-schema columns (verified 2026-07-24: title,
+    provider_name, description, amount, coverage_type, deadline, min_gpa,
+    academic_level, eligible_majors, application_link, is_active). The old
+    branches filtered phantom columns (category/provider_type/title_ar) and
+    500'd whenever exercised. Legacy ?category is accepted as an alias for
+    coverage_type; ?provider_type matches provider_name.
+    """
+    academic_level = request.args.get('academic_level', '')
+    coverage_type = request.args.get('coverage_type', '') or request.args.get('category', '')
+    provider = request.args.get('provider', '') or request.args.get('provider_type', '')
     search = request.args.get('search', '')
 
     sql = "SELECT * FROM scholarships WHERE is_active = TRUE"
     params = []
-    if category:
-        sql += " AND category = %s"
-        params.append(category)
-    if provider_type:
-        sql += " AND provider_type = %s"
-        params.append(provider_type)
+    if academic_level:
+        sql += " AND academic_level ILIKE %s"
+        params.append(f'%{academic_level}%')
+    if coverage_type:
+        sql += " AND coverage_type ILIKE %s"
+        params.append(f'%{coverage_type}%')
+    if provider:
+        sql += " AND provider_name ILIKE %s"
+        params.append(f'%{provider}%')
     if search:
-        sql += " AND (title ILIKE %s OR title_ar ILIKE %s OR provider_name ILIKE %s)"
+        sql += " AND (title ILIKE %s OR provider_name ILIKE %s OR description ILIKE %s)"
         params.extend([f'%{search}%'] * 3)
-    sql += " ORDER BY amount DESC"
+    sql += " ORDER BY deadline ASC NULLS LAST, created_at DESC"
 
     scholarships = query_all(sql, params)
     for s in scholarships:
-        for field in ['eligibility', 'skills_required']:
-            if isinstance(s.get(field), str):
-                try:
-                    s[field] = json.loads(s[field])
-                except:
-                    s[field] = []
+        if isinstance(s.get('eligible_majors'), str):
+            try:
+                s['eligible_majors'] = json.loads(s['eligible_majors'])
+            except Exception:
+                s['eligible_majors'] = []
         if s.get('deadline'):
             s['deadline'] = str(s['deadline'])
         if s.get('created_at'):
             s['created_at'] = str(s['created_at'])
+        if s.get('min_gpa') is not None:
+            s['min_gpa'] = float(s['min_gpa'])
     return jsonify({"scholarships": scholarships, "total": len(scholarships)})
 
 
@@ -303,23 +316,20 @@ def apply_to_scholarship(scholarship_id):
         if existing:
             return jsonify({"error": "Already applied"}), 409
 
-        # Calculate AI match score based on user skills vs required skills
-        match_score = 0.0
-        scholarship = query_one("SELECT skills_required FROM scholarships WHERE id = %s", (scholarship_id,))
-        if scholarship and scholarship.get('skills_required'):
-            user_skills = query_all(
-                "SELECT skill_name FROM user_skills WHERE user_id = %s", (user_id,)
-            )
-            user_skill_names = {s['skill_name'].lower() for s in user_skills}
-            required = scholarship['skills_required'] if isinstance(scholarship['skills_required'], list) else []
-            if required:
-                matching = sum(1 for s in required if s.lower() in user_skill_names)
-                match_score = round(matching / len(required) * 100, 1)
+        # Verify the scholarship exists and is active (the old code selected a
+        # phantom skills_required column here and 500'd on every apply).
+        scholarship = query_one(
+            "SELECT id FROM scholarships WHERE id = %s AND is_active = TRUE", (scholarship_id,))
+        if not scholarship:
+            return jsonify({"error": "Scholarship not found"}), 404
 
+        # No fabricated scoring: scholarships carry eligible_majors, not skill
+        # requirements, so an honest skill-match score cannot be computed —
+        # ai_match_score stays NULL (audit issue #26).
         cursor.execute("""
             INSERT INTO scholarship_applications (user_id, scholarship_id, application_data, ai_match_score)
-            VALUES (%s, %s, %s, %s) RETURNING id, status, ai_match_score, submitted_at
-        """, (user_id, scholarship_id, json.dumps(data), match_score))
+            VALUES (%s, %s, %s, NULL) RETURNING id, status, ai_match_score, submitted_at
+        """, (user_id, scholarship_id, json.dumps(data)))
         db.commit()
         row = cursor.fetchone()
         return jsonify({
