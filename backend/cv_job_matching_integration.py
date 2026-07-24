@@ -486,8 +486,10 @@ class CVJobMatchingIntegration:
             conn.close()
             
             if not rows:
-                logger.info("No vacancies in DB, using fallback mock data")
-                return self._get_fallback_mock_jobs()
+                # Data honesty (audit issue #26): no vacancies means no matches —
+                # never substitute fabricated jobs.
+                logger.info("No vacancies in DB — returning no matches")
+                return []
             
             jobs = []
             for row in rows:
@@ -509,7 +511,9 @@ class CVJobMatchingIntegration:
                 jobs.append({
                     'job_id': str(row['id']),
                     'title': row.get('title', ''),
-                    'company': row.get('employer_admin', ''),
+                    # SELECT aliases the column as `employer`; the old
+                    # `employer_admin` key never existed → company was always ''.
+                    'company': row.get('employer', ''),
                     'location': row.get('location', 'UAE'),
                     'description': row.get('description', ''),
                     'required_skills': [r if isinstance(r, str) else r.get('name', '') for r in requirements],
@@ -519,7 +523,9 @@ class CVJobMatchingIntegration:
                     'job_type': 'Full-time',
                     'remote_allowed': False,
                     'emiratization_priority': True,
-                    'salary_range': {'min': 8000, 'max': 20000, 'currency': 'AED'},
+                    # No salary column exists on recruiter_vacancies — never
+                    # fabricate a range (audit issue #26).
+                    'salary_range': None,
                     'posted_at': str(row.get('created_at', ''))
                 })
             
@@ -527,39 +533,8 @@ class CVJobMatchingIntegration:
             return jobs
             
         except Exception as e:
-            logger.warning(f"DB query failed, using fallback mock jobs: {e}")
-            return self._get_fallback_mock_jobs()
-    
-    def _get_fallback_mock_jobs(self) -> List[Dict[str, Any]]:
-        """Fallback mock jobs when DB is unavailable"""
-        return [
-            {
-                'job_id': str(uuid.uuid4()),
-                'title': 'Senior Software Engineer',
-                'company': 'Emirates NBD',
-                'location': 'Dubai, UAE',
-                'salary_range': {'min': 15000, 'max': 25000, 'currency': 'AED'},
-                'required_skills': ['Python', 'React', 'AWS'],
-                'experience_required': '3-5 years',
-                'industry': 'Banking',
-                'job_type': 'Full-time',
-                'remote_allowed': False,
-                'emiratization_priority': True
-            },
-            {
-                'job_id': str(uuid.uuid4()),
-                'title': 'Data Scientist',
-                'company': 'ADNOC',
-                'location': 'Abu Dhabi, UAE',
-                'salary_range': {'min': 18000, 'max': 30000, 'currency': 'AED'},
-                'required_skills': ['Python', 'Machine Learning', 'SQL'],
-                'experience_required': '2-4 years',
-                'industry': 'Oil & Gas',
-                'job_type': 'Full-time',
-                'remote_allowed': True,
-                'emiratization_priority': True
-            }
-        ]
+            logger.warning(f"DB query failed — returning no matches (never mock): {e}")
+            return []
     
     def _score_job_matches(self, jobs: List[Dict[str, Any]], criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Score job matches based on criteria"""
