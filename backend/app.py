@@ -256,7 +256,6 @@ if not _uaepass_eid_key:
         # acceptable for synthetic staging data; production MUST set a stable
         # UAEPASS_EID_KEY (enforced by the fail-fast above).
         import base64
-        import secrets
         logger.warning("⚠️  UAEPASS_EID_KEY not set — generating an EPHEMERAL random key (non-production). "
                        "EID ciphertext will NOT survive a restart; set UAEPASS_EID_KEY for stable/production use.")
         os.environ['UAEPASS_EID_KEY'] = base64.b64encode(secrets.token_bytes(32)).decode('utf-8')
