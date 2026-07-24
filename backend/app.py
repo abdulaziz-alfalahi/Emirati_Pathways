@@ -709,6 +709,7 @@ _additional_blueprints = [
     ('backend.routes.caseload_assignment_routes', 'caseload_bp', None, 'Caseload Assignment'),
     ('backend.parent_routes', 'parent_bp', None, 'Parent Dashboard'),
     ('backend.internship_coordinator_routes', 'internship_coord_bp', None, 'Internship Coordinator'),
+    ('backend.routes.internship_engagement_routes', 'internship_engagement_bp', None, 'Internship Engagement'),
     ('backend.training_center_routes', 'training_center_bp', None, 'Training Center'),
     ('backend.platform_ops_routes', 'platform_ops_bp', None, 'Platform Operations'),
     ('backend.routes.workspace_routes', 'workspace_bp', None, 'Workspaces'),
