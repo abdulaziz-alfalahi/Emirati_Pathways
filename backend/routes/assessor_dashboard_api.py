@@ -209,3 +209,55 @@ def complete(app_id):
     except Exception as e:
         logger.error(f"assessor complete failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to complete evaluation'}), 500
+
+
+@assessor_dash_bp.route('/operator/stats', methods=['GET'])
+@require_roles(*_ASSESSOR_ROLES)
+def operator_stats():
+    """Aggregate statistics for the Assessment Operator Dashboard — real counts
+    from the live assessment_templates / competency_models / assessments tables,
+    with honest zeros/empties when there is no data.
+
+    Ported from the retired assessor_routes.py, whose blueprint never registered
+    (bad `require_role` import) so this endpoint 404'd for the frontend.
+    Gated because recent_assessments exposes candidate ids/titles.
+    """
+    try:
+        templates = execute_query(
+            """SELECT id, name, template_type, nqf_level, industry_sector,
+                      passing_score, is_active, created_at::text AS created_at
+               FROM assessment_templates
+               ORDER BY created_at DESC LIMIT 10""") or []
+        total_templates = execute_query(
+            "SELECT COUNT(*) AS n FROM assessment_templates", fetch_one=True) or {'n': 0}
+        competency_models = execute_query(
+            "SELECT COUNT(*) AS n FROM competency_models", fetch_one=True) or {'n': 0}
+        recent = execute_query(
+            """SELECT id, assessment_title, status,
+                      scheduled_date::text AS scheduled_date, created_at::text AS created_at
+               FROM assessments ORDER BY created_at DESC LIMIT 10""") or []
+        counts = execute_query(
+            """SELECT COUNT(*) AS total,
+                      COUNT(*) FILTER (WHERE status IN ('scheduled','in_progress')) AS active,
+                      COUNT(*) FILTER (WHERE status IN ('pending_review','pending')) AS pending
+               FROM assessments""", fetch_one=True) or {'total': 0, 'active': 0, 'pending': 0}
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_templates': total_templates['n'],
+                'active_assessments': counts['active'],
+                'competency_models': competency_models['n'],
+                'pending_reviews': counts['pending'],
+                'total_assessed': counts['total'],
+            },
+            'templates': templates,
+            'recent_assessments': recent,
+        })
+    except Exception as e:
+        logger.error(f"assessor operator stats failed: {e}")
+        return jsonify({
+            'success': True,
+            'stats': {'total_templates': 0, 'active_assessments': 0,
+                      'competency_models': 0, 'pending_reviews': 0, 'total_assessed': 0},
+            'templates': [], 'recent_assessments': [],
+        })

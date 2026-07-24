@@ -680,7 +680,9 @@ register_all_blueprints(app)
 # 2. Additional blueprints registered directly (recruiter, education, etc.)
 _additional_blueprints = [
     ('backend.recruiter.shortlist_routes', 'shortlist_bp', '/api/recruiter/shortlist', 'Recruiter Shortlist'),
-    ('backend.recruiter.interview_routes', 'interview_bp', '/api/recruiter/interviews', 'Recruiter Interview'),
+    # NOTE: recruiter interview_bp ('recruiter_interviews') is already registered
+    # by blueprint_registry.py at /api/recruiter/interviews. Registering it here
+    # too raised "name 'recruiter_interviews' is already registered" every boot.
     ('backend.hr_interview_scheduling_routes', 'hr_interview_bp', None, 'HR Interview Scheduling'),
     ('backend.video_interview_routes', 'video_interview_bp', '/api/video-interview', 'Video Interview'),
     ('backend.recruiter.jd_routes_v2', 'jd_bp', None, 'Recruiter JD V2'),
