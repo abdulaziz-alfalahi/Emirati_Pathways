@@ -1,9 +1,8 @@
 """
 Student enrolment — institution-scoped enrolment authority.
 
-A `student` is an enrolment-verified role. The Academic Advisor (institution-side,
-present from the start of the journey) is the primary enroller, alongside the
-Education Operator and Admin. Enrolment:
+A `student` is an enrolment-verified role. Enrolment is an institution-side act
+owned by the Academic Advisor (bound to the institution). Enrolment:
   (a) pre-creates the person's account by their real Emirates ID when they have
       not yet logged in via UAE Pass (the proven EID binds on first login —
       identity model #90; never bind by phone/email),
@@ -13,9 +12,12 @@ Education Operator and Admin. Enrolment:
       (the advisor's caseload).
 
 Advisors are bound to institutions via `institution_staff` and may only enrol /
-manage students of an institution they are active staff of; admin and
-education_operator are unscoped. The internship coordinator no longer enrols —
-it lists/assigns from an already-enrolled, institution-scoped pool.
+manage students of an institution they are active staff of. Only admin may enrol
+unscoped (break-glass). The education_operator is a platform-side setup/oversight
+role: it provisions institutions and binds advisors, and can view all students,
+but does not enrol directly (it binds itself as an advisor if it must). The
+internship coordinator no longer enrols — it lists/assigns from an
+already-enrolled, institution-scoped pool.
 
 Blueprint prefix: /api/students
 """
@@ -43,8 +45,10 @@ logger = logging.getLogger(__name__)
 
 student_enrolment_bp = Blueprint('student_enrolment', __name__, url_prefix='/api/students')
 
-# Operators who may enrol into / manage any institution (unscoped).
-_UNSCOPED = ADMIN_ROLES | {'education_operator'}
+# Oversight roles that see every institution's students/institutions (read only).
+# NB: this is *visibility*, not enrolment authority — education_operator can see
+# and set up, but only admin (below) may enrol without an institution binding.
+_UNSCOPED_VIEW = ADMIN_ROLES | {'education_operator'}
 # Who may create institutions and bind staff to them.
 _INSTITUTION_ADMIN = ADMIN_ROLES | {'education_operator'}
 # A real UAE Emirates ID: 15 digits, 784 prefix (synthetic 7840000… also match).
@@ -199,8 +203,12 @@ def _enrol_one(row, institution_id, institution_name, link_advisor):
 
 
 def _authorize_institution(institution_id):
-    """None if the caller may enrol into this institution, else a 403 response."""
-    if resolve_roles() & _UNSCOPED:
+    """None if the caller may enrol into this institution, else a 403 response.
+
+    Only admin is unscoped (break-glass). Everyone else — including the
+    education_operator — must be a bound advisor at this institution to enrol.
+    """
+    if resolve_roles() & ADMIN_ROLES:
         return None
     if institution_id in _caller_institution_ids('advisor'):
         return None
@@ -282,7 +290,7 @@ def my_students():
     """An advisor's caseload (advisor_student_assignments); admin/education_operator
     see all enrolled students."""
     roles = resolve_roles()
-    if roles & _UNSCOPED:
+    if roles & _UNSCOPED_VIEW:
         rows = execute_query(
             """SELECT s.user_id, COALESCE(u.full_name, s.user_id) AS full_name,
                       s.institution, s.institution_id, s.program,
@@ -312,7 +320,7 @@ def students_at_my_institution():
     coordinator). admin/education_operator see all. This is the coordinator's
     assignable internship pool."""
     roles = resolve_roles()
-    if roles & _UNSCOPED:
+    if roles & _UNSCOPED_VIEW:
         rows = execute_query(
             """SELECT s.user_id, COALESCE(u.full_name, s.user_id) AS full_name,
                       s.institution, s.institution_id, s.program,
@@ -343,7 +351,7 @@ def students_at_my_institution():
 def list_institutions():
     """admin/education_operator see all institutions; advisor/coordinator see the
     ones they are staff of (for the enrol/assign pickers)."""
-    if resolve_roles() & _UNSCOPED:
+    if resolve_roles() & _UNSCOPED_VIEW:
         rows = execute_query(
             "SELECT id, name, name_ar, type, emirate FROM institutions ORDER BY name") or []
     else:
