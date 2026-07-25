@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 education_bp = Blueprint('education', __name__, url_prefix='/api/education')
 
 try:
-    from backend.auth.access_control import require_roles, OPERATOR_ROLES
+    from backend.auth.access_control import require_roles, OPERATOR_ROLES, PROFDEV_ROLES
 except ImportError:
-    from auth.access_control import require_roles, OPERATOR_ROLES
+    from auth.access_control import require_roles, OPERATOR_ROLES, PROFDEV_ROLES
 
 
 def get_db():
@@ -1244,6 +1244,7 @@ def profdev_operator_stats():
 
 
 @education_bp.route('/profdev/courses', methods=['POST'])
+@require_roles(*PROFDEV_ROLES)
 def add_profdev_course():
     """Add a new training course to the Professional Development catalog."""
     ensure_profdev_tables()
@@ -1275,6 +1276,7 @@ def add_profdev_course():
 
 
 @education_bp.route('/profdev/courses/<int:course_id>/approve', methods=['PUT'])
+@require_roles(*PROFDEV_ROLES)
 def approve_profdev_course(course_id):
     """Approve a pending course and publish it."""
     ensure_profdev_tables()
@@ -1293,6 +1295,7 @@ def approve_profdev_course(course_id):
 
 
 @education_bp.route('/profdev/courses/<int:course_id>/reject', methods=['PUT'])
+@require_roles(*PROFDEV_ROLES)
 def reject_profdev_course(course_id):
     """Reject or set a course to draft/pending status."""
     ensure_profdev_tables()
@@ -1311,6 +1314,7 @@ def reject_profdev_course(course_id):
 
 
 @education_bp.route('/profdev/settings', methods=['GET'])
+@require_roles(*PROFDEV_ROLES)
 def get_profdev_settings():
     """Retrieve settings for Professional Development."""
     ensure_profdev_tables()
@@ -1329,6 +1333,7 @@ def get_profdev_settings():
 
 
 @education_bp.route('/profdev/settings', methods=['PUT'])
+@require_roles(*PROFDEV_ROLES)
 def update_profdev_settings():
     """Update settings for Professional Development."""
     ensure_profdev_tables()
@@ -1352,6 +1357,7 @@ def update_profdev_settings():
 
 
 @education_bp.route('/profdev/certification-bodies', methods=['POST'])
+@require_roles(*PROFDEV_ROLES)
 def add_certification_body():
     """Register a new certification body."""
     ensure_profdev_tables()
@@ -1381,6 +1387,7 @@ def add_certification_body():
 
 
 @education_bp.route('/profdev/certification-bodies/<int:body_id>/toggle', methods=['PUT'])
+@require_roles(*PROFDEV_ROLES)
 def toggle_certification_body(body_id):
     """Toggle the active/inactive state of a certification body."""
     ensure_profdev_tables()

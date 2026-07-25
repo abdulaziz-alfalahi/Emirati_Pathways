@@ -29,6 +29,7 @@ ROLE_OPERATOR_MAP = {
     'Growth Operator':  ['admin', 'admin'],
     'call_center_agent': ['admin', 'admin'],
     'career_services_operator': ['admin', 'admin'],
+    'professional_dev_operator': ['admin', 'admin'],
 }
 
 # The role-request UI uses Title-Case labels, but guards use canonical lowercase
