@@ -125,7 +125,7 @@ def get_training_programs():
                    url, skills_covered, relevance_score, active, certification_offered,
                    created_at
             FROM training_programs
-            WHERE active = true
+            WHERE active = true AND COALESCE(status, 'published') = 'published'
             ORDER BY relevance_score DESC
         """)
         programs = []

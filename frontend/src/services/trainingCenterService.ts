@@ -35,6 +35,13 @@ export const trainingCenterService = {
   // Provider representative
   myCenters: () =>
     restClient.get(`${BASE}/my-centers`).then((r) => (r.data?.data as TrainingCenter[]) || []),
+  programs: () =>
+    restClient.get(`${BASE}/programs`).then((r) => (r.data?.programs as any[]) || []),
+  createProgram: (body: {
+    title: string; title_ar?: string; category?: string; level?: string;
+    duration?: string; url?: string; description?: string; skills_covered?: string[];
+    certification_offered?: boolean;
+  }) => restClient.post(`${BASE}/programs`, body),
 };
 
 export default trainingCenterService;

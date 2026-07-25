@@ -1219,13 +1219,22 @@ def ensure_profdev_tables():
 @education_bp.route('/profdev/operator/stats', methods=['GET'])
 @require_roles(*OPERATOR_ROLES)
 def profdev_operator_stats():
-    """Aggregate statistics for the Professional Development Operator Dashboard."""
+    """Aggregate statistics for the Professional Development Operator Dashboard.
+    Reads the canonical `training_programs` catalogue (Phase 3)."""
     ensure_profdev_tables()
-    courses = query_all("SELECT * FROM training_courses ORDER BY enrolled DESC")
+    courses = query_all("""
+        SELECT tp.id, tp.title AS name, tp.title_ar AS name_ar, tp.provider,
+               tp.category, tp.level, tp.status, tp.url,
+               COALESCE((SELECT COUNT(*) FROM training_program_enrollments e
+                         WHERE e.program_id = tp.id), 0) AS enrolled
+        FROM training_programs tp
+        ORDER BY enrolled DESC, tp.created_at DESC
+    """)
     cert_bodies = query_all("SELECT * FROM certification_bodies ORDER BY certs_issued DESC")
 
+    # 'submitted' = awaiting operator review (was 'pending' in the old table).
     published = [c for c in courses if c.get('status') == 'published']
-    pending = [c for c in courses if c.get('status') == 'pending']
+    pending = [c for c in courses if c.get('status') == 'submitted']
     total_enrolled = sum(c.get('enrolled', 0) for c in courses)
     total_certs = sum(b.get('certs_issued', 0) for b in cert_bodies)
 
@@ -1261,14 +1270,19 @@ def add_profdev_course():
         if not name or not provider:
             return jsonify({'error': 'Name and provider are required'}), 400
 
+        # Operator-added programs are published (curated by definition) into the
+        # canonical catalogue.
         cursor = db.cursor()
         cursor.execute(
-            "INSERT INTO training_courses (name, name_ar, provider, enrolled, status, course_type) VALUES (%s, %s, %s, 0, 'pending', %s) RETURNING id",
-            (name, name_ar if name_ar else None, provider, course_type)
+            "INSERT INTO training_programs (title, title_ar, provider, category, status, "
+            "active, created_by, approved_by, created_at) "
+            "VALUES (%s, %s, %s, %s, 'published', TRUE, %s, %s, NOW()) RETURNING id",
+            (name, name_ar if name_ar else None, provider, course_type,
+             get_jwt_identity(), get_jwt_identity())
         )
         course_id = cursor.fetchone()[0]
         db.commit()
-        return jsonify({'success': True, 'course_id': course_id, 'message': 'Course added and pending review'}), 201
+        return jsonify({'success': True, 'course_id': course_id, 'message': 'Program added and published'}), 201
     except Exception as e:
         logger.error(f"Error adding profdev course: {e}")
         db.rollback()
@@ -1285,9 +1299,11 @@ def approve_profdev_course(course_id):
         return jsonify({'error': 'Database unavailable'}), 503
     try:
         cursor = db.cursor()
-        cursor.execute("UPDATE training_courses SET status = 'published' WHERE id = %s", (course_id,))
+        cursor.execute(
+            "UPDATE training_programs SET status = 'published', active = TRUE, approved_by = %s "
+            "WHERE id = %s", (get_jwt_identity(), course_id))
         db.commit()
-        return jsonify({'success': True, 'message': 'Course approved and published'}), 200
+        return jsonify({'success': True, 'message': 'Program approved and published'}), 200
     except Exception as e:
         logger.error(f"Error approving course: {e}")
         db.rollback()
@@ -1304,9 +1320,11 @@ def reject_profdev_course(course_id):
         return jsonify({'error': 'Database unavailable'}), 503
     try:
         cursor = db.cursor()
-        cursor.execute("UPDATE training_courses SET status = 'pending' WHERE id = %s", (course_id,))
+        cursor.execute(
+            "UPDATE training_programs SET status = 'rejected', active = FALSE WHERE id = %s",
+            (course_id,))
         db.commit()
-        return jsonify({'success': True, 'message': 'Course set to pending status'}), 200
+        return jsonify({'success': True, 'message': 'Program rejected'}), 200
     except Exception as e:
         logger.error(f"Error rejecting course: {e}")
         db.rollback()

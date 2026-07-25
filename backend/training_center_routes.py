@@ -92,65 +92,65 @@ def get_profile():
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
 
+def _my_center():
+    """The center (id, name) the caller represents, or None. First active binding."""
+    return execute_query(
+        "SELECT c.id, c.name FROM training_center_staff st "
+        "JOIN training_centers c ON c.id = st.training_center_id "
+        "WHERE st.user_id = %s AND st.status = 'active' ORDER BY c.id LIMIT 1",
+        (get_jwt_identity(),), fetch_one=True)
+
+
 @training_center_bp.route('/programs', methods=['GET'])
 @jwt_required()
 def list_programs():
-    # Owner is always the authenticated caller (no client-supplied ?user_id).
-    user_id = get_jwt_identity()
-    conn = get_db()
-    if not conn: return jsonify({"error": "Database unavailable"}), 503
-    try:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        # Look up their center_id first
-        cur.execute("SELECT id FROM training_center_profiles WHERE user_id = %s", (user_id,))
-        center = cur.fetchone()
-        if not center:
-            cur.close(); conn.close()
-            return jsonify({"programs": [], "total": 0}), 200
-        cur.execute("""
-            SELECT tc.*, (SELECT COUNT(*) FROM course_enrollments ce WHERE ce.course_id = tc.id) as enrolled_count
-            FROM training_courses tc WHERE tc.provider ILIKE (
-                SELECT center_name FROM training_center_profiles WHERE id = %s
-            ) ORDER BY tc.created_at DESC
-        """, (center['id'],))
-        rows = cur.fetchall()
-        cur.close(); conn.close()
-        programs = []
-        for r in rows:
-            d = dict(r)
-            for k in ('created_at',):
-                if d.get(k): d[k] = d[k].isoformat()
-            programs.append(d)
-        return jsonify({"programs": programs, "total": len(programs)}), 200
-    except Exception as e:
-        conn.close(); return jsonify({"error": str(e)}), 500
+    """List the caller's center's programs from the canonical training_programs
+    catalogue, with a correct enrolment count (training_program_enrollments)."""
+    center = _my_center()
+    if not center:
+        return jsonify({"programs": [], "total": 0}), 200
+    rows = execute_query(
+        """SELECT tp.id, tp.title, tp.title_ar, tp.provider, tp.category, tp.level,
+                  tp.duration, tp.url, tp.status, tp.active, tp.created_at::text AS created_at,
+                  COALESCE((SELECT COUNT(*) FROM training_program_enrollments e
+                            WHERE e.program_id = tp.id), 0) AS enrolled_count
+           FROM training_programs tp
+           WHERE tp.provider_id = %s
+           ORDER BY tp.created_at DESC""",
+        (center['id'],)) or []
+    return jsonify({"programs": rows, "total": len(rows)}), 200
+
 
 @training_center_bp.route('/programs', methods=['POST'])
 @jwt_required()
 def create_program():
+    """A center rep submits a program into the canonical catalogue for review
+    (status='submitted' until the Professional Dev Operator approves it)."""
     guard = _require_training_role()
     if guard:
         return guard
+    center = _my_center()
+    if not center:
+        return jsonify({"error": "You are not bound to a training center"}), 403
     data = request.get_json(silent=True) or {}
-    conn = get_db()
-    if not conn: return jsonify({"error": "Database unavailable"}), 503
-    try:
-        cur = conn.cursor()
-        # Live training_courses columns: name, name_ar, provider, enrolled, status, course_type
-        cur.execute("""
-            INSERT INTO training_courses (name, name_ar, provider, status, course_type)
-            VALUES (%s,%s,%s,%s,%s) RETURNING id
-        """, (data.get('title_en') or data.get('name', ''),
-              data.get('title_ar') or data.get('name_ar', ''),
-              data.get('provider', ''),
-              data.get('status', 'active'),
-              data.get('category') or data.get('course_type', 'General')))
-        pid = cur.fetchone()[0]
-        conn.commit(); cur.close(); conn.close()
-        return jsonify({"program_id": pid}), 201
-    except Exception as e:
-        conn.rollback(); conn.close()
-        return jsonify({"error": str(e)}), 500
+    title = (data.get('title_en') or data.get('title') or data.get('name') or '').strip()
+    if not title:
+        return jsonify({"error": "title is required"}), 400
+    skills = data.get('skills_covered') or data.get('skills') or []
+    row = execute_query(
+        """INSERT INTO training_programs
+               (title, title_ar, provider, provider_id, category, level, duration, url,
+                skills_covered, description, certification_offered, status, active,
+                created_by, created_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, 'submitted', FALSE, %s, NOW())
+           RETURNING id""",
+        (title, data.get('title_ar') or data.get('name_ar'), center['name'], center['id'],
+         data.get('category') or data.get('course_type') or 'General', data.get('level'),
+         data.get('duration'), data.get('url'), json.dumps(skills), data.get('description'),
+         bool(data.get('certification_offered', False)), get_jwt_identity()),
+        fetch_one=True)
+    return jsonify({"program_id": (row or {}).get('id'),
+                    "message": "Program submitted for operator review"}), 201
 
 @training_center_bp.route('/certificates', methods=['POST'])
 @jwt_required()
