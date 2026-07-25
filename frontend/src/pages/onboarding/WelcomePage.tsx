@@ -32,14 +32,6 @@ const ROLES = [
         borderColor: 'border-purple-200'
     },
     {
-        id: 'training_provider',
-        title: 'Educator',
-        description: 'Manage curriculum and track student progress.',
-        icon: BookOpen,
-        color: 'bg-emerald-50 text-emerald-600',
-        borderColor: 'border-emerald-200'
-    },
-    {
         id: 'recruiter',
         title: 'Employer / Recruiter',
         description: 'Find top talent and manage job postings.',

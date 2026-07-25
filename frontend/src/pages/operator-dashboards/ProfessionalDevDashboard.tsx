@@ -4,8 +4,9 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import {
     Award, BookOpen, Settings, Search,
-    Clock, TrendingUp, Plus, Users, Eye, Shield, X, Check, AlertCircle
+    Clock, TrendingUp, Plus, Users, Eye, Shield, X, Check, AlertCircle, Building2
 } from 'lucide-react';
+import TrainingCentersManager from '@/components/education/TrainingCentersManager';
 
 const brand = {
     primary: '#0D9488', secondary: '#14B8A6', accent: '#5EEAD4',
@@ -189,6 +190,7 @@ const ProfessionalDevDashboard: React.FC = () => {
 
     const tabs = [
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: TrendingUp },
+        { id: 'centers', label: t('Training Centers', 'مراكز التدريب'), icon: Building2 },
         { id: 'training', label: t('Training', 'التدريب'), icon: BookOpen },
         { id: 'certifications', label: t('Certifications', 'الشهادات'), icon: Award },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
@@ -395,6 +397,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                 </div>
                 {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
                 {!loading && activeTab === 'overview' && renderOverview()}
+                {activeTab === 'centers' && <TrainingCentersManager />}
                 {!loading && activeTab === 'training' && renderTraining()}
                 {!loading && activeTab === 'certifications' && renderCertifications()}
                 {!loading && activeTab === 'settings' && renderSettings()}

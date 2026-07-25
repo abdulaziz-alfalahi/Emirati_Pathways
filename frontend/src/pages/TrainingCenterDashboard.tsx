@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { GraduationCap, BookOpen, Users, Award, Plus, Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { GraduationCap, BookOpen, Users, Award, Loader2 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import trainingCenterService, { TrainingCenter } from '@/services/trainingCenterService';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -14,25 +14,24 @@ const brand = {
 
 const TrainingCenterDashboard: React.FC = () => {
   const { i18n } = useTranslation();
-  const { user } = useAuth();
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
-  const [profile, setProfile] = useState<any>(null);
+  const [centers, setCenters] = useState<TrainingCenter[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const userId = user?.id || 1;
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       try {
-        const [prRes, pgRes] = await Promise.allSettled([
-          restClient.get(`/api/training-center/profile?user_id=${userId}`),
-          restClient.get(`/api/training-center/programs?user_id=${userId}`),
+        // The center(s) this rep is bound to (operator-onboarded), plus their programs.
+        const [ctrRes, pgRes] = await Promise.allSettled([
+          trainingCenterService.myCenters(),
+          restClient.get(`/api/training-center/programs`),
         ]);
         if (cancelled) return;
-        if (prRes.status === 'fulfilled') setProfile((prRes.value as any).data.profile);
+        if (ctrRes.status === 'fulfilled') setCenters(ctrRes.value || []);
         if (pgRes.status === 'fulfilled') setPrograms((pgRes.value as any).data.programs || []);
       } catch (err) { console.error(err); }
       finally { if (!cancelled) setLoading(false); }
@@ -82,7 +81,7 @@ const TrainingCenterDashboard: React.FC = () => {
     { value: `${programs.length}`, label: t('Programs', 'برامج'), icon: BookOpen },
     { value: `${totalEnrollments}`, label: t('Enrollments', 'مسجلون'), icon: Users },
     { value: '0', label: t('Certificates', 'شهادات'), icon: Award },
-    { value: profile?.center_name ? '1' : '0', label: t('Centers', 'مراكز'), icon: GraduationCap },
+    { value: `${centers.length}`, label: t('Centers', 'مراكز'), icon: GraduationCap },
   ];
 
   const tabs = [
