@@ -24,6 +24,44 @@ import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def find_published_programs_for_skills(skills: List[str], limit: int = 8) -> List[Dict[str, Any]]:
+    """Resolve a list of skill/gap names to REAL, published training programs from
+    the canonical catalogue. The LLM invents free-text course names; this grounds
+    "take a course" recommendations in actual listed programs (with id + url) so
+    they are clickable and enrollable. Returns [] on any error (best-effort)."""
+    names = [str(s).strip() for s in (skills or []) if str(s).strip()]
+    if not names:
+        return []
+    try:
+        try:
+            from backend.db_utils import execute_query
+        except ImportError:
+            from db_utils import execute_query
+        clauses, params = [], []
+        for n in names[:12]:
+            clauses.append("(LOWER(title) LIKE %s OR LOWER(skills_covered::text) LIKE %s "
+                           "OR LOWER(category) LIKE %s)")
+            like = f"%{n.lower()}%"
+            params.extend([like, like, like])
+        rows = execute_query(
+            "SELECT id, title, title_ar, provider, category, level, duration, url "
+            "FROM training_programs "
+            "WHERE active = TRUE AND COALESCE(status, 'published') = 'published' "
+            "AND (" + " OR ".join(clauses) + ") "
+            "ORDER BY relevance_score DESC NULLS LAST LIMIT %s",
+            tuple(params) + (limit,)) or []
+        return [{
+            'program_id': r['id'], 'title': r['title'], 'title_ar': r.get('title_ar'),
+            'provider': r.get('provider'), 'category': r.get('category'),
+            'level': r.get('level'), 'duration': r.get('duration'),
+            'url': r.get('url') or f"/training?program={r['id']}",
+        } for r in rows]
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"find_published_programs_for_skills failed: {e}")
+        return []
+
+
 # Configure Gemini API
 DASHSCOPE_API_KEY = DASHSCOPE_API_KEY
 if DASHSCOPE_API_KEY:
@@ -314,12 +352,23 @@ class AIAssessmentIntelligence:
             gap_data = self._enhance_with_uae_market_context(gap_data)
             
             self._update_stats(True, processing_time)
-            
+
+            # Ground the LLM's "upskill" advice in REAL listed programs: resolve the
+            # identified gaps to actual published catalogue entries (clickable/enrollable),
+            # rather than the free-text course names the model invents.
+            gaps = gap_data.get('gaps', [])
+            gap_names = [
+                (g.get('skill') or g.get('name') or g.get('area') or g) if isinstance(g, dict) else g
+                for g in gaps
+            ]
+            recommended_programs = find_published_programs_for_skills(gap_names)
+
             return {
                 'success': True,
-                'skill_gaps': gap_data.get('gaps', []),
+                'skill_gaps': gaps,
                 'strengths': gap_data.get('strengths', []),
                 'learning_recommendations': gap_data.get('learning_plan', []),
+                'recommended_programs': recommended_programs,
                 'career_guidance': gap_data.get('career_advice', []),
                 'uae_market_insights': gap_data.get('uae_insights', {}),
                 'confidence_score': gap_data.get('confidence', 0.9),
