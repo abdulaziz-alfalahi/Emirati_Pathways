@@ -46,9 +46,18 @@ OPERATOR_ROLES = ADMIN_ROLES | {
 # Career-services counselling CRM (candidate pipeline, counselling notes, PII).
 # Kept tight — this surface exposes candidate national IDs / phones.
 CAREER_SERVICES_ROLES = ADMIN_ROLES | {'career_services_operator', 'call_center_agent', 'operator'}
-# Enrolment-verified education role, and who may verify enrolment (Phase B).
+# Enrolment-verified education role, and who may verify enrolment.
 STUDENT_ROLES = ADMIN_ROLES | {'student'}
-ENROLMENT_ROLES = ADMIN_ROLES | {'education_operator', 'internship_coordinator'}
+# Academic/career advisor — institution-side role that owns the student caseload.
+ADVISOR_ROLES = ADMIN_ROLES | {'advisor'}
+# Who may enrol a person (grant the `student` role). The Academic Advisor is the
+# institution-side role present from the start of the student journey; the
+# internship_coordinator was intentionally removed (2026-07-25) — it only enters
+# at the internship stage and now consumes an already-enrolled student pool.
+ENROLMENT_ROLES = ADMIN_ROLES | {'education_operator', 'advisor'}
+# Any institution-side staff (read/list students of one's institution). Includes
+# the coordinator, who lists/assigns but no longer enrols.
+INSTITUTION_ROLES = ADMIN_ROLES | {'education_operator', 'advisor', 'internship_coordinator'}
 # Governance / oversight surfaces (metrics, demographics, executive analytics).
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 

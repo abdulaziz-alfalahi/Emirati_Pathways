@@ -3,7 +3,7 @@
 // InternshipCoordinatorDashboard.
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Briefcase, Sparkles, CheckCircle2, AlertCircle, ClipboardList, ChevronDown, ChevronUp, Users, UserPlus } from 'lucide-react';
+import { Loader2, Briefcase, Sparkles, CheckCircle2, AlertCircle, ClipboardList, ChevronDown, ChevronUp, Users } from 'lucide-react';
 import internshipEngagementService, {
   Engagement,
   Internship,
@@ -64,13 +64,6 @@ const CoordinatorInternshipEngagement: React.FC = () => {
   const [students, setStudents] = useState<EnrolledStudent[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [studentsError, setStudentsError] = useState<string | null>(null);
-  const [enrolUserId, setEnrolUserId] = useState('');
-  const [enrolInstitution, setEnrolInstitution] = useState('');
-  const [enrolProgram, setEnrolProgram] = useState('');
-  const [enrolGradDate, setEnrolGradDate] = useState('');
-  const [enrolBusy, setEnrolBusy] = useState(false);
-  const [enrolError, setEnrolError] = useState<string | null>(null);
-  const [enrolNotice, setEnrolNotice] = useState<string | null>(null);
 
   // --- Section A: assign opportunities ---
   const [studentId, setStudentId] = useState('');
@@ -121,7 +114,7 @@ const CoordinatorInternshipEngagement: React.FC = () => {
   const loadStudents = useCallback(async () => {
     setStudentsError(null);
     try {
-      const rows = await studentEnrolmentService.myStudents();
+      const rows = await studentEnrolmentService.atMyInstitution();
       setStudents(rows || []);
     } catch (err) {
       setStudentsError(errMessage(err, t('Failed to load enrolled students.', 'تعذّر تحميل الطلاب المسجّلين.')));
@@ -132,33 +125,6 @@ const CoordinatorInternshipEngagement: React.FC = () => {
   }, [isRTL]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);
-
-  const enrolStudent = async () => {
-    const uid = enrolUserId.trim();
-    const institution = enrolInstitution.trim();
-    if (!uid || !institution) return;
-    setEnrolBusy(true);
-    setEnrolError(null);
-    setEnrolNotice(null);
-    try {
-      await studentEnrolmentService.enrol({
-        user_id: uid,
-        institution,
-        program: enrolProgram.trim() || undefined,
-        graduation_date: enrolGradDate.trim() || undefined,
-      });
-      setEnrolNotice(t('Student enrolled.', 'تم تسجيل الطالب.'));
-      setEnrolUserId('');
-      setEnrolInstitution('');
-      setEnrolProgram('');
-      setEnrolGradDate('');
-      await loadStudents();
-    } catch (err) {
-      setEnrolError(errMessage(err, t('Failed to enrol this student.', 'تعذّر تسجيل هذا الطالب.')));
-    } finally {
-      setEnrolBusy(false);
-    }
-  };
 
   const loadOpportunities = async (id?: string) => {
     const sid = (id ?? studentId).trim();
@@ -321,58 +287,11 @@ const CoordinatorInternshipEngagement: React.FC = () => {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ---------- Section: my students ---------- */}
-      <h2 style={sectionTitle}>{t('My Students', 'طلابي')}</h2>
+      <h2 style={sectionTitle}>{t('Students at my institution', 'طلاب مؤسستي')}</h2>
       <p style={sectionDesc}>
-        {t('Enrol the students you coordinate, then assign internship opportunities to them below.',
-           'سجّل الطلاب الذين تشرف عليهم، ثم أسند لهم فرص التدريب العملي أدناه.')}
+        {t('These students were enrolled by an academic advisor at your institution. Assign internship opportunities to them below.',
+           'تم تسجيل هؤلاء الطلاب من قِبل مستشار أكاديمي في مؤسستك. أسند لهم فرص التدريب العملي أدناه.')}
       </p>
-
-      {/* Enrol a student */}
-      <div style={{ background: brand.primarySurface, borderRadius: 10, padding: 16, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>
-          <UserPlus size={16} style={{ color: brand.primary }} />
-          {t('Enrol a student', 'تسجيل طالب')}
-        </div>
-
-        {enrolError && <div style={errorBox}><AlertCircle size={16} /><span>{enrolError}</span></div>}
-        {enrolNotice && <div style={successBox}><CheckCircle2 size={16} /><span>{enrolNotice}</span></div>}
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
-          <input
-            value={enrolUserId}
-            onChange={e => setEnrolUserId(e.target.value)}
-            placeholder={t('Student Emirates ID *', 'رقم الهوية الإماراتية للطالب *')}
-            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
-          />
-          <input
-            value={enrolInstitution}
-            onChange={e => setEnrolInstitution(e.target.value)}
-            placeholder={t('Institution *', 'المؤسسة التعليمية *')}
-            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
-          />
-          <input
-            value={enrolProgram}
-            onChange={e => setEnrolProgram(e.target.value)}
-            placeholder={t('Program', 'البرنامج')}
-            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
-          />
-          <input
-            type="date"
-            value={enrolGradDate}
-            onChange={e => setEnrolGradDate(e.target.value)}
-            title={t('Graduation date', 'تاريخ التخرج')}
-            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
-          />
-        </div>
-        <button
-          onClick={enrolStudent}
-          disabled={!enrolUserId.trim() || !enrolInstitution.trim() || enrolBusy}
-          style={{ ...btnStyle('primary'), display: 'inline-flex', alignItems: 'center', gap: 6, opacity: !enrolUserId.trim() || !enrolInstitution.trim() || enrolBusy ? 0.6 : 1 }}
-        >
-          {enrolBusy ? <Loader2 className="animate-spin" size={14} /> : <UserPlus size={14} />}
-          {t('Enrol student', 'تسجيل الطالب')}
-        </button>
-      </div>
 
       {/* Enrolled students list */}
       {studentsError && <div style={errorBox}><AlertCircle size={16} /><span>{studentsError}</span></div>}
@@ -383,7 +302,7 @@ const CoordinatorInternshipEngagement: React.FC = () => {
         </div>
       ) : students.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 28, color: brand.textSecondary, fontSize: 13 }}>
-          <p>{t('No enrolled students yet — enrol one above.', 'لا يوجد طلاب مسجّلون بعد — سجّل طالبًا أعلاه.')}</p>
+          <p>{t('No enrolled students at your institution yet — an academic advisor enrols them.', 'لا يوجد طلاب مسجّلون في مؤسستك بعد — يقوم المستشار الأكاديمي بتسجيلهم.')}</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
@@ -442,7 +361,7 @@ const CoordinatorInternshipEngagement: React.FC = () => {
 
       {students.length === 0 && (
         <div style={{ textAlign: 'center', padding: 28, color: brand.textSecondary, fontSize: 13 }}>
-          <p>{t('No enrolled students yet — enrol one above.', 'لا يوجد طلاب مسجّلون بعد — سجّل طالبًا أعلاه.')}</p>
+          <p>{t('No enrolled students at your institution yet — an academic advisor enrols them.', 'لا يوجد طلاب مسجّلون في مؤسستك بعد — يقوم المستشار الأكاديمي بتسجيلهم.')}</p>
         </div>
       )}
 

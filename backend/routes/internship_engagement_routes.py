@@ -320,16 +320,20 @@ def coordinator_propose():
     student = execute_query("SELECT id FROM users WHERE id = %s", (student_id,), fetch_one=True)
     if not student:
         return jsonify({'success': False, 'message': 'Student not found'}), 404
-    # Phase B: a coordinator may only propose to THEIR enrolled students (admin bypass).
-    if not (resolve_roles() & ADMIN_ROLES):
-        link = execute_query(
-            "SELECT 1 FROM advisor_student_assignments a JOIN students s ON s.user_id = a.student_id "
-            "WHERE a.advisor_id = %s AND a.student_id = %s AND COALESCE(a.status,'') <> 'inactive' "
-            "AND COALESCE(s.status,'') <> 'withdrawn' LIMIT 1",
-            (_me(), student_id), fetch_one=True)
-        if not link:
+    # A coordinator may only propose to a student enrolled at an institution they
+    # are staff of. Enrolment itself is owned by the advisor (2026-07-25 reshape);
+    # admin and education_operator are unscoped.
+    if not (resolve_roles() & (ADMIN_ROLES | {'education_operator'})):
+        ok = execute_query(
+            "SELECT 1 FROM students s "
+            "JOIN institution_staff st ON st.institution_id = s.institution_id "
+            "WHERE s.user_id = %s AND st.user_id = %s AND st.staff_role = 'coordinator' "
+            "AND st.status = 'active' AND COALESCE(s.status,'') <> 'withdrawn' LIMIT 1",
+            (student_id, _me()), fetch_one=True)
+        if not ok:
             return jsonify({'success': False,
-                            'message': 'Not your enrolled student — enrol/assign them first via /api/students/enrol'}), 403
+                            'message': 'Not a student at an institution you coordinate — the student '
+                                       'must be enrolled (by an advisor) at your institution first.'}), 403
     eng, err = _upsert_engagement(internship_id, student_id, 'coordinator', coordinator_id=_me())
     if err:
         return err
