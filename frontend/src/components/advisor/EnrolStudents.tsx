@@ -152,22 +152,6 @@ const EnrolStudents: React.FC = () => {
     } finally { setBBusy(false); }
   };
 
-  // ----- admin: create institution -----
-  const [newInst, setNewInst] = useState('');
-  const [newInstBusy, setNewInstBusy] = useState(false);
-  const createInstitution = async () => {
-    if (!newInst.trim()) return;
-    setNewInstBusy(true);
-    try {
-      const created = await studentEnrolmentService.createInstitution({ name: newInst.trim() });
-      setNewInst('');
-      await loadInstitutions();
-      if (created?.id) setInstitutionId(created.id);
-    } catch (e) {
-      setInstError(errMessage(e, t('Failed to create institution.', 'تعذّر إنشاء المؤسسة.')));
-    } finally { setNewInstBusy(false); }
-  };
-
   const card: React.CSSProperties = {
     background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 12, padding: 18, marginBottom: 18,
   };
@@ -191,23 +175,13 @@ const EnrolStudents: React.FC = () => {
         ) : institutions.length === 0 ? (
           <p style={{ fontSize: 13, color: brand.textSecondary }}>
             {isUnscoped
-              ? t('No institutions yet — create one below.', 'لا توجد مؤسسات بعد — أنشئ واحدة أدناه.')
+              ? t('No institutions yet — create one under Education Operator → Institutions & Staff.', 'لا توجد مؤسسات بعد — أنشئ واحدة من مشغل التعليم ← المؤسسات والطاقم.')
               : t('You are not bound to any institution. Ask an operator to add you as an advisor.', 'لست مرتبطًا بأي مؤسسة. اطلب من المشغّل إضافتك كمستشار.')}
           </p>
         ) : (
           <select value={institutionId} onChange={(e) => setInstitutionId(Number(e.target.value))} style={field}>
             {institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
           </select>
-        )}
-        {isUnscoped && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <input value={newInst} onChange={(e) => setNewInst(e.target.value)}
-              placeholder={t('New institution name', 'اسم مؤسسة جديدة')} style={field} />
-            <button onClick={createInstitution} disabled={!newInst.trim() || newInstBusy} style={btn('ghost')}>
-              {newInstBusy ? <Loader2 className="animate-spin" size={14} /> : <Building2 size={14} />}
-              {t('Add', 'إضافة')}
-            </button>
-          </div>
         )}
       </div>
 

@@ -419,6 +419,37 @@ def add_institution_staff(institution_id):
                              'staff_role': staff_role}}), 201
 
 
+@student_enrolment_bp.route('/institutions/<int:institution_id>/staff', methods=['GET'])
+@require_roles(*_INSTITUTION_ADMIN)
+def list_institution_staff(institution_id):
+    """Active advisors/coordinators bound to an institution (operator setup view)."""
+    rows = execute_query(
+        """SELECT st.user_id, COALESCE(u.full_name, st.user_id) AS full_name,
+                  st.staff_role, st.status
+           FROM institution_staff st LEFT JOIN users u ON u.id = st.user_id
+           WHERE st.institution_id = %s AND st.status = 'active'
+           ORDER BY st.staff_role, full_name""",
+        (institution_id,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@student_enrolment_bp.route('/institutions/<int:institution_id>/staff/<user_id>', methods=['DELETE'])
+@require_roles(*_INSTITUTION_ADMIN)
+def remove_institution_staff(institution_id, user_id):
+    """Deactivate a staff binding (the person's secondary role is left intact —
+    they may staff another institution). Optional ?staff_role= narrows it."""
+    staff_role = (request.args.get('staff_role') or '').strip()
+    q = ("UPDATE institution_staff SET status = 'inactive' "
+         "WHERE institution_id = %s AND user_id = %s")
+    params = [institution_id, str(user_id).strip()]
+    if staff_role in ('advisor', 'coordinator'):
+        q += " AND staff_role = %s"
+        params.append(staff_role)
+    execute_query(q, tuple(params), fetch_all=False)
+    return jsonify({'success': True, 'message': 'Staff binding deactivated',
+                    'data': {'institution_id': institution_id, 'user_id': str(user_id).strip()}})
+
+
 @student_enrolment_bp.route('/<user_id>', methods=['GET'])
 @require_roles(*INSTITUTION_ROLES)
 def student_record(user_id):
