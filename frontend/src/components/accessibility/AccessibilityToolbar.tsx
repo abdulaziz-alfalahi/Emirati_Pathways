@@ -36,7 +36,7 @@ interface AccessibilitySettings {
 }
 
 export const AccessibilityToolbar: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -173,24 +173,7 @@ export const AccessibilityToolbar: React.FC = () => {
 
         <DropdownMenuSeparator className="bg-ehrdc-neutral-light" />
 
-        {/* Theme Selection */}
-        <DropdownMenuLabel className="text-ehrdc-neutral-dark font-semibold mt-2">
-          {t('Display Theme', 'سمة العرض')}
-        </DropdownMenuLabel>
-        <div className="flex bg-slate-100 p-1 rounded-md mx-2 mb-2">
-          {(['light', 'dark', 'system'] as const).map((thm) => (
-            <button
-              key={thm}
-              onClick={() => setTheme(thm)}
-              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-sm capitalize transition-all ${theme === thm
-                ? 'bg-white text-ehrdc-teal shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-                }`}
-            >
-              {thm === 'light' ? t('Light', 'فاتح') : thm === 'dark' ? t('Dark', 'داكن') : t('System', 'النظام')}
-            </button>
-          ))}
-        </div>
+        {/* Theme selection removed — platform is light-only by design (CLAUDE.md; PR #82). */}
 
         <DropdownMenuSeparator className="bg-ehrdc-neutral-light" />
 
