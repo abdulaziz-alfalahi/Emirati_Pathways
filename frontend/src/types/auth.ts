@@ -124,7 +124,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'student': '/candidate-dashboard',
   'employer_admin': '/hr-dashboard',
   'recruiter': '/recruiter',
-  'training_provider': '/educator-dashboard',
+  'training_provider': '/training-center-dashboard',
   'parent': '/guardian-dashboard',
   'admin': '/admin-dashboard',
   'talent_operator': '/nafis-talent-dashboard',

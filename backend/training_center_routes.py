@@ -7,21 +7,29 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2, psycopg2.extras, os, json, logging
 
+try:
+    from backend.db_utils import execute_query
+    from backend.auth.access_control import (
+        require_roles, resolve_roles, PROFDEV_ROLES, TRAINING_ROLES,
+    )
+except ImportError:  # pragma: no cover
+    from db_utils import execute_query
+    from auth.access_control import (
+        require_roles, resolve_roles, PROFDEV_ROLES, TRAINING_ROLES,
+    )
+
 logger = logging.getLogger(__name__)
 training_center_bp = Blueprint('training_center', __name__, url_prefix='/api/training-center')
 
-# Roles permitted to operate a training center (manage courses, issue certificates).
-_TRAINING_ROLES = {'training_provider', 'training_center_rep', 'educator',
-                   'education_operator', 'admin', 'super_admin'}
-
 
 def _require_training_role():
-    """Return a (response, 403) if the caller isn't a training provider, else None."""
+    """Return a (response, 403) if the caller isn't a training provider, else None.
+    Resolves secondary_roles — operator-bound reps hold training_provider as a
+    SECONDARY role, so a primary-claim-only check would lock them out."""
     try:
-        role = (get_jwt() or {}).get('role', '')
+        if not (resolve_roles() & TRAINING_ROLES):
+            return jsonify({"error": "Forbidden - training provider access required"}), 403
     except Exception:
-        role = ''
-    if role not in _TRAINING_ROLES:
         return jsonify({"error": "Forbidden - training provider access required"}), 403
     return None
 
@@ -184,6 +192,101 @@ def issue_certificate():
     except Exception as e:
         conn.rollback(); conn.close()
         return jsonify({"error": str(e)}), 500
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Operator onboarding surface (Professional Dev Operator) — create/vet training
+# centers and bind their representatives. Mirrors the education-operator ↔
+# institution ↔ advisor model. Uses the shared execute_query access layer.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@training_center_bp.route('/centers', methods=['POST'])
+@require_roles(*PROFDEV_ROLES)
+def create_center():
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'name is required'}), 400
+    existing = execute_query("SELECT id, name FROM training_centers WHERE LOWER(name) = LOWER(%s)",
+                             (name,), fetch_one=True)
+    if existing:
+        return jsonify({'success': True, 'data': existing, 'message': 'Already exists'}), 200
+    row = execute_query(
+        "INSERT INTO training_centers (name, name_ar, accreditations, specializations, website, "
+        "emirate, status, created_by, approved_by, created_at) "
+        "VALUES (%s, %s, %s::jsonb, %s::jsonb, %s, %s, 'approved', %s, %s, NOW()) "
+        "RETURNING id, name, name_ar, website, emirate, status",
+        (name, data.get('name_ar'), json.dumps(data.get('accreditations') or []),
+         json.dumps(data.get('specializations') or []), data.get('website'), data.get('emirate'),
+         get_jwt_identity(), get_jwt_identity()), fetch_one=True)
+    return jsonify({'success': True, 'data': row, 'message': 'Training center created'}), 201
+
+
+@training_center_bp.route('/centers', methods=['GET'])
+@require_roles(*PROFDEV_ROLES)
+def list_centers():
+    rows = execute_query(
+        "SELECT id, name, name_ar, website, emirate, status FROM training_centers ORDER BY name") or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@training_center_bp.route('/centers/<int:center_id>/staff', methods=['GET'])
+@require_roles(*PROFDEV_ROLES)
+def list_center_staff(center_id):
+    rows = execute_query(
+        "SELECT st.user_id, COALESCE(u.full_name, st.user_id) AS full_name, st.staff_role, st.status "
+        "FROM training_center_staff st LEFT JOIN users u ON u.id = st.user_id "
+        "WHERE st.training_center_id = %s AND st.status = 'active' ORDER BY full_name",
+        (center_id,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@training_center_bp.route('/centers/<int:center_id>/staff', methods=['POST'])
+@require_roles(*PROFDEV_ROLES)
+def add_center_staff(center_id):
+    """Bind a user as a training-center representative AND grant the
+    training_provider role, so affiliation and role never drift apart."""
+    data = request.get_json() or {}
+    user_id = (data.get('user_id') or '').strip()
+    if not execute_query("SELECT id FROM training_centers WHERE id = %s", (center_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'Training center not found'}), 404
+    if not execute_query("SELECT id FROM users WHERE id = %s", (user_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    execute_query(
+        "INSERT INTO training_center_staff (user_id, training_center_id, staff_role, status, created_by, created_at) "
+        "VALUES (%s, %s, 'representative', 'active', %s, NOW()) "
+        "ON CONFLICT (user_id, training_center_id, staff_role) DO UPDATE SET status = 'active'",
+        (user_id, center_id, get_jwt_identity()), fetch_all=False)
+    execute_query(
+        "UPDATE users SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) "
+        "|| jsonb_build_array('training_provider') WHERE id = %s "
+        "AND NOT (COALESCE(secondary_roles, '[]'::jsonb) ? 'training_provider')",
+        (user_id,), fetch_all=False)
+    return jsonify({'success': True, 'message': f'{user_id} bound as representative',
+                    'data': {'user_id': user_id, 'training_center_id': center_id}}), 201
+
+
+@training_center_bp.route('/centers/<int:center_id>/staff/<user_id>', methods=['DELETE'])
+@require_roles(*PROFDEV_ROLES)
+def remove_center_staff(center_id, user_id):
+    """Deactivate a rep binding (role left intact — they may staff another center)."""
+    execute_query(
+        "UPDATE training_center_staff SET status = 'inactive' "
+        "WHERE training_center_id = %s AND user_id = %s",
+        (center_id, str(user_id).strip()), fetch_all=False)
+    return jsonify({'success': True, 'message': 'Representative removed'})
+
+
+@training_center_bp.route('/my-centers', methods=['GET'])
+@require_roles(*TRAINING_ROLES)
+def my_centers():
+    """The training centers the caller represents (for the provider dashboard)."""
+    rows = execute_query(
+        "SELECT c.id, c.name, c.name_ar, c.website, c.emirate, c.status "
+        "FROM training_center_staff st JOIN training_centers c ON c.id = st.training_center_id "
+        "WHERE st.user_id = %s AND st.status = 'active' ORDER BY c.name",
+        (get_jwt_identity(),)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
 
 @training_center_bp.route('/analytics', methods=['GET'])
 @jwt_required()
