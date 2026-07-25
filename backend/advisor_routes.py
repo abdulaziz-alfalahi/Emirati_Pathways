@@ -14,9 +14,9 @@ import os
 import json
 import logging
 try:
-    from backend.auth.access_control import resolve_roles
+    from backend.auth.access_control import resolve_roles, ADVISOR_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import resolve_roles
+    from auth.access_control import resolve_roles, ADVISOR_ROLES
 
 logger = logging.getLogger(__name__)
 advisor_bp = Blueprint('advisor', __name__, url_prefix='/api/advisor')
@@ -31,8 +31,9 @@ def get_db():
         return None
 
 
-# Roles permitted to act as an academic/career advisor.
-_ADVISOR_ROLES = {'advisor', 'admin', 'super_admin'}
+# Roles permitted to act as an academic/career advisor. Sourced from the central
+# role registry so it cannot drift from the platform-wide definition.
+_ADVISOR_ROLES = ADVISOR_ROLES
 
 
 def _require_advisor_role():
