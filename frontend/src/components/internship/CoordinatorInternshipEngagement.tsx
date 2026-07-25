@@ -3,7 +3,7 @@
 // InternshipCoordinatorDashboard.
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Briefcase, Search, Sparkles, CheckCircle2, AlertCircle, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Briefcase, Sparkles, CheckCircle2, AlertCircle, ClipboardList, ChevronDown, ChevronUp, Users, UserPlus } from 'lucide-react';
 import internshipEngagementService, {
   Engagement,
   Internship,
@@ -11,6 +11,7 @@ import internshipEngagementService, {
   Report,
   stageLabel,
 } from '@/services/internshipEngagementService';
+import studentEnrolmentService, { EnrolledStudent } from '@/services/studentEnrolmentService';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -59,6 +60,18 @@ const CoordinatorInternshipEngagement: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => (isRTL ? ar : en);
 
+  // --- Section: my students (enrolment) ---
+  const [students, setStudents] = useState<EnrolledStudent[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+  const [enrolUserId, setEnrolUserId] = useState('');
+  const [enrolInstitution, setEnrolInstitution] = useState('');
+  const [enrolProgram, setEnrolProgram] = useState('');
+  const [enrolGradDate, setEnrolGradDate] = useState('');
+  const [enrolBusy, setEnrolBusy] = useState(false);
+  const [enrolError, setEnrolError] = useState<string | null>(null);
+  const [enrolNotice, setEnrolNotice] = useState<string | null>(null);
+
   // --- Section A: assign opportunities ---
   const [studentId, setStudentId] = useState('');
   const [loadedStudentId, setLoadedStudentId] = useState<string | null>(null);
@@ -105,9 +118,57 @@ const CoordinatorInternshipEngagement: React.FC = () => {
 
   useEffect(() => { loadEngagements(); }, [loadEngagements]);
 
-  const loadOpportunities = async () => {
-    const sid = studentId.trim();
-    if (!sid) return;
+  const loadStudents = useCallback(async () => {
+    setStudentsError(null);
+    try {
+      const rows = await studentEnrolmentService.myStudents();
+      setStudents(rows || []);
+    } catch (err) {
+      setStudentsError(errMessage(err, t('Failed to load enrolled students.', 'تعذّر تحميل الطلاب المسجّلين.')));
+    } finally {
+      setStudentsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRTL]);
+
+  useEffect(() => { loadStudents(); }, [loadStudents]);
+
+  const enrolStudent = async () => {
+    const uid = enrolUserId.trim();
+    const institution = enrolInstitution.trim();
+    if (!uid || !institution) return;
+    setEnrolBusy(true);
+    setEnrolError(null);
+    setEnrolNotice(null);
+    try {
+      await studentEnrolmentService.enrol({
+        user_id: uid,
+        institution,
+        program: enrolProgram.trim() || undefined,
+        graduation_date: enrolGradDate.trim() || undefined,
+      });
+      setEnrolNotice(t('Student enrolled.', 'تم تسجيل الطالب.'));
+      setEnrolUserId('');
+      setEnrolInstitution('');
+      setEnrolProgram('');
+      setEnrolGradDate('');
+      await loadStudents();
+    } catch (err) {
+      setEnrolError(errMessage(err, t('Failed to enrol this student.', 'تعذّر تسجيل هذا الطالب.')));
+    } finally {
+      setEnrolBusy(false);
+    }
+  };
+
+  const loadOpportunities = async (id?: string) => {
+    const sid = (id ?? studentId).trim();
+    if (!sid) {
+      setOpportunities([]);
+      setLoadedStudentId(null);
+      setOppsError(null);
+      setAssignNotice(null);
+      return;
+    }
     setOppsLoading(true);
     setOppsError(null);
     setAssignNotice(null);
@@ -124,6 +185,12 @@ const CoordinatorInternshipEngagement: React.FC = () => {
     }
   };
 
+  const studentLabel = (uid: string | null) => {
+    if (!uid) return '';
+    const s = students.find(st => st.user_id === uid);
+    return s?.full_name || uid;
+  };
+
   const assign = async (internship: Internship) => {
     if (!loadedStudentId) return;
     setAssigningId(internship.id);
@@ -133,8 +200,8 @@ const CoordinatorInternshipEngagement: React.FC = () => {
       await internshipEngagementService.propose(internship.id, loadedStudentId);
       setAssignNotice(
         isRTL
-          ? `تم اقتراح «${internship.title_ar || internship.title}» للطالب ${loadedStudentId}.`
-          : `Proposed "${internship.title}" to student ${loadedStudentId}.`
+          ? `تم اقتراح «${internship.title_ar || internship.title}» للطالب ${studentLabel(loadedStudentId)}.`
+          : `Proposed "${internship.title}" to student ${studentLabel(loadedStudentId)}.`
       );
       await loadEngagements();
     } catch (err) {
@@ -253,33 +320,131 @@ const CoordinatorInternshipEngagement: React.FC = () => {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* ---------- Section: my students ---------- */}
+      <h2 style={sectionTitle}>{t('My Students', 'طلابي')}</h2>
+      <p style={sectionDesc}>
+        {t('Enrol the students you coordinate, then assign internship opportunities to them below.',
+           'سجّل الطلاب الذين تشرف عليهم، ثم أسند لهم فرص التدريب العملي أدناه.')}
+      </p>
+
+      {/* Enrol a student */}
+      <div style={{ background: brand.primarySurface, borderRadius: 10, padding: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>
+          <UserPlus size={16} style={{ color: brand.primary }} />
+          {t('Enrol a student', 'تسجيل طالب')}
+        </div>
+
+        {enrolError && <div style={errorBox}><AlertCircle size={16} /><span>{enrolError}</span></div>}
+        {enrolNotice && <div style={successBox}><CheckCircle2 size={16} /><span>{enrolNotice}</span></div>}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
+          <input
+            value={enrolUserId}
+            onChange={e => setEnrolUserId(e.target.value)}
+            placeholder={t('Student Emirates ID *', 'رقم الهوية الإماراتية للطالب *')}
+            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
+          />
+          <input
+            value={enrolInstitution}
+            onChange={e => setEnrolInstitution(e.target.value)}
+            placeholder={t('Institution *', 'المؤسسة التعليمية *')}
+            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
+          />
+          <input
+            value={enrolProgram}
+            onChange={e => setEnrolProgram(e.target.value)}
+            placeholder={t('Program', 'البرنامج')}
+            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
+          />
+          <input
+            type="date"
+            value={enrolGradDate}
+            onChange={e => setEnrolGradDate(e.target.value)}
+            title={t('Graduation date', 'تاريخ التخرج')}
+            style={{ ...fieldStyle, fontSize: 14, padding: '8px 12px' }}
+          />
+        </div>
+        <button
+          onClick={enrolStudent}
+          disabled={!enrolUserId.trim() || !enrolInstitution.trim() || enrolBusy}
+          style={{ ...btnStyle('primary'), display: 'inline-flex', alignItems: 'center', gap: 6, opacity: !enrolUserId.trim() || !enrolInstitution.trim() || enrolBusy ? 0.6 : 1 }}
+        >
+          {enrolBusy ? <Loader2 className="animate-spin" size={14} /> : <UserPlus size={14} />}
+          {t('Enrol student', 'تسجيل الطالب')}
+        </button>
+      </div>
+
+      {/* Enrolled students list */}
+      {studentsError && <div style={errorBox}><AlertCircle size={16} /><span>{studentsError}</span></div>}
+
+      {studentsLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <Loader2 className="animate-spin" size={28} style={{ color: brand.primary }} />
+        </div>
+      ) : students.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 28, color: brand.textSecondary, fontSize: 13 }}>
+          <p>{t('No enrolled students yet — enrol one above.', 'لا يوجد طلاب مسجّلون بعد — سجّل طالبًا أعلاه.')}</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+          {students.map(s => (
+            <div key={s.user_id} style={{ background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 10, padding: 14, display: 'flex', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Users size={18} style={{ color: brand.primary }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>
+                    {s.full_name || s.user_id}
+                  </h4>
+                  {s.status && (
+                    <span style={pillStyle(SUBSTATUS_STYLES[s.status] || { bg: brand.primarySurface, color: brand.primary })}>
+                      {s.status}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 4 }}>
+                  {[s.institution, s.program].filter(Boolean).join(' · ') || t('No institution on file', 'لا توجد مؤسسة مسجّلة')}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ---------- Section A: assign opportunities ---------- */}
+      <div style={{ borderTop: `1px solid ${brand.border}`, margin: '28px 0 24px' }} />
       <h2 style={sectionTitle}>{t('Assign Opportunities', 'إسناد الفرص')}</h2>
       <p style={sectionDesc}>
-        {t('Look up internship opportunities for a student and propose an assignment. The recruiter and the student both need to approve.',
-           'ابحث عن فرص التدريب العملي لطالب واقترح إسنادًا. يجب أن يوافق كل من مسؤول التوظيف والطالب.')}
+        {t('Pick one of your enrolled students to see internship opportunities and propose an assignment. The recruiter and the student both need to approve.',
+           'اختر أحد طلابك المسجّلين لعرض فرص التدريب العملي واقتراح إسناد. يجب أن يوافق كل من مسؤول التوظيف والطالب.')}
       </p>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input
+        <select
           value={studentId}
-          onChange={e => setStudentId(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') loadOpportunities(); }}
-          placeholder={t('Student Emirates ID', 'رقم الهوية الإماراتية للطالب')}
+          onChange={e => { const v = e.target.value; setStudentId(v); loadOpportunities(v); }}
+          disabled={students.length === 0}
           style={{
             flex: '1 1 260px', maxWidth: 360, fontSize: 14, padding: '8px 12px',
-            border: `1px solid ${brand.border}`, borderRadius: 8, color: brand.textPrimary, outline: 'none',
+            border: `1px solid ${brand.border}`, borderRadius: 8, color: brand.textPrimary,
+            outline: 'none', background: '#fff', opacity: students.length === 0 ? 0.6 : 1,
           }}
-        />
-        <button
-          onClick={loadOpportunities}
-          disabled={!studentId.trim() || oppsLoading}
-          style={{ ...btnStyle('primary'), display: 'flex', alignItems: 'center', gap: 6, opacity: !studentId.trim() || oppsLoading ? 0.6 : 1 }}
         >
-          {oppsLoading ? <Loader2 className="animate-spin" size={14} /> : <Search size={14} />}
-          {t('Load opportunities', 'تحميل الفرص')}
-        </button>
+          <option value="">{t('Select an enrolled student…', 'اختر طالبًا مسجّلًا…')}</option>
+          {students.map(s => (
+            <option key={s.user_id} value={s.user_id}>
+              {(s.full_name || s.user_id) + (s.institution ? ` — ${s.institution}` : '')}
+            </option>
+          ))}
+        </select>
       </div>
+
+      {students.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 28, color: brand.textSecondary, fontSize: 13 }}>
+          <p>{t('No enrolled students yet — enrol one above.', 'لا يوجد طلاب مسجّلون بعد — سجّل طالبًا أعلاه.')}</p>
+        </div>
+      )}
 
       {oppsError && <div style={errorBox}><AlertCircle size={16} /><span>{oppsError}</span></div>}
       {assignNotice && <div style={successBox}><CheckCircle2 size={16} /><span>{assignNotice}</span></div>}
@@ -288,9 +453,9 @@ const CoordinatorInternshipEngagement: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
           <Loader2 className="animate-spin" size={32} style={{ color: brand.primary }} />
         </div>
-      ) : loadedStudentId === null ? (
+      ) : students.length === 0 ? null : loadedStudentId === null ? (
         <div style={{ textAlign: 'center', padding: 32, color: brand.textSecondary, fontSize: 13 }}>
-          <p>{t('Enter a student Emirates ID to see available opportunities.', 'أدخل رقم الهوية الإماراتية للطالب لعرض الفرص المتاحة.')}</p>
+          <p>{t('Select a student above to see available opportunities.', 'اختر طالبًا أعلاه لعرض الفرص المتاحة.')}</p>
         </div>
       ) : opportunities.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 32, color: brand.textSecondary, fontSize: 13 }}>
