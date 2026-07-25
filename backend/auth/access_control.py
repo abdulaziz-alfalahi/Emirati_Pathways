@@ -63,6 +63,12 @@ ENROLMENT_ROLES = ADMIN_ROLES | {'advisor'}
 # the coordinator (lists/assigns, no enrol) and the education_operator (oversight
 # + institution setup).
 INSTITUTION_ROLES = ADMIN_ROLES | {'education_operator', 'advisor', 'internship_coordinator'}
+# Professional-development operator: platform-side role that vets/onboards training
+# centers and curates their programs (analogous to education_operator for schools).
+PROFDEV_ROLES = ADMIN_ROLES | {'professional_dev_operator'}
+# Training-center-side staff: representatives who list their center's programs.
+# Bound to a center via training_center_staff (the binding grants the role).
+TRAINING_ROLES = ADMIN_ROLES | {'training_provider', 'training_center_rep'}
 # Governance / oversight surfaces (metrics, demographics, executive analytics).
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 
