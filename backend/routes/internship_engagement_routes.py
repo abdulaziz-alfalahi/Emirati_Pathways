@@ -190,6 +190,49 @@ def _parties(e, include_parents=False):
     return ids
 
 
+def _stamp_internship_passport(e):
+    """Phase C: on completion, add a VERIFIED 'internship' stamp to the student's
+    career passport (get-or-create) — the durable record that carries from student
+    into candidate. Idempotent per engagement; best-effort (never blocks complete)."""
+    try:
+        student_id = (e.get('user_id') or '').strip()
+        if not student_id:
+            return
+        p = execute_query("SELECT id FROM career_passports WHERE user_id = %s",
+                          (student_id,), fetch_one=True)
+        if not p:
+            p = execute_query("INSERT INTO career_passports (user_id) VALUES (%s) RETURNING id",
+                              (student_id,), fetch_one=True)
+        pid = (p or {}).get('id')
+        if not pid:
+            return
+        if execute_query("SELECT 1 FROM passport_stamps WHERE passport_id = %s "
+                         "AND metadata->>'engagement_id' = %s LIMIT 1",
+                         (pid, str(e['id'])), fetch_one=True):
+            return  # already stamped this engagement
+        title = e.get('internship_title') or 'Internship'
+        company = (e.get('internship_company') or '').strip()
+        placement = _placement_id(e['id'])
+        avg = execute_query(
+            "SELECT ROUND(AVG(rating)::numeric, 1) AS r FROM internship_evaluations "
+            "WHERE placement_id = %s AND rating IS NOT NULL", (placement,), fetch_one=True
+        ) if placement else None
+        meta = {'engagement_id': str(e['id']), 'internship_id': e.get('internship_id'), 'company': company}
+        if avg and avg.get('r') is not None:
+            meta['avg_rating'] = float(avg['r'])
+        execute_query(
+            """INSERT INTO passport_stamps (id, passport_id, category, title_en, title_ar,
+                   description_en, description_ar, issuer, icon, color, earned_at, verified, metadata)
+               VALUES (gen_random_uuid(), %s, 'internship', %s, %s, %s, %s, %s,
+                       'briefcase', '#006E6D', NOW(), TRUE, %s::jsonb)""",
+            (pid, title, title, f"Completed internship at {company}".strip(),
+             f"أكمل تدريباً في {company}".strip(), company, json.dumps(meta)), fetch_all=False)
+        execute_query("UPDATE career_passports SET total_stamps = COALESCE(total_stamps, 0) + 1, "
+                      "updated_at = NOW() WHERE id = %s", (pid,), fetch_all=False)
+    except Exception as ex:  # pragma: no cover
+        logger.warning(f"internship passport stamp failed: {ex}")
+
+
 def _upsert_engagement(internship_id, student_id, initiated_by, coordinator_id=None):
     """Create — or reset a previously-declined — engagement for (internship, student).
     Returns (engagement, error_response)."""
@@ -609,6 +652,7 @@ def complete_engagement(eng_id):
         "UPDATE internship_placements SET status='completed', end_date=COALESCE(end_date, NOW()) "
         "WHERE application_id=%s", (eng_id,), fetch_all=False)
     ef = _get_engagement(eng_id)
+    _stamp_internship_passport(ef)  # Phase C: verified credential on the passport
     _notify(_parties(ef, include_parents=True) - {_me()}, 'internship_completed', 'Internship completed',
             f"The internship \"{(ef or {}).get('internship_title', '')}\" is complete.",
             {'engagement_id': eng_id})
