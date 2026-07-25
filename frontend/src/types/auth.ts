@@ -68,6 +68,7 @@ export type GrowthOperatorDomain =
 
 export type UserRole =
   | 'candidate'
+  | 'student'
   | 'employer_admin'
   | 'recruiter'
   | 'training_provider'
@@ -93,6 +94,7 @@ export type UserRole =
 
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'candidate': 'Candidate',
+  'student': 'Student',
   'employer_admin': 'Employer',
   'recruiter': 'Recruiter',
   'training_provider': 'Training Center Representative',
@@ -119,6 +121,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
 
 export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'candidate': '/candidate-dashboard',
+  'student': '/candidate-dashboard',
   'employer_admin': '/hr-dashboard',
   'recruiter': '/recruiter',
   'training_provider': '/educator-dashboard',
