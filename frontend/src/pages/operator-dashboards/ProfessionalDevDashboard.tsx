@@ -205,7 +205,7 @@ const ProfessionalDevDashboard: React.FC = () => {
 
     const filteredCourses = courses.filter(c => {
         if (courseFilter === 'published') return c.status === 'published';
-        if (courseFilter === 'pending') return c.status === 'pending';
+        if (courseFilter === 'submitted') return c.status === 'submitted';
         return true;
     });
 
@@ -232,7 +232,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                                 <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.provider}</div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 500, background: brand.tealBg, color: brand.tealText }}>{c.course_type}</span>
+                                <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 500, background: brand.tealBg, color: brand.tealText }}>{c.category}</span>
                                 <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary }}>{c.enrolled || 0} {t('enrolled', 'مسجل')}</span>
                             </div>
                         </div>
@@ -262,7 +262,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                     {[
                         { id: 'all', label: t('All', 'الكل') },
                         { id: 'published', label: t('Published', 'منشور') },
-                        { id: 'pending', label: t('Pending', 'قيد الانتظار') }
+                        { id: 'submitted', label: t('Pending Review', 'قيد المراجعة') }
                     ].map((f) => (
                         <button key={f.id} onClick={() => setCourseFilter(f.id)} style={{
                             padding: '8px 16px', borderRadius: 20,
@@ -283,7 +283,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (c.name_ar || c.name) : c.name}</span>
-                            <span style={{ fontSize: 11, background: brand.tealBg, color: brand.tealText, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>{c.course_type}</span>
+                            <span style={{ fontSize: 11, background: brand.tealBg, color: brand.tealText, padding: '2px 8px', borderRadius: 10, fontWeight: 500 }}>{c.category}</span>
                         </div>
                         <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.provider} • {c.enrolled || 0} {t('enrolled', 'مسجل')}</div>
                     </div>
@@ -291,7 +291,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                         <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 500, background: c.status === 'published' ? brand.greenBg : brand.yellowBg, color: c.status === 'published' ? brand.greenText : brand.yellowText }}>
                             {c.status === 'published' ? t('Published', 'منشور') : t('Pending Approval', 'بانتظار الموافقة')}
                         </span>
-                        {c.status === 'pending' ? (
+                        {c.status === 'submitted' ? (
                             <button onClick={() => handleApproveCourse(c.id)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', borderRadius: 6, border: 'none', background: brand.primary, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                                 <Check size={13} /> {t('Approve', 'موافق')}
                             </button>
