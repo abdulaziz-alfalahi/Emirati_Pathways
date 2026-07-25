@@ -225,9 +225,11 @@ export const statusLabel = (raw: string | null | undefined, lang: Lang): string 
 // Domain from src/types/auth.ts ROLE_DISPLAY_NAMES + the role maps in
 // UserMenu.tsx / HybridGovernmentNavFixed.tsx.
 const ROLES: Domain = {
-  candidate: { en: 'Job Seeker', ar: 'باحث عن عمل' },
-  'job seeker': { en: 'Job Seeker', ar: 'باحث عن عمل' },
-  jobseeker: { en: 'Job Seeker', ar: 'باحث عن عمل' },
+  // The workforce role is `candidate`; job-seeking is now an availability_status,
+  // not the role name (identity rework 2026-07). Label it "Candidate".
+  candidate: { en: 'Candidate', ar: 'مرشح' },
+  'job seeker': { en: 'Candidate', ar: 'مرشح' },
+  jobseeker: { en: 'Candidate', ar: 'مرشح' },
   'job seekers': { en: 'Job Seekers', ar: 'باحثون عن عمل' },
   recruiter: { en: 'Recruiter', ar: 'مسؤول توظيف' },
   employer: { en: 'Employer', ar: 'صاحب عمل' },
