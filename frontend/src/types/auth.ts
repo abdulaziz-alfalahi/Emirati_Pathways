@@ -228,6 +228,11 @@ export const normalizeRole = (role: string): UserRole | string => {
   if (['candidate', 'job seeker', 'job_seeker', 'jobseeker'].includes(lowerRole)) {
     return 'candidate';
   }
+  // The dedicated `student` role, folding legacy school_student/university_student.
+  if (['student', 'school_student', 'university_student',
+       'school student', 'university student'].includes(lowerRole)) {
+    return 'student';
+  }
   if (['employer_admin', 'hr manager', 'hr_manager'].includes(lowerRole)) {
     return 'employer_admin';
   }

@@ -31,6 +31,20 @@ ROLE_OPERATOR_MAP = {
     'career_services_operator': ['admin', 'admin'],
 }
 
+# The role-request UI uses Title-Case labels, but guards use canonical lowercase
+# role ids. Canonicalise the STUDENT family so a "Student" request grants the same
+# `student` role that enrolment grants. (The workforce/operator labels — Job Seeker,
+# HR/Recruiter, Educator, Mentor, ... — are a separate, broader normalisation.)
+REQUEST_ROLE_CANONICAL = {
+    'Student': 'student',
+    'school_student': 'student',
+    'university_student': 'student',
+}
+
+
+def _canon_requested_role(r):
+    return REQUEST_ROLE_CANONICAL.get(r, r)
+
 
 
 @role_bp.route('/institutions/search', methods=['GET'])
@@ -116,11 +130,12 @@ def submit_role_request():
         # ─── Auto-approve Job Seeker ───
         if ROLE_OPERATOR_MAP.get(requested_role) is None:
             # Directly add to secondary_roles without creating a request
+            _store_role = _canon_requested_role(requested_role)
             cur.execute("""
-                UPDATE users 
+                UPDATE users
                 SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) || jsonb_build_array(%s)
                 WHERE id = %s AND (secondary_roles IS NULL OR NOT jsonb_exists(secondary_roles, %s))
-            """, (requested_role, user_id, requested_role))
+            """, (_store_role, user_id, _store_role))
             conn.commit()
             
             logger.info(f"Auto-approved role '{requested_role}' for user {user_id}")
@@ -354,8 +369,8 @@ def action_request(request_id):
         # If Approved, ADD role to user's secondary_roles
         if action == 'approve':
             user_id = req['user_id']
-            role_to_add = req['requested_role']
-            
+            role_to_add = _canon_requested_role(req['requested_role'])
+
             # Use array_append to add to list if not exists, handling NULLs
             cur.execute("""
                 UPDATE users 
@@ -545,9 +560,9 @@ def operator_action_request(request_id):
         # If Approved, ADD role to user's secondary_roles
         if action == 'approve':
             user_id = req['user_id']
-            role_to_add = req['requested_role']
+            role_to_add = _canon_requested_role(req['requested_role'])
             cur.execute("""
-                UPDATE users 
+                UPDATE users
                 SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) || jsonb_build_array(%s)
                 WHERE id = %s AND (secondary_roles IS NULL OR NOT jsonb_exists(secondary_roles, %s))
             """, (role_to_add, user_id, role_to_add))

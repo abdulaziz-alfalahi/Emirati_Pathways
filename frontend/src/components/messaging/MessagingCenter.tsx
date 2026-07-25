@@ -115,7 +115,7 @@ const MessagingCenter: React.FC = () => {
   const getAvailableContactRoles = (): UserRole[] => {
     let availableRoles: UserRole[] = [];
     
-    if (roles.includes('school_student') || roles.includes('university_student')) {
+    if (roles.includes('student') || roles.includes('school_student') || roles.includes('university_student')) {
       availableRoles = [
         'school_student', 'university_student', 'jobseeker',
         'full_time_employee', 'part_time_employee', 'gig_worker',
