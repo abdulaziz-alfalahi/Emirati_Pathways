@@ -39,7 +39,7 @@ const MobileQuickActions: React.FC = () => {
     ];
 
     // Add role-specific actions
-    if (roles.includes('school_student') || roles.includes('university_student')) {
+    if (roles.includes('student') || roles.includes('school_student') || roles.includes('university_student')) {
       baseActions.push({
         icon: GraduationCap,
         label: 'Scholarships',

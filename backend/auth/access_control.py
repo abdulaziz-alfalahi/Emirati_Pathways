@@ -107,6 +107,11 @@ def resolve_roles():
     # guards never fail closed during the transition.
     if 'job_seeker' in roles:
         roles.add('candidate')
+    # The student role has legacy/label variants (school_student, university_student,
+    # and the Title-Case 'Student' the role-request UI grants). Fold them to the
+    # canonical `student` so guards match regardless of how it was granted.
+    if roles & {'school_student', 'university_student', 'Student'}:
+        roles.add('student')
     return roles
 
 
