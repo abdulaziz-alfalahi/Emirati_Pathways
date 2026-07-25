@@ -42,7 +42,9 @@ const UserMenu: React.FC = () => {
 
   // Role label helper based on language
   const getRoleLabel = (role: string): string => {
-    const key = role.toLowerCase();
+    // Normalize first so a stale 'job_seeker' (pre-migration session) or a legacy
+    // 'university_student' resolves to candidate/student before the label lookup.
+    const key = normalizeRole(role) as string;
     if (isRTL) {
       return ROLE_DISPLAY_NAMES_AR[key] || ROLE_DISPLAY_NAMES[key as UserRole] || role;
     }
@@ -116,7 +118,7 @@ const UserMenu: React.FC = () => {
 
   const getCurrentRole = () => {
     const role = getUserRole();
-    return role ? getRoleLabel(role) : t('Job Seeker', 'باحث عن عمل');
+    return role ? getRoleLabel(role) : t('Candidate', 'مرشح');
   };
 
   const getRoleIcon = (role: string): string => {

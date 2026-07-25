@@ -126,7 +126,8 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
 
     // Helper Configuration
     const roleConfigs: Record<string, any> = {
-        'candidate': { label: 'Job Seeker', icon: User, color: 'bg-teal-500' },
+        'candidate': { label: 'Candidate', icon: User, color: 'bg-teal-500' },
+        'student': { label: 'Student', icon: GraduationCap, color: 'bg-teal-600' },
         'recruiter': { label: 'Recruiter', icon: Users, color: 'bg-green-500' },
         'employer_admin': { label: 'Employer', icon: Users, color: 'bg-green-600' },
         'training_provider': { label: 'Training Center', icon: GraduationCap, color: 'bg-purple-500' },
