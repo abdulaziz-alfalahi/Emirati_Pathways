@@ -4,9 +4,10 @@ import { getDisplayName } from '@/utils/nameUtils';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
-    GraduationCap, Building2, BookOpen, Users, Settings, Search,
+    GraduationCap, Building2, BookOpen, Users, Settings,
     Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle
 } from 'lucide-react';
+import InstitutionsManager from '@/components/education/InstitutionsManager';
 
 const brand = {
     primary: '#6D28D9', secondary: '#7C3AED', accent: '#A78BFA',
@@ -31,7 +32,6 @@ const EducationOperatorDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('overview');
 
     const [stats, setStats] = useState<any>({ institutions: 0, active_programs: 0, enrolled_students: 0, pending_approvals: 0, enrollment_by_type: [] });
-    const [institutions, setInstitutions] = useState<any[]>([]);
     const [pendingPrograms, setPendingPrograms] = useState<any[]>([]);
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
     const [roleRequests, setRoleRequests] = useState<any[]>([]);
@@ -51,9 +51,6 @@ const EducationOperatorDashboard: React.FC = () => {
                     ]);
                     if (statsResp.ok && !cancelled) setStats(await statsResp.json());
                     if (pendingResp.ok && !cancelled) { const d = await pendingResp.json(); setPendingPrograms(d.programs || []); }
-                } else if (activeTab === 'institutions') {
-                    const resp = await fetch(`${API_BASE}/api/education/operator/institutions`);
-                    if (resp.ok && !cancelled) { const d = await resp.json(); setInstitutions(d.institutions || []); }
                 } else if (activeTab === 'programs') {
                     const resp = await fetch(`${API_BASE}/api/education/university-programs`);
                     if (resp.ok && !cancelled) { const d = await resp.json(); setPendingPrograms(d.programs || []); }
@@ -72,7 +69,7 @@ const EducationOperatorDashboard: React.FC = () => {
 
     const tabs = [
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: TrendingUp },
-        { id: 'institutions', label: t('Institutions', 'المؤسسات'), icon: Building2 },
+        { id: 'institutions', label: t('Institutions & Staff', 'المؤسسات والطاقم'), icon: Building2 },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: BookOpen },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
         { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
@@ -138,40 +135,6 @@ const EducationOperatorDashboard: React.FC = () => {
                     })}
                 </div>
             </div>
-        </div>
-    );
-
-    const renderInstitutions = () => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flex: 1, position: 'relative', maxWidth: 400 }}>
-                    <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: brand.textSecondary }} />
-                    <input placeholder={t('Search institutions...', 'بحث عن مؤسسات...')} style={{ width: '100%', padding: '10px 12px 10px 36px', border: `1px solid ${brand.border}`, borderRadius: 8, fontSize: 14, outline: 'none' }} />
-                </div>
-                <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: brand.primary, color: 'white', border: 'none', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    <Plus size={14} /> {t('Add Institution', 'إضافة مؤسسة')}
-                </button>
-            </div>
-            {institutions.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('No institutions found', 'لم يتم العثور على مؤسسات')}</div>}
-            {institutions.map((inst: any, i: number) => (
-                <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ background: brand.purpleBg, borderRadius: 10, padding: 12, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Building2 size={20} color={brand.purpleText} /></div>
-                        <div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (inst.name_ar || inst.name) : inst.name}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{inst.type || 'University'} • {inst.location} • {inst.program_count || 0} {t('programs', 'برنامج')} • {(inst.student_count || 0).toLocaleString()} {t('students', 'طالب')}</div>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 500, background: inst.is_active ? brand.greenBg : brand.yellowBg, color: inst.is_active ? brand.greenText : brand.yellowText }}>
-                            {inst.is_active ? t('Active', 'نشط') : t('Pending', 'قيد الانتظار')}
-                        </span>
-                        <button style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.primary, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-                            <Eye size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} /> {t('Manage', 'إدارة')}
-                        </button>
-                    </div>
-                </div>
-            ))}
         </div>
     );
 
@@ -456,7 +419,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 </div>
                 {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
                 {!loading && activeTab === 'overview' && renderOverview()}
-                {!loading && activeTab === 'institutions' && renderInstitutions()}
+                {activeTab === 'institutions' && <InstitutionsManager />}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
                 {!loading && activeTab === 'requests' && renderRoleRequests()}
