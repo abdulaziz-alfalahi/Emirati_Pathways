@@ -32,7 +32,8 @@ const RoleSwitcher: React.FC = () => {
       'educational_institution': 'Educational Institution',
       'mentor': 'Mentor',
       'career_advisor': 'Career Advisor',
-      'candidate': 'Job Seeker',
+      'candidate': 'Candidate',
+      'student': 'Student',
       'school_student': 'School Student',
       'university_student': 'University Student',
       'jobseeker': 'Job Seeker',
@@ -42,7 +43,6 @@ const RoleSwitcher: React.FC = () => {
       'gig_worker': 'Gig Worker',
       'lifelong_learner': 'Lifelong Learner',
       'entrepreneur': 'Entrepreneur',
-      'candidate': 'Retiree',
       'parent': 'Parent',
       'training_center': 'Training Center',
       'assessment_center': 'Assessment Center',
@@ -64,6 +64,7 @@ const RoleSwitcher: React.FC = () => {
       'mentor': '🧭',
       'career_advisor': '💡',
       'candidate': '👤',
+      'student': '🎓',
       'school_student': '📚',
       'university_student': '🎓',
       'jobseeker': '🔍',
@@ -72,8 +73,7 @@ const RoleSwitcher: React.FC = () => {
       'part_time_employee': '⏰',
       'gig_worker': '🚀',
       'lifelong_learner': '📖',
-      'entrepreneur': '💡',
-      'candidate': '🌅'
+      'entrepreneur': '💡'
     };
     
     return roleIcons[role] || '👤';
