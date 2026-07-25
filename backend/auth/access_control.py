@@ -50,13 +50,18 @@ CAREER_SERVICES_ROLES = ADMIN_ROLES | {'career_services_operator', 'call_center_
 STUDENT_ROLES = ADMIN_ROLES | {'student'}
 # Academic/career advisor — institution-side role that owns the student caseload.
 ADVISOR_ROLES = ADMIN_ROLES | {'advisor'}
-# Who may enrol a person (grant the `student` role). The Academic Advisor is the
-# institution-side role present from the start of the student journey; the
-# internship_coordinator was intentionally removed (2026-07-25) — it only enters
-# at the internship stage and now consumes an already-enrolled student pool.
-ENROLMENT_ROLES = ADMIN_ROLES | {'education_operator', 'advisor'}
+# Who may enrol a person (grant the `student` role). Enrolment is an
+# institution-side act owned by the Academic Advisor (bound to the institution).
+# The internship_coordinator was removed (2026-07-25 — it only enters at the
+# internship stage), and the education_operator was removed too (2026-07-25 —
+# it is a platform-side setup/oversight role; it provisions institutions and
+# binds advisors, but does not do institution-side data entry). An operator who
+# must enrol binds itself as an advisor at that institution. Only admin is an
+# unscoped enroller (break-glass).
+ENROLMENT_ROLES = ADMIN_ROLES | {'advisor'}
 # Any institution-side staff (read/list students of one's institution). Includes
-# the coordinator, who lists/assigns but no longer enrols.
+# the coordinator (lists/assigns, no enrol) and the education_operator (oversight
+# + institution setup).
 INSTITUTION_ROLES = ADMIN_ROLES | {'education_operator', 'advisor', 'internship_coordinator'}
 # Governance / oversight surfaces (metrics, demographics, executive analytics).
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
