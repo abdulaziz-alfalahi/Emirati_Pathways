@@ -5,7 +5,7 @@ Blueprint prefix: /api/career-services
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 import psycopg2
 import psycopg2.extras
 import os
@@ -870,6 +870,20 @@ def get_portfolio(user_id):
         return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        # Phase C: portfolio visibility follows availability_status. The owner always
+        # sees their own; others see nothing when the owner is 'not_visible'.
+        viewer = None
+        try:
+            verify_jwt_in_request(optional=True)
+            viewer = get_jwt_identity()
+        except Exception:
+            viewer = None
+        cur.execute("SELECT availability_status FROM users WHERE id = %s", (user_id,))
+        av = cur.fetchone()
+        if av and av.get('availability_status') == 'not_visible' and str(viewer or '') != str(user_id):
+            cur.close()
+            conn.close()
+            return jsonify({"projects": [], "total": 0, "hidden": True}), 200
         cur.execute("SELECT * FROM portfolio_projects WHERE user_id = %s AND is_public = true ORDER BY completion_date DESC", (user_id,))
         rows = cur.fetchall()
         cur.close()
