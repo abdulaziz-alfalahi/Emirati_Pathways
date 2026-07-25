@@ -37,20 +37,14 @@ export function ThemeProvider({
     if (typeof window === "undefined") return
     
     const root = window.document.documentElement
-    
+
+    // The EHRDC platform is LIGHT-ONLY by design (CLAUDE.md; PR #82). The UI has
+    // no maintained dark styling, so honoring a 'dark'/'system' preference blacks
+    // out the page and hides dark-on-dark controls (e.g. the accessibility icon).
+    // Always apply light regardless of stored/system preference. (High-contrast
+    // is a separate a11y class and is unaffected.)
     root.classList.remove("light", "dark")
-    
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-      
-      root.classList.add(systemTheme)
-      return
-    }
-    
-    root.classList.add(theme)
+    root.classList.add("light")
   }, [theme])
 
   const value = {
