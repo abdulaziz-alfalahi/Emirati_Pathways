@@ -510,7 +510,20 @@ class AICareerGuidanceEngine:
                 "government_sector_readiness": True,
                 "vision_2071_alignment": True
             }
-            
+
+            # Ground the generic learning modules in REAL, published training programs
+            # from the platform catalogue (clickable/enrollable), resolved from the
+            # student's actual skill gaps.
+            try:
+                try:
+                    from backend.ai_assessment_intelligence import find_published_programs_for_skills
+                except ImportError:
+                    from ai_assessment_intelligence import find_published_programs_for_skills
+                gap_names = [g.skill_name for g in (skill_gaps or []) if getattr(g, 'skill_name', None)]
+                learning_plan["recommended_programs"] = find_published_programs_for_skills(gap_names)
+            except Exception as _e:  # pragma: no cover
+                learning_plan["recommended_programs"] = []
+
             return learning_plan
             
         except Exception as e:

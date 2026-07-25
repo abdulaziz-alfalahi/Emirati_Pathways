@@ -220,25 +220,27 @@ class RecommendationEngine:
         if self.db:
             try:
                 cursor = self.db.cursor()
+                # Only published programs are recommendable (submitted/rejected are
+                # not visible to candidates — training catalogue lifecycle, 2026-07).
                 cursor.execute("""
                     SELECT id, title, title_ar, provider, duration, level, url
                     FROM training_programs
-                    WHERE (LOWER(title) LIKE %s OR LOWER(skills_covered) LIKE %s)
-                      AND active = TRUE
-                    ORDER BY relevance_score DESC LIMIT 5
+                    WHERE (LOWER(title) LIKE %s OR LOWER(skills_covered::text) LIKE %s)
+                      AND active = TRUE AND COALESCE(status, 'published') = 'published'
+                    ORDER BY relevance_score DESC NULLS LAST LIMIT 5
                 """, (f"%{skill_name.lower()}%", f"%{skill_name.lower()}%"))
                 rows = cursor.fetchall()
                 if rows:
-                    columns = [d[0] for d in cursor.description]
                     return [{
                         "type": RecommendationType.TRAINING.value,
+                        "program_id": row[0],
                         "title": row[1],
                         "title_ar": row[2] or row[1],
                         "description": f"Offered by {row[3]}",
                         "provider": row[3],
                         "effort": row[4] or "2-4 weeks",
                         "level": row[5] or "intermediate",
-                        "action_url": row[6] or "/training"
+                        "action_url": row[6] or f"/training?program={row[0]}"
                     } for row in rows]
             except Exception:
                 pass
