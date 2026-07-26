@@ -1001,7 +1001,7 @@ def my_mentors():
     return jsonify({'success': True, 'data': rows, 'total': len(rows)})
 
 
-@mentor_bp.route('/requests/<int:matching_id>/decision', methods=['POST'])
+@mentor_bp.route('/requests/<matching_id>/decision', methods=['POST'])
 @require_roles(*_MENTOR_ROLES)
 def mentor_decide_request(matching_id):
     """The requested mentor accepts/declines. Only that mentor may decide."""
