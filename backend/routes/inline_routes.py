@@ -101,8 +101,37 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             return jsonify({'success': True, 'data': []}), 200
 
     @_app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
+    @require_roles(*RECRUITER_ROLES)
     def get_job_applicants(job_id):
-        """Get applicants for a specific job (Robust ID handling)"""
+        """Get applicants for a specific job (Robust ID handling).
+
+        Authz (Cluster-1 review 2026-07-26): this endpoint had NO auth at all —
+        anyone could read a job's full applicant pipeline (names, emails, CVs).
+        Now recruiter-gated AND company-scoped: the caller must be an accepted
+        team member (or growth operator) of the company that owns the job, or
+        an admin — the same rule as /api/applications/job/<id> (audit H1).
+        """
+        # Company scoping (fail closed).
+        if not (resolve_roles() & ADMIN_ROLES):
+            try:
+                from backend.workspace_middleware import get_company_context
+            except ImportError:  # pragma: no cover
+                from workspace_middleware import get_company_context
+            _me = str(get_jwt_identity())
+            _job = execute_query(
+                "SELECT company_id FROM job_postings WHERE id::text = %s OR jd_id = %s LIMIT 1",
+                (str(job_id), str(job_id)), fetch_one=True)
+            _company_id = (_job or {}).get('company_id')
+            _ok = False
+            if _company_id:
+                try:
+                    _ctx = get_company_context(_me, str(_company_id))
+                    _ok = bool(_ctx and (_ctx.get('is_member') or _ctx.get('is_growth_operator')))
+                except Exception as _e:  # never fail open
+                    logger.warning(f"applicants company-context check failed: {_e}")
+                    _ok = False
+            if not _ok:
+                return jsonify({'success': False, 'message': 'Access denied'}), 403
         try:
             print(f"DEBUG: get_job_applicants CALLED for job_id={job_id}")
             # Use args for GET request
