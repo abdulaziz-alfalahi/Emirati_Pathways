@@ -1,11 +1,15 @@
 import os
 import json
 import logging
+import secrets
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import uuid
+
+# Roles an HR manager may hand out through a team invite link (never admin/owner).
+_INVITABLE_TEAM_ROLES = {'recruiter', 'hr_manager', 'hr'}
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +64,97 @@ class CompanyTeamSystem:
         except Exception as e:
             logger.error(f"Error getting team members: {e}")
             return []
+
+    def create_team_invitation(self, company_id: str, role: str, invited_by_user_id) -> Dict[str, Any]:
+        """Create a copyable magic-link invitation to join this workspace as a
+        teammate. The link works for a brand-new user (they register via UAE Pass
+        and are added on redemption) or an existing one. Carries company_id — never
+        a name."""
+        role = (role or 'recruiter').strip()
+        if role not in _INVITABLE_TEAM_ROLES:
+            return {'success': False, 'message': f'Role must be one of {sorted(_INVITABLE_TEAM_ROLES)}'}
+        try:
+            with self.get_db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT id, COALESCE(name, company_name) AS name FROM companies WHERE id = %s",
+                                (company_id,))
+                    company = cur.fetchone()
+                    if not company:
+                        return {'success': False, 'message': 'Company not found'}
+                    token = secrets.token_urlsafe(32)
+                    cur.execute(
+                        "INSERT INTO team_invitations (token, company_id, role, invited_by) "
+                        "VALUES (%s, %s, %s, %s) RETURNING id",
+                        (token, company_id, role, str(invited_by_user_id)))
+                    conn.commit()
+                    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                    return {'success': True, 'token': token, 'role': role,
+                            'company_name': company['name'],
+                            'invite_link': f"{frontend_url}/join-team/{token}"}
+        except Exception as e:
+            logger.error(f"create_team_invitation failed: {e}")
+            return {'success': False, 'message': str(e)}
+
+    def get_team_invitation(self, token: str) -> Optional[Dict[str, Any]]:
+        """Public preview of a team invite (company name + role), or None."""
+        try:
+            with self.get_db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(
+                        "SELECT ti.role, ti.status, ti.is_used, ti.expires_at, "
+                        "COALESCE(c.name, c.company_name) AS company_name "
+                        "FROM team_invitations ti JOIN companies c ON c.id = ti.company_id "
+                        "WHERE ti.token = %s", (token,))
+                    row = cur.fetchone()
+                    if not row:
+                        return None
+                    valid = (not row['is_used']) and row['status'] == 'pending' and \
+                        (row['expires_at'] is None or row['expires_at'] > datetime.now(row['expires_at'].tzinfo))
+                    return {'company_name': row['company_name'], 'role': row['role'], 'valid': valid}
+        except Exception as e:
+            logger.error(f"get_team_invitation failed: {e}")
+            return None
+
+    def redeem_team_invitation_for_user(self, token: str, user_id: str, is_new_user: bool = False) -> Dict[str, Any]:
+        """Add the (UAE-Pass-proven or logged-in) user to the invited workspace.
+        Mirrors the company-invitation redemption: team membership + the role as a
+        secondary role; a brand-new account takes the role as primary."""
+        with self.get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id, company_id, role, is_used, status, expires_at "
+                            "FROM team_invitations WHERE token = %s", (token,))
+                inv = cur.fetchone()
+                if not inv or inv['is_used'] or inv['status'] != 'pending' or \
+                        (inv['expires_at'] is not None and inv['expires_at'] <= datetime.now(inv['expires_at'].tzinfo)):
+                    raise ValueError("Invalid, expired, or already used invitation link")
+                company_id, role = inv['company_id'], inv['role']
+                # Team membership (the row the ACL reads) — reactivate a soft-removed row.
+                cur.execute("SELECT id, invitation_status FROM company_team_members "
+                            "WHERE company_id = %s AND user_id = %s", (company_id, user_id))
+                existing = cur.fetchone()
+                if existing:
+                    cur.execute("UPDATE company_team_members SET role = %s, invitation_status = 'accepted', "
+                                "invited_by = %s, joined_at = NOW(), updated_at = NOW() WHERE id = %s",
+                                (role, str(inv.get('invited_by') or ''), existing['id']))
+                else:
+                    cur.execute(
+                        "INSERT INTO company_team_members (company_id, user_id, role, invitation_status, "
+                        "joined_at, created_at, updated_at) VALUES (%s, %s, %s, 'accepted', NOW(), NOW(), NOW())",
+                        (company_id, user_id, role))
+                # Role on the user: new accounts take it as primary; existing keep
+                # their primary and gain it as a secondary role.
+                if is_new_user:
+                    cur.execute("UPDATE users SET role = %s, user_type = %s WHERE id = %s", (role, role, user_id))
+                else:
+                    cur.execute(
+                        "UPDATE users SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) "
+                        "|| jsonb_build_array(%s) WHERE id = %s "
+                        "AND NOT (COALESCE(secondary_roles, '[]'::jsonb) ? %s)", (role, user_id, role))
+                cur.execute("UPDATE team_invitations SET is_used = TRUE, status = 'accepted', "
+                            "created_user_id = %s, accepted_at = NOW() WHERE token = %s", (user_id, token))
+                conn.commit()
+                return {'success': True, 'company_id': str(company_id), 'role': role,
+                        'primary_role': role if is_new_user else None}
 
     def invite_member(self, company_id: str, email: str, role: str, invited_by_user_id: int) -> Dict[str, Any]:
         """

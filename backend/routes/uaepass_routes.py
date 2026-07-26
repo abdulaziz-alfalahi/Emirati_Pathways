@@ -321,6 +321,16 @@ def uaepass_callback():
                     invitation_result = NafisTalentSystem().redeem_seeker_invitation_for_user(
                         invitation_token, user_id, is_new_user=is_new_user
                     )
+                elif invitation_type == 'team':
+                    # HR-manager team invite — join the platform + the workspace
+                    # with the invited role (carries company_id, resolved by token).
+                    try:
+                        from backend.company_team_system import CompanyTeamSystem
+                    except ImportError:
+                        from company_team_system import CompanyTeamSystem
+                    invitation_result = CompanyTeamSystem().redeem_team_invitation_for_user(
+                        invitation_token, user_id, is_new_user=is_new_user
+                    )
                 else:
                     from growth_system import GrowthSystem
                     invitation_result = GrowthSystem().redeem_invitation_for_user(

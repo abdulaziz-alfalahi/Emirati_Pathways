@@ -43,6 +43,53 @@ def get_team_members():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@company_team_bp.route('/invite-link', methods=['POST', 'OPTIONS'])
+@cross_origin()
+@jwt_required()
+def create_invite_link():
+    """HR manager generates a copyable magic link to invite a teammate to join the
+    platform + this workspace (works for brand-new or existing users). Requires the
+    workspace.manage_employees permission on the target company."""
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json(silent=True) or {}
+        company_id = data.get('company_id')
+        role = data.get('role', 'recruiter')
+        if not company_id:
+            return jsonify({'success': False, 'error': 'company_id is required'}), 400
+        context = get_company_context(current_user_id, company_id)
+        if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
+            return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
+        result = team_system.create_team_invitation(company_id, role, current_user_id)
+        return jsonify(result), (200 if result.get('success') else 400)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@company_team_bp.route('/invitation/<token>/preview', methods=['GET'])
+@cross_origin()
+def preview_team_invitation(token):
+    """Public preview of a team invite link (company + role) — no auth."""
+    inv = team_system.get_team_invitation(token)
+    if not inv:
+        return jsonify({'success': False, 'error': 'Invitation not found'}), 404
+    return jsonify({'success': True, 'invitation': inv}), 200
+
+
+@company_team_bp.route('/invitation/<token>/redeem', methods=['POST', 'OPTIONS'])
+@cross_origin()
+@jwt_required()
+def redeem_team_invitation(token):
+    """An already-signed-in user joins the workspace via the link."""
+    try:
+        result = team_system.redeem_team_invitation_for_user(token, str(get_jwt_identity()), is_new_user=False)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 409
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @company_team_bp.route('/invite', methods=['POST', 'OPTIONS'])
 @cross_origin()
 @jwt_required()
