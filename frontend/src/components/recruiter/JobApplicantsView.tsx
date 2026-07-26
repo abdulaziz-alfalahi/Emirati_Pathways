@@ -25,7 +25,8 @@ import {
   ChevronDown,
   ChevronUp,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  ClipboardCheck
 } from 'lucide-react';
 import {
   Select,
@@ -243,6 +244,26 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
   const handleScheduleInterview = (applicant: Applicant) => {
     setInterviewCandidateId(applicant.candidate_id);
     setIsInterviewDialogOpen(true);
+  };
+
+  // Request a skills assessment of this candidate (Rework B). The candidate must
+  // consent before it proceeds to an assessor; results are shared back on consent+completion.
+  const [assessingId, setAssessingId] = useState<string | null>(null);
+  const requestAssessment = async (applicant: Applicant) => {
+    if (assessingId) return;
+    setAssessingId(applicant.application_id);
+    try {
+      await restClient.post('/api/assessor/recruiter/request', {
+        candidate_id: applicant.candidate_id,
+        title: `${job?.title || 'Role'} — Skills Assessment`,
+      });
+      toast({ title: 'Assessment requested', description: 'The candidate will be asked to consent before it proceeds.' });
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Please try again.';
+      toast({ title: 'Could not request assessment', description: msg, variant: 'destructive' });
+    } finally {
+      setAssessingId(null);
+    }
   };
 
   // No closing brace here!
@@ -511,6 +532,14 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           </div>
                         </div>
                       )}
+
+                      {/* Actions */}
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Button size="sm" variant="outline" onClick={() => requestAssessment(applicant)} disabled={assessingId === applicant.application_id}>
+                          <ClipboardCheck className="h-4 w-4 mr-1" />
+                          {assessingId === applicant.application_id ? 'Requesting…' : 'Request assessment'}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>

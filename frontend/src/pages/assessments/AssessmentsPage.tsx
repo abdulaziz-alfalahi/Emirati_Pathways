@@ -55,6 +55,7 @@ const AssessmentsPage: React.FC = () => {
     const [totalSkills, setTotalSkills] = useState(0);
     const [myRequests, setMyRequests] = useState<any[]>([]);
     const [requestingTitle, setRequestingTitle] = useState<string | null>(null);
+    const [consentingId, setConsentingId] = useState<number | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -143,6 +144,23 @@ const AssessmentsPage: React.FC = () => {
             }
         } finally {
             setRequestingTitle(null);
+        }
+    };
+
+    // Recruiter-requested assessments need the candidate's consent before they
+    // proceed to an assessor (Rework B). grant → enters the assessor pool; deny → cancelled.
+    const decideConsent = async (id: number, decision: 'grant' | 'deny') => {
+        if (!id || consentingId) return;
+        setConsentingId(id);
+        try {
+            await restClient.post(`/api/skills-development/assessments/${id}/consent`, { decision });
+            const res = await restClient.get('/api/skills-development/assessments/my-requests');
+            const d = res.data as any;
+            if (Array.isArray(d?.data)) setMyRequests(d.data);
+        } catch (e) {
+            console.warn('Consent decision failed', e);
+        } finally {
+            setConsentingId(null);
         }
     };
 
@@ -281,7 +299,14 @@ const AssessmentsPage: React.FC = () => {
                         {myRequests.map((r: any, i: number) => (
                             <div key={r.id ?? i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                                 <div>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{r.title}</div>
+                                    <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>
+                                        {r.title}
+                                        {r.recruiter_requested && (
+                                            <span style={{ marginInlineStart: 8, fontSize: 10, fontWeight: 600, color: brand.blueText, background: brand.blue, padding: '2px 8px', borderRadius: 99 }}>
+                                                {t('Recruiter-requested', 'بطلب من مسؤول التوظيف')}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>
                                         {r.scheduled_at
                                             ? `${t('Scheduled for', 'مجدول في')} ${formatDate(r.scheduled_at)}`
@@ -291,7 +316,23 @@ const AssessmentsPage: React.FC = () => {
                                             : ''}
                                     </div>
                                 </div>
-                                {requestStatusChip(r)}
+                                {r.recruiter_requested && r.consent_status === 'pending' ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: 11, color: brand.amberText }}>
+                                            {t('Your consent is needed to share results', 'مطلوبة موافقتك لمشاركة النتائج')}
+                                        </span>
+                                        <button onClick={() => decideConsent(r.id, 'grant')} disabled={consentingId === r.id}
+                                            style={{ background: brand.green, color: brand.greenText, border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                            {consentingId === r.id ? <Loader2 className="animate-spin" size={12} /> : null}{t('Consent', 'أوافق')}
+                                        </button>
+                                        <button onClick={() => decideConsent(r.id, 'deny')} disabled={consentingId === r.id}
+                                            style={{ background: '#fff', color: brand.redText, border: `1px solid ${brand.border}`, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                                            {t('Decline', 'أرفض')}
+                                        </button>
+                                    </div>
+                                ) : r.consent_status === 'denied' ? (
+                                    <span style={{ background: brand.red, color: brand.redText, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99 }}>{t('Declined', 'مرفوض')}</span>
+                                ) : requestStatusChip(r)}
                             </div>
                         ))}
                     </div>
