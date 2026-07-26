@@ -22,10 +22,10 @@ from flask_jwt_extended import get_jwt_identity
 
 try:
     from backend.db_utils import execute_query
-    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, RECRUITER_ROLES
 except ImportError:  # pragma: no cover
     from db_utils import execute_query
-    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES
+    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, RECRUITER_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,9 @@ def applications():
                       u.email AS candidate_email
                FROM assessments a
                LEFT JOIN users u ON u.id = a.candidate_id
-               WHERE a.assessor_id = %s OR a.assessor_id IS NULL
+               WHERE (a.assessor_id = %s OR a.assessor_id IS NULL)
+                 AND COALESCE(a.consent_status, 'not_required') <> 'pending'
+                 AND COALESCE(a.status, '') NOT IN ('cancelled', 'denied')
                ORDER BY a.created_at DESC LIMIT 100""", (me,)) or []
         return jsonify({'success': True, 'applications': [{
             'id': r['id'],
@@ -430,3 +432,64 @@ def assessor_my_centers():
         "AND c.business_type='assessment_center' ORDER BY name",
         (get_jwt_identity(),)) or []
     return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Recruiter-requested assessments (Rework B). A recruiter requests an assessment
+# of a candidate; it enters the assessor pool ONLY after the candidate consents
+# (assessment outcomes are PII). The requesting recruiter can view the outcome
+# once consent is granted and the assessment is completed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@assessor_dash_bp.route('/recruiter/request', methods=['POST'])
+@require_roles(*RECRUITER_ROLES)
+def recruiter_request_assessment():
+    data = request.get_json() or {}
+    candidate_id = (data.get('candidate_id') or '').strip()
+    title = (str(data.get('title') or '').strip())[:250]
+    if not candidate_id or not title:
+        return jsonify({'success': False, 'message': 'candidate_id and title are required'}), 400
+    if not execute_query("SELECT id FROM users WHERE id = %s", (candidate_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+    dup = execute_query(
+        "SELECT id FROM assessments WHERE candidate_id = %s AND assessment_title = %s "
+        "AND status IN ('pending','scheduled','in_progress')", (candidate_id, title), fetch_one=True)
+    if dup:
+        return jsonify({'success': False, 'message': 'An open assessment for this candidate/title already exists',
+                        'assessment_id': dup['id']}), 409
+    row = execute_query(
+        """INSERT INTO assessments (assessment_code, candidate_id, assessment_title, assessment_purpose,
+               status, requested_by, consent_status, created_at, updated_at)
+           VALUES ('REQ-' || to_char(NOW(), 'YYYYMMDDHH24MISS'), %s, %s,
+                   'Recruiter-requested assessment', 'pending', %s, 'pending', NOW(), NOW())
+           RETURNING id""",
+        (candidate_id, title, get_jwt_identity()), fetch_one=True)
+    return jsonify({'success': True,
+                    'message': 'Assessment requested — awaiting the candidate\'s consent',
+                    'data': {'id': (row or {}).get('id'), 'consent_status': 'pending'}}), 201
+
+
+@assessor_dash_bp.route('/recruiter/requests', methods=['GET'])
+@require_roles(*RECRUITER_ROLES)
+def recruiter_my_requests():
+    """Assessments this recruiter requested. Outcome (score/result) is shown ONLY
+    once the candidate has consented and the assessment is completed."""
+    rows = execute_query(
+        """SELECT a.id, a.assessment_title, a.status, a.consent_status,
+                  a.percentage_score, a.pass_fail_status,
+                  a.candidate_id, COALESCE(u.full_name, a.candidate_id) AS candidate_name
+           FROM assessments a LEFT JOIN users u ON u.id = a.candidate_id
+           WHERE a.requested_by = %s ORDER BY a.created_at DESC""",
+        (get_jwt_identity(),)) or []
+    out = []
+    for r in rows:
+        shareable = (r.get('consent_status') == 'granted' and r.get('status') == 'completed')
+        out.append({
+            'id': r['id'], 'title': r['assessment_title'], 'candidate_id': r['candidate_id'],
+            'candidate_name': r['candidate_name'], 'status': r['status'],
+            'consent_status': r['consent_status'],
+            # PII gate: never expose the score without consent + completion.
+            'score': float(r['percentage_score']) if (shareable and r['percentage_score'] is not None) else None,
+            'result': r['pass_fail_status'] if shareable else None,
+        })
+    return jsonify({'success': True, 'data': out, 'total': len(out)})
