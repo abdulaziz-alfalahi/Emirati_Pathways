@@ -15,6 +15,7 @@ candidate holds a passport.
 """
 
 import logging
+import re
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
@@ -191,21 +192,54 @@ def complete(app_id):
                    feedback = %s, assessor_id = COALESCE(assessor_id, %s), updated_at = NOW()
                WHERE id::text = %s""",
             (score, score or 0, feedback, me, str(app_id)), fetch_all=False)
+        # Verified skills only count for a PASSING assessment — a failed
+        # assessment must not stamp a "verified skill" or mark it present in the
+        # skill graph (previously it stamped regardless of pass/fail).
+        passed = score >= 60
         stamped = 0
-        if skills and row.get('candidate_id'):
+        skills_verified = 0
+        cand = row.get('candidate_id')
+        if passed and skills and cand:
             passport = execute_query("SELECT id FROM career_passports WHERE user_id = %s",
-                                     (row['candidate_id'],), fetch_one=True)
-            if passport:
-                for skill in skills:
+                                     (cand,), fetch_one=True)
+            if not passport:
+                passport = execute_query(
+                    "INSERT INTO career_passports (user_id) VALUES (%s) RETURNING id",
+                    (cand,), fetch_one=True)
+            for skill in skills:
+                name = skill.strip()
+                if passport:
                     execute_query(
                         """INSERT INTO passport_stamps (id, passport_id, category, title_en, title_ar,
                                description_en, issuer, icon, color, earned_at, verified)
                            VALUES (gen_random_uuid(), %s, 'skill', %s, %s,
                                    'Skill verified through a professional assessment',
                                    'Assessment verification', 'award', '#006E6D', NOW(), TRUE)""",
-                        (passport['id'], skill.strip(), skill.strip()), fetch_all=False)
+                        (passport['id'], name, name), fetch_all=False)
                     stamped += 1
-        return jsonify({'success': True, 'message': 'Evaluation completed', 'skills_stamped': stamped})
+                # Feed the skills graph so the verified skill flows into skill-gap
+                # analysis → training recommendations (closes the assessment→AI gap;
+                # the dormant SkillGraphEngine.update_skills_from_assessment bridge
+                # was never called by any route).
+                existing = execute_query(
+                    "SELECT id FROM user_skills WHERE user_id = %s AND LOWER(skill_name) = LOWER(%s)",
+                    (cand, name), fetch_one=True)
+                evidence = f"Assessment score: {score:.0f}"
+                if existing:
+                    execute_query(
+                        "UPDATE user_skills SET verified = TRUE, source = 'assessment', "
+                        "evidence = %s, last_assessed = NOW(), updated_at = NOW() WHERE id = %s",
+                        (evidence, existing['id']), fetch_all=False)
+                else:
+                    slug = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_') or name.lower()
+                    execute_query(
+                        "INSERT INTO user_skills (user_id, skill_id, skill_name, proficiency, "
+                        "source, verified, evidence, last_assessed, created_at, updated_at) "
+                        "VALUES (%s, %s, %s, 'intermediate', 'assessment', TRUE, %s, NOW(), NOW(), NOW())",
+                        (cand, slug, name, evidence), fetch_all=False)
+                skills_verified += 1
+        return jsonify({'success': True, 'message': 'Evaluation completed',
+                        'skills_stamped': stamped, 'skills_verified': skills_verified})
     except Exception as e:
         logger.error(f"assessor complete failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to complete evaluation'}), 500
