@@ -377,13 +377,16 @@ def enrol_assessor(center_id):
         "ON CONFLICT (company_id, user_id) DO UPDATE SET role='assessor', invitation_status='accepted', "
         "updated_at=NOW()",
         (str(center_id), user_id, get_jwt_identity()), fetch_all=False)
-    # certification profile (upsert by user_id)
+    # certification profile (upsert by user_id). specialization is a NOT NULL
+    # text[] column — normalise a string/list into a Postgres array.
+    spec = data.get('specialization')
+    spec_arr = spec if isinstance(spec, list) else ([spec] if spec else [])
     existing = execute_query("SELECT id FROM assessor_profiles WHERE user_id = %s", (user_id,), fetch_one=True)
     if existing:
         execute_query(
             "UPDATE assessor_profiles SET certification_level=%s, specialization=%s, "
             "nqf_authorization_level=%s, years_experience=%s, is_active=TRUE, updated_at=NOW() WHERE user_id=%s",
-            (data.get('certification_level'), data.get('specialization'),
+            (data.get('certification_level'), spec_arr,
              data.get('nqf_authorization_level'), data.get('years_experience'), user_id), fetch_all=False)
     else:
         execute_query(
@@ -391,7 +394,7 @@ def enrol_assessor(center_id):
             "nqf_authorization_level, years_experience, is_active, created_at, updated_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, TRUE, NOW(), NOW())",
             (user_id, _assessor_code(user_id), data.get('certification_level'),
-             data.get('specialization'), data.get('nqf_authorization_level'),
+             spec_arr, data.get('nqf_authorization_level'),
              data.get('years_experience')), fetch_all=False)
     # grant the assessor role (idempotent secondary role)
     execute_query(
