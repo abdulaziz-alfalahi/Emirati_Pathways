@@ -36,6 +36,10 @@ logger = logging.getLogger(__name__)
 _RECRUITER_ROLES = {'recruiter', 'employer_admin', 'hr_manager', 'admin', 'super_admin'}
 
 from backend.db_utils import get_db, execute_query, DATABASE_CONFIG
+try:
+    from backend.verified_skills import verified_skill_names
+except ImportError:  # pragma: no cover
+    from verified_skills import verified_skill_names
 
 try:
     import pdfplumber
@@ -258,19 +262,33 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     elif isinstance(s, dict):
                         all_candidate_skills.add(str(s.get('name', s.get('skill', ''))).lower())
 
+                # Assessment-verified skills (Rework E): count an assessed skill even
+                # if the CV omits it, and give a capped bonus so passing an assessment
+                # demonstrably improves the match. Strictly additive — never lowers
+                # an existing score.
+                verified = verified_skill_names(candidate.get('user_id') or candidate.get('candidate_id'))
+                all_candidate_skills |= verified
+
                 # Calculate skill match (60% of total score)
                 if required_skills:
                     max_score += 60
                     matched_skills = 0
+                    verified_matches = 0
                     for req_skill in required_skills:
                         req_lower = req_skill.lower() if isinstance(req_skill, str) else str(req_skill).lower()
                         # Check if any candidate skill contains or matches the required skill
                         for cand_skill in all_candidate_skills:
                             if req_lower in cand_skill or cand_skill in req_lower:
                                 matched_skills += 1
+                                if cand_skill in verified or any(
+                                        (v in cand_skill or cand_skill in v) for v in verified):
+                                    verified_matches += 1
                                 break
                     if len(required_skills) > 0:
                         score += (matched_skills / len(required_skills)) * 60
+                    # Verification bonus: up to +10 for required skills backed by an
+                    # assessment (added to score, not max_score; final is capped at 100).
+                    score += min(verified_matches * 4, 10)
                 else:
                     # No required skills specified, give baseline score
                     score += 40
