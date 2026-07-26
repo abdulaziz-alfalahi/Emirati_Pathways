@@ -34,6 +34,9 @@ export const TeamManagementTab: React.FC = () => {
     const [inviteOpen, setInviteOpen] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [inviteLink, setInviteLink] = useState('');
+    const [linkBusy, setLinkBusy] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const { user } = useAuth();
 
@@ -90,6 +93,30 @@ export const TeamManagementTab: React.FC = () => {
         }
     };
 
+    const handleCreateLink = async () => {
+        setError(''); setLinkBusy(true);
+        try {
+            const res = await restClient.post(`/api/company/team/invite-link`, {
+                company_id: COMPANY_ID, role: 'recruiter'
+            });
+            if (res.data?.success && res.data.invite_link) {
+                setInviteLink(res.data.invite_link);
+            } else {
+                setError(res.data?.error || res.data?.message || 'Could not generate a link');
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || err.response?.data?.message || 'Could not generate a link');
+        } finally {
+            setLinkBusy(false);
+        }
+    };
+
+    const handleCopyLink = async () => {
+        try { await navigator.clipboard.writeText(inviteLink); } catch (e) { /* fallback: field is selectable */ }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+    };
+
     const handleRemove = async (userId: string) => {
         // Implementation omitted for brevity in MVP, but wired up conceptually
         if (!confirm("Are you sure you want to remove this member?")) return;
@@ -140,17 +167,39 @@ export const TeamManagementTab: React.FC = () => {
                                 {success && <Alert className="text-green-600 border-green-200 bg-green-50"><AlertDescription>{success}</AlertDescription></Alert>}
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Email Address</label>
+                                    <label className="text-sm font-medium">Invite by link</label>
+                                    <p className="text-xs text-slate-500">
+                                        Share this link with anyone to join the platform <b>and</b> your workspace as a Recruiter — even if they haven't registered yet.
+                                    </p>
+                                    {!inviteLink ? (
+                                        <Button onClick={handleCreateLink} disabled={linkBusy} variant="outline" className="w-full">
+                                            {linkBusy ? 'Generating…' : 'Generate invite link'}
+                                        </Button>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Input readOnly value={inviteLink} onFocus={(e) => e.currentTarget.select()} />
+                                            <Button type="button" onClick={handleCopyLink} className="bg-teal-600 shrink-0">
+                                                {copied ? 'Copied!' : 'Copy'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative py-1"><div className="border-t border-slate-200"></div>
+                                    <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-xs text-slate-400">or</span></div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Add an existing user by email</label>
                                     <Input
                                         placeholder="colleague@company.com"
                                         value={inviteEmail}
                                         onChange={(e) => setInviteEmail(e.target.value)}
                                     />
                                     <p className="text-xs text-slate-500">
-                                        The user must already have an account on the platform to be invited.
+                                        For someone who has <b>already registered</b> — they're added to the workspace immediately.
                                     </p>
                                 </div>
-                                <Button onClick={handleInvite} className="w-full bg-teal-600">Send Invitation</Button>
+                                <Button onClick={handleInvite} className="w-full bg-teal-600">Add to workspace</Button>
                             </div>
                         </DialogContent>
                     </Dialog>

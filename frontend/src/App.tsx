@@ -32,6 +32,7 @@ const EnhancedAuthPage = lazy(() => import('@/pages/auth/EnhancedAuth'));
 const UAEPassCallback = lazy(() => import('@/pages/auth/UAEPassCallback'));
 const VerifyJob = lazy(() => import('@/pages/public/VerifyJob').then(m => ({ default: m.VerifyJob })));
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
+const JoinTeamPage = lazy(() => import('@/pages/public/JoinTeamPage'));
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
 // Lazy loaded components for better performance
@@ -260,6 +261,7 @@ const AppContent: React.FC = () => {
               <Route path="/jobs/:token" element={<VerifyJob />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+              <Route path="/join-team/:token" element={<JoinTeamPage />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -306,6 +308,7 @@ const AppContent: React.FC = () => {
               />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+              <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -1022,6 +1025,7 @@ const AppContent: React.FC = () => {
               {/* Public magic-link routes (accessible even when authenticated) */}
               <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+              <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
               {/* Login Test Route */}
@@ -1069,6 +1073,7 @@ const AppContent: React.FC = () => {
             } />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+              <Route path="/join-team/:token" element={<JoinTeamPage />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
