@@ -1498,7 +1498,30 @@ def save_jd(jd_id):
         # Store a clean company UUID (or NULL) — never a placeholder/name string.
         recruiter_id = recruiter_id or 'unknown'
         company_id = _normalize_company_id_for_storage(cur, company_id, recruiter_id)
-        
+
+        # The company approval gate (issue #96) — same rule as /api/hr/jobs.
+        # Publishing requires an operator-verified company; drafts are unaffected.
+        # This path previously wrote status='published' with NO verification check,
+        # bypassing the gate the HR path enforces (Cluster-1 review 2026-07-26).
+        # Fails CLOSED: no/unknown company blocks publish.
+        if status == 'published':
+            verified = False
+            if company_id:
+                cur.execute("SELECT is_verified FROM companies WHERE id::text = %s",
+                            (str(company_id),))
+                vrow = cur.fetchone()
+                verified = bool(vrow and vrow.get('is_verified'))
+            if not verified:
+                cur.close()
+                conn.close()
+                return jsonify({
+                    'success': False,
+                    'error_code': 'company_not_verified',
+                    'message': 'Your company has not been approved to publish jobs yet. '
+                               'Save the posting as a draft — it will be publishable '
+                               'once platform operations verifies your company.',
+                }), 403
+
         logger.info(f"Save JD {jd_id}: recruiter_id={recruiter_id}, company_id={company_id}, jwt_user={current_user_id}")
         
         # Build location string from city + emirate if location not set

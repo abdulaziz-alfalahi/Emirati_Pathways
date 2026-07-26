@@ -273,10 +273,10 @@ def _resolve_job(cursor, job_id, current_user_id):
     Returns (job_row_dict, error_response_tuple).
     If access is allowed, returns (job_row_dict, None).
     """
-    from flask_jwt_extended import get_jwt
-    claims = get_jwt() or {}
-    user_role = claims.get('role', '')
-    
+    # NB: never read claims.get('role') here — raw primary-claim checks ignore
+    # secondary_roles and have failed open/closed 12 times (issue #96). All
+    # permission decisions below go through resolve_roles().
+
     # 1. Fetch job
     if str(job_id).isdigit():
         cursor.execute("SELECT * FROM job_postings WHERE id = %s", (int(job_id),))
