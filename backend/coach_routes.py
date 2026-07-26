@@ -286,3 +286,45 @@ def coach_analytics():
         }), 200
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
+
+
+@coach_bp.route('/request', methods=['POST'])
+@jwt_required()
+def request_coach():
+    """A candidate requests/books a career coach → an active coach_client_assignment
+    (nothing created these before, so the whole coach flow was unreachable). The
+    target must actually hold the coach role."""
+    me = str(get_jwt_identity())
+    coach_id = ((request.get_json(silent=True) or {}).get('coach_id') or '').strip()
+    if not coach_id:
+        return jsonify({"success": False, "message": "coach_id is required"}), 400
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT role, secondary_roles FROM users WHERE id = %s", (coach_id,))
+        u = cur.fetchone()
+        is_coach = bool(u and ((u.get('role') == 'coach') or ('coach' in (u.get('secondary_roles') or []))))
+        if not is_coach:
+            cur.close(); conn.close()
+            return jsonify({"success": False, "message": "That user is not a coach"}), 404
+        cur.execute("""SELECT id, status FROM coach_client_assignments
+                       WHERE coach_id = %s AND client_id = %s""", (coach_id, me))
+        existing = cur.fetchone()
+        if existing:
+            if existing['status'] != 'active':
+                cur.execute("UPDATE coach_client_assignments SET status='active' WHERE id=%s", (existing['id'],))
+                conn.commit()
+            cur.close(); conn.close()
+            return jsonify({"success": True, "message": "Coach assignment active",
+                            "data": {"id": existing['id']}}), 200
+        cur.execute("""INSERT INTO coach_client_assignments (coach_id, client_id, status, assigned_at)
+                       VALUES (%s, %s, 'active', NOW()) RETURNING id""", (coach_id, me))
+        row = cur.fetchone()
+        conn.commit(); cur.close(); conn.close()
+        return jsonify({"success": True, "message": "Coach assigned",
+                        "data": {"id": row['id']}}), 201
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"success": False, "message": str(e)}), 500
