@@ -231,6 +231,7 @@ def get_mentors():
         for r in rows:
             mentors.append({
                 'id': r['id'],
+                'user_id': r['user_id'],  # the mentor's EID — needed to request mentorship
                 'name': r['full_name'],
                 'name_ar': None,
                 'title': r['professional_title'],

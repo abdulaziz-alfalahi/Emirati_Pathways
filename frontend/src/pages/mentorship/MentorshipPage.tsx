@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { careerLifecycleAPI } from '@/services/intelligenceAPI';
+import menteeMentorshipService from '@/services/menteeMentorshipService';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 
 // Brand tokens
@@ -45,6 +46,9 @@ const MentorshipPage: React.FC = () => {
     // Intelligence API state
     const [mentors, setMentors] = useState<any[]>([]);
     const [liveStats, setLiveStats] = useState<any>(null);
+    const [myMentors, setMyMentors] = useState<any[]>([]);
+    const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+    const [notice, setNotice] = useState<string | null>(null);
 
     // Fetch mentors and stats from backend
     useEffect(() => {
@@ -61,6 +65,7 @@ const MentorshipPage: React.FC = () => {
                         expertise: (m.expertise || []).map((e: string, i: number) =>
                             t(e, (m.expertise_ar || [])[i] || e)
                         ),
+                        user_id: m.user_id,
                         rating: m.rating,
                         sessions: m.sessions,
                         location: t(m.location, m.location_ar || m.location),
@@ -85,20 +90,57 @@ const MentorshipPage: React.FC = () => {
                 console.warn('Mentorship stats API not available', e);
             }
         }
+        async function loadMyMentors() {
+            try {
+                const rows = await menteeMentorshipService.myMentors();
+                if (!cancelled) setMyMentors(rows);
+            } catch (e) { console.warn('my-mentors unavailable', e); }
+        }
         loadMentors();
         loadStats();
+        loadMyMentors();
         return () => { cancelled = true; };
     }, [isRTL]);
 
-    // Handler: request mentorship → logs career lifecycle milestone
-    const handleRequestMentorship = useCallback(async (mentorName: string) => {
-        try {
-            await careerLifecycleAPI.completeMilestone('find_mentor');
-            console.log(`✅ Mentorship requested with ${mentorName}`);
-        } catch (e) {
-            console.warn('Could not log mentorship request:', e);
-        }
+    const reloadMyMentors = useCallback(async () => {
+        try { setMyMentors(await menteeMentorshipService.myMentors()); } catch (e) { /* keep */ }
     }, []);
+
+    // Request mentorship for real → creates a pending mentorship_matching the
+    // mentor can accept (Rework M3). Falls back to an honest notice on failure.
+    const handleRequestMentorship = useCallback(async (mentor: any) => {
+        if (!mentor?.user_id) { setNotice(t('This mentor cannot be requested yet.', 'لا يمكن طلب هذا المرشد بعد.')); return; }
+        try {
+            await menteeMentorshipService.requestMentor(mentor.user_id);
+            setRequestedIds(prev => new Set(prev).add(mentor.user_id));
+            setNotice(t(`Request sent to ${mentor.name} — awaiting their acceptance.`, `تم إرسال الطلب إلى ${mentor.name} — بانتظار قبوله.`));
+            try { await careerLifecycleAPI.completeMilestone('find_mentor'); } catch { /* non-blocking */ }
+            reloadMyMentors();
+        } catch (e: any) {
+            const status = e?.response?.status;
+            setNotice(status === 409
+                ? t('You already have a request with this mentor.', 'لديك طلب بالفعل مع هذا المرشد.')
+                : t('Could not send the request. Please try again.', 'تعذّر إرسال الطلب. حاول مرة أخرى.'));
+        }
+    }, [reloadMyMentors, isRTL]);
+
+    // Ask an active mentor to verify a skill (feeds the passport + AI recs).
+    const handleRequestVerification = useCallback(async (m: any) => {
+        const skill = window.prompt(t('Which skill should this mentor verify?', 'أي مهارة تريد أن يوثّقها هذا المرشد؟'));
+        if (!skill || !skill.trim()) return;
+        try {
+            await menteeMentorshipService.requestVerification(m.mentor_user_id, skill.trim());
+            setNotice(t('Verification requested.', 'تم طلب التوثيق.'));
+        } catch (e) { setNotice(t('Could not request verification.', 'تعذّر طلب التوثيق.')); }
+    }, [isRTL]);
+
+    // Book a session with an active mentor.
+    const handleBookSession = useCallback(async (m: any) => {
+        try {
+            await menteeMentorshipService.bookSession({ mentor_user_id: m.mentor_user_id, session_title: 'Mentorship session' });
+            setNotice(t('Session booked.', 'تم حجز الجلسة.'));
+        } catch (e) { setNotice(t('Could not book a session (is the mentorship active?).', 'تعذّر حجز الجلسة (هل الإرشاد نشط؟).')); }
+    }, [isRTL]);
 
     /* ──────────────────────── DATA ──────────────────────── */
 
@@ -202,15 +244,19 @@ const MentorshipPage: React.FC = () => {
 
 
                         <button
-                            onClick={() => handleRequestMentorship(m.name)}
+                            onClick={() => handleRequestMentorship(m)}
+                            disabled={requestedIds.has(m.user_id)}
                             style={{
-                                background: m.available ? brand.primary : 'transparent',
-                                color: m.available ? '#fff' : brand.primary,
-                                border: m.available ? 'none' : `1px solid ${brand.primary}`,
-                                padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                                background: requestedIds.has(m.user_id) ? '#F3F4F6' : (m.available ? brand.primary : 'transparent'),
+                                color: requestedIds.has(m.user_id) ? brand.textSecondary : (m.available ? '#fff' : brand.primary),
+                                border: m.available && !requestedIds.has(m.user_id) ? 'none' : `1px solid ${brand.border}`,
+                                padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                cursor: requestedIds.has(m.user_id) ? 'default' : 'pointer',
                                 marginTop: 'auto', width: '100%',
                             }}>
-                            {m.available ? t('Request Mentorship', 'طلب إرشاد') : t('Join Waitlist', 'انضم لقائمة الانتظار')}
+                            {requestedIds.has(m.user_id)
+                                ? t('Requested', 'تم الطلب')
+                                : m.available ? t('Request Mentorship', 'طلب إرشاد') : t('Join Waitlist', 'انضم لقائمة الانتظار')}
                         </button>
 
                     </div>
@@ -232,42 +278,55 @@ const MentorshipPage: React.FC = () => {
                 )}
             </p>
 
-            {/* Active */}
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Active', 'نشطة')}</h3>
+            {notice && (
+                <div style={{ background: brand.primarySurface, color: brand.primary, border: `1px solid ${brand.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
+                    {notice}
+                </div>
+            )}
+
+            {/* Active + requested (real mentorship_matching rows) */}
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('My mentors', 'مرشدوني')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
-                {myMentorships.length === 0 && (
+                {myMentors.length === 0 && (
                     <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
-                        {t('You have no active mentorships yet. Browse mentors above to request one.', 'ليس لديك أي إرشاد نشط بعد. تصفّح المرشدين أعلاه لطلب إرشاد.')}
+                        {t('You have no mentorships yet. Browse mentors above to request one.', 'ليس لديك أي إرشاد بعد. تصفّح المرشدين أعلاه لطلب إرشاد.')}
                     </div>
                 )}
-                {myMentorships.map((m, i) => (
-                    <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                            <div>
-                                <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{m.topic}</h4>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>
-                                    {t('with', 'مع')} <strong>{m.mentor}</strong> · {m.completed}/{m.totalSessions} {t('sessions', 'جلسة')}
+                {myMentors.map((m, i) => {
+                    const active = m.is_active || m.match_status === 'active';
+                    const statusChip = active
+                        ? { bg: brand.green, fg: brand.greenText, label: t('Active', 'نشط') }
+                        : m.match_status === 'declined'
+                            ? { bg: brand.amber, fg: brand.amberText, label: t('Declined', 'مرفوض') }
+                            : { bg: brand.amber, fg: brand.amberText, label: t('Requested', 'مطلوب') };
+                    return (
+                        <div key={m.id ?? i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                                <div>
+                                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{m.mentor_name}</h4>
+                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{m.professional_title || t('Mentor', 'مرشد')}</div>
                                 </div>
+                                <span style={{ background: statusChip.bg, color: statusChip.fg, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                    {statusChip.label}
+                                </span>
                             </div>
-                            <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
-                                {m.statusLabel}
-                            </span>
+                            {active ? (
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <button onClick={() => handleBookSession(m)} style={{ background: brand.primary, color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                        <Video size={13} /> {t('Book session', 'حجز جلسة')}
+                                    </button>
+                                    <button onClick={() => handleRequestVerification(m)} style={{ background: '#fff', color: brand.primary, border: `1px solid ${brand.primary}`, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                                        {t('Request skill verification', 'طلب توثيق مهارة')}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                    {t('Awaiting the mentor’s acceptance.', 'بانتظار قبول المرشد.')}
+                                </div>
+                            )}
                         </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: brand.textSecondary, marginBottom: 12 }}>
-                            <Video size={14} style={{ color: brand.primary }} />
-                            <span>{t('Next:', 'التالي:')} <strong>{m.nextSession}</strong></span>
-                        </div>
-
-                        <div style={{ height: 8, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
-                            <div style={{ width: `${m.progress}%`, height: '100%', background: brand.primary, borderRadius: 99 }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                            <span style={{ fontSize: 11, color: brand.textSecondary }}>{m.completed} {t('of', 'من')} {m.totalSessions} {t('sessions', 'جلسة')}</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: brand.primary }}>{m.progress}%</span>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Past Mentorships */}
