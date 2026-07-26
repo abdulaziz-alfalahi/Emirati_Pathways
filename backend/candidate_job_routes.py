@@ -110,7 +110,21 @@ def get_candidate_cv(user_id):
                         cv_data['skills'].extend(tech_skills)
                     if isinstance(soft_skills, list):
                         cv_data['skills'].extend(soft_skills)
-                    
+
+                    # Fold in assessment-verified skills (Rework E) so a proven skill
+                    # counts in job matching even if the CV omits it. Deduped, case-insensitive.
+                    try:
+                        try:
+                            from backend.verified_skills import verified_skill_names
+                        except ImportError:
+                            from verified_skills import verified_skill_names
+                        have = {str(s).lower() for s in cv_data['skills'] if isinstance(s, str)}
+                        for vs in verified_skill_names(uid):
+                            if vs not in have:
+                                cv_data['skills'].append(vs)
+                    except Exception as _ve:
+                        logger.warning(f"verified-skill merge skipped: {_ve}")
+
                     return cv_data
             except Exception as e:
                 # Log usage warnings but continue to next ID/Table

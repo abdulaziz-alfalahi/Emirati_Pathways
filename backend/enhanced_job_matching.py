@@ -77,9 +77,12 @@ class EnhancedJobMatchingEngine:
                     if not profile:
                         return {}
                     
-                    # Get skills
+                    # Get skills. NB the live column is `proficiency` (not
+                    # `proficiency_level`) — the old name errored, so user_skills
+                    # never actually loaded here (Rework E). `verified` lets callers
+                    # weight assessment-proven skills above self-claimed ones.
                     cur.execute("""
-                        SELECT skill_name, proficiency_level FROM user_skills
+                        SELECT skill_name, proficiency, verified FROM user_skills
                         WHERE user_id = %s
                     """, (user_id,))
                     skills = cur.fetchall()
