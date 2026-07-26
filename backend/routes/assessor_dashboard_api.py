@@ -178,7 +178,8 @@ def complete(app_id):
             return jsonify({'success': False, 'message': 'score must be between 0 and 100'}), 400
         feedback = (data.get('feedback') or '')[:8000]
         skills = [s for s in (data.get('skills_to_verify') or []) if isinstance(s, str) and s.strip()][:20]
-        row = execute_query("SELECT id, candidate_id, status, assessor_id FROM assessments WHERE id::text = %s",
+        row = execute_query("SELECT id, candidate_id, status, assessor_id, assessment_title "
+                            "FROM assessments WHERE id::text = %s",
                             (str(app_id),), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'message': 'Assessment not found'}), 404
@@ -240,8 +241,47 @@ def complete(app_id):
                         "VALUES (%s, %s, %s, 'intermediate', 'assessment', TRUE, %s, NOW(), NOW(), NOW())",
                         (cand, slug, name, evidence), fetch_all=False)
                 skills_verified += 1
+
+        # Certification issuance (Rework D): a PASSING assessment is itself a
+        # credential — mint a certification onto the portfolio/passport, issued by
+        # the assessor's accredited center, with NQF level + a 2-year validity.
+        cert_issued = False
+        if passed and cand:
+            passport = execute_query("SELECT id FROM career_passports WHERE user_id = %s",
+                                     (cand,), fetch_one=True)
+            if not passport:
+                passport = execute_query(
+                    "INSERT INTO career_passports (user_id) VALUES (%s) RETURNING id",
+                    (cand,), fetch_one=True)
+            center = execute_query(
+                "SELECT COALESCE(c.name, c.company_name) AS name FROM company_team_members ctm "
+                "JOIN companies c ON c.id = ctm.company_id "
+                "WHERE ctm.user_id = %s AND ctm.role = 'assessor' "
+                "AND ctm.invitation_status = 'accepted' AND c.business_type = 'assessment_center' LIMIT 1",
+                (me,), fetch_one=True)
+            issuer = (center or {}).get('name') or 'Professional Assessment'
+            prof = execute_query("SELECT nqf_authorization_level FROM assessor_profiles WHERE user_id = %s",
+                                 (me,), fetch_one=True)
+            nqf = (prof or {}).get('nqf_authorization_level')
+            title = (row.get('assessment_title') or 'Professional Assessment') + ' — Certified'
+            cert_no = 'CERT-' + str(app_id) + '-' + str(int(score))
+            if passport:
+                execute_query(
+                    "INSERT INTO passport_stamps (id, passport_id, category, title_en, title_ar, "
+                    "description_en, issuer, icon, color, earned_at, verified, metadata) "
+                    "VALUES (gen_random_uuid(), %s, 'certification', %s, %s, "
+                    "'Certification earned by passing a professional assessment', %s, "
+                    "'certificate', '#1D4ED8', NOW(), TRUE, "
+                    "jsonb_build_object('nqf_level', %s, 'certificate_number', %s, "
+                    "'assessment_id', %s, 'score', %s, "
+                    "'expires_at', (NOW() + interval '2 years')::text)) ",
+                    (passport['id'], title, title, issuer, nqf, cert_no, str(app_id), score),
+                    fetch_all=False)
+                cert_issued = True
+
         return jsonify({'success': True, 'message': 'Evaluation completed',
-                        'skills_stamped': stamped, 'skills_verified': skills_verified})
+                        'skills_stamped': stamped, 'skills_verified': skills_verified,
+                        'certification_issued': cert_issued})
     except Exception as e:
         logger.error(f"assessor complete failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to complete evaluation'}), 500
