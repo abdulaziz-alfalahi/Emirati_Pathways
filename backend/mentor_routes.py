@@ -20,9 +20,9 @@ from mentor_system import (
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 try:
-    from backend.auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES, ADMIN_ROLES
 except ImportError:
-    from auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES
+    from auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES, ADMIN_ROLES
 
 # Who may act as a skill-verifying mentor / manage mentor profiles for others.
 _MENTOR_ROLES = tuple(OPERATOR_ROLES | {'mentor'})
@@ -810,3 +810,125 @@ def verify_skill():
         return jsonify({'success': False, 'error': 'Failed to process verification'}), 500
 
 logger.info("✅ Mentor routes loaded successfully")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mentorship enrollment operator (Cluster-3 M2). The mentorship_operator enrols
+# mentors (persisted to the DB mentor_profiles — NOT the legacy in-memory store —
+# so they appear in discovery/matching) and coaches (granted the coach role), and
+# manages mentorship programs. Mirrors the education/training/assessment operator
+# onboarding patterns. Guard: admin + mentorship_operator.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_MENTOR_OPERATOR_ROLES = tuple(ADMIN_ROLES | {'mentorship_operator'})
+
+
+def _grant_secondary_role(user_id, role):
+    _msv_query(
+        "UPDATE users SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) "
+        "|| jsonb_build_array(%s) WHERE id = %s "
+        "AND NOT (COALESCE(secondary_roles, '[]'::jsonb) ? %s)",
+        (role, str(user_id), role), fetch_all=False)
+
+
+@mentor_bp.route('/operator/mentors', methods=['POST'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_enrol_mentor():
+    """Enrol/verify a mentor: upsert mentor_profiles (DB) + grant the mentor role."""
+    data = request.get_json() or {}
+    user_id = (data.get('user_id') or '').strip()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'user_id is required'}), 400
+    if not _msv_query("SELECT id FROM users WHERE id = %s", (user_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    expertise = json.dumps(data.get('expertise_areas') or [])
+    specializations = json.dumps(data.get('mentoring_specializations') or [])
+    existing = _msv_query("SELECT id FROM mentor_profiles WHERE user_id = %s", (user_id,), fetch_one=True)
+    if existing:
+        _msv_query(
+            "UPDATE mentor_profiles SET professional_title=%s, industry=%s, "
+            "years_of_experience=%s, expertise_areas=%s::jsonb, mentoring_specializations=%s::jsonb, "
+            "is_available=TRUE, is_verified=TRUE, updated_at=NOW() WHERE user_id=%s",
+            (data.get('professional_title'), data.get('industry'), data.get('years_of_experience'),
+             expertise, specializations, user_id), fetch_all=False)
+    else:
+        _msv_query(
+            "INSERT INTO mentor_profiles (user_id, professional_title, industry, years_of_experience, "
+            "expertise_areas, mentoring_specializations, is_available, is_verified, created_at, updated_at) "
+            "VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, TRUE, TRUE, NOW(), NOW())",
+            (user_id, data.get('professional_title'), data.get('industry'),
+             data.get('years_of_experience'), expertise, specializations), fetch_all=False)
+    _grant_secondary_role(user_id, 'mentor')
+    return jsonify({'success': True, 'message': f'{user_id} enrolled as a mentor',
+                    'data': {'user_id': user_id}}), 201
+
+
+@mentor_bp.route('/operator/mentors', methods=['GET'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_list_mentors():
+    rows = _msv_query(
+        "SELECT mp.user_id, COALESCE(u.full_name, mp.user_id) AS full_name, mp.professional_title, "
+        "mp.industry, mp.expertise_areas, mp.is_available, mp.is_verified "
+        "FROM mentor_profiles mp LEFT JOIN users u ON u.id = mp.user_id "
+        "ORDER BY mp.updated_at DESC NULLS LAST") or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@mentor_bp.route('/operator/mentors/<user_id>', methods=['DELETE'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_remove_mentor(user_id):
+    """Retire a mentor (unavailable + unverified; role left intact)."""
+    _msv_query("UPDATE mentor_profiles SET is_available=FALSE, is_verified=FALSE, updated_at=NOW() "
+               "WHERE user_id=%s", (str(user_id).strip(),), fetch_all=False)
+    return jsonify({'success': True, 'message': 'Mentor retired'})
+
+
+@mentor_bp.route('/operator/coaches', methods=['POST'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_enrol_coach():
+    """Enrol a career coach: grant the coach role (coaches have no profile table;
+    they work through coach_client_assignments)."""
+    data = request.get_json() or {}
+    user_id = (data.get('user_id') or '').strip()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'user_id is required'}), 400
+    if not _msv_query("SELECT id FROM users WHERE id = %s", (user_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    _grant_secondary_role(user_id, 'coach')
+    return jsonify({'success': True, 'message': f'{user_id} enrolled as a coach',
+                    'data': {'user_id': user_id}}), 201
+
+
+@mentor_bp.route('/operator/coaches', methods=['GET'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_list_coaches():
+    rows = _msv_query(
+        "SELECT id AS user_id, COALESCE(full_name, id) AS full_name FROM users "
+        "WHERE role = 'coach' OR COALESCE(secondary_roles, '[]'::jsonb) ? 'coach' "
+        "ORDER BY full_name") or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@mentor_bp.route('/operator/programs', methods=['POST'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_create_program():
+    data = request.get_json() or {}
+    name = (data.get('program_name') or data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'program_name is required'}), 400
+    row = _msv_query(
+        "INSERT INTO mentorship_programs (program_name, program_description, program_type, "
+        "target_audience, duration_weeks, is_active, is_published, created_at, updated_at) "
+        "VALUES (%s, %s, %s, %s, %s, TRUE, TRUE, NOW(), NOW()) RETURNING id, program_name",
+        (name, data.get('program_description'), data.get('program_type') or 'general',
+         data.get('target_audience'), data.get('duration_weeks')), fetch_one=True)
+    return jsonify({'success': True, 'data': row, 'message': 'Program created'}), 201
+
+
+@mentor_bp.route('/operator/programs', methods=['GET'])
+@require_roles(*_MENTOR_OPERATOR_ROLES)
+def operator_list_programs():
+    rows = _msv_query(
+        "SELECT id, program_name, program_type, target_audience, duration_weeks, is_published "
+        "FROM mentorship_programs ORDER BY created_at DESC NULLS LAST") or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})

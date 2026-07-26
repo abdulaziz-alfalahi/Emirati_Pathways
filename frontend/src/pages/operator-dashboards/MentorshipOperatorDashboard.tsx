@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import MentorshipEnrollmentManager from '@/components/mentorship/MentorshipEnrollmentManager';
 import {
     UserCheck, Users, Briefcase, Settings, Heart,
     Clock, TrendingUp, Plus, Search, Eye, Star, MessageSquare, Target
@@ -49,6 +50,7 @@ const MentorshipOperatorDashboard: React.FC = () => {
 
     const tabs = [
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: TrendingUp },
+        { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: UserCheck },
         { id: 'mentors', label: t('Mentors', 'المرشدون'), icon: UserCheck },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: Briefcase },
         { id: 'matches', label: t('Matches', 'المطابقات'), icon: Heart },
@@ -229,6 +231,7 @@ const MentorshipOperatorDashboard: React.FC = () => {
                 </div>
                 {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
                 {!loading && activeTab === 'overview' && renderOverview()}
+                {activeTab === 'enrollment' && <MentorshipEnrollmentManager />}
                 {!loading && activeTab === 'mentors' && renderMentors()}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'matches' && renderMatches()}
