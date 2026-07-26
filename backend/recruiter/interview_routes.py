@@ -22,9 +22,17 @@ from .interview_engine import (
 )
 
 try:
-    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES, resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES, resolve_roles, ADMIN_ROLES
+
+# Panelists may be recruiters/hiring managers OR certified assessors invited to
+# sit on an interview panel (assessment vision, Rework C). Assessors are not in
+# RECRUITER_ROLES, so the panelist endpoints must admit them explicitly.
+try:
+    PANEL_ROLES = tuple(set(RECRUITER_ROLES) | {'assessor'})
+except Exception:  # pragma: no cover
+    PANEL_ROLES = RECRUITER_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -700,7 +708,7 @@ def get_interviews_by_shortlist(shortlist_id):
 
 
 @interview_bp.route('/my-panels', methods=['GET'])
-@require_roles(*RECRUITER_ROLES)
+@require_roles(*PANEL_ROLES)
 def get_my_panels():
     """
     Get all interviews where the current user is listed as a panelist
@@ -749,7 +757,7 @@ def get_my_panels():
 
 
 @interview_bp.route('/<interview_id>/scorecard', methods=['POST'])
-@require_roles(*RECRUITER_ROLES)
+@require_roles(*PANEL_ROLES)
 def submit_scorecard(interview_id):
     """
     Submit or update a panelist's scorecard for an interview.
@@ -769,6 +777,26 @@ def submit_scorecard(interview_id):
     try:
         data = request.get_json()
         panelist_id = str(get_jwt_identity())
+
+        # Authz (Rework C): only an actual panelist on THIS interview (or its
+        # recruiter/owner, or an admin) may submit a scorecard — otherwise any
+        # recruiter/assessor could inject a scorecard into an arbitrary interview.
+        if not (resolve_roles() & ADMIN_ROLES):
+            _conn = get_db_connection()
+            _cur = _conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            _cur.execute(
+                "SELECT interviewers, recruiter_id FROM interview_schedules "
+                "WHERE id::text = %s OR interview_id::text = %s LIMIT 1",
+                (str(interview_id), str(interview_id)))
+            _iv = _cur.fetchone()
+            _conn.close()
+            if not _iv:
+                return jsonify({'success': False, 'error': 'Interview not found'}), 404
+            _is_panelist = panelist_id in str(_iv.get('interviewers') or '')
+            _is_owner = str(_iv.get('recruiter_id') or '') == panelist_id
+            if not (_is_panelist or _is_owner):
+                return jsonify({'success': False,
+                                'error': 'You are not a panelist on this interview'}), 403
 
         # Validate scores
         score_fields = [
