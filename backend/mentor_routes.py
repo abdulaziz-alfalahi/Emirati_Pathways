@@ -778,9 +778,14 @@ def verify_skill():
         if not (resolve_roles() & ({'admin', 'administrator', 'super_admin', 'super_user',
                                     'platform_administrator'})):
             assigned = (row.get('mentor_id') or '').strip() in ('', str(mentor_id))
+            # mentorship_matching.mentor_id is a UUID (mentor_profiles.id), so join
+            # via mentor_profiles.user_id (the mentor's EID) rather than comparing
+            # the EID to a uuid column.
             linked = _msv_query(
-                "SELECT 1 FROM mentorship_matching WHERE mentor_id = %s AND mentee_user_id = %s "
-                "AND COALESCE(is_active, TRUE) IS TRUE LIMIT 1",
+                "SELECT 1 FROM mentorship_matching mm "
+                "JOIN mentor_profiles mp ON mp.id = mm.mentor_id "
+                "WHERE mp.user_id = %s AND mm.mentee_user_id = %s "
+                "AND COALESCE(mm.is_active, TRUE) IS TRUE LIMIT 1",
                 (str(mentor_id), row['candidate_id']), fetch_one=True)
             if not (row.get('mentor_id') and assigned) and not linked:
                 return jsonify({'success': False,
@@ -932,3 +937,143 @@ def operator_list_programs():
         "SELECT id, program_name, program_type, target_audience, duration_weeks, is_published "
         "FROM mentorship_programs ORDER BY created_at DESC NULLS LAST") or []
     return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Mentee flow (Cluster-3 M3): a candidate requests a mentor → the mentor accepts
+# (mentorship_matching), can book sessions (mentorship_sessions), and the candidate
+# can request skill verification (mentor_skill_verifications, consumed by
+# /progress/verify-skill). NB mentorship_matching.mentor_id is a UUID
+# (mentor_profiles.id); mentor_skill_verifications.mentor_id is the mentor EID.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _mentor_profile_uuid(mentor_user_id):
+    row = _msv_query("SELECT id FROM mentor_profiles WHERE user_id = %s", (str(mentor_user_id),), fetch_one=True)
+    return (row or {}).get('id')
+
+
+@mentor_bp.route('/request', methods=['POST'])
+@jwt_required()
+def request_mentor():
+    """Candidate requests a mentor → a pending mentorship_matching."""
+    me = str(get_jwt_identity())
+    mentor_user_id = ((request.get_json(silent=True) or {}).get('mentor_user_id') or '').strip()
+    pid = _mentor_profile_uuid(mentor_user_id)
+    if not pid:
+        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    dup = _msv_query("SELECT id FROM mentorship_matching WHERE mentor_id = %s AND mentee_user_id = %s "
+                     "AND COALESCE(match_status,'') NOT IN ('declined','ended') LIMIT 1",
+                     (pid, me), fetch_one=True)
+    if dup:
+        return jsonify({'success': False, 'message': 'You already have a request/relationship with this mentor',
+                        'matching_id': dup['id']}), 409
+    row = _msv_query(
+        "INSERT INTO mentorship_matching (mentor_id, mentee_user_id, match_status, is_active, created_at, updated_at) "
+        "VALUES (%s, %s, 'requested', FALSE, NOW(), NOW()) RETURNING id",
+        (pid, me), fetch_one=True)
+    return jsonify({'success': True, 'message': 'Mentorship requested', 'data': {'id': (row or {}).get('id')}}), 201
+
+
+@mentor_bp.route('/my-mentees', methods=['GET'])
+@require_roles(*_MENTOR_ROLES)
+def my_mentees():
+    """A mentor's requests + active mentees (matchings on their profile)."""
+    me = str(get_jwt_identity())
+    rows = _msv_query(
+        "SELECT mm.id, mm.mentee_user_id, COALESCE(u.full_name, mm.mentee_user_id) AS mentee_name, "
+        "mm.match_status, mm.is_active FROM mentorship_matching mm "
+        "JOIN mentor_profiles mp ON mp.id = mm.mentor_id "
+        "LEFT JOIN users u ON u.id = mm.mentee_user_id "
+        "WHERE mp.user_id = %s ORDER BY mm.created_at DESC NULLS LAST", (me,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@mentor_bp.route('/my-mentors', methods=['GET'])
+@jwt_required()
+def my_mentors():
+    """A candidate's mentor requests/relationships."""
+    me = str(get_jwt_identity())
+    rows = _msv_query(
+        "SELECT mm.id, mp.user_id AS mentor_user_id, COALESCE(u.full_name, mp.user_id) AS mentor_name, "
+        "mp.professional_title, mm.match_status, mm.is_active FROM mentorship_matching mm "
+        "JOIN mentor_profiles mp ON mp.id = mm.mentor_id LEFT JOIN users u ON u.id = mp.user_id "
+        "WHERE mm.mentee_user_id = %s ORDER BY mm.created_at DESC NULLS LAST", (me,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@mentor_bp.route('/requests/<int:matching_id>/decision', methods=['POST'])
+@require_roles(*_MENTOR_ROLES)
+def mentor_decide_request(matching_id):
+    """The requested mentor accepts/declines. Only that mentor may decide."""
+    me = str(get_jwt_identity())
+    decision = (request.get_json(silent=True) or {}).get('decision')
+    if decision not in ('accept', 'decline'):
+        return jsonify({'success': False, 'message': "decision must be 'accept' or 'decline'"}), 400
+    row = _msv_query(
+        "SELECT mm.id, mp.user_id AS mentor_user_id, mm.match_status FROM mentorship_matching mm "
+        "JOIN mentor_profiles mp ON mp.id = mm.mentor_id WHERE mm.id = %s", (matching_id,), fetch_one=True)
+    if not row:
+        return jsonify({'success': False, 'message': 'Request not found'}), 404
+    if not (resolve_roles() & ADMIN_ROLES) and str(row['mentor_user_id']) != me:
+        return jsonify({'success': False, 'message': 'Not your mentorship request'}), 403
+    if decision == 'accept':
+        _msv_query("UPDATE mentorship_matching SET match_status='active', is_active=TRUE, "
+                   "start_date=COALESCE(start_date, NOW()), updated_at=NOW() WHERE id=%s",
+                   (matching_id,), fetch_all=False)
+    else:
+        _msv_query("UPDATE mentorship_matching SET match_status='declined', is_active=FALSE, updated_at=NOW() "
+                   "WHERE id=%s", (matching_id,), fetch_all=False)
+    return jsonify({'success': True, 'message': f'Request {decision}ed'})
+
+
+@mentor_bp.route('/verify-request', methods=['POST'])
+@jwt_required()
+def request_skill_verification():
+    """Candidate asks a specific mentor to verify a skill → pending
+    mentor_skill_verifications (the queue /progress/verify-skill consumes)."""
+    me = str(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    mentor_user_id = (data.get('mentor_user_id') or '').strip()
+    skill_name = (str(data.get('skill_name') or '').strip())[:120]
+    if not mentor_user_id or not skill_name:
+        return jsonify({'success': False, 'message': 'mentor_user_id and skill_name are required'}), 400
+    if not _msv_query("SELECT id FROM users WHERE id = %s", (mentor_user_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    dup = _msv_query("SELECT id FROM mentor_skill_verifications WHERE candidate_id=%s AND mentor_id=%s "
+                     "AND LOWER(skill_name)=LOWER(%s) AND status='pending' LIMIT 1",
+                     (me, mentor_user_id, skill_name), fetch_one=True)
+    if dup:
+        return jsonify({'success': False, 'message': 'A pending request for this skill already exists'}), 409
+    row = _msv_query(
+        "INSERT INTO mentor_skill_verifications (candidate_id, mentor_id, skill_name, skill_level, "
+        "skill_category, status, requested_at) VALUES (%s, %s, %s, %s, %s, 'pending', NOW()) RETURNING id",
+        (me, mentor_user_id, skill_name, data.get('skill_level'), data.get('skill_category')), fetch_one=True)
+    return jsonify({'success': True, 'message': 'Verification requested', 'data': {'id': (row or {}).get('id')}}), 201
+
+
+@mentor_bp.route('/sessions', methods=['POST'])
+@jwt_required()
+def book_session():
+    """Book a mentorship session. Caller must be the mentor or the mentee on an
+    active matching (admins bypass)."""
+    me = str(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    mentor_user_id = (data.get('mentor_user_id') or '').strip()
+    mentee_user_id = (data.get('mentee_user_id') or '').strip() or me
+    pid = _mentor_profile_uuid(mentor_user_id)
+    if not pid:
+        return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    if not (resolve_roles() & ADMIN_ROLES) and me not in (mentor_user_id, mentee_user_id):
+        return jsonify({'success': False, 'message': 'You are not a party to this session'}), 403
+    link = _msv_query("SELECT 1 FROM mentorship_matching WHERE mentor_id=%s AND mentee_user_id=%s "
+                      "AND COALESCE(is_active,FALSE) IS TRUE LIMIT 1", (pid, mentee_user_id), fetch_one=True)
+    if not link and not (resolve_roles() & ADMIN_ROLES):
+        return jsonify({'success': False, 'message': 'No active mentorship between these users'}), 409
+    row = _msv_query(
+        "INSERT INTO mentorship_sessions (mentor_id, mentee_user_id, session_title, session_type, "
+        "scheduled_date, duration_minutes, session_status, created_at, updated_at) "
+        "VALUES (%s, %s, %s, %s, %s, %s, 'scheduled', NOW(), NOW()) RETURNING id",
+        (pid, mentee_user_id, data.get('session_title') or 'Mentorship session',
+         data.get('session_type') or 'general', data.get('scheduled_date'),
+         data.get('duration_minutes') or 60), fetch_one=True)
+    return jsonify({'success': True, 'message': 'Session booked', 'data': {'id': (row or {}).get('id')}}), 201
