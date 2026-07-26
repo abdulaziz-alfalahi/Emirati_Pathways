@@ -21,9 +21,9 @@ try:
 except ImportError:  # pragma: no cover
     from db_utils import execute_query
 try:
-    from backend.auth.access_control import require_roles, CAREER_SERVICES_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, CAREER_SERVICES_ROLES, ADMIN_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import require_roles, CAREER_SERVICES_ROLES
+    from auth.access_control import require_roles, resolve_roles, CAREER_SERVICES_ROLES, ADMIN_ROLES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -848,10 +848,17 @@ def get_crm_candidates():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
+        # Caseload scoping (horizontal-BOLA fix): supervisors (admin + the
+        # career-services/operator roles that assign caseloads) see the whole
+        # roster; a front-line agent (e.g. call_center_agent) sees ONLY the
+        # candidates assigned to them — otherwise every agent could read every
+        # candidate's national ID / phone / counselling notes.
+        me = str(get_jwt_identity())
+        supervisor = bool(resolve_roles() & (ADMIN_ROLES | {'career_services_operator', 'operator'}))
         try:
-            cursor.execute("""
-                SELECT 
+            base = """
+                SELECT
                     u.id,
                     u.emirates_id_enc as national_id,
                     u.full_name,
@@ -872,11 +879,14 @@ def get_crm_candidates():
                     cp.role_preferences
                 FROM users u
                 LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
-                WHERE u.role = 'candidate' OR u.user_type = 'candidate'
-                ORDER BY u.created_at DESC
-                LIMIT 100000
-             """)
-            
+                WHERE (u.role = 'candidate' OR u.user_type = 'candidate')
+            """
+            if supervisor:
+                cursor.execute(base + " ORDER BY u.created_at DESC LIMIT 100000")
+            else:
+                cursor.execute(base + " AND cp.assigned_to = %s ORDER BY u.created_at DESC LIMIT 100000",
+                               (me,))
+
             candidates = cursor.fetchall()
             
             # Format the output for the frontend
@@ -941,10 +951,18 @@ def update_crm_candidate(user_id):
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
         try:
-            cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (user_id,))
+            cursor.execute("SELECT id, assigned_to FROM candidate_profiles WHERE user_id = %s", (user_id,))
             exists = cursor.fetchone()
+            # Caseload scoping (BOLA fix): a front-line agent may only edit a
+            # candidate assigned to them; supervisors/admin may edit any.
+            me = str(get_jwt_identity())
+            supervisor = bool(resolve_roles() & (ADMIN_ROLES | {'career_services_operator', 'operator'}))
+            if not supervisor and exists and str(exists.get('assigned_to') or '') != me:
+                cursor.close(); conn.close()
+                return jsonify({'success': False,
+                                'message': 'This candidate is not on your caseload'}), 403
             
             import json
             preferred_locations = data.get('preferredLocations')
