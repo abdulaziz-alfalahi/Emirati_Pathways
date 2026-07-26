@@ -611,7 +611,8 @@ def my_assessment_requests():
         conn = get_db()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
-            """SELECT id, assessment_title, status, scheduled_date, percentage_score, pass_fail_status
+            """SELECT id, assessment_title, status, scheduled_date, percentage_score, pass_fail_status,
+                      consent_status, requested_by
                FROM assessments WHERE candidate_id = %s ORDER BY created_at DESC""", (user_id,))
         rows = cur.fetchall()
         cur.close(); conn.close()
@@ -620,7 +621,53 @@ def my_assessment_requests():
             'scheduled_at': r['scheduled_date'].isoformat() if r['scheduled_date'] else None,
             'score': float(r['percentage_score']) if r['percentage_score'] is not None else None,
             'result': r['pass_fail_status'],
+            # Recruiter-requested assessments need the candidate's consent before
+            # they proceed (Rework B). 'pending' → the UI should prompt for consent.
+            'consent_status': r.get('consent_status') or 'not_required',
+            'recruiter_requested': bool(r.get('requested_by')),
         } for r in rows]})
     except Exception as e:
         logger.error(f"My assessment requests error: {e}")
         return jsonify({'success': False, 'message': 'Failed to load requests'}), 500
+
+
+@skills_dev_bp.route('/assessments/<int:assessment_id>/consent', methods=['POST'])
+@jwt_required()
+def assessment_consent(assessment_id):
+    """Candidate grants/denies consent for a recruiter-requested assessment.
+    On grant it enters the assessor pool; on deny it is cancelled. Only the
+    candidate the assessment is about may consent, and only while pending."""
+    try:
+        user_id = get_jwt_identity()
+        decision = (request.get_json(silent=True) or {}).get('decision')
+        if decision not in ('grant', 'deny'):
+            return jsonify({'success': False, 'message': "decision must be 'grant' or 'deny'"}), 400
+        conn = get_db()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT candidate_id, consent_status FROM assessments WHERE id = %s", (assessment_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Assessment not found'}), 404
+        if str(row['candidate_id']) != str(user_id):
+            cur.close(); conn.close()
+            return jsonify({'success': False, 'message': 'Not your assessment'}), 403
+        if (row['consent_status'] or 'not_required') != 'pending':
+            cur.close(); conn.close()
+            return jsonify({'success': False,
+                            'message': f"Consent is {row['consent_status']} — nothing to decide"}), 409
+        if decision == 'grant':
+            cur.execute("UPDATE assessments SET consent_status='granted', updated_at=NOW() WHERE id=%s",
+                        (assessment_id,))
+        else:
+            cur.execute("UPDATE assessments SET consent_status='denied', status='cancelled', "
+                        "updated_at=NOW() WHERE id=%s", (assessment_id,))
+        conn.commit(); cur.close(); conn.close()
+        return jsonify({'success': True,
+                        'message': 'Consent granted — the assessment is now open to assessors'
+                                   if decision == 'grant' else 'Assessment declined',
+                        'data': {'id': assessment_id,
+                                 'consent_status': 'granted' if decision == 'grant' else 'denied'}})
+    except Exception as e:
+        logger.error(f"Assessment consent error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to record consent'}), 500
