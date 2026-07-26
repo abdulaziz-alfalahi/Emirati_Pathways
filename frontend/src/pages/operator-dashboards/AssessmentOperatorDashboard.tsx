@@ -6,6 +6,7 @@ import {
     ClipboardCheck, Building2, Award, Calendar, Settings, Users,
     CheckCircle, Clock, TrendingUp, Plus, Search, Eye, BarChart3
 } from 'lucide-react';
+import AssessmentCentersManager from '@/components/assessor/AssessmentCentersManager';
 
 const brand = {
     primary: '#D97706', secondary: '#F59E0B', accent: '#FCD34D',
@@ -232,7 +233,7 @@ const AssessmentOperatorDashboard: React.FC = () => {
                 </div>
                 {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
                 {!loading && activeTab === 'overview' && renderOverview()}
-                {!loading && activeTab === 'centers' && renderCenters()}
+                {activeTab === 'centers' && <AssessmentCentersManager />}
                 {!loading && activeTab === 'certifications' && renderCertifications()}
                 {!loading && activeTab === 'schedule' && renderSchedule()}
                 {!loading && activeTab === 'settings' && renderSettings()}

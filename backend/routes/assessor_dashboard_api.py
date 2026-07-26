@@ -295,3 +295,135 @@ def operator_stats():
                       'competency_models': 0, 'pending_reviews': 0, 'total_assessed': 0},
             'templates': [], 'recent_assessments': [],
         })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Assessment Operator onboarding (Rework A) — enrol assessment centers + bind
+# certified assessors. An assessment center is a companies row
+# (business_type='assessment_center'); an assessor is a company_team_members
+# row (role='assessor', accepted) + an assessor_profiles cert record + the
+# 'assessor' user role. Reuses the same entity model as the hiring cluster.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_OPERATOR_ROLES = tuple(ADMIN_ROLES | {'assessment_operator'})
+
+
+def _assessor_code(user_id):
+    return 'ASR-' + str(user_id)[-6:]
+
+
+@assessor_dash_bp.route('/operator/centers', methods=['POST'])
+@require_roles(*_OPERATOR_ROLES)
+def create_assessment_center():
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'name is required'}), 400
+    existing = execute_query(
+        "SELECT id, name FROM companies WHERE business_type='assessment_center' "
+        "AND LOWER(COALESCE(name, company_name)) = LOWER(%s)", (name,), fetch_one=True)
+    if existing:
+        return jsonify({'success': True, 'data': existing, 'message': 'Already exists'}), 200
+    row = execute_query(
+        "INSERT INTO companies (name, company_name, business_type, is_verified, industry, "
+        "emirate, website, provisioned_by, provisioned_at, verified_by, verified_at) "
+        "VALUES (%s, %s, 'assessment_center', TRUE, %s, %s, %s, %s, NOW(), %s, NOW()) "
+        "RETURNING id, name",
+        (name, name, data.get('industry'), data.get('emirate'), data.get('website'),
+         get_jwt_identity(), get_jwt_identity()), fetch_one=True)
+    return jsonify({'success': True, 'data': row, 'message': 'Assessment center created'}), 201
+
+
+@assessor_dash_bp.route('/operator/centers', methods=['GET'])
+@require_roles(*_OPERATOR_ROLES)
+def list_assessment_centers():
+    rows = execute_query(
+        "SELECT id, COALESCE(name, company_name) AS name, industry, emirate, website, is_verified "
+        "FROM companies WHERE business_type='assessment_center' ORDER BY COALESCE(name, company_name)") or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@assessor_dash_bp.route('/operator/centers/<center_id>/assessors', methods=['GET'])
+@require_roles(*_OPERATOR_ROLES)
+def list_center_assessors(center_id):
+    rows = execute_query(
+        """SELECT ctm.user_id, COALESCE(u.full_name, ctm.user_id) AS full_name, ctm.invitation_status,
+                  ap.certification_level, ap.specialization, ap.nqf_authorization_level, ap.is_active
+           FROM company_team_members ctm
+           LEFT JOIN users u ON u.id = ctm.user_id
+           LEFT JOIN assessor_profiles ap ON ap.user_id = ctm.user_id
+           WHERE ctm.company_id = %s AND ctm.role = 'assessor' AND ctm.invitation_status = 'accepted'
+           ORDER BY full_name""",
+        (center_id,)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
+
+
+@assessor_dash_bp.route('/operator/centers/<center_id>/assessors', methods=['POST'])
+@require_roles(*_OPERATOR_ROLES)
+def enrol_assessor(center_id):
+    """Certify + bind an assessor to a center: company_team_members (accepted) +
+    assessor_profiles (cert metadata) + grant the 'assessor' role."""
+    data = request.get_json() or {}
+    user_id = (data.get('user_id') or '').strip()
+    if not execute_query("SELECT id FROM companies WHERE id::text = %s AND business_type='assessment_center'",
+                         (str(center_id),), fetch_one=True):
+        return jsonify({'success': False, 'message': 'Assessment center not found'}), 404
+    if not execute_query("SELECT id FROM users WHERE id = %s", (user_id,), fetch_one=True):
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    # bind to the center
+    execute_query(
+        "INSERT INTO company_team_members (company_id, user_id, role, invitation_status, invited_by, "
+        "joined_at, created_at, updated_at) VALUES (%s, %s, 'assessor', 'accepted', %s, NOW(), NOW(), NOW()) "
+        "ON CONFLICT (company_id, user_id) DO UPDATE SET role='assessor', invitation_status='accepted', "
+        "updated_at=NOW()",
+        (str(center_id), user_id, get_jwt_identity()), fetch_all=False)
+    # certification profile (upsert by user_id)
+    existing = execute_query("SELECT id FROM assessor_profiles WHERE user_id = %s", (user_id,), fetch_one=True)
+    if existing:
+        execute_query(
+            "UPDATE assessor_profiles SET certification_level=%s, specialization=%s, "
+            "nqf_authorization_level=%s, years_experience=%s, is_active=TRUE, updated_at=NOW() WHERE user_id=%s",
+            (data.get('certification_level'), data.get('specialization'),
+             data.get('nqf_authorization_level'), data.get('years_experience'), user_id), fetch_all=False)
+    else:
+        execute_query(
+            "INSERT INTO assessor_profiles (user_id, assessor_code, certification_level, specialization, "
+            "nqf_authorization_level, years_experience, is_active, created_at, updated_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, TRUE, NOW(), NOW())",
+            (user_id, _assessor_code(user_id), data.get('certification_level'),
+             data.get('specialization'), data.get('nqf_authorization_level'),
+             data.get('years_experience')), fetch_all=False)
+    # grant the assessor role (idempotent secondary role)
+    execute_query(
+        "UPDATE users SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) "
+        "|| jsonb_build_array('assessor') WHERE id = %s "
+        "AND NOT (COALESCE(secondary_roles, '[]'::jsonb) ? 'assessor')",
+        (user_id,), fetch_all=False)
+    return jsonify({'success': True, 'message': f'{user_id} certified as assessor',
+                    'data': {'user_id': user_id, 'center_id': str(center_id)}}), 201
+
+
+@assessor_dash_bp.route('/operator/centers/<center_id>/assessors/<user_id>', methods=['DELETE'])
+@require_roles(*_OPERATOR_ROLES)
+def remove_assessor(center_id, user_id):
+    """De-certify: deactivate the binding + profile (assessor user role left intact)."""
+    execute_query(
+        "UPDATE company_team_members SET invitation_status='inactive', updated_at=NOW() "
+        "WHERE company_id::text = %s AND user_id = %s AND role='assessor'",
+        (str(center_id), str(user_id).strip()), fetch_all=False)
+    execute_query("UPDATE assessor_profiles SET is_active=FALSE, updated_at=NOW() WHERE user_id=%s",
+                  (str(user_id).strip(),), fetch_all=False)
+    return jsonify({'success': True, 'message': 'Assessor removed from center'})
+
+
+@assessor_dash_bp.route('/my-centers', methods=['GET'])
+@require_roles(*_ASSESSOR_ROLES)
+def assessor_my_centers():
+    """The assessment centers the caller is certified at (for the assessor dashboard)."""
+    rows = execute_query(
+        "SELECT c.id, COALESCE(c.name, c.company_name) AS name, c.emirate "
+        "FROM company_team_members ctm JOIN companies c ON c.id = ctm.company_id "
+        "WHERE ctm.user_id = %s AND ctm.role='assessor' AND ctm.invitation_status='accepted' "
+        "AND c.business_type='assessment_center' ORDER BY name",
+        (get_jwt_identity(),)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})
