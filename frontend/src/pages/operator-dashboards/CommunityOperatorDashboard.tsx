@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 import {
     MessageSquare, Users, Calendar, Flag, Settings, Heart,
     Clock, TrendingUp, Plus, Eye, ThumbsUp, AlertTriangle, FileText
@@ -36,9 +37,10 @@ const CommunityOperatorDashboard: React.FC = () => {
         (async () => {
             setLoading(true);
             try {
-                const resp = await fetch(`${API_BASE}/api/education/community/operator/stats`);
-                if (resp.ok && !cancelled) {
-                    const d = await resp.json();
+                // restClient carries auth — endpoint is @require_roles(*OPERATOR_ROLES).
+                const resp = await restClient.get(`/api/education/community/operator/stats`);
+                const d = resp.data;
+                if (d && !cancelled) {
                     setStats(d.stats || {});
                     setGroups(d.groups || []);
                     setContentQueue(d.content_queue || []);

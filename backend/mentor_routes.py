@@ -134,6 +134,7 @@ def create_mentor_profile():
         }), 500
 
 @mentor_bp.route('/profile/<mentor_id>', methods=['GET'])
+@jwt_required()  # was unauthenticated — returned a mentor's full profile (PII) to anyone
 def get_mentor_profile(mentor_id: str):
     """Get mentor profile by ID"""
     try:
@@ -427,6 +428,7 @@ def get_availability_statuses():
         }), 500
 
 @mentor_bp.route('/dashboard/<mentor_id>', methods=['GET'])
+@jwt_required()  # was unauthenticated — exposed a mentor's dashboard/PII to anyone
 def get_mentor_dashboard(mentor_id: str):
     """Get mentor dashboard data"""
     try:
@@ -762,12 +764,27 @@ def verify_skill():
         approved = bool(data.get('is_approved'))
         if not skill_id:
             return jsonify({'success': False, 'error': 'skill_id is required'}), 400
-        row = _msv_query("SELECT id, candidate_id, skill_name, status FROM mentor_skill_verifications WHERE id = %s",
+        row = _msv_query("SELECT id, candidate_id, mentor_id, skill_name, status "
+                         "FROM mentor_skill_verifications WHERE id = %s",
                          (skill_id,), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'error': 'Verification request not found'}), 404
         if row['status'] != 'pending':
             return jsonify({'success': False, 'error': 'Request already decided'}), 409
+        # Authz (M1): a mentor may only verify a candidate they are actually linked
+        # to — the request was assigned to them, OR they have an active mentorship
+        # with that candidate. Otherwise any mentor could approve any candidate's
+        # skill and stamp their passport (BOLA). Admins bypass.
+        if not (resolve_roles() & ({'admin', 'administrator', 'super_admin', 'super_user',
+                                    'platform_administrator'})):
+            assigned = (row.get('mentor_id') or '').strip() in ('', str(mentor_id))
+            linked = _msv_query(
+                "SELECT 1 FROM mentorship_matching WHERE mentor_id = %s AND mentee_user_id = %s "
+                "AND COALESCE(is_active, TRUE) IS TRUE LIMIT 1",
+                (str(mentor_id), row['candidate_id']), fetch_one=True)
+            if not (row.get('mentor_id') and assigned) and not linked:
+                return jsonify({'success': False,
+                                'error': 'You are not this candidate\'s mentor'}), 403
         new_status = 'approved' if approved else 'rejected'
         _msv_query(
             "UPDATE mentor_skill_verifications SET status = %s, mentor_id = %s, decided_at = NOW() WHERE id = %s",

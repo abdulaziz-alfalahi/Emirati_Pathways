@@ -14,9 +14,9 @@ import os
 import json
 import logging
 try:
-    from backend.auth.access_control import resolve_roles
+    from backend.auth.access_control import resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import resolve_roles
+    from auth.access_control import resolve_roles, ADMIN_ROLES
 
 logger = logging.getLogger(__name__)
 coach_bp = Blueprint('coach', __name__, url_prefix='/api/coach')
@@ -32,7 +32,9 @@ def get_db():
 
 
 # Roles permitted to act as a career coach (view client PII, manage plans/sessions).
-_COACH_ROLES = {'coach', 'advisor', 'admin', 'super_admin'}
+# Sourced from ADMIN_ROLES so every admin alias (super_user, platform_administrator,
+# administrator) is honoured — a hand-rolled {'admin','super_admin'} 403'd real admins.
+_COACH_ROLES = ADMIN_ROLES | {'coach', 'advisor'}
 
 
 def _require_coach_role():

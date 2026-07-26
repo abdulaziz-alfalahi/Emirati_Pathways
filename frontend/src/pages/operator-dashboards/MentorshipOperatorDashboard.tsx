@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 import {
     UserCheck, Users, Briefcase, Settings, Heart,
     Clock, TrendingUp, Plus, Search, Eye, Star, MessageSquare, Target
@@ -32,13 +33,13 @@ const MentorshipOperatorDashboard: React.FC = () => {
         (async () => {
             setLoading(true);
             try {
-                const resp = await fetch(`${API_BASE}/api/mentor/operator/stats`);
-                if (resp.ok && !cancelled) {
-                    const d = await resp.json();
-                    if (d.success) {
-                        setStats(d.stats || {});
-                        setMentors(d.mentors || []);
-                    }
+                // restClient sends the auth cookie/token — the endpoint is
+                // @require_roles(*OPERATOR_ROLES); a raw fetch 401'd.
+                const resp = await restClient.get(`/api/mentor/operator/stats`);
+                const d = resp.data;
+                if (d && d.success && !cancelled) {
+                    setStats(d.stats || {});
+                    setMentors(d.mentors || []);
                 }
             } catch (err) { console.error('Mentorship operator fetch error:', err); }
             finally { if (!cancelled) setLoading(false); }
