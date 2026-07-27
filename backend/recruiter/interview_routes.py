@@ -36,6 +36,76 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+
+def _caller_company_ids(cur, user_id):
+    """Companies the caller belongs to, from BOTH membership stores (accepted
+    company_team_members ∪ hr_profiles) — the #91/#94 dual-store lesson."""
+    ids = set()
+    if not user_id:
+        return ids
+    for sql in (
+        "SELECT company_id FROM company_team_members WHERE user_id=%s AND invitation_status='accepted'",
+        "SELECT company_id FROM hr_profiles WHERE user_id=%s AND company_id IS NOT NULL",
+    ):
+        try:
+            cur.execute(sql, (str(user_id),))
+            for r in cur.fetchall():
+                v = r.get('company_id') if hasattr(r, 'get') else r[0]
+                if v:
+                    ids.add(str(v))
+        except Exception:
+            pass
+    return ids
+
+
+def _assert_interview_company_access(interview_id=None, jd_id=None):
+    """Company-ownership guard for interview by-id / by-jd routes (fixes C1 UAT
+    CRITICAL BOLA [C1-ISO-2]: cross-tenant read of interviews + candidate EIDs).
+    Resolve the interview's JD → job_postings.company_id and require the caller be
+    an accepted member of that company (admins bypass). Returns None if allowed,
+    else an (json, status) tuple. Unknown ids / unscoped legacy rows are allowed."""
+    try:
+        roles = resolve_roles()
+    except Exception:
+        roles = set()
+    if roles & ADMIN_ROLES:
+        return None
+    try:
+        user_id = get_jwt_identity()
+    except Exception:
+        user_id = None
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    try:
+        resolved_jd = jd_id
+        if resolved_jd is None and interview_id is not None:
+            cur.execute(
+                "SELECT jd_id FROM interview_schedules WHERE interview_id = %s OR id::text = %s",
+                (str(interview_id), str(interview_id)))
+            r = cur.fetchone()
+            if not r:
+                return None  # unknown interview — nothing to protect
+            resolved_jd = r.get('jd_id')
+        if not resolved_jd:
+            return None
+        cur.execute("SELECT company_id FROM job_postings WHERE jd_id = %s", (str(resolved_jd),))
+        r = cur.fetchone()
+        if not r or not r.get('company_id'):
+            return None
+        if str(r['company_id']) not in _caller_company_ids(cur, user_id):
+            logger.warning(
+                f"BOLA blocked: user {user_id} tried to access interview/jd "
+                f"(interview={interview_id}, jd={resolved_jd}) of company {r['company_id']}")
+            return (jsonify({
+                'success': False,
+                'error_code': 'not_your_company',
+                'error': 'Access denied: this interview belongs to another company.',
+            }), 403)
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
 # Create blueprint
 interview_bp = Blueprint('recruiter_interviews', __name__)
 
@@ -201,6 +271,9 @@ def get_interviews_by_jd(jd_id):
     - interview_type: Filter by interview type
     """
     try:
+        denied = _assert_interview_company_access(jd_id=jd_id)
+        if denied is not None:
+            return denied
         filters = {'jd_id': jd_id}
         
         # Add optional filters
@@ -239,6 +312,9 @@ def get_interviews_by_jd(jd_id):
 def get_interview_details(interview_id):
     """Get detailed information about a specific interview"""
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
@@ -282,6 +358,9 @@ def update_interview(interview_id):
     Request body: Any fields from the interview schema
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         data = request.get_json()
         
         conn = get_db_connection()
@@ -319,6 +398,9 @@ def cancel_interview(interview_id):
     }
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         data = request.get_json()
         reason = data.get('cancellation_reason', 'No reason provided')
         
@@ -401,6 +483,9 @@ def reschedule_interview(interview_id):
     }
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         data = request.get_json()
         
         if not data.get('scheduled_date') or not data.get('scheduled_time'):
@@ -518,6 +603,9 @@ def complete_interview(interview_id):
     }
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         data = request.get_json()
         
         conn = get_db_connection()
@@ -555,6 +643,9 @@ def confirm_interview(interview_id):
     }
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         data = request.get_json()
         confirmation_status = data.get('confirmation_status')
         
@@ -605,6 +696,9 @@ def send_interview_reminder(interview_id):
     This endpoint will integrate with the Communication Module
     """
     try:
+        denied = _assert_interview_company_access(interview_id=interview_id)
+        if denied is not None:
+            return denied
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
@@ -654,6 +748,9 @@ def send_interview_reminder(interview_id):
 def get_interview_statistics(jd_id):
     """Get interview statistics for a job description"""
     try:
+        denied = _assert_interview_company_access(jd_id=jd_id)
+        if denied is not None:
+            return denied
         conn = get_db_connection()
         stats = interview_engine.get_statistics(conn, jd_id)
         conn.close()
