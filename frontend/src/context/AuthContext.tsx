@@ -217,7 +217,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // "primary" role, but the user may have switched to a secondary role
           // via switchRole().  We detect this by comparing the stored role with
           // the API role and keeping the stored one when they differ.
-          let mergedData = profile.data;
+          let mergedData: any = profile.data;
           if (currentUserStr) {
             try {
               const storedUser = JSON.parse(currentUserStr);
@@ -249,6 +249,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     user_type: storedRoleStillValid ? storedUser.user_type : profile.data.user_type,
                   }
                 };
+              }
+
+              // Preserve the company binding across refreshes.  The /api/auth/profile
+              // payload omits company_id/company_name, so replacing the user with it
+              // wiped the HR manager's company from the session and broke the entire
+              // Team tab — roster, invite-link and add-by-email all 400'd with
+              // "company_id is required" on any returning session (C1 UAT [C1-HRM-4]).
+              mergedData = { ...mergedData };
+              if (mergedData.company_id == null && storedUser.company_id != null) {
+                mergedData.company_id = storedUser.company_id;
+              }
+              if (mergedData.company_name == null && storedUser.company_name != null) {
+                mergedData.company_name = storedUser.company_name;
               }
             } catch (_) { /* parse error — fall through to use API data */ }
           }

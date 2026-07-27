@@ -151,6 +151,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   // Revoking is deliberate and confirmed: it stops the company publishing
   // NEW jobs (already-published ones stay live).
   const [verifyingCompanyId, setVerifyingCompanyId] = useState('');
+  const [invitingCompanyId, setInvitingCompanyId] = useState('');
   const handleVerifyCompany = async (companyId: string, verified: boolean) => {
     if (!verified && !window.confirm(t(
       'Revoke approval? The company will no longer be able to publish new jobs.',
@@ -186,6 +187,43 @@ const GrowthOperatorDashboard: React.FC = () => {
     } catch (err) {
       console.error('Error nudging company:', err);
       alert(t('Error sending nudge warning', 'خطأ أثناء إرسال تنبيه'));
+    }
+  };
+
+  // Send / resend a magic-link invitation for a single pipeline company. The
+  // Send Invite + Resend Link buttons previously had no onClick — the operator
+  // had no working UI path to invite a company (C1 UAT [C1-OPR-4]); only the
+  // NAFIS-import bulk path worked. Auto-email is deferred, so we surface the
+  // magic link for the operator to copy (matches the invite-link feature).
+  const handleSendInvite = async (company: any) => {
+    setInvitingCompanyId(company.id);
+    try {
+      const res = await restClient.post('/api/growth/invite-companies', {
+        companies: [{
+          name: company.name,
+          email: company.contactEmail || '',
+          sector: company.industry || '',
+          role: 'employer_admin',
+        }],
+      });
+      const r = (res as any).data || res;
+      const result = r?.results?.[0] || r?.invitations?.[0] || {};
+      const link = result.magic_link || result.magicLink || result.link || '';
+      if (r.success !== false && (link || result.token)) {
+        window.prompt(
+          t('Invitation ready. Copy this magic link and send it to the employer:',
+            'الدعوة جاهزة. انسخ هذا الرابط وأرسله إلى صاحب العمل:'),
+          link
+        );
+        await fetchDashboardStats();
+      } else {
+        alert(r.error || t('Failed to send invitation', 'فشل إرسال الدعوة'));
+      }
+    } catch (err: any) {
+      console.error('Send invite failed:', err);
+      alert(err?.response?.data?.error || t('Failed to send invitation', 'فشل إرسال الدعوة'));
+    } finally {
+      setInvitingCompanyId('');
     }
   };
 
@@ -622,15 +660,21 @@ const GrowthOperatorDashboard: React.FC = () => {
                     </button>
                   )}
                   {company.status === 'expired' && (
-                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
-                      {t('Resend Link', 'إعادة إرسال الرابط')}
+                    <button
+                      onClick={() => handleSendInvite(company)}
+                      disabled={invitingCompanyId === company.id}
+                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: invitingCompanyId === company.id ? 'wait' : 'pointer', fontWeight: 600, opacity: invitingCompanyId === company.id ? 0.6 : 1 }}>
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} />
+                      {invitingCompanyId === company.id ? t('Sending...', 'جاري الإرسال...') : t('Resend Link', 'إعادة إرسال الرابط')}
                     </button>
                   )}
                   {company.status === 'lead' && company.jobsPosted > 0 && (
-                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
-                      <Mail size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
-                      {t('Send Invite', 'إرسال دعوة')}
+                    <button
+                      onClick={() => handleSendInvite(company)}
+                      disabled={invitingCompanyId === company.id}
+                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: invitingCompanyId === company.id ? 'wait' : 'pointer', fontWeight: 600, opacity: invitingCompanyId === company.id ? 0.6 : 1 }}>
+                      <Mail size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} />
+                      {invitingCompanyId === company.id ? t('Sending...', 'جاري الإرسال...') : t('Send Invite', 'إرسال دعوة')}
                     </button>
                   )}
                 </div>

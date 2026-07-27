@@ -35,17 +35,19 @@ const WorkspaceSettings: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [generalSaving, setGeneralSaving] = useState(false);
 
-  // General Settings Form
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // General Settings Form — hydrated from the workspace (columns + workspace_settings)
   const [form, setForm] = useState({
     companyName: workspace?.company_name || '',
     industry: workspace?.industry || '',
     website: workspace?.website || '',
     description: workspace?.description || '',
     location: workspace?.location || '',
-    emiratizationTarget: 80,
-    notifyOnNewApp: true,
-    notifyOnDeadline: true,
-    autoApproveTraining: false,
+    emiratizationTarget: typeof workspace?.emiratization_target === 'number' ? workspace.emiratization_target : 80,
+    notifyOnNewApp: workspace?.notify_on_new_app ?? true,
+    notifyOnDeadline: workspace?.notify_on_deadline ?? true,
+    autoApproveTraining: workspace?.auto_approve_training ?? false,
   });
 
   // Progression Settings Form
@@ -73,10 +75,10 @@ const WorkspaceSettings: React.FC = () => {
         website: workspace.website || '',
         description: workspace.description || '',
         location: workspace.location || '',
-        emiratizationTarget: 80,
-        notifyOnNewApp: true,
-        notifyOnDeadline: true,
-        autoApproveTraining: false,
+        emiratizationTarget: typeof workspace.emiratization_target === 'number' ? workspace.emiratization_target : 80,
+        notifyOnNewApp: workspace.notify_on_new_app ?? true,
+        notifyOnDeadline: workspace.notify_on_deadline ?? true,
+        autoApproveTraining: workspace.auto_approve_training ?? false,
       });
     }
   }, [workspace]);
@@ -101,13 +103,29 @@ const WorkspaceSettings: React.FC = () => {
   }, [companyId]);
 
   const handleSaveGeneral = async () => {
+    if (!companyId) return;
     setGeneralSaving(true);
-    // Mimic API delay and update state
-    setTimeout(() => {
-      setGeneralSaving(false);
+    setGeneralError(null);
+    try {
+      await restClient.put(`/api/workspace/${companyId}/settings`, {
+        company_name: form.companyName,
+        industry: form.industry,
+        website: form.website,
+        description: form.description,
+        location: form.location,
+        emiratization_target: form.emiratizationTarget,
+        notify_on_new_app: form.notifyOnNewApp,
+        notify_on_deadline: form.notifyOnDeadline,
+        auto_approve_training: form.autoApproveTraining,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    }, 800);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.response?.data?.message;
+      setGeneralError(msg || t('Failed to save settings. Please try again.', 'فشل حفظ الإعدادات. حاول مرة أخرى.'));
+    } finally {
+      setGeneralSaving(false);
+    }
   };
 
   const handleSaveProgression = async () => {
@@ -328,6 +346,15 @@ const WorkspaceSettings: React.FC = () => {
       {/* Tab Panels */}
       {activeTab === 'general' && (
         <div>
+          {generalError && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+              background: brand.redSurface, border: `1px solid ${brand.redText}22`,
+              borderRadius: 10, padding: '10px 14px', color: brand.redText, fontSize: 13,
+            }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} /> {generalError}
+            </div>
+          )}
           {/* Company Information */}
           <div style={{ background: brand.white, borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, marginBottom: 16 }}>
             <SectionHeader icon={Building2} titleEn="Company Information" titleAr="معلومات الشركة" descEn="Basic company details" descAr="تفاصيل الشركة الأساسية" />

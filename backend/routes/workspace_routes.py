@@ -18,9 +18,25 @@ import json
 import logging
 from functools import wraps
 from backend.workspace_middleware import require_workspace_access
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles
 
 # Roles allowed for cross-company admin operations (provision, list)
 GROWTH_OPERATOR_ROLES = {'employer_relations', 'growth_operator', 'platform_administrator', 'super_user', 'admin'}
+
+
+def _caller_is_growth_operator():
+    """True if the caller holds a growth-operator/admin role in ANY of the three
+    places roles live — primary claim, secondary_roles, or the DB — via
+    resolve_roles(). The previous hand-rolled checks read only role/user_type and
+    so 403'd multi-role operators whose operator role sits in secondary_roles
+    (C1 UAT [C1-OPR-5]; the failed-open/closed guard anti-pattern, issue #96)."""
+    try:
+        return bool(resolve_roles() & GROWTH_OPERATOR_ROLES)
+    except Exception:
+        return False
 
 logger = logging.getLogger(__name__)
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/workspace')
@@ -68,22 +84,10 @@ def provision_workspace():
 
     provisioner_id = get_jwt_identity()
 
-    # Verify the caller is a growth operator or platform admin
-    conn_check = get_db()
-    if conn_check:
-        try:
-            cur_check = conn_check.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            # role is authoritative, user_type the legacy mirror (#93).
-            cur_check.execute("SELECT role, user_type FROM users WHERE id = %s", (provisioner_id,))
-            caller = cur_check.fetchone()
-            cur_check.close(); conn_check.close()
-            if not caller or not ({caller.get('role'), caller.get('user_type')} & GROWTH_OPERATOR_ROLES):
-                return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
-        except Exception:
-            conn_check.close()
-            return jsonify({"error": "Authorization check failed"}), 500
-    else:
-        return jsonify({"error": "Database unavailable"}), 503
+    # Verify the caller is a growth operator or platform admin — via resolve_roles
+    # so secondary_roles count (C1 UAT [C1-OPR-5]).
+    if not _caller_is_growth_operator():
+        return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
 
     admin_user_id = data.get('admin_user_id')
     slug = data.get('slug')
@@ -168,7 +172,7 @@ def get_workspace(company_id):
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         cur.execute("""
-            SELECT c.id, c.company_name, c.industry,
+            SELECT c.id, c.company_name, c.industry, c.website, c.description,
                    c.workspace_enabled, c.workspace_slug,
                    c.workspace_admin_id, c.workspace_settings,
                    c.provisioned_at,
@@ -186,7 +190,21 @@ def get_workspace(company_id):
         if not workspace:
             return jsonify({"error": "Company not found"}), 404
 
-        return jsonify({"workspace": serialize_row(workspace)}), 200
+        result = serialize_row(workspace)
+        # Surface general settings stored in the workspace_settings jsonb at the top
+        # level so the settings form hydrates on reload (location + emiratization
+        # target + notification prefs have no dedicated columns). [C1-HRM-2]
+        ws = result.get('workspace_settings') or {}
+        if isinstance(ws, str):
+            try:
+                ws = json.loads(ws)
+            except Exception:
+                ws = {}
+        for key in ('location', 'emiratization_target', 'notify_on_new_app',
+                    'notify_on_deadline', 'auto_approve_training'):
+            if key in ws:
+                result[key] = ws[key]
+        return jsonify({"workspace": result}), 200
     except Exception as e:
         conn.close()
         return jsonify({"error": str(e)}), 500
@@ -752,18 +770,14 @@ def workspace_stats(company_id):
 def list_workspaces():
     """List all provisioned workspaces (for Growth Operators)."""
     caller_id = get_jwt_identity()
-    # Verify the caller is a growth operator or platform admin
+    # Verify the caller is a growth operator or platform admin — via resolve_roles
+    # so secondary_roles count (C1 UAT [C1-OPR-5]; previously read only user_type).
+    if not _caller_is_growth_operator():
+        return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
     try:
-        cur_check = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur_check.execute("SELECT user_type FROM users WHERE id = %s", (caller_id,))
-        caller = cur_check.fetchone()
-        cur_check.close()
-        if not caller or caller['user_type'] not in GROWTH_OPERATOR_ROLES:
-            conn.close()
-            return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT c.id, c.company_name, c.industry, c.workspace_slug,
@@ -912,6 +926,58 @@ def update_workspace_progression(company_id):
         conn.commit()
         cur.close(); conn.close()
         return jsonify({"success": True, "message": "Career progression updated successfully"}), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── WORKSPACE GENERAL SETTINGS ──────────────────────────────────────────────
+
+@workspace_bp.route('/<company_id>/settings', methods=['PUT'])
+@require_workspace_access('workspace.view')
+def update_workspace_settings(company_id):
+    """Persist General-tab workspace settings (C1 UAT [C1-HRM-2] — the form used
+    to fake-save on the client with no API call). Real columns (company_name,
+    industry, website, description) update on `companies`; fields with no column
+    (location, emiratization target, notification prefs) merge into the
+    workspace_settings jsonb. Only the workspace admin/operator may save."""
+    role = g.company_context['role']
+    if role not in ('admin', 'employer_admin', 'growth_operator'):
+        return jsonify({"error": "Access denied: requires admin or employer_admin role"}), 403
+
+    data = request.get_json(silent=True) or {}
+    # Columns that exist on companies (verified against live schema 2026-07-27)
+    col_map = {
+        'company_name': data.get('company_name'),
+        'industry': data.get('industry'),
+        'website': data.get('website'),
+        'description': data.get('description'),
+    }
+    cols = {k: v for k, v in col_map.items() if v is not None}
+    # Fields with no dedicated column → workspace_settings jsonb
+    settings_keys = ('location', 'emiratization_target', 'notify_on_new_app',
+                     'notify_on_deadline', 'auto_approve_training')
+    settings_patch = {k: data[k] for k in settings_keys if k in data}
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor()
+        set_clauses = [f"{c} = %s" for c in cols]
+        params = list(cols.values())
+        if settings_patch:
+            # Merge (not replace) the jsonb so unrelated keys survive.
+            set_clauses.append("workspace_settings = COALESCE(workspace_settings, '{}'::jsonb) || %s::jsonb")
+            params.append(json.dumps(settings_patch))
+        if not set_clauses:
+            cur.close(); conn.close()
+            return jsonify({"success": True, "message": "Nothing to update"}), 200
+        params.append(company_id)
+        cur.execute(f"UPDATE companies SET {', '.join(set_clauses)} WHERE id = %s", params)
+        conn.commit()
+        cur.close(); conn.close()
+        return jsonify({"success": True, "message": "Workspace settings updated successfully"}), 200
     except Exception as e:
         conn.rollback(); conn.close()
         return jsonify({"error": str(e)}), 500

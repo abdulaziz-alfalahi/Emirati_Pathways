@@ -495,7 +495,48 @@ def get_profile():
             profile_data['first_name'] = user_data.get('first_name')
             profile_data['last_name'] = user_data.get('last_name')
             profile_data['phone'] = user_data.get('phone')
-            
+
+            # Include the company binding so a fresh login (no cached user) has
+            # company_id — the HR/recruiter Team tab needs it, and without it here
+            # the frontend session lost it on every refresh (C1 UAT [C1-HRM-4]).
+            # Resolve from BOTH membership stores: accepted company_team_members
+            # (the ACL's authoritative store) then hr_profiles (legacy).
+            try:
+                from backend.db import get_db_connection
+                _cc = get_db_connection()
+                _ccur = _cc.cursor()
+                _ccur.execute(
+                    """
+                    SELECT ctm.company_id, COALESCE(c.company_name, c.name)
+                    FROM company_team_members ctm
+                    LEFT JOIN companies c ON c.id = ctm.company_id
+                    WHERE ctm.user_id = %s AND ctm.invitation_status = 'accepted'
+                    ORDER BY ctm.joined_at DESC NULLS LAST, ctm.created_at DESC
+                    LIMIT 1
+                    """,
+                    (user_id,),
+                )
+                _crow = _ccur.fetchone()
+                if not _crow:
+                    _ccur.execute(
+                        """
+                        SELECT hp.company_id, COALESCE(c.company_name, c.name)
+                        FROM hr_profiles hp
+                        LEFT JOIN companies c ON c.id = hp.company_id
+                        WHERE hp.user_id = %s AND hp.company_id IS NOT NULL
+                        LIMIT 1
+                        """,
+                        (user_id,),
+                    )
+                    _crow = _ccur.fetchone()
+                _cc.close()
+                if _crow and _crow[0]:
+                    profile_data['company_id'] = str(_crow[0])
+                    if _crow[1]:
+                        profile_data['company_name'] = _crow[1]
+            except Exception as _cerr:
+                logger.warning(f"Could not resolve company_id for profile: {_cerr}")
+
             # Map location if missing
             if not profile_data.get('personal_info'): profile_data['personal_info'] = {}
             if not profile_data['personal_info'].get('city'):
