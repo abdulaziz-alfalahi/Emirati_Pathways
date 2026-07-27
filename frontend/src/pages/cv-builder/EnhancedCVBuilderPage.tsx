@@ -123,7 +123,7 @@ const CVBuilderContent: React.FC = () => {
         await createCV('modern-template', 'en');
       }
 
-      // Transform Gemini analysis to CV context format
+      // Transform AI analysis to CV context format
       const cvUpdates = {
         personalInfo: {
           firstName: analysisData.personalInfo?.name?.split(' ')[0] || '',

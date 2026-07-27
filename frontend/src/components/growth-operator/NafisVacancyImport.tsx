@@ -808,10 +808,10 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                                     {company.name}
                                                     {existingCompanies.has(company.name) && (
                                                         <span
-                                                            title={t('This employer is already registered on the platform — check the pipeline before re-inviting', 'صاحب العمل هذا مسجل بالفعل على المنصة — تحقق من خط الإلحاق قبل إعادة الدعوة')}
+                                                            title={t('A company with this name already exists in the system — check the pipeline before re-inviting to avoid a duplicate', 'توجد شركة بهذا الاسم في النظام بالفعل — تحقق من خط الإلحاق قبل إعادة الدعوة لتجنب التكرار')}
                                                             style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: colors.greenBg, color: colors.greenText, letterSpacing: '0.03em', flexShrink: 0 }}
                                                         >
-                                                            {t('ON PLATFORM', 'على المنصة')}
+                                                            {t('IN SYSTEM', 'موجودة بالنظام')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -1052,7 +1052,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                                         {name}
                                                         {existingCompanies.has(name) && (
                                                             <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: colors.yellowBg, color: colors.yellowText, flexShrink: 0 }}>
-                                                                {t('ALREADY ON PLATFORM', 'مسجلة بالفعل')}
+                                                                {t('ALREADY IN SYSTEM', 'موجودة بالفعل')}
                                                             </span>
                                                         )}
                                                     </div>

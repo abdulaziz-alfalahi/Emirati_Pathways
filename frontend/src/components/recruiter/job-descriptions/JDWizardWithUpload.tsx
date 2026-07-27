@@ -119,7 +119,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
                       Fill out the wizard step-by-step with guided prompts and AI assistance
                     </p>
                   </div>
-                  <Button variant="outline" className="w-full" onClick={handleManualStart}>
+                  <Button variant="outline" className="w-full" onClick={(e) => { e.stopPropagation(); handleManualStart(); }}>
                     <Edit3 className="h-4 w-4 me-2" />
                     Start from Scratch
                   </Button>

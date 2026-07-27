@@ -5,6 +5,13 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import NafisVacancyImport from '@/components/growth-operator/NafisVacancyImport';
 import Messages from '@/components/recruiter/Messages';
 import { restClient } from '@/utils/api';
+import toast from 'react-hot-toast';
+
+// Display helper: stored company names can be lower-cased (import path stores
+// them lower-cased); title-case them for display only (C1 UAT [C1-OPR-2]).
+// Leaves already-upper letters intact (CSS-capitalize semantics), so acronyms
+// like "LLC"/"UAE" are not mangled.
+const displayName = (s?: string) => (s || '').replace(/\b\w/g, (c) => c.toUpperCase());
 import {
   Building2, Plus, Search, Filter, Mail, Phone, MapPin, Globe,
   Users, Briefcase, CheckCircle, Clock, AlertTriangle, Eye, Edit,
@@ -162,6 +169,11 @@ const GrowthOperatorDashboard: React.FC = () => {
       const res = await restClient.post(`/api/growth/companies/${companyId}/verify`, { verified });
       const r = (res as any).data || res;
       if (r.success) {
+        // Confirmation was missing entirely — the card just vanished on refresh
+        // (C1 UAT [C1-OPR-7]). Surface an explicit success toast.
+        toast.success(verified
+          ? t('Company approved — it can now publish jobs', 'تم اعتماد الشركة — يمكنها الآن نشر الوظائف')
+          : t('Approval revoked', 'تم إلغاء الاعتماد'));
         await fetchDashboardStats();
       } else {
         alert(r.error || t('Failed to update company approval', 'فشل تحديث اعتماد الشركة'));
@@ -605,7 +617,7 @@ const GrowthOperatorDashboard: React.FC = () => {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 600, color: colors.text }}>{company.name}</span>
+                  <span style={{ fontWeight: 600, color: colors.text }}>{displayName(company.name)}</span>
                   {company.leadSource === 'nafis_import' && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8', letterSpacing: '0.03em' }}>NAFIS</span>
                   )}
@@ -736,7 +748,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{company.name}</span>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{displayName(company.name)}</span>
                     {company.leadSource === 'nafis_import' && (
                       <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8' }}>NAFIS</span>
                     )}
@@ -857,7 +869,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                   return (
                     <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 600, color: colors.text }}>{company.name}</div>
+                        <div style={{ fontWeight: 600, color: colors.text }}>{displayName(company.name)}</div>
                         <div style={{ fontSize: 12, color: colors.textSecondary }}>{company.emirate}</div>
                       </td>
                       <td style={{ textAlign: 'center', padding: '14px 16px', fontWeight: 600, color: colors.text }}>{company.jobsPosted}</td>
@@ -1018,7 +1030,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                   <Building2 size={22} color={colors.primary} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: colors.text }}>{ws.company_name}</div>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: colors.text }}>{displayName(ws.company_name)}</div>
                   <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
                     {ws.industry || t('No industry', 'لا يوجد قطاع')}
                     {ws.workspace_slug && <span> · /{ws.workspace_slug}</span>}
@@ -1067,7 +1079,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                 <option value="">{t('Select a company...', 'اختر شركة...')}</option>
                 {unprovisionedCompanies.map((c: any) => (
                   <option key={c.id || c.company_id} value={c.id || c.company_id}>
-                    {c.company_name || c.name} — {c.industry || t('No industry', 'لا يوجد قطاع')}
+                    {displayName(c.company_name || c.name)} — {c.industry || t('No industry', 'لا يوجد قطاع')}
                   </option>
                 ))}
               </select>

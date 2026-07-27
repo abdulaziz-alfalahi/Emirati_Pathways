@@ -23,7 +23,7 @@ interface AnalysisData {
     overall_impression?: string;
 }
 
-// ─── AI Analysis Sidebar (Web Speech API + Gemini) ────────────────
+// ─── AI Analysis Sidebar (Web Speech API + AI) ────────────────
 const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
     const [history, setHistory] = useState<{ time: string; score: number }[]>([]);
@@ -127,7 +127,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
             }
         }, 2000);
 
-        // Set up analysis interval — send transcript to Gemini every 30 seconds
+        // Set up analysis interval — send transcript to the AI every 30 seconds
         analysisIntervalRef.current = setInterval(() => {
             if (transcriptRef.current.trim().length > 20) {
                 analyzeTranscript();
