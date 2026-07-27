@@ -1460,27 +1460,41 @@ def save_jd(jd_id):
         if company_id_placeholder and current_user_id:
              try:
                 # Check multiple sources for company name:
-                # 1. users.company (VARCHAR column)
-                # 2. users.profile_data->>'companyName' (JSONB from Settings)
-                # 3. hr_profiles -> companies (relational)
+                # 1. hr_profiles -> companies (relational, legacy display store)
+                # 2. company_team_members accepted membership (the ACL's
+                #    authoritative store — invite-link recruiters ONLY have this;
+                #    without it they could draft but never publish, C1 UAT [C1-REC-4])
+                # 3. users.company (VARCHAR column)
+                # 4. users.profile_data->>'companyName' (JSONB from Settings)
                 cur.execute("""
                     SELECT
                         hp.company_id as hr_company_id,
+                        ctm.company_id as team_company_id,
                         u.company,
                         u.profile_data->>'companyName' as profile_company,
                         COALESCE(c.company_name, c.name) as hr_company
                     FROM users u
                     LEFT JOIN hr_profiles hp ON hp.user_id = u.id
                     LEFT JOIN companies c ON hp.company_id::text = c.id::text
+                    LEFT JOIN LATERAL (
+                        SELECT m.company_id
+                        FROM company_team_members m
+                        WHERE m.user_id = u.id
+                          AND m.invitation_status = 'accepted'
+                        ORDER BY m.joined_at DESC NULLS LAST, m.created_at DESC
+                        LIMIT 1
+                    ) ctm ON TRUE
                     WHERE u.id = %s
                 """, (current_user_id,))
                 row = cur.fetchone()
                 if row:
                     # Prefer the company UUID (aligns with hr_profiles.company_id,
-                    # which the recruiter match join uses); fall back to a name so
-                    # recruiters without an hr_profile keep working unchanged.
+                    # which the recruiter match join uses), then the accepted team
+                    # membership; fall back to a name so recruiters without either
+                    # keep working unchanged.
                     resolved = (
                         row.get('hr_company_id') or
+                        row.get('team_company_id') or
                         row.get('company') or
                         row.get('profile_company') or
                         row.get('hr_company')
