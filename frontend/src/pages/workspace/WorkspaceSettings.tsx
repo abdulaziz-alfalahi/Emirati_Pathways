@@ -5,7 +5,7 @@ import { restClient } from '@/utils/api';
 import {
   Building2, Settings, Globe, Users, Bell, Shield, Mail,
   Save, Loader2, CheckCircle, AlertCircle, Plus, Trash2,
-  Briefcase, Award, TrendingUp
+  Briefcase, Award, TrendingUp, Palette
 } from 'lucide-react';
 
 const brand = {
@@ -31,11 +31,23 @@ const WorkspaceSettings: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
   
-  const [activeTab, setActiveTab] = useState<'general' | 'progression'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'branding' | 'progression'>('general');
   const [saved, setSaved] = useState(false);
   const [generalSaving, setGeneralSaving] = useState(false);
 
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // Branding form — persisted in the companies.workspace_branding jsonb column.
+  // Logo is a URL (a full file-upload is out of scope for this fix).
+  const wsBrand = (workspace?.branding || workspace?.workspace_branding || {}) as any;
+  const [branding, setBranding] = useState({
+    brand_name: wsBrand.brand_name || '',
+    brand_color: wsBrand.brand_color || '#0D9488',
+    brand_logo_url: wsBrand.brand_logo_url || '',
+    brand_tagline: wsBrand.brand_tagline || '',
+  });
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
 
   // General Settings Form — hydrated from the workspace (columns + workspace_settings)
   const [form, setForm] = useState({
@@ -79,6 +91,13 @@ const WorkspaceSettings: React.FC = () => {
         notifyOnNewApp: workspace.notify_on_new_app ?? true,
         notifyOnDeadline: workspace.notify_on_deadline ?? true,
         autoApproveTraining: workspace.auto_approve_training ?? false,
+      });
+      const b = (workspace.branding || workspace.workspace_branding || {}) as any;
+      setBranding({
+        brand_name: b.brand_name || '',
+        brand_color: b.brand_color || '#0D9488',
+        brand_logo_url: b.brand_logo_url || '',
+        brand_tagline: b.brand_tagline || '',
       });
     }
   }, [workspace]);
@@ -125,6 +144,27 @@ const WorkspaceSettings: React.FC = () => {
       setGeneralError(msg || t('Failed to save settings. Please try again.', 'فشل حفظ الإعدادات. حاول مرة أخرى.'));
     } finally {
       setGeneralSaving(false);
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    if (!companyId) return;
+    setBrandingSaving(true);
+    setBrandingError(null);
+    try {
+      await restClient.put(`/api/workspace/${companyId}/settings`, {
+        brand_name: branding.brand_name,
+        brand_color: branding.brand_color,
+        brand_logo_url: branding.brand_logo_url,
+        brand_tagline: branding.brand_tagline,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.response?.data?.message;
+      setBrandingError(msg || t('Failed to save branding. Please try again.', 'فشل حفظ العلامة التجارية. حاول مرة أخرى.'));
+    } finally {
+      setBrandingSaving(false);
     }
   };
 
@@ -274,24 +314,24 @@ const WorkspaceSettings: React.FC = () => {
           </p>
         </div>
         
-        {activeTab === 'general' ? (
+        {activeTab !== 'progression' ? (
           <button
-            onClick={handleSaveGeneral}
-            disabled={generalSaving}
+            onClick={activeTab === 'branding' ? handleSaveBranding : handleSaveGeneral}
+            disabled={activeTab === 'branding' ? brandingSaving : generalSaving}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '10px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
               background: saved ? brand.greenText : brand.primary, color: brand.white,
               fontSize: 13, fontWeight: 600, transition: 'background 0.2s',
-              opacity: generalSaving ? 0.7 : 1,
+              opacity: (activeTab === 'branding' ? brandingSaving : generalSaving) ? 0.7 : 1,
             }}
           >
-            {generalSaving ? (
+            {(activeTab === 'branding' ? brandingSaving : generalSaving) ? (
               <Loader2 className="animate-spin" size={16} />
             ) : saved ? (
               <><CheckCircle size={16} /> {t('Saved!', 'تم الحفظ!')}</>
             ) : (
-              <><Save size={16} /> {t('Save Changes', 'حفظ التغييرات')}</>
+              <><Save size={16} /> {activeTab === 'branding' ? t('Save Branding', 'حفظ العلامة التجارية') : t('Save Changes', 'حفظ التغييرات')}</>
             )}
           </button>
         ) : (
@@ -329,6 +369,17 @@ const WorkspaceSettings: React.FC = () => {
           }}
         >
           {t('General Settings', 'الإعدادات العامة')}
+        </button>
+        <button
+          onClick={() => setActiveTab('branding')}
+          style={{
+            padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 14, fontWeight: 600, color: activeTab === 'branding' ? brand.primary : brand.textSecondary,
+            borderBottom: activeTab === 'branding' ? `2px solid ${brand.primary}` : '2px solid transparent',
+            marginBottom: -1, transition: 'all 0.15s',
+          }}
+        >
+          {t('Branding', 'العلامة التجارية')}
         </button>
         <button
           onClick={() => setActiveTab('progression')}
@@ -435,6 +486,71 @@ const WorkspaceSettings: React.FC = () => {
                 `Workspace ID: ${companyId} · Slug: ${workspace?.workspace_slug || 'N/A'}`,
                 `معرّف مساحة العمل: ${companyId} · الرابط: ${workspace?.workspace_slug || 'غير متوفر'}`
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'branding' && (
+        <div>
+          {brandingError && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+              background: brand.redSurface, border: `1px solid ${brand.redText}22`,
+              borderRadius: 10, padding: '10px 14px', color: brand.redText, fontSize: 13,
+            }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} /> {brandingError}
+            </div>
+          )}
+          <div style={{ background: brand.white, borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, marginBottom: 16 }}>
+            <SectionHeader icon={Palette} titleEn="Workspace Branding" titleAr="العلامة التجارية لمساحة العمل" descEn="Customize how your workspace appears to your team" descAr="خصّص كيفية ظهور مساحة عملك لفريقك" />
+            <InputField label={t('Display Name', 'الاسم المعروض')} value={branding.brand_name} onChange={v => setBranding(prev => ({ ...prev, brand_name: v }))} placeholder={t('e.g. Falcon Talent', 'مثال: مواهب فالكون')} />
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: brand.textSecondary, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {t('Primary Colour', 'اللون الأساسي')}
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="color"
+                  value={branding.brand_color}
+                  onChange={e => setBranding(prev => ({ ...prev, brand_color: e.target.value }))}
+                  style={{ width: 48, height: 38, padding: 2, borderRadius: 8, border: `1px solid ${brand.border}`, cursor: 'pointer', background: brand.white }}
+                />
+                <input
+                  type="text"
+                  value={branding.brand_color}
+                  onChange={e => setBranding(prev => ({ ...prev, brand_color: e.target.value }))}
+                  placeholder="#0D9488"
+                  style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, color: brand.textPrimary, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+            {/* Logo is stored as a URL for now; a full file-upload is out of scope for this fix. */}
+            <InputField label={t('Logo URL', 'رابط الشعار')} value={branding.brand_logo_url} onChange={v => setBranding(prev => ({ ...prev, brand_logo_url: v }))} placeholder="https://…/logo.png" />
+            <InputField label={t('Tagline', 'الشعار النصي')} value={branding.brand_tagline} onChange={v => setBranding(prev => ({ ...prev, brand_tagline: v }))} placeholder={t('A short workspace tagline', 'شعار نصي قصير لمساحة العمل')} />
+          </div>
+
+          {/* Live preview */}
+          <div style={{ background: brand.white, borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
+            <SectionHeader icon={Globe} titleEn="Preview" titleAr="معاينة" descEn="How your branding looks" descAr="كيف تبدو علامتك التجارية" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderRadius: 10, border: `1px solid ${brand.border}` }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
+                background: branding.brand_color || brand.primary, color: brand.white,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18,
+              }}>
+                {branding.brand_logo_url
+                  ? <img src={branding.brand_logo_url} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (branding.brand_name || workspace?.company_name || 'W').slice(0, 1).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: brand.textPrimary }}>
+                  {branding.brand_name || workspace?.company_name || t('Your Workspace', 'مساحة عملك')}
+                </div>
+                <div style={{ fontSize: 13, color: brand.textSecondary }}>
+                  {branding.brand_tagline || t('No tagline set', 'لا يوجد شعار نصي')}
+                </div>
+              </div>
             </div>
           </div>
         </div>

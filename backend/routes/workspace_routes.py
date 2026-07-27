@@ -174,7 +174,7 @@ def get_workspace(company_id):
         cur.execute("""
             SELECT c.id, c.company_name, c.industry, c.website, c.description,
                    c.workspace_enabled, c.workspace_slug,
-                   c.workspace_admin_id, c.workspace_settings,
+                   c.workspace_admin_id, c.workspace_settings, c.workspace_branding,
                    c.provisioned_at,
                    u.full_name as admin_name, u.email as admin_email,
                    (SELECT COUNT(*) FROM company_employees ce WHERE ce.company_id = c.id AND ce.status = 'active') as employee_count,
@@ -204,6 +204,14 @@ def get_workspace(company_id):
                     'notify_on_deadline', 'auto_approve_training'):
             if key in ws:
                 result[key] = ws[key]
+        # Surface branding jsonb as a `branding` object for the Branding tab ([C1-HRM-3]).
+        wb = result.get('workspace_branding') or {}
+        if isinstance(wb, str):
+            try:
+                wb = json.loads(wb)
+            except Exception:
+                wb = {}
+        result['branding'] = wb
         return jsonify({"workspace": result}), 200
     except Exception as e:
         conn.close()
@@ -958,6 +966,9 @@ def update_workspace_settings(company_id):
     settings_keys = ('location', 'emiratization_target', 'notify_on_new_app',
                      'notify_on_deadline', 'auto_approve_training')
     settings_patch = {k: data[k] for k in settings_keys if k in data}
+    # Branding fields → the dedicated workspace_branding jsonb column ([C1-HRM-3]).
+    branding_keys = ('brand_name', 'brand_color', 'brand_logo_url', 'brand_tagline')
+    branding_patch = {k: data[k] for k in branding_keys if k in data}
 
     conn = get_db()
     if not conn:
@@ -970,6 +981,9 @@ def update_workspace_settings(company_id):
             # Merge (not replace) the jsonb so unrelated keys survive.
             set_clauses.append("workspace_settings = COALESCE(workspace_settings, '{}'::jsonb) || %s::jsonb")
             params.append(json.dumps(settings_patch))
+        if branding_patch:
+            set_clauses.append("workspace_branding = COALESCE(workspace_branding, '{}'::jsonb) || %s::jsonb")
+            params.append(json.dumps(branding_patch))
         if not set_clauses:
             cur.close(); conn.close()
             return jsonify({"success": True, "message": "Nothing to update"}), 200

@@ -169,10 +169,11 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 SELECT DISTINCT ON (ja.id)
                     ja.id as application_id,
                     ja.candidate_id,
+                    ja.cover_letter,
                     ja.applied_at as submitted_at,
                     ja.status as application_status,
                     uc.id as cv_id,
-                    uc.user_id,
+                    COALESCE(uc.user_id, u.id) as user_id,
                     uc.personal_info,
                     uc.professional_summary,
                     uc.technical_skills,
@@ -183,12 +184,19 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     u.first_name,
                     u.last_name,
                     CONCAT(u.first_name, ' ', u.last_name) as candidate_name,
-                    u.email
+                    u.email,
+                    u.profile_data
                 FROM job_applications ja
                 LEFT JOIN users u ON ja.candidate_id = u.id
                 LEFT JOIN user_cvs uc ON u.id = uc.user_id
                 WHERE 1=1
             """
+            # NOTE (C1-REC-5): candidate_id / user_id are the candidate's users.id,
+            # which in this system is the (synthetic) Emirates ID. It is the functional
+            # id the shortlist/message/interview actions require, so it stays in the
+            # payload — but it must NOT be shown to recruiters as a visible national ID
+            # (the UI mitigation lives in JobApplicantsView.tsx). A proper opaque
+            # public-id layer is the deeper follow-up.
 
             params = []
 
@@ -322,6 +330,68 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     final_score = 50.0
 
                 return round(final_score, 1)
+
+            # Backfill qualification fields for applicants without a user_cvs row
+            # (C1-REC-5): a candidate's skills live in user_skills (self-reported /
+            # assessment-verified) and their summary/experience/education in
+            # users.profile_data — not only in user_cvs. Without this the recruiter
+            # sees an all-null applicant and cannot evaluate anyone. Runs BEFORE
+            # scoring so self-reported skills also feed the match score.
+            import json as _json_bf
+
+            def _bf_list(v):
+                if not v:
+                    return []
+                if isinstance(v, list):
+                    return v
+                if isinstance(v, str):
+                    try:
+                        p = _json_bf.loads(v)
+                        return p if isinstance(p, list) else [p]
+                    except Exception:
+                        return [s.strip() for s in v.split(',') if s.strip()]
+                return [v]
+
+            for candidate in candidates:
+                uid = candidate.get('user_id') or candidate.get('candidate_id')
+                pd = candidate.get('profile_data')
+                if isinstance(pd, str):
+                    try:
+                        pd = _json_bf.loads(pd)
+                    except Exception:
+                        pd = {}
+                pd = pd or {}
+
+                if not candidate.get('technical_skills'):
+                    try:
+                        skill_rows = execute_query(
+                            "SELECT skill_name, proficiency, source, verified "
+                            "FROM user_skills WHERE user_id = %s "
+                            "ORDER BY verified DESC, skill_name",
+                            (str(uid),)) or []
+                    except Exception:
+                        skill_rows = []
+                    if skill_rows:
+                        candidate['technical_skills'] = [
+                            {'name': r.get('skill_name'),
+                             'proficiency': r.get('proficiency'),
+                             'source': r.get('source'),
+                             'verified': r.get('verified')}
+                            for r in skill_rows if r.get('skill_name')]
+                    elif pd.get('skills'):
+                        candidate['technical_skills'] = _bf_list(pd.get('skills'))
+                if not candidate.get('professional_summary'):
+                    candidate['professional_summary'] = (
+                        pd.get('professional_summary') or pd.get('summary'))
+                if not candidate.get('work_experience'):
+                    candidate['work_experience'] = _bf_list(
+                        pd.get('work_experience') or pd.get('experience'))
+                if not candidate.get('education'):
+                    candidate['education'] = _bf_list(pd.get('education'))
+                if not candidate.get('certifications'):
+                    candidate['certifications'] = _bf_list(pd.get('certifications'))
+                # profile_data is an internal blob — don't ship it to the client.
+                candidate.pop('profile_data', None)
 
             # Add match scores and sort by score DESC
             for candidate in candidates:

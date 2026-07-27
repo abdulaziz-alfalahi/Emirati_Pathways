@@ -123,7 +123,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'candidate': '/candidate-dashboard',
   'student': '/candidate-dashboard',
   'employer_admin': '/hr-dashboard',
-  'recruiter': '/recruiter',
+  'recruiter': '/recruiter-dashboard',
   'training_provider': '/training-center-dashboard',
   'parent': '/guardian-dashboard',
   'admin': '/admin-dashboard',

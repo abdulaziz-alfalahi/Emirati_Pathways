@@ -504,6 +504,23 @@ def recruiter_request_assessment():
                    'Recruiter-requested assessment', 'pending', %s, 'pending', NOW(), NOW())
            RETURNING id""",
         (candidate_id, title, get_jwt_identity()), fetch_one=True)
+    # Notify the candidate that an assessment awaits their consent (best-effort;
+    # C1-CAN-5 — recruiter-requested assessments produced no candidate notification).
+    try:
+        try:
+            from backend.notification_helper import create_notification as _notify
+        except ImportError:
+            from notification_helper import create_notification as _notify
+        _notify(
+            candidate_id,
+            'assessment_requested',
+            'Assessment requested — your consent needed',
+            f"A recruiter has requested the assessment \"{title}\". Review and give or decline consent.",
+            {'assessment_id': (row or {}).get('id'), 'title': title, 'consent_status': 'pending',
+             'event': 'assessment_requested'}
+        )
+    except Exception as _notif_err:
+        logger.warning(f"Assessment-request candidate notification failed (non-critical): {_notif_err}")
     return jsonify({'success': True,
                     'message': 'Assessment requested — awaiting the candidate\'s consent',
                     'data': {'id': (row or {}).get('id'), 'consent_status': 'pending'}}), 201

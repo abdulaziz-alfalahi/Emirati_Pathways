@@ -72,6 +72,20 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     return Array.from(new Set(raw.map(r => String(normalizeRole(r) || r).toLowerCase())));
   }, [user, propUserRole]);
 
+  // [C1-OPR-1] The consolidated "Growth Dashboard" nav item must route to the
+  // user's ACTUAL operator dashboard, resolved from ALL their roles — not
+  // getDashboardRoute(userRole), which uses the primary role (candidate for a
+  // self-serve-granted operator) and so misrouted operators to
+  // /candidate-dashboard. Pick the first role that maps to a non-candidate
+  // dashboard; fall back to the generic growth-operator dashboard.
+  const operatorDashboardRoute = React.useMemo(() => {
+    const opRole = userRoles.find(r => {
+      const d = getDashboardRoute(r);
+      return d && d !== '/candidate-dashboard';
+    });
+    return opRole ? getDashboardRoute(opRole) : '/growth-operator-dashboard';
+  }, [userRoles]);
+
   // ── Role-based nav filtering ──
   // Define which nav items should be HIDDEN for each role category
   const hiddenPathsByRole: Record<string, string[]> = {
@@ -461,7 +475,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                             return (
                             <Link
                               key={item.name}
-                              to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
+                              to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? operatorDashboardRoute : item.href)}
                               className={`flex flex-row items-start gap-3 p-3 rounded-xl transition-colors group ${isItemDisabled ? 'opacity-60 hover:bg-muted' : 'hover:bg-[#F0F7F7]'}`}
                             >
                               <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isItemDisabled ? 'text-slate-400' : 'text-primary'}`} />
@@ -537,7 +551,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       return (
                       <Link
                         key={item.name}
-                        to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
+                        to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? operatorDashboardRoute : item.href)}
                         className={`flex text-start ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center gap-2 transition-colors py-1 ${isItemDisabled ? 'opacity-60 text-slate-400' : 'text-[#6B7280] hover:text-primary'}`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >

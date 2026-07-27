@@ -263,6 +263,24 @@ class CompanyTeamSystem:
         """, (company_id, str(user_id), self.ADMIN_TIER_ROLES))
         return cur.fetchone() is not None
 
+    def _pick_reassign_owner(self, cur, company_id: str, exclude_user_id, fallback) -> str:
+        """Choose a durable owner for a departing member's job postings: an
+        accepted admin-tier member of the SAME company (never the one being
+        removed); otherwise the actor performing the removal (who holds
+        manage_employees). Never returns None, so a published job is never
+        orphaned when its recruiter is removed (C1 UAT [C1-HRM-6])."""
+        cur.execute("""
+            SELECT user_id FROM company_team_members
+            WHERE company_id = %s AND user_id <> %s
+              AND invitation_status = 'accepted' AND role IN %s
+            ORDER BY joined_at ASC NULLS LAST
+            LIMIT 1
+        """, (company_id, str(exclude_user_id), self.ADMIN_TIER_ROLES))
+        row = cur.fetchone()
+        if row and row.get('user_id'):
+            return str(row['user_id'])
+        return str(fallback)
+
     def _audit(self, cur, actor_id, action: str, company_id: str, details: dict):
         """Append to admin_audit_log (append-only, migration 002). Best-effort:
         a missing audit table must not turn revocation into a 500 — but log loudly."""
@@ -287,8 +305,9 @@ class CompanyTeamSystem:
           1. soft-remove the membership (status 'removed' — the ACL honours
              only 'accepted'), preserving role/joined_at history;
           2. sever hr_profiles.company_id for this company;
-          3. unassign the company's job postings from the user (recruiter_id
-             only — created_by is provenance, not an access key here);
+          3. REASSIGN the company's job postings from the user to a durable
+             company owner (recruiter_id only — created_by is provenance);
+             never NULL, so a published job is never orphaned ([C1-HRM-6]);
           4. append an audit record.
         Refuses to remove the last admin-tier member (stranded company).
         """
@@ -324,23 +343,30 @@ class CompanyTeamSystem:
                     """, (user_id, company_id))
                     profiles_severed = cur.rowcount
 
+                    # Reassign — never orphan — the departing member's job
+                    # postings to a durable company owner (C1 UAT [C1-HRM-6]).
+                    # Setting recruiter_id = NULL previously left published jobs
+                    # ownerless and unrecoverable on re-add.
+                    new_owner = self._pick_reassign_owner(cur, company_id, user_id, removed_by)
                     cur.execute("""
-                        UPDATE job_postings SET recruiter_id = NULL
+                        UPDATE job_postings SET recruiter_id = %s
                         WHERE company_id::text = %s AND recruiter_id = %s
-                    """, (str(company_id), user_id))
-                    jobs_unassigned = cur.rowcount
+                    """, (new_owner, str(company_id), user_id))
+                    jobs_reassigned = cur.rowcount
 
                     self._audit(cur, removed_by, 'team.remove_member', company_id, {
                         'target_user_id': user_id,
                         'previous_role': member['role'],
                         'hr_profiles_severed': profiles_severed,
-                        'jobs_unassigned': jobs_unassigned,
+                        'jobs_reassigned': jobs_reassigned,
+                        'reassigned_to': new_owner,
                     })
                     conn.commit()
                     return {'success': True, 'status': 200,
                             'message': 'Member removed and access revoked',
                             'hr_profiles_severed': profiles_severed,
-                            'jobs_unassigned': jobs_unassigned}
+                            'jobs_reassigned': jobs_reassigned,
+                            'reassigned_to': new_owner}
         except Exception as e:
             logger.error(f"Error removing member: {e}")
             return {'success': False, 'status': 500, 'message': 'Failed to remove member'}

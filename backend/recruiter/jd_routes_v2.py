@@ -1391,6 +1391,32 @@ def add_to_shortlist():
 
             logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id} (job_id={job_id_int})")
 
+            # Notify the candidate they were shortlisted (best-effort; C1-CAN-5 —
+            # shortlist produced no candidate notification before).
+            try:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                _job_title = None
+                try:
+                    _tcur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                    _tcur.execute("SELECT title FROM job_postings WHERE id = %s", (job_id_int,))
+                    _tr = _tcur.fetchone(); _tcur.close()
+                    _job_title = _tr['title'] if _tr else None
+                except Exception:
+                    _job_title = None
+                _notify(
+                    str(candidate_id),
+                    'application_shortlisted',
+                    'You have been shortlisted',
+                    (f"You've been shortlisted for {_job_title}." if _job_title
+                     else "You've been shortlisted for a role you applied to."),
+                    {'jd_id': str(jd_id), 'job_id': job_id_int, 'event': 'shortlisted'}
+                )
+            except Exception as _notif_err:
+                logger.warning(f"Shortlist candidate notification failed (non-critical): {_notif_err}")
+
             return jsonify({
                 'success': True,
                 'message': 'Candidate added to shortlist',
