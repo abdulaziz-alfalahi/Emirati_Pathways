@@ -164,13 +164,24 @@ def add_skill():
     """Add or update a skill for the current user."""
     try:
         from flask import g
+        import re
         user_id = g.user_id
-        data = request.get_json()
+        data = request.get_json() or {}
+        skill_name = (data.get('skill_name') or '').strip()
+        skill_id = (data.get('skill_id') or '').strip()
+        if not skill_name and not skill_id:
+            return jsonify({"error": "skill_name is required"}), 400
+        # Derive a stable per-skill id from the name when the client doesn't send
+        # one. Without this every self-reported skill arrives with skill_id='' and
+        # they all collide on ON CONFLICT (user_id, '') — collapsing every skill
+        # into a single row (C1 UAT [C1-CAN-1]).
+        if not skill_id and skill_name:
+            skill_id = 'self_' + re.sub(r'[^a-z0-9]+', '-', skill_name.lower()).strip('-')
         skill_graph, _, _ = _get_engines()
         result = skill_graph.add_user_skill(
             user_id=user_id,
-            skill_id=data.get('skill_id', ''),
-            skill_name=data.get('skill_name', ''),
+            skill_id=skill_id,
+            skill_name=skill_name,
             proficiency=data.get('proficiency', 'intermediate'),
             source=data.get('source', 'self_reported'),
             evidence=data.get('evidence', ''),

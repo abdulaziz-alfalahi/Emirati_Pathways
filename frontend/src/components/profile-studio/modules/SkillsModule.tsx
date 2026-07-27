@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, CheckCircle, Shield, Zap, Loader2 } from 'lucide-react';
+import { Target, CheckCircle, Shield, Zap, Loader2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { profileService, CandidateProfile } from '@/services/profile/profileService';
+import { restClient } from '@/utils/api';
 import { AssessmentModule } from './AssessmentModule';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
 export const SkillsModule = () => {
     const navigate = useNavigate();
@@ -11,6 +16,11 @@ export const SkillsModule = () => {
     const [skills, setSkills] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('All');
+    // Add-skill modal state
+    const [showAdd, setShowAdd] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [newLevel, setNewLevel] = useState('Intermediate');
+    const [saving, setSaving] = useState(false);
     const { language, isRTL } = useLanguage();
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
@@ -20,21 +30,67 @@ export const SkillsModule = () => {
 
     const loadSkills = async () => {
         try {
-            const res = await profileService.getProfile();
-            if (res.success) {
-                setProfile(res.data);
-                if (res.data.skills) {
-                    const mappedSkills = res.data.skills.map((s: any) => ({
-                        ...s,
-                        score: s.assessment_score || 0
-                    }));
-                    setSkills(mappedSkills);
-                }
+            // Merge two stores so what you add is what you see: the profile
+            // (carries assessment scores/verification) AND the intelligence
+            // user_skills store (where self-reported skills are written).
+            const [profRes, intel] = await Promise.allSettled([
+                profileService.getProfile(),
+                restClient.get('/api/intelligence/skills'),
+            ]);
+
+            const byName = new Map<string, any>();
+            if (profRes.status === 'fulfilled' && profRes.value?.success) {
+                setProfile(profRes.value.data);
+                (profRes.value.data.skills || []).forEach((s: any) => {
+                    byName.set((s.name || '').toLowerCase(), { ...s, score: s.assessment_score || 0 });
+                });
             }
+            if (intel.status === 'fulfilled') {
+                (intel.value?.data?.skills || []).forEach((s: any) => {
+                    const name = s.skill_name || s.name || '';
+                    const key = name.toLowerCase();
+                    if (!key) return;
+                    if (!byName.has(key)) {
+                        byName.set(key, {
+                            name,
+                            category: s.category || 'Technical',
+                            level: cap(s.proficiency || 'intermediate'),
+                            verified: !!s.verified,
+                            score: s.assessment_score || 0,
+                        });
+                    }
+                });
+            }
+            setSkills(Array.from(byName.values()));
         } catch (error) {
             console.error("Failed to load skills", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAddSkill = async () => {
+        const name = newName.trim();
+        if (!name) {
+            toast.error(t('Enter a skill name', 'أدخل اسم المهارة'));
+            return;
+        }
+        setSaving(true);
+        try {
+            await restClient.post('/api/intelligence/skills', {
+                skill_name: name,
+                proficiency: newLevel.toLowerCase(),
+                source: 'self_reported',
+            });
+            toast.success(t('Skill added', 'تمت إضافة المهارة'));
+            setNewName('');
+            setNewLevel('Intermediate');
+            setShowAdd(false);
+            await loadSkills();
+        } catch (e) {
+            toast.error(t('Could not add skill', 'تعذر إضافة المهارة'));
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -157,13 +213,73 @@ export const SkillsModule = () => {
                 ))}
 
                 {/* Add New Skill Card */}
-                <button className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-6 text-gray-400 hover:border-teal-400 hover:text-teal-500 transition-colors min-h-[160px]">
+                <button
+                    onClick={() => setShowAdd(true)}
+                    className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center p-6 text-gray-400 hover:border-teal-400 hover:text-teal-500 transition-colors min-h-[160px]"
+                >
                     <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-2">
                         <span className="text-2xl font-light">+</span>
                     </div>
                     <span className="font-medium">{t('Add Skill', 'إضافة مهارة')}</span>
                 </button>
             </div>
+
+            {/* Add Skill Modal */}
+            {showAdd && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+                    onClick={() => !saving && setShowAdd(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+                        onClick={(e) => e.stopPropagation()}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-900">{t('Add a Skill', 'إضافة مهارة')}</h3>
+                            <button onClick={() => !saving && setShowAdd(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('Skill name', 'اسم المهارة')}</label>
+                        <input
+                            autoFocus
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddSkill(); }}
+                            placeholder={t('e.g. Python, Project Management', 'مثال: بايثون، إدارة المشاريع')}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('Proficiency', 'مستوى الإتقان')}</label>
+                        <select
+                            value={newLevel}
+                            onChange={(e) => setNewLevel(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                            {LEVELS.map((l) => (
+                                <option key={l} value={l}>{l}</option>
+                            ))}
+                        </select>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setShowAdd(false)}
+                                disabled={saving}
+                                className="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium disabled:opacity-50"
+                            >
+                                {t('Cancel', 'إلغاء')}
+                            </button>
+                            <button
+                                onClick={handleAddSkill}
+                                disabled={saving}
+                                className="px-4 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-medium disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {saving && <Loader2 size={16} className="animate-spin" />}
+                                {t('Add Skill', 'إضافة مهارة')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Assessment Integration */}
             <div className="mt-12">

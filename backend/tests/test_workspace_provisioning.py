@@ -87,8 +87,21 @@ class TestNoCurrentCompanyIdWrites:
         sql_statements = [l for l in statements if 'UPDATE' in l or 'SELECT' in l or 'INSERT' in l]
         assert sql_statements == [], f"SQL still references current_company_id: {sql_statements}"
 
-    def test_provision_checks_role_and_user_type(self):
+    def test_provision_and_list_authorize_via_resolve_roles(self):
+        # The provision + list guards must authorize through resolve_roles() so a
+        # multi-role operator whose growth-operator role sits in secondary_roles is
+        # allowed (C1 UAT [C1-OPR-5]). The previous hand-rolled checks read only
+        # users.role/user_type and 403'd such operators — pinning that SQL here
+        # locked in the bug (issue #96 fail-closed guard anti-pattern).
         import inspect
-        from backend.routes.workspace_routes import provision_workspace
-        src = inspect.getsource(provision_workspace)
-        assert "SELECT role, user_type" in src
+        from backend.routes.workspace_routes import provision_workspace, list_workspaces
+        prov = inspect.getsource(provision_workspace)
+        lst = inspect.getsource(list_workspaces)
+        assert "_caller_is_growth_operator()" in prov
+        assert "_caller_is_growth_operator()" in lst
+        # and the shared helper resolves roles from all three stores
+        from backend.routes.workspace_routes import _caller_is_growth_operator
+        assert "resolve_roles" in inspect.getsource(_caller_is_growth_operator)
+        # the buggy primary-only lookups must be gone
+        assert "SELECT role, user_type" not in prov
+        assert "SELECT user_type" not in lst

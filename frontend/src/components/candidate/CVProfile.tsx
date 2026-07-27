@@ -1002,7 +1002,7 @@ const CVProfile: React.FC = () => {
 
             <div className="mt-4 pt-4 border-t">
               <Button
-                onClick={() => navigate('/cv-builder')}
+                onClick={() => navigate('/candidate/profile/skills')}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Sparkles className="h-4 w-4" style={{ marginInlineEnd: 8 }} />

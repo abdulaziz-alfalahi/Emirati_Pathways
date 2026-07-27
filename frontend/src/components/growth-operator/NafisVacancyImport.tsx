@@ -381,6 +381,20 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
         totalHired: filteredJobs.reduce((s, j) => s + parseInt(j['No of Hired'] || '0'), 0),
     }), [filteredJobs, companyAggregates]);
 
+    // Vacancies covered by the current selection + its share of the total. Both were
+    // referenced in the selection toolbar but never computed — selecting a company
+    // threw `ReferenceError: selectedVacancies is not defined` and white-screened the
+    // whole dashboard (C1 UAT [C1-OPR-4]).
+    const selectedVacancies = useMemo(
+        () => companyAggregates
+            .filter(c => selectedCompanies.has(c.name))
+            .reduce((s, c) => s + (c.totalVacancies || 0), 0),
+        [companyAggregates, selectedCompanies]
+    );
+    const coveragePct = stats.totalVacancies > 0
+        ? Math.round((selectedVacancies / stats.totalVacancies) * 100)
+        : 0;
+
     const activeFilterCount = [sectorFilter, emirateFilter, jobTypeFilter, businessTypeFilter, educationFilter].filter(f => f.length > 0).length + (minVacancies > 0 ? 1 : 0);
 
     // ─── Selection ───

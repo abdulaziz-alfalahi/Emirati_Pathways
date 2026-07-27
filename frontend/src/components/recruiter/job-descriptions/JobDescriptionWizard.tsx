@@ -679,6 +679,29 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
+  // Surface the backend's own error message rather than axios' raw
+  // "Request failed with status code NNN". The save/publish gate returns
+  // { success:false, error_code, message } — prefer message, then error,
+  // then a friendly mapping for known codes ([C1-REC-3]).
+  const extractApiError = (error: any, fallback: string): string => {
+    const data = error?.response?.data;
+    if (data) {
+      if (data.error_code === 'company_not_verified') {
+        return data.message ||
+          'Your company must be approved by platform operations before you can publish. ' +
+          'Your work is saved as a draft — you can publish once it is verified.';
+      }
+      if (data.error_code === 'not_your_company') {
+        return data.error || data.message || 'This job belongs to another company.';
+      }
+      if (data.message) return data.message;
+      if (data.error) return data.error;
+    }
+    const raw = error?.message;
+    if (raw && !/^Request failed with status code/i.test(raw)) return raw;
+    return fallback;
+  };
+
   const handleSaveDraft = async () => {
     if (!jdData.jd_id || jdData.jd_id === 'undefined') {
       toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
@@ -717,14 +740,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = response.data;
       console.log('Save draft result:', result);
 
+      if (result?.success === false) {
+        toast.error(result.message || result.error || "Could not save draft.");
+        return;
+      }
+
       // Show success toast
-      toast.success(result.message || (result.success ? "Job description saved as draft successfully" : "Saved"));
+      toast.success(result.message || "Job description saved as draft successfully");
 
       // Don't navigate away - allow user to continue editing
     } catch (error: any) {
       console.error('Save draft error:', error);
-      const message = error.response?.data?.error || error.message || "Failed to save draft. Please try again.";
-      toast.error(message);
+      toast.error(extractApiError(error, "Failed to save draft. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -762,15 +789,25 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
       const result = response.data;
 
-      toast.success("Job description published successfully");
+      // A 200 with success:false must not masquerade as a successful publish;
+      // keep the wizard state intact so the recruiter doesn't lose their work.
+      if (result?.success === false) {
+        toast.error(result.message || result.error || "Could not publish this job.");
+        return;
+      }
+
+      toast.success(result?.message || "Job description published successfully");
 
       // Call onComplete callback
       if (onComplete && jdData.jd_id) {
         onComplete(jdData.jd_id);
       }
     } catch (error: any) {
-      const message = error.response?.data?.error || error.message || "Failed to publish job description";
-      toast.error(message);
+      console.error('Publish error:', error);
+      // Show the backend's clear message (e.g. company_not_verified) instead of
+      // the raw axios string, and leave the wizard on its current step so the
+      // recruiter can save as draft / retry without re-entering anything.
+      toast.error(extractApiError(error, "Failed to publish job description"));
     } finally {
       setLoading(false);
     }
