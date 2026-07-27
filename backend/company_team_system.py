@@ -8,6 +8,11 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import uuid
 
+try:
+    from backend.user_helpers import user_display_name
+except ImportError:  # pragma: no cover
+    from user_helpers import user_display_name
+
 # Roles an HR manager may hand out through a team invite link (never admin/owner).
 _INVITABLE_TEAM_ROLES = {'recruiter', 'hr_manager', 'hr'}
 
@@ -34,15 +39,18 @@ class CompanyTeamSystem:
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    query = """
-                        SELECT 
+                    # full_name via user_display_name so a null full_name column
+                    # falls back to first||last then email (C1 UAT [C1-HRM-6]/[C1-REC-1]
+                    # roster showed null names).
+                    query = f"""
+                        SELECT
                             ctm.id,
                             ctm.user_id,
                             ctm.role,
                             ctm.permissions,
                             ctm.invitation_status,
                             ctm.joined_at,
-                            u.full_name,
+                            {user_display_name('full_name', 'u')},
                             u.email,
                             u.job_title
                         FROM company_team_members ctm
@@ -250,9 +258,11 @@ class CompanyTeamSystem:
     # Roles whose ROLE_PERMISSIONS grant workspace.manage_employees — the
     # last-admin guard counts these (workspace_middleware.py vocabulary).
     ADMIN_TIER_ROLES = ('admin', 'employer_admin')
-    # Roles assignable through the team API. Deliberately excludes anything
-    # outside the workspace_middleware.ROLE_PERMISSIONS vocabulary.
-    ASSIGNABLE_ROLES = ('admin', 'employer_admin', 'recruiter', 'member')
+    # Roles assignable through the team API. Includes the same team vocabulary
+    # the invite/link flow issues (_INVITABLE_TEAM_ROLES: recruiter/hr_manager/hr)
+    # so a role granted by invite can also be set via change-role — the C1 UAT
+    # [C1-HRM-6] mismatch where 'hr' was rejected by change_member_role.
+    ASSIGNABLE_ROLES = ('admin', 'employer_admin', 'recruiter', 'hr_manager', 'hr', 'member')
 
     def _other_admin_exists(self, cur, company_id: str, user_id) -> bool:
         cur.execute("""

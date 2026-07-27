@@ -64,12 +64,27 @@ _VALID_STATUSES = {'submitted', 'under_review', 'shortlisted', 'interview',
 _BASE_SELECT = """
     SELECT ja.id, ja.job_id, ja.candidate_id, ja.status, ja.cover_letter,
            ja.expected_salary, ja.applied_at, ja.submitted_at, ja.updated_at,
-           ja.interview_date, ja.interview_type,
+           COALESCE(ja.interview_date::timestamp, sched.scheduled_date::timestamp) AS interview_date,
+           COALESCE(ja.interview_type, sched.interview_type) AS interview_type,
            jp.title AS job_title, jp.emirate, jp.city,
            COALESCE(c.name, c.company_name, '') AS company_name
     FROM job_applications ja
     LEFT JOIN job_postings jp ON jp.id::text = ja.job_id
     LEFT JOIN companies c ON c.id = jp.company_id
+    LEFT JOIN LATERAL (
+        -- Scheduled interviews live in interview_schedules, not on
+        -- job_applications.interview_date — so the column was always null even
+        -- after an interview was booked (C1 UAT [C1-CAN-5]). Pull the latest
+        -- non-cancelled one, matched by application id or candidate+job.
+        SELECT isch.scheduled_date, isch.interview_type
+        FROM interview_schedules isch
+        WHERE (isch.application_id::text = ja.id::text
+               OR (isch.candidate_id::text = ja.candidate_id::text
+                   AND isch.job_posting_id::text = ja.job_id::text))
+          AND COALESCE(isch.status, '') NOT IN ('cancelled', 'canceled')
+        ORDER BY isch.scheduled_date DESC NULLS LAST
+        LIMIT 1
+    ) sched ON TRUE
 """
 
 

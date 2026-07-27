@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -421,6 +421,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   });
 
   const [loading, setLoading] = useState(false);
+  // Guards against creating two draft JDs from one "Start from Scratch": the init
+  // effect runs twice under React 18 StrictMode (and can re-run on dep changes)
+  // before setJDData applies, so both invocations pass the "no id yet" check and
+  // each POST /jd/create. A synchronous ref set before the await lets only the
+  // first through (C1 UAT [C1-REC-2]).
+  const createInFlightRef = useRef(false);
   const [showMatchingDialog, setShowMatchingDialog] = useState(false);
   const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
   const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
@@ -544,6 +550,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
       // If no ID found anywhere, Create a new JD
       if (!initialData && !cleanUrlJdId) {
+        // One draft per Start-from-Scratch: bail if a create already fired
+        // (StrictMode double-invoke / effect re-run). Reset only on failure.
+        if (createInFlightRef.current) return;
+        createInFlightRef.current = true;
         try {
           const response = await restClient.post('/api/recruiter/jd/create', {
             recruiter_id: recruiterId,
@@ -563,6 +573,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           }
         } catch (error) {
           console.error('Failed to create JD:', error);
+          createInFlightRef.current = false; // allow a retry after a failed create
         }
       }
     };

@@ -37,6 +37,7 @@ import { langOf, employmentTypeLabel, salaryLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 interface MatchBreakdown {
   skills_match?: number;
@@ -121,6 +122,24 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [applyJob, setApplyJob] = useState<Job | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [applying, setApplying] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Never surface a raw company UUID on a card ([C1-CAN-2]) — fall back to a
+  // neutral label when the API sends an id instead of a resolved name.
+  const isUuid = (s?: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((s || '').trim());
+  const displayCompany = (c?: string) => (c && !isUuid(c) ? c : t('Company', 'شركة'));
+
+  // The job APIs emit a "{min} - {max} AED" string that collapses to "- AED"
+  // when no range is set ([C1-CAN-2]). Keep real ranges and word placeholders
+  // (Competitive/Negotiable…); replace the empty stub with a clean fallback.
+  const displaySalary = (raw?: string) => {
+    const v = (raw || '').trim();
+    const hasDigits = /\d/.test(v);
+    const knownWord = /competitive|negotiable|not specified|not disclosed|unpaid/i.test(v);
+    if (!v || (!hasDigits && !knownWord)) return t('Salary not disclosed', 'الراتب غير معلن');
+    return salaryLabel(v, lang);
+  };
 
   const toggleExpandedJob = (jobId: string) => {
     setExpandedJobDetails(prev => {
@@ -438,7 +457,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       passesLevelFilter = job.jobLevel === experienceFilter;
     }
 
-    return passesScoreFilter && passesLevelFilter;
+    // Apply free-text search over title + company ([C1-CAN-2])
+    const q = searchQuery.trim().toLowerCase();
+    const passesSearch = !q ||
+      (job.title || '').toLowerCase().includes(q) ||
+      (job.company || '').toLowerCase().includes(q);
+
+    return passesScoreFilter && passesLevelFilter && passesSearch;
   });
 
   // Loading state
@@ -672,6 +697,18 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
               </Button>
             </div>
 
+            {/* Free-text search ([C1-CAN-2]) */}
+            <div className="relative">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('Search by job title or company…', 'ابحث حسب المسمى الوظيفي أو الشركة…')}
+                className="ps-9"
+              />
+            </div>
+
             {/* Filters */}
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center space-x-2">
@@ -754,7 +791,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                         <div className="flex items-center flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                           <div className="flex items-center space-x-1">
                             <Briefcase className="h-4 w-4" />
-                            <span>{job.company}</span>
+                            <span>{displayCompany(job.company)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <MapPin className="h-4 w-4" />
@@ -777,7 +814,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           )}
                           <div className="flex items-center space-x-1">
                             <Coins className="h-4 w-4" />
-                            <span>{salaryLabel(job.salary, lang)}</span>
+                            <span>{displaySalary(job.salary)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />
@@ -827,7 +864,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                         )}
                         <div>
                           <h4 className="font-semibold text-foreground mb-1">{t('Company Info', 'معلومات الشركة')}</h4>
-                          <p className="text-muted-foreground">{t('Company:', 'الشركة:')} {job.company}</p>
+                          <p className="text-muted-foreground">{t('Company:', 'الشركة:')} {displayCompany(job.company)}</p>
                           <p className="text-muted-foreground">{t('Location:', 'الموقع:')} {job.location}</p>
                         </div>
                       </div>
@@ -1009,7 +1046,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
               {t('Apply', 'التقديم')}{applyJob ? ` — ${applyJob.title}` : ''}
             </DialogTitle>
             <DialogDescription>
-              {applyJob ? `${applyJob.company}` : ''}
+              {applyJob ? `${displayCompany(applyJob.company)}` : ''}
               {' '}
               {t('Add a short cover letter to introduce yourself (optional but recommended).',
                  'أضف رسالة تعريفية قصيرة للتعريف بنفسك (اختيارية لكن يُنصح بها).')}

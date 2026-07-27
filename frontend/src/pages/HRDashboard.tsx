@@ -133,6 +133,7 @@ const HRDashboard: React.FC = () => {
 
   const userData = getUserData();
   const COMPANY_ID = userData.company_id || userData.profile_data?.companyId || '';
+  const COMPANY_NAME = userData.company_name || userData.profile_data?.companyName || '';
   const HR_MANAGER_ID = userData.id ? String(userData.id) : '';
   const HR_MANAGER_NAME = (userData.full_name && userData.full_name !== 'None None' && userData.full_name !== 'None')
     ? userData.full_name
@@ -342,8 +343,10 @@ const HRDashboard: React.FC = () => {
               filled: m.overview.positions_filled
             },
             recruitment: {
-              averageTimeToHire: m.performance.avg_time_to_hire,
-              successRate: m.performance.success_rate,
+              // Coalesce: a null metric rendered "nulld" / "null%" in the stat
+              // cards (C1 UAT [C1-HRM-1]); empty stats now read 0.
+              averageTimeToHire: m.performance.avg_time_to_hire ?? 0,
+              successRate: m.performance.success_rate ?? 0,
               candidateQuality: 0
             }
           }));
@@ -400,6 +403,12 @@ const HRDashboard: React.FC = () => {
                 <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
                   {b('HR Management Dashboard', 'لوحة إدارة الموارد البشرية')}
                 </h1>
+                {COMPANY_NAME && (
+                  <div className="flex items-center gap-1.5 text-slate-700 font-dubai-bold mb-1">
+                    <Building2 className="h-4 w-4 text-teal-600" />
+                    <span>{COMPANY_NAME}</span>
+                  </div>
+                )}
                 <p className="text-slate-600 font-dubai-medium">
                   {b(`Welcome back, ${HR_MANAGER_NAME} - Manage UAE National talent acquisition`, `مرحباً بعودتك، ${HR_MANAGER_NAME} - إدارة استقطاب المواهب الوطنية`)}
                 </p>
@@ -409,9 +418,15 @@ const HRDashboard: React.FC = () => {
                   {b('HR Manager', 'مدير الموارد البشرية')}
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  {b('Talent33 Aligned', 'متوافق مع برنامج نافس')}
+                  {b('NAFIS Aligned', 'متوافق مع برنامج نافس')}
                 </Badge>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!COMPANY_ID}
+                  title={!COMPANY_ID ? b('No workspace linked to your account', 'لا توجد مساحة عمل مرتبطة بحسابك') : undefined}
+                  onClick={() => COMPANY_ID && navigate(`/workspace/${COMPANY_ID}/settings`)}
+                >
                   <Settings className={`h-4 w-4 me-2`} />
                   {b('Settings', 'الإعدادات')}
                 </Button>

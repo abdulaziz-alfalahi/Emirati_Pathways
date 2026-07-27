@@ -54,6 +54,17 @@ import {
   activityDescriptionLabel,
 } from '@/utils/enumLabels';
 
+// C1 UAT [C1-CAN-2]: guard the Recommended-for-You card so a raw company UUID or
+// an empty "- AED" salary never leaks into the UI.
+const _isUuid = (v?: string) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim());
+const displayCompanyName = (c?: string, fallback = 'Company') => (!c || _isUuid(c)) ? fallback : c;
+const displayJobSalary = (raw: string | undefined, lang: any) => {
+  const label = salaryLabel(raw, lang);
+  return (!label || !/\d/.test(String(label))) && !/competitive|negoti|disclos|حسب|تنافس/i.test(String(label || ''))
+    ? (lang === 'ar' ? 'الراتب غير محدد' : 'Salary not disclosed')
+    : label;
+};
+
 interface DashboardData {
   profile: {
     name: string;
@@ -520,14 +531,14 @@ const CandidateDashboard: React.FC = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground flex-shrink-0">
-                                {(job.company || '?').charAt(0)}
+                                {displayCompanyName(job.company).charAt(0)}
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{isRTL && (job as any).title_ar ? (job as any).title_ar : job.title}</p>
-                                <p className="text-xs text-muted-foreground">{isRTL && (job as any).company_ar ? (job as any).company_ar : job.company}</p>
+                                <p className="text-xs text-muted-foreground">{isRTL && (job as any).company_ar ? (job as any).company_ar : displayCompanyName(job.company)}</p>
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                                   <span>📍 {job.location || 'UAE'}</span>
-                                  <span>💰 {salaryLabel(job.salary, lang)}</span>
+                                  <span>💰 {displayJobSalary(job.salary, lang)}</span>
                                   <span>🏢 {employmentTypeLabel(job.type, lang)}</span>
                                   {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">{jobSourceLabel(job.source, lang)}</Badge>}
                                 </div>
