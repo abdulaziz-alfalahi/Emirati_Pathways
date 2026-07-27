@@ -35,6 +35,8 @@ import { useNavigate } from 'react-router-dom';
 import { formatDateFromString } from '@/utils/dateFormat';
 import { langOf, employmentTypeLabel, salaryLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface MatchBreakdown {
   skills_match?: number;
@@ -116,6 +118,9 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat?: number, long?: number }>({});
   const [expandedJobDetails, setExpandedJobDetails] = useState<Set<string>>(new Set());
+  const [applyJob, setApplyJob] = useState<Job | null>(null);
+  const [coverLetter, setCoverLetter] = useState('');
+  const [applying, setApplying] = useState(false);
 
   const toggleExpandedJob = (jobId: string) => {
     setExpandedJobDetails(prev => {
@@ -304,7 +309,20 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     }
   };
 
-  const handleApply = async (jobId: string) => {
+  // Open the cover-letter dialog rather than applying in one click, so the
+  // candidate submits a real cover letter (fixes [C1-CAN-3] — the canned
+  // "Application from Candidate Dashboard" that recruiters read as the candidate's).
+  const openApplyDialog = (job: Job) => {
+    setApplyJob(job);
+    setCoverLetter('');
+  };
+
+  const submitApplication = async () => {
+    if (!applyJob) return;
+    const jobId = applyJob.id;
+    const letter = coverLetter.trim();
+    setApplying(true);
+
     // Optimistic update — show "Applied" immediately
     setJobs(prevJobs =>
       prevJobs.map(job =>
@@ -316,11 +334,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       const response = await restClient.post('/api/jobs/apply', {
         job_id: jobId,
         user_id: candidateProfile?.id,
-        cover_letter: 'Application from Candidate Dashboard'
+        cover_letter: letter
       });
 
       if (response.data.success) {
         toast.success(t('Application submitted successfully!', 'تم تقديم الطلب بنجاح!'));
+        setApplyJob(null);
+        setCoverLetter('');
       } else {
         // Rollback on failure
         setJobs(prevJobs =>
@@ -335,6 +355,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       if (error.response?.data?.message?.includes('already applied')) {
         // Keep the optimistic state — user already applied
         toast.info(t('You have already applied for this job.', 'لقد قدمت بالفعل على هذه الوظيفة.'));
+        setApplyJob(null);
       } else {
         // Rollback on network error
         setJobs(prevJobs =>
@@ -344,6 +365,8 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
         );
         toast.error(t('Failed to submit application. Please try again.', 'فشل تقديم الطلب. يرجى المحاولة مرة أخرى.'));
       }
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -949,7 +972,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                             <XCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
                             {t('Withdrawn', 'تم السحب')}
                           </Badge>
-                          <Button size="sm" onClick={() => handleApply(job.id)}>
+                          <Button size="sm" onClick={() => openApplyDialog(job)}>
                             {t('Re-Apply', 'إعادة التقديم')}
                           </Button>
                         </div>
@@ -959,12 +982,12 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                             <XCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
                             {t('Not Selected', 'لم يتم الاختيار')}
                           </Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleApply(job.id)}>
+                          <Button size="sm" variant="outline" onClick={() => openApplyDialog(job)}>
                             {t('Re-Apply', 'إعادة التقديم')}
                           </Button>
                         </div>
                       ) : (
-                        <Button size="sm" onClick={() => handleApply(job.id)}>
+                        <Button size="sm" onClick={() => openApplyDialog(job)}>
                           {t('Apply Now', 'قدّم الآن')}
                         </Button>
                       )}
@@ -976,6 +999,47 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cover-letter dialog — candidates submit a real letter instead of a
+          one-click canned string ([C1-CAN-3]) */}
+      <Dialog open={!!applyJob} onOpenChange={(open) => { if (!open && !applying) { setApplyJob(null); setCoverLetter(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('Apply', 'التقديم')}{applyJob ? ` — ${applyJob.title}` : ''}
+            </DialogTitle>
+            <DialogDescription>
+              {applyJob ? `${applyJob.company}` : ''}
+              {' '}
+              {t('Add a short cover letter to introduce yourself (optional but recommended).',
+                 'أضف رسالة تعريفية قصيرة للتعريف بنفسك (اختيارية لكن يُنصح بها).')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium mb-1 block">
+              {t('Cover letter', 'الرسالة التعريفية')}
+            </label>
+            <Textarea
+              value={coverLetter}
+              onChange={(e) => setCoverLetter(e.target.value)}
+              rows={7}
+              placeholder={t(
+                'Why are you a great fit for this role? Highlight relevant skills and experience…',
+                'لماذا أنت مناسب لهذه الوظيفة؟ سلّط الضوء على مهاراتك وخبراتك ذات الصلة…'
+              )}
+              disabled={applying}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setApplyJob(null); setCoverLetter(''); }} disabled={applying}>
+              {t('Cancel', 'إلغاء')}
+            </Button>
+            <Button onClick={submitApplication} disabled={applying}>
+              {applying ? t('Submitting…', 'جارٍ التقديم…') : t('Submit application', 'إرسال الطلب')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

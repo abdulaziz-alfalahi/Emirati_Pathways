@@ -99,7 +99,29 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
       }
       const response = await restClient.get(`/api/recruiter/jobs/${jobId}/applicants?${params.toString()}`);
       if (response.data?.success) {
-        return response.data;
+        // Normalize backend keys → the Applicant shape the card reads (C1-REC-5).
+        // The API returns email/professional_summary/application_status and skills
+        // that may be objects ({name,proficiency,...}) from the user_skills backfill;
+        // without this the recruiter saw blank fields. candidate_id (the functional
+        // users.id) is kept for actions but never rendered as a visible ID.
+        const skillName = (s: any) =>
+          typeof s === 'string' ? s : (s?.name || s?.skill || s?.skill_name || '');
+        const norm = (c: any) => ({
+          ...c,
+          candidate_email: c.candidate_email || c.email,
+          candidate_phone: c.candidate_phone || c.phone || c.personal_info?.phone,
+          candidate_summary: c.candidate_summary || c.professional_summary,
+          status: c.status || c.application_status,
+          technical_skills: Array.isArray(c.technical_skills)
+            ? c.technical_skills.map(skillName).filter(Boolean) : c.technical_skills,
+          soft_skills: Array.isArray(c.soft_skills)
+            ? c.soft_skills.map(skillName).filter(Boolean) : c.soft_skills,
+        });
+        return {
+          ...response.data,
+          candidates: (response.data.candidates || []).map(norm),
+          top_matches: (response.data.top_matches || []).map(norm),
+        };
       }
       throw new Error('Failed to fetch applicants');
     },

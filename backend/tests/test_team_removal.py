@@ -86,6 +86,7 @@ class TestRemoveMember:
         cur = ScriptedCursor([
             {'id': 'm1', 'role': 'admin', 'invitation_status': 'accepted'},
             {'1': 1},  # another admin exists
+            {'user_id': '784000011111110'},  # _pick_reassign_owner: durable admin found
         ])
         system, conn = _system_with(cur)
         r = system.remove_member(COMPANY, TARGET, ACTOR)
@@ -96,8 +97,10 @@ class TestRemoveMember:
         assert not cur.executed('DELETE FROM company_team_members')
         # 2. hr_profiles severed
         assert cur.executed('UPDATE hr_profiles SET company_id = NULL')
-        # 3. jobs unassigned
-        assert cur.executed('UPDATE job_postings SET recruiter_id = NULL')
+        # 3. jobs REASSIGNED to a durable company admin, never NULL ([C1-HRM-6])
+        assert cur.executed('UPDATE job_postings SET recruiter_id = %s')
+        assert not cur.executed('UPDATE job_postings SET recruiter_id = NULL')
+        assert r.get('reassigned_to') == '784000011111110'
         # 4. audited
         assert cur.executed('INSERT INTO admin_audit_log')
         conn.commit.assert_called_once()
