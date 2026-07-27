@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
+import toast from 'react-hot-toast';
 
 const brand = {
     primary: '#0D9488',
@@ -54,6 +55,7 @@ const AssessmentsPage: React.FC = () => {
     const [userSkills, setUserSkills] = useState<any[]>([]);
     const [totalSkills, setTotalSkills] = useState(0);
     const [myRequests, setMyRequests] = useState<any[]>([]);
+    const [certifications, setCertifications] = useState<any[]>([]);
     const [requestingTitle, setRequestingTitle] = useState<string | null>(null);
     const [consentingId, setConsentingId] = useState<number | null>(null);
 
@@ -62,10 +64,11 @@ const AssessmentsPage: React.FC = () => {
         async function fetchData() {
             setLoading(true);
             try {
-                const [assessRes, progressRes, requestsRes] = await Promise.allSettled([
+                const [assessRes, progressRes, requestsRes, stampsRes] = await Promise.allSettled([
                     restClient.get('/api/skills-development/assessments'),
                     restClient.get('/api/skills-development/user-progress'),
                     restClient.get('/api/skills-development/assessments/my-requests'),
+                    restClient.get('/api/career-passport/stamps'),
                 ]);
                 if (cancelled) return;
                 if (assessRes.status === 'fulfilled') {
@@ -88,6 +91,15 @@ const AssessmentsPage: React.FC = () => {
                     const d = requestsRes.value.data as any;
                     if (Array.isArray(d?.data)) setMyRequests(d.data);
                 }
+                // Certifications minted by passing an assessment land on the career
+                // passport as 'certification' stamps (C2 UAT [C2-CAN-2]).
+                if (stampsRes.status === 'fulfilled') {
+                    const d = stampsRes.value.data as any;
+                    const stamps = d?.stamps || d?.data?.stamps || [];
+                    if (Array.isArray(stamps)) {
+                        setCertifications(stamps.filter((s: any) => s?.category === 'certification'));
+                    }
+                }
             } catch (e) {
                 console.warn('Assessments API not available', e);
             } finally {
@@ -97,6 +109,14 @@ const AssessmentsPage: React.FC = () => {
         fetchData();
         return () => { cancelled = true; };
     }, []);
+
+    const refreshRequests = async () => {
+        try {
+            const res = await restClient.get('/api/skills-development/assessments/my-requests');
+            const d = res.data as any;
+            if (Array.isArray(d?.data)) setMyRequests(d.data);
+        } catch { /* non-fatal */ }
+    };
 
     const stats = [
         { value: totalSkills > 0 ? `${totalSkills}` : '75+', label: t('Skills Mapped', 'مهارة مصنّفة'), icon: BookOpen },
@@ -125,22 +145,19 @@ const AssessmentsPage: React.FC = () => {
         if (!title || requestingTitle) return;
         setRequestingTitle(title);
         try {
-            const res = await restClient.post('/api/skills-development/assessments/request', { title });
-            const d = res.data as any;
-            if (d?.data) setMyRequests(prev => [d.data, ...prev]);
+            await restClient.post('/api/skills-development/assessments/request', { title: `${title} Skills Assessment` });
+            // Re-fetch from the server so the new pending request reliably shows,
+            // independent of the POST response shape (C2 UAT [C2-CAN-3]: the button
+            // looked like a silent no-op when the response shape didn't match).
+            await refreshRequests();
+            toast.success(t('Assessment requested — an assessor will schedule it.', 'تم طلب التقييم — سيقوم مقيّم بجدولته.'));
         } catch (e: any) {
             if (e?.response?.status === 409) {
-                // An open request already exists — reflect its state.
-                try {
-                    const res = await restClient.get('/api/skills-development/assessments/my-requests');
-                    const d = res.data as any;
-                    if (Array.isArray(d?.data)) setMyRequests(d.data);
-                    else setMyRequests(prev => [{ id: -1, title, status: 'pending', scheduled_at: null, score: null, result: null }, ...prev]);
-                } catch {
-                    setMyRequests(prev => [{ id: -1, title, status: 'pending', scheduled_at: null, score: null, result: null }, ...prev]);
-                }
+                await refreshRequests();
+                toast(t('You already have an open request for this assessment.', 'لديك بالفعل طلب مفتوح لهذا التقييم.'));
             } else {
-                console.warn('Assessment request failed', e);
+                const msg = e?.response?.data?.message || t('Could not request the assessment. Please try again.', 'تعذّر طلب التقييم. حاول مرة أخرى.');
+                toast.error(msg);
             }
         } finally {
             setRequestingTitle(null);
@@ -154,15 +171,22 @@ const AssessmentsPage: React.FC = () => {
         setConsentingId(id);
         try {
             await restClient.post(`/api/skills-development/assessments/${id}/consent`, { decision });
-            const res = await restClient.get('/api/skills-development/assessments/my-requests');
-            const d = res.data as any;
-            if (Array.isArray(d?.data)) setMyRequests(d.data);
-        } catch (e) {
-            console.warn('Consent decision failed', e);
+            await refreshRequests();
+            toast.success(decision === 'grant'
+                ? t('Consent granted — the assessor can now proceed.', 'تمت الموافقة — يمكن للمقيّم المتابعة الآن.')
+                : t('Request declined.', 'تم رفض الطلب.'));
+        } catch (e: any) {
+            const msg = e?.response?.data?.message || t('Could not record your decision. Please try again.', 'تعذّر تسجيل قرارك. حاول مرة أخرى.');
+            toast.error(msg);
         } finally {
             setConsentingId(null);
         }
     };
+
+    // Recruiter-requested assessments still awaiting the candidate's consent —
+    // surfaced at the top of the landing tab so the action isn't below the fold
+    // (C2 UAT [C2-CAN-5]).
+    const pendingConsent = myRequests.filter((r: any) => r.recruiter_requested && r.consent_status === 'pending');
 
     const requestStatusChip = (r: any) => {
         let bg = brand.amber, fg = brand.amberText, label = t('Requested — awaiting assessor', 'مطلوب — بانتظار المقيّم');
@@ -184,9 +208,44 @@ const AssessmentsPage: React.FC = () => {
         );
     };
 
+    /* ── Consent banner (recruiter-requested, awaiting consent) ── */
+    const consentBanner = pendingConsent.length > 0 ? (
+        <div style={{ background: brand.amber, border: `1px solid ${brand.amberText}33`, borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Star size={18} style={{ color: brand.amberText }} />
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: brand.amberText, margin: 0 }}>
+                    {t('A recruiter has requested an assessment — your consent is needed', 'طلب مسؤول توظيف تقييمًا — مطلوبة موافقتك')}
+                </h3>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {pendingConsent.map((r: any, i: number) => (
+                    <div key={r.id ?? i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{r.title}</div>
+                            <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>
+                                {t('Your consent is needed before results can be shared with the recruiter.', 'مطلوبة موافقتك قبل مشاركة النتائج مع مسؤول التوظيف.')}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <button onClick={() => decideConsent(r.id, 'grant')} disabled={consentingId === r.id}
+                                style={{ background: brand.green, color: brand.greenText, border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                {consentingId === r.id ? <Loader2 className="animate-spin" size={13} /> : null}{t('Consent', 'أوافق')}
+                            </button>
+                            <button onClick={() => decideConsent(r.id, 'deny')} disabled={consentingId === r.id}
+                                style={{ background: '#fff', color: brand.redText, border: `1px solid ${brand.border}`, padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                                {t('Decline', 'أرفض')}
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    ) : null;
+
     /* ── Tab 1: Skill Domains ── */
     const domainsTab = (
         <div>
+            {consentBanner}
             <AiAssistPanel
                 feature="skills_gap"
                 title="AI skills-gap analysis"
@@ -449,9 +508,74 @@ const AssessmentsPage: React.FC = () => {
         </div>
     );
 
+    /* ── Tab 4: My Certifications ── */
+    const certificationsTab = (
+        <div>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+                {t('My Certifications', 'شهاداتي')}
+            </h2>
+            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
+                {t('Credentials earned by passing professional assessments — issued by accredited assessment centres.', 'الشهادات التي حصلت عليها باجتياز التقييمات المهنية — صادرة عن مراكز تقييم معتمدة.')}
+            </p>
+            {loading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                    <Loader2 className="animate-spin" size={32} style={{ color: brand.primary }} />
+                </div>
+            ) : certifications.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 50, color: brand.textSecondary }}>
+                    <Award size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                    <p style={{ fontSize: 15 }}>{t('No certifications yet.', 'لا توجد شهادات بعد.')}</p>
+                    <p style={{ fontSize: 13 }}>{t('Pass an assessment to earn a verified certification.', 'اجتز تقييمًا لتحصل على شهادة موثّقة.')}</p>
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                    {certifications.map((c: any, i: number) => {
+                        const meta = c.metadata || {};
+                        const rows: Array<[string, any]> = [
+                            [t('Issuer', 'الجهة المانحة'), c.issuer],
+                            [t('NQF level', 'مستوى الإطار الوطني'), meta.nqf_level],
+                            [t('Issued', 'تاريخ الإصدار'), formatDate(c.earned_at)],
+                            [t('Expires', 'تاريخ الانتهاء'), formatDate(meta.expires_at)],
+                            [t('Certificate no.', 'رقم الشهادة'), meta.certificate_number],
+                            [t('Score', 'النتيجة'), meta.score !== undefined && meta.score !== null ? `${Math.round(meta.score)}%` : undefined],
+                        ];
+                        return (
+                            <div key={c.id ?? i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, borderTop: `3px solid ${brand.primary}` }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Award size={20} style={{ color: brand.primary }} />
+                                        </div>
+                                        <h4 style={{ fontSize: 15, fontWeight: 700, color: brand.textPrimary, margin: 0 }}>
+                                            {isRTL && c.title_ar ? c.title_ar : (c.title_en || c.title || t('Certification', 'شهادة'))}
+                                        </h4>
+                                    </div>
+                                    {c.verified && (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+                                            <CheckCircle size={11} /> {t('Verified', 'موثّقة')}
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {rows.filter(([, v]) => v !== undefined && v !== null && v !== '').map(([k, v], j) => (
+                                        <div key={j} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12.5 }}>
+                                            <span style={{ color: brand.textSecondary }}>{k}</span>
+                                            <span style={{ color: brand.textPrimary, fontWeight: 500, textAlign: isRTL ? 'left' : 'right' }}>{v}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+
     const tabs = [
         { id: 'domains', label: t('Skill Domains', 'مجالات المهارات'), icon: <Brain className="h-4 w-4" />, content: domainsTab },
         { id: 'results', label: t('My Results', 'نتائجي'), icon: <BarChart3 className="h-4 w-4" />, content: resultsTab },
+        { id: 'certifications', label: t('Certifications', 'الشهادات'), icon: <Award className="h-4 w-4" />, content: certificationsTab },
         { id: 'heatmap', label: t('Market Demand', 'طلب السوق'), icon: <TrendingUp className="h-4 w-4" />, content: heatmapTab },
     ];
 

@@ -61,6 +61,11 @@ export interface Applicant {
   candidate_summary: string;
   technical_skills: string[] | null;
   soft_skills: string[] | null;
+  // Parallel skill lists that retain the verified/source flags for badge rendering
+  // (the plain *_skills arrays are flattened to strings for RecruiterCandidateView
+  // backward-compat). C2-REC-1.
+  technical_skills_detailed?: Array<{ name: string; verified: boolean }>;
+  soft_skills_detailed?: Array<{ name: string; verified: boolean }>;
   work_experience: any[] | null;
   education: any[] | null;
   location?: string;
@@ -72,6 +77,12 @@ interface JobApplicantsViewProps {
   job: any;
   onBack: () => void;
 }
+
+// C2-REC-2: never show a raw company UUID (or blank) in the applicant header.
+const _isUuid = (v?: string) =>
+  !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v).trim());
+const displayCompany = (job: any) =>
+  job?.company_name || (job?.company && !_isUuid(job.company) ? job.company : '') || 'Company';
 
 export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBack }) => {
   const navigate = useNavigate();
@@ -106,12 +117,23 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
         // users.id) is kept for actions but never rendered as a visible ID.
         const skillName = (s: any) =>
           typeof s === 'string' ? s : (s?.name || s?.skill || s?.skill_name || '');
+        // Keep the verified/source flags for the badge (C2-REC-1): a skill is
+        // "verified" when it came from an assessment. The backend applicant payload
+        // marks each skill object {name, proficiency, source, verified}.
+        const skillMeta = (s: any) => ({
+          name: skillName(s),
+          verified: typeof s === 'object' && s !== null && !!(s.verified || s.source === 'assessment'),
+        });
+        const detailed = (arr: any) =>
+          Array.isArray(arr) ? arr.map(skillMeta).filter((x: any) => x.name) : [];
         const norm = (c: any) => ({
           ...c,
           candidate_email: c.candidate_email || c.email,
           candidate_phone: c.candidate_phone || c.phone || c.personal_info?.phone,
           candidate_summary: c.candidate_summary || c.professional_summary,
           status: c.status || c.application_status,
+          technical_skills_detailed: detailed(c.technical_skills),
+          soft_skills_detailed: detailed(c.soft_skills),
           technical_skills: Array.isArray(c.technical_skills)
             ? c.technical_skills.map(skillName).filter(Boolean) : c.technical_skills,
           soft_skills: Array.isArray(c.soft_skills)
@@ -288,6 +310,46 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
     }
   };
 
+  // Add a certified assessor to a candidate's interview panel by Emirates ID
+  // (C2-REC-5). The recruiter couldn't invite an external assessor before — the
+  // colleague picker only listed internal team. This finds the candidate's
+  // interview for the job and appends the assessor to its interviewers list.
+  const [panelApplicant, setPanelApplicant] = useState<Applicant | null>(null);
+  const [panelEid, setPanelEid] = useState('');
+  const [panelName, setPanelName] = useState('');
+  const [panelSubmitting, setPanelSubmitting] = useState(false);
+  const submitAddPanelist = async () => {
+    if (!panelApplicant || !panelEid.trim()) return;
+    setPanelSubmitting(true);
+    try {
+      const res = await restClient.get(`/api/recruiter/interviews/jd/${jdId}`);
+      const list = res.data?.interviews || res.data?.data || [];
+      const iv = list.find((i: any) => String(i.candidate_id) === String(panelApplicant.candidate_id));
+      if (!iv) {
+        toast({
+          variant: 'destructive',
+          title: 'No interview scheduled yet',
+          description: 'Schedule an interview for this candidate first, then add the assessor to its panel.',
+        });
+        return;
+      }
+      const interviewId = iv.interview_id || iv.id;
+      let existing: any = iv.interviewers;
+      if (typeof existing === 'string') { try { existing = JSON.parse(existing); } catch { existing = []; } }
+      if (!Array.isArray(existing)) existing = [];
+      await restClient.put(`/api/recruiter/interviews/${interviewId}`, {
+        interviewers: [...existing, { id: panelEid.trim(), name: panelName.trim() || panelEid.trim() }],
+      });
+      toast({ title: 'Assessor added to panel', description: 'They can now open the interview scorecard.' });
+      setPanelApplicant(null); setPanelEid(''); setPanelName('');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.response?.data?.error || 'Please try again.';
+      toast({ variant: 'destructive', title: 'Could not add assessor', description: msg });
+    } finally {
+      setPanelSubmitting(false);
+    }
+  };
+
   // No closing brace here!
 
   // If viewing a specific candidate detailed profile
@@ -328,7 +390,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
               </Badge>
             </h2>
             <p className="text-muted-foreground">
-              {job?.company} • {job?.location}
+              {displayCompany(job)} • {job?.location}
             </p>
           </div>
         </div>
@@ -499,23 +561,41 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                         </div>
                       )}
 
-                      {/* Skills */}
-                      {(applicant.technical_skills?.length || applicant.soft_skills?.length) && (
+                      {/* Skills — assessment-verified skills get a distinct badge (C2-REC-1) */}
+                      {(applicant.technical_skills_detailed?.length || applicant.soft_skills_detailed?.length ||
+                        applicant.technical_skills?.length || applicant.soft_skills?.length) ? (
                         <div>
                           <h4 className="font-medium mb-2 flex items-center gap-2">
                             <Briefcase className="h-4 w-4" />
                             Skills
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {applicant.technical_skills?.map((skill, idx) => (
-                              <Badge key={`tech-${idx}`} variant="secondary">{skill}</Badge>
+                            {(applicant.technical_skills_detailed?.length
+                              ? applicant.technical_skills_detailed
+                              : (applicant.technical_skills || []).map((s) => ({ name: s, verified: false }))
+                            ).map((skill, idx) => (
+                              skill.verified ? (
+                                <Badge
+                                  key={`tech-${idx}`}
+                                  className="gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  title="Verified by an accredited assessment"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  {skill.name} · Verified
+                                </Badge>
+                              ) : (
+                                <Badge key={`tech-${idx}`} variant="secondary">{skill.name}</Badge>
+                              )
                             ))}
-                            {applicant.soft_skills?.map((skill, idx) => (
-                              <Badge key={`soft-${idx}`} variant="outline">{skill}</Badge>
+                            {(applicant.soft_skills_detailed?.length
+                              ? applicant.soft_skills_detailed
+                              : (applicant.soft_skills || []).map((s) => ({ name: s, verified: false }))
+                            ).map((skill, idx) => (
+                              <Badge key={`soft-${idx}`} variant="outline">{skill.name}</Badge>
                             ))}
                           </div>
                         </div>
-                      )}
+                      ) : null}
 
                       {/* Experience */}
                       {applicant.work_experience && applicant.work_experience.length > 0 && (
@@ -561,6 +641,10 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           <ClipboardCheck className="h-4 w-4 mr-1" />
                           {assessingId === applicant.application_id ? 'Requesting…' : 'Request assessment'}
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setPanelApplicant(applicant); setPanelEid(''); setPanelName(''); }}>
+                          <Users className="h-4 w-4 mr-1" />
+                          Add assessor to panel
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -578,6 +662,39 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
         initialJobId={jdId}
         initialCandidateId={interviewCandidateId || undefined}
       />
+
+      {/* Add assessor to interview panel (C2-REC-5) */}
+      <Dialog open={!!panelApplicant} onOpenChange={(o) => { if (!o) setPanelApplicant(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add assessor to interview panel</DialogTitle>
+            <DialogDescription>
+              Add a certified assessor by Emirates ID to{' '}
+              {panelApplicant?.candidate_name || 'this candidate'}'s scheduled interview so they can complete the scorecard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              placeholder="Assessor Emirates ID"
+              value={panelEid}
+              onChange={(e) => setPanelEid(e.target.value)}
+            />
+            <input
+              className="w-full border rounded-md px-3 py-2 text-sm"
+              placeholder="Assessor name (optional)"
+              value={panelName}
+              onChange={(e) => setPanelName(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPanelApplicant(null)}>Cancel</Button>
+              <Button onClick={submitAddPanelist} disabled={!panelEid.trim() || panelSubmitting}>
+                {panelSubmitting ? 'Adding…' : 'Add to panel'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -50,6 +50,45 @@ interface Notification {
   read_at?: string;
 }
 
+// C2 UAT [C2-CAN-5]: assessment/interview notifications were showing as
+// "application_submitted" because their type had no label mapping and a raw
+// type-slug title was rendered verbatim. Map known types to friendly labels
+// and never render a raw slug as the visible title.
+const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  assessment_requested: 'Assessment requested — your consent is needed',
+  assessment_completed: 'Assessment completed',
+  assessment_scheduled: 'Assessment scheduled',
+  consent_required: 'Your consent is needed',
+  interview_scheduled: 'Interview scheduled',
+  interview_rescheduled: 'Interview rescheduled',
+  interview_cancelled: 'Interview cancelled',
+  application_submitted: 'Application submitted',
+  application_shortlisted: 'You were shortlisted',
+  application_update: 'Application update',
+  application_reviewed: 'Application reviewed',
+  new_message: 'New message',
+  message: 'New message',
+  job_alert: 'Job alert',
+  system_announcement: 'Announcement',
+};
+
+// A value that looks like a raw type slug (all lowercase / underscores, no spaces)
+const _isRawSlug = (s?: string) => !!s && /^[a-z][a-z0-9_]*$/.test(s.trim());
+
+const prettyNotificationLabel = (type?: string): string => {
+  if (type && NOTIFICATION_TYPE_LABELS[type]) return NOTIFICATION_TYPE_LABELS[type];
+  if (type) return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return 'Notification';
+};
+
+// Prefer a real human title; if the server sent an empty or slug-like title,
+// derive a friendly label from the type instead of showing the raw slug.
+const notificationDisplayTitle = (n: { title?: string; notification_type?: string }): string => {
+  const t = (n.title || '').trim();
+  if (t && !_isRawSlug(t)) return t;
+  return prettyNotificationLabel(t || n.notification_type);
+};
+
 interface NotificationPreferences {
   job_alerts: boolean;
   application_updates: boolean;
@@ -279,7 +318,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         }}
         className="cursor-pointer hover:opacity-80 transition-opacity"
       >
-        <p className="font-bold">{title}</p>
+        <p className="font-bold">{notificationDisplayTitle(notification)}</p>
         <p className="text-sm">{content}</p>
       </div>
     );
@@ -670,6 +709,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       case 'interview_rescheduled':
       case 'interview_cancelled':
         return <Calendar className="h-4 w-4" />;
+      case 'assessment_requested':
+      case 'assessment_scheduled':
+      case 'assessment_completed':
+      case 'consent_required':
+        return <GraduationCap className="h-4 w-4" />;
+      case 'application_shortlisted':
+        return <CheckCheck className="h-4 w-4" />;
+      case 'new_message':
+      case 'message':
+        return <MessageSquare className="h-4 w-4" />;
       case 'mentoring_session':
         return <Users className="h-4 w-4" />;
       case 'educational_content':
@@ -800,7 +849,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {notification.title}
+                          {notificationDisplayTitle(notification)}
                         </p>
                         <p className="text-xs text-gray-600 mt-1">
                           {notification.content}

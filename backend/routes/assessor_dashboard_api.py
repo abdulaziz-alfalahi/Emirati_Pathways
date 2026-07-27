@@ -423,21 +423,32 @@ def enrol_assessor(center_id):
     # text[] column — normalise a string/list into a Postgres array.
     spec = data.get('specialization')
     spec_arr = spec if isinstance(spec, list) else ([spec] if spec else [])
+    # nqf_authorization_level + years_experience are INTEGER columns, but the
+    # operator form sends free text (e.g. "Level 7"). A non-int string made the
+    # whole INSERT fail — and execute_query swallows write errors, so the profile
+    # row was silently never created (201 returned, nothing written): the assessor
+    # ended up with the role but no specialization/cert-level (C2 UAT [C2-AOP-3]).
+    # Coerce to the embedded integer, else None.
+    def _as_int(v):
+        if v in (None, ''):
+            return None
+        m = re.search(r'\d+', str(v))
+        return int(m.group()) if m else None
+    nqf = _as_int(data.get('nqf_authorization_level'))
+    yrs = _as_int(data.get('years_experience'))
     existing = execute_query("SELECT id FROM assessor_profiles WHERE user_id = %s", (user_id,), fetch_one=True)
     if existing:
         execute_query(
             "UPDATE assessor_profiles SET certification_level=%s, specialization=%s, "
             "nqf_authorization_level=%s, years_experience=%s, is_active=TRUE, updated_at=NOW() WHERE user_id=%s",
-            (data.get('certification_level'), spec_arr,
-             data.get('nqf_authorization_level'), data.get('years_experience'), user_id), fetch_all=False)
+            (data.get('certification_level'), spec_arr, nqf, yrs, user_id), fetch_all=False)
     else:
         execute_query(
             "INSERT INTO assessor_profiles (user_id, assessor_code, certification_level, specialization, "
             "nqf_authorization_level, years_experience, is_active, created_at, updated_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, TRUE, NOW(), NOW())",
             (user_id, _assessor_code(user_id), data.get('certification_level'),
-             spec_arr, data.get('nqf_authorization_level'),
-             data.get('years_experience')), fetch_all=False)
+             spec_arr, nqf, yrs), fetch_all=False)
     # grant the assessor role (idempotent secondary role)
     execute_query(
         "UPDATE users SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) "
