@@ -640,17 +640,27 @@ const JobMatchingPage: React.FC = () => {
     ];
 
     return (
-        <EducationPathwayLayout
-            title={t('Job Matching', 'مطابقة الوظائف')}
-            description={t(
-                'AI-powered job matching — discover roles that align with your skills, experience, and career goals across the UAE',
-                'مطابقة وظائف مدعومة بالذكاء الاصطناعي — اكتشف أدواراً تتوافق مع مهاراتك وخبراتك وأهدافك المهنية في الإمارات'
-            )}
-            icon={<Search className="h-6 w-6" />}
-            stats={stats}
-            tabs={tabs}
-            defaultTab="matches"
-        />
+        <>
+            <EducationPathwayLayout
+                title={t('Job Matching', 'مطابقة الوظائف')}
+                description={t(
+                    'AI-powered job matching — discover roles that align with your skills, experience, and career goals across the UAE',
+                    'مطابقة وظائف مدعومة بالذكاء الاصطناعي — اكتشف أدواراً تتوافق مع مهاراتك وخبراتك وأهدافك المهنية في الإمارات'
+                )}
+                icon={<Search className="h-6 w-6" />}
+                stats={stats}
+                tabs={tabs}
+                defaultTab="matches"
+            />
+            {/* C2-CAN-2: the Apply button set state but the dialog was never rendered —
+                so applying was a silent no-op. Render it here. */}
+            <JobApplicationDialog
+                isOpen={isApplicationDialogOpen}
+                onOpenChange={setIsApplicationDialogOpen}
+                job={selectedJobForApplication}
+                onApplicationSubmitted={handleApplicationSubmitted}
+            />
+        </>
     );
 };
 

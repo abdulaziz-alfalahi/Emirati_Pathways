@@ -185,6 +185,60 @@ const AssessorDashboard: React.FC = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  // Interview panels (C2-ASR-6): assessors invited onto a recruiter's interview
+  // panel need a UI to view the panel and submit their scorecard.
+  const [panels, setPanels] = useState<any[]>([]);
+  const [panelsLoading, setPanelsLoading] = useState(false);
+  const [scoringPanel, setScoringPanel] = useState<any | null>(null);
+  const [scoreForm, setScoreForm] = useState({
+    technical_score: 4, communication_score: 4, cultural_fit_score: 4,
+    overall_score: 4, notes: '', recommendation: 'hire',
+  });
+
+  const loadPanels = async () => {
+    setPanelsLoading(true);
+    setActionError(null);
+    try {
+      const res = await restClient.get('/api/recruiter/interviews/my-panels');
+      // endpoint returns { success, interviews: [...] } or { panels: [...] }
+      setPanels(res.data?.interviews || res.data?.panels || res.data?.data || []);
+    } catch (err: any) {
+      setActionError(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to load panels');
+    } finally {
+      setPanelsLoading(false);
+    }
+  };
+
+  const submitScorecard = async (interviewId: string) => {
+    try {
+      setActionError(null);
+      setActionSuccess(null);
+      const res = await restClient.post(`/api/recruiter/interviews/${interviewId}/scorecard`, {
+        technical_score: scoreForm.technical_score,
+        communication_score: scoreForm.communication_score,
+        cultural_fit_score: scoreForm.cultural_fit_score,
+        overall_score: scoreForm.overall_score,
+        notes: scoreForm.notes,
+        recommendation: scoreForm.recommendation,
+      });
+      if (res.data?.success !== false) {
+        setActionSuccess(t('Scorecard submitted.', 'تم إرسال بطاقة التقييم.'));
+        setScoringPanel(null);
+        loadPanels();
+      } else {
+        setActionError(res.data?.message || 'Failed to submit scorecard');
+      }
+    } catch (err: any) {
+      setActionError(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to submit scorecard');
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'panels') {
+      loadPanels();
+    }
+  }, [activeTab]);
+
   const loadApplications = async () => {
     setAppsLoading(true);
     setActionError(null);
@@ -319,10 +373,11 @@ const AssessorDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-7 bg-white shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="assessments" className="font-dubai-medium">{t('Assessments', 'التقييمات')}</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium">{t('Candidates', 'المرشحين')}</TabsTrigger>
+              <TabsTrigger value="panels" className="font-dubai-medium">{t('Panels', 'اللجان')}</TabsTrigger>
               <TabsTrigger value="performance" className="font-dubai-medium">{t('Performance', 'الأداء')}</TabsTrigger>
               <TabsTrigger value="tools" className="font-dubai-medium">{t('Tools', 'الأدوات')}</TabsTrigger>
               <TabsTrigger value="messages" className="font-dubai-medium">
@@ -651,15 +706,20 @@ const AssessorDashboard: React.FC = () => {
                                     </div>
                                   </div>
                                 )}
-                                {app.status === 'applied' && (
+                                {(app.status === 'applied' || app.status === 'pending') && (
                                   <Badge className="bg-amber-50 text-amber-700 border border-amber-200">
-                                    {t('Applied', 'تم التقديم')}
+                                    {app.status === 'pending' ? t('Pending', 'قيد الانتظار') : t('Applied', 'تم التقديم')}
+                                  </Badge>
+                                )}
+                                {app.status === 'in_progress' && (
+                                  <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    {t('In Progress', 'قيد التنفيذ')}
                                   </Badge>
                                 )}
                               </td>
                               <td className="py-4 px-4 text-end">
                                 <div className="flex gap-2 justify-end">
-                                  {app.status === 'applied' && (
+                                  {(app.status === 'applied' || app.status === 'pending') && (
                                     <Button
                                       onClick={() => {
                                         setSchedulingApp(app);
@@ -831,6 +891,129 @@ const AssessorDashboard: React.FC = () => {
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium text-xs"
                       >
                         {t('Submit Grade & Verify Skills', 'تقديم التقييم وتوثيق المهارات')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Panels Tab (C2-ASR-6): interview panels the assessor was invited to */}
+            <TabsContent value="panels" className="space-y-6">
+              {actionError && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <AlertCircle size={16} />{actionError}
+                </div>
+              )}
+              {actionSuccess && (
+                <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <CheckCircle size={16} />{actionSuccess}
+                </div>
+              )}
+              <Card className="bg-white shadow-sm border border-slate-100">
+                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4 pb-6">
+                  <div>
+                    <CardTitle className="font-dubai-bold text-slate-900 text-xl">
+                      {t('My Interview Panels', 'لجان المقابلات الخاصة بي')}
+                    </CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-500 mt-1">
+                      {t('Interviews you were invited to as a panelist — open one to submit your scorecard.', 'المقابلات التي دُعيت إليها كعضو لجنة — افتح إحداها لتقديم بطاقة تقييمك.')}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={loadPanels} disabled={panelsLoading} variant="outline"
+                    className="font-dubai-medium border-slate-200 text-slate-700 hover:bg-slate-50">
+                    {panelsLoading ? <Loader2 size={16} className="animate-spin me-2" /> : null}
+                    {t('Refresh', 'تحديث')}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {panelsLoading && panels.length === 0 ? (
+                    <div className="flex justify-center items-center py-12"><Loader2 className="animate-spin text-teal-600" size={36} /></div>
+                  ) : panels.length === 0 ? (
+                    <div className="text-center py-12">
+                      <UserCheck className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('No Panels Yet', 'لا توجد لجان بعد')}</h3>
+                      <p className="text-slate-500 font-dubai-medium max-w-md mx-auto">
+                        {t('When a recruiter adds you to an interview panel, it will appear here.', 'عندما يضيفك أحد المسؤولين إلى لجنة مقابلة، ستظهر هنا.')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {panels.map((p: any) => (
+                        <div key={p.interview_id || p.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50/50 transition-colors">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 truncate">
+                              {p.interview_title || p.title || t('Interview', 'مقابلة')}
+                            </div>
+                            <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                              <Calendar size={12} />
+                              {p.scheduled_date ? new Date(p.scheduled_date).toLocaleString(isRTL ? 'ar-AE' : 'en-US') : t('Not scheduled', 'غير مجدول')}
+                              {p.candidate_name ? <span className="ms-2">· {p.candidate_name}</span> : null}
+                            </div>
+                          </div>
+                          <Button size="sm"
+                            onClick={() => { setScoringPanel(p); setScoreForm({ technical_score: 4, communication_score: 4, cultural_fit_score: 4, overall_score: 4, notes: '', recommendation: 'hire' }); }}
+                            className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium text-xs h-8">
+                            <Star size={14} className="me-1" />{t('Scorecard', 'بطاقة التقييم')}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Scorecard Modal */}
+              {scoringPanel && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full border border-slate-100 p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('Panel Scorecard', 'بطاقة تقييم اللجنة')}</h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {scoringPanel.interview_title || scoringPanel.title || t('Interview', 'مقابلة')}
+                        {scoringPanel.candidate_name ? ` · ${scoringPanel.candidate_name}` : ''}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {([
+                        ['technical_score', t('Technical', 'التقني')],
+                        ['communication_score', t('Communication', 'التواصل')],
+                        ['cultural_fit_score', t('Cultural Fit', 'التوافق الثقافي')],
+                        ['overall_score', t('Overall', 'الإجمالي')],
+                      ] as [keyof typeof scoreForm, string][]).map(([key, label]) => (
+                        <div key={key} className="space-y-1">
+                          <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">{label} (1–5)</label>
+                          <Input type="number" min={1} max={5} value={scoreForm[key] as number}
+                            onChange={(e) => setScoreForm({ ...scoreForm, [key]: Math.max(1, Math.min(5, Number(e.target.value) || 1)) })}
+                            className="w-full border-slate-200 dark:border-slate-800" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('Recommendation', 'التوصية')}</label>
+                      <Select value={scoreForm.recommendation} onValueChange={(v) => setScoreForm({ ...scoreForm, recommendation: v })}>
+                        <SelectTrigger className="w-full border-slate-200"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="strong_hire">{t('Strong hire', 'توظيف قوي')}</SelectItem>
+                          <SelectItem value="hire">{t('Hire', 'توظيف')}</SelectItem>
+                          <SelectItem value="no_hire">{t('No hire', 'عدم التوظيف')}</SelectItem>
+                          <SelectItem value="strong_no_hire">{t('Strong no hire', 'رفض قوي')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('Notes', 'ملاحظات')}</label>
+                      <textarea value={scoreForm.notes} onChange={(e) => setScoreForm({ ...scoreForm, notes: e.target.value })}
+                        rows={3} className="w-full rounded-md border border-slate-200 dark:border-slate-800 dark:bg-slate-950 p-2 text-sm"
+                        placeholder={t('Your assessment of the candidate…', 'تقييمك للمرشح…')} />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <Button variant="outline" onClick={() => setScoringPanel(null)} className="font-dubai-medium text-xs border-slate-200 text-slate-700">
+                        {t('Cancel', 'إلغاء')}
+                      </Button>
+                      <Button onClick={() => submitScorecard(scoringPanel.interview_id || scoringPanel.id)}
+                        className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium text-xs">
+                        {t('Submit Scorecard', 'إرسال بطاقة التقييم')}
                       </Button>
                     </div>
                   </div>

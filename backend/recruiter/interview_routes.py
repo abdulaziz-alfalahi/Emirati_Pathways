@@ -361,8 +361,25 @@ def update_interview(interview_id):
         denied = _assert_interview_company_access(interview_id=interview_id)
         if denied is not None:
             return denied
-        data = request.get_json()
-        
+        data = request.get_json() or {}
+
+        # interview_schedules.interviewers and .metadata are JSONB columns, but the
+        # engine appends update values as raw params — a Python list/dict can't be
+        # adapted by psycopg2 ("can't adapt type 'dict'") and a list of strings
+        # adapts to text[] (jsonb-vs-text[] mismatch). Wrap them in the Json
+        # adapter so they serialize to jsonb regardless of the shape the client
+        # sent (objects, id strings, or a pre-stringified array) — this is what
+        # lets a recruiter add an assessor as a panelist (C2 UAT [C2-REC-5]).
+        for _jf in ('interviewers', 'metadata'):
+            if data.get(_jf) is not None:
+                _v = data[_jf]
+                if isinstance(_v, str):
+                    try:
+                        _v = json.loads(_v)
+                    except Exception:
+                        pass
+                data[_jf] = psycopg2.extras.Json(_v)
+
         conn = get_db_connection()
         success, message = interview_engine.update_interview(conn, interview_id, data)
         conn.close()
