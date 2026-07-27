@@ -62,13 +62,96 @@ from backend.db import get_db_connection
 from backend.user_helpers import user_display_name
 
 try:
-    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+    from backend.auth.access_control import require_roles, require_auth, RECRUITER_ROLES, resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES
+    from auth.access_control import require_roles, require_auth, RECRUITER_ROLES, resolve_roles, ADMIN_ROLES
+
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _caller_company_ids(cur, user_id):
+    """Every company the caller belongs to, read from BOTH membership stores —
+    company_team_members (accepted; the ACL's authoritative store, invite-link
+    recruiters) AND hr_profiles (legacy display store, magic-link HR). Reading
+    both is the #91/#94 lesson: membership lives in two places."""
+    ids = set()
+    if not user_id:
+        return ids
+    for sql in (
+        "SELECT company_id FROM company_team_members WHERE user_id=%s AND invitation_status='accepted'",
+        "SELECT company_id FROM hr_profiles WHERE user_id=%s AND company_id IS NOT NULL",
+    ):
+        try:
+            cur.execute(sql, (str(user_id),))
+            for r in cur.fetchall():
+                v = r.get('company_id') if hasattr(r, 'get') else r[0]
+                if v:
+                    ids.add(str(v))
+        except Exception:
+            pass
+    return ids
+
+
+def _assert_jd_company_access(jd_id):
+    """Company-ownership guard for recruiter JD by-id routes (fixes the C1 UAT
+    CRITICAL BOLA [C1-ISO-2]: any recruiter could read/overwrite/republish/re-home
+    ANY job by id). Returns None if allowed, or an (json, status) tuple to return.
+
+    Rule: if the JD exists and carries a company_id, the caller must be an accepted
+    member of THAT company (admins bypass). A not-yet-persisted jd_id (new draft)
+    or a legacy JD with no company_id is allowed — creation binds to the caller's
+    own company downstream."""
+    try:
+        roles = resolve_roles()
+    except Exception:
+        roles = set()
+    if roles & ADMIN_ROLES:
+        return None
+    try:
+        user_id = get_jwt_identity()
+    except Exception:
+        user_id = None
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    try:
+        cur.execute("SELECT company_id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        row = cur.fetchone()
+        if not row:
+            return None  # new / unknown jd_id — not an existing resource to protect
+        jd_company = row.get('company_id')
+        if not jd_company:
+            return None  # legacy JD with no company scope
+        if str(jd_company) not in _caller_company_ids(cur, user_id):
+            logger.warning(
+                f"BOLA blocked: user {user_id} tried to access JD {jd_id} "
+                f"owned by company {jd_company}")
+            return (jsonify({
+                'success': False,
+                'error_code': 'not_your_company',
+                'error': 'Access denied: this job belongs to another company.',
+            }), 403)
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+
+def require_jd_company_access(fn):
+    """Decorator for /<jd_id>/... routes: enforce company ownership before the
+    handler runs. Place BELOW @require_roles so authentication resolves first."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        jd_id = kwargs.get('jd_id')
+        if jd_id:
+            denied = _assert_jd_company_access(jd_id)
+            if denied is not None:
+                return denied
+        return fn(*args, **kwargs)
+    return wrapper
 
 print("!!! DEBUG: LOADING RECRUITER/JD_ROUTES_V2.PY !!!", flush=True)
 
@@ -469,6 +552,7 @@ def jd_health():
 
 @jd_bp.route('/<jd_id>', methods=['GET'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def get_jd(jd_id):
     """Get full job description details"""
     try:
@@ -492,6 +576,7 @@ def get_jd(jd_id):
             
 @jd_bp.route('/<jd_id>/basic-info', methods=['PUT'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def update_basic_info(jd_id):
     """Update basic information (Step 1 of wizard)"""
     try:
@@ -548,6 +633,7 @@ def update_basic_info(jd_id):
 
 @jd_bp.route('/<jd_id>/description', methods=['PUT'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def update_description(jd_id):
     """Update job description (Step 2 of wizard)"""
     try:
@@ -585,6 +671,7 @@ def update_description(jd_id):
 
 @jd_bp.route('/<jd_id>/requirements', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def add_requirement(jd_id):
     """Add job requirement (Step 3 of wizard)"""
     try:
@@ -620,6 +707,7 @@ def add_requirement(jd_id):
 
 @jd_bp.route('/<jd_id>/responsibilities', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def add_responsibility(jd_id):
     """Add job responsibility (Step 4 of wizard)"""
     try:
@@ -655,6 +743,7 @@ def add_responsibility(jd_id):
 
 @jd_bp.route('/<jd_id>/benefits', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def add_benefit(jd_id):
     """Add job benefit (Step 5 of wizard)"""
     try:
@@ -690,6 +779,7 @@ def add_benefit(jd_id):
 
 @jd_bp.route('/<jd_id>/compensation', methods=['PUT'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def update_compensation(jd_id):
     """Update compensation information (Step 6 of wizard)"""
     try:
@@ -725,6 +815,7 @@ def update_compensation(jd_id):
 
 @jd_bp.route('/<jd_id>/smart-fill', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def smart_fill_jd(jd_id):
     """AI-generate a complete JD from a job title (description + requirements + responsibilities + benefits)."""
     try:
@@ -749,6 +840,7 @@ def smart_fill_jd(jd_id):
 
 @jd_bp.route('/<jd_id>/generate-description', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def generate_description(jd_id):
     """Generate AI-powered job description"""
     try:
@@ -783,6 +875,7 @@ def generate_description(jd_id):
 
 @jd_bp.route('/<jd_id>/completion-score', methods=['GET'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def get_completion_score(jd_id):
     """Get JD completion score and recommendations"""
     try:
@@ -808,6 +901,7 @@ def get_completion_score(jd_id):
 
 @jd_bp.route('/<jd_id>/match-candidates', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def match_candidates(jd_id):
     """
     Match top 10 candidates to job description with employment status filtering.
@@ -1194,6 +1288,12 @@ def add_to_shortlist():
         if not jd_id or not candidate_id:
             return jsonify({'error': 'jd_id and candidate_id are required'}), 400
 
+        # Company-ownership guard (C1 UAT BOLA [C1-ISO-2]): you may only shortlist
+        # against a JD that belongs to your company.
+        denied = _assert_jd_company_access(jd_id)
+        if denied is not None:
+            return denied
+
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
@@ -1309,6 +1409,7 @@ def add_to_shortlist():
 
 @jd_bp.route('/shortlist/<jd_id>', methods=['GET'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def get_shortlist(jd_id):
     """Get shortlisted candidates for a JD.
     
@@ -1367,6 +1468,7 @@ def get_shortlist(jd_id):
 
 @jd_bp.route('/<jd_id>/validate', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def validate_jd(jd_id):
     """Validate JD before publishing"""
     try:
@@ -1409,6 +1511,7 @@ def internal_error(error):
 
 @jd_bp.route('/<jd_id>/save', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def save_jd(jd_id):
     """
     Save job description (as draft or published)
@@ -1738,6 +1841,7 @@ def save_jd(jd_id):
 
 @jd_bp.route('/<jd_id>/publish', methods=['POST'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def publish_jd(jd_id):
     """
     Publish a job description (change status from draft to published)
@@ -1767,6 +1871,7 @@ def publish_jd(jd_id):
 
 @jd_bp.route('/<jd_id>', methods=['DELETE'])
 @require_roles(*RECRUITER_ROLES)
+@require_jd_company_access
 def delete_jd(jd_id):
     """
     Delete a job description
