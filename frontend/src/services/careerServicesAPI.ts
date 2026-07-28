@@ -171,6 +171,73 @@ export async function addPortfolioProject(project: Partial<PortfolioProject>): P
     return resp.data;
 }
 
+// ─── Portfolio templates (D33 economic levers, migration 036) ───
+
+export interface BilingualLabel { en: string; ar: string; }
+export interface PortfolioTemplateSection { key: string; en: string; ar: string; }
+
+export interface PortfolioTemplate {
+    id: number;
+    key: string;
+    name: string;
+    name_ar?: string;
+    d33_lever: string;
+    d33_lever_ar?: string;
+    description?: string;
+    description_ar?: string;
+    accent_color: string;
+    icon: string;
+    recommended_categories: BilingualLabel[];
+    highlighted_skills: string[];
+    sections: PortfolioTemplateSection[];
+    guidance: BilingualLabel[];
+    sort_order: number;
+}
+
+export interface PortfolioWithMeta {
+    projects: PortfolioProject[];
+    template_key: string | null;
+    template: PortfolioTemplate | null;
+}
+
+export async function getPortfolioTemplates(): Promise<PortfolioTemplate[]> {
+    const resp = await restClient.get('/api/career-services/portfolio/templates');
+    return resp.data?.templates || [];
+}
+
+/** Full portfolio payload including the applied D33 template (if any). */
+export async function getPortfolioWithMeta(userId: string | number): Promise<PortfolioWithMeta> {
+    const resp = await restClient.get(`/api/career-services/portfolio/${userId}`);
+    return {
+        projects: resp.data?.projects || [],
+        template_key: resp.data?.template_key ?? null,
+        template: resp.data?.template ?? null,
+    };
+}
+
+export async function setPortfolioTemplate(templateKey: string | null): Promise<PortfolioTemplate | null> {
+    const resp = await restClient.put('/api/career-services/portfolio/template', { template_key: templateKey });
+    return resp.data?.template ?? null;
+}
+
+export async function updatePortfolioProject(projectId: number, patch: Partial<PortfolioProject>): Promise<void> {
+    await restClient.put(`/api/career-services/portfolio/projects/${projectId}`, patch);
+}
+
+// ─── Availability / portfolio visibility (drives recruiter + portfolio view) ───
+
+export type AvailabilityStatus = 'job_seeking' | 'open_to_opportunities' | 'not_visible';
+
+export async function getAvailability(): Promise<AvailabilityStatus> {
+    const resp = await restClient.get('/api/profile/availability');
+    return (resp.data?.data?.availability_status || resp.data?.availability_status || 'job_seeking') as AvailabilityStatus;
+}
+
+export async function setAvailability(status: AvailabilityStatus): Promise<AvailabilityStatus> {
+    const resp = await restClient.put('/api/profile/availability', { availability_status: status });
+    return (resp.data?.data?.availability_status || status) as AvailabilityStatus;
+}
+
 // ─── Startup Launchpad ──────────────────────────────────
 
 export async function getStartupPrograms(): Promise<StartupProgram[]> {
