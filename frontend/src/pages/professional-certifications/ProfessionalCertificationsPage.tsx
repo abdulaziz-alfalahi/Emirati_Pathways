@@ -103,12 +103,24 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
         return acc;
     }, []);
 
+    // Real per-page counts only — no fabricated platform-wide figures.
     const stats = [
-        { value: certPrograms.length > 0 ? `${certPrograms.length}` : '150+', label: t('Certifications', 'شهادة'), icon: Award },
-        { value: earnedCerts.length > 0 ? `${earnedCerts.length}` : '0', label: t('Earned', 'مكتسبة'), icon: CheckCircle },
-        { value: partners.length > 0 ? `${partners.length}` : '30+', label: t('Partners', 'شريك'), icon: Building },
-        { value: '96%', label: t('Pass Rate', 'نسبة النجاح'), icon: TrendingUp },
+        { value: `${certPrograms.length}`, label: t('Certifications', 'شهادة'), icon: Award },
+        { value: `${earnedCerts.length}`, label: t('Earned', 'مكتسبة'), icon: CheckCircle },
+        { value: `${partners.length}`, label: t('Partners', 'شريك'), icon: Building },
+        { value: `${new Set(certPrograms.map((p: any) => p.category).filter(Boolean)).size}`, label: t('Categories', 'فئات'), icon: TrendingUp },
     ];
+
+    const [copiedCertIdx, setCopiedCertIdx] = React.useState<number | null>(null);
+    const shareCert = async (c: any, idx: number) => {
+        const text = [c.name, c.issuer, c.credential_id ? `ID: ${c.credential_id}` : '']
+            .filter(Boolean).join(' · ');
+        try {
+            await navigator.clipboard.writeText(`${text} — ${window.location.href}`);
+            setCopiedCertIdx(idx);
+            setTimeout(() => setCopiedCertIdx(prev => (prev === idx ? null : prev)), 2000);
+        } catch { /* clipboard unavailable */ }
+    };
 
     /* ── Tab 1: Available Certifications ── */
     const availableTab = (
@@ -129,8 +141,8 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    `Explore ${certPrograms.length || '150+'} industry-recognized certification programs from top UAE and global institutions — boost your career with verified credentials.`,
-                    `استكشف ${certPrograms.length || '150+'} برنامج شهادات معتمد من مؤسسات إماراتية وعالمية رائدة — عزّز مسيرتك المهنية بأوراق اعتماد موثّقة.`
+                    `Explore ${certPrograms.length} industry-recognized certification programs from top UAE and global institutions — boost your career with verified credentials.`,
+                    `استكشف ${certPrograms.length} برنامج شهادات معتمد من مؤسسات إماراتية وعالمية رائدة — عزّز مسيرتك المهنية بأوراق اعتماد موثّقة.`
                 )}
             </p>
 
@@ -149,7 +161,7 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
                                 style={{
                                     background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                                     padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                                    transition: 'box-shadow .2s', cursor: 'pointer',
+                                    transition: 'box-shadow .2s',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                                 onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -182,12 +194,14 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
                                 </div>
 
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-                                    <button style={{
-                                        background: brand.primary, color: '#fff', border: 'none',
-                                        padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                    }}>
-                                        {t('Get Certified', 'احصل على الشهادة')} <ChevronIcon size={14} />
+                                    <button
+                                        onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.provider || ''} ${p.title || ''} certification`)}`, '_blank', 'noopener')}
+                                        style={{
+                                            background: brand.primary, color: '#fff', border: 'none',
+                                            padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4,
+                                        }}>
+                                        {t('Find this certification', 'ابحث عن الشهادة')} <ExternalLink size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -264,18 +278,14 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
                             </div>
 
                             <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
-                                <button style={{
-                                    background: 'transparent', color: brand.primary, border: `1px solid ${brand.primary}`,
-                                    padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                }}>
-                                    <ExternalLink size={14} /> {t('Verify', 'تحقق')}
-                                </button>
-                                <button style={{
-                                    background: brand.primary, color: '#fff', border: 'none',
-                                    padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                }}>
-                                    {t('Share', 'مشاركة')}
+                                <button
+                                    onClick={() => shareCert(c, i)}
+                                    style={{
+                                        background: copiedCertIdx === i ? brand.green : brand.primary,
+                                        color: copiedCertIdx === i ? brand.greenText : '#fff', border: 'none',
+                                        padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                    }}>
+                                    {copiedCertIdx === i ? t('Copied ✓', 'تم النسخ ✓') : t('Share', 'مشاركة')}
                                 </button>
                             </div>
                         </div>
@@ -293,8 +303,8 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    `We partner with ${partners.length || '30+'} leading certification bodies and training institutions.`,
-                    `نتعاون مع ${partners.length || '30+'} جهة اعتماد ومؤسسة تدريب رائدة.`
+                    `We partner with ${partners.length} leading certification bodies and training institutions.`,
+                    `نتعاون مع ${partners.length} جهة اعتماد ومؤسسة تدريب رائدة.`
                 )}
             </p>
 
@@ -312,12 +322,9 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
                                 </span>
                             </div>
                             <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 6px' }}>{p.name}</h4>
-                            <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 10 }}>
-                                {p.certCount} {t('certifications', 'شهادة')}
+                            <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                {p.certCount} {t('certifications available', 'شهادة متاحة')}
                             </div>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer' }}>
-                                {t('View Programs', 'عرض البرامج')} <ChevronIcon size={14} />
-                            </span>
                         </div>
                     );
                 })}
@@ -325,11 +332,13 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
         </div>
     );
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the Share / Find-certification buttons.
     const tabs = [
         { id: 'available', label: t('Certifications', 'الشهادات'), icon: <Award className="h-4 w-4" />, content: availableTab },
         { id: 'my-certs', label: t('My Certifications', 'شهاداتي'), icon: <CheckCircle className="h-4 w-4" />, content: myTab },
         { id: 'partners', label: t('Partners', 'الشركاء'), icon: <Building className="h-4 w-4" />, content: partnersTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout

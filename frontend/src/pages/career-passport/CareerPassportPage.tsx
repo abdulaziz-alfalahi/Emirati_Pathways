@@ -223,10 +223,14 @@ const CareerPassportPage: React.FC<{ embedded?: boolean }> = ({ embedded = false
         {t('See how you rank against other Emirati professionals on the platform.', 'شاهد ترتيبك مقارنة بالمهنيين الإماراتيين الآخرين.')}
       </p>
 
-      {leaderboard.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+          <Loader2 className="animate-spin" size={32} style={{ color: brand.primary }} />
+        </div>
+      ) : leaderboard.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>
           <Trophy size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p>{t('Leaderboard is loading...', 'جاري تحميل لوحة المتصدرين...')}</p>
+          <p>{t('No leaderboard entries yet.', 'لا توجد إدخالات في لوحة المتصدرين بعد.')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -275,11 +279,13 @@ const CareerPassportPage: React.FC<{ embedded?: boolean }> = ({ embedded = false
     { value: `${leaderboard.length}`, label: t('Participants', 'مشاركون'), icon: Users },
   ];
 
+  // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+  // firing a false "Coming soon" toast on the category-filter buttons.
   const tabs = [
     { id: 'passport', label: t('My Passport', 'جوازي'), icon: <Shield className="h-4 w-4" />, content: passportTab },
     { id: 'stamps', label: t('Digital Stamps', 'الطوابع'), icon: <Medal className="h-4 w-4" />, content: stampsTab },
     { id: 'leaderboard', label: t('Leaderboard', 'المتصدرين'), icon: <Trophy className="h-4 w-4" />, content: leaderboardTab },
-  ];
+  ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
   return (
     <EducationPathwayLayout
