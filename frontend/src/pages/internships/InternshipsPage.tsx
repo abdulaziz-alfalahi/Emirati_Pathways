@@ -4,13 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Briefcase, Building2, MapPin, Clock, Calendar,
-    ChevronRight, ChevronLeft, Bookmark, CheckCircle, Search,
-    TrendingUp, Star, Users, Shield,
-    GraduationCap, Banknote, Globe, Zap, Filter, Loader2
+    ChevronRight, ChevronLeft, CheckCircle,
+    TrendingUp, Star, Users,
+    GraduationCap, Banknote, Globe, Loader2, Sparkles
 } from 'lucide-react';
-import { getInternships, applyForInternship, type Internship } from '@/services/careerServicesAPI';
+import { getInternships, applyForInternship, getMyInternshipApplications, type Internship } from '@/services/careerServicesAPI';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
-import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
 // Brand tokens (unified with Education Pathway)
@@ -49,7 +48,6 @@ const InternshipsPage: React.FC = () => {
     const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
     const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
     const [applyingId, setApplyingId] = useState<number | null>(null);
-    const { user } = useAuth();
 
     const handleApply = async (internshipId: number) => {
         if (appliedIds.has(internshipId)) {
@@ -58,7 +56,7 @@ const InternshipsPage: React.FC = () => {
         }
         setApplyingId(internshipId);
         try {
-            await applyForInternship(internshipId, user?.id ? Number(user.id) : undefined);
+            await applyForInternship(internshipId);
             setAppliedIds(prev => new Set(prev).add(internshipId));
             toast.success(t('Application submitted successfully!', 'تم إرسال الطلب بنجاح!'));
         } catch (err: any) {
@@ -88,6 +86,13 @@ const InternshipsPage: React.FC = () => {
                 const skillData = await skillGraphAPI.getUserSkills();
                 if (!cancelled) setUserSkills(skillData.skills || []);
             } catch { /* not logged in or no skill profile — graceful fallback */ }
+        })();
+        // Seed already-applied internships so 'Applied' persists across reloads
+        (async () => {
+            try {
+                const apps = await getMyInternshipApplications();
+                if (!cancelled) setAppliedIds(new Set(apps.map(a => a.internship_id)));
+            } catch { /* graceful */ }
         })();
         return () => { cancelled = true; };
     }, []);
@@ -140,10 +145,10 @@ const InternshipsPage: React.FC = () => {
     ];
 
     const stats = [
-        { value: `${internships.length}+`, label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
-        { value: `${partnerCompanies.length}+`, label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
-        // Removed fabricated '1,200+' Placements and '72%' Full-time Conversion tiles —
-        // neither figure was API-backed. Open Internships & Partner Companies are real. (data-honesty)
+        { value: `${internships.length}`, label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
+        { value: `${partnerCompanies.length}`, label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
+        // Exact real counts (no inflating "+"). Fabricated '1,200+' Placements and
+        // '72%' Full-time Conversion tiles were removed earlier. (data-honesty)
     ];
 
     // Loading state
@@ -191,6 +196,35 @@ const InternshipsPage: React.FC = () => {
                     'استكشف فرص التدريب في أبرز شركات الإمارات — فلتر حسب القطاع والموقع والمدة للعثور على التدريب المثالي.'
                 )}
             </p>
+
+            {/* Recommended for you — real skill-match (only when the user has matches) */}
+            {recommendedInternships.length > 0 && (
+                <div style={{ background: brand.primarySurface, border: `1px solid ${brand.primary}22`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <Sparkles size={16} style={{ color: brand.primary }} />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{t('Recommended for you', 'موصى به لك')}</span>
+                        <span style={{ fontSize: 12, color: brand.textSecondary }}>{t('based on your skills', 'بناءً على مهاراتك')}</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+                        {recommendedInternships.slice(0, 4).map((item) => (
+                            <div key={`rec-${item.id}`} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary, lineHeight: 1.35 }}>{loc(item.title, item.title_ar)}</span>
+                                    <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, whiteSpace: 'nowrap' }}>{item.matchScore}%</span>
+                                </div>
+                                <span style={{ fontSize: 12, color: brand.textSecondary }}>{loc(item.company, item.company_ar)}</span>
+                                <button
+                                    data-has-handler="true"
+                                    onClick={() => handleApply(item.id)}
+                                    disabled={applyingId === item.id}
+                                    style={{ marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: appliedIds.has(item.id) ? brand.greenText : '#fff', background: appliedIds.has(item.id) ? brand.green : brand.primary, border: 'none', padding: '6px 12px', borderRadius: 7, cursor: 'pointer' }}>
+                                    {appliedIds.has(item.id) ? <><CheckCircle size={13} /> {t('Applied', 'تم التقديم')}</> : applyingId === item.id ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : t('Apply', 'قدّم')}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Filter bar */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
@@ -240,7 +274,6 @@ const InternshipsPage: React.FC = () => {
                                         <Building2 size={14} /> {loc(item.company, item.company_ar)}
                                     </div>
                                 </div>
-                                <Bookmark size={18} style={{ color: brand.textSecondary, cursor: 'pointer' }} />
                             </div>
 
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>
@@ -356,7 +389,7 @@ const InternshipsPage: React.FC = () => {
                         style={{
                             background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                             padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
+                            transition: 'box-shadow .2s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                         onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -375,9 +408,6 @@ const InternshipsPage: React.FC = () => {
                             <span style={{ fontSize: 13, color: brand.textSecondary }}>
                                 <Briefcase size={14} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />
                                 {internships.filter(int => int.company === co.name || int.company_ar === co.name).length} {t('open positions', 'وظائف متاحة')}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
-                                {t('View', 'عرض')} <ChevronIcon size={14} />
                             </span>
                         </div>
                     </div>
@@ -440,11 +470,14 @@ const InternshipsPage: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on these functional controls (filter
+    // chips, Apply, etc.).
     const tabs = [
         { id: 'opportunities', label: t('Opportunities', 'الفرص'), icon: <Briefcase className="h-4 w-4" />, content: opportunitiesTab },
         { id: 'companies', label: t('Partner Companies', 'الشركات الشريكة'), icon: <Building2 className="h-4 w-4" />, content: companiesTab },
         { id: 'tips', label: t('Tips & Resources', 'نصائح ومصادر'), icon: <Star className="h-4 w-4" />, content: tipsTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
