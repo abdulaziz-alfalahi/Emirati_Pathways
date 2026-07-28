@@ -5,9 +5,9 @@ import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLay
 import {
     Search, Target, Briefcase, MapPin, Banknote,
     Building2, Clock, ChevronRight, ChevronLeft, Heart, Send,
-    TrendingUp, Star, Users, Award, Filter,
-    CheckCircle, BookmarkPlus, BarChart3, Zap, Eye, Loader2,
-    Navigation, Car, CalendarDays
+    TrendingUp, Star, Award, Filter,
+    CheckCircle, BookmarkPlus, BarChart3, Eye, Loader2,
+    Navigation, Car, CalendarDays, Trash2
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import JobApplicationDialog from '@/components/applications/JobApplicationDialog';
@@ -50,6 +50,14 @@ const JobMatchingPage: React.FC = () => {
     const [activeSector, setActiveSector] = useState(0); // 0 = All
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Real per-user data (replaces the former fabricated arrays)
+    const [savedJobs, setSavedJobs] = useState<any[]>([]);
+    const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+    const [loadingSaved, setLoadingSaved] = useState(true);
+    const [applications, setApplications] = useState<any[]>([]);
+    const [loadingApps, setLoadingApps] = useState(true);
+    const [completion, setCompletion] = useState<{ pct: number; missing: string[] } | null>(null);
+
     const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
     const [selectedJobForApplication, setSelectedJobForApplication] = useState<any>(null);
 
@@ -81,6 +89,7 @@ const JobMatchingPage: React.FC = () => {
                 )
             );
         }
+        loadApplications();
     };
 
     const colorPalette = [
@@ -182,16 +191,63 @@ const JobMatchingPage: React.FC = () => {
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [searchQuery, activeSector]);
 
-    const savedJobs = [
-        { title: t('Cloud Solutions Architect', 'مهندس حلول سحابية'), company: t('Microsoft UAE', 'مايكروسوفت الإمارات'), location: t('Dubai', 'دبي'), salary: t('AED 25,000–35,000', '25,000–35,000 د.إ'), match: 91, savedDate: t('Feb 12, 2026', '12 فبراير 2026') },
-        { title: t('HR Business Partner', 'شريك أعمال الموارد البشرية'), company: t('DP World', 'موانئ دبي العالمية'), location: t('Dubai', 'دبي'), salary: t('AED 14,000–19,000', '14,000–19,000 د.إ'), match: 82, savedDate: t('Feb 8, 2026', '8 فبراير 2026') },
-    ];
+    /* ── Real data loaders ── */
+    const loadSaved = useCallback(async () => {
+        setLoadingSaved(true);
+        try {
+            const resp = await restClient.get('/api/candidate/saved-jobs');
+            const data = resp.data?.data || [];
+            setSavedJobs(data);
+            setSavedIds(new Set(data.map((j: any) => String(j.job_id))));
+        } catch (err) {
+            console.warn('Saved jobs unavailable:', err);
+        } finally {
+            setLoadingSaved(false);
+        }
+    }, []);
 
-    const myApplications = [
-        { title: t('Senior Product Manager', 'مدير منتجات أول'), company: t('Emirates Group', 'مجموعة الإمارات'), appliedDate: t('Feb 15, 2026', '15 فبراير 2026'), status: t('Interview Scheduled', 'مقابلة مجدولة'), statusColor: brand.green, statusText: brand.greenText },
-        { title: t('Data Engineer', 'مهندس بيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), appliedDate: t('Feb 12, 2026', '12 فبراير 2026'), status: t('Under Review', 'قيد المراجعة'), statusColor: brand.amber, statusText: brand.amberText },
-        { title: t('Marketing Specialist', 'أخصائي تسويق'), company: 'Noon.com', appliedDate: t('Feb 1, 2026', '1 فبراير 2026'), status: t('Not Selected', 'لم يُختر'), statusColor: brand.red, statusText: brand.redText },
-    ];
+    const loadApplications = useCallback(async () => {
+        setLoadingApps(true);
+        try {
+            const resp = await restClient.get('/api/applications/my-applications');
+            setApplications(resp.data?.data || []);
+        } catch (err) {
+            console.warn('Applications unavailable:', err);
+        } finally {
+            setLoadingApps(false);
+        }
+    }, []);
+
+    const loadCompletion = useCallback(async () => {
+        try {
+            const resp = await restClient.get('/api/profile/candidate/completion');
+            const d = resp.data?.data;
+            if (d) setCompletion({ pct: Math.round(d.completion_percentage || 0), missing: d.missing_sections || [] });
+        } catch { /* graceful */ }
+    }, []);
+
+    useEffect(() => { loadSaved(); loadApplications(); loadCompletion(); }, [loadSaved, loadApplications, loadCompletion]);
+
+    /* ── Save / unsave toggle (real) ── */
+    const toggleSave = async (jobId: any) => {
+        const id = String(jobId);
+        const isSaved = savedIds.has(id);
+        // optimistic
+        setSavedIds(prev => { const n = new Set(prev); isSaved ? n.delete(id) : n.add(id); return n; });
+        try {
+            if (isSaved) {
+                await restClient.delete(`/api/candidate/saved-jobs/${id}`);
+                setSavedJobs(prev => prev.filter(j => String(j.job_id) !== id));
+            } else {
+                await restClient.post(`/api/candidate/saved-jobs/${id}`);
+                await loadSaved();
+            }
+        } catch (err) {
+            // revert on failure
+            setSavedIds(prev => { const n = new Set(prev); isSaved ? n.add(id) : n.delete(id); return n; });
+            console.warn('Save toggle failed:', err);
+        }
+    };
 
     const sectors = [
         t('All Sectors', 'جميع القطاعات'),
@@ -204,18 +260,28 @@ const JobMatchingPage: React.FC = () => {
         t('Healthcare', 'الرعاية الصحية'),
     ];
 
-    const recommendations = [
-        { title: t('Complete Your Skills Profile', 'أكمل ملف مهاراتك'), desc: t('Adding 3 more verified skills will improve your match score by up to 15%', 'إضافة 3 مهارات موثّقة أخرى ستحسّن درجة التوافق بنسبة تصل إلى 15%'), Icon: Target },
-        { title: t('Update Work Experience', 'حدّث خبراتك العملية'), desc: t("Your latest role isn't listed — adding it will unlock better senior-level matches", 'دورك الأخير غير مُدرج — إضافته ستُتيح توافقات أفضل للمستويات العليا'), Icon: Briefcase },
-        { title: t('Set Salary Preferences', 'حدّد تفضيلات الراتب'), desc: t('Specifying your expected salary range helps our AI filter irrelevant listings', 'تحديد نطاق راتبك المتوقع يساعد ذكاءنا الاصطناعي على تصفية الإعلانات غير المناسبة'), Icon: Banknote },
-        { title: t('Enable Location Preferences', 'فعّل تفضيلات الموقع'), desc: t("Tell us if you're open to Abu Dhabi, Sharjah, or remote roles for more options", 'أخبرنا إن كنت منفتحاً على فرص في أبوظبي أو الشارقة أو العمل عن بُعد لمزيد من الخيارات'), Icon: MapPin },
-    ];
+    /* ── Application status → label + colors (real statuses) ── */
+    const statusMeta = (status: string): { label: string; bg: string; text: string } => {
+        const s = (status || '').toLowerCase();
+        if (/(interview|shortlist)/.test(s)) return { label: t('Interview / Shortlisted', 'مقابلة / قائمة مختصرة'), bg: brand.green, text: brand.greenText };
+        if (/(offer|hired|accepted)/.test(s)) return { label: t('Offer', 'عرض'), bg: brand.green, text: brand.greenText };
+        if (/(reject|not_selected|declined)/.test(s)) return { label: t('Not Selected', 'لم يُختر'), bg: brand.red, text: brand.redText };
+        if (/withdraw/.test(s)) return { label: t('Withdrawn', 'مسحوب'), bg: '#F3F4F6', text: brand.textSecondary };
+        return { label: t('Under Review', 'قيد المراجعة'), bg: brand.amber, text: brand.amberText };
+    };
+    const appCounts = {
+        total: applications.length,
+        interviews: applications.filter(a => a.interview_date || /(interview|shortlist)/.test((a.status || '').toLowerCase())).length,
+        review: applications.filter(a => !/(interview|shortlist|offer|hired|accepted|reject|not_selected|declined|withdraw)/.test((a.status || '').toLowerCase())).length,
+        notSelected: applications.filter(a => /(reject|not_selected|declined)/.test((a.status || '').toLowerCase())).length,
+    };
 
+    /* ── Header stats: real, per-user (were fabricated 5,000+/500+/85%/3,200+) ── */
     const stats = [
-        { value: '5,000+', label: t('Job Listings', 'إعلان وظيفي'), icon: Briefcase },
-        { value: '500+', label: t('Employers', 'جهة توظيف'), icon: Building2 },
-        { value: '85%', label: t('Match Accuracy', 'دقة التوافق'), icon: Target },
-        { value: '3,200+', label: t('Placements', 'توظيف'), icon: TrendingUp },
+        { value: loadingJobs ? '—' : String(jobs.length), label: t('Job Matches', 'وظائف مطابقة'), icon: Target },
+        { value: loadingSaved ? '—' : String(savedJobs.length), label: t('Saved Jobs', 'محفوظة'), icon: Heart },
+        { value: loadingApps ? '—' : String(applications.length), label: t('Applications', 'الطلبات'), icon: Send },
+        { value: completion ? `${completion.pct}%` : '—', label: t('Profile Strength', 'قوة الملف'), icon: TrendingUp },
     ];
 
     /* ── Tab 1: AI Matches ── */
@@ -295,12 +361,14 @@ const JobMatchingPage: React.FC = () => {
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    {jobs.map((job, i) => (
+                    {jobs.map((job, i) => {
+                        const isSaved = savedIds.has(String(job.id));
+                        return (
                         <div
                             key={i}
                             style={{
                                 background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                                padding: 20, transition: 'box-shadow .2s', cursor: 'pointer',
+                                padding: 20, transition: 'box-shadow .2s',
                             }}
                             onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                             onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -341,11 +409,18 @@ const JobMatchingPage: React.FC = () => {
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, color: brand.textSecondary }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Building2 size={14} /> {job.company}</span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={14} /> {job.location}</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={14} /> {job.salary}</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={14} /> {job.posted}</span>
+                                        {job.salary && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={14} /> {job.salary}</span>}
+                                        {job.posted && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={14} /> {job.posted}</span>}
                                     </div>
                                 </div>
-                                <Heart size={20} style={{ color: brand.textSecondary, cursor: 'pointer', flexShrink: 0, ...(isRTL ? { marginRight: 12 } : { marginLeft: 12 }) }} />
+                                <button
+                                    onClick={() => toggleSave(job.id)}
+                                    title={isSaved ? t('Remove from saved', 'إزالة من المحفوظة') : t('Save job', 'حفظ الوظيفة')}
+                                    aria-label={isSaved ? t('Remove from saved', 'إزالة من المحفوظة') : t('Save job', 'حفظ الوظيفة')}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, flexShrink: 0, ...(isRTL ? { marginRight: 12 } : { marginLeft: 12 }) }}
+                                >
+                                    <Heart size={20} style={{ color: isSaved ? '#DC2626' : brand.textSecondary, fill: isSaved ? '#DC2626' : 'none' }} />
+                                </button>
                             </div>
 
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '8px 0 10px' }}>{job.desc}</p>
@@ -384,6 +459,7 @@ const JobMatchingPage: React.FC = () => {
                                 )}
 
                                 {/* Posting recency */}
+                                {job.posted && (
                                 <span style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
                                     background: job.daysAgo <= 3 ? '#ECFDF5' : job.daysAgo <= 14 ? '#FFF7ED' : '#F3F4F6',
@@ -396,6 +472,7 @@ const JobMatchingPage: React.FC = () => {
                                             ? t('Yesterday', 'أمس')
                                             : `${job.daysAgo} ${t('days ago', 'يوم مضى')}`}
                                 </span>
+                                )}
                             </div>
 
                             {/* Tags + Actions row */}
@@ -423,7 +500,7 @@ const JobMatchingPage: React.FC = () => {
                                             <CheckCircle size={14} /> {t('Applied', 'تم التقديم')}
                                         </button>
                                     ) : (
-                                        <button 
+                                        <button
                                             onClick={() => handleApplyToJob(job)}
                                             style={{
                                                 background: brand.primary, color: '#fff', border: 'none',
@@ -434,7 +511,7 @@ const JobMatchingPage: React.FC = () => {
                                             <Send size={14} /> {t('Apply', 'قدّم')}
                                         </button>
                                     )}
-                                    <button 
+                                    <button
                                         onClick={() => handleApplyToJob(job)}
                                         style={{
                                             background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`,
@@ -447,13 +524,14 @@ const JobMatchingPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
     );
 
-    /* ── Tab 2: Saved Jobs ── */
+    /* ── Tab 2: Saved Jobs (real) ── */
     const savedTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -461,39 +539,50 @@ const JobMatchingPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    "Jobs you've bookmarked to review or apply to later — stay organized and never miss a deadline.",
-                    'الوظائف التي حفظتها لمراجعتها أو التقديم عليها لاحقاً — ابقَ منظّماً ولا تفوّت أي موعد نهائي.'
+                    "Jobs you've bookmarked to review or apply to later — tap the heart on any match to save it here.",
+                    'الوظائف التي حفظتها لمراجعتها أو التقديم عليها لاحقاً — اضغط القلب على أي تطابق لحفظه هنا.'
                 )}
             </p>
 
-            {savedJobs.length > 0 ? (
+            {loadingSaved ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+                    <Loader2 size={28} style={{ color: brand.primary, animation: 'spin 1s linear infinite' }} />
+                </div>
+            ) : savedJobs.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {savedJobs.map((job, i) => (
+                    {savedJobs.map((job, i) => {
+                        const loc = [job.city, job.emirate].filter(Boolean).join(', ') || job.location || '';
+                        const applied = applications.some(a => String(a.job_id) === String(job.job_id));
+                        return (
                         <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
-                                <div style={{ width: 44, height: 44, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <BookmarkPlus size={22} style={{ color: brand.primary }} />
                                 </div>
                                 <div>
-                                    <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{job.title}</h4>
-                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{job.company} · {job.location} · {job.salary}</div>
-                                    <div style={{ fontSize: 11, color: brand.textSecondary, marginTop: 2 }}>{t('Saved', 'حُفظ في')} {job.savedDate}</div>
+                                    <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{job.title || t('Job', 'وظيفة')}</h4>
+                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                        {[job.company, loc, job.salary_range && job.salary_range.trim()].filter(Boolean).join(' · ')}
+                                    </div>
+                                    {job.saved_at && <div style={{ fontSize: 11, color: brand.textSecondary, marginTop: 2 }}>{t('Saved', 'حُفظ في')} {new Date(job.saved_at).toLocaleDateString()}</div>}
                                 </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <span style={{ background: brand.green, color: brand.greenText, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
-                                    {job.match}% {t('Match', 'تطابق')}
-                                </span>
-                                {job.hasApplied ? (
+                                {job.status && job.status !== 'published' && (
+                                    <span style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                        {t('Closed', 'مغلقة')}
+                                    </span>
+                                )}
+                                {applied ? (
                                     <button disabled style={{
                                         background: '#DCFCE7', color: '#166534', border: 'none',
                                         padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'not-allowed',
                                     }}>
                                         {t('Applied', 'تم التقديم')}
                                     </button>
-                                ) : (
-                                    <button 
-                                        onClick={() => handleApplyToJob(job)}
+                                ) : (job.status === 'published' || !job.status) ? (
+                                    <button
+                                        onClick={() => handleApplyToJob({ id: job.job_id, title: job.title, company: job.company, location: loc, description: '' })}
                                         style={{
                                             background: brand.primary, color: '#fff', border: 'none',
                                             padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -501,21 +590,30 @@ const JobMatchingPage: React.FC = () => {
                                     >
                                         {t('Apply', 'قدّم')}
                                     </button>
-                                )}
+                                ) : null}
+                                <button
+                                    onClick={() => toggleSave(job.job_id)}
+                                    title={t('Remove from saved', 'إزالة من المحفوظة')}
+                                    aria-label={t('Remove from saved', 'إزالة من المحفوظة')}
+                                    style={{ background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 8, padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <Trash2 size={15} style={{ color: brand.redText }} />
+                                </button>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             ) : (
                 <div style={{ textAlign: 'center', padding: '48px 0', color: brand.textSecondary }}>
                     <BookmarkPlus size={48} style={{ margin: '0 auto 12px', opacity: .4 }} />
-                    <p>{t('No saved jobs yet — bookmark jobs you like to review them later.', 'لا توجد وظائف محفوظة بعد — احفظ الوظائف التي تعجبك لمراجعتها لاحقاً.')}</p>
+                    <p>{t('No saved jobs yet — tap the heart on any match to save it for later.', 'لا توجد وظائف محفوظة بعد — اضغط القلب على أي تطابق لحفظه لاحقاً.')}</p>
                 </div>
             )}
         </div>
     );
 
-    /* ── Tab 3: My Applications ── */
+    /* ── Tab 3: My Applications (real) ── */
     const applicationsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -528,43 +626,70 @@ const JobMatchingPage: React.FC = () => {
                 )}
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-                {myApplications.map((app, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Send size={22} style={{ color: brand.primary }} />
-                            </div>
-                            <div>
-                                <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{app.title}</h4>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{app.company} · {t('Applied', 'تقدّم في')} {app.appliedDate}</div>
-                            </div>
-                        </div>
-                        <span style={{ background: app.statusColor, color: app.statusText, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99, whiteSpace: 'nowrap' }}>
-                            {app.status}
-                        </span>
+            {loadingApps ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+                    <Loader2 size={28} style={{ color: brand.primary, animation: 'spin 1s linear infinite' }} />
+                </div>
+            ) : applications.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: brand.textSecondary }}>
+                    <Send size={48} style={{ margin: '0 auto 12px', opacity: .4 }} />
+                    <p>{t("You haven't applied to any jobs yet. Apply from your AI matches to track them here.", 'لم تتقدّم لأي وظائف بعد. قدّم من تطابقاتك لتتبّعها هنا.')}</p>
+                </div>
+            ) : (
+                <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+                        {applications.map((app, i) => {
+                            const meta = statusMeta(app.status);
+                            const loc = [app.city, app.emirate].filter(Boolean).join(', ');
+                            return (
+                                <div key={app.id || i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Send size={22} style={{ color: brand.primary }} />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{app.job_title || t('Job', 'وظيفة')}</h4>
+                                            <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                                {[app.company_name, loc].filter(Boolean).join(' · ')}
+                                                {app.created_at && <> · {t('Applied', 'تقدّم في')} {new Date(app.created_at).toLocaleDateString()}</>}
+                                            </div>
+                                            {app.interview_date && (
+                                                <div style={{ fontSize: 11, color: brand.greenText, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    <CalendarDays size={12} /> {t('Interview', 'مقابلة')}: {new Date(app.interview_date).toLocaleString()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span style={{ background: meta.bg, color: meta.text, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99, whiteSpace: 'nowrap' }}>
+                                        {meta.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
-                ))}
-            </div>
 
-            {/* Stats Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
-                {[
-                    { label: t('Total Applied', 'إجمالي الطلبات'), value: '3', color: brand.primary },
-                    { label: t('Interviews', 'المقابلات'), value: '1', color: brand.greenText },
-                    { label: t('Under Review', 'قيد المراجعة'), value: '1', color: brand.amberText },
-                    { label: t('Not Selected', 'لم يُختر'), value: '1', color: brand.redText },
-                ].map((stat, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, textAlign: 'center' }}>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                        <span style={{ fontSize: 13, color: brand.textSecondary }}>{stat.label}</span>
+                    {/* Stats Summary (real counts) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
+                        {[
+                            { label: t('Total Applied', 'إجمالي الطلبات'), value: appCounts.total, color: brand.primary },
+                            { label: t('Interviews', 'المقابلات'), value: appCounts.interviews, color: brand.greenText },
+                            { label: t('Under Review', 'قيد المراجعة'), value: appCounts.review, color: brand.amberText },
+                            { label: t('Not Selected', 'لم يُختر'), value: appCounts.notSelected, color: brand.redText },
+                        ].map((stat, i) => (
+                            <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, textAlign: 'center' }}>
+                                <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                                <span style={{ fontSize: 13, color: brand.textSecondary }}>{stat.label}</span>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+                </>
+            )}
         </div>
     );
 
-    /* ── Tab 4: Recommendations ── */
+    /* ── Tab 4: Recommendations (real profile strength) ── */
+    const pct = completion?.pct ?? 0;
+    const missing = completion?.missing ?? [];
     const recsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -577,48 +702,56 @@ const JobMatchingPage: React.FC = () => {
                 )}
             </p>
 
-            {/* Match Score Overview */}
+            {/* Match Score Overview — real completion % */}
             <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 28 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Your Match Profile Strength', 'قوة ملف التوافق الخاص بك')}</h3>
-                    <span style={{ fontSize: 22, fontWeight: 700, color: brand.primary }}>85%</span>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Your Profile Strength', 'قوة ملفك الشخصي')}</h3>
+                    <span style={{ fontSize: 22, fontWeight: 700, color: brand.primary }}>{completion ? `${pct}%` : '—'}</span>
                 </div>
                 <div style={{ height: 8, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
-                    <div style={{ width: '85%', height: '100%', background: brand.primary, borderRadius: 99 }} />
+                    <div style={{ width: `${pct}%`, height: '100%', background: brand.primary, borderRadius: 99, transition: 'width .3s' }} />
                 </div>
-                <span style={{ fontSize: 12, color: brand.textSecondary }}>{t('Complete the actions below to reach 100% and unlock the best matches', 'أكمل الإجراءات أدناه للوصول إلى 100% وفتح أفضل التطابقات')}</span>
+                <span style={{ fontSize: 12, color: brand.textSecondary }}>
+                    {pct >= 100
+                        ? t('Your profile is complete — you’re getting the best matches.', 'ملفك مكتمل — تحصل على أفضل التطابقات.')
+                        : t('Complete the sections below to reach 100% and unlock the best matches.', 'أكمل الأقسام أدناه للوصول إلى 100% وفتح أفضل التطابقات.')}
+                </span>
             </div>
 
-            {/* Recommendation Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
-                {recommendations.map((rec, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, display: 'flex', gap: 14 }}>
-                        <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <rec.Icon size={20} style={{ color: brand.primary }} />
+            {/* Recommendation cards — real missing sections */}
+            {missing.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
+                    {missing.map((section, i) => (
+                        <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, display: 'flex', gap: 14 }}>
+                            <div style={{ width: 40, height: 40, minWidth: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Award size={20} style={{ color: brand.primary }} />
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{t('Add', 'أضف')} {section}</h4>
+                                <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '0 0 10px' }}>
+                                    {t('Completing this section improves your match accuracy.', 'إكمال هذا القسم يحسّن دقة التوافق.')}
+                                </p>
+                                <a href="/candidate/profile/identity" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, textDecoration: 'none' }}>
+                                    {t('Take Action', 'اتّخذ إجراءً')} <ChevronIcon size={14} />
+                                </a>
+                            </div>
                         </div>
-                        <div>
-                            <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{rec.title}</h4>
-                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '0 0 10px' }}>{rec.desc}</p>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer' }}>
-                                {t('Take Action', 'اتّخذ إجراءً')} <ChevronIcon size={14} />
-                            </span>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
-            {/* Matching Stats */}
+            {/* Match Statistics — real per-user numbers */}
             <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <BarChart3 size={20} style={{ color: brand.primary }} />
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Your Match Statistics', 'إحصائيات التوافق')}</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Your Job-Search Snapshot', 'ملخّص بحثك عن عمل')}</h3>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
                     {[
-                        { label: t('Total Matches', 'إجمالي التطابقات'), value: '47' },
-                        { label: t('New This Week', 'جديد هذا الأسبوع'), value: '12' },
-                        { label: t('Profile Completeness', 'اكتمال الملف'), value: '85%' },
-                        { label: t('AI Accuracy', 'دقة الذكاء الاصطناعي'), value: '92%' },
+                        { label: t('Current Matches', 'التطابقات الحالية'), value: String(jobs.length) },
+                        { label: t('Saved Jobs', 'الوظائف المحفوظة'), value: String(savedJobs.length) },
+                        { label: t('Applications', 'الطلبات'), value: String(applications.length) },
+                        { label: t('Profile Strength', 'قوة الملف'), value: completion ? `${pct}%` : '—' },
                     ].map((stat, i) => (
                         <div key={i} style={{ background: '#fff', borderRadius: 10, padding: 14, textAlign: 'center' }}>
                             <div style={{ fontSize: 22, fontWeight: 700, color: brand.primary }}>{stat.value}</div>
