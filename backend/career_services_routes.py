@@ -862,6 +862,66 @@ def get_financial_projections():
 # PORTFOLIO
 # ═══════════════════════════════════════════════════════════
 
+@career_services_bp.route('/portfolio/templates', methods=['GET'])
+def list_portfolio_templates():
+    """Browse the D33-lever portfolio template catalogue (migration 036).
+
+    Public — templates are curated content, no PII. Ordered by sort_order so the
+    sectors read as the owner curated them.
+    """
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM portfolio_templates WHERE is_active = true ORDER BY sort_order, id")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({"templates": [dict(r) for r in rows], "total": len(rows)}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@career_services_bp.route('/portfolio/template', methods=['PUT'])
+@jwt_required()
+def set_portfolio_template():
+    """Apply a D33-lever template to the caller's own portfolio.
+
+    Persists users.portfolio_template_key. A null/empty key clears the selection.
+    The key MUST reference an active template — an unknown key is rejected so a
+    stale client can never orphan the reference.
+    """
+    user_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    key = data.get('template_key')
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        template = None
+        if key:
+            cur.execute("SELECT * FROM portfolio_templates WHERE key = %s AND is_active = true", (key,))
+            template = cur.fetchone()
+            if not template:
+                cur.close()
+                conn.close()
+                return jsonify({"error": "Unknown or inactive template"}), 400
+        cur.execute("UPDATE users SET portfolio_template_key = %s WHERE id = %s",
+                    (key or None, user_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"status": "applied", "template_key": key or None,
+                        "template": dict(template) if template else None}), 200
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
 @career_services_bp.route('/portfolio/<user_id>', methods=['GET'])
 def get_portfolio(user_id):
     """Get user's portfolio projects."""
@@ -878,7 +938,7 @@ def get_portfolio(user_id):
             viewer = get_jwt_identity()
         except Exception:
             viewer = None
-        cur.execute("SELECT availability_status FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT availability_status, portfolio_template_key FROM users WHERE id = %s", (user_id,))
         av = cur.fetchone()
         if av and av.get('availability_status') == 'not_visible' and str(viewer or '') != str(user_id):
             cur.close()
@@ -886,9 +946,19 @@ def get_portfolio(user_id):
             return jsonify({"projects": [], "total": 0, "hidden": True}), 200
         cur.execute("SELECT * FROM portfolio_projects WHERE user_id = %s AND is_public = true ORDER BY completion_date DESC", (user_id,))
         rows = cur.fetchall()
+        # The candidate's selected D33-lever template (migration 036), if any.
+        template = None
+        tkey = (av or {}).get('portfolio_template_key')
+        if tkey:
+            cur.execute("SELECT * FROM portfolio_templates WHERE key = %s AND is_active = true", (tkey,))
+            trow = cur.fetchone()
+            if trow:
+                template = dict(trow)
         cur.close()
         conn.close()
-        return jsonify({"projects": [dict(r) for r in rows], "total": len(rows)}), 200
+        return jsonify({"projects": [dict(r) for r in rows], "total": len(rows),
+                        "template_key": (av or {}).get('portfolio_template_key'),
+                        "template": template}), 200
     except Exception as e:
         conn.close()
         return jsonify({"error": str(e)}), 500
