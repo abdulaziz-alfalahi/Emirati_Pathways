@@ -271,7 +271,7 @@ const MentorshipPage: React.FC = () => {
                         style={{
                             background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                             padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
+                            transition: 'box-shadow .2s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                         onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -498,13 +498,15 @@ const MentorshipPage: React.FC = () => {
                 </div>
             </div>
 
-            <button style={{
-                background: brand.primary, color: '#fff', border: 'none',
-                padding: '12px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto',
-            }}>
-                {t('Apply to Be a Mentor', 'قدّم طلباً لتكون مرشداً')} <ArrowIcon size={18} />
-            </button>
+            {/* Mentor onboarding is managed by the EHRDC mentorship team (operators
+                enrol and vet mentors) — there is no self-serve apply endpoint, so
+                we give honest guidance instead of a dead "Apply" button. */}
+            <div style={{ textAlign: 'center', fontSize: 13, color: brand.textSecondary, lineHeight: 1.6, maxWidth: 520, margin: '0 auto' }}>
+                {t(
+                    'Mentor onboarding is managed by the EHRDC mentorship team. If you meet the requirements above, reach out via the Support chat to register your interest and start the screening process.',
+                    'يُدار انضمام المرشدين من قِبل فريق الإرشاد في المجلس. إذا كنت تستوفي المتطلبات أعلاه، تواصل عبر دردشة الدعم لتسجيل اهتمامك وبدء عملية الفرز.'
+                )}
+            </div>
         </div>
     );
 
@@ -534,12 +536,14 @@ const MentorshipPage: React.FC = () => {
                                 <Clock size={12} /> {r.readTime}
                             </div>
                         </div>
-                        <button style={{
-                            background: brand.primary, color: '#fff', border: 'none',
-                            padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                            marginTop: 'auto', width: '100%',
-                        }}>
-                            {t('Access Resource', 'الوصول إلى المورد')}
+                        <button
+                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(r.title + ' UAE')}`, '_blank', 'noopener')}
+                            style={{
+                                background: brand.primary, color: '#fff', border: 'none',
+                                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                marginTop: 'auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            }}>
+                            {t('Find this resource', 'ابحث عن هذا المورد')} <ArrowIcon size={13} />
                         </button>
                     </div>
                 ))}
@@ -626,13 +630,16 @@ const MentorshipPage: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the many real action buttons here
+    // (request mentorship, book session, request coach, etc.).
     const tabs = [
         { id: 'find', label: t('Find Mentors', 'ابحث عن مرشد'), icon: <Search className="h-4 w-4" />, content: findTab },
         { id: 'my', label: t('My Mentorships', 'إرشاداتي'), icon: <MessageCircle className="h-4 w-4" />, content: myTab },
         { id: 'coaching', label: t('Coaching', 'التدريب'), icon: <Briefcase className="h-4 w-4" />, content: coachingTab },
         { id: 'become', label: t('Become a Mentor', 'كن مرشداً'), icon: <UserCheck className="h-4 w-4" />, content: becomeTab },
         { id: 'resources', label: t('Resources', 'الموارد'), icon: <BookOpen className="h-4 w-4" />, content: resourcesTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
