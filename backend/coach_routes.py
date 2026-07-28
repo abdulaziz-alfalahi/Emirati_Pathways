@@ -63,6 +63,18 @@ def _coach_owns_client(conn, coach_id, client_id):
     return ok
 
 
+def _safe_notify(user_id, notification_type, title, message=''):
+    """Best-effort in-app notification — never break the request on failure."""
+    try:
+        try:
+            from backend.notification_helper import create_notification
+        except ImportError:  # pragma: no cover
+            from notification_helper import create_notification
+        create_notification(str(user_id), notification_type, title, message, {})
+    except Exception as e:
+        logger.warning(f"coach notify skipped: {e}")
+
+
 def ensure_tables(conn):
     cur = conn.cursor()
     cur.execute("""
@@ -186,8 +198,9 @@ def coach_directory():
 @jwt_required()
 def my_coaching():
     """The caller's own coaching relationships (mentee-facing) — mirrors the
-    mentor side's /my-mentors. Returns each coach the caller is an active client
-    of, with the coach's display name."""
+    mentor side's /my-mentors. Returns each coach the caller has requested or is
+    an active client of (pending + active), with the coach's display name and
+    status, so the mentee can see a request that's still awaiting acceptance."""
     caller = str(get_jwt_identity())
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
@@ -198,7 +211,7 @@ def my_coaching():
                    cca.status, cca.assigned_at
             FROM coach_client_assignments cca
             LEFT JOIN users u ON u.id = cca.coach_id
-            WHERE cca.client_id = %s AND cca.status = 'active'
+            WHERE cca.client_id = %s AND cca.status IN ('pending', 'active')
             ORDER BY cca.assigned_at DESC
         """, (caller,))
         rows = cur.fetchall()
@@ -366,9 +379,10 @@ def coach_analytics():
 @coach_bp.route('/request', methods=['POST'])
 @jwt_required()
 def request_coach():
-    """A candidate requests/books a career coach → an active coach_client_assignment
-    (nothing created these before, so the whole coach flow was unreachable). The
-    target must actually hold the coach role."""
+    """A candidate requests a career coach → a PENDING coach_client_assignment.
+    The coach must accept it (see /requests/<id>/decision) before it becomes
+    active — mirrors the mentor request→accept flow (owner decision: coaches
+    accept like mentors, no silent auto-assign). The target must hold the coach role."""
     me = str(get_jwt_identity())
     coach_id = ((request.get_json(silent=True) or {}).get('coach_id') or '').strip()
     if not coach_id:
@@ -388,18 +402,106 @@ def request_coach():
                        WHERE coach_id = %s AND client_id = %s""", (coach_id, me))
         existing = cur.fetchone()
         if existing:
-            if existing['status'] != 'active':
-                cur.execute("UPDATE coach_client_assignments SET status='active' WHERE id=%s", (existing['id'],))
-                conn.commit()
-            cur.close(); conn.close()
-            return jsonify({"success": True, "message": "Coach assignment active",
-                            "data": {"id": existing['id']}}), 200
-        cur.execute("""INSERT INTO coach_client_assignments (coach_id, client_id, status, assigned_at)
-                       VALUES (%s, %s, 'active', NOW()) RETURNING id""", (coach_id, me))
-        row = cur.fetchone()
+            st = existing['status']
+            if st == 'active':
+                cur.close(); conn.close()
+                return jsonify({"success": True, "status": "active",
+                                "message": "You already have an active coaching relationship with this coach",
+                                "data": {"id": existing['id'], "status": "active"}}), 200
+            if st == 'pending':
+                cur.close(); conn.close()
+                return jsonify({"success": True, "status": "pending",
+                                "message": "You have already requested this coach — awaiting their acceptance",
+                                "data": {"id": existing['id'], "status": "pending"}}), 200
+            # a previously declined request may be re-sent → back to pending
+            cur.execute("UPDATE coach_client_assignments SET status='pending', assigned_at=NOW() WHERE id=%s",
+                        (existing['id'],))
+            new_id = existing['id']
+        else:
+            cur.execute("""INSERT INTO coach_client_assignments (coach_id, client_id, status, assigned_at)
+                           VALUES (%s, %s, 'pending', NOW()) RETURNING id""", (coach_id, me))
+            new_id = cur.fetchone()['id']
         conn.commit(); cur.close(); conn.close()
-        return jsonify({"success": True, "message": "Coach assigned",
-                        "data": {"id": row['id']}}), 201
+        _safe_notify(coach_id, 'coaching_requested', 'New coaching request',
+                     'A candidate has requested you as their coach — review and accept or decline.')
+        return jsonify({"success": True, "status": "pending",
+                        "message": "Coaching requested — awaiting the coach",
+                        "data": {"id": new_id, "status": "pending"}}), 201
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@coach_bp.route('/requests', methods=['GET'])
+@jwt_required()
+def list_coach_requests():
+    """The coach's PENDING requests to accept/decline (mirrors the mentor pool)."""
+    guard = _require_coach_role()
+    if guard: return guard
+    coach_id = str(get_jwt_identity())
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(f"""
+            SELECT cca.id, cca.client_id, {user_display_name('display_name', 'u')},
+                   u.email, cca.status, cca.assigned_at AS requested_at
+            FROM coach_client_assignments cca
+            LEFT JOIN users u ON u.id = cca.client_id
+            WHERE cca.coach_id = %s AND cca.status = 'pending'
+            ORDER BY cca.assigned_at DESC
+        """, (coach_id,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        out = []
+        for r in rows:
+            d = dict(r)
+            if d.get('requested_at'): d['requested_at'] = d['requested_at'].isoformat()
+            out.append(d)
+        return jsonify({"requests": out, "total": len(out)}), 200
+    except Exception as e:
+        conn.close(); return jsonify({"error": str(e)}), 500
+
+
+@coach_bp.route('/requests/<assignment_id>/decision', methods=['POST'])
+@jwt_required()
+def decide_coach_request(assignment_id):
+    """The COACH accepts or declines a pending coaching request. Only the
+    assignment's own coach may decide (BOLA guard). accept → active, decline →
+    declined. Mirrors the mentor /requests/<id>/decision flow."""
+    guard = _require_coach_role()
+    if guard: return guard
+    me = str(get_jwt_identity())
+    decision = ((request.get_json(silent=True) or {}).get('decision') or '').strip().lower()
+    if decision not in ('accept', 'decline'):
+        return jsonify({"success": False, "message": "decision must be 'accept' or 'decline'"}), 400
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT id, coach_id, client_id, status FROM coach_client_assignments WHERE id = %s",
+                    (assignment_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return jsonify({"success": False, "message": "Request not found"}), 404
+        if str(row['coach_id']) != me:
+            cur.close(); conn.close()
+            return jsonify({"success": False, "message": "This is not your coaching request"}), 403
+        if row['status'] != 'pending':
+            cur.close(); conn.close()
+            return jsonify({"success": False, "message": "Request already decided"}), 409
+        new_status = 'active' if decision == 'accept' else 'declined'
+        cur.execute("UPDATE coach_client_assignments SET status=%s WHERE id=%s", (new_status, assignment_id))
+        conn.commit(); cur.close(); conn.close()
+        if decision == 'accept':
+            _safe_notify(row['client_id'], 'coaching_accepted', 'Coaching request accepted',
+                         'Your coach accepted your request — you can now work together.')
+        else:
+            _safe_notify(row['client_id'], 'coaching_declined', 'Coaching request declined',
+                         'Your coaching request was declined. You can request another coach.')
+        return jsonify({"success": True, "message": f"Request {new_status}",
+                        "data": {"id": assignment_id, "status": new_status}}), 200
     except Exception as e:
         conn.rollback(); conn.close()
         return jsonify({"success": False, "message": str(e)}), 500

@@ -40,6 +40,10 @@ try:
     from backend.verified_skills import verified_skill_names
 except ImportError:  # pragma: no cover
     from verified_skills import verified_skill_names
+try:
+    from backend.match_scoring import calculate_match_score as _canonical_match_score
+except ImportError:  # pragma: no cover
+    from match_scoring import calculate_match_score as _canonical_match_score
 
 try:
     import pdfplumber
@@ -224,112 +228,10 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             job_data = execute_query(job_query, (job_id,), fetch_one=True)
 
             # Calculate match scores for each candidate
-            def calculate_match_score(candidate, job):
-                if not job:
-                    return 50.0  # Default score if job data unavailable
-
-                score = 0.0
-                max_score = 0.0
-
-                # Parse job required skills (handle JSON or comma-separated)
-                required_skills = job.get('required_skills') or []
-                if isinstance(required_skills, str):
-                    try:
-                        import json
-                        required_skills = json.loads(required_skills)
-                    except:
-                        required_skills = [s.strip().lower() for s in required_skills.split(',') if s.strip()]
-                if isinstance(required_skills, list):
-                    required_skills = [s.lower() if isinstance(s, str) else str(s).lower() for s in required_skills]
-
-                # Get candidate skills
-                candidate_tech_skills = candidate.get('technical_skills') or []
-                candidate_soft_skills = candidate.get('soft_skills') or []
-                if isinstance(candidate_tech_skills, str):
-                    try:
-                        import json
-                        candidate_tech_skills = json.loads(candidate_tech_skills)
-                    except:
-                        candidate_tech_skills = [s.strip().lower() for s in candidate_tech_skills.split(',') if s.strip()]
-                if isinstance(candidate_soft_skills, str):
-                    try:
-                        import json
-                        candidate_soft_skills = json.loads(candidate_soft_skills)
-                    except:
-                        candidate_soft_skills = [s.strip().lower() for s in candidate_soft_skills.split(',') if s.strip()]
-
-                all_candidate_skills = set()
-                for s in (candidate_tech_skills or []):
-                    if isinstance(s, str):
-                        all_candidate_skills.add(s.lower())
-                    elif isinstance(s, dict):
-                        all_candidate_skills.add(str(s.get('name', s.get('skill', ''))).lower())
-                for s in (candidate_soft_skills or []):
-                    if isinstance(s, str):
-                        all_candidate_skills.add(s.lower())
-                    elif isinstance(s, dict):
-                        all_candidate_skills.add(str(s.get('name', s.get('skill', ''))).lower())
-
-                # Assessment-verified skills (Rework E): count an assessed skill even
-                # if the CV omits it, and give a capped bonus so passing an assessment
-                # demonstrably improves the match. Strictly additive — never lowers
-                # an existing score.
-                verified = verified_skill_names(candidate.get('user_id') or candidate.get('candidate_id'))
-                all_candidate_skills |= verified
-
-                # Calculate skill match (60% of total score)
-                if required_skills:
-                    max_score += 60
-                    matched_skills = 0
-                    verified_matches = 0
-                    for req_skill in required_skills:
-                        req_lower = req_skill.lower() if isinstance(req_skill, str) else str(req_skill).lower()
-                        # Check if any candidate skill contains or matches the required skill
-                        for cand_skill in all_candidate_skills:
-                            if req_lower in cand_skill or cand_skill in req_lower:
-                                matched_skills += 1
-                                if cand_skill in verified or any(
-                                        (v in cand_skill or cand_skill in v) for v in verified):
-                                    verified_matches += 1
-                                break
-                    if len(required_skills) > 0:
-                        score += (matched_skills / len(required_skills)) * 60
-                    # Verification bonus: up to +10 for required skills backed by an
-                    # assessment (added to score, not max_score; final is capped at 100).
-                    score += min(verified_matches * 4, 10)
-                else:
-                    # No required skills specified, give baseline score
-                    score += 40
-                    max_score += 60
-
-                # Experience bonus (20% of total score)
-                max_score += 20
-                work_experience = candidate.get('work_experience') or []
-                if work_experience:
-                    # More experience = higher score (max 5 positions)
-                    exp_count = len(work_experience) if isinstance(work_experience, list) else 0
-                    score += min(exp_count / 5, 1.0) * 20
-
-                # Education bonus (20% of total score)
-                max_score += 20
-                education = candidate.get('education') or []
-                if education:
-                    # Having education = bonus
-                    score += 15
-                    # Check for advanced degrees
-                    for edu in (education if isinstance(education, list) else []):
-                        degree = str(edu.get('degree', '')).lower() if isinstance(edu, dict) else ''
-                        if 'master' in degree or 'phd' in degree or 'mba' in degree:
-                            score += 5
-                            break
-
-                # Normalize to percentage
-                if max_score > 0:
-                    final_score = min((score / max_score) * 100, 100)
-                else:
-                    final_score = 50.0
-
-                return round(final_score, 1)
+            # Canonical scorer shared with the candidate-side job matches
+            # (backend/match_scoring.py) so BOTH sides show the SAME percentage
+            # for the same candidate+job.
+            calculate_match_score = _canonical_match_score
 
             # Backfill qualification fields for applicants without a user_cvs row
             # (C1-REC-5): a candidate's skills live in user_skills (self-reported /

@@ -33,6 +33,8 @@ const CoachDashboard: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
   const [clients, setClients] = useState<any[]>([]);
+  const [pending, setPending] = useState<any[]>([]);
+  const [deciding, setDeciding] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const coachId = user?.id || 1;
@@ -55,17 +57,33 @@ const CoachDashboard: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [cRes, anRes] = await Promise.allSettled([
+      const [cRes, anRes, pRes] = await Promise.allSettled([
         restClient.get(`/api/coach/clients?coach_id=${coachId}`),
         restClient.get(`/api/coach/analytics?coach_id=${coachId}`),
+        restClient.get('/api/coach/requests'),
       ]);
       if (cRes.status === 'fulfilled') setClients((cRes.value as any).data.clients || []);
       if (anRes.status === 'fulfilled') setAnalytics((anRes.value as any).data);
+      if (pRes.status === 'fulfilled') setPending((pRes.value as any).data.requests || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, [coachId]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Coaching requests now require the coach to accept (owner decision: like mentors).
+  const decideRequest = async (id: string, decision: 'accept' | 'decline') => {
+    setDeciding(id);
+    try {
+      await restClient.post(`/api/coach/requests/${id}/decision`, { decision });
+      toast.success(decision === 'accept'
+        ? t('Request accepted — client added.', 'تم قبول الطلب — تمت إضافة العميل.')
+        : t('Request declined.', 'تم رفض الطلب.'));
+      loadData();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || t('Could not update the request.', 'تعذّر تحديث الطلب.'));
+    } finally { setDeciding(null); }
+  };
 
   const openModal = (kind: ModalKind, client: any) => {
     setSessType('one_on_one'); setSessDuration('60'); setSessNotes('');
@@ -132,6 +150,33 @@ const CoachDashboard: React.FC = () => {
       <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
         {t('Manage your coaching clients, development plans, and session history.', 'إدارة عملاء التدريب وخطط التطوير وسجل الجلسات.')}
       </p>
+
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 10 }}>
+            {t('Pending requests', 'الطلبات المعلقة')} ({pending.length})
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {pending.map((r, i) => (
+              <div key={r.id || i} style={{ background: brand.primarySurface, borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{clientName(r)}</h4>
+                  <div style={{ fontSize: 12, color: brand.textSecondary }}>{t('Requested you as their coach', 'طلبك كمدرب له')}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button disabled={deciding === r.id} onClick={() => decideRequest(r.id, 'accept')} style={{ background: brand.primary, color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: deciding === r.id ? 'default' : 'pointer', opacity: deciding === r.id ? 0.6 : 1 }}>
+                    {t('Accept', 'قبول')}
+                  </button>
+                  <button disabled={deciding === r.id} onClick={() => decideRequest(r.id, 'decline')} style={{ background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: deciding === r.id ? 'default' : 'pointer', opacity: deciding === r.id ? 0.6 : 1 }}>
+                    {t('Decline', 'رفض')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 className="animate-spin" size={32} style={{ color: brand.primary }} /></div>
       ) : clients.length === 0 ? (
