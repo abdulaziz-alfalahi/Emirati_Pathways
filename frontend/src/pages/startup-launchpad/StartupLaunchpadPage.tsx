@@ -47,6 +47,18 @@ const StartupLaunchpadPage: React.FC = () => {
     const [programs, setPrograms] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // My Journey is a real personal checklist, persisted locally in the browser.
+    const CHECKLIST_KEY = 'startup_journey_checklist';
+    const [checklist, setChecklist] = useState<Record<string, boolean>>({});
+    useEffect(() => {
+        try { const raw = localStorage.getItem(CHECKLIST_KEY); if (raw) setChecklist(JSON.parse(raw)); } catch { /* ignore */ }
+    }, []);
+    const toggleTask = (key: string) => setChecklist(prev => {
+        const next = { ...prev, [key]: !prev[key] };
+        try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+    });
+
     useEffect(() => {
         (async () => {
             try {
@@ -79,21 +91,21 @@ const StartupLaunchpadPage: React.FC = () => {
     ];
 
     const funding = [
-        { name: t('Khalifa Fund — Micro Enterprise', 'صندوق خليفة — المشاريع الصغيرة'), amount: t('AED 50K – 250K', '50 – 250 ألف د.إ'), type: t('Soft Loan', 'قرض ميسّر'), eligibility: t('UAE Nationals, 21+, business plan required', 'مواطنون إماراتيون، 21+، خطة عمل مطلوبة'), deadline: t('Rolling', 'مستمر'), catBg: brand.green, catColor: brand.greenText },
-        { name: t('Khalifa Fund — SME Finance', 'صندوق خليفة — تمويل المشاريع المتوسطة'), amount: t('AED 250K – 3M', '250 ألف – 3 مليون د.إ'), type: t('Soft Loan', 'قرض ميسّر'), eligibility: t('UAE Nationals, existing business, 2+ years', 'مواطنون إماراتيون، مشروع قائم، سنتان+'), deadline: t('Rolling', 'مستمر'), catBg: brand.blue, catColor: brand.blueText },
-        { name: t('Hub71 Incentive Package', 'حزمة حوافز Hub71'), amount: t('Up to AED 2M', 'حتى 2 مليون د.إ'), type: t('Incentive / Grant', 'حافز / منحة'), eligibility: t('Tech startups, accepted into Hub71 program', 'شركات تقنية ناشئة، مقبولة في برنامج Hub71'), deadline: t('Quarterly intake', 'قبول ربع سنوي'), catBg: brand.purple, catColor: brand.purpleText },
-        { name: t('Dubai Future Accelerators', 'مسرّعات دبي المستقبل'), amount: t('AED 500K – 1M', '500 ألف – 1 مليون د.إ'), type: t('Grant + Pilot Contract', 'منحة + عقد تجريبي'), eligibility: t('Innovative solutions for government challenges', 'حلول مبتكرة لتحديات حكومية'), deadline: t('Mar 2026', 'مارس 2026'), catBg: brand.amber, catColor: brand.amberText },
-        { name: t('Sheraa Seed Fund', 'صندوق شراع الأولي'), amount: t('AED 100K – 300K', '100 – 300 ألف د.إ'), type: t('Equity Investment', 'استثمار بالأسهم'), eligibility: t('Early-stage startups, Sheraa alumni', 'شركات ناشئة مبكرة، خريجو شراع'), deadline: t('Ongoing', 'مستمر'), catBg: brand.pink, catColor: brand.pinkText },
-        { name: t('Mohammed bin Rashid Innovation Fund', 'صندوق محمد بن راشد للابتكار'), amount: t('AED 500K – 5M', '500 ألف – 5 مليون د.إ'), type: t('Innovation Grant', 'منحة ابتكار'), eligibility: t('UAE-based startups with innovative solutions', 'شركات ناشئة في الإمارات بحلول مبتكرة'), deadline: t('Apr 2026', 'أبريل 2026'), catBg: brand.orange, catColor: brand.orangeText },
+        { name: t('Khalifa Fund — Micro Enterprise', 'صندوق خليفة — المشاريع الصغيرة'), amount: t('AED 50K – 250K', '50 – 250 ألف د.إ'), type: t('Soft Loan', 'قرض ميسّر'), eligibility: t('UAE Nationals, 21+, business plan required', 'مواطنون إماراتيون، 21+، خطة عمل مطلوبة'), deadline: t('Rolling', 'مستمر'), catBg: brand.green, catColor: brand.greenText, url: 'https://khalifafund.ae' },
+        { name: t('Khalifa Fund — SME Finance', 'صندوق خليفة — تمويل المشاريع المتوسطة'), amount: t('AED 250K – 3M', '250 ألف – 3 مليون د.إ'), type: t('Soft Loan', 'قرض ميسّر'), eligibility: t('UAE Nationals, existing business, 2+ years', 'مواطنون إماراتيون، مشروع قائم، سنتان+'), deadline: t('Rolling', 'مستمر'), catBg: brand.blue, catColor: brand.blueText, url: 'https://khalifafund.ae' },
+        { name: t('Hub71 Incentive Package', 'حزمة حوافز Hub71'), amount: t('Up to AED 2M', 'حتى 2 مليون د.إ'), type: t('Incentive / Grant', 'حافز / منحة'), eligibility: t('Tech startups, accepted into Hub71 program', 'شركات تقنية ناشئة، مقبولة في برنامج Hub71'), deadline: t('Quarterly intake', 'قبول ربع سنوي'), catBg: brand.purple, catColor: brand.purpleText, url: 'https://hub71.com' },
+        { name: t('Dubai Future Accelerators', 'مسرّعات دبي المستقبل'), amount: t('AED 500K – 1M', '500 ألف – 1 مليون د.إ'), type: t('Grant + Pilot Contract', 'منحة + عقد تجريبي'), eligibility: t('Innovative solutions for government challenges', 'حلول مبتكرة لتحديات حكومية'), deadline: t('Mar 2026', 'مارس 2026'), catBg: brand.amber, catColor: brand.amberText, url: 'https://www.dubaifuture.ae' },
+        { name: t('Sheraa Seed Fund', 'صندوق شراع الأولي'), amount: t('AED 100K – 300K', '100 – 300 ألف د.إ'), type: t('Equity Investment', 'استثمار بالأسهم'), eligibility: t('Early-stage startups, Sheraa alumni', 'شركات ناشئة مبكرة، خريجو شراع'), deadline: t('Ongoing', 'مستمر'), catBg: brand.pink, catColor: brand.pinkText, url: 'https://sheraa.com' },
+        { name: t('Mohammed bin Rashid Innovation Fund', 'صندوق محمد بن راشد للابتكار'), amount: t('AED 500K – 5M', '500 ألف – 5 مليون د.إ'), type: t('Innovation Grant', 'منحة ابتكار'), eligibility: t('UAE-based startups with innovative solutions', 'شركات ناشئة في الإمارات بحلول مبتكرة'), deadline: t('Apr 2026', 'أبريل 2026'), catBg: brand.orange, catColor: brand.orangeText, url: 'https://www.mbrif.ae' },
     ];
 
     const resources = [
-        { title: t('Business Plan Template (UAE)', 'قالب خطة العمل (الإمارات)'), desc: t('Comprehensive template aligned with UAE government funding requirements', 'قالب شامل متوافق مع متطلبات التمويل الحكومي الإماراتي'), type: t('Template', 'قالب'), icon: FileText, catBg: brand.blue, catColor: brand.blueText },
-        { title: t('UAE Trade License Guide', 'دليل الرخصة التجارية الإماراتية'), desc: t('Step-by-step guide for registering your business across all UAE emirates', 'دليل خطوة بخطوة لتسجيل مشروعك في جميع إمارات الدولة'), type: t('Guide', 'دليل'), icon: BookOpen, catBg: brand.green, catColor: brand.greenText },
-        { title: t('Pitch Deck Masterclass', 'دورة العرض التقديمي'), desc: t('Video series on crafting investor-ready pitch decks tailored for GCC VCs', 'سلسلة فيديو لإعداد عروض تقديمية جاهزة للمستثمرين في الخليج'), type: t('Course', 'دورة'), icon: Eye, catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Financial Modelling Toolkit', 'أدوات النمذجة المالية'), desc: t('Excel templates for revenue projections, unit economics, and burn rate tracking', 'قوالب Excel لتوقعات الإيرادات واقتصاديات الوحدة وتتبع معدل الإنفاق'), type: t('Toolkit', 'مجموعة أدوات'), icon: BarChart3, catBg: brand.amber, catColor: brand.amberText },
-        { title: t('UAE Intellectual Property Guide', 'دليل الملكية الفكرية في الإمارات'), desc: t('How to protect patents, trademarks, and copyrights in the UAE market', 'كيفية حماية براءات الاختراع والعلامات التجارية وحقوق النشر في السوق الإماراتي'), type: t('Guide', 'دليل'), icon: Shield, catBg: brand.red, catColor: brand.redText },
-        { title: t('Market Entry: GCC Expansion', 'دخول السوق: التوسع الخليجي'), desc: t('Research report on expanding from UAE to Saudi Arabia, Bahrain, Qatar, and beyond', 'تقرير بحثي حول التوسع من الإمارات إلى السعودية والبحرين وقطر وما بعدها'), type: t('Report', 'تقرير'), icon: Globe, catBg: brand.pink, catColor: brand.pinkText },
+        { title: t('Business Plan Template (UAE)', 'قالب خطة العمل (الإمارات)'), desc: t('Comprehensive template aligned with UAE government funding requirements', 'قالب شامل متوافق مع متطلبات التمويل الحكومي الإماراتي'), type: t('Template', 'قالب'), icon: FileText, catBg: brand.blue, catColor: brand.blueText, url: 'https://khalifafund.ae' },
+        { title: t('UAE Trade License Guide', 'دليل الرخصة التجارية الإماراتية'), desc: t('Step-by-step guide for registering your business across all UAE emirates', 'دليل خطوة بخطوة لتسجيل مشروعك في جميع إمارات الدولة'), type: t('Guide', 'دليل'), icon: BookOpen, catBg: brand.green, catColor: brand.greenText, url: 'https://u.ae/en/information-and-services/business/starting-a-business' },
+        { title: t('Pitch Deck Masterclass', 'دورة العرض التقديمي'), desc: t('Video series on crafting investor-ready pitch decks tailored for GCC VCs', 'سلسلة فيديو لإعداد عروض تقديمية جاهزة للمستثمرين في الخليج'), type: t('Course', 'دورة'), icon: Eye, catBg: brand.purple, catColor: brand.purpleText, url: 'https://hub71.com' },
+        { title: t('Financial Modelling Toolkit', 'أدوات النمذجة المالية'), desc: t('Excel templates for revenue projections, unit economics, and burn rate tracking', 'قوالب Excel لتوقعات الإيرادات واقتصاديات الوحدة وتتبع معدل الإنفاق'), type: t('Toolkit', 'مجموعة أدوات'), icon: BarChart3, catBg: brand.amber, catColor: brand.amberText, url: 'https://khalifafund.ae' },
+        { title: t('UAE Intellectual Property Guide', 'دليل الملكية الفكرية في الإمارات'), desc: t('How to protect patents, trademarks, and copyrights in the UAE market', 'كيفية حماية براءات الاختراع والعلامات التجارية وحقوق النشر في السوق الإماراتي'), type: t('Guide', 'دليل'), icon: Shield, catBg: brand.red, catColor: brand.redText, url: 'https://u.ae/en/information-and-services/business' },
+        { title: t('Market Entry: GCC Expansion', 'دخول السوق: التوسع الخليجي'), desc: t('Research report on expanding from UAE to Saudi Arabia, Bahrain, Qatar, and beyond', 'تقرير بحثي حول التوسع من الإمارات إلى السعودية والبحرين وقطر وما بعدها'), type: t('Report', 'تقرير'), icon: Globe, catBg: brand.pink, catColor: brand.pinkText, url: 'https://u.ae/en/information-and-services/business' },
     ];
 
     /* ── Dynamic Stats ── */
@@ -165,12 +177,15 @@ const StartupLaunchpadPage: React.FC = () => {
                                         <div style={{ fontSize: 16, fontWeight: 700, color: brand.primary, marginBottom: 12 }}>{p._funding}</div>
                                     </>
                                 )}
-                                <button
-                                    onClick={() => p.website && window.open(p.website, '_blank')}
-                                    style={{ padding: '10px 20px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-                                >
-                                    {t('Apply', 'قدّم')} <ExternalLink size={14} />
-                                </button>
+                                {(p.website && String(p.website).startsWith('http')) && (
+                                    <button
+                                        data-has-handler="true"
+                                        onClick={() => window.open(p.website, '_blank', 'noopener')}
+                                        style={{ padding: '10px 20px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                                    >
+                                        {t('Visit site', 'زيارة الموقع')} <ExternalLink size={14} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -179,16 +194,24 @@ const StartupLaunchpadPage: React.FC = () => {
         </div>
     );
 
-    /* ── TAB 2: My Journey ── */
+    /* ── TAB 2: My Journey (real interactive checklist, saved in this browser) ── */
+    const isDone = (i: number, j: number) => !!checklist[`${i}:${j}`];
+    const stageDone = (i: number, s: typeof journeyStages[number]) => s.tasks.filter((_, j) => isDone(i, j)).length;
+    const overallDone = journeyStages.reduce((acc, s, i) => acc + stageDone(i, s), 0);
+    const overallTotal = journeyStages.reduce((acc, s) => acc + s.tasks.length, 0);
+
     const journeyTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Your Startup Journey', 'رحلتك الريادية')}</h2>
-            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>{t('Track your progress through each stage of building your startup.', 'تابع تقدمك عبر كل مرحلة من مراحل بناء شركتك الناشئة.')}</p>
+            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20, lineHeight: 1.6 }}>
+                {t('A personal checklist for building your startup — tick items off as you go. Your progress is saved in this browser.',
+                   'قائمة مهام شخصية لبناء شركتك الناشئة — علّم المهام عند إنجازها. يُحفظ تقدّمك في هذا المتصفّح.')}
+                {' '}<strong style={{ color: brand.primary }}>{overallDone}/{overallTotal}</strong> {t('done', 'مُنجز')}
+            </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32, position: 'relative' }}>
                 {journeyStages.map((s, i) => {
-                    const completedTasks = s.tasks.filter(t => t.done).length;
-                    const progress = Math.round((completedTasks / s.tasks.length) * 100);
-                    const isActive = i === 0;
+                    const progress = Math.round((stageDone(i, s) / s.tasks.length) * 100);
+                    const isActive = progress > 0;
                     return (
                         <div key={i} style={{ flex: 1, textAlign: 'center', position: 'relative' }}>
                             <div style={{ width: 48, height: 48, borderRadius: '50%', background: isActive ? s.color : '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', border: isActive ? `2px solid ${s.textColor}` : `2px solid ${brand.border}` }}>
@@ -208,16 +231,24 @@ const StartupLaunchpadPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <s.icon size={20} color={s.textColor} />
                         <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary }}>{s.stage}</h3>
-                        <span style={badgeStyle(s.color, s.textColor)}>{s.tasks.filter(t => t.done).length}/{s.tasks.length}</span>
+                        <span style={badgeStyle(s.color, s.textColor)}>{stageDone(i, s)}/{s.tasks.length}</span>
                     </div>
                     <p style={{ fontSize: 13, color: brand.textSecondary, marginBottom: 12, lineHeight: 1.6 }}>{s.desc}</p>
                     <div style={{ display: 'grid', gap: 8 }}>
-                        {s.tasks.map((task, j) => (
-                            <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: task.done ? brand.green : '#F9FAFB', borderRadius: 10, border: `1px solid ${task.done ? brand.greenText + '30' : brand.border}` }}>
-                                <CheckCircle size={16} color={task.done ? brand.greenText : brand.border} fill={task.done ? brand.green : 'none'} />
-                                <span style={{ fontSize: 13, color: task.done ? brand.greenText : brand.textPrimary, textDecoration: task.done ? 'line-through' : 'none' }}>{task.text}</span>
-                            </div>
-                        ))}
+                        {s.tasks.map((task, j) => {
+                            const done = isDone(i, j);
+                            return (
+                                <button
+                                    key={j}
+                                    data-has-handler="true"
+                                    onClick={() => toggleTask(`${i}:${j}`)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', width: '100%', textAlign: isRTL ? 'right' : 'left', background: done ? brand.green : '#F9FAFB', borderRadius: 10, border: `1px solid ${done ? brand.greenText + '30' : brand.border}`, cursor: 'pointer' }}
+                                >
+                                    <CheckCircle size={16} color={done ? brand.greenText : brand.border} fill={done ? brand.green : 'none'} />
+                                    <span style={{ fontSize: 13, color: done ? brand.greenText : brand.textPrimary, textDecoration: done ? 'line-through' : 'none' }}>{task.text}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             ))}
@@ -242,7 +273,12 @@ const StartupLaunchpadPage: React.FC = () => {
                         <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
                             <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 4 }}>{t('Amount', 'المبلغ')}</div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: brand.primary, marginBottom: 8 }}>{f.amount}</div>
-                            <button style={{ padding: '8px 16px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>{t('Learn More', 'اعرف المزيد')}</button>
+                            <button
+                                data-has-handler="true"
+                                onClick={() => f.url && window.open(f.url, '_blank', 'noopener')}
+                                style={{ padding: '8px 16px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                {t('Learn More', 'اعرف المزيد')} <ExternalLink size={13} />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -255,9 +291,12 @@ const StartupLaunchpadPage: React.FC = () => {
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Mentor Network', 'شبكة المرشدين')}</h2>
             <div style={{ ...card, textAlign: 'center', padding: 48 }}>
-                <Users size={40} style={{ color: brand.textSecondary, margin: '0 auto 12px' }} />
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{t('Mentor profiles coming soon', 'ملفات المرشدين قريباً')}</h3>
-                <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, maxWidth: 420, margin: '0 auto' }}>{t('We are building a network of verified mentors. Check back soon to connect with experienced entrepreneurs.', 'نعمل على بناء شبكة من المرشدين الموثّقين. عد قريباً للتواصل مع رواد أعمال ذوي خبرة.')}</p>
+                <Users size={40} style={{ color: brand.primary, margin: '0 auto 12px' }} />
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{t('Connect with a mentor', 'تواصل مع مرشد')}</h3>
+                <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, maxWidth: 460, margin: '0 auto 16px' }}>{t('The platform runs a full mentorship program where you can request an experienced mentor. A startup-specific mentor track is on the way.', 'تدير المنصّة برنامج إرشاد متكاملاً يمكنك من خلاله طلب مرشد ذي خبرة. مسار إرشاد خاص بالشركات الناشئة قيد الإعداد.')}</p>
+                <a href="/mentorship" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', background: brand.primary, color: '#fff', borderRadius: 10, fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                    {t('Explore the mentorship program', 'استكشف برنامج الإرشاد')} <ArrowRight size={14} />
+                </a>
             </div>
         </div>
     );
@@ -279,8 +318,11 @@ const StartupLaunchpadPage: React.FC = () => {
                             </div>
                         </div>
                         <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 12 }}>{r.desc}</p>
-                        <button style={{ padding: '8px 16px', background: '#F9FAFB', color: brand.textPrimary, border: `1px solid ${brand.border}`, borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Download size={14} /> {t('Download', 'تحميل')}
+                        <button
+                            data-has-handler="true"
+                            onClick={() => r.url && window.open(r.url, '_blank', 'noopener')}
+                            style={{ padding: '8px 16px', background: '#F9FAFB', color: brand.textPrimary, border: `1px solid ${brand.border}`, borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {t('Learn More', 'اعرف المزيد')} <ExternalLink size={14} />
                         </button>
                     </div>
                 ))}
@@ -289,13 +331,15 @@ const StartupLaunchpadPage: React.FC = () => {
     );
 
     /* ── Tabs ── */
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on these functional controls.
     const tabs = [
         { id: 'programs', label: t('Explore Programs', 'استكشف البرامج'), icon: <Rocket className="h-4 w-4" />, content: programsTab },
         { id: 'journey', label: t('My Journey', 'رحلتي'), icon: <Target className="h-4 w-4" />, content: journeyTab },
         { id: 'funding', label: t('Funding & Grants', 'التمويل والمنح'), icon: <DollarSign className="h-4 w-4" />, content: fundingTab },
         { id: 'mentors', label: t('Mentor Network', 'شبكة المرشدين'), icon: <Users className="h-4 w-4" />, content: mentorTab },
         { id: 'resources', label: t('Resources', 'الموارد'), icon: <BookOpen className="h-4 w-4" />, content: resourcesTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
