@@ -170,19 +170,20 @@ const FunctionalCareerPlanningHub: React.FC = () => {
 
         if (json.success && json.data) {
           const d = json.data;
+          // The backend serves generic illustrative guidance as flat strings
+          // (career_path[].title/typical_experience/focus; promotion_criteria[]
+          // and emiratisation_support[] as plain strings). Read defensively so
+          // either a flat string or a legacy {en,ar} object renders.
+          const pick = (v: any) => (v && typeof v === 'object') ? (isRTL ? (v.ar || v.en) : v.en) : v;
           const transformed = {
-            overview: isRTL ? (d.overview_ar || d.overview) : d.overview,
+            overview: (isRTL ? (d.overview_ar || d.overview) : d.overview) || '',
             careerPath: (d.career_path || []).map((cp: any) => ({
-              title: isRTL ? (cp.title.ar || cp.title.en) : cp.title.en,
-              duration: isRTL ? (cp.duration.ar || cp.duration.en) : cp.duration.en,
-              focus: isRTL ? (cp.focus.ar || cp.focus.en) : cp.focus.en,
+              title: pick(cp.title) || cp.level || '',
+              duration: pick(cp.typical_experience ?? cp.duration) || '',
+              focus: pick(cp.focus) || '',
             })),
-            promotionCriteria: (d.promotion_criteria || []).map((pc: any) => 
-              isRTL ? (pc.ar || pc.en) : pc.en
-            ),
-            emiratisationSupport: (d.emiratisation_support || []).map((es: any) => 
-              isRTL ? (es.ar || es.en) : es.en
-            ),
+            promotionCriteria: (d.promotion_criteria || []).map(pick),
+            emiratisationSupport: (d.emiratisation_support || []).map(pick),
           };
           setProgressionData(transformed);
         } else {
