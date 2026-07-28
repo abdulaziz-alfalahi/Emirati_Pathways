@@ -389,7 +389,7 @@ def get_my_applications():
 
         # Internship applications — with full posting details
         cur.execute("""
-            SELECT ia.id as application_id, ia.status, ia.applied_at,
+            SELECT ia.id as application_id, ia.internship_id as source_id, ia.status, ia.applied_at,
                    i.title as job_title, i.company, i.location,
                    i.description, i.duration, i.deadline, i.sector,
                    i.stipend, i.type as internship_type, i.skills,
@@ -403,7 +403,7 @@ def get_my_applications():
 
         # Gig applications — with full posting details
         cur.execute("""
-            SELECT ga.id as application_id, ga.status, ga.applied_at,
+            SELECT ga.id as application_id, ga.gig_id as source_id, ga.status, ga.applied_at,
                    g.title as job_title, g.company, g.location,
                    g.description, g.duration, g.budget, g.category,
                    g.skills, g.posted_at,
@@ -433,6 +433,7 @@ def get_my_applications():
 
             app_data = {
                 'application_id': d['application_id'],
+                'source_id': d.get('source_id'),
                 'jobTitle': d.get('job_title', 'Unknown'),
                 'company': d.get('company', 'Unknown'),
                 'location': d.get('location', 'UAE'),
@@ -553,9 +554,18 @@ def apply_gig(gig_id):
         return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Idempotent: don't create a second application for the same gig.
+        cur.execute("SELECT id, status FROM gig_applications WHERE gig_id = %s AND user_id = %s",
+                    (gig_id, str(user_id)))
+        existing = cur.fetchone()
+        if existing:
+            cur.close()
+            conn.close()
+            return jsonify({"application_id": existing[0], "status": existing[1] or "pending",
+                            "already_applied": True}), 200
         cur.execute(
             "INSERT INTO gig_applications (gig_id, user_id, status) VALUES (%s, %s, 'pending') RETURNING id",
-            (gig_id, user_id)
+            (gig_id, str(user_id))
         )
         app_id = cur.fetchone()[0]
         conn.commit()

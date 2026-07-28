@@ -146,8 +146,9 @@ export async function getGig(id: number): Promise<Gig> {
     return resp.data;
 }
 
-export async function applyForGig(gigId: number, userId?: number): Promise<{ application_id: number; status: string }> {
-    const resp = await restClient.post(`/api/career-services/gigs/${gigId}/apply`, { user_id: userId });
+export async function applyForGig(gigId: number): Promise<{ application_id: number; status: string; already_applied?: boolean }> {
+    // Identity comes from the JWT server-side (users.id is a CHAR(15) Emirates ID).
+    const resp = await restClient.post(`/api/career-services/gigs/${gigId}/apply`, {});
     return resp.data;
 }
 
