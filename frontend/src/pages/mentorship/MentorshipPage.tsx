@@ -580,9 +580,15 @@ const MentorshipPage: React.FC = () => {
                                 <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{cleanName(c.coach_name, t('Coach', 'مدرب'))}</h4>
                                 <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.focus_area || t('Career coaching', 'تدريب مهني')}</div>
                             </div>
-                            <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
-                                {c.status || t('Active', 'نشط')}
-                            </span>
+                            {c.status === 'pending' ? (
+                                <span style={{ background: '#fef3e2', color: '#b45309', fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                    {t('Requested — awaiting coach', 'تم الطلب — بانتظار المدرب')}
+                                </span>
+                            ) : (
+                                <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                    {t('Active', 'نشط')}
+                                </span>
+                            )}
                         </div>
                     </div>
                 ))}

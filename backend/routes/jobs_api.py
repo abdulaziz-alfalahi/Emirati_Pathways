@@ -18,6 +18,10 @@ try:
     from backend.auth.access_control import require_auth, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
 except ImportError:  # pragma: no cover
     from auth.access_control import require_auth, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+try:
+    from backend.match_scoring import calculate_match_score
+except ImportError:  # pragma: no cover
+    from match_scoring import calculate_match_score
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -309,10 +313,11 @@ def search_jobs():
                 if job.get('salary_range_max'):
                     salary += f" - {job['salary_range_max']}"
             job['salary_range'] = salary
-            
-            # Map score fallback if not computed by AI
-            job['match_score'] = 75
-            
+
+            # This is a browse/search list, not a scored match — don't stamp a
+            # fabricated match % (was a flat 75 on every job). Null = "not scored".
+            job['match_score'] = None
+
             if job.get('created_at') and hasattr(job['created_at'], 'isoformat'):
                 job['created_at'] = job['created_at'].isoformat()
                 
@@ -637,31 +642,35 @@ def get_job_matches():
                 'data': []
             })
         
-        # Get candidate's skills from CV
-        skills = []
-        if cv_id:
-            # Query user_cvs table
-            cv_query = "SELECT parsed_data FROM user_cvs WHERE id = %s"
-            cv = execute_query(cv_query, (str(cv_id),), fetch_one=True)
-            if cv and cv.get('parsed_data'):
-                parsed = cv['parsed_data']
-                # Try to extract skills from various common locations in parsed structure
-                if isinstance(parsed, dict):
-                    skills_data = parsed.get('skills')
-                    if not skills_data:
-                        # Fallback for some parsers that put it in data.skills
-                        skills_data = parsed.get('data', {}).get('skills')
-                        
-                    if isinstance(skills_data, list):
-                        skills = skills_data
-                    elif isinstance(skills_data, str):
-                        skills = [s.strip() for s in skills_data.split(',')]
-        
+        # Build the candidate profile the CANONICAL scorer expects, from the SAME
+        # sources the recruiter applicant view uses (backend/match_scoring.py) —
+        # user_skills (self-reported + assessment-verified) + users.profile_data —
+        # so the candidate's match % equals the recruiter's for the same job.
+        candidate = {'user_id': str(user_id), 'technical_skills': [], 'soft_skills': [],
+                     'work_experience': [], 'education': []}
+        skill_rows = execute_query(
+            "SELECT skill_name FROM user_skills WHERE user_id = %s", (str(user_id),))
+        candidate['technical_skills'] = [r['skill_name'] for r in (skill_rows or []) if r.get('skill_name')]
+        prof = execute_query(
+            "SELECT profile_data FROM users WHERE id = %s", (str(user_id),), fetch_one=True)
+        pdata = (prof or {}).get('profile_data') or {}
+        if isinstance(pdata, str):
+            try:
+                pdata = json.loads(pdata)
+            except Exception:
+                pdata = {}
+        if isinstance(pdata, dict):
+            candidate['work_experience'] = pdata.get('work_experience') or pdata.get('experience') or []
+            candidate['education'] = pdata.get('education') or []
+            # a CV without user_skills rows can still carry skills in profile_data
+            if not candidate['technical_skills']:
+                candidate['technical_skills'] = pdata.get('skills') or []
+
         # Get matching jobs from job_postings
         # Join with companies to get company name
         # Cast IDs to text for comparison to handle type mismatches in schema
         query = """
-            SELECT 
+            SELECT
                 jp.id,
                 jp.title,
                 c.name as company,
@@ -669,6 +678,7 @@ def get_job_matches():
                 jp.employment_type as job_type,
                 jp.description,
                 jp.requirements,
+                jp.required_skills,
                 jp.salary_range_min,
                 jp.salary_range_max,
                 jp.currency,
@@ -684,44 +694,16 @@ def get_job_matches():
             ORDER BY jp.created_at DESC
             LIMIT 20
         """
-        
+
         jobs = execute_query(query, (str(user_id),))
-        
-        # Calculate match scores
+
+        # Calculate match scores via the ONE canonical scorer (same as recruiter side)
         matches = []
         for job in (jobs or []):
-            match_score = 70  # Base score
-            
-            # Construct requirements text from JSONB or String
-            req_text = ""
             raw_reqs = job.get('requirements')
-            if isinstance(raw_reqs, list):
-                # entries like [{'description': '...', 'category': '...'}]
-                terms = []
-                for item in raw_reqs:
-                    if isinstance(item, dict):
-                        terms.append(item.get('description', ''))
-                        terms.append(item.get('category', ''))
-                    elif isinstance(item, str):
-                        terms.append(item)
-                req_text = " ".join(terms).lower()
-            elif isinstance(raw_reqs, str):
-                req_text = raw_reqs.lower()
-                
-            # Check skill overlap
-            if skills:
-                for skill in skills:
-                    skill_name = ""
-                    if isinstance(skill, dict):
-                        skill_name = skill.get('name', skill.get('skill', ''))
-                    else:
-                        skill_name = str(skill)
-                    
-                    if skill_name and skill_name.lower() in req_text:
-                        match_score += 5
-            
-            match_score = min(match_score, 98)  # Cap score
-            
+            match_score = calculate_match_score(
+                candidate, {'required_skills': job.get('required_skills')})
+
             # Format salary range from min/max
             salary_str = "Not specified"
             if job.get('salary_range_min'):
@@ -756,53 +738,14 @@ def get_job_matches():
         
     except Exception as e:
         logger.error(f"Failed to get job matches: {e}")
-        # Return fallback data on any error
-        fallback_matches = [
-            {
-                'id': 1,
-                'title': 'Software Engineer',
-                'company': 'Emirates NBD',
-                'location': 'Dubai, UAE',
-                'job_type': 'full_time',
-                'description': 'Join our digital transformation team.',
-                'requirements': 'Python, JavaScript, React, SQL',
-                'salary_range': 'AED 18,000 - 25,000',
-                'status': 'active',
-                'match_score': 92,
-                'match_reasons': ['Skills match', 'Location preference']
-            },
-            {
-                'id': 2,
-                'title': 'Full Stack Developer',
-                'company': 'Careem',
-                'location': 'Dubai, UAE',
-                'job_type': 'full_time',
-                'description': 'Build and scale our platform.',
-                'requirements': 'Node.js, React, MongoDB, AWS',
-                'salary_range': 'AED 15,000 - 22,000',
-                'status': 'active',
-                'match_score': 88,
-                'match_reasons': ['Skills match', 'Industry interest']
-            },
-            {
-                'id': 3,
-                'title': 'Data Analyst',
-                'company': 'ADNOC',
-                'location': 'Abu Dhabi, UAE',
-                'job_type': 'full_time',
-                'description': 'Analyze energy sector data.',
-                'requirements': 'Python, SQL, Tableau, Power BI',
-                'salary_range': 'AED 16,000 - 24,000',
-                'status': 'active',
-                'match_score': 85,
-                'match_reasons': ['Skills match', 'Government sector']
-            }
-        ]
+        # Honest empty result on error — never serve fabricated jobs/scores (the old
+        # fallback returned invented Emirates NBD/Careem/ADNOC rows with hard-coded
+        # 92/88/85 match scores as if real).
         return jsonify({
-            'success': True,
-            'data': fallback_matches,
-            'source': 'fallback'
-        })
+            'success': False,
+            'data': [],
+            'message': 'Job matches are temporarily unavailable.'
+        }), 200
 
 
 # Also create an alias endpoint for candidate job matches
