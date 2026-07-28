@@ -17,6 +17,10 @@ try:
     from backend.auth.access_control import resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
     from auth.access_control import resolve_roles, ADMIN_ROLES
+try:
+    from backend.user_helpers import user_display_name
+except ImportError:  # pragma: no cover
+    from user_helpers import user_display_name
 
 logger = logging.getLogger(__name__)
 coach_bp = Blueprint('coach', __name__, url_prefix='/api/coach')
@@ -121,14 +125,17 @@ def list_clients():
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""
-            SELECT cca.client_id, u.full_name, u.email, u.phone, cca.assigned_at,
+        # C3-COA-2: resolve a display name (full_name -> first||last -> email) so the
+        # UI shows a name, not a raw 15-digit Emirates ID when full_name is null.
+        cur.execute(f"""
+            SELECT cca.client_id, u.full_name, {user_display_name('display_name', 'u')},
+                   u.email, u.phone, cca.assigned_at,
                    (SELECT COUNT(*) FROM development_plans dp WHERE dp.client_id = cca.client_id AND dp.status = 'active') as active_plans,
                    (SELECT COUNT(*) FROM coaching_sessions cs WHERE cs.client_id = cca.client_id) as total_sessions
             FROM coach_client_assignments cca
             LEFT JOIN users u ON u.id = cca.client_id
             WHERE cca.coach_id = %s AND cca.status = 'active'
-            ORDER BY u.full_name
+            ORDER BY display_name
         """, (coach_id,))
         rows = cur.fetchall()
         cur.close(); conn.close()
@@ -138,6 +145,70 @@ def list_clients():
             if d.get('assigned_at'): d['assigned_at'] = d['assigned_at'].isoformat()
             clients.append(d)
         return jsonify({"clients": clients, "total": len(clients)}), 200
+    except Exception as e:
+        conn.close(); return jsonify({"error": str(e)}), 500
+
+
+# ─── MENTEE-FACING DISCOVERY (C3-MEE-3: the mentee had no way to see a coach) ──
+
+@coach_bp.route('/directory', methods=['GET'])
+@jwt_required()
+def coach_directory():
+    """Public-ish directory of coaches so a mentee can pick a coach_id to
+    POST /api/coach/request. Any signed-in user may read it (no coach role
+    required). A coach is a user with role='coach' OR 'coach' in secondary_roles.
+    NB there is no coach-profile table today, so bio/specialisation come back
+    null — shape kept stable for the frontend."""
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(f"""
+            SELECT u.id, {user_display_name('display_name', 'u')}
+            FROM users u
+            WHERE (u.role = 'coach' OR COALESCE(u.secondary_roles, '[]'::jsonb) @> '["coach"]'::jsonb)
+              AND COALESCE(u.is_active, TRUE) IS TRUE
+            ORDER BY display_name
+        """)
+        coaches = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d['bio'] = None
+            d['specialization'] = None
+            coaches.append(d)
+        cur.close(); conn.close()
+        return jsonify({"coaches": coaches, "total": len(coaches)}), 200
+    except Exception as e:
+        conn.close(); return jsonify({"error": str(e)}), 500
+
+
+@coach_bp.route('/my-coaching', methods=['GET'])
+@jwt_required()
+def my_coaching():
+    """The caller's own coaching relationships (mentee-facing) — mirrors the
+    mentor side's /my-mentors. Returns each coach the caller is an active client
+    of, with the coach's display name."""
+    caller = str(get_jwt_identity())
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(f"""
+            SELECT cca.coach_id, {user_display_name('coach_name', 'u')},
+                   cca.status, cca.assigned_at
+            FROM coach_client_assignments cca
+            LEFT JOIN users u ON u.id = cca.coach_id
+            WHERE cca.client_id = %s AND cca.status = 'active'
+            ORDER BY cca.assigned_at DESC
+        """, (caller,))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        coaching = []
+        for r in rows:
+            d = dict(r)
+            if d.get('assigned_at'): d['assigned_at'] = d['assigned_at'].isoformat()
+            coaching.append(d)
+        return jsonify({"coaching": coaching, "total": len(coaching)}), 200
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
 
@@ -234,20 +305,24 @@ def get_skill_gaps(client_id):
         conn.close(); return jsonify({"error": "Forbidden - not your client"}), 403
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        # Get client's current skills
+        # C3-COA-2: read the client's skills straight from user_skills by skill_name.
+        # The old INNER JOIN to skill_taxonomy (st.skill_id = us.skill_id) dropped
+        # every self-reported skill — those carry skill_id like 'self_python' which
+        # has no taxonomy row — so the analysis always returned total_skills: 0.
         cur.execute("""
-            SELECT st.name, us.proficiency AS proficiency_level, us.source
-            FROM user_skills us
-            JOIN skill_taxonomy st ON st.skill_id = us.skill_id
-            WHERE us.user_id = %s
+            SELECT skill_name AS name, proficiency AS proficiency_level,
+                   source, verified
+            FROM user_skills
+            WHERE user_id = %s
+            ORDER BY skill_name
         """, (client_id,))
         current_skills = [dict(r) for r in cur.fetchall()]
         cur.close(); conn.close()
-        
-        skill_map = {s['name'].lower(): s for s in current_skills}
+
         return jsonify({
             "current_skills": current_skills,
             "total_skills": len(current_skills),
+            "verified_skills": len([s for s in current_skills if s.get('verified')]),
             "skills_by_level": {
                 "beginner": len([s for s in current_skills if s.get('proficiency_level') == 'beginner']),
                 "intermediate": len([s for s in current_skills if s.get('proficiency_level') == 'intermediate']),
