@@ -45,394 +45,9 @@ const fmtSalary = (n: number) => {
   return `AED ${fmtNum(n)}`;
 };
 
-const getCompanyProgression = (
-  companyName: string,
-  sectorId: string,
-  t: (en: string, ar: string) => string
-): {
-  overview: string;
-  careerPath: Array<{ title: string; duration: string; focus: string }>;
-  promotionCriteria: string[];
-  emiratisationSupport: string[];
-} => {
-  const normalizedName = companyName.split('(')[0].trim().toLowerCase();
-
-  const data: Record<string, {
-    overview: string;
-    careerPath: Array<{ title: string; duration: string; focus: string }>;
-    promotionCriteria: string[];
-    emiratisationSupport: string[];
-  }> = {
-    'microsoft': {
-      overview: t(
-        'A global leader in technology, cloud computing, and AI, driving innovation and digital transformation in the UAE.',
-        'شركة عالمية رائدة في مجال التكنولوجيا والحوسبة السحابية والذكاء الاصطناعي، تقود الابتكار والتحول الرقمي في الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Software Engineer I', 'مهندس برمجيات أول'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Learning codebase, minor features, bug fixes, testing.', 'تعلم التعليمات البرمجية، الميزات البسيطة، إصلاح الأخطاء، والاختبار.') },
-        { title: t('Software Engineer II', 'مهندس برمجيات ثاني'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Owning features, design contributions, system reliability.', 'امتلاك الميزات، المساهمة في التصميم، وموثوقية النظام.') },
-        { title: t('Senior Software Engineer', 'كبير مهندسي برمجيات'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Architecture design, mentoring juniors, leading small projects.', 'تصميم البنية البرمجية، إرشاد المبتدئين، وقيادة المشاريع الصغيرة.') },
-        { title: t('Principal Software Engineer', 'مهندس برمجيات رئيسي'), duration: t('7+ Years', '7+ سنوات'), focus: t('Technical strategy, cross-team alignment, architectural roadmap.', 'الاستراتيجية التقنية، التنسيق بين الفرق، ومخطط البنية البرمجية.') }
-      ],
-      promotionCriteria: [
-        t('Demonstrate ownership of critical features and robust code delivery.', 'إثبات القدرة على امتلاك الميزات الهامة وتقديم برمجيات قوية.'),
-        t('Active participation in design reviews and architectural decisions.', 'المشاركة الفعالة في مراجعات التصميم والقرارات المعمارية.'),
-        t('Mentoring junior engineers and improving overall team code quality.', 'إرشاد المهندسين المبتدئين وتحسين جودة البرمجة الإجمالية للفريق.'),
-        t('Relevant professional certifications (e.g. Azure Solutions Architect).', 'الشهادات المهنية ذات الصلة (مثل Azure Solutions Architect).')
-      ],
-      emiratisationSupport: [
-        t('Nafis program compatibility and salary support alignment.', 'التوافق مع برنامج نافس ومواءمة دعم الرواتب.'),
-        t('Microsoft UAE Graduate Program (Tomoh) for Emirati nationals.', 'برنامج مايكروسوفت للخريجين في الإمارات (طموح) للمواطنين الإماراتيين.'),
-        t('Direct mentorship from global Microsoft tech leads.', 'إرشاد مباشر من قادة تكنولوجيا مايكروسوفت العالميين.')
-      ]
-    },
-    'google': {
-      overview: t(
-        'A global technology giant focusing on search, cloud, AI, and hardware, empowering UAE developers and businesses.',
-        'شركة تكنولوجيا عالمية تركز على البحث، السحابية، الذكاء الاصطناعي، والأجهزة، وتمكين المطورين والشركات في الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Software Engineer (L3)', 'مهندس برمجيات (L3)'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Developing clean code, writing unit tests, and designing simple features.', 'تطوير كود نظيف، كتابة اختبارات الوحدة، وتصميم ميزات بسيطة.') },
-        { title: t('Software Engineer (L4)', 'مهندس برمجيات (L4)'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Leading moderate projects, system design, code reviews.', 'قيادة مشاريع متوسطة، تصميم النظام، ومراجعة الأكواد.') },
-        { title: t('Senior Software Engineer (L5)', 'كبير مهندسي برمجيات (L5)'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Technical leadership, defining project scopes, mentoring L3/L4 engineers.', 'القيادة التقنية، تحديد نطاقات المشاريع، وإرشاد مهندسي L3/L4.') },
-        { title: t('Staff Engineer (L6)', 'مهندس طاقم عمل (L6)'), duration: t('7+ Years', '7+ سنوات'), focus: t('Influencing organization-wide technology roadmaps and architectural designs.', 'التأثير على خرائط تكنولوجيا المؤسسة بأكملها والتصميمات المعمارية.') }
-      ],
-      promotionCriteria: [
-        t('Consistently deliver code with high impact, quality, and low bug rate.', 'تقديم كود ذو تأثير وجودة عالية وبمعدل أخطاء منخفض باستمرار.'),
-        t('Strong technical leadership and ability to navigate ambiguous scopes.', 'قيادة تقنية قوية والقدرة على التعامل مع المهام الغامضة.'),
-        t('Positive contributions to Google’s engineering culture and peer mentoring.', 'المساهمة الإيجابية في الثقافة الهندسية لجوجل وإرشاد الأقران.'),
-        t('Proven track record of designing scalable and maintainable distributed systems.', 'سجل حافل في تصميم أنظمة موزعة قابلة للتطوير والصيانة.')
-      ],
-      emiratisationSupport: [
-        t('Active participation in local digital economy talent initiatives.', 'المشاركة الفعالة في مبادرات مواهب الاقتصاد الرقمي المحلي.'),
-        t('Google UAE Internship Program for qualified Emirati undergraduates.', 'برنامج جوجل للتدريب الداخلي في الإمارات لطلاب الجامعات الإماراتيين المؤهلين.'),
-        t('Access to Google Developer Groups and premium training resources.', 'الوصول إلى مجموعات مطوري جوجل وموارد التدريب المتميزة.')
-      ]
-    },
-    'amazon': {
-      overview: t(
-        'A pioneer in e-commerce, cloud computing (AWS), and digital streaming, accelerating digital business in the UAE.',
-        'رائدة في التجارة الإلكترونية، الحوسبة السحابية (AWS)، والبث الرقمي، مما يسرع الأعمال الرقمية في الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Software Development Engineer I (L4)', 'مهندس تطوير برمجيات أول (L4)'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Developing service features, resolving tickets, and operational excellence.', 'تطوير ميزات الخدمة، حل التذاكر البرمجية، والتميز التشغيلي.') },
-        { title: t('Software Development Engineer II (L5)', 'مهندس تطوير برمجيات ثاني (L5)'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Designing components, system scaling, operational leadership.', 'تصميم المكونات، توسيع نطاق النظام، والقيادة التشغيلية.') },
-        { title: t('Senior SDE (L6)', 'كبير مهندسي تطوير برمجيات (L6)'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Leading engineering teams, system architecture, long-term technical plans.', 'قيادة الفرق الهندسية، هندسة النظام، والخطط التقنية طويلة الأجل.') },
-        { title: t('Principal SDE (L7)', 'مهندس تطوير رئيسي (L7)'), duration: t('7+ Years', '7+ سنوات'), focus: t('Setting technical vision across multiple organisations and business units.', 'وضع الرؤية التقنية عبر العديد من المؤسسات ووحدات العمل.') }
-      ],
-      promotionCriteria: [
-        t('Exceeding expectations in Amazon Leadership Principles.', 'تجاوز التوقعات في مبادئ القيادة لشركة أمازون.'),
-        t('Delivering high-availability systems with excellent operational metrics.', 'تقديم أنظمة عالية التوفر بمقاييس تشغيلية ممتازة.'),
-        t('Leading architecture alignment across team boundaries.', 'قيادة توافق البنية البرمجية عبر حدود الفريق.'),
-        t('AWS professional certifications (e.g. DevOps Engineer / Solutions Architect).', 'الشهادات المهنية لـ AWS (مثل مهندس DevOps / مهندس حلول).')
-      ],
-      emiratisationSupport: [
-        t('Dedicated AWS Cloud training pathways for Emirati students.', 'مسارات تدريب سحابية مخصصة من AWS للطلاب الإماراتيين.'),
-        t('Alignment with Nafis program for salary and pension support.', 'التوافق مع برنامج نافس لدعم الرواتب والمعاشات التقاعدية.'),
-        t('Emirati graduate accelerator programs in cloud engineering.', 'مسرّعات خريجي الإمارات في هندسة السحابة.')
-      ]
-    },
-    'jpmorgan': {
-      overview: t(
-        'A leading global financial services firm providing investment banking and wealth management in the UAE.',
-        'مؤسسة خدمات مالية عالمية رائدة تقدم الخدمات المصرفية الاستثمارية وإدارة الثروات في الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Analyst', 'محلل مالى'), duration: t('1-3 Years', '1-3 سنوات'), focus: t('Financial modeling, industry research, slide decks, database management.', 'النمذجة المالية، بحوث الصناعة، العروض التقديمية، وإدارة قواعد البيانات.') },
-        { title: t('Associate', 'شريك مالى'), duration: t('3-5 Years', '3-5 سنوات'), focus: t('Managing deal workflows, client communication, supervising analysts.', 'إدارة سير عمل الصفقات، التواصل مع العملاء، والإشراف على المحللين.') },
-        { title: t('Vice President (VP)', 'نائب الرئيس'), duration: t('5-8 Years', '5-8 سنوات'), focus: t('Client relationships, execution of deals, team leadership, risk management.', 'علاقات العملاء، تنفيذ الصفقات، قيادة الفريق، وإدارة المخاطر.') },
-        { title: t('Executive Director', 'مدير تنفيذي'), duration: t('8+ Years', '8+ سنوات'), focus: t('Origination of deals, strategic sector leadership, high-level client advisory.', 'ابتكار الصفقات، القيادة الاستراتيجية للقطاع، وتقديم الاستشارات للعملاء.') }
-      ],
-      promotionCriteria: [
-        t('Consistently high performance on transaction execution and client satisfaction.', 'أداء عالي باستمرار في تنفيذ المعاملات ورضا العملاء.'),
-        t('Deep understanding of financial compliance and regulatory frameworks.', 'فهم عميق للامتثال المالي والأطر التنظيمية.'),
-        t('Mentorship of junior bankers and commitment to inclusion.', 'إرشاد المصرفيين المبتدئين والالتزام بالدمج وتكافؤ الفرص.'),
-        t('CFA (Chartered Financial Analyst) charterholder preferred for senior tracks.', 'يفضل الحصول على شهادة المحلل المالي المعتمد (CFA) للمسارات العليا.')
-      ],
-      emiratisationSupport: [
-        t('JPMorgan UAE National Training Program for finance graduates.', 'برنامج جي بي مورغان لتدريب المواطنين الإماراتيين لخريجي العلوم المالية.'),
-        t('Active placement in investment banking and global market divisions.', 'توظيف نشط في الخدمات المصرفية الاستثمارية وأقسام الأسواق العالمية.'),
-        t('Integration with Nafis financial training initiatives.', 'التكامل مع مبادرات التدريب المالي لبرنامج نافس.')
-      ]
-    },
-    'hsbc': {
-      overview: t(
-        'One of the largest international banks in the Middle East, facilitating trade and wealth development in the UAE.',
-        'أحد أكبر البنوك الدولية في الشرق الأوسط، يسهل التجارة وتطوير الثروات في دولة الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Graduate Trainee', 'خريج متدرب'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Rotations across retail, commercial, and wealth divisions, learning systems.', 'التناوب بين أقسام التجزئة والخدمات التجارية والثروات، وتعلم الأنظمة.') },
-        { title: t('Relationship Manager', 'مدير علاقات العملاء'), duration: t('2-5 Years', '2-5 سنوات'), focus: t('Managing corporate or retail portfolios, product advisory, client satisfaction.', 'إدارة محافظ الشركات أو الأفراد، تقديم المشورة بشأن المنتجات، ورضا العملاء.') },
-        { title: t('Senior Relationship Manager / Team Leader', 'كبير مديري العلاقات / قائد فريق'), duration: t('5-8 Years', '5-8 سنوات'), focus: t('Supervising relationship teams, complex transactions, strategic growth.', 'الإشراف على فرق العلاقات، المعاملات المعقدة، والنمو الاستراتيجي.') },
-        { title: t('Director / Country Head', 'مدير / رئيس الدولة'), duration: t('8+ Years', '8+ سنوات'), focus: t('Business unit management, regulatory relations, high-value client advisory.', 'إدارة وحدة الأعمال، العلاقات التنظيمية، واستشارات العملاء ذوي الملاءة المالية العالية.') }
-      ],
-      promotionCriteria: [
-        t('Achieving portfolio growth while maintaining strict compliance.', 'تحقيق نمو المحفظة المالية مع الحفاظ على الامتثال الصارم.'),
-        t('Exhibiting leadership behaviors aligned with HSBC values.', 'إظهار سلوكيات القيادة المتوافقة مع قيم HSBC.'),
-        t('Successful completion of credit certification and relevant banking credentials.', 'إكمال شهادة الائتمان والمؤهلات المصرفية ذات الصلة بنجاح.'),
-        t('Active contribution to group digitalization initiatives.', 'المساهمة الفعالة في مبادرات التحول الرقمي للمجموعة.')
-      ],
-      emiratisationSupport: [
-        t('HSBC Emirati Academy for comprehensive career training.', 'أكاديمية HSBC الإماراتية للتدريب المهني الشامل.'),
-        t('Nafis program sponsorship and pension scheme matching.', 'رعاية برنامج نافس ومطابقة خطة المعاشات التقاعدية.'),
-        t('Leadership development fast-track for top-performing Emirati nationals.', 'مسار سريع لتطوير القيادة للمواطنين الإماراتيين ذوي الأداء المتميز.')
-      ]
-    },
-    'shell': {
-      overview: t(
-        'A global group of energy and petrochemical companies, supporting sustainable energy development in the UAE.',
-        'مجموعة عالمية من شركات الطاقة والبتروكيماويات، تدعم تطوير الطاقة المستدامة في دولة الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Graduate Engineer', 'مهندس خريج'), duration: t('1-3 Years', '1-3 سنوات'), focus: t('Technical training, site rotations, safety audits, learning engineering standards.', 'التدريب الفني، التناوب بين المواقع، تدقيق السلامة، وتعلم المعايير الهندسية.') },
-        { title: t('Project Engineer', 'مهندس مشروع'), duration: t('3-6 Years', '3-6 سنوات'), focus: t('Executing engineering packages, budget estimation, vendor coordination.', 'تنفيذ الحزم الهندسية، تقدير الميزانية، وتنسيق البائعين.') },
-        { title: t('Senior Engineer / Project Manager', 'كبير مهندسين / مدير مشروع'), duration: t('6-9 Years', '6-9 سنوات'), focus: t('Managing multi-disciplinary engineering projects, risk mitigation.', 'إدارة المشاريع الهندسية متعددة التخصصات، والحد من المخاطر.') },
-        { title: t('Engineering Director', 'مدير هندسي'), duration: t('9+ Years', '9+ سنوات'), focus: t('Leading asset teams, global technology implementation, safety leadership.', 'قيادة فرق الأصول، تطبيق التكنولوجيا العالمية، وقيادة السلامة.') }
-      ],
-      promotionCriteria: [
-        t('Demonstrated engineering competence according to Shell Professional Standards.', 'إثبات الكفاءة الهندسية وفقاً للمعايير المهنية لشل.'),
-        t('Zero-accident record and active contribution to safety culture.', 'سجل خالٍ من الحوادث والمساهمة الفعالة في ثقافة السلامة.'),
-        t('Proven capability in managing capital budgets and delivery timelines.', 'قدرة مثبتة على إدارة الميزانيات الرأسمالية والجداول الزمنية للتسليم.'),
-        t('Professional Engineering credentials (e.g. Chartered Engineer status).', 'المؤهلات الهندسية المهنية (مثل وضع مهندس معتمد).')
-      ],
-      emiratisationSupport: [
-        t('Shell UAE graduate trainee schemes with direct global mentors.', 'مخططات تدريب الخريجين من شل الإمارات مع موجهين عالميين مباشرين.'),
-        t('Collaboration with local universities for research and talent.', 'التعاون مع الجامعات المحلية للبحث وجذب المواهب.'),
-        t('Alignment with Nafis engineering and technical salary programs.', 'التوافق مع برامج نافس لرواتب التخصصات الهندسية والفنية.')
-      ]
-    },
-    'pfizer': {
-      overview: t(
-        'A leading biopharmaceutical corporation discovering, developing, and manufacturing medicines and vaccines in the UAE.',
-        'شركة رائدة في مجال الأدوية الحيوية، تقوم باكتشاف وتطوير وتصنيع الأدوية واللقاحات في دولة الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Medical Representative', 'مندوب طبي'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Product presentations to healthcare professionals, market feedback.', 'تقديم عروض المنتجات لأخصائيي الرعاية الصحية، وملاحظات السوق.') },
-        { title: t('Key Account Manager', 'مدير حسابات رئيسي'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Managing institutional clients, contract negotiation, sales strategies.', 'إدارة العملاء المؤسسيين، تفاوض العقود، واستراتيجيات المبيعات.') },
-        { title: t('Product Manager / Medical Advisor', 'مدير المنتج / مستشار طبي'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Product lifecycle strategy, clinical trials coordination, marketing.', 'استراتيجية دورة حياة المنتج، تنسيق التجارب السريرية، والتسويق.') },
-        { title: t('Business Unit Director', 'مدير وحدة الأعمال'), duration: t('7+ Years', '7+ سنوات'), focus: t('Leading therapeutic areas, budget allocation, strategic market expansion.', 'قيادة المجالات العلاجية، تخصيص الميزانية، والتوسع الاستراتيجي في السوق.') }
-      ],
-      promotionCriteria: [
-        t('Consistently achieving or exceeding pharmaceutical sales and compliance goals.', 'تحقيق أو تجاوز أهداف مبيعات الأدوية والامتثال باستمرار.'),
-        t('Deep scientific knowledge of Pfizer products and therapeutic sectors.', 'معرفة علمية عميقة بمنتجات فايزر والقطاعات العلاجية.'),
-        t('Compliance with strict international healthcare marketing regulations.', 'الامتثال للوائح الدولية الصارمة لتسويق الرعاية الصحية.'),
-        t('Postgraduate credentials (e.g. PharmD, MBA, or PhD in Life Sciences) highly valued.', 'تقدير كبير للمؤهلات العليا (مثل دكتوراه صيدلة، ماجستير إدارة أعمال، أو دكتوراه في علوم الحياة).')
-      ],
-      emiratisationSupport: [
-        t('Pfizer UAE Medical Academy training programs for local graduates.', 'برنامج تدريب أكاديمية فايزر الطبية في الإمارات للخريجين المحليين.'),
-        t('Support for Emiratis pursuing research careers in life sciences.', 'دعم الإماراتيين الذين يسعون وراء مهن بحثية في علوم الحياة.'),
-        t('Salary top-up and training integration via the Nafis framework.', 'تكامل دعم الرواتب والتدريب من خلال إطار نافس.')
-      ]
-    },
-    'airbus': {
-      overview: t(
-        'A global pioneer in the aerospace industry, designing, manufacturing and delivering aerospace products in the UAE.',
-        'شركة عالمية رائدة في صناعة الطيران والفضاء، تقوم بتصميم وتصنيع وتقديم منتجات الفضاء في الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Associate Systems Engineer', 'مهندس أنظمة مساعد'), duration: t('1-3 Years', '1-3 سنوات'), focus: t('Assisting in components check, diagnostic tools execution, documentation.', 'المساعدة في فحص المكونات، تشغيل أدوات التشخيص، وتوثيق الأنظمة.') },
-        { title: t('Systems / Flight Test Engineer', 'مهندس أنظمة / مهندس اختبار الطيران'), duration: t('3-6 Years', '3-6 سنوات'), focus: t('Designing sub-assemblies, avionics diagnostics, simulation testing.', 'تصميم الأنظمة الفرعية، تشخيص إلكترونيات الطيران، واختبار المحاكاة.') },
-        { title: t('Senior Aerospace Engineer', 'كبير مهندسي الطيران والفضاء'), duration: t('6-9 Years', '6-9 سنوات'), focus: t('Leading modification packages, airframe integrity review, team mentorship.', 'قيادة حزم التعديل، مراجعة سلامة هيكل الطائرة، وإرشاد الفريق.') },
-        { title: t('Aeronautics Program Manager', 'مدير برنامج الطيران'), duration: t('9+ Years', '9+ سنوات'), focus: t('Managing airline integration contracts, aerospace engineering strategy.', 'إدارة عقود تكامل شركات الطيران، واستراتيجية هندسة الفضاء.') }
-      ],
-      promotionCriteria: [
-        t('Demonstrated engineering precision in aviation and defense contexts.', 'إثبات الدقة الهندسية في سياقات الطيران والدفاع.'),
-        t('Adherence to strict international civil and military aviation regulations.', 'الالتزام بأنظمة الطيران المدني والعسكري الدولية الصارمة.'),
-        t('Successful execution of modification programs and cost management.', 'التنفيذ الناجح لبرامج التعديل وإدارة التكاليف.'),
-        t('Professional licensure and engineering certifications (e.g. EASA standards).', 'الترخيص المهني والشهادات الهندسية (مثل معايير الوكالة الأوروبية لسلامة الطيران EASA).')
-      ],
-      emiratisationSupport: [
-        t('Airbus UAE Engineering Fellowship for top aerospace students.', 'زمالة إيرباص الإمارات الهندسية لطلاب هندسة الفضاء المتميزين.'),
-        t('Rotational internships in Toulouse and Hamburg for Emirati graduates.', 'تدريب داخلي بالتناوب في تولوز وهامبورغ للخريجين الإماراتيين.'),
-        t('Alignment with Nafis technical skills development programs.', 'التوافق مع برامج تطوير المهارات الفنية لبرنامج نافس.')
-      ]
-    },
-    'marriott': {
-      overview: t(
-        'A leading global lodging company managing a diverse portfolio of hotels and resorts in the UAE.',
-        'شركة إقامة عالمية رائدة تدير محفظة متنوعة من الفنادق والمنتجعات في دولة الإمارات.'
-      ),
-      careerPath: [
-        { title: t('Management Trainee', 'متدرب إداري'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Rotations across front desk, F&B, housekeeping, guest relations.', 'التناوب بين الاستقبال، الأغذية والمشروبات، التدبير المنزلي، وعلاقات الضيوف.') },
-        { title: t('Assistant Department Manager', 'مساعد مدير القسم'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Supervising floor teams, handling guest escalation, schedule planning.', 'الإشراف على فرق العمل، معالجة مشكلات الضيوف، وتخطيط الجداول الزمنية.') },
-        { title: t('Hotel Department Manager', 'مدير قسم الفندق'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Owning department P&L, customer satisfaction scores, quality control.', 'إدارة الأرباح والخسائر للقسم، درجات رضا العملاء، ومراقبة الجودة.') },
-        { title: t('Hotel General Manager / Regional Director', 'مدير عام الفندق / مدير إقليمي'), duration: t('7+ Years', '7+ سنوات'), focus: t('Full property management, strategic brand alignment, financial success.', 'إدارة العقار بالكامل، التوافق الاستراتيجي مع العلامة التجارية، والنجاح المالي.') }
-      ],
-      promotionCriteria: [
-        t('Consistently high customer service experience (GSS) scores.', 'درجات رضا عملاء عالية باستمرار (GSS).'),
-        t('Demonstrated ability to drive revenue and control labor/operating budgets.', 'القدرة على زيادة الإيرادات والتحكم في الميزانيات التشغيلية والعمالة.'),
-        t('Active participation in Marriott Leadership Training pathways.', 'المشاركة الفعالة في مسارات تدريب القيادة من ماريوت.'),
-        t('Bilingual fluency (English & Arabic) highly preferred for UAE leadership.', 'تفضيل ثنائية اللغة (الإنجليزية والعربية) لقيادة العمليات في الإمارات.')
-      ],
-      emiratisationSupport: [
-        t('Marriott UAE National Hospitality Program (Tahseen).', 'برنامج ماريوت للضيافة الوطنية في الإمارات (تحسين).'),
-        t('Fast-track to operational leadership for Emirati candidates.', 'مسار سريع للقيادة التشغيلية للمرشحين الإماراتيين.'),
-        t('Nafis program alignment providing salary support in hospitality.', 'التوافق مع برنامج نافس لتقديم دعم الرواتب في قطاع الضيافة.')
-      ]
-    }
-  };
-
-  if (data[normalizedName]) {
-    return data[normalizedName];
-  }
-
-  switch (sectorId) {
-    case 'technology':
-      return {
-        overview: t(
-          `A prominent technology firm specializing in digital services, software development, and localized innovation.`,
-          `شركة تكنولوجيا بارزة متخصصة في الخدمات الرقمية، تطوير البرمجيات، والابتكار المحلي.`
-        ),
-        careerPath: [
-          { title: t('Junior Developer', 'مطور مبتدئ'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Implementing feature requests, writing unit tests, and fixing bugs.', 'تنفيذ طلبات الميزات، كتابة اختبارات الوحدة، وإصلاح الأخطاء.') },
-          { title: t('Developer', 'مطور'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Owning feature modules, database optimization, integration reviews.', 'امتلاك وحدات الميزات، تحسين قواعد البيانات، ومراجعات التكامل.') },
-          { title: t('Senior Developer / Architect', 'كبير مطورين / مهندس معماري'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Designing system architectures, leading code reviews, mentoring.', 'تصميم بنيات النظام، قيادة مراجعات الأكواد، والإرشاد.') },
-          { title: t('Engineering Director', 'مدير هندسي'), duration: t('7+ Years', '7+ سنوات'), focus: t('Formulating technical vision, managing engineering budgets and team scales.', 'صياغة الرؤية الفنية، إدارة الميزانيات الهندسية ومقاييس الفريق.') }
-        ],
-        promotionCriteria: [
-          t('Clean code delivery and compliance with modern software architectures.', 'تقديم كود نظيف والالتزام بهندسة البرمجيات الحديثة.'),
-          t('Demonstrated initiative in adopting new toolsets or optimizing workflows.', 'مبادرة واضحة في اعتماد أدوات جديدة أو تحسين سير العمل.'),
-          t('Contributions to cross-team code libraries and shared utilities.', 'المساهمات في مكتبات الأكواد المشتركة بين الفرق والأدوات المساعدة.')
-        ],
-        emiratisationSupport: [
-          t('Structured graduate training tracks matching technical credentials.', 'مسارات تدريب خريجين منظمة تطابق المؤهلات الفنية.'),
-          t('Co-financing and salary support compatibility through the Nafis program.', 'التوافق مع برامج دعم الرواتب والتمويل المشترك عبر برنامج نافس.')
-        ]
-      };
-    case 'finance':
-      return {
-        overview: t(
-          `A leading financial institution offering secure banking, investment options, and capital services.`,
-          `مؤسسة مالية رائدة تقدم الخدمات المصرفية الآمنة، خيارات الاستثمار، والخدمات الرأسمالية.`
-        ),
-        careerPath: [
-          { title: t('Financial Analyst', 'محلل مالي'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Data entry, ledger balances review, financial statement reviews.', 'إدخال البيانات، مراجعة موازين الحسابات، ومراجعة البيانات المالية.') },
-          { title: t('Senior Analyst / Officer', 'كبير محللين / مسؤول'), duration: t('2-5 Years', '2-5 سنوات'), focus: t('Compiling credit reviews, executing transaction requests, client advisory.', 'إعداد مراجعات الائتمان، تنفيذ طلبات المعاملات، وتقديم الاستشارات للعملاء.') },
-          { title: t('VP / Department Lead', 'نائب رئيس / رئيس قسم'), duration: t('5-8 Years', '5-8 سنوات'), focus: t('Managing compliance reviews, portfolio risks, and leading analyst teams.', 'إإدارة مراجعات الامتثال، مخاطر المحفظة، وقيادة فرق المحللين.') },
-          { title: t('Director / General Manager', 'مدير / مدير عام'), duration: t('8+ Years', '8+ سنوات'), focus: t('Setting corporate finance policy, high-value client acquisitions, global growth.', 'وضع سياسة تمويل الشركات، الاستحواذ على عملاء ذوي قيمة عالية، والنمو العالمي.') }
-        ],
-        promotionCriteria: [
-          t('Pristine compliance score in audits and regular transaction checks.', 'درجة امتثال مثالية في عمليات التدقيق وفحوصات المعاملات العادية.'),
-          t('Successful delivery of financial portfolios and transaction targets.', 'التسليم الناجح للمحافظ المالية وأهداف المعاملات.'),
-          t('Professional certifications such as CFA or ACCA.', 'الشهادات المهنية مثل CFA أو ACCA.')
-        ],
-        emiratisationSupport: [
-          t('Direct entry pathways for local banking and economics graduates.', 'مسارات دخول مباشرة لخريجي العلوم المصرفية والاقتصاد المحليين.'),
-          t('Integration with Nafis bank leadership programs.', 'التكامل مع برامج قيادة البنوك لبرنامج نافس.')
-        ]
-      };
-    case 'energy':
-      return {
-        overview: t(
-          `An energy firm driving infrastructure development, efficiency solutions, and power grid optimization.`,
-          `شركة طاقة تقود تطوير البنية التحتية، حلول الكفاءة، وتحسين شبكة الطاقة.`
-        ),
-        careerPath: [
-          { title: t('Graduate Engineer', 'مهندس خريج'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Assisting on-site operations, drafting CAD diagrams, reporting.', 'المساعدة في العمليات الميدانية، صياغة مخططات CAD، وإعداد التقارير.') },
-          { title: t('Operations Specialist', 'أخصائي عمليات'), duration: t('2-5 Years', '2-5 سنوات'), focus: t('Managing physical assets maintenance, diagnostic checks, vendor orders.', 'إدارة صيانة الأصول المادية، فحوصات التشخيص، وطلبات البائعين.') },
-          { title: t('Lead Consultant / Senior Engineer', 'استشاري رئيسي / كبير مهندسين'), duration: t('5-8 Years', '5-8 سنوات'), focus: t('Managing multi-site optimization plans, compliance approvals, team safety.', 'إدارة خطط التحسين متعددة المواقع، موافقات الامتثال، وسلامة الفريق.') },
-          { title: t('Chief Engineering Officer', 'رئيس المهندسين'), duration: t('8+ Years', '8+ سنوات'), focus: t('Formulating corporate resource strategy, safety audits, infrastructure vision.', 'صياغة استراتيجية الموارد للشركة، تدقيق السلامة، ورؤية البنية التحتية.') }
-        ],
-        promotionCriteria: [
-          t('Adherence to strict HSE (Health, Safety, and Environment) policies.', 'الالتزام بسياسات الصحة والسلامة والبيئة (HSE) الصارمة.'),
-          t('Proven delivery of infrastructure enhancements within project budgets.', 'إثبات تقديم تحسينات في البنية التحتية ضمن ميزانيات المشروع.'),
-          t('Advanced training certifications in energy management.', 'شهادات تدريبية متقدمة في إدارة الطاقة.')
-        ],
-        emiratisationSupport: [
-          t('Strategic partnership with local technical colleges and institutes.', 'شراكة استراتيجية مع الكليات والمعاهد التقنية المحلية.'),
-          t('Compatibility with state engineering salary allowances and Nafis support.', 'التوافق مع البدلات المالية الهندسية للدولة ودعم نافس.')
-        ]
-      };
-    case 'healthcare':
-      return {
-        overview: t(
-          `A medical entity focused on healthcare diagnostics, therapeutic services, and clinical innovation.`,
-          `جهة طبية تركز على تشخيصات الرعاية الصحية، الخدمات العلاجية، والابتكار السريري.`
-        ),
-        careerPath: [
-          { title: t('Clinical Assistant', 'مساعد سريري'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Patient diagnostics registration, maintaining laboratory logs, research aid.', 'تسجيل تشخيصات المرضى، الحفاظ على سجلات المختبر، والمساعدة البحثية.') },
-          { title: t('healthcare Practitioner / Officer', 'ممارس الرعاية الصحية / مسؤول'), duration: t('2-5 Years', '2-5 سنوات'), focus: t('Conducting treatment programs, administering diagnostic tools, case write-ups.', 'إجراء برامج العلاج، تشغيل أدوات التشخيص، وكتابة تقارير الحالات.') },
-          { title: t('Senior Medical Specialist', 'أخصائي طبي أول'), duration: t('5-8 Years', '5-8 سنوات'), focus: t('Directing clinical units, supervising interns, reviewing treatment plans.', 'توجيه الوحدات السريرية، الإشراف على المتدربين، ومراجعة خطط العلاج.') },
-          { title: t('Clinical Director / Lab Head', 'مدير سريري / رئيس المختبر'), duration: t('8+ Years', '8+ سنوات'), focus: t('Managing healthcare policies, hospital compliance, scientific research strategy.', 'إدارة سياسات الرعاية الصحية، الامتثال للمستشفيات، واستراتيجية البحث العلمي.') }
-        ],
-        promotionCriteria: [
-          t('Pristine medical licensing checks (e.g. MOHAP or DHA licence).', 'مراجعة تراخيص طبية ممتازة (مثل ترخيص وزارة الصحة أو هيئة الصحة بدبي).'),
-          t('High patient satisfaction ratings and successful case resolutions.', 'تقييمات عالية لرضا المرضى وحل ناجح للحالات الطبية.'),
-          t('Publication of research or contribution to medical trials.', 'نشر الأبحاث أو المساهمة في التجارب الطبية.')
-        ],
-        emiratisationSupport: [
-          t('Sponsorship pathways for medical residency programs.', 'مسارات الرعاية لبرامج الإقامة الطبية.'),
-          t('Nafis healthcare talent support compatibility.', 'التوافق مع دعم مواهب الرعاية الصحية لبرنامج نافس.')
-        ]
-      };
-    case 'aerospace':
-      return {
-        overview: t(
-          `An aviation specialist firm engineering avionics, systems design, and logistics support.`,
-          `شركة متخصصة في الطيران تهندس إلكترونيات الطيران، تصميم الأنظمة، والدعم اللوجستي.`
-        ),
-        careerPath: [
-          { title: t('Junior Systems Engineer', 'مهندس أنظمة مبتدئ'), duration: t('1-3 Years', '1-3 سنوات'), focus: t('Reviewing equipment logs, flight safety testing, technical documentation.', 'مراجعة سجلات المعدات، اختبار سلامة الطيران، والتوثيق الفني.') },
-          { title: t('Aerospace Specialist', 'أخصائي طيران وفضاء'), duration: t('3-6 Years', '3-6 سنوات'), focus: t('Avionics design modifications, diagnostic software testing, engine tuning.', 'تعديلات تصميم إلكترونيات الطيران، اختبار برمجيات التشخيص، وضبط المحرك.') },
-          { title: t('Lead Engineering Officer', 'رئيس المهندسين'), duration: t('6-9 Years', '6-9 سنوات'), focus: t('Supervising fleet checks, compliance verification, modification planning.', 'الإشراف على فحص الأسطول، التحقق من الامتثال، وتخطيط التعديل.') },
-          { title: t('Program Director', 'مدير البرنامج'), duration: t('9+ Years', '9+ سنوات'), focus: t('Managing global operations, fleet acquisitions, aviation safety strategy.', 'إدارة العمليات العالمية، الاستحواذ على الأساطيل، واستراتيجية سلامة الطيران.') }
-        ],
-        promotionCriteria: [
-          t('Adherence to civil and defense aviation security protocols.', 'الالتزام ببروتوكولات أمن الطيران المدني والدفاعي.'),
-          t('Flawless safety records in aircraft maintenance checks.', 'سجلات سلامة مثالية في فحوصات صيانة الطائرات.'),
-          t('GCAA (General Civil Aviation Authority) approvals and credentials.', 'الحصول على موافقات واعتمادات الهيئة العامة للطيران المدني (GCAA).')
-        ],
-        emiratisationSupport: [
-          t('Aviation academy links for cadet and systems engineering pathways.', 'روابط أكاديمية الطيران لمسارات تدريب الطيارين وهندسة الأنظمة.'),
-          t('Advanced training grants for national pilots and engineers.', 'منح تدريبية متقدمة للطيارين والمهندسين المواطنين.')
-        ]
-      };
-    case 'tourism':
-      return {
-        overview: t(
-          `A premium hospitality company creating experiences, managing resorts, and developing travel destinations.`,
-          `شركة ضيافة متميزة تصنع التجارب، تدير المنتجعات، وتطور الوجهات السياحية.`
-        ),
-        careerPath: [
-          { title: t('Guest Relations Associate', 'مسؤول علاقات الضيوف'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Handling guest check-ins, lobby service operations, resolving issues.', 'التعامل مع تسجيل وصول الضيوف، عمليات خدمة البهو، وحل المشكلات.') },
-          { title: t('Operations Team Lead', 'قائد فريق العمليات'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Supervising floor teams, kitchen safety compliance, booking systems.', 'الإشراف على فرق العمل، الامتثال لسلامة المطبخ، وأنظمة الحجز.') },
-          { title: t('Department Manager', 'مدير قسم'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Managing resort sections budgets, guest satisfaction ratings, vendor deals.', 'إدارة ميزانيات أقسام المنتجع، تقييمات رضا الضيوف، وصفقات الموردين.') },
-          { title: t('Resort GM / Operations Director', 'مدير عام المنتجع / مدير العمليات'), duration: t('7+ Years', '7+ سنوات'), focus: t('Full property revenue ownership, brand strategy, localized tourism development.', 'إدارة إيرادات العقار بالكامل، استراتيجية العلامة التجارية، وتطوير السياحة المحلية.') }
-        ],
-        promotionCriteria: [
-          t('Excellent guest satisfaction ratings (Net Promoter Scores).', 'تقييمات ممتازة لرضا الضيوف (صافي درجات الترويج).'),
-          t('Demonstrated ability to train and upskill hospitality personnel.', 'القدرة على تدريب وتطوير موظفي الضيافة.'),
-          t('Revenue growth contributions through local event integrations.', 'المساهمة في نمو الإيرادات من خلال دمج الفعاليات المحلية.')
-        ],
-        emiratisationSupport: [
-          t('Hospitality management fast-track pathways for national talent.', 'مسارات سريعة لإدارة الضيافة للمواهب الوطنية.'),
-          t('Integration with Nafis career development plans and tourism grants.', 'التكامل مع خطط التطوير المهني لبرنامج نافس والمنح السياحية.')
-        ]
-      };
-    default:
-      return {
-        overview: t(
-          `An established enterprise focusing on corporate growth, local employment, and market services.`,
-          `مؤسسة قائمة تركز على نمو الشركات، التوظيف المحلي، وخدمات السوق.`
-        ),
-        careerPath: [
-          { title: t('Associate', 'مساعد'), duration: t('1-2 Years', '1-2 سنة'), focus: t('Basic operations support, reporting, client communication.', 'دعم العمليات الأساسية، التقارير، والتواصل مع العملاء.') },
-          { title: t('Specialist', 'أخصائي'), duration: t('2-4 Years', '2-4 سنوات'), focus: t('Owning workstreams, process improvements, diagnostic tool checks.', 'إدارة مسارات العمل، تحسين العمليات، وفحوصات أدوات التشخيص.') },
-          { title: t('Senior Specialist', 'أخصائي أول'), duration: t('4-7 Years', '4-7 سنوات'), focus: t('Project management, team supervision, strategic planning.', 'إدارة المشاريع، الإشراف على الفريق، والتخطيط الاستراتيجي.') },
-          { title: t('Executive Director', 'مدير تنفيذي'), duration: t('7+ Years', '7+ سنوات'), focus: t('Business unit management, client acquisition, setting corporate policies.', 'إدارة وحدة الأعمال، الاستحواذ على العملاء، ووضع سياسات الشركة.') }
-        ],
-        promotionCriteria: [
-          t('Consistent high scores in peer and supervisor performance reviews.', 'درجات عالية باستمرار في مراجعات الأداء من الأقران والمشرفين.'),
-          t('Demonstrated capability in managing independent project deliveries.', 'القدرة المثبتة على إدارة تسليم المشاريع المستقلة.'),
-          t('Adherence to the company core principles and quality standards.', 'الالتزام بمبادئ الشركة الأساسية ومعايير الجودة.')
-        ],
-        emiratisationSupport: [
-          t('Compatibility with Nafis salary top-up and pension programs.', 'التوافق مع برامج دعم الرواتب والمعاشات التقاعدية لبرنامج نافس.'),
-          t('Direct training and career growth mentoring initiatives.', 'مبادرات التدريب المباشر وإرشاد النمو المهني.')
-        ]
-      };
-  }
-};
+// (removed) getCompanyProgression: fabricated per-company career ladders with
+// invented programs attributed to real firms. Progression now comes from the
+// backend /api/companies/progression as GENERIC illustrative guidance.
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
@@ -468,7 +83,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
             name: isRTL ? (s.name_ar || s.name) : s.name,
             Icon: iconMap[s.icon] || Building2,
             growth: s.growth,
-            jobs: s.jobs,
+            openPositions: typeof s.open_positions === 'number' ? s.open_positions : Number(s.open_positions) || 0,
             avgSalary: isRTL ? (s.avg_salary_ar || s.avg_salary) : s.avg_salary,
             topCompanies: (() => { try { return JSON.parse(s.top_companies || '[]'); } catch { return []; } })(),
             description: isRTL ? (s.description_ar || s.description) : s.description,
@@ -612,7 +227,8 @@ const FunctionalCareerPlanningHub: React.FC = () => {
     { value: String(industries.length), label: t('Key Sectors', 'القطاعات الرئيسية'), icon: Building2 },
     { value: s ? fmtNum(s.total_jobs) : '—', label: t('Job Postings', 'الإعلانات الوظيفية'), icon: Briefcase },
     { value: s ? fmtNum(s.total_companies) : '—', label: t('Companies', 'الشركات'), icon: Users },
-    { value: s ? fmtSalary(s.avg_salary_max) : '—', label: t('Avg. Top Salary', 'أعلى متوسط راتب'), icon: DollarSign },
+    // Avg. Top Salary tile only when a real aggregate exists — no blank "—" stat.
+    ...(s?.avg_salary_max ? [{ value: fmtSalary(s.avg_salary_max), label: t('Avg. Top Salary', 'أعلى متوسط راتب'), icon: DollarSign }] : []),
   ];
 
   /* ──────────────────────── MARKET INSIGHTS DATA ──────────────────────── */
@@ -830,20 +446,24 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                     }} />
                   </div>
 
-                  {/* Quick stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: isExpanded ? 16 : 0 }}>
+                  {/* Quick stats — real open-position count; salary tile only when we have real data */}
+                  <div style={{ display: 'grid', gridTemplateColumns: ind.avgSalary ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10, marginBottom: isExpanded ? 16 : 0 }}>
                     <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.primarySurface, textAlign: 'center' }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: brand.greenText }}>{ind.growth}</div>
                       <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Growth', 'النمو')}</div>
                     </div>
                     <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.blue, textAlign: 'center' }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: brand.blueText }}>{ind.jobs}</div>
-                      <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Positions', 'وظائف')}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: brand.blueText }}>{ind.openPositions}</div>
+                      <div style={{ fontSize: 11, color: brand.textSecondary }}>
+                        {ind.openPositions === 0 ? t('No open positions yet', 'لا توجد وظائف شاغرة بعد') : t('Open positions', 'وظائف شاغرة')}
+                      </div>
                     </div>
-                    <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.purple, textAlign: 'center' }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: brand.purpleText }}>{ind.avgSalary.split('–')[0]}</div>
-                      <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Avg. Salary', 'متوسط الراتب')}</div>
-                    </div>
+                    {ind.avgSalary && (
+                      <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.purple, textAlign: 'center' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: brand.purpleText }}>{String(ind.avgSalary).split('–')[0]}</div>
+                        <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Avg. Salary', 'متوسط الراتب')}</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Expanded details */}
@@ -858,18 +478,28 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                           <Building2 style={{ width: 13, height: 13 }} /> {t('Top Employers', 'أبرز جهات التوظيف')}
                         </h4>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {ind.topCompanies.map((c, i) => (
-                            <button
-                              key={i}
-                              className="company-badge-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveCompany({ name: c, sectorId: ind.id });
-                              }}
-                            >
-                              {c}
-                            </button>
-                          ))}
+                          {ind.topCompanies.length === 0 && (
+                            <span style={{ fontSize: 12.5, color: brand.textSecondary }}>
+                              {t('No registered employers in this sector yet.', 'لا توجد جهات توظيف مسجّلة في هذا القطاع بعد.')}
+                            </span>
+                          )}
+                          {ind.topCompanies.map((c, i) => {
+                            // Backend now returns real registered companies (object {name,id} or a name string).
+                            const cName = typeof c === 'string' ? c : (c?.name || '');
+                            if (!cName) return null;
+                            return (
+                              <button
+                                key={i}
+                                className="company-badge-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveCompany({ name: cName, sectorId: ind.id });
+                                }}
+                              >
+                                {cName}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1308,7 +938,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
 
       {/* Modal */}
       {activeCompany && (() => {
-        const progression = progressionData || getCompanyProgression(activeCompany.name, activeCompany.sectorId, t);
+        const progression = progressionData;
         return (
           <div
             style={{
@@ -1461,6 +1091,10 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                     {t('Loading career pathways...', 'جاري تحميل مسارات التطوير المهني...')}
                   </p>
                 </div>
+              ) : !progression ? (
+                <div style={{ padding: '48px 28px', textAlign: 'center', color: brand.textSecondary, fontSize: 14, flex: 1 }}>
+                  {t('Career-path guidance is not available right now.', 'إرشادات المسار المهني غير متوفرة حالياً.')}
+                </div>
               ) : (
                 <>
                   <div
@@ -1473,6 +1107,10 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                   gap: 24,
                 }}
               >
+                {/* Illustrative disclaimer — this is generic guidance, not a company-specific programme */}
+                <div style={{ padding: '10px 14px', borderRadius: 10, background: brand.primarySurface, border: `1px solid ${brand.border}`, fontSize: 12.5, color: brand.textSecondary, lineHeight: 1.5 }}>
+                  {t('Illustrative career path — general guidance, not a company-specific programme.', 'مسار مهني توضيحي — إرشادات عامة، وليست برنامجاً خاصاً بشركة معينة.')}
+                </div>
                 {/* Overview */}
                 <div>
                   <p

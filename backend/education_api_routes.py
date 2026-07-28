@@ -1740,7 +1740,46 @@ def ensure_industry_sectors_table():
 @education_bp.route('/content/industries', methods=['GET'])
 def get_industries():
     ensure_industry_sectors_table()
-    sectors = query_all("SELECT * FROM industry_sectors ORDER BY sector_id")
+    sectors = query_all("SELECT * FROM industry_sectors ORDER BY sector_id") or []
+    # The seeded `jobs` ('900+'…'2,500+') and `top_companies` (Boeing/Shell/HSBC…
+    # global brands) were FABRICATED — they contradicted the real ~8 postings / 13
+    # registered companies on the same page. Overlay REAL, live values per sector:
+    # open positions = published job_postings whose company is in that sector, and
+    # employers = the actual registered companies in that sector (empty if none).
+    # Sector taxonomy (name/description/skills/growth) is kept; avg_salary ranges
+    # remain illustrative market guidance. Test data (ZZ-*) is excluded.
+    import json as _json
+    companies = query_all(
+        "SELECT id, company_name AS name, industry FROM companies "
+        "WHERE COALESCE(company_name, '') NOT ILIKE %s "
+        "AND COALESCE(company_name, '') NOT ILIKE %s", ('ZZ-%', 'TestCo%')) or []
+    jobrows = query_all(
+        "SELECT jp.company_id AS cid, COUNT(*) AS n FROM job_postings jp "
+        "JOIN companies c ON c.id = jp.company_id "
+        "WHERE jp.status = 'published' "
+        "AND COALESCE(c.company_name, '') NOT ILIKE %s "
+        "AND COALESCE(c.company_name, '') NOT ILIKE %s "
+        "AND COALESCE(jp.title, '') NOT ILIKE %s "
+        "GROUP BY jp.company_id", ('ZZ-%', 'TestCo%', 'ZZ-%')) or []
+    jobs_by_cid = {str(r['cid']): int(r['n']) for r in jobrows if r.get('cid') is not None}
+
+    def _sector_match(industry, sec):
+        i = (industry or '').strip().lower()
+        if not i:
+            return False
+        name = (sec.get('name') or '').lower()
+        tag = (sec.get('sector_tag') or '').lower()
+        return i == name or i in name or name in i or (bool(tag) and tag in i)
+
+    for sec in sectors:
+        emp = [c for c in companies if _sector_match(c.get('industry'), sec)]
+        open_positions = sum(jobs_by_cid.get(str(c['id']), 0) for c in emp)
+        sec['open_positions'] = open_positions
+        sec['jobs'] = str(open_positions)            # was a fabricated '900+' string
+        sec['employers'] = [{'id': str(c['id']), 'name': c['name']}
+                            for c in emp if c.get('name')]
+        sec['top_companies'] = _json.dumps([e['name'] for e in sec['employers']])
+        sec['counts_source'] = 'live'                 # real, computed at request time
     return jsonify({'industries': sectors})
 
 

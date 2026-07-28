@@ -361,64 +361,55 @@ def get_company_progression():
             'message': 'Either company name or company_id is required'
         }), 400
 
-    from backend.db_utils import execute_query
+    # The old response served per-company career ladders from
+    # `company_career_progressions` — invented programs attributed to real named
+    # firms (e.g. "Microsoft UAE Graduate Program (Tomoh)"). There is NO real
+    # per-company progression data, and attributing fabricated programmes to named
+    # companies is reputationally risky for a government platform. Return GENERIC,
+    # role-level guidance clearly flagged illustrative, with NO company-specific
+    # invented programmes. `name` (if supplied) is echoed only as display context.
+    display_name = (name.split('(')[0].strip() if name else None) or 'This employer'
 
-    # Query progression
-    row = None
-    if company_id:
-        row = execute_query("""
-            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
-                   cp.career_path, cp.promotion_criteria, cp.emiratisation_support
-            FROM company_career_progressions cp
-            JOIN companies c ON c.id = cp.company_id
-            WHERE cp.company_id = %s
-        """, (company_id,), fetch_one=True)
-    elif name:
-        # Normalize name: e.g. "Amazon (AWS)" -> "Amazon"
-        normalized_name = name.split('(')[0].strip()
-        row = execute_query("""
-            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
-                   cp.career_path, cp.promotion_criteria, cp.emiratisation_support
-            FROM company_career_progressions cp
-            JOIN companies c ON c.id = cp.company_id
-            WHERE c.name ILIKE %s OR c.company_name ILIKE %s
-        """, (normalized_name, normalized_name), fetch_one=True)
-
-        if not row:
-            # Try fuzzy/prefix match
-            row = execute_query("""
-                SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar,
-                       cp.career_path, cp.promotion_criteria, cp.emiratisation_support
-                FROM company_career_progressions cp
-                JOIN companies c ON c.id = cp.company_id
-                WHERE c.name ILIKE %s OR c.company_name ILIKE %s
-                   OR %s ILIKE CONCAT(c.name, '%%')
-            """, (f"%{normalized_name}%", f"%{normalized_name}%", normalized_name), fetch_one=True)
-
-    if not row:
-        return jsonify({
-            'success': False,
-            'message': 'Career progression details not found for this company'
-        }), 404
-
-    # Ensure JSON structures are parsed properly
-    import json
-    for field in ('career_path', 'promotion_criteria', 'emiratisation_support'):
-        if isinstance(row.get(field), str):
-            try:
-                row[field] = json.loads(row[field])
-            except:
-                pass
+    career_path = [
+        {'level': 'Entry',  'title': 'Entry level / Graduate',
+         'typical_experience': '0–2 years',
+         'focus': 'Foundational skills, on-the-job learning, mentorship and structured onboarding.'},
+        {'level': 'Mid',    'title': 'Mid level / Specialist',
+         'typical_experience': '2–5 years',
+         'focus': 'Independent delivery, deepening domain expertise, owning workstreams.'},
+        {'level': 'Senior', 'title': 'Senior / Lead',
+         'typical_experience': '5–9 years',
+         'focus': 'Leading projects and people, setting standards, mentoring juniors.'},
+        {'level': 'Principal', 'title': 'Principal / Manager',
+         'typical_experience': '9+ years',
+         'focus': 'Strategy, cross-team leadership, and organisational impact.'},
+    ]
+    promotion_criteria = [
+        'Consistent performance against role expectations',
+        'Demonstrated growth in relevant skills and competencies',
+        'Increasing scope, ownership and impact',
+        'Leadership, collaboration and mentoring of others',
+    ]
+    emiratisation_support = [
+        'National talent development and Emiratisation pathways (per employer policy)',
+        'Structured onboarding, mentorship and training',
+        'Nafis-aligned incentives where applicable',
+    ]
 
     return jsonify({
         'success': True,
+        'illustrative': True,
+        'disclaimer': ('Illustrative, generic career-progression guidance — not a '
+                       'specific programme offered by any named company. Confirm actual '
+                       'roles and programmes with the employer.'),
         'data': {
-            'company_id': row['company_id'],
-            'name': row['name'],
-            'overview': row['overview'],
-            'overview_ar': row['overview_ar'],
-            'career_path': row['career_path'],
-            'promotion_criteria': row['promotion_criteria'],
-            'emiratisation_support': row['emiratisation_support']
+            'company_id': company_id,
+            'name': display_name,
+            'overview': (f'A typical career path relevant to {display_name}. This is '
+                         'general guidance, not an employer-specific programme.'),
+            'overview_ar': None,
+            'career_path': career_path,
+            'promotion_criteria': promotion_criteria,
+            'emiratisation_support': emiratisation_support,
         }
     }), 200
