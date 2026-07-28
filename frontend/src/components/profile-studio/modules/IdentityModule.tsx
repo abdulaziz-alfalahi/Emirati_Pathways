@@ -20,7 +20,6 @@ export const IdentityModule = () => {
     // CV Management State
     const [cvs, setCvs] = useState<any[]>([]);
     const [loadingCvs, setLoadingCvs] = useState(false);
-    const [debugData, setDebugData] = useState<any>(null);
 
     const { language, isRTL } = useLanguage();
     const { t: i18t } = useTranslation();
@@ -48,10 +47,6 @@ export const IdentityModule = () => {
             const res = await profileService.listCVs();
             if (res.success && Array.isArray(res.cvs)) {
                 setCvs(res.cvs);
-                // If empty, fetch debug info to diagnose
-                if (res.cvs.length === 0) {
-                    profileService.getDebugAuth().then(d => setDebugData(d));
-                }
             }
         } catch (e) {
             console.error("Failed to load CVs", e);
@@ -342,7 +337,7 @@ export const IdentityModule = () => {
                                     <option value="native">{t('Native / Bilingual', 'أصلي / ثنائي اللغة')}</option>
                                 </select>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {t('Used for AI matching. Fluent/Native awards a 25 point bonus, Conversational awards 15 points.', 'يُستخدم للمطابقة بالذكاء الاصطناعي. المستوى الطليق/الأصلي يمنح ٢٥ نقطة إضافية، والمحادثة تمنح ١٥ نقطة.')}
+                                    {t('Used to improve your job matching — a stronger English level strengthens your matches.', 'يُستخدم لتحسين مطابقة الوظائف — يعزّز مستوى الإنجليزية الأقوى فرص مطابقتك.')}
                                 </p>
                             </div>
 
@@ -380,17 +375,6 @@ export const IdentityModule = () => {
                         <div className="text-center py-8 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50">
                             <FileText className="mx-auto h-10 w-10 text-gray-300 mb-2" />
                             <p className="text-gray-500">{t('No CVs uploaded yet.', 'لم يتم رفع أي سيرة ذاتية بعد.')}</p>
-                            {debugData && (
-                                <div className={`mt-4 mx-auto max-w-sm p-3 bg-red-50 text-red-800 text-xs text-start rounded border border-red-100 font-mono`}>
-                                    <div className="font-bold mb-1">{t('Diagnostic Info:', 'معلومات تشخيصية:')}</div>
-                                    <div>User ID: {JSON.stringify(debugData.user_id)}</div>
-                                    <div>Type: {debugData.user_id_type}</div>
-                                    <div>Auth: {debugData.raw_header}</div>
-                                    <div className="mt-1 text-[10px] text-red-600">
-                                        {t('If User ID matches your expectation but list is empty, please report this.', 'إذا كان معرف المستخدم مطابقاً لتوقعاتك ولكن القائمة فارغة، يرجى الإبلاغ.')}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     ) : (
                         <div className="grid gap-4">

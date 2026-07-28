@@ -58,12 +58,19 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         }
     };
 
+    // Fall back to the authenticated user (localStorage) rather than the fake
+    // "Job Seeker" / "user@example.com" placeholders, so a candidate building
+    // their CV always sees their real identity (C4 CV-builder audit).
+    const _authUser = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })();
+    const _authFull = String(_authUser.full_name || '').trim();
+    const _authFirst = _authUser.first_name || (_authFull ? _authFull.split(' ')[0] : '');
+    const _authLast = _authUser.last_name || (_authFull ? _authFull.split(' ').slice(1).join(' ') : '');
     // Transform initialProfile to match UserProfile structure if needed
     const [currentUser, setCurrentUser] = useState<UserProfile>({
-        id: initialProfile?.id || '1',
-        firstName: initialProfile?.first_name || 'Job',
-        lastName: initialProfile?.last_name || 'Seeker',
-        email: initialProfile?.email || initialProfile?.contact?.email || 'user@example.com',
+        id: initialProfile?.id || _authUser.id || '1',
+        firstName: initialProfile?.first_name || _authFirst || '',
+        lastName: initialProfile?.last_name || _authLast || '',
+        email: initialProfile?.email || initialProfile?.contact?.email || _authUser.email || '',
         primaryRole: 'Job Seeker', // Default
         secondaryRoles: [],
         profileCompletion: 0, // Will be fetched from readiness API
