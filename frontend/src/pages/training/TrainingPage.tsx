@@ -169,8 +169,8 @@ const TrainingPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    `Discover ${programs.length || '200+'} professional training programs from leading UAE institutions — from government leadership to industry certifications.`,
-                    `اكتشف ${programs.length || '200+'} برنامج تدريبي مهني من مؤسسات إماراتية رائدة — من القيادة الحكومية إلى الشهادات القطاعية.`
+                    `Discover ${programs.length} professional training programs from leading UAE institutions — from government leadership to industry certifications.`,
+                    `اكتشف ${programs.length} برنامج تدريبي مهني من مؤسسات إماراتية رائدة — من القيادة الحكومية إلى الشهادات القطاعية.`
                 )}
             </p>
 
@@ -192,7 +192,7 @@ const TrainingPage: React.FC = () => {
                                 style={{
                                     background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                                     padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                                    transition: 'box-shadow .2s', cursor: 'pointer',
+                                    transition: 'box-shadow .2s',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                                 onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -401,8 +401,8 @@ const TrainingPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    `We collaborate with ${partnersData.length || '50+'}  leading UAE institutions and global training providers.`,
-                    `نتعاون مع ${partnersData.length || '50+'} مؤسسة إماراتية رائدة ومزودي تدريب عالميين.`
+                    `We collaborate with ${partnersData.length} leading UAE institutions and global training providers.`,
+                    `نتعاون مع ${partnersData.length} مؤسسة إماراتية رائدة ومزودي تدريب عالميين.`
                 )}
             </p>
 
@@ -419,11 +419,8 @@ const TrainingPage: React.FC = () => {
                         </div>
                         <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 6px' }}>{p.name}</h4>
                         <div style={{ display: 'flex', gap: 12, fontSize: 12, color: brand.textSecondary }}>
-                            <span>{p.programCount} {t('programs', 'برنامج')}</span>
+                            <span>{p.programCount} {t('programs available', 'برنامج متاح')}</span>
                         </div>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer', marginTop: 12 }}>
-                            {t('View Programs', 'عرض البرامج')} <ChevronIcon size={14} />
-                        </span>
                     </div>
                 ))}
             </div>
@@ -432,12 +429,14 @@ const TrainingPage: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on these functional controls.
     const tabs = [
         { id: 'programs', label: t('Available Programs', 'البرامج المتاحة'), icon: <BookOpen className="h-4 w-4" />, content: programsTab },
         { id: 'certificates', label: t('Certificates', 'الشهادات'), icon: <Award className="h-4 w-4" />, content: certsTab },
         { id: 'assessments', label: t('Assessments', 'الاختبارات'), icon: <Target className="h-4 w-4" />, content: assessmentsTab },
         { id: 'partners', label: t('Training Partners', 'شركاء التدريب'), icon: <Building className="h-4 w-4" />, content: partnersTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
