@@ -118,11 +118,12 @@ const AssessmentsPage: React.FC = () => {
         } catch { /* non-fatal */ }
     };
 
+    // Real per-page counts only — no fabricated platform-wide figures.
     const stats = [
-        { value: totalSkills > 0 ? `${totalSkills}` : '75+', label: t('Skills Mapped', 'مهارة مصنّفة'), icon: BookOpen },
-        { value: domains.length > 0 ? `${domains.length}` : '8', label: t('Domains', 'مجال'), icon: Layers },
-        { value: userAssessments.length > 0 ? `${userAssessments.length}` : '0', label: t('Completed', 'مكتمل'), icon: CheckCircle },
-        { value: '95%', label: t('Accuracy', 'دقة'), icon: Target },
+        { value: `${totalSkills}`, label: t('Skills Mapped', 'مهارة مصنّفة'), icon: BookOpen },
+        { value: `${domains.length}`, label: t('Domains', 'مجال'), icon: Layers },
+        { value: `${userAssessments.length}`, label: t('Completed', 'مكتمل'), icon: CheckCircle },
+        { value: `${certifications.length}`, label: t('Certifications', 'شهادات'), icon: Award },
     ];
 
     /* ── Assessment requests (candidate → assessor pending pool) ── */
@@ -288,7 +289,7 @@ const AssessmentsPage: React.FC = () => {
                                 key={i}
                                 style={{
                                     background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                                    padding: 20, transition: 'box-shadow .2s', cursor: 'pointer',
+                                    padding: 20, transition: 'box-shadow .2s',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                                 onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -572,12 +573,14 @@ const AssessmentsPage: React.FC = () => {
         </div>
     );
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the Take Assessment / Consent buttons.
     const tabs = [
         { id: 'domains', label: t('Skill Domains', 'مجالات المهارات'), icon: <Brain className="h-4 w-4" />, content: domainsTab },
         { id: 'results', label: t('My Results', 'نتائجي'), icon: <BarChart3 className="h-4 w-4" />, content: resultsTab },
         { id: 'certifications', label: t('Certifications', 'الشهادات'), icon: <Award className="h-4 w-4" />, content: certificationsTab },
         { id: 'heatmap', label: t('Market Demand', 'طلب السوق'), icon: <TrendingUp className="h-4 w-4" />, content: heatmapTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
