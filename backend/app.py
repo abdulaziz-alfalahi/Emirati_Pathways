@@ -701,6 +701,7 @@ _additional_blueprints = [
     ('backend.routes.applications_api', 'applications_bp', None, 'Job Applications'),
     ('backend.routes.assessor_dashboard_api', 'assessor_dash_bp', None, 'Assessor Dashboard'),
     ('backend.routes.ai_assist_routes', 'ai_assist_bp', None, 'AI Assist'),
+    ('backend.routes.interview_prep_routes', 'interview_prep_bp', None, 'Interview Prep'),
     ('backend.lifelong_engagement_routes', 'lifelong_engagement_bp', None, 'Lifelong Engagement'),
     ('backend.career_simulator_routes', 'career_simulator_bp', None, 'Career Simulator'),
     ('backend.career_passport_routes', 'career_passport_bp', None, 'Career Passport'),
