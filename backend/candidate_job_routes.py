@@ -1159,6 +1159,91 @@ def get_service_status():
 
 
 # =====================================================
+# SAVED JOBS ENDPOINTS (candidate_saved_jobs, migration 037)
+# EID-keyed + JWT-scoped — replaces the drifted/BOLA-prone legacy saved_jobs.
+# =====================================================
+
+@candidate_job_bp.route('/saved-jobs', methods=['GET'])
+@jwt_required()
+def get_candidate_saved_jobs():
+    """The authenticated candidate's saved jobs, with job detail."""
+    user_id = str(get_jwt_identity())
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT s.job_id, s.created_at AS saved_at,
+                   jp.title,
+                   COALESCE(c.name, c.company_name, 'Employer') AS company,
+                   jp.location, jp.city, jp.emirate, jp.employment_type,
+                   jp.salary_range, jp.status
+            FROM candidate_saved_jobs s
+            LEFT JOIN job_postings jp ON jp.id::text = s.job_id
+            LEFT JOIN companies c ON c.id = jp.company_id
+            WHERE s.user_id = %s
+            ORDER BY s.created_at DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'data': [dict(r) for r in rows]})
+    except Exception as e:
+        conn.close()
+        logger.error(f"get_candidate_saved_jobs failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load saved jobs'}), 500
+
+
+@candidate_job_bp.route('/saved-jobs/<job_id>', methods=['POST'])
+@jwt_required()
+def save_candidate_job(job_id):
+    """Save a job for the authenticated candidate (idempotent)."""
+    user_id = str(get_jwt_identity())
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO candidate_saved_jobs (user_id, job_id) VALUES (%s, %s) "
+            "ON CONFLICT (user_id, job_id) DO NOTHING",
+            (user_id, str(job_id)))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Job saved'}), 201
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        logger.error(f"save_candidate_job failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save job'}), 500
+
+
+@candidate_job_bp.route('/saved-jobs/<job_id>', methods=['DELETE'])
+@jwt_required()
+def unsave_candidate_job(job_id):
+    """Remove a job from the authenticated candidate's saved list."""
+    user_id = str(get_jwt_identity())
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM candidate_saved_jobs WHERE user_id = %s AND job_id = %s",
+                    (user_id, str(job_id)))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Job removed from saved list'})
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        logger.error(f"unsave_candidate_job failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to remove saved job'}), 500
+
+
+# =====================================================
 # CANDIDATE OFFERS ENDPOINTS
 # =====================================================
 
