@@ -132,7 +132,9 @@ const JobMatchingPage: React.FC = () => {
                 title: v.title || t('Job Opportunity', 'فرصة عمل'),
                 company: v.company || v.company_name || t('Employer', 'جهة توظيف'),
                 location: v.location || t('UAE', 'الإمارات'),
-                salary: v.salary || v.salary_range || '',
+                // Only surface a salary that carries a real figure — the match
+                // API formats an empty range as "- AED", which must not render.
+                salary: (() => { const s = v.salary || v.salary_range || ''; return /\d/.test(s) ? s : ''; })(),
                 type: v.type || v.employment_type || t('Full-time', 'دوام كامل'),
                 match: Math.round(v.matchScore || v.match_score || 0),
                 posted: rawDate ? new Date(rawDate).toLocaleDateString() : '',
