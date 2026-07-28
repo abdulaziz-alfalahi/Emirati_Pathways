@@ -692,6 +692,29 @@ try:
 except ImportError:
     from db_utils import execute_query as _msv_query
 
+import re as _re
+try:
+    from backend.user_helpers import user_display_name as _display_name
+except ImportError:
+    from user_helpers import user_display_name as _display_name
+try:
+    from backend.notification_helper import create_notification as _notify
+except ImportError:  # pragma: no cover
+    try:
+        from notification_helper import create_notification as _notify
+    except ImportError:
+        _notify = None
+
+
+def _safe_notify(user_id, ntype, title, message='', metadata=None):
+    """Best-effort notification — a failure must never break the primary action."""
+    try:
+        if _notify and user_id:
+            _notify(str(user_id), ntype, title, message, metadata or {})
+    except Exception as _ne:
+        logger.warning(f"notification '{ntype}' skipped: {_ne}")
+
+
 _INCENTIVE_POINTS_PER_VERIFICATION = 10
 _INCENTIVE_TIERS = [(200, 'Gold'), (80, 'Silver'), (0, 'Bronze')]
 
@@ -808,6 +831,33 @@ def verify_skill():
                         (passport['id'], row['skill_name'], row['skill_name']), fetch_all=False)
             except Exception as stamp_err:
                 logger.warning(f"passport stamp on verification skipped: {stamp_err}")
+            # C3-MEE-3: actually flip the candidate's skill to VERIFIED — a passport
+            # stamp alone left user_skills self_reported/unverified forever, so the
+            # core "mentor endorsement → verified skill" outcome never landed.
+            # Mirrors the assessment flow (assessor_dashboard_api). Best-effort.
+            try:
+                cand = row['candidate_id']
+                sname = row['skill_name']
+                existing_sk = _msv_query(
+                    "SELECT id FROM user_skills WHERE user_id = %s AND LOWER(skill_name) = LOWER(%s) LIMIT 1",
+                    (cand, sname), fetch_one=True)
+                if existing_sk:
+                    _msv_query(
+                        "UPDATE user_skills SET verified = TRUE, source = 'mentor', "
+                        "last_assessed = NOW(), updated_at = NOW() WHERE id = %s",
+                        (existing_sk['id'],), fetch_all=False)
+                else:
+                    slug = _re.sub(r'[^a-z0-9]+', '_', sname.lower()).strip('_') or sname.lower()
+                    _msv_query(
+                        "INSERT INTO user_skills (user_id, skill_id, skill_name, proficiency, source, "
+                        "verified, last_assessed, created_at, updated_at) "
+                        "VALUES (%s, %s, %s, 'intermediate', 'mentor', TRUE, NOW(), NOW(), NOW())",
+                        (cand, 'mentor_' + slug, sname), fetch_all=False)
+            except Exception as sk_err:
+                logger.warning(f"user_skills verify flip skipped: {sk_err}")
+            _safe_notify(row['candidate_id'], 'skill_verified', 'Skill verified',
+                         f"Your skill \"{row['skill_name']}\" was verified by your mentor.",
+                         {'skill_name': row['skill_name']})
         return jsonify({'success': True,
                         'message': 'Skill verified successfully' if approved else 'Skill verification rejected'})
     except Exception as e:
@@ -872,7 +922,7 @@ def operator_enrol_mentor():
 @require_roles(*_MENTOR_OPERATOR_ROLES)
 def operator_list_mentors():
     rows = _msv_query(
-        "SELECT mp.user_id, COALESCE(u.full_name, mp.user_id) AS full_name, mp.professional_title, "
+        f"SELECT mp.user_id, {_display_name('full_name', 'u')}, mp.professional_title, "
         "mp.industry, mp.expertise_areas, mp.is_available, mp.is_verified "
         "FROM mentor_profiles mp LEFT JOIN users u ON u.id = mp.user_id "
         "ORDER BY mp.updated_at DESC NULLS LAST") or []
@@ -908,8 +958,8 @@ def operator_enrol_coach():
 @require_roles(*_MENTOR_OPERATOR_ROLES)
 def operator_list_coaches():
     rows = _msv_query(
-        "SELECT id AS user_id, COALESCE(full_name, id) AS full_name FROM users "
-        "WHERE role = 'coach' OR COALESCE(secondary_roles, '[]'::jsonb) ? 'coach' "
+        f"SELECT u.id AS user_id, {_display_name('full_name', 'u')} FROM users u "
+        "WHERE u.role = 'coach' OR COALESCE(u.secondary_roles, '[]'::jsonb) ? 'coach' "
         "ORDER BY full_name") or []
     return jsonify({'success': True, 'data': rows, 'total': len(rows)})
 
@@ -980,7 +1030,7 @@ def my_mentees():
     """A mentor's requests + active mentees (matchings on their profile)."""
     me = str(get_jwt_identity())
     rows = _msv_query(
-        "SELECT mm.id, mm.mentee_user_id, COALESCE(u.full_name, mm.mentee_user_id) AS mentee_name, "
+        f"SELECT mm.id, mm.mentee_user_id, {_display_name('mentee_name', 'u')}, "
         "mm.match_status, mm.is_active FROM mentorship_matching mm "
         "JOIN mentor_profiles mp ON mp.id = mm.mentor_id "
         "LEFT JOIN users u ON u.id = mm.mentee_user_id "
@@ -994,7 +1044,7 @@ def my_mentors():
     """A candidate's mentor requests/relationships."""
     me = str(get_jwt_identity())
     rows = _msv_query(
-        "SELECT mm.id, mp.user_id AS mentor_user_id, COALESCE(u.full_name, mp.user_id) AS mentor_name, "
+        f"SELECT mm.id, mp.user_id AS mentor_user_id, {_display_name('mentor_name', 'u')}, "
         "mp.professional_title, mm.match_status, mm.is_active FROM mentorship_matching mm "
         "JOIN mentor_profiles mp ON mp.id = mm.mentor_id LEFT JOIN users u ON u.id = mp.user_id "
         "WHERE mm.mentee_user_id = %s ORDER BY mm.created_at DESC NULLS LAST", (me,)) or []
@@ -1010,7 +1060,8 @@ def mentor_decide_request(matching_id):
     if decision not in ('accept', 'decline'):
         return jsonify({'success': False, 'message': "decision must be 'accept' or 'decline'"}), 400
     row = _msv_query(
-        "SELECT mm.id, mp.user_id AS mentor_user_id, mm.match_status FROM mentorship_matching mm "
+        "SELECT mm.id, mp.user_id AS mentor_user_id, mm.mentee_user_id, mm.match_status "
+        "FROM mentorship_matching mm "
         "JOIN mentor_profiles mp ON mp.id = mm.mentor_id WHERE mm.id = %s", (matching_id,), fetch_one=True)
     if not row:
         return jsonify({'success': False, 'message': 'Request not found'}), 404
@@ -1020,6 +1071,10 @@ def mentor_decide_request(matching_id):
         _msv_query("UPDATE mentorship_matching SET match_status='active', is_active=TRUE, "
                    "start_date=COALESCE(start_date, NOW()), updated_at=NOW() WHERE id=%s",
                    (matching_id,), fetch_all=False)
+        _safe_notify(row.get('mentee_user_id'), 'mentorship_accepted',
+                     'Mentor accepted your request',
+                     'Your mentorship request was accepted — you can now book sessions.',
+                     {'matching_id': str(matching_id)})
     else:
         _msv_query("UPDATE mentorship_matching SET match_status='declined', is_active=FALSE, updated_at=NOW() "
                    "WHERE id=%s", (matching_id,), fetch_all=False)
@@ -1039,6 +1094,19 @@ def request_skill_verification():
         return jsonify({'success': False, 'message': 'mentor_user_id and skill_name are required'}), 400
     if not _msv_query("SELECT id FROM users WHERE id = %s", (mentor_user_id,), fetch_one=True):
         return jsonify({'success': False, 'message': 'Mentor not found'}), 404
+    # C3-ISO-2 (hygiene): a candidate may only request verification from a mentor
+    # they actually have a mentorship with — otherwise anyone could inject pending
+    # rows into any mentor's queue. (The row is the caller's own, so not a
+    # cross-tenant write, but this closes the spam/abuse vector.) Admins bypass.
+    if not (resolve_roles() & ADMIN_ROLES):
+        rel = _msv_query(
+            "SELECT 1 FROM mentorship_matching mm JOIN mentor_profiles mp ON mp.id = mm.mentor_id "
+            "WHERE mp.user_id = %s AND mm.mentee_user_id = %s "
+            "AND COALESCE(mm.match_status, '') NOT IN ('declined', 'ended') LIMIT 1",
+            (mentor_user_id, me), fetch_one=True)
+        if not rel:
+            return jsonify({'success': False,
+                            'message': 'You can only request verification from your own mentor'}), 403
     dup = _msv_query("SELECT id FROM mentor_skill_verifications WHERE candidate_id=%s AND mentor_id=%s "
                      "AND LOWER(skill_name)=LOWER(%s) AND status='pending' LIMIT 1",
                      (me, mentor_user_id, skill_name), fetch_one=True)
@@ -1076,4 +1144,29 @@ def book_session():
         (pid, mentee_user_id, data.get('session_title') or 'Mentorship session',
          data.get('session_type') or 'general', data.get('scheduled_date'),
          data.get('duration_minutes') or 60), fetch_one=True)
+    # Notify the counterparty (whoever didn't book it) — C3-MEE-5.
+    _other = mentor_user_id if me == mentee_user_id else mentee_user_id
+    _safe_notify(_other, 'session_booked', 'Mentorship session booked',
+                 f"A mentorship session was scheduled for {data.get('scheduled_date') or 'soon'}.",
+                 {'session_id': (row or {}).get('id')})
     return jsonify({'success': True, 'message': 'Session booked', 'data': {'id': (row or {}).get('id')}}), 201
+
+
+@mentor_bp.route('/sessions', methods=['GET'])
+@jwt_required()
+def list_sessions():
+    """List the caller's mentorship sessions — as mentor OR mentee — so both
+    sides (esp. the mentee) can see booked sessions (C3-MEE-5: /sessions was
+    POST-only, leaving the mentee unable to read them)."""
+    me = str(get_jwt_identity())
+    rows = _msv_query(
+        "SELECT s.id, s.session_title, s.session_type, s.scheduled_date, s.duration_minutes, "
+        "s.session_status, s.mentee_user_id, mp.user_id AS mentor_user_id, "
+        f"{_display_name('mentee_name', 'um')}, {_display_name('mentor_name', 'up')} "
+        "FROM mentorship_sessions s "
+        "LEFT JOIN mentor_profiles mp ON mp.id = s.mentor_id "
+        "LEFT JOIN users um ON um.id = s.mentee_user_id "
+        "LEFT JOIN users up ON up.id = mp.user_id "
+        "WHERE s.mentee_user_id = %s OR mp.user_id = %s "
+        "ORDER BY s.scheduled_date DESC NULLS LAST", (me, me)) or []
+    return jsonify({'success': True, 'data': rows, 'total': len(rows)})

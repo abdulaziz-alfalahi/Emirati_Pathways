@@ -33,6 +33,15 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
+/* Never surface a raw 15-digit Emirates ID or the literal "null" as a person's
+   name (C3-MEE-2): fall back to a title, then a generic label. */
+const looksLikeEid = (s?: string | null) => !!s && /^\d{15}$/.test(String(s).trim());
+const cleanName = (name?: string | null, fallback = 'Mentor') => {
+    const n = (name ?? '').toString().trim();
+    if (!n || n.toLowerCase() === 'null' || looksLikeEid(n)) return fallback;
+    return n;
+};
+
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const MentorshipPage: React.FC = () => {
@@ -47,6 +56,9 @@ const MentorshipPage: React.FC = () => {
     const [mentors, setMentors] = useState<any[]>([]);
     const [liveStats, setLiveStats] = useState<any>(null);
     const [myMentors, setMyMentors] = useState<any[]>([]);
+    const [mySessions, setMySessions] = useState<any[]>([]);
+    const [myCoaching, setMyCoaching] = useState<any[]>([]);
+    const [coachDirectory, setCoachDirectory] = useState<any[]>([]);
     const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
     const [notice, setNotice] = useState<string | null>(null);
 
@@ -60,7 +72,7 @@ const MentorshipPage: React.FC = () => {
                 const d = res.data as any;
                 if (d?.mentors) {
                     setMentors(d.mentors.map((m: any) => ({
-                        name: t(m.name, m.name_ar || m.name),
+                        name: cleanName(isRTL ? (m.name_ar || m.name) : m.name, t(m.title, m.title_ar || m.title) || t('Mentor', 'مرشد')),
                         title: t(m.title, m.title_ar || m.title),
                         expertise: (m.expertise || []).map((e: string, i: number) =>
                             t(e, (m.expertise_ar || [])[i] || e)
@@ -96,11 +108,59 @@ const MentorshipPage: React.FC = () => {
                 if (!cancelled) setMyMentors(rows);
             } catch (e) { console.warn('my-mentors unavailable', e); }
         }
+        async function loadMySessions() {
+            // Sessions booked by the mentee's mentor (C3-MEE-5). GET added backend-side;
+            // degrade to empty if unavailable.
+            try {
+                const res = await restClient.get('/api/mentor/sessions');
+                if (cancelled) return;
+                const d = res.data as any;
+                setMySessions(d?.data || d?.sessions || []);
+            } catch (e) { if (!cancelled) setMySessions([]); }
+        }
+        async function loadMyCoaching() {
+            // The mentee's coaching relationship (C3-MEE-3). No dedicated mentee-facing
+            // endpoint exists yet, so this is best-effort and degrades to an honest empty
+            // state; see report note on the required backend endpoint.
+            try {
+                const res = await restClient.get('/api/coach/my-coaching');
+                if (cancelled) return;
+                const d = res.data as any;
+                setMyCoaching(d?.data || d?.coaching || []);
+            } catch (e) { if (!cancelled) setMyCoaching([]); }
+        }
+        async function loadCoachDirectory() {
+            // Coaches a mentee can request (C3-MEE-3 coach picker).
+            try {
+                const res = await restClient.get('/api/coach/directory');
+                if (cancelled) return;
+                const d = res.data as any;
+                setCoachDirectory(d?.coaches || d?.data || []);
+            } catch (e) { if (!cancelled) setCoachDirectory([]); }
+        }
         loadMentors();
         loadStats();
         loadMyMentors();
+        loadMySessions();
+        loadMyCoaching();
+        loadCoachDirectory();
         return () => { cancelled = true; };
     }, [isRTL]);
+
+    // Request a coach (C3-MEE-3): pick from the directory, POST, then refresh My coaching.
+    const requestCoach = async (coachId: string, coachName: string) => {
+        try {
+            await restClient.post('/api/coach/request', { coach_id: coachId });
+            setNotice(t(`Coaching requested with ${coachName}.`, `تم طلب التدريب مع ${coachName}.`));
+            try {
+                const res = await restClient.get('/api/coach/my-coaching');
+                const d = res.data as any;
+                setMyCoaching(d?.data || d?.coaching || []);
+            } catch { /* keep prior */ }
+        } catch (e: any) {
+            setNotice(t('Could not request this coach. Please try again.', 'تعذّر طلب هذا المدرب. حاول مرة أخرى.'));
+        }
+    };
 
     const reloadMyMentors = useCallback(async () => {
         try { setMyMentors(await menteeMentorshipService.myMentors()); } catch (e) { /* keep */ }
@@ -160,17 +220,20 @@ const MentorshipPage: React.FC = () => {
         { title: t('UAE Career Development Framework', 'إطار التطوير المهني في الإمارات'), type: t('Guide', 'دليل'), readTime: t('15 min', '15 دقيقة'), icon: '🇦🇪' },
     ];
 
-    const totalMentors = liveStats?.total_mentors || mentors.length || 300;
-    const totalMentees = liveStats?.total_mentees || 800;
-    const totalSessions = liveStats?.total_sessions || 1500;
-    const avgRating = liveStats?.avg_rating || 4.8;
+    // Real counts only — no fabricated/inflated numbers (C3-MEE-1). Prefer live
+    // stats from the backend; otherwise derive from what we actually loaded.
+    const totalMentors = liveStats?.total_mentors ?? mentors.length;
+    const ratedMentors = mentors.filter((m) => Number(m.rating) > 0);
+    const avgRating = liveStats?.avg_rating
+        ?? (ratedMentors.length ? Math.round((ratedMentors.reduce((s, m) => s + Number(m.rating || 0), 0) / ratedMentors.length) * 10) / 10 : null);
 
     const stats = [
-        { value: `${totalMentors}+`, label: t('Active Mentors', 'مرشد نشط'), icon: UserCheck },
-        { value: `${totalMentees}+`, label: t('Mentees', 'متدرب'), icon: Users },
-        { value: totalSessions >= 1000 ? `${Math.round(totalSessions / 100) / 10}K+` : `${totalSessions}+`, label: t('Sessions', 'جلسة'), icon: Calendar },
-        { value: `${avgRating}/5`, label: t('Avg Rating', 'متوسط التقييم'), icon: Star },
-    ];
+        { value: `${totalMentors}`, label: t('Active Mentors', 'مرشد نشط'), icon: UserCheck },
+        { value: `${myMentors.length}`, label: t('My Mentorships', 'إرشاداتي'), icon: Users },
+        { value: `${mySessions.length}`, label: t('My Sessions', 'جلساتي'), icon: Calendar },
+        ...(liveStats?.total_mentees != null ? [{ value: `${liveStats.total_mentees}`, label: t('Mentees', 'متدرب'), icon: Users }] : []),
+        ...(avgRating != null ? [{ value: `${avgRating}/5`, label: t('Avg Rating', 'متوسط التقييم'), icon: Star }] : []),
+    ].slice(0, 4);
 
     /* ── Tab 1: Find Mentors ── */
     const findTab = (
@@ -303,7 +366,7 @@ const MentorshipPage: React.FC = () => {
                         <div key={m.id ?? i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                                 <div>
-                                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{m.mentor_name}</h4>
+                                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{cleanName(m.mentor_name, m.professional_title || t('Mentor', 'مرشد'))}</h4>
                                     <div style={{ fontSize: 12, color: brand.textSecondary }}>{m.professional_title || t('Mentor', 'مرشد')}</div>
                                 </div>
                                 <span style={{ background: statusChip.bg, color: statusChip.fg, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
@@ -327,6 +390,31 @@ const MentorshipPage: React.FC = () => {
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Upcoming sessions (booked by the mentor) — C3-MEE-5 */}
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Upcoming sessions', 'الجلسات القادمة')}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
+                {mySessions.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('No sessions scheduled yet.', 'لا توجد جلسات مجدولة بعد.')}
+                    </div>
+                )}
+                {mySessions.map((s, i) => (
+                    <div key={s.id ?? i} className="ep-card" style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Video size={20} style={{ color: brand.primary }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{s.session_title || s.title || t('Mentorship session', 'جلسة إرشاد')}</h4>
+                            <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                {t('with', 'مع')} {cleanName(s.mentor_name, t('your mentor', 'مرشدك'))}
+                                {(s.scheduled_date || s.scheduled_at) ? ` · ${new Date(s.scheduled_date || s.scheduled_at).toLocaleString()}` : ''}
+                            </div>
+                        </div>
+                        {s.status && <span style={{ background: brand.blue, color: brand.blueText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>{s.status}</span>}
+                    </div>
+                ))}
             </div>
 
             {/* Past Mentorships */}
@@ -459,11 +547,83 @@ const MentorshipPage: React.FC = () => {
         </div>
     );
 
+    /* ── Tab: Coaching ── */
+    const coachingTab = (
+        <div>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+                {t('Career Coaching', 'التدريب المهني')}
+            </h2>
+            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
+                {t(
+                    'Work one-on-one with a career coach on a development plan and structured sessions.',
+                    'اعمل بشكل فردي مع مدرب مهني على خطة تطوير وجلسات منظمة.'
+                )}
+            </p>
+
+            {notice && (
+                <div style={{ background: brand.primarySurface, color: brand.primary, border: `1px solid ${brand.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
+                    {notice}
+                </div>
+            )}
+
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('My coaching', 'تدريبي')}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {myCoaching.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('You have no coaching relationship yet.', 'ليس لديك علاقة تدريب بعد.')}
+                    </div>
+                )}
+                {myCoaching.map((c, i) => (
+                    <div key={c.id ?? i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{cleanName(c.coach_name, t('Coach', 'مدرب'))}</h4>
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.focus_area || t('Career coaching', 'تدريب مهني')}</div>
+                            </div>
+                            <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                {c.status || t('Active', 'نشط')}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Find a coach (C3-MEE-3): pick a coach from the directory and request one */}
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '24px 0 12px' }}>{t('Find a coach', 'ابحث عن مدرب')}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {coachDirectory.length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 20, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('No coaches are available yet.', 'لا يوجد مدربون متاحون بعد.')}
+                    </div>
+                )}
+                {coachDirectory.map((co, i) => {
+                    const already = myCoaching.some((m) => String(m.coach_id) === String(co.id));
+                    return (
+                        <div key={co.id ?? i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                            <div>
+                                <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{cleanName(co.display_name, t('Coach', 'مدرب'))}</h4>
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{co.specialization || co.bio || t('Career coach', 'مدرب مهني')}</div>
+                            </div>
+                            <button
+                                onClick={() => requestCoach(co.id, cleanName(co.display_name, t('this coach', 'هذا المدرب')))}
+                                disabled={already}
+                                style={{ background: already ? brand.border : brand.primary, color: already ? brand.textSecondary : '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: already ? 'default' : 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                                {already ? t('Requested', 'تم الطلب') : t('Request coach', 'اطلب مدربًا')}
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
     const tabs = [
         { id: 'find', label: t('Find Mentors', 'ابحث عن مرشد'), icon: <Search className="h-4 w-4" />, content: findTab },
         { id: 'my', label: t('My Mentorships', 'إرشاداتي'), icon: <MessageCircle className="h-4 w-4" />, content: myTab },
+        { id: 'coaching', label: t('Coaching', 'التدريب'), icon: <Briefcase className="h-4 w-4" />, content: coachingTab },
         { id: 'become', label: t('Become a Mentor', 'كن مرشداً'), icon: <UserCheck className="h-4 w-4" />, content: becomeTab },
         { id: 'resources', label: t('Resources', 'الموارد'), icon: <BookOpen className="h-4 w-4" />, content: resourcesTab },
     ];
@@ -472,8 +632,8 @@ const MentorshipPage: React.FC = () => {
         <EducationPathwayLayout
             title={t('Mentorship Programs', 'برامج الإرشاد')}
             description={t(
-                'Connect with 300+ experienced UAE professionals for one-on-one guidance — in tech, finance, energy, aviation, government, and more',
-                'تواصل مع أكثر من 300 محترف إماراتي ذو خبرة للإرشاد الفردي — في التكنولوجيا والمالية والطاقة والطيران والحكومة وغيرها'
+                'Connect with experienced UAE professionals for one-on-one guidance — in tech, finance, energy, aviation, government, and more',
+                'تواصل مع محترفين إماراتيين ذوي خبرة للإرشاد الفردي — في التكنولوجيا والمالية والطاقة والطيران والحكومة وغيرها'
             )}
             icon={<Users className="h-6 w-6" />}
             stats={stats}

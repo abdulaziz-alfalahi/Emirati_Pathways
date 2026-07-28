@@ -121,6 +121,28 @@ const MentorDashboard: React.FC = () => {
   const [loadingVerifications, setLoadingVerifications] = useState<boolean>(true);
   const [processingVerificationId, setProcessingVerificationId] = useState<number | null>(null);
 
+  // Mentees + Sessions (C3-MEN-2 / C3-MEN-4): the tabs were static placeholders
+  // over a working backend; wire them to the real endpoints.
+  const [mentees, setMentees] = useState<any[]>([]);
+  const [loadingMentees, setLoadingMentees] = useState<boolean>(true);
+  const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState<boolean>(true);
+  const [showBookingForm, setShowBookingForm] = useState<boolean>(false);
+  const [bookMenteeId, setBookMenteeId] = useState<string>('');
+  const [bookWhen, setBookWhen] = useState<string>('');
+  const [bookNotes, setBookNotes] = useState<string>('');
+  const [bookingSaving, setBookingSaving] = useState<boolean>(false);
+
+  // Prefer a real name; never render a raw 15-digit Emirates ID (a companion
+  // backend fix adds display_name to these payloads).
+  const menteeDisplayName = (m: any) =>
+    m?.mentee_name || m?.display_name || m?.mentee_display_name || m?.full_name ||
+    m?.mentee_full_name || m?.name || t('Mentee', 'متدرب');
+  const menteeIdOf = (m: any) => m?.mentee_user_id || m?.mentee_id || m?.candidate_id || '';
+  const matchingIdOf = (m: any) => m?.matching_id || m?.id || m?.match_id || '';
+  const isPending = (m: any) => ['requested', 'pending'].includes(String(m?.status || m?.match_status || '').toLowerCase());
+
   const fetchIncentives = async () => {
     try {
       setLoadingIncentives(true);
@@ -188,6 +210,105 @@ const MentorDashboard: React.FC = () => {
       toast.error(t('An error occurred during verification', 'حدث خطأ أثناء عملية التحقق'));
     } finally {
       setProcessingVerificationId(null);
+    }
+  };
+
+  const fetchMentees = async () => {
+    try {
+      setLoadingMentees(true);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/my-mentees`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        setMentees(result.data || result.mentees || []);
+      }
+    } catch (err) {
+      console.error('Error fetching mentees:', err);
+    } finally {
+      setLoadingMentees(false);
+    }
+  };
+
+  const handleDecision = async (matchingId: string, decision: 'accept' | 'decline') => {
+    if (!matchingId) return;
+    try {
+      setDecidingId(matchingId);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/requests/${matchingId}/decision`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision })
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (resp.ok && (result.success !== false)) {
+        toast.success(decision === 'accept'
+          ? t('Mentee request accepted', 'تم قبول طلب المتدرب')
+          : t('Mentee request declined', 'تم رفض طلب المتدرب'));
+        fetchMentees();
+      } else {
+        toast.error(result.message || result.error || t('Could not update the request', 'تعذّر تحديث الطلب'));
+      }
+    } catch (err) {
+      console.error('Error deciding on request:', err);
+      toast.error(t('An error occurred', 'حدث خطأ'));
+    } finally {
+      setDecidingId(null);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      setLoadingSessions(true);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/sessions`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resp.ok) {
+        const result = await resp.json();
+        setSessions(result.data || result.sessions || []);
+      }
+    } catch (err) {
+      console.error('Error fetching sessions:', err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const handleBookSession = async () => {
+    const me = userInfo?.id || userInfo?.user_id || '';
+    if (!bookMenteeId || !bookWhen) {
+      toast.error(t('Choose a mentee and a date/time', 'اختر متدرباً وتاريخاً/وقتاً'));
+      return;
+    }
+    try {
+      setBookingSaving(true);
+      const token = getAuthToken() || '';
+      const resp = await fetch(`${API_BASE}/api/mentor/sessions`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mentor_user_id: me,
+          mentee_user_id: bookMenteeId,
+          scheduled_at: bookWhen,
+          notes: bookNotes
+        })
+      });
+      const result = await resp.json().catch(() => ({}));
+      if (resp.ok && (result.success !== false)) {
+        toast.success(t('Session booked', 'تم حجز الجلسة'));
+        setShowBookingForm(false);
+        setBookMenteeId(''); setBookWhen(''); setBookNotes('');
+        fetchSessions();
+      } else {
+        toast.error(result.message || result.error || t('Could not book the session', 'تعذّر حجز الجلسة'));
+      }
+    } catch (err) {
+      console.error('Error booking session:', err);
+      toast.error(t('An error occurred', 'حدث خطأ'));
+    } finally {
+      setBookingSaving(false);
     }
   };
 
@@ -299,6 +420,8 @@ const MentorDashboard: React.FC = () => {
     })();
     fetchIncentives();
     fetchVerifications();
+    fetchMentees();
+    fetchSessions();
     return () => { cancelled = true; };
   }, []);
 
@@ -536,14 +659,78 @@ const MentorDashboard: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Mentee Management', 'إدارة المتدربين')}</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Track progress and manage relationships with your mentees', 'تتبّع التقدم وإدارة العلاقات مع المتدربين')}</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      {t('View All Mentees', 'عرض جميع المتدربين')}
-                    </Button>
-                  </div>
+                  {loadingMentees ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                    </div>
+                  ) : mentees.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('No mentees yet', 'لا يوجد متدربون بعد')}</h3>
+                      <p className="text-slate-500 font-dubai-medium">{t('Incoming mentee requests will appear here for you to accept.', 'ستظهر طلبات المتدربين هنا لتقوم بقبولها.')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Pending requests */}
+                      {mentees.some(isPending) && (
+                        <div className="space-y-3">
+                          <h4 className="font-dubai-bold text-slate-900 text-sm">{t('Pending Requests', 'الطلبات المعلقة')}</h4>
+                          {mentees.filter(isPending).map((m) => (
+                            <div key={matchingIdOf(m)} className={`p-4 rounded-xl border border-amber-200 bg-amber-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 ${isRTL ? 'md:flex-row-reverse text-start' : ''}`}>
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-dubai-bold">
+                                  {menteeDisplayName(m).charAt(0)}
+                                </div>
+                                <div>
+                                  <h5 className="font-dubai-bold text-slate-900 leading-tight">{menteeDisplayName(m)}</h5>
+                                  <p className="text-xs text-slate-500 font-dubai">{m.message || m.request_message || t('Requested to be mentored', 'طلب الإرشاد')}</p>
+                                </div>
+                              </div>
+                              <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                <Button
+                                  onClick={() => handleDecision(matchingIdOf(m), 'accept')}
+                                  disabled={decidingId !== null}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium"
+                                >
+                                  {decidingId === matchingIdOf(m) ? (
+                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                  ) : (<><CheckCircle className="h-4 w-4 me-2" />{t('Accept', 'قبول')}</>)}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleDecision(matchingIdOf(m), 'decline')}
+                                  disabled={decidingId !== null}
+                                  className="border-red-200 hover:bg-red-50 text-red-600 font-dubai-medium"
+                                >
+                                  {t('Decline', 'رفض')}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Active mentees */}
+                      <div className="space-y-3">
+                        <h4 className="font-dubai-bold text-slate-900 text-sm">{t('My Mentees', 'متدربيّ')}</h4>
+                        {mentees.filter((m) => !isPending(m)).length === 0 ? (
+                          <p className="text-sm text-slate-500 font-dubai-medium">{t('No active mentees yet.', 'لا يوجد متدربون نشطون بعد.')}</p>
+                        ) : mentees.filter((m) => !isPending(m)).map((m) => (
+                          <div key={matchingIdOf(m) || menteeIdOf(m)} className={`p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between gap-3 ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-dubai-bold">
+                                {menteeDisplayName(m).charAt(0)}
+                              </div>
+                              <div>
+                                <h5 className="font-dubai-bold text-slate-900 leading-tight">{menteeDisplayName(m)}</h5>
+                                <p className="text-xs text-slate-500 font-dubai">{t('Active mentorship', 'إرشاد نشط')}</p>
+                              </div>
+                            </div>
+                            <Badge className="bg-teal-600 text-white font-dubai">{t('Active', 'نشط')}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -557,16 +744,82 @@ const MentorDashboard: React.FC = () => {
                     {t('Schedule and manage mentoring sessions', 'جدولة وإدارة جلسات الإرشاد')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Calendar className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Session Management', 'إدارة الجلسات')}</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Schedule, conduct, and track mentoring sessions', 'جدولة وإجراء وتتبّع جلسات الإرشاد')}</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                <CardContent className="space-y-5">
+                  <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
+                    <Button
+                      onClick={() => setShowBookingForm((v) => !v)}
+                      className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
+                    >
                       <Plus className={`h-4 w-4 me-2`} />
                       {t('Schedule New Session', 'جدولة جلسة جديدة')}
                     </Button>
                   </div>
+
+                  {showBookingForm && (
+                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-xs font-dubai-medium text-slate-600 mb-1 block">{t('Mentee', 'المتدرب')}</label>
+                          <Select value={bookMenteeId} onValueChange={setBookMenteeId}>
+                            <SelectTrigger><SelectValue placeholder={t('Select a mentee', 'اختر متدرباً')} /></SelectTrigger>
+                            <SelectContent>
+                              {mentees.filter((m) => !isPending(m)).map((m) => (
+                                <SelectItem key={menteeIdOf(m)} value={String(menteeIdOf(m))}>{menteeDisplayName(m)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-dubai-medium text-slate-600 mb-1 block">{t('Date & time', 'التاريخ والوقت')}</label>
+                          <Input type="datetime-local" value={bookWhen} onChange={(e) => setBookWhen(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-dubai-medium text-slate-600 mb-1 block">{t('Notes', 'ملاحظات')}</label>
+                          <Input value={bookNotes} onChange={(e) => setBookNotes(e.target.value)} placeholder={t('Optional', 'اختياري')} />
+                        </div>
+                      </div>
+                      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <Button onClick={handleBookSession} disabled={bookingSaving} className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                          {bookingSaving ? (<span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>) : t('Book Session', 'حجز الجلسة')}
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowBookingForm(false)} className="font-dubai-medium">{t('Cancel', 'إلغاء')}</Button>
+                      </div>
+                      {mentees.filter((m) => !isPending(m)).length === 0 && (
+                        <p className="text-xs text-amber-600 font-dubai-medium">{t('Accept a mentee first to book a session.', 'اقبل متدرباً أولاً لحجز جلسة.')}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {loadingSessions ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                    </div>
+                  ) : sessions.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Calendar className="h-14 w-14 text-slate-400 mx-auto mb-3" />
+                      <p className="text-slate-500 font-dubai-medium">{t('No sessions scheduled yet.', 'لا توجد جلسات مجدولة بعد.')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {sessions.map((s: any, i: number) => (
+                        <div key={s.id || s.session_id || i} className={`p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-between gap-3 ${isRTL ? 'flex-row-reverse text-start' : ''}`}>
+                          <div className="flex items-center gap-3">
+                            <Calendar className="h-5 w-5 text-teal-600" />
+                            <div>
+                              <h5 className="font-dubai-bold text-slate-900 leading-tight">
+                                {s.mentee_name || s.mentee_display_name || menteeDisplayName(s) }
+                              </h5>
+                              <p className="text-xs text-slate-500 font-dubai">
+                                {s.scheduled_at ? new Date(s.scheduled_at).toLocaleString() : (s.session_date || '')}
+                                {s.notes ? ` · ${s.notes}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          {s.status && <Badge variant="secondary" className="font-dubai">{s.status}</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

@@ -14,6 +14,12 @@ const field: React.CSSProperties = { border: `1px solid ${c.border}`, borderRadi
 const btn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6, background: c.primary, color: '#fff', border: 'none', padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' };
 const box = (k: 'err' | 'ok'): React.CSSProperties => ({ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, fontSize: 13, marginBottom: 12, background: k === 'err' ? c.red : c.green, color: k === 'err' ? c.redText : c.greenText });
 const err = (e: any, f: string) => e?.response?.data?.message || e?.message || f;
+// Never show a raw 15-digit Emirates ID or "null" as a name (C3-MOP-2).
+const looksLikeEid = (s?: string | null) => !!s && /^\d{15}$/.test(String(s).trim());
+const personName = (name?: string | null, fallback = 'Enrolled') => {
+  const n = (name ?? '').toString().trim();
+  return (!n || n.toLowerCase() === 'null' || looksLikeEid(n)) ? fallback : n;
+};
 const card: React.CSSProperties = { background: c.card, border: `1px solid ${c.border}`, borderRadius: 12, padding: 18, marginBottom: 18 };
 const rowItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: `1px solid ${c.border}`, marginBottom: 6 };
 
@@ -104,8 +110,8 @@ const MentorshipEnrollmentManager: React.FC = () => {
             <div key={m.user_id} style={rowItem}>
               <Users size={15} color={c.tintText} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: c.textPrimary }}>{m.full_name}</span>
-                <span style={{ fontSize: 11, color: c.textSecondary }}>{[m.professional_title, m.industry].filter(Boolean).join(' · ') || m.user_id}{m.is_verified ? ' · ✓' : ''}</span>
+                <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: c.textPrimary }}>{personName(m.full_name, m.professional_title || t('Mentor', 'مرشد'))}</span>
+                <span style={{ fontSize: 11, color: c.textSecondary }}>{[m.professional_title, m.industry].filter(Boolean).join(' · ') || t('Mentor', 'مرشد')}{m.is_verified ? ' · ✓' : ''}</span>
               </span>
               <button onClick={() => removeMentor(m.user_id)} title={t('Retire', 'إيقاف')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: c.redText, padding: 4 }}><Trash2 size={15} /></button>
             </div>
@@ -126,7 +132,7 @@ const MentorshipEnrollmentManager: React.FC = () => {
         </div>
         <div style={{ fontSize: 12, fontWeight: 700, color: c.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>{t('Coaches', 'المدربون')} ({coaches.length})</div>
         {coaches.map(co => (
-          <div key={co.user_id} style={rowItem}><Users size={15} color={c.tintText} /><span style={{ fontSize: 13, color: c.textPrimary }}>{co.full_name} <span style={{ color: c.textSecondary, fontSize: 11 }}>({co.user_id})</span></span></div>
+          <div key={co.user_id} style={rowItem}><Users size={15} color={c.tintText} /><span style={{ fontSize: 13, color: c.textPrimary }}>{personName(co.full_name, t('Coach', 'مدرب'))}</span></div>
         ))}
         {coaches.length === 0 && <div style={{ fontSize: 13, color: c.textSecondary }}>{t('None yet.', 'لا يوجد بعد.')}</div>}
       </div>
