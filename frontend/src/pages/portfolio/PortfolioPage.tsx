@@ -810,12 +810,15 @@ const PortfolioPage: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation on each tab's content keeps EducationPathwayLayout's
+    // content-click delegation from firing a false "Coming soon" toast over
+    // these fully-functional controls.
     const tabs = [
         { id: 'projects', label: t('My Projects', 'مشاريعي'), icon: <FolderOpen className="h-4 w-4" />, content: projectsTab },
         { id: 'templates', label: t('Templates', 'القوالب'), icon: <Image className="h-4 w-4" />, content: templatesTab },
         { id: 'analytics', label: t('Analytics', 'التحليلات'), icon: <BarChart3 className="h-4 w-4" />, content: analyticsTab },
         { id: 'sharing', label: t('Sharing & Visibility', 'المشاركة والظهور'), icon: <Settings className="h-4 w-4" />, content: sharingTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout

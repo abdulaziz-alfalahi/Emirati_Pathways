@@ -310,11 +310,16 @@ const InterviewPreparationPage: React.FC = () => {
         { value: String(sessions.length), label: t('Your Sessions', 'جلساتك'), icon: BarChart3 },
     ];
 
-    /* ── Tab 1: Question Bank ── */
+    /* ── Tab 1: Question Bank ──
+       The stopPropagation wrapper prevents EducationPathwayLayout's content-click
+       delegation from firing a false "Coming soon / under development" toast on
+       these fully-functional buttons. */
     const questionsTab = practice?.source === 'questions' ? (
-        <PracticeRunner spec={practice} isRTL={isRTL} t={t} onExit={() => setPractice(null)} onComplete={completePractice} />
+        <div onClick={e => e.stopPropagation()}>
+            <PracticeRunner spec={practice} isRTL={isRTL} t={t} onExit={() => setPractice(null)} onComplete={completePractice} />
+        </div>
     ) : (
-        <div>
+        <div onClick={e => e.stopPropagation()}>
             {/* Personalized Focus (real) */}
             {(careerStage || userSkills.length > 0) && (
                 <div style={{ background: brand.primarySurface, border: `1px solid ${brand.primary}22`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
@@ -424,9 +429,11 @@ const InterviewPreparationPage: React.FC = () => {
     ];
 
     const simulatorTab = practice?.source === 'simulator' ? (
-        <PracticeRunner spec={practice} isRTL={isRTL} t={t} onExit={() => setPractice(null)} onComplete={completePractice} />
+        <div onClick={e => e.stopPropagation()}>
+            <PracticeRunner spec={practice} isRTL={isRTL} t={t} onExit={() => setPractice(null)} onComplete={completePractice} />
+        </div>
     ) : (
-        <div>
+        <div onClick={e => e.stopPropagation()}>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Interview Simulator', 'محاكي المقابلات')}</h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t('Run a timed mock interview from the real question bank and get AI feedback on each answer. Choose a mode — and an industry for the industry-specific mode.',

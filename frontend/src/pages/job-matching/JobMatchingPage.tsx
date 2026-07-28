@@ -767,12 +767,15 @@ const JobMatchingPage: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation on each tab's content keeps EducationPathwayLayout's
+    // content-click delegation from firing a false "Coming soon" toast over
+    // these fully-functional controls.
     const tabs = [
         { id: 'matches', label: t('AI Matches', 'تطابقات الذكاء الاصطناعي'), icon: <Target className="h-4 w-4" />, content: matchesTab },
         { id: 'saved', label: t('Saved Jobs', 'الوظائف المحفوظة'), icon: <Heart className="h-4 w-4" />, content: savedTab },
         { id: 'applications', label: t('Applications', 'الطلبات'), icon: <Send className="h-4 w-4" />, content: applicationsTab },
         { id: 'recommendations', label: t('Recommendations', 'التوصيات'), icon: <Star className="h-4 w-4" />, content: recsTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <>
