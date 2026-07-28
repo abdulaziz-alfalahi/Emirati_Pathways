@@ -95,8 +95,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const storedUser = authService.getUser();
         if (storedUser) {
           setUserState(storedUser);
-          // Background refresh to get latest roles/status
-          refreshUser();
+          // AWAIT the refresh so isLoading stays true until the authoritative
+          // roles (esp. secondary_roles) are resolved. Previously this was
+          // fire-and-forget, so a first load with a stored user that lacked
+          // secondary_roles (e.g. right after login) evaluated ProtectedRoute
+          // before roles landed and BOUNCED every operator dashboard to the
+          // candidate homepage until a manual reload (C4 [C4-BRD-1]; the
+          // recurring first-load routing race seen across all clusters).
+          await refreshUser();
         } else {
           // If no stored user, try to fetch from API
           try {

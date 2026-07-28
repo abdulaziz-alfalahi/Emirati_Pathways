@@ -118,6 +118,36 @@ def admin_required(f):
 optional_auth = admin_required
 
 
+def _identity_has_audit_role():
+    """Admin OR compliance_auditor — the auditor's whole job is reading the audit
+    trail, but it was admin-only, so a compliance_auditor got 403/404 with no way
+    to see it (C4 [C4-AUD-1]). Read-only oversight; no write endpoints widened."""
+    if _identity_has_admin_role():
+        return True
+    try:
+        from backend.auth.access_control import resolve_roles
+    except ImportError:  # pragma: no cover
+        from auth.access_control import resolve_roles
+    try:
+        return 'compliance_auditor' in resolve_roles()
+    except Exception:
+        return False
+
+
+def audit_read_required(f):
+    """Guard for the read-only audit-trail endpoints: admin or compliance_auditor."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            verify_jwt_in_request()
+        except Exception:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        if not _identity_has_audit_role():
+            return jsonify({'success': False, 'message': 'Forbidden - audit access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 # =====================================================
 # DASHBOARD STATS ENDPOINT
 # =====================================================
@@ -1297,7 +1327,8 @@ def get_security_stats():
 # =====================================================
 
 @admin_dashboard_bp.route('/audit-log', methods=['GET'])
-@admin_required
+@admin_dashboard_bp.route('/audit-logs', methods=['GET'])
+@audit_read_required
 def get_audit_log():
     """
     Get paginated, filterable audit log entries.
@@ -1398,7 +1429,7 @@ def get_audit_log():
 
 
 @admin_dashboard_bp.route('/audit-log/stats', methods=['GET'])
-@admin_required
+@audit_read_required
 def get_audit_log_stats():
     """
     Return summary statistics for the audit log.

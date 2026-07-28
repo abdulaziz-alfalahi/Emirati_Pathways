@@ -969,6 +969,13 @@ def update_crm_candidate(user_id):
             if preferred_locations is not None:
                 preferred_locations = json.dumps(preferred_locations)
 
+            # Normalise the assignee: the CRM's "Unassigned" dropdown value (and
+            # blanks) must persist as NULL, not the literal string 'Unassigned',
+            # so the caseload column stays a clean user-id-or-NULL (C4 [C4-CSO-2]).
+            _assigned_raw = data.get('assignedTo')
+            assigned_to_val = None if str(_assigned_raw or '').strip().lower() in (
+                '', 'unassigned', 'none', 'null') else _assigned_raw
+
             if exists:
                 cursor.execute("""
                     UPDATE candidate_profiles SET
@@ -989,7 +996,7 @@ def update_crm_candidate(user_id):
                     data.get('callStatus'),
                     data.get('workStatus'),
                     data.get('remarks'),
-                    data.get('assignedTo'),
+                    assigned_to_val,
                     preferred_locations,
                     data.get('preferredSector'),
                     data.get('preferredWorkSetup'),
@@ -1010,7 +1017,7 @@ def update_crm_candidate(user_id):
                     data.get('callStatus'),
                     data.get('workStatus'),
                     data.get('remarks'),
-                    data.get('assignedTo'),
+                    assigned_to_val,
                     preferred_locations,
                     data.get('preferredSector'),
                     data.get('preferredWorkSetup'),
