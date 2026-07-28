@@ -134,9 +134,19 @@ def apply_internship(internship_id):
         return jsonify({"error": "Database unavailable"}), 503
     try:
         cur = conn.cursor()
+        # Idempotent: don't create a second application for the same internship.
+        cur.execute(
+            "SELECT id, status FROM internship_applications WHERE internship_id = %s AND user_id = %s",
+            (internship_id, str(user_id)))
+        existing = cur.fetchone()
+        if existing:
+            cur.close()
+            conn.close()
+            return jsonify({"application_id": existing[0], "status": existing[1] or "pending",
+                            "already_applied": True}), 200
         cur.execute(
             "INSERT INTO internship_applications (internship_id, user_id, status) VALUES (%s, %s, 'pending') RETURNING id",
-            (internship_id, user_id)
+            (internship_id, str(user_id))
         )
         app_id = cur.fetchone()[0]
         conn.commit()
@@ -147,6 +157,37 @@ def apply_internship(internship_id):
         conn.rollback()
         conn.close()
         return jsonify({"error": str(e)}), 500
+
+
+@career_services_bp.route('/internships/my-applications', methods=['GET'])
+@jwt_required()
+def my_internship_applications():
+    """The caller's own internship applications (so the UI can show 'Applied'
+    across reloads). Scoped to the JWT identity."""
+    user_id = str(get_jwt_identity())
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            "SELECT internship_id, status, applied_at FROM internship_applications "
+            "WHERE user_id = %s ORDER BY applied_at DESC NULLS LAST", (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({
+            "internship_ids": [r['internship_id'] for r in rows],
+            "applications": [{
+                'internship_id': r['internship_id'],
+                'status': r['status'],
+                'applied_at': r['applied_at'].isoformat() if r.get('applied_at') else None,
+            } for r in rows],
+        }), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 
 # ═══════════════════════════════════════════════════════════
 # INTERNSHIP APPLICANTS

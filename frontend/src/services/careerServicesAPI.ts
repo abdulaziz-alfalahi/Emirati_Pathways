@@ -114,9 +114,16 @@ export async function getInternship(id: number): Promise<Internship> {
     return resp.data;
 }
 
-export async function applyForInternship(internshipId: number, userId?: number): Promise<{ application_id: number; status: string }> {
-    const resp = await restClient.post(`/api/career-services/internships/${internshipId}/apply`, { user_id: userId });
+export async function applyForInternship(internshipId: number): Promise<{ application_id: number; status: string; already_applied?: boolean }> {
+    // The candidate identity comes from the JWT server-side — never from the body
+    // (users.id is a CHAR(15) Emirates ID, not a safe integer).
+    const resp = await restClient.post(`/api/career-services/internships/${internshipId}/apply`, {});
     return resp.data;
+}
+
+export async function getMyInternshipApplications(): Promise<{ internship_id: number; status: string }[]> {
+    const resp = await restClient.get('/api/career-services/internships/my-applications');
+    return resp.data?.applications || [];
 }
 
 // ─── Gig Marketplace ────────────────────────────────────
