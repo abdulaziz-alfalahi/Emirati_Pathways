@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import {
     Search, Briefcase, MapPin, Banknote, Clock, ChevronRight, ChevronLeft, Star,
-    TrendingUp, Filter, Zap, Eye, Users, Award, CheckCircle, Send, Heart,
+    TrendingUp, Filter, Zap, Users, Award, CheckCircle, Send,
     Code, Palette, BarChart3, Globe, BookOpen, MessageSquare, ThumbsUp,
     Calendar, DollarSign, Shield, Target, Sparkles, PenTool, Loader2
 } from 'lucide-react';
@@ -13,7 +13,6 @@ import { getGigs, applyForGig, type Gig } from '@/services/careerServicesAPI';
 import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
-import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
 const brand = {
@@ -37,6 +36,7 @@ interface MyApplication {
     description?: string;
     duration?: string;
     skills?: string[];
+    source_id?: number;           // the underlying gig / internship id
     // gig-specific
     budget?: string;
     category?: string;
@@ -62,7 +62,6 @@ const GigMarketplacePage: React.FC = () => {
     const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
     const [appliedGigs, setAppliedGigs] = useState<Set<number>>(new Set());
     const [applyingGigId, setApplyingGigId] = useState<number | null>(null);
-    const { user } = useAuth();
 
     useEffect(() => {
         let cancelled = false;
@@ -83,6 +82,18 @@ const GigMarketplacePage: React.FC = () => {
                 const skillData = await skillGraphAPI.getUserSkills();
                 if (!cancelled) setUserSkills(skillData.skills || []);
             } catch { /* not logged in or no skill profile — fallback */ }
+        })();
+        // Seed already-applied gigs so 'Applied' persists on Browse across reloads.
+        (async () => {
+            try {
+                const resp = await restClient.get('/api/career-services/my-applications');
+                const apps: MyApplication[] = resp.data?.data?.applications || [];
+                if (!cancelled) {
+                    setMyApps(apps);
+                    setMyAppsLoaded(true);
+                    setAppliedGigs(new Set(apps.filter(a => a.application_type === 'gig' && a.source_id != null).map(a => a.source_id as number)));
+                }
+            } catch { /* graceful — leave My Applications to lazy-load */ }
         })();
         return () => { cancelled = true; };
     }, []);
@@ -166,7 +177,7 @@ const GigMarketplacePage: React.FC = () => {
         }
         setApplyingGigId(gigId);
         try {
-            await applyForGig(gigId, user?.id ? Number(user.id) : undefined);
+            await applyForGig(gigId);
             setAppliedGigs(prev => new Set(prev).add(gigId));
             setMyAppsLoaded(false); // refresh My Applications on next visit
             toast.success(t('Application submitted!', 'تم تقديم الطلب!'));
@@ -202,7 +213,7 @@ const GigMarketplacePage: React.FC = () => {
         { icon: Clock, title: t('Flexible Schedule', 'جدول مرن'), desc: t('Work on your own terms and schedule', 'اعمل وفق شروطك وجدولك الخاص') },
         { icon: TrendingUp, title: t('Grow Your Portfolio', 'طوّر أعمالك'), desc: t('Build a diverse portfolio with top UAE companies', 'ابنِ محفظة متنوعة مع كبار شركات الإمارات') },
         { icon: Banknote, title: t('Competitive Pay', 'أجر تنافسي'), desc: t('Earn market-rate compensation for your skills', 'احصل على تعويض بأسعار السوق لمهاراتك') },
-        { icon: Shield, title: t('Secure Payments', 'مدفوعات آمنة'), desc: t('Escrow-protected payments released on completion', 'مدفوعات محمية بالضمان تُصرف عند الإنجاز') },
+        { icon: Shield, title: t('Clear Scope & Terms', 'نطاق وشروط واضحة'), desc: t('Agree deliverables, budget, and timeline up front with the employer', 'اتّفق على المخرجات والميزانية والجدول الزمني مع صاحب العمل مسبقاً') },
     ];
 
     /* ── Shared styles ── */
@@ -255,7 +266,9 @@ const GigMarketplacePage: React.FC = () => {
             {filteredGigs.map((g) => {
                 const skills: string[] = Array.isArray(g.skills) ? g.skills : (typeof g.skills === 'string' ? JSON.parse(g.skills) : []);
                 const cc = catColorMap[g.category || ''] || { bg: '#F3F4F6', color: brand.textSecondary };
-                const match = matchScores[g.id] || 85;
+                // Real skill-match only — never a fabricated fallback. 0 means we
+                // have no verified overlap to score (e.g. no skills on the profile).
+                const match = matchScores[g.id] || 0;
                 return (
                     <div key={g.id} style={{ ...card, ...(g.is_featured ? { borderColor: brand.primary, borderWidth: 1.5 } : {}) }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
@@ -296,8 +309,12 @@ const GigMarketplacePage: React.FC = () => {
                                 </div>
                             </div>
                             <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
-                                <div style={{ fontSize: 22, fontWeight: 700, color: brand.primary, marginBottom: 4 }}>{match}%</div>
-                                <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 12 }}>{t('Match Score', 'درجة التوافق')}</div>
+                                {match > 0 && (
+                                    <>
+                                        <div style={{ fontSize: 22, fontWeight: 700, color: brand.primary, marginBottom: 4 }}>{match}%</div>
+                                        <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 12 }}>{t('Skill Match', 'تطابق المهارات')}</div>
+                                    </>
+                                )}
                                 <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 2 }}>{loc(g.budget, g.budget_ar)}</div>
                                 <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 2 }}>{loc(g.duration, g.duration_ar)}</div>
                             </div>
@@ -322,8 +339,6 @@ const GigMarketplacePage: React.FC = () => {
                                         ? <><CheckCircle size={16} /> {t('Applied', 'تم التقديم')}</>
                                         : t('Apply Now', 'قدّم الآن')}
                             </button>
-                            <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Heart size={16} /></button>
-                            <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Eye size={16} /></button>
                         </div>
                     </div>
                 );
