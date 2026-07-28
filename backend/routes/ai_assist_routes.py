@@ -125,6 +125,15 @@ _FEATURES = {
         "This is advisory only and is not a matching score.",
         {'job_title', 'required_skills', 'my_skills'},
     ),
+    'interview_feedback': (
+        "Act as a supportive interview coach. Given the interview question and "
+        "the candidate's draft answer, give specific, constructive feedback: "
+        "what works, what to improve, and — for behavioural questions — whether "
+        "the answer follows the STAR structure (Situation, Task, Action, "
+        "Result). Keep it short and actionable. If the answer is empty or very "
+        "short, coach them on how to approach the question instead.",
+        {'question', 'answer', 'category', 'target_role'},
+    ),
 }
 
 
