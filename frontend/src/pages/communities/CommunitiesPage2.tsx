@@ -56,6 +56,44 @@ const CommunitiesPage2: React.FC = () => {
     const [feedPosts, setFeedPosts] = useState<any[]>([]);
     const [events, setEvents] = useState<any[]>([]);
     const [liveStats, setLiveStats] = useState<any>(null);
+    const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
+    const [busyId, setBusyId] = useState<number | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
+    const [copiedPost, setCopiedPost] = useState<number | null>(null);
+
+    const loadMyCommunities = async () => {
+        try {
+            const res = await restClient.get('/api/community-mentorship/my-communities');
+            const ids = (res.data as any)?.community_ids || [];
+            setJoinedIds(new Set<number>(ids.map((x: any) => Number(x))));
+        } catch { /* graceful — not joined / not logged in */ }
+    };
+
+    const toggleJoin = async (communityId: number) => {
+        const id = Number(communityId);
+        const isJoined = joinedIds.has(id);
+        setBusyId(id);
+        // optimistic
+        setJoinedIds(prev => { const n = new Set(prev); isJoined ? n.delete(id) : n.add(id); return n; });
+        try {
+            if (isJoined) await restClient.post(`/api/community-mentorship/communities/${id}/leave`);
+            else await restClient.post(`/api/community-mentorship/communities/${id}/join`);
+        } catch {
+            // revert on failure
+            setJoinedIds(prev => { const n = new Set(prev); isJoined ? n.add(id) : n.delete(id); return n; });
+            setNotice(t('Could not update your membership. Please try again.', 'تعذّر تحديث عضويتك. حاول مرة أخرى.'));
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const sharePost = async (idx: number) => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopiedPost(idx);
+            setTimeout(() => setCopiedPost(prev => (prev === idx ? null : prev)), 2000);
+        } catch { /* clipboard unavailable */ }
+    };
 
     // Fetch all community data from backend
     useEffect(() => {
@@ -67,12 +105,11 @@ const CommunitiesPage2: React.FC = () => {
                 if (cancelled) return;
                 const d = res.data as any;
                 if (d?.communities) {
-                    setCommunities(d.communities.map((c: any, i: number) => ({
+                    setCommunities(d.communities.map((c: any) => ({
                         ...c,
                         name: t(c.name, c.name_ar || c.name),
                         description: t(c.description, c.description_ar || c.description),
                         category: t(c.category, c.category_ar || c.category),
-                        joined: i < 3,  // first 3 joined for demo
                         catBg: catColors[c.category]?.bg || brand.blue,
                         catColor: catColors[c.category]?.color || brand.blueText,
                     })));
@@ -146,20 +183,22 @@ const CommunitiesPage2: React.FC = () => {
         fetchFeed();
         fetchEvents();
         fetchStats();
+        loadMyCommunities();
         return () => { cancelled = true; };
     }, [isRTL]);
 
     /* ──────────────────────── STATS ──────────────────────── */
 
-    const totalMembers = liveStats?.total_community_members || 23000;
-    const totalComms = liveStats?.total_communities || communities.length || 25;
+    // Real counts only — derived from live data, no fabricated/inflated figures.
+    const totalMembers = liveStats?.total_community_members ?? communities.reduce((s: number, c: any) => s + (c.members || 0), 0);
+    const totalComms = liveStats?.total_communities ?? communities.length;
     const totalPosts = communities.reduce((s: number, c: any) => s + (c.posts || 0), 0);
 
     const stats = [
-        { value: `${totalComms}+`, label: t('Communities', 'مجتمع'), icon: Users },
-        { value: totalMembers >= 1000 ? `${Math.round(totalMembers / 1000)}K+` : `${totalMembers}+`, label: t('Members', 'عضو'), icon: UserCheck },
-        { value: totalPosts >= 1000 ? `${Math.round(totalPosts / 1000)}K+` : `${totalPosts}+`, label: t('Posts', 'منشور'), icon: MessageCircle },
-        { value: `${events.length * 20}+`, label: t('Events/Year', 'فعالية/سنة'), icon: Calendar },
+        { value: `${totalComms}`, label: t('Communities', 'مجتمع'), icon: Users },
+        { value: `${totalMembers}`, label: t('Members', 'عضو'), icon: UserCheck },
+        { value: `${totalPosts}`, label: t('Posts', 'منشور'), icon: MessageCircle },
+        { value: `${joinedIds.size}`, label: t('My Communities', 'مجتمعاتي'), icon: CheckCircle },
     ];
 
     /* ── Tab 1: Discover ── */
@@ -193,7 +232,7 @@ const CommunitiesPage2: React.FC = () => {
                         style={{
                             background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
                             padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
+                            transition: 'box-shadow .2s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
                         onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
@@ -224,15 +263,23 @@ const CommunitiesPage2: React.FC = () => {
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MessageCircle size={12} /> {c.posts.toLocaleString()} {t('posts', 'منشور')}</span>
                         </div>
 
-                        <button style={{
-                            background: c.joined ? 'transparent' : brand.primary,
-                            color: c.joined ? brand.primary : '#fff',
-                            border: c.joined ? `1px solid ${brand.primary}` : 'none',
-                            padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            marginTop: 'auto', width: '100%',
-                        }}>
-                            {c.joined ? t('Joined ✓', 'منضم ✓') : t('Join Community', 'انضم للمجتمع')}
-                        </button>
+                        {(() => {
+                            const joined = joinedIds.has(Number(c.id));
+                            return (
+                                <button
+                                    onClick={() => toggleJoin(Number(c.id))}
+                                    disabled={busyId === Number(c.id)}
+                                    style={{
+                                        background: joined ? 'transparent' : brand.primary,
+                                        color: joined ? brand.primary : '#fff',
+                                        border: joined ? `1px solid ${brand.primary}` : 'none',
+                                        padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                                        marginTop: 'auto', width: '100%', opacity: busyId === Number(c.id) ? 0.6 : 1,
+                                    }}>
+                                    {joined ? t('Joined ✓', 'منضم ✓') : t('Join Community', 'انضم للمجتمع')}
+                                </button>
+                            );
+                        })()}
                     </div>
                 ))}
             </div>
@@ -274,15 +321,17 @@ const CommunitiesPage2: React.FC = () => {
 
                         <p style={{ fontSize: 14, color: brand.textPrimary, lineHeight: 1.6, margin: '0 0 14px' }}>{p.content}</p>
 
-                        <div style={{ display: 'flex', gap: 16, borderTop: `1px solid ${brand.border}`, paddingTop: 12 }}>
-                            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
+                        <div style={{ display: 'flex', gap: 16, borderTop: `1px solid ${brand.border}`, paddingTop: 12, alignItems: 'center' }}>
+                            {/* Like/comment counts are read-only (no post-interaction
+                                backend yet); Share copies a link, which genuinely works. */}
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
                                 <Heart size={14} /> {p.likes}
-                            </button>
-                            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
                                 <MessageCircle size={14} /> {p.comments}
-                            </button>
-                            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
-                                <Share2 size={14} /> {t('Share', 'مشاركة')}
+                            </span>
+                            <button onClick={() => sharePost(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: copiedPost === i ? brand.greenText : brand.textSecondary, marginInlineStart: 'auto' }}>
+                                <Share2 size={14} /> {copiedPost === i ? t('Copied ✓', 'تم النسخ ✓') : t('Share', 'مشاركة')}
                             </button>
                         </div>
                     </div>
@@ -333,12 +382,11 @@ const CommunitiesPage2: React.FC = () => {
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: 11, color: brand.primary, fontWeight: 500 }}>{t('by', 'بواسطة')} {ev.organizer} · {ev.community}</span>
-                                <button style={{
-                                    background: brand.primary, color: '#fff', border: 'none',
-                                    padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                }}>
-                                    {t('Register', 'سجّل')}
-                                </button>
+                                {(ev.maxAttendees != null && ev.attendees != null) && (
+                                    <span style={{ fontSize: 11, color: brand.textSecondary }}>
+                                        {Math.max(0, ev.maxAttendees - ev.attendees)} {t('spots left', 'مقعد متبقٍ')}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -360,8 +408,19 @@ const CommunitiesPage2: React.FC = () => {
                 )}
             </p>
 
+            {notice && (
+                <div style={{ background: brand.primarySurface, color: brand.primary, border: `1px solid ${brand.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>
+                    {notice}
+                </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {communities.filter(c => c.joined).map((c, i) => (
+                {communities.filter(c => joinedIds.has(Number(c.id))).length === 0 && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 24, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                        {t('You haven’t joined any communities yet. Browse Discover and tap Join.', 'لم تنضم إلى أي مجتمع بعد. تصفّح "اكتشف" واضغط انضم.')}
+                    </div>
+                )}
+                {communities.filter(c => joinedIds.has(Number(c.id))).map((c, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <span style={{ fontSize: 28 }}>{c.avatar}</span>
@@ -371,31 +430,29 @@ const CommunitiesPage2: React.FC = () => {
                                     {c.verified && <CheckCircle size={14} style={{ color: brand.primary }} />}
                                 </div>
                                 <div style={{ display: 'flex', gap: 10, fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>
-                                    <span>{c.members.toLocaleString()} {t('members', 'عضو')}</span>
-                                    <span>{c.posts.toLocaleString()} {t('posts', 'منشور')}</span>
+                                    <span>{(c.members || 0).toLocaleString()} {t('members', 'عضو')}</span>
+                                    <span>{(c.posts || 0).toLocaleString()} {t('posts', 'منشور')}</span>
                                 </div>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                            <button style={{ background: 'transparent', color: brand.primary, border: `1px solid ${brand.primary}`, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                                {t('View', 'عرض')}
-                            </button>
-                            <button style={{ background: '#fff', color: brand.redText, border: `1px solid ${brand.border}`, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-                                {t('Leave', 'مغادرة')}
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => toggleJoin(Number(c.id))}
+                            disabled={busyId === Number(c.id)}
+                            style={{ background: '#fff', color: brand.redText, border: `1px solid ${brand.border}`, padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: busyId === Number(c.id) ? 0.6 : 1 }}>
+                            {t('Leave', 'مغادرة')}
+                        </button>
                     </div>
                 ))}
             </div>
 
-            {/* Empty state hint */}
+            {/* Discover-more hint */}
             <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24, marginTop: 24, textAlign: 'center' }}>
                 <Globe size={28} style={{ color: brand.primary, margin: '0 auto 8px' }} />
                 <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 6px' }}>{t('Discover More Communities', 'اكتشف المزيد من المجتمعات')}</h4>
                 <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>
                     {t(
-                        'Explore 25+ professional communities and find your tribe — from tech and finance to government and sustainability.',
-                        'استكشف أكثر من 25 مجتمعاً مهنياً وجد مجموعتك — من التكنولوجيا والمالية إلى الحكومة والاستدامة.'
+                        `Explore ${communities.length} professional communities and find your tribe — from tech and finance to government and sustainability.`,
+                        `استكشف ${communities.length} مجتمعاً مهنياً وجد مجموعتك — من التكنولوجيا والمالية إلى الحكومة والاستدامة.`
                     )}
                 </p>
             </div>
@@ -404,19 +461,21 @@ const CommunitiesPage2: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the Join / Leave / Share buttons.
     const tabs = [
         { id: 'discover', label: t('Discover', 'اكتشف'), icon: <Search className="h-4 w-4" />, content: discoverTab },
         { id: 'feed', label: t('Feed', 'آخر الأخبار'), icon: <MessageCircle className="h-4 w-4" />, content: feedTab },
         { id: 'events', label: t('Events', 'الفعاليات'), icon: <Calendar className="h-4 w-4" />, content: eventsTab },
         { id: 'my', label: t('My Communities', 'مجتمعاتي'), icon: <Users className="h-4 w-4" />, content: myTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
             title={t('Professional Communities', 'المجتمعات المهنية')}
             description={t(
-                'Join 25+ vibrant professional communities across the UAE — network, share knowledge, attend events, and grow your career alongside 23,000+ members',
-                'انضم إلى أكثر من 25 مجتمعاً مهنياً نابضاً بالحياة في الإمارات — تواصل وشارك المعرفة واحضر الفعاليات ونمِّ مسيرتك المهنية مع أكثر من 23,000 عضو'
+                'Join vibrant professional communities across the UAE — network, share knowledge, attend events, and grow your career.',
+                'انضم إلى مجتمعات مهنية نابضة بالحياة في الإمارات — تواصل وشارك المعرفة واحضر الفعاليات ونمِّ مسيرتك المهنية.'
             )}
             icon={<Users className="h-6 w-6" />}
             stats={stats}
