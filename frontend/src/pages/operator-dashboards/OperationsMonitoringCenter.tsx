@@ -261,9 +261,19 @@ const OperationsMonitoringCenter: React.FC = () => {
                                         icon={Award}
                                         sub={<Delta value={ea?.offers_week || 0} />}
                                     />
-                                    {/* Not yet instrumented — shown as unavailable rather than as a zero. */}
-                                    <MetricCard label={t('Avg Response Time', 'متوسط وقت الاستجابة')} value="—" icon={Clock} />
-                                    <MetricCard label={t('Response Rate', 'نسبة الاستجابة')} value="—" icon={CheckCircle} />
+                                    {/* Null until any application has been reviewed — shown as unavailable rather than as a zero. */}
+                                    <MetricCard
+                                        label={t('Avg Response Time', 'متوسط وقت الاستجابة')}
+                                        value={ea?.avg_recruiter_response_days != null
+                                            ? `${ea.avg_recruiter_response_days.toLocaleString(locale)} ${t('days', 'يوم')}`
+                                            : '—'}
+                                        icon={Clock}
+                                    />
+                                    <MetricCard
+                                        label={t('Response Rate', 'نسبة الاستجابة')}
+                                        value={ea?.recruiter_response_rate != null ? `${ea.recruiter_response_rate}%` : '—'}
+                                        icon={CheckCircle}
+                                    />
                                 </div>
                             </Card>
                         </div>

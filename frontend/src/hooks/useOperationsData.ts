@@ -23,6 +23,10 @@ export interface OpsData {
         new_jobs_week: number;
         total_offers: number;
         offers_week: number;
+        /** Days, real average over reviewed applications; null until there is data. */
+        avg_recruiter_response_days: number | null;
+        /** Percentage of applications moved out of pending; null until there is data. */
+        recruiter_response_rate: number | null;
     };
     interview_tracker: {
         conducted_today: number;
@@ -110,7 +114,18 @@ export function useOperationsData(): UseOperationsDataResult {
                 gotSomething = true;
             }
             if (liveRes.data?.success && liveRes.data?.data) {
-                setFunnelData(liveRes.data.data.funnel_analytics ?? null);
+                // The API marks the funnel 'unavailable' until a real conversion
+                // source is connected; rendering it then would draw a funnel of
+                // zeros that reads as measured data. Backend keys also differ
+                // from the display names (signup/job_applied).
+                const fa = liveRes.data.data.funnel_analytics;
+                const funnelIsReal = fa && fa.source !== 'unavailable' &&
+                    [fa.signup, fa.profile_completion, fa.job_applied].some(v => typeof v === 'number');
+                setFunnelData(funnelIsReal ? {
+                    signups: fa.signup ?? 0,
+                    profile_completion: fa.profile_completion ?? 0,
+                    job_applications: fa.job_applied ?? 0,
+                } : null);
                 gotSomething = true;
             }
 

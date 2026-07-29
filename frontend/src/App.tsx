@@ -937,11 +937,19 @@ const AppContent: React.FC = () => {
                   mode toggle. Declared first: it is the more specific path. */}
               <Route
                 path="/operations-center/display"
-                element={<OperationsWallDisplay />}
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'platform_administrator', 'platform_operator']}>
+                    <OperationsWallDisplay />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/operations-center"
-                element={<OperationsMonitoringCenter />}
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'platform_administrator', 'platform_operator']}>
+                    <OperationsMonitoringCenter />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="demographics"
