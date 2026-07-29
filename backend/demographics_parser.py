@@ -150,9 +150,11 @@ def parse_master_excel(excel_path="/app/master_file.xlsx"):
         ar_sheet_name = find_sheet_name(wb.sheetnames, "Added & Removed Dashboard")
         if ar_sheet_name:
             sheet = wb[ar_sheet_name]
+            # Empty cells mean "no reading", never a stand-in figure — the old
+            # fallbacks (10603/1520) were invented totals.
             data["growth"] = {
-                "total_added": int(sheet["B4"].value or 10603),
-                "total_removed": int(sheet["H4"].value or 1520),
+                "total_added": int(sheet["B4"].value or 0),
+                "total_removed": int(sheet["H4"].value or 0),
                 "weekly": []
             }
             for r in range(7, 13):

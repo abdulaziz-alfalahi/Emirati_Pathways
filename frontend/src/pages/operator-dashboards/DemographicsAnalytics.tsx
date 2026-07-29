@@ -96,6 +96,11 @@ const DemographicsAnalytics: React.FC = () => {
     // Get current data cut statistics
     const currentStats = rawMetrics ? rawMetrics[selectedCut] : null;
 
+    // The API returns { source: 'unavailable', ... } with none of the cohort
+    // cuts when the master file is not connected. Every render below must
+    // treat that as "no data", not crash on the missing keys.
+    const sourceUnavailable = !!rawMetrics && !rawMetrics.registered;
+
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{
             minHeight: '100vh', background: c.bg, overflow: 'auto',
@@ -185,9 +190,22 @@ const DemographicsAnalytics: React.FC = () => {
                     <AlertTriangle size={24} />
                     <span style={{ fontSize: 14 }}>{error}</span>
                 </div>
+            ) : sourceUnavailable ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 100, gap: 12, color: c.textSecondary }}>
+                    <AlertTriangle size={32} color={c.yellow} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: c.textPrimary }}>
+                        {t('Demographics source not connected', 'مصدر بيانات التركيبة السكانية غير متصل')}
+                    </span>
+                    <span style={{ fontSize: 13, maxWidth: 420, textAlign: 'center' }}>
+                        {t(
+                            'The master data file is not available on this environment, so no figures are shown — nothing here is estimated or simulated.',
+                            'ملف البيانات الرئيسي غير متوفر في هذه البيئة، لذلك لا تُعرض أي أرقام — لا شيء هنا مُقدّر أو مُحاكى.'
+                        )}
+                    </span>
+                </div>
             ) : (
                 <div style={{ padding: 24 }}>
-                    
+
                     {/* Cohort Stats Mini Header */}
                     {currentStats && (
                         <div style={{
@@ -333,7 +351,9 @@ const DemographicsAnalytics: React.FC = () => {
                     {/* TAB: SYSTEM TRACKING */}
                     {activeTab === 'reachability' && rawMetrics && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            {/* Initiatives comparison */}
+                            {/* Initiatives comparison — the totals block only exists when the
+                                initiatives sheet was present in the master file. */}
+                            {rawMetrics.initiatives_totals && (
                             <ChartCard title={t('EHRDC Initiatives Active Counts', 'أعداد المستفيدين النشطين من مبادرات الهيئة')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={[
@@ -352,8 +372,10 @@ const DemographicsAnalytics: React.FC = () => {
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartCard>
+                            )}
 
                             {/* No Answer Candidates */}
+                            {rawMetrics.no_answer && (
                             <ChartCard title={t('Contact Center Reachability Status', 'حالة استجابة الاتصال مع الكوادر')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
@@ -369,8 +391,10 @@ const DemographicsAnalytics: React.FC = () => {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </ChartCard>
+                            )}
 
                             {/* Weekly Registrations Added vs Removed */}
+                            {rawMetrics.growth?.weekly?.length > 0 && (
                             <ChartCard title={t('Weekly Intake Trend (Added vs Removed)', 'اتجاه التدفق الأسبوعي (المضاف مقابل المزال)')} style={{ gridColumn: '1 / -1' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={rawMetrics.growth.weekly} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -383,6 +407,7 @@ const DemographicsAnalytics: React.FC = () => {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </ChartCard>
+                            )}
                         </div>
                     )}
                 </div>
