@@ -140,8 +140,8 @@ const FinancialPlanningPage: React.FC = () => {
     const stats = [
         { value: `AED ${Math.round(salary / 1000)}K`, label: t('Est. Monthly Salary', 'الراتب الشهري المقدّر'), icon: Banknote },
         { value: '20%', label: t('Rec. Savings Rate', 'نسبة الادخار الموصى بها'), icon: Banknote },
-        { value: String(data.benchmarks.length || '6+'), label: t('Salary Benchmarks', 'معايير الرواتب'), icon: TrendingUp },
-        { value: '6', label: t('Gov. Benefits', 'المزايا الحكومية'), icon: Shield },
+        { value: String(data.benchmarks.length), label: t('Salary Benchmarks', 'معايير الرواتب'), icon: TrendingUp },
+        { value: String(govBenefits.length), label: t('Gov. Benefits', 'المزايا الحكومية'), icon: Shield },
     ];
 
     /* ── Tab 1: Budget & Planning ── */
@@ -317,7 +317,9 @@ const FinancialPlanningPage: React.FC = () => {
                                 <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: opt.catBg, color: opt.catColor }}>{opt.risk}</span>
                             </div>
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{opt.desc}</p>
-                            <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                            <button
+                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(opt.title + ' UAE investment')}`, '_blank', 'noopener')}
+                                style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                                 onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
                                 onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
                                 {t('Learn More', 'اعرف المزيد')} <ArrowIcon style={{ width: 14, height: 14 }} />
@@ -398,10 +400,12 @@ const FinancialPlanningPage: React.FC = () => {
                                     <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{ben.desc}</p>
                                 </div>
                             </div>
-                            <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: '#fff', color: brand.primary, fontSize: 14, fontWeight: 600, border: `1px solid ${brand.primary}`, cursor: 'pointer', transition: 'all 150ms' }}
+                            <button
+                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(ben.title + ' UAE government')}`, '_blank', 'noopener')}
+                                style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: '#fff', color: brand.primary, fontSize: 14, fontWeight: 600, border: `1px solid ${brand.primary}`, cursor: 'pointer', transition: 'all 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                                 onMouseEnter={e => { e.currentTarget.style.background = brand.primarySurface; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
-                                {t('View Details', 'عرض التفاصيل')}
+                                {t('Learn More', 'اعرف المزيد')} <ArrowIcon style={{ width: 14, height: 14 }} />
                             </button>
                         </div>
                     );
@@ -433,10 +437,12 @@ const FinancialPlanningPage: React.FC = () => {
                         </div>
                         <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{r.title}</h3>
                         <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{r.desc}</p>
-                        <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms' }}
+                        <button
+                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(r.title + ' UAE')}`, '_blank', 'noopener')}
+                            style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                             onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
                             onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
-                            {r.action}
+                            {r.action} <ArrowIcon style={{ width: 14, height: 14 }} />
                         </button>
                     </div>
                 ))}
@@ -444,12 +450,14 @@ const FinancialPlanningPage: React.FC = () => {
         </div>
     );
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the Learn More / resource buttons.
     const tabs = [
         { id: 'budget', label: t('Budget & Savings', 'الميزانية والادخار'), icon: <Banknote className="h-4 w-4" />, content: budgetTab },
         { id: 'invest', label: t('Investments', 'الاستثمارات'), icon: <TrendingUp className="h-4 w-4" />, content: investTab },
         { id: 'benefits', label: t('Gov. Benefits', 'المزايا الحكومية'), icon: <Shield className="h-4 w-4" />, content: benefitsTab },
         { id: 'tools', label: t('Tools & Resources', 'الأدوات والموارد'), icon: <Calculator className="h-4 w-4" />, content: toolsTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
