@@ -70,11 +70,11 @@ const UniversityProgramsPage: React.FC = () => {
   });
 
   const stats = [
-    { value: `${universities.length}+`, label: t('Universities & Colleges', 'الجامعات والكليات'), icon: Building },
-    { value: `${programs.length}+`, label: t('Degree Programs', 'البرامج الأكاديمية'), icon: GraduationCap },
+    { value: `${universities.length}`, label: t('Universities & Colleges', 'الجامعات والكليات'), icon: Building },
+    { value: `${programs.length}`, label: t('Degree Programs', 'البرامج الأكاديمية'), icon: GraduationCap },
     // Removed fabricated '92%' Employment Rate tile — no aggregate employment-rate
     // source exists (employment_rate is a per-program field, not a page total). (data-honesty)
-    { value: `${programs.reduce((sum, p) => sum + (p.enrolled || 0), 0).toLocaleString()}+`, label: t('Students Enrolled', 'طالب مسجّل'), icon: Users },
+    { value: `${programs.reduce((sum, p) => sum + (p.enrolled || 0), 0).toLocaleString()}`, label: t('Students Enrolled', 'طالب مسجّل'), icon: Users },
   ];
 
   const getCategoryColor = (cat: string) => {
@@ -185,7 +185,6 @@ const UniversityProgramsPage: React.FC = () => {
                       border: `1px solid ${brand.border}`,
                       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms',
-                      cursor: 'pointer',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderColor = brand.primary;
@@ -346,14 +345,17 @@ const UniversityProgramsPage: React.FC = () => {
                           <Star style={{ width: 14, height: 14, color: '#F59E0B', fill: '#F59E0B' }} />
                           <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{p.rating}</span>
                         </div>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                          background: brand.primary, color: '#fff',
-                          cursor: 'pointer', transition: 'background 150ms',
-                        }}>
-                          {t('Apply Now', 'قدّم الآن')} <ArrowIcon style={{ width: 16, height: 16 }} />
-                        </span>
+                        <button
+                          data-has-handler="true"
+                          onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${loc(p.university_name, p.university_name) || ''} ${loc(p.title, p.title) || ''} admissions`)}`, '_blank', 'noopener')}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                            background: brand.primary, color: '#fff', border: 'none',
+                            cursor: 'pointer', transition: 'background 150ms',
+                          }}>
+                          {t('How to apply', 'كيفية التقديم')} <ArrowIcon style={{ width: 16, height: 16 }} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -453,14 +455,22 @@ const UniversityProgramsPage: React.FC = () => {
                     <Globe style={{ width: 14, height: 14 }} />
                     {u.website}
                   </div>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '8px 18px', borderRadius: 20, fontSize: 13, fontWeight: 600,
-                    background: brand.primary, color: '#fff',
-                    cursor: 'pointer',
-                  }}>
-                    {t('View Programs', 'عرض البرامج')} <ArrowIcon style={{ width: 14, height: 14 }} />
-                  </span>
+                  <button
+                    data-has-handler="true"
+                    onClick={() => {
+                      const url = u.website && /^https?:\/\//.test(u.website) ? u.website
+                        : u.website ? `https://${u.website}`
+                        : `https://www.google.com/search?q=${encodeURIComponent((loc(u.name, u.name) || '') + ' UAE')}`;
+                      window.open(url, '_blank', 'noopener');
+                    }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '8px 18px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                      background: brand.primary, color: '#fff', border: 'none',
+                      cursor: 'pointer',
+                    }}>
+                    {t('Visit website', 'زيارة الموقع')} <ExternalLink style={{ width: 14, height: 14 }} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -491,7 +501,7 @@ const UniversityProgramsPage: React.FC = () => {
         </div>
       ),
     },
-  ];
+  ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
   return (
     <EducationPathwayLayout
