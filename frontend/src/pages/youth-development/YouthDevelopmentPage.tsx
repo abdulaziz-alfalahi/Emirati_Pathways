@@ -41,12 +41,9 @@ const YouthDevelopmentPage2: React.FC = () => {
 
     /* ──────────────────────── DATA ──────────────────────── */
 
-    const fallbackPrograms = [
-        { title: t('Future Leaders Initiative', 'مبادرة قادة المستقبل'), org: t('Federal Youth Authority', 'الهيئة الاتحادية للشباب'), duration: t('12 months', '12 شهراً'), ageGroup: '18–25', enrolled: 450, capacity: 500, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('Leadership', 'القيادة'), t('Mentorship', 'الإرشاد'), t('Policy', 'السياسات')], icon: '🏅', desc: t('Comprehensive program developing next-generation Emirati leaders with mentorship, project assignments, and international exposure.', 'برنامج شامل لتطوير الجيل القادم من القادة الإماراتيين من خلال الإرشاد والمهام المشروعية والتعرض الدولي.') },
-        { title: t('Youth Innovation Bootcamp', 'معسكر الابتكار الشبابي'), org: t('Dubai Future Foundation', 'مؤسسة دبي للمستقبل'), duration: t('6 weeks', '6 أسابيع'), ageGroup: '16–22', enrolled: 180, capacity: 200, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('AI', 'الذكاء الاصطناعي'), t('Startups', 'الشركات الناشئة'), t('Innovation', 'الابتكار')], icon: '🚀', desc: t('Intensive bootcamp teaching design thinking, prototyping, and entrepreneurship — with seed funding for top projects.', 'معسكر تدريبي مكثف يُعلّم التفكير التصميمي والنماذج الأولية وريادة الأعمال — مع تمويل أولي لأفضل المشاريع.') },
-    ];
-
-    const [programs, setPrograms] = useState(fallbackPrograms);
+    // No fabricated fallback programs — the list comes from the API; an empty
+    // response renders an honest empty state (data-honesty).
+    const [programs, setPrograms] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchPrograms = async () => {
@@ -103,10 +100,15 @@ const YouthDevelopmentPage2: React.FC = () => {
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
                     'Explore youth development programs across leadership, technology, entrepreneurship, culture, and national service — all designed for young Emiratis.',
-                    'استكشف أكثر من 85 برنامجاً لتطوير الشباب في مجالات القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — جميعها مصممة للشباب الإماراتي.'
+                    'استكشف برامج تطوير الشباب في مجالات القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — جميعها مصممة للشباب الإماراتي.'
                 )}
             </p>
 
+            {programs.length === 0 ? (
+                <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`, padding: 40, textAlign: 'center', color: brand.textSecondary, fontSize: 14 }}>
+                    {t('No youth programs are published yet. Please check back soon.', 'لا توجد برامج شبابية منشورة بعد. يرجى المراجعة قريباً.')}
+                </div>
+            ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
                 {programs.map((p, i) => (
                     <div
@@ -150,18 +152,22 @@ const YouthDevelopmentPage2: React.FC = () => {
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Target size={12} /> {p.enrolled}/{p.capacity}</span>
                         </div>
 
-                        <button style={{
-                            background: p.statusKey === 'Open' ? brand.primary : 'transparent',
-                            color: p.statusKey === 'Open' ? '#fff' : brand.textSecondary,
-                            border: p.statusKey === 'Open' ? 'none' : `1px solid ${brand.border}`,
-                            padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            marginTop: 'auto', width: '100%',
-                        }}>
-                            {p.statusKey === 'Open' ? t('Apply Now', 'قدّم الآن') : t('Join Waitlist', 'انضم لقائمة الانتظار')}
+                        <button
+                            data-has-handler="true"
+                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.title || ''} ${p.org || ''} UAE`)}`, '_blank', 'noopener')}
+                            style={{
+                                background: p.statusKey === 'Open' ? brand.primary : 'transparent',
+                                color: p.statusKey === 'Open' ? '#fff' : brand.textSecondary,
+                                border: p.statusKey === 'Open' ? 'none' : `1px solid ${brand.border}`,
+                                padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                                marginTop: 'auto', width: '100%',
+                            }}>
+                            {t('Find how to apply', 'كيفية التقديم')}
                         </button>
                     </div>
                 ))}
             </div>
+            )}
         </div>
     );
 
@@ -265,7 +271,10 @@ const YouthDevelopmentPage2: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <button style={{ background: brand.primary, color: '#fff', border: 'none', padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 14, width: '100%' }}>
+                        <button
+                            data-has-handler="true"
+                            onClick={() => { window.location.href = '/training'; }}
+                            style={{ background: brand.primary, color: '#fff', border: 'none', padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 14, width: '100%' }}>
                             {t('Explore Courses', 'استكشف الدورات')}
                         </button>
                     </div>
@@ -278,7 +287,10 @@ const YouthDevelopmentPage2: React.FC = () => {
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{t('Skills Assessment & Development Plan', 'تقييم المهارات وخطة التطوير')}</h3>
                     <p style={{ fontSize: 13, color: brand.textSecondary, margin: 0 }}>{t('Take a personalized assessment and get a tailored learning roadmap.', 'أجرِ تقييماً مخصصاً واحصل على خارطة طريق تعليمية مصممة لك.')}</p>
                 </div>
-                <button style={{ background: brand.primary, color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                    data-has-handler="true"
+                    onClick={() => { window.location.href = '/assessments'; }}
+                    style={{ background: brand.primary, color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                     {t('Start Assessment', 'ابدأ التقييم')} <ArrowIcon size={16} />
                 </button>
             </div>
@@ -316,8 +328,11 @@ const YouthDevelopmentPage2: React.FC = () => {
                         'انضم إلى الشباب الإماراتي الذين يبنون مستقبلهم. قدّم لبرنامج، ابحث عن مرشد، وابدأ بتطوير المهارات المهمة.'
                     )}
                 </p>
-                <button style={{ background: brand.primary, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    {t('Browse Programs', 'تصفّح البرامج')} <ArrowIcon size={18} />
+                <button
+                    data-has-handler="true"
+                    onClick={() => { window.location.href = '/training'; }}
+                    style={{ background: brand.primary, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {t('Explore Training', 'استكشف التدريب')} <ArrowIcon size={18} />
                 </button>
             </div>
         </div>
@@ -325,19 +340,21 @@ const YouthDevelopmentPage2: React.FC = () => {
 
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
+    // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+    // firing a false "Coming soon" toast on the now-functional buttons.
     const tabs = [
         { id: 'programs', label: t('Programs', 'البرامج'), icon: <Target className="h-4 w-4" />, content: programsTab },
         { id: 'leadership', label: t('Leadership', 'القيادة'), icon: <Award className="h-4 w-4" />, content: leadershipTab },
         { id: 'skills', label: t('Skills', 'المهارات'), icon: <BookOpen className="h-4 w-4" />, content: skillsTab },
         { id: 'stories', label: t('Success Stories', 'قصص النجاح'), icon: <Star className="h-4 w-4" />, content: storiesTab },
-    ];
+    ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
     return (
         <EducationPathwayLayout
             title={t('Youth Development', 'تطوير الشباب')}
             description={t(
                 "Empowering young Emiratis through development programs in leadership, technology, entrepreneurship, culture, and national service — building the UAE's future workforce",
-                'تمكين الشباب الإماراتي من خلال أكثر من 85 برنامجاً تطويرياً في القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — بناء القوى العاملة المستقبلية للإمارات'
+                'تمكين الشباب الإماراتي من خلال برامج تطويرية في القيادة والتكنولوجيا وريادة الأعمال والثقافة والخدمة الوطنية — بناء القوى العاملة المستقبلية للإمارات'
             )}
             icon={<Users className="h-6 w-6" />}
             stats={stats}
