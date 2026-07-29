@@ -1132,14 +1132,18 @@ const ExecutiveDashboard: React.FC = () => {
                       <h4 className="text-xs font-dubai-bold text-slate-500 uppercase tracking-wider mb-1">{b('Observation', 'الملاحظة')}</h4>
                       <p className="text-sm text-slate-700 font-dubai-medium">{selectedInsight.description}</p>
                     </div>
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-dubai-bold text-slate-700 uppercase tracking-wider">{b('Recommended Actions', 'الإجراءات الموصى بها')}</h4>
-                      <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 font-dubai-medium">
-                        <li>{b('Review target guidelines with private sector partners.', 'مراجعة المبادئ التوجيهية المستهدفة مع شركاء القطاع الخاص.')}</li>
-                        <li>{b('Deploy incentive matching grants to accelerate placements.', 'نشر منح مطابقة الحوافز لتسريع التعيينات.')}</li>
-                        <li>{b('Coordinate with regional authorities to resolve bottlenecks.', 'التنسيق مع السلطات الإقليمية لحل العقبات.')}</li>
-                      </ul>
-                    </div>
+                    {/* Actions come from the insight itself — no canned bullets
+                        pretending every insight has the same three remedies. */}
+                    {Array.isArray(selectedInsight.actions) && selectedInsight.actions.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-dubai-bold text-slate-700 uppercase tracking-wider">{b('Recommended Actions', 'الإجراءات الموصى بها')}</h4>
+                        <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 font-dubai-medium">
+                          {selectedInsight.actions.map((action: string, i: number) => (
+                            <li key={i}>{action}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter className="flex gap-2">
                     <Button variant="outline" onClick={() => setSelectedInsight(null)} className="font-dubai-medium flex-1">

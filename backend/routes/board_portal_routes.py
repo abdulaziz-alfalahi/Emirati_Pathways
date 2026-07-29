@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import get_jwt_identity
 from datetime import datetime, timedelta
 import logging
 from psycopg2.extras import RealDictCursor
@@ -119,9 +120,12 @@ def handle_directives():
             
     elif request.method == 'POST':
         data = request.json
-        # Handle optional_auth behavior where user might be None if no token, 
-        # mock author_id if no proper auth for this demo sprint
-        author_id = getattr(request, 'user', {}).get('id', '784000000000140') 
+        # require_roles guarantees a verified JWT here; the author is the real
+        # caller, never a placeholder (the old fallback stamped every directive
+        # with a fixed synthetic EID, fabricating the audit trail).
+        author_id = get_jwt_identity()
+        if not author_id:
+            return jsonify({'error': 'Could not resolve authenticated user'}), 401
         
         try:
             query = """
@@ -139,7 +143,11 @@ def handle_directives():
 @optional_auth
 def respond_directive(directive_id):
     data = request.json
-    responder_id = getattr(request, 'user', {}).get('id', '784000000000140')
+    # Same fix as directive creation: the responder is the verified caller,
+    # never a fixed synthetic EID.
+    responder_id = get_jwt_identity()
+    if not responder_id:
+        return jsonify({'error': 'Could not resolve authenticated user'}), 401
     
     try:
         query = """
@@ -209,16 +217,13 @@ def get_briefing_pack():
         else:
             md.append("No active directives found.")
             
-        md.append("\n## 3. Strategic AI Insights & Recommendations")
-        md.append("\n### Insight A: Placement Rate Growth")
-        md.append("- **Theme:** Talent Supply")
-        md.append("- **Details:** Abu Dhabi placement rate increased by 12%, driven primarily by the technology sector.")
-        md.append("\n### Insight B: Company Inactivity Warning")
-        md.append("- **Theme:** Company Demand")
-        md.append("- **Details:** 3 major enterprise companies have not posted new roles in the last 30 days.")
-        md.append("\n### Insight C: Registration Surge")
-        md.append("- **Theme:** Platform Health")
-        md.append("- **Details:** 45 candidates completed their profile this week vs. 28 last week.")
+        # No fabricated insights in a document a board member can circulate —
+        # the old Insight A/B/C blocks asserted specific figures (+12% Abu Dhabi
+        # placements, "45 vs 28 profiles") that were never derived from data.
+        md.append("\n## 3. Strategic Insights & Recommendations")
+        md.append("Data-driven insights are not yet computed for this platform. "
+                  "This section will populate automatically once a real analytics "
+                  "source is connected.")
         
         md_content = "\n".join(md)
         
