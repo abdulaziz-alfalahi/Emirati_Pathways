@@ -4,7 +4,7 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import DemandSignalsTab from '@/components/nafis/DemandSignalsTab';
 import {
-    Users, Upload, UserCheck, BarChart3, Settings, Search,
+    Users, Upload, UserCheck, BarChart3, Search,
     CheckCircle, Clock, AlertTriangle, TrendingUp, FileText,
     ArrowUp, ArrowDown, Filter, Download, RefreshCw, Eye,
     Loader2, X, ChevronLeft, ChevronRight, Send, Mail,
@@ -260,7 +260,9 @@ const NafisTalentDashboard: React.FC = () => {
         { id: 'audit', label: t('Profile Audit', 'تدقيق الملفات'), icon: UserCheck },
         { id: 'demand', label: t('Demand Signals', 'إشارات الطلب'), icon: Building2 },
         { id: 'tracking', label: t('Placement Tracking', 'تتبع التوظيف'), icon: TrendingUp },
-        { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
+        // No Settings tab: it displayed four invented values (auto-sync schedule,
+        // completeness threshold, match minimum, EID verification) with no store
+        // behind them. Reinstate only when a real settings source exists.
     ];
 
     // ─── Data Fetching ───
@@ -312,7 +314,6 @@ const NafisTalentDashboard: React.FC = () => {
     const fetchFilterOptions = async () => {
         try {
             const res = await restClient.get('/api/nafis-talent/filter-options');
-            console.log('[NAFIS] filter-options response:', res.data);
             setFilterOptions(res.data || {});
         } catch (err) {
             console.error('Failed to fetch filter options:', err);
@@ -985,26 +986,6 @@ const NafisTalentDashboard: React.FC = () => {
         );
     };
 
-    // ─── Settings Tab (unchanged) ───
-    const renderSettings = () => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {[
-                { title: t('Auto-sync Schedule', 'جدول المزامنة التلقائية'), desc: t('Configure automatic NAFIS database sync interval', 'ضبط فترة المزامنة التلقائية مع قاعدة بيانات نافس'), value: t('Daily at 2:00 AM', 'يومياً الساعة 2:00 صباحاً') },
-                { title: t('Profile Completeness Threshold', 'حد اكتمال الملف الشخصي'), desc: t('Minimum fields required before a profile is marked complete', 'الحد الأدنى للحقول المطلوبة لاعتبار الملف مكتملاً'), value: '85%' },
-                { title: t('Match Score Minimum', 'الحد الأدنى لدرجة المطابقة'), desc: t('Minimum AI match score for job recommendations', 'الحد الأدنى لدرجة المطابقة بالذكاء الاصطناعي لتوصيات الوظائف'), value: '70%' },
-                { title: t('Emirates ID Verification', 'التحقق من الهوية الإماراتية'), desc: t('Require Emirates ID verification for all imports', 'طلب التحقق من الهوية الإماراتية لجميع عمليات الاستيراد'), value: t('Enabled', 'مفعّل') },
-            ].map((s, i) => (
-                <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{s.title}</div>
-                        <div style={{ fontSize: 13, color: brand.textSecondary, marginTop: 2 }}>{s.desc}</div>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: brand.primary, background: brand.blueBg, padding: '6px 14px', borderRadius: 6 }}>{s.value}</span>
-                </div>
-            ))}
-        </div>
-    );
-
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: brand.bg }}>
             <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={language} />
@@ -1036,7 +1017,6 @@ const NafisTalentDashboard: React.FC = () => {
                 {activeTab === 'audit' && renderProfileAudit()}
                 {activeTab === 'demand' && <DemandSignalsTab isRTL={isRTL} t={t} />}
                 {activeTab === 'tracking' && renderPlacementTracking()}
-                {activeTab === 'settings' && renderSettings()}
             </div>
         </div>
     );
