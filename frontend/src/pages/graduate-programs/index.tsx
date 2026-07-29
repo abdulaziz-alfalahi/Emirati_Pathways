@@ -97,11 +97,13 @@ const GraduateProgramsPage: React.FC = () => {
     return matchType && matchSearch;
   });
 
+  // Real counts derived from the loaded programs — no fabricated figures.
+  const uniCount = new Set(programs.map(p => (p.university || '').trim()).filter(Boolean)).size;
+  const gradEnrolled = programs.reduce((s: number, p: any) => s + (p.enrolled || 0), 0);
   const stats = [
-    { value: '25+', label: t('Graduate Programs', 'برامج الدراسات العليا'), icon: GraduationCap },
-    { value: '15+', label: t('Partner Universities', 'الجامعات الشريكة'), icon: Building },
-    { value: '800+', label: t('Graduate Students', 'طلاب الدراسات العليا'), icon: Users },
-    { value: '94%', label: t('Employment Rate', 'نسبة التوظيف'), icon: Target },
+    { value: `${programs.length}`, label: t('Graduate Programs', 'برامج الدراسات العليا'), icon: GraduationCap },
+    { value: `${uniCount}`, label: t('Partner Universities', 'الجامعات الشريكة'), icon: Building },
+    { value: `${gradEnrolled}`, label: t('Graduate Students', 'طلاب الدراسات العليا'), icon: Users },
   ];
 
   const tabs = [
@@ -174,7 +176,6 @@ const GraduateProgramsPage: React.FC = () => {
                     border: `1px solid ${brand.border}`,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms',
-                    cursor: 'pointer',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.borderColor = brand.primary;
@@ -299,14 +300,17 @@ const GraduateProgramsPage: React.FC = () => {
                         <Star style={{ width: 14, height: 14, color: '#F59E0B', fill: '#F59E0B' }} />
                         <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{p.rating}</span>
                       </div>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                        background: brand.primary, color: '#fff',
-                        cursor: 'pointer', transition: 'background 150ms',
-                      }}>
-                        {t('Apply Now', 'قدّم الآن')} <ArrowIcon style={{ width: 16, height: 16 }} />
-                      </span>
+                      <button
+                        data-has-handler="true"
+                        onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.university || ''} ${p.title || ''} graduate admissions`)}`, '_blank', 'noopener')}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                          background: brand.primary, color: '#fff', border: 'none',
+                          cursor: 'pointer', transition: 'background 150ms',
+                        }}>
+                        {t('How to apply', 'كيفية التقديم')} <ArrowIcon style={{ width: 16, height: 16 }} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -403,7 +407,7 @@ const GraduateProgramsPage: React.FC = () => {
         </div>
       ),
     },
-  ];
+  ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
   return (
     <EducationPathwayLayout
