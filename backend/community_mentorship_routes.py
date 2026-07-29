@@ -47,7 +47,7 @@ def my_communities():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT c.id, c.name, c.name_ar, c.description, c.description_ar,
-                   c.category, c.category_ar, c.avatar, c.members, c.posts,
+                   c.category, c.category_ar, c.avatar, c.members, c.posts_count AS posts,
                    c.verified, cm.created_at AS joined_at
             FROM community_memberships cm
             JOIN communities c ON c.id = cm.community_id
