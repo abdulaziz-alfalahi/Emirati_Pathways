@@ -4,6 +4,7 @@ Endpoints for communities, feed, events, mentors, and mentorship stats
 """
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2
 import psycopg2.extras
 import logging
@@ -29,6 +30,87 @@ def _safe_json(val):
         except (json.JSONDecodeError, TypeError):
             return []
     return val
+
+
+# ─────────────────────────────────────────────
+# Community memberships (EID-keyed, JWT-scoped) — migration 039
+# ─────────────────────────────────────────────
+@community_mentorship_bp.route('/my-communities', methods=['GET'])
+@jwt_required()
+def my_communities():
+    """The caller's joined communities (ids + details)."""
+    user_id = str(get_jwt_identity())
+    conn = _get_conn()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database unavailable'}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT c.id, c.name, c.name_ar, c.description, c.description_ar,
+                   c.category, c.category_ar, c.avatar, c.members, c.posts,
+                   c.verified, cm.created_at AS joined_at
+            FROM community_memberships cm
+            JOIN communities c ON c.id = cm.community_id
+            WHERE cm.user_id = %s
+            ORDER BY cm.created_at DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True,
+                        'community_ids': [r['id'] for r in rows],
+                        'communities': [dict(r) for r in rows]})
+    except Exception as e:
+        conn.close()
+        logger.error(f"my_communities failed: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@community_mentorship_bp.route('/communities/<int:community_id>/join', methods=['POST'])
+@jwt_required()
+def join_community(community_id):
+    """Join a community (idempotent)."""
+    user_id = str(get_jwt_identity())
+    conn = _get_conn()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database unavailable'}), 503
+    try:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO community_memberships (user_id, community_id) "
+                    "VALUES (%s, %s) ON CONFLICT (user_id, community_id) DO NOTHING",
+                    (user_id, community_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'joined': True}), 201
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        logger.error(f"join_community failed: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@community_mentorship_bp.route('/communities/<int:community_id>/leave', methods=['POST', 'DELETE'])
+@jwt_required()
+def leave_community(community_id):
+    """Leave a community."""
+    user_id = str(get_jwt_identity())
+    conn = _get_conn()
+    if not conn:
+        return jsonify({'success': False, 'error': 'Database unavailable'}), 503
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM community_memberships WHERE user_id = %s AND community_id = %s",
+                    (user_id, community_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'joined': False})
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        logger.error(f"leave_community failed: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ─────────────────────────────────────────────
