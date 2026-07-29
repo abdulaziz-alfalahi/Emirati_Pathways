@@ -143,7 +143,11 @@ def handle_directives():
 @optional_auth
 def respond_directive(directive_id):
     data = request.json
-    responder_id = getattr(request, 'user', {}).get('id', '784000000000140')
+    # Same fix as directive creation: the responder is the verified caller,
+    # never a fixed synthetic EID.
+    responder_id = get_jwt_identity()
+    if not responder_id:
+        return jsonify({'error': 'Could not resolve authenticated user'}), 401
     
     try:
         query = """
