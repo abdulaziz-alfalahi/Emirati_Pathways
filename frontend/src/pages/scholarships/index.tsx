@@ -402,7 +402,9 @@ const ScholarshipsPage: React.FC = () => {
     );
   };
 
-  const tabs = [
+  // stopPropagation keeps EducationPathwayLayout's content-click delegation from
+  // firing a false "Coming soon" toast on the Apply / filter / retry buttons.
+  const tabs = ([
     {
       id: 'available', label: t('Available Scholarships', 'المنح المتاحة'),
       icon: <Award className="h-4 w-4" />,
@@ -430,7 +432,7 @@ const ScholarshipsPage: React.FC = () => {
         </div>
       )
     }
-  ];
+  ]).map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
   return (
     <EducationPathwayLayout
