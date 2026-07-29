@@ -36,61 +36,6 @@ const brand = {
   textTertiary: '#9CA3AF',
 };
 
-// Mock data
-const mockPrograms = [
-  {
-    id: 'prog-001',
-    title: { en: 'Advanced STEM Innovation Program', ar: 'برنامج الابتكار المتقدم في العلوم والتكنولوجيا' },
-    description: {
-      en: 'A comprehensive STEM program focusing on robotics, AI, and sustainable technology solutions for future innovators.',
-      ar: 'برنامج شامل في العلوم والتكنولوجيا يركز على الروبوتات والذكاء الاصطناعي.'
-    },
-    school: { name: { en: 'Dubai International Academy', ar: 'أكاديمية دبي الدولية' }, location: 'Al Barsha, Dubai' },
-    category: 'STEM',
-    ageRange: { min: 14, max: 18 },
-    duration: '2 years',
-    fees: { currency: 'AED', amount: 25000 },
-    rating: 4.8,
-    enrolledStudents: 120,
-    maxCapacity: 150,
-    featured: true
-  },
-  {
-    id: 'prog-002',
-    title: { en: 'Creative Arts Excellence Program', ar: 'برنامج التميز في الفنون الإبداعية' },
-    description: {
-      en: 'Develop artistic talents through comprehensive visual and performing arts education with world-class mentors.',
-      ar: 'تطوير المواهب الفنية من خلال التعليم الشامل للفنون البصرية والأدائية.'
-    },
-    school: { name: { en: 'GEMS Wellington Academy', ar: 'أكاديمية جيمس ويلينغتون' }, location: 'Silicon Oasis, Dubai' },
-    category: 'Arts',
-    ageRange: { min: 12, max: 17 },
-    duration: '3 years',
-    fees: { currency: 'AED', amount: 22000 },
-    rating: 4.6,
-    enrolledStudents: 85,
-    maxCapacity: 100,
-    featured: true
-  },
-  {
-    id: 'prog-003',
-    title: { en: 'Sports Leadership Academy', ar: 'أكاديمية القيادة الرياضية' },
-    description: {
-      en: 'Combine athletic excellence with leadership development and academic achievement in a structured program.',
-      ar: 'دمج التميز الرياضي مع تطوير القيادة والإنجاز الأكاديمي.'
-    },
-    school: { name: { en: 'American School of Dubai', ar: 'المدرسة الأمريكية في دبي' }, location: 'Jumeirah, Dubai' },
-    category: 'Sports',
-    ageRange: { min: 13, max: 18 },
-    duration: '4 years',
-    fees: { currency: 'AED', amount: 28000 },
-    rating: 4.7,
-    enrolledStudents: 95,
-    maxCapacity: 120,
-    featured: false
-  }
-];
-
 const SchoolProgramsPage: React.FC = () => {
   const { i18n } = useTranslation();
   const lang = (i18n.language === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
@@ -135,8 +80,9 @@ const SchoolProgramsPage: React.FC = () => {
         setPrograms(transformedPrograms);
         setFilteredPrograms(transformedPrograms);
       } catch {
-        setPrograms(mockPrograms);
-        setFilteredPrograms(mockPrograms);
+        // Honest empty on failure — never substitute fabricated programs (#26).
+        setPrograms([]);
+        setFilteredPrograms([]);
       } finally {
         setLoading(false);
       }
@@ -163,11 +109,13 @@ const SchoolProgramsPage: React.FC = () => {
   const closeProgramModal = () => { setSelectedProgram(null); setShowProgramModal(false); };
   const enrollmentPercent = (enrolled: number, max: number) => Math.round((enrolled / max) * 100);
 
-  // Stats for the layout
+  // Stats for the layout — real counts derived from the loaded programs.
+  const schoolCount = new Set(programs.map((p: any) => p.school?.name?.en).filter(Boolean)).size;
+  const enrolledTotal = programs.reduce((s: number, p: any) => s + (p.enrolledStudents || 0), 0);
   const stats = [
     { value: `${programs.length}`, label: t('Programs', 'برنامج'), icon: GraduationCap },
-    { value: '3', label: t('Schools', 'مدارس'), icon: Building2 },
-    { value: '300+', label: t('Students', 'طالب'), icon: TrendingUp },
+    { value: `${schoolCount}`, label: t('Schools', 'مدارس'), icon: Building2 },
+    { value: `${enrolledTotal}`, label: t('Enrolled Students', 'طالب مسجّل'), icon: TrendingUp },
   ];
 
   // Programs grid content (shared across tabs)
@@ -570,29 +518,26 @@ const SchoolProgramsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* CTAs */}
+                  {/* Applications for school programs are handled by the school
+                      directly (no in-app enrolment backend). Point the user to the
+                      school so the button does something real, and be explicit. */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <button style={{
-                      width: '100%', padding: '12px 24px', borderRadius: 12,
-                      background: brand.primary, color: '#fff', fontWeight: 600, fontSize: 14,
-                      border: 'none', cursor: 'pointer', transition: 'background 150ms'
-                    }}
+                    <button
+                      onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${selectedProgram.school.name.en} ${selectedProgram.title.en} admissions`)}`, '_blank', 'noopener')}
+                      style={{
+                        width: '100%', padding: '12px 24px', borderRadius: 12,
+                        background: brand.primary, color: '#fff', fontWeight: 600, fontSize: 14,
+                        border: 'none', cursor: 'pointer', transition: 'background 150ms',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                      }}
                       onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
                       onMouseLeave={e => e.currentTarget.style.background = brand.primary}
                     >
-                      {t('Apply Now', 'تقدم الآن')}
+                      {t('Find how to apply', 'كيفية التقديم')} <ArrowRight size={16} />
                     </button>
-                    <button style={{
-                      width: '100%', padding: '12px 24px', borderRadius: 12,
-                      background: '#fff', color: brand.primary, fontWeight: 600, fontSize: 14,
-                      border: `1px solid ${brand.primary}`, cursor: 'pointer',
-                      transition: 'background 150ms'
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = brand.primarySurface}
-                      onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-                    >
-                      {t('Download Brochure', 'تحميل الكتيب')}
-                    </button>
+                    <p style={{ fontSize: 12, color: brand.textTertiary, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+                      {t('Applications are handled directly by the school.', 'تتم معالجة الطلبات مباشرةً من قبل المدرسة.')}
+                    </p>
                   </div>
                 </div>
               </div>
