@@ -80,11 +80,15 @@ const SummerCampsPage: React.FC = () => {
   });
 
 
+  // Real counts derived from the loaded camps — no fabricated figures.
+  const enrolledTotal = camps.reduce((s: number, c: any) => s + (c.enrolled || 0), 0);
+  const categoryCount = new Set(camps.map((c: any) => c.category).filter(Boolean)).size;
+  const locationCount = new Set(camps.map((c: any) => c.location).filter(Boolean)).size;
   const stats = [
-    { value: '+50', label: t('Knowledge Programs', 'برامج معرفية'), icon: BookOpen },
-    { value: '+1,200', label: t('Students Enrolled', 'الطلاب المسجلين'), icon: Users },
-    { value: '+15', label: t('Partner Institutions', 'المؤسسات الشريكة'), icon: Calendar },
-    { value: '7', label: t('Emirates Covered', 'الإمارات المشمولة'), icon: Trophy },
+    { value: `${camps.length}`, label: t('Knowledge Programs', 'برامج معرفية'), icon: BookOpen },
+    { value: `${enrolledTotal}`, label: t('Students Enrolled', 'الطلاب المسجلين'), icon: Users },
+    { value: `${categoryCount}`, label: t('Categories', 'الفئات'), icon: Calendar },
+    { value: `${locationCount}`, label: t('Locations', 'المواقع'), icon: Trophy },
   ];
 
   const tabs = [
@@ -155,7 +159,6 @@ const SummerCampsPage: React.FC = () => {
                     border: `1px solid ${brand.border}`,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     overflow: 'hidden', transition: 'border-color 150ms',
-                    cursor: 'pointer',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = brand.primary)}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = brand.border)}
@@ -225,12 +228,15 @@ const SummerCampsPage: React.FC = () => {
                     {/* Footer */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 18, fontWeight: 600, color: brand.primary }}>{camp.price}</span>
-                      <span style={{
-                        display: 'flex', alignItems: 'center', gap: 4,
-                        fontSize: 14, fontWeight: 500, color: brand.primary, cursor: 'pointer',
-                      }}>
-                        {t('Register', 'سجل الآن')} <ArrowRight style={{ width: 16, height: 16 }} />
-                      </span>
+                      <button
+                        data-has-handler="true"
+                        onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(camp.title.en + ' Dubai registration')}`, '_blank', 'noopener')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0,
+                          fontSize: 14, fontWeight: 500, color: brand.primary, cursor: 'pointer',
+                        }}>
+                        {t('Find how to register', 'كيفية التسجيل')} <ArrowRight style={{ width: 16, height: 16 }} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -270,7 +276,7 @@ const SummerCampsPage: React.FC = () => {
         </div>
       )
     }
-  ];
+  ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
 
   return (
     <EducationPathwayLayout
