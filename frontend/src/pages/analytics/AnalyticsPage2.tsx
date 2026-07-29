@@ -62,13 +62,9 @@ const FALLBACK: AnalyticsData = {
         interview_rate: 0, skills_count: 0, certifications_count: 0,
         portfolio_projects: 0, application_statuses: {},
     },
-    skills: [
-        { name: 'Project Management', level: 70, demand: 'High' },
-        { name: 'Data Analysis', level: 65, demand: 'Very High' },
-        { name: 'Cloud Computing', level: 55, demand: 'High' },
-        { name: 'Leadership', level: 80, demand: 'Medium' },
-        { name: 'Communication', level: 75, demand: 'High' },
-    ],
+    // No fabricated skills — an empty profile shows an honest empty state, never
+    // invented skills with invented levels (data-honesty).
+    skills: [],
     certifications: [],
     goals: [],
     recent_applications: [],
@@ -93,8 +89,7 @@ const AnalyticsPage: React.FC = () => {
             try {
                 const res = await restClient.get('/api/career-services/analytics/candidate');
                 const d = res.data as AnalyticsData;
-                // If user has no skills data at all, merge fallback skills so the page isn't empty
-                if (!d.skills || d.skills.length === 0) d.skills = FALLBACK.skills;
+                if (!d.skills) d.skills = [];
                 setData(d);
             } catch (err) {
                 console.error('Failed to load candidate analytics:', err);
@@ -441,9 +436,6 @@ const AnalyticsPage: React.FC = () => {
                             <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{insight.title}</h4>
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{insight.desc}</p>
                         </div>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer', marginTop: 'auto' }}>
-                            {t('View Details', 'عرض التفاصيل')} <ChevronIcon size={14} />
-                        </span>
                     </div>
                 ))}
             </div>
