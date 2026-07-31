@@ -4,9 +4,10 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import {
     ClipboardCheck, Building2, Award, Calendar, Settings, Users,
-    CheckCircle, Clock, TrendingUp, Plus, Search, Eye, BarChart3
+    CheckCircle, Clock, TrendingUp, Plus, Search, Eye, BarChart3, MessageSquare
 } from 'lucide-react';
 import AssessmentCentersManager from '@/components/assessor/AssessmentCentersManager';
+import Messages from '@/components/recruiter/Messages';
 
 const brand = {
     primary: '#D97706', secondary: '#F59E0B', accent: '#FCD34D',
@@ -54,6 +55,7 @@ const AssessmentOperatorDashboard: React.FC = () => {
         { id: 'centers', label: t('Assessment Centers', 'مراكز التقييم'), icon: Building2 },
         { id: 'certifications', label: t('Certifications', 'الشهادات'), icon: Award },
         { id: 'schedule', label: t('Schedule', 'الجدول'), icon: Calendar },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -236,6 +238,7 @@ const AssessmentOperatorDashboard: React.FC = () => {
                 {activeTab === 'centers' && <AssessmentCentersManager />}
                 {!loading && activeTab === 'certifications' && renderCertifications()}
                 {!loading && activeTab === 'schedule' && renderSchedule()}
+                {activeTab === 'messages' && <Messages senderRole="assessment_operator" showNewConversation />}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>

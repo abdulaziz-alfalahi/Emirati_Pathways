@@ -4,9 +4,10 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import {
     Award, BookOpen, Settings, Search,
-    Clock, TrendingUp, Plus, Users, Eye, Shield, X, Check, AlertCircle, Building2
+    Clock, TrendingUp, Plus, Users, Eye, Shield, X, Check, AlertCircle, Building2, MessageSquare
 } from 'lucide-react';
 import TrainingCentersManager from '@/components/education/TrainingCentersManager';
+import Messages from '@/components/recruiter/Messages';
 
 const brand = {
     primary: '#0D9488', secondary: '#14B8A6', accent: '#5EEAD4',
@@ -193,6 +194,7 @@ const ProfessionalDevDashboard: React.FC = () => {
         { id: 'centers', label: t('Training Centers', 'مراكز التدريب'), icon: Building2 },
         { id: 'training', label: t('Training', 'التدريب'), icon: BookOpen },
         { id: 'certifications', label: t('Certifications', 'الشهادات'), icon: Award },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -400,6 +402,7 @@ const ProfessionalDevDashboard: React.FC = () => {
                 {activeTab === 'centers' && <TrainingCentersManager />}
                 {!loading && activeTab === 'training' && renderTraining()}
                 {!loading && activeTab === 'certifications' && renderCertifications()}
+                {activeTab === 'messages' && <Messages senderRole="professional_dev_operator" showNewConversation />}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
 

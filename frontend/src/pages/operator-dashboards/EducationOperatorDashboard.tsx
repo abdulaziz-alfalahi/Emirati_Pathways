@@ -5,9 +5,10 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
     GraduationCap, Building2, BookOpen, Users, Settings,
-    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle
+    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle, MessageSquare
 } from 'lucide-react';
 import InstitutionsManager from '@/components/education/InstitutionsManager';
+import Messages from '@/components/recruiter/Messages';
 
 const brand = {
     primary: '#6D28D9', secondary: '#7C3AED', accent: '#A78BFA',
@@ -73,6 +74,7 @@ const EducationOperatorDashboard: React.FC = () => {
         { id: 'programs', label: t('Programs', 'البرامج'), icon: BookOpen },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
         { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -423,6 +425,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
                 {!loading && activeTab === 'requests' && renderRoleRequests()}
+                {activeTab === 'messages' && <Messages senderRole="education_operator" showNewConversation />}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>

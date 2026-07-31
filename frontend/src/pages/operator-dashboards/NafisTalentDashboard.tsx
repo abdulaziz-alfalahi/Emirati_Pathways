@@ -3,6 +3,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import DemandSignalsTab from '@/components/nafis/DemandSignalsTab';
+import Messages from '@/components/recruiter/Messages';
 import {
     Users, Upload, UserCheck, BarChart3, Search,
     CheckCircle, Clock, AlertTriangle, TrendingUp, FileText,
@@ -260,6 +261,7 @@ const NafisTalentDashboard: React.FC = () => {
         { id: 'audit', label: t('Profile Audit', 'تدقيق الملفات'), icon: UserCheck },
         { id: 'demand', label: t('Demand Signals', 'إشارات الطلب'), icon: Building2 },
         { id: 'tracking', label: t('Placement Tracking', 'تتبع التوظيف'), icon: TrendingUp },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: Mail },
         // No Settings tab: it displayed four invented values (auto-sync schedule,
         // completeness threshold, match minimum, EID verification) with no store
         // behind them. Reinstate only when a real settings source exists.
@@ -1017,6 +1019,7 @@ const NafisTalentDashboard: React.FC = () => {
                 {activeTab === 'audit' && renderProfileAudit()}
                 {activeTab === 'demand' && <DemandSignalsTab isRTL={isRTL} t={t} />}
                 {activeTab === 'tracking' && renderPlacementTracking()}
+                {activeTab === 'messages' && <Messages senderRole="talent_operator" showNewConversation />}
             </div>
         </div>
     );
