@@ -384,22 +384,17 @@ class CommunicationService:
                         # Ensure it's active/unarchived for both if it exists
                         # If I am creating it, I should see it even if I hid it before.
                         
-                        if participant_roles:
-                             # Also update ROLES if provided (fixes legacy/broken conversations)
-                             for user_id, role in participant_roles.items():
-                                  if role:
-                                      cur.execute("""
-                                          UPDATE conversation_participants
-                                          SET role = %s, is_archived = FALSE
-                                          WHERE conversation_id = %s AND user_id = %s
-                                      """, (role, existing['id'], str(user_id)))
-                        else:
-                            # Fallback just unarchive
-                            cur.execute("""
-                                UPDATE conversation_participants 
-                                SET is_archived = FALSE 
-                                WHERE conversation_id = %s AND user_id IN %s
-                            """, (existing['id'], tuple(participants)))
+                        # Un-archive only. The old branch also OVERWROTE both
+                        # participants' stored roles with the (client-supplied)
+                        # participant_roles map — one create call could relabel
+                        # a thread out of the counterpart's inbox. Roles are
+                        # only ever set for one's own row on send, or at
+                        # creation of a genuinely new conversation below.
+                        cur.execute("""
+                            UPDATE conversation_participants
+                            SET is_archived = FALSE
+                            WHERE conversation_id = %s AND user_id IN %s
+                        """, (existing['id'], tuple(participants)))
                             
                         conn.commit() # Commit un-archive
                         self.logger.info(f"Returning existing conversation {existing['id']}")
@@ -653,26 +648,16 @@ class CommunicationService:
                 sender_role = metadata.get('sender_role') if metadata else None
                 
                 if sender_role:
-                   # Update Sender Role
+                   # Update ONLY the sender's own participant row. The old code
+                   # also rewrote every OTHER participant's role from the
+                   # sender's self-declared (client-controlled) sender_role —
+                   # which relabelled threads out of the counterpart's inbox
+                   # (the "my messages disappeared" reports).
                    cur.execute("""
-                       UPDATE conversation_participants 
-                       SET role = %s 
+                       UPDATE conversation_participants
+                       SET role = %s
                        WHERE conversation_id = %s AND user_id = %s AND (role IS NULL OR role != %s)
                    """, (sender_role, conversation_id, sender_id, sender_role))
-
-                   # Update Recipient Role (Infer)
-                   recipient_role = None
-                   if sender_role == 'recruiter':
-                        recipient_role = 'candidate'
-                   elif sender_role == 'candidate':
-                        recipient_role = 'recruiter'
-                   
-                   if recipient_role:
-                       cur.execute("""
-                           UPDATE conversation_participants 
-                           SET role = %s 
-                           WHERE conversation_id = %s AND user_id != %s AND (role IS NULL OR role != %s)
-                       """, (recipient_role, conversation_id, sender_id, recipient_role))
 
                 cur.execute("""
                     UPDATE conversation_participants 
@@ -681,12 +666,15 @@ class CommunicationService:
                 """, (conversation_id, tuple(participants_to_active)))
                 self.logger.info(f"Un-archive result (rows updated): {cur.rowcount}")
 
-                # Insert Message
+                # Insert Message (recipient_id was accepted but never written —
+                # 100% of live rows had it NULL, which also made
+                # mark_messages_read's recipient_id filter dead)
                 cur.execute("""
-                    INSERT INTO messages (conversation_id, sender_id, content, message_type, metadata, status)
-                    VALUES (%s, %s, %s, %s, %s, 'sent')
+                    INSERT INTO messages (conversation_id, sender_id, recipient_id, content, message_type, metadata, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'sent')
                     RETURNING id, created_at, status
-                """, (conversation_id, sender_id, content, message_type.value, json.dumps(metadata or {})))
+                """, (conversation_id, sender_id, str(recipient_id) if recipient_id else None,
+                      content, message_type.value, json.dumps(metadata or {})))
                 
                 msg_row = cur.fetchone()
                 
@@ -789,38 +777,42 @@ class CommunicationService:
                 # Find all conversation IDs for user
                 self.logger.info(f"DEBUG: get_user_conversations querying for user_id={user_id} role={role}")
                 
+                # NO role filter: the old role-variant map only knew
+                # candidate/recruiter spellings, so participant rows stamped
+                # 'user', 'admin', 'call_center_agent' or 'mentor' made whole
+                # threads invisible ("my messages disappeared"). A user sees
+                # every conversation they participate in, full stop.
                 query = """
-                    SELECT conversation_id FROM conversation_participants 
+                    SELECT conversation_id FROM conversation_participants
                     WHERE user_id = %s AND (is_archived IS FALSE OR is_archived IS NULL)
                 """
                 params = [user_id]
-                
-                if role:
-                    # Map equivalent role names: frontend may send 'candidate' but DB stores 'candidate'
-                    role_variants = {
-                        'candidate': ['candidate', 'candidate', 'jobseeker'],
-                        'candidate': ['candidate', 'candidate', 'jobseeker'],
-                        'jobseeker': ['candidate', 'candidate', 'jobseeker'],
-                        'recruiter': ['recruiter', 'employer_admin'],
-                        'employer_admin': ['recruiter', 'employer_admin'],
-                    }
-                    roles_to_match = role_variants.get(role, [role])
-                    placeholders = ', '.join(['%s'] * len(roles_to_match))
-                    query += f" AND (role IN ({placeholders}) OR role IS NULL)"
-                    params.extend(roles_to_match)
-                
+
                 cur.execute(query, tuple(params))
                 rows = cur.fetchall()
                 conv_ids = [r['conversation_id'] for r in rows]
-                self.logger.info(f"DEBUG: Found conversation IDs: {conv_ids}")
-                
+
+                # Real unread counts in ONE aggregate (the dataclass default of
+                # 0 was never overwritten before, so every badge showed zero).
+                unread_by_conv = {}
+                if conv_ids:
+                    cur.execute("""
+                        SELECT conversation_id, COUNT(*) AS c
+                        FROM messages
+                        WHERE conversation_id = ANY(%s::uuid[])
+                          AND sender_id != %s
+                          AND (is_read = FALSE OR is_read IS NULL)
+                        GROUP BY conversation_id
+                    """, (conv_ids, str(user_id)))
+                    unread_by_conv = {str(r['conversation_id']): r['c'] for r in cur.fetchall()}
+
                 conversations = []
                 for cid in conv_ids:
-                    # Reuse helper (slightly inefficient N+1 but safe for robust data)
                     conv = self._get_conversation_by_id(cur, cid)
                     if conv:
+                        conv.unread_count = unread_by_conv.get(str(cid), 0)
                         conversations.append(conv)
-                
+
                 # Sort by last message
                 conversations.sort(key=lambda x: x.last_message_at or x.created_at, reverse=True)
                 return conversations
@@ -955,15 +947,37 @@ class CommunicationService:
         finally:
             conn.close()
             
+    def get_message_conversation_participants(self, message_id: str):
+        """Participants of the conversation a message belongs to, or None if
+        the message does not exist. Used for read-endpoint authorization."""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """SELECT cp.user_id FROM messages m
+                       JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id
+                       WHERE m.id::text = %s""", (str(message_id),))
+                rows = cur.fetchall()
+                return [r[0] for r in rows] if rows else None
+        except Exception as e:
+            logger.error(f"participants lookup failed: {e}")
+            return None
+        finally:
+            conn.close()
+
     def mark_message_as_read(self, message_id: str, user_id: str) -> bool:
         conn = self._get_db_connection()
         try:
             with conn.cursor() as cur:
-                # Ideally verify recipient_id logic in SQL or assume if they have access to API, it's valid?
-                # Simplistic: Just mark it.
-                cur.execute("UPDATE messages SET is_read = TRUE, read_at = NOW(), status='read' WHERE id = %s", (message_id,))
+                # Never mark your own outbound message read, and report
+                # honestly whether anything matched (the old version updated
+                # unconditionally and always returned True).
+                cur.execute(
+                    """UPDATE messages SET is_read = TRUE, read_at = NOW(), status='read'
+                       WHERE id::text = %s AND sender_id != %s""",
+                    (str(message_id), str(user_id)))
                 conn.commit()
-                return True
+                return cur.rowcount > 0
         finally:
             conn.close()
 

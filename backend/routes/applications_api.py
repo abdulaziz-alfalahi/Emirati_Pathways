@@ -72,6 +72,7 @@ _BASE_SELECT = """
            COALESCE(ja.interview_date::timestamp, sched.scheduled_date::timestamp) AS interview_date,
            COALESCE(ja.interview_type, sched.interview_type) AS interview_type,
            hist.timeline,
+           COALESCE(jp.recruiter_id::text, jp.posted_by::text, jp.created_by::text) AS recruiter_id,
            jp.title AS job_title, jp.emirate, jp.city,
            COALESCE(c.name, c.company_name, '') AS company_name
     FROM job_applications ja
@@ -125,6 +126,9 @@ def _row_out(r):
         # current status by migration 041; live transitions append via
         # application_history.record_status_change).
         'timeline': r.get('timeline') or [],
+        # Job owner — lets the candidate message the right person instead of
+        # the frontend's old hardcoded 'recruiter-id' placeholder.
+        'recruiter_id': r.get('recruiter_id'),
     }
 
 

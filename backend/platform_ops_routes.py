@@ -723,7 +723,10 @@ def start_live_chat():
         conversation_id = None
         if agent_id:
             try:
-                from services.communication_service import communication_service
+                try:
+                    from backend.services.communication_service import communication_service
+                except ImportError:
+                    from services.communication_service import communication_service
                 conv = communication_service.create_conversation(
                     participants=[str(user_id), str(agent_id)],
                     title=f"Live Chat - {category}",
@@ -856,7 +859,10 @@ def accept_live_chat(session_id):
         conversation_id = session.get('conversation_id')
         if not conversation_id or 'unassigned' in str(conversation_id):
             try:
-                from services.communication_service import communication_service
+                try:
+                    from backend.services.communication_service import communication_service
+                except ImportError:
+                    from services.communication_service import communication_service
                 conv = communication_service.create_conversation(
                     participants=[str(session['user_id']), str(agent_id)],
                     title=f"Live Chat - {session.get('category', 'general')}",

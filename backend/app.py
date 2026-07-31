@@ -475,7 +475,23 @@ def on_connect(auth=None):
 
 @socketio.on('join')
 def on_join(data):
-    room = data['room']
+    """Join a room — AUTHORIZED. Personal rooms (a bare user id, where
+    new_message payloads with full content are emitted) may only be joined by
+    that user; the old handler let ANY socket join ANY user's room and read
+    their message stream. Identity comes from the verified connect() mapping
+    (online_users), never from client data."""
+    room = str((data or {}).get('room') or '')
+    if not room:
+        return
+    my_user_id = next((uid for uid, sid in online_users.items() if sid == request.sid), None)
+
+    # A room name that is some user's id is a personal message room.
+    looks_personal = room.isdigit() and len(room) == 15
+    if looks_personal and room != my_user_id:
+        logger.warning(f"[authz] socket {request.sid} denied joining personal room {room}")
+        return
+    # role_* rooms: only your own resolved role would be legitimate, but role
+    # rooms carry no per-user payloads today; allow non-personal rooms.
     join_room(room)
     logger.debug(f"User joined room: {room} (Socket: {request.sid})")
     emit('peer-joined', {'sid': request.sid}, room=room, include_self=False)
