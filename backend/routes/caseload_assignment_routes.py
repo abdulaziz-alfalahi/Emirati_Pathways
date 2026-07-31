@@ -116,6 +116,18 @@ def assign(kind):
         """, (str(staff_id), str(member_id)))
         conn.commit()
         cur.close(); conn.close()
+        # The caseload changed hands with zero signal to the assignee.
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            _notify(user_id=str(staff_id), notification_type='caseload_assigned',
+                    title='New caseload assignment',
+                    message='A person has been assigned to your caseload.',
+                    metadata={'kind': kind, 'member_id': str(member_id)})
+        except Exception as notify_err:
+            logger.warning(f"caseload assign notify failed: {notify_err}")
         return jsonify({'success': True, 'status': 'assigned'}), 200
     except Exception as e:
         conn.rollback(); conn.close()

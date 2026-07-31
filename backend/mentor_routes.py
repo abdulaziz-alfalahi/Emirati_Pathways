@@ -1050,6 +1050,11 @@ def request_mentor():
         "INSERT INTO mentorship_matching (mentor_id, mentee_user_id, match_status, is_active, created_at, updated_at) "
         "VALUES (%s, %s, 'requested', FALSE, NOW(), NOW()) RETURNING id",
         (pid, me), fetch_one=True)
+    # The request silently entered the mentor's queue — tell the mentor.
+    _safe_notify(mentor_user_id, 'mentorship_requested',
+                 'New mentorship request',
+                 'A candidate has requested you as their mentor. Review it on your mentor dashboard.',
+                 {'matching_id': str((row or {}).get('id')), 'link': '/mentor-dashboard'})
     return jsonify({'success': True, 'message': 'Mentorship requested', 'data': {'id': (row or {}).get('id')}}), 201
 
 
@@ -1107,6 +1112,11 @@ def mentor_decide_request(matching_id):
     else:
         _msv_query("UPDATE mentorship_matching SET match_status='declined', is_active=FALSE, updated_at=NOW() "
                    "WHERE id=%s", (matching_id,), fetch_all=False)
+        # Symmetric with accept — a silent decline left the mentee waiting.
+        _safe_notify(row.get('mentee_user_id'), 'mentorship_declined',
+                     'Mentorship request declined',
+                     'Your mentorship request was declined. You can request a different mentor.',
+                     {'matching_id': str(matching_id), 'link': '/mentorship'})
     return jsonify({'success': True, 'message': f'Request {decision}ed'})
 
 
@@ -1145,6 +1155,11 @@ def request_skill_verification():
         "INSERT INTO mentor_skill_verifications (candidate_id, mentor_id, skill_name, skill_level, "
         "skill_category, status, requested_at) VALUES (%s, %s, %s, %s, %s, 'pending', NOW()) RETURNING id",
         (me, mentor_user_id, skill_name, data.get('skill_level'), data.get('skill_category')), fetch_one=True)
+    # The pending row silently entered the mentor's verification queue.
+    _safe_notify(mentor_user_id, 'verification_requested',
+                 'Skill verification requested',
+                 f"A mentee asked you to verify their skill: {skill_name}.",
+                 {'verification_id': str((row or {}).get('id')), 'link': '/mentor-dashboard'})
     return jsonify({'success': True, 'message': 'Verification requested', 'data': {'id': (row or {}).get('id')}}), 201
 
 

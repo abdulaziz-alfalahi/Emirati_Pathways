@@ -224,59 +224,49 @@ class InterviewScheduler:
 
     @staticmethod
     def send_interview_notification(interview_data: Dict[str, Any], notification_type: str) -> bool:
-        """Send interview notification via integrated communication system"""
+        """Notify candidate + interviewer about an interview lifecycle event.
 
+        Rewired to notification_helper: the old MentorCommunicationSystem path
+        inserted into columns the live notifications table does not have
+        (notification_type/priority/message/data/expires_at), so every HR
+        schedule/reschedule/cancel produced ZERO notifications for both
+        parties and the failure was swallowed here as a warning.
+        """
         try:
-            # Import here to avoid circular dependencies
-            from mentor_communication_system import MentorCommunicationSystem, NotificationType, NotificationPriority
+            try:
+                from backend.notification_helper import create_notification
+            except ImportError:
+                from notification_helper import create_notification
 
-            comm_system = MentorCommunicationSystem(DB_CONFIG)
-
-            # Map notification string to Enum type
             type_mapping = {
-                'scheduled': NotificationType.INTERVIEW_SCHEDULED.value,
-                'rescheduled': NotificationType.INTERVIEW_RESCHEDULED.value,
-                'cancelled': NotificationType.INTERVIEW_CANCELLED.value
+                'scheduled': 'interview_scheduled',
+                'rescheduled': 'interview_rescheduled',
+                'cancelled': 'interview_cancelled',
             }
+            notif_type = type_mapping.get(notification_type, 'interview_scheduled')
 
-            # Default to scheduled if unknown
-            notif_enum_val = type_mapping.get(notification_type, NotificationType.INTERVIEW_SCHEDULED.value)
-
-            # Prepare Base Data
             job_title = interview_data.get('job_title', 'Position')
             candidate_name = interview_data.get('candidate_name', 'Candidate')
             date_str = str(interview_data['scheduled_date'])
             interview_ref = str(interview_data.get('interview_id') or interview_data.get('id'))
+            meta = {'interview_id': interview_ref, 'job_title': job_title,
+                    'scheduled_date': date_str, 'priority': 'high'}
 
-            # 1. Notify Candidate
-            candidate_msg = f"Your interview for {job_title} has been {notification_type}. Date: {date_str}"
-            comm_system.create_notification({
-                'user_id': interview_data['candidate_id'],
-                'notification_type': notif_enum_val,
-                'priority': NotificationPriority.HIGH.value,
-                'title': f"Interview {notification_type.title()}",
-                'message': candidate_msg,
-                'data': {
-                    'interview_id': interview_ref,
-                    'job_title': job_title,
-                    'scheduled_date': date_str
-                }
-            })
+            if interview_data.get('candidate_id'):
+                create_notification(
+                    user_id=str(interview_data['candidate_id']),
+                    notification_type=notif_type,
+                    title=f"Interview {notification_type.title()}",
+                    message=f"Your interview for {job_title} has been {notification_type}. Date: {date_str}",
+                    metadata=meta)
 
-            # 2. Notify Interviewer
-            interviewer_msg = f"Interview with {candidate_name} for {job_title} has been {notification_type}. Date: {date_str}"
-            comm_system.create_notification({
-                'user_id': interview_data['interviewer_id'],
-                'notification_type': notif_enum_val,
-                'priority': NotificationPriority.HIGH.value,
-                'title': f"Interview {notification_type.title()}",
-                'message': interviewer_msg,
-                'data': {
-                    'interview_id': interview_ref,
-                    'candidate_name': candidate_name,
-                    'scheduled_date': date_str
-                }
-            })
+            if interview_data.get('interviewer_id'):
+                create_notification(
+                    user_id=str(interview_data['interviewer_id']),
+                    notification_type=notif_type,
+                    title=f"Interview {notification_type.title()}",
+                    message=f"Interview with {candidate_name} for {job_title} has been {notification_type}. Date: {date_str}",
+                    metadata={**meta, 'candidate_name': candidate_name})
 
             logger.info(f"Interview notifications sent for {interview_ref} ({notification_type})")
             return True

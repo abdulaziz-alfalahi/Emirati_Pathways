@@ -1035,7 +1035,27 @@ def update_crm_candidate(user_id):
                 ))
                 
             conn.commit()
-            
+
+            # New assignee gets told their caseload grew (C4 gap: assignment
+            # changed hands with zero signal). Only for id-valued assignees
+            # that actually changed, and never for self-assignment.
+            try:
+                prev_assigned = str((exists or {}).get('assigned_to') or '')
+                if (assigned_to_val and str(assigned_to_val) != prev_assigned
+                        and str(assigned_to_val) != me and len(str(assigned_to_val)) == 15):
+                    try:
+                        from backend.notification_helper import create_notification as _notify
+                    except ImportError:
+                        from notification_helper import create_notification as _notify
+                    _notify(user_id=str(assigned_to_val),
+                            notification_type='caseload_assigned',
+                            title='Candidate assigned to you',
+                            message='A candidate was assigned to your CRM caseload.',
+                            metadata={'candidate_user_id': str(user_id),
+                                      'link': '/career-services-dashboard'})
+            except Exception as notify_err:
+                logger.warning(f"crm assign notify failed: {notify_err}")
+
             return jsonify({
                 'success': True,
                 'message': 'Candidate updated successfully'

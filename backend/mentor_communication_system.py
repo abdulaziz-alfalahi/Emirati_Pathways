@@ -402,22 +402,26 @@ class MentorCommunicationSystem:
             
             with self.get_database_connection() as conn:
                 with conn.cursor() as cursor:
+                    # Live table columns are (id, user_id, type, title, content,
+                    # metadata, is_read, read_at, created_at). The old column
+                    # list (notification_type/priority/message/data/expires_at)
+                    # matched no real schema, so every insert from this
+                    # subsystem raised and was swallowed — session reminders,
+                    # goal deadlines and interview notices all silently lost.
                     cursor.execute("""
-                        INSERT INTO notifications 
-                        (id, user_id, notification_type, priority, title, message, 
-                         data, is_read, created_at, expires_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        INSERT INTO notifications
+                        (id, user_id, type, title, content, metadata, is_read, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         notification_id,
-                        notification_data['user_id'],
+                        str(notification_data['user_id']),
                         notification_data['notification_type'],
-                        notification_data['priority'],
                         notification_data['title'],
                         notification_data['message'],
-                        json.dumps(notification_data.get('data', {})),
+                        json.dumps({**notification_data.get('data', {}),
+                                    'priority': notification_data.get('priority', 'medium')}),
                         False,
                         datetime.now(),
-                        notification_data.get('expires_at')
                     ))
                     
                     conn.commit()

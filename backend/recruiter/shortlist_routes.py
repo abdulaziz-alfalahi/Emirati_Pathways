@@ -143,9 +143,23 @@ def add_to_shortlist():
         conn.commit()
         cur.close()
         conn.close()
-        
+
         logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id}")
-        
+
+        # This legacy add path never got the PR #209 candidate notification.
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            _notify(user_id=str(candidate_id),
+                    notification_type='application_shortlisted',
+                    title='You have been shortlisted',
+                    message='A recruiter shortlisted you for a position. Check your applications for details.',
+                    metadata={'jd_id': str(jd_id), 'link': '/applications'})
+        except Exception as notify_err:
+            logger.warning(f"shortlist notify failed: {notify_err}")
+
         return jsonify({
             'success': True,
             'shortlist_id': shortlist_id,
@@ -310,11 +324,41 @@ def update_shortlist_status(shortlist_id):
                 WHERE shortlist_id = %s
             """, legacy_params)
             rows_affected = cur.rowcount
-        
+
+        # A rejection decision must reach the candidate (C1 gap: no rejection
+        # notification existed on any path).
+        cand_row = None
+        if rows_affected and status in ('rejected', 'declined'):
+            try:
+                cur.execute("SELECT candidate_id FROM shortlisted_candidates WHERE id = %s::integer",
+                            (shortlist_id,))
+                cand_row = cur.fetchone()
+                if not cand_row:
+                    cur.execute("SELECT candidate_id FROM candidate_shortlist WHERE shortlist_id = %s",
+                                (shortlist_id,))
+                    cand_row = cur.fetchone()
+            except Exception:
+                conn.rollback()
+
         conn.commit()
         cur.close()
         conn.close()
-        
+
+        if cand_row and cand_row[0]:
+            try:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                _notify(user_id=str(cand_row[0]),
+                        notification_type='application_update',
+                        title='Update on your application',
+                        message='There is an update on one of your applications. Check your applications for details.',
+                        metadata={'shortlist_id': str(shortlist_id), 'new_status': status,
+                                  'link': '/applications'})
+            except Exception as notify_err:
+                logger.warning(f"shortlist status notify failed: {notify_err}")
+
         if rows_affected == 0:
             logger.warning(f"No rows updated for shortlist_id {shortlist_id}")
             return jsonify({

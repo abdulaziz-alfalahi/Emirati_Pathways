@@ -181,6 +181,24 @@ def apply():
              str(data.get('expected_salary') or '')[:60]),
             fetch_all=False,
         )
+        # Tell the job's owner — this apply path notified nobody (the parallel
+        # job_application_routes path did).
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            owner = execute_query(
+                "SELECT COALESCE(recruiter_id::text, posted_by::text, created_by::text) AS owner, title "
+                "FROM job_postings WHERE id::text = %s", (job_id,), fetch_one=True)
+            if owner and owner.get('owner'):
+                _notify(user_id=str(owner['owner']),
+                        notification_type='application_received',
+                        title='New application received',
+                        message=f"A candidate applied to '{owner.get('title') or 'your job posting'}'.",
+                        metadata={'application_id': app_id, 'job_id': job_id})
+        except Exception as notify_err:
+            logger.warning(f"apply notify failed: {notify_err}")
         return jsonify({'success': True, 'message': 'Application submitted successfully',
                         'data': {'id': app_id, 'job_id': job_id, 'status': 'submitted'}}), 201
     except Exception as e:

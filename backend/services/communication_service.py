@@ -44,6 +44,16 @@ class NotificationType(Enum):
     NEW_MESSAGE = "new_message"
     SYSTEM_ANNOUNCEMENT = "system_announcement"
 
+
+def _coerce_notification_type(raw):
+    """Stored types come from many writers, not only this enum — keep the raw
+    slug when it isn't an enum member so the UI can label/route it."""
+    try:
+        return NotificationType(raw)
+    except Exception:
+        return raw or 'system_announcement'
+
+
 class MessageStatus(Enum):
     SENT = "sent"
     DELIVERED = "delivered"
@@ -102,7 +112,11 @@ class Notification:
         return {
             'id': self.id,
             'user_id': str(self.user_id),
-            'notification_type': self.notification_type.value,
+            # The stored type may be any writer's slug, not just enum members —
+            # emit it verbatim so the bell's labels/links keep working.
+            'notification_type': (self.notification_type.value
+                                  if isinstance(self.notification_type, NotificationType)
+                                  else str(self.notification_type)),
             'title': self.title,
             'content': self.content,
             # 'channels': [channel.value for channel in self.channels], # Channels not stored in DB, implied by logic
@@ -907,7 +921,10 @@ class CommunicationService:
                 return [Notification(
                     id=str(r['id']),
                     user_id=str(r['user_id']),
-                    notification_type=NotificationType.APPLICATION_SUBMITTED, # Simplified for reconstruction
+                    # Preserve the REAL stored type. The old hardcoded
+                    # APPLICATION_SUBMITTED made every fetched notification
+                    # render as an application event regardless of what it was.
+                    notification_type=_coerce_notification_type(r.get('type')),
                     title=r['title'],
                     content=r['content'],
                     channels=[],
