@@ -10,6 +10,7 @@ import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search,
 import { restClient } from '@/utils/api';
 import { toast } from '@/components/ui/use-toast';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import Messages from '@/components/recruiter/Messages';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,7 @@ export default function CareerServicesDashboard() {
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
+  const [view, setView] = useState<'candidates' | 'messages'>('candidates');
   const [candidates, setCandidates] = useState<any[]>([]);
   const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,11 +220,41 @@ export default function CareerServicesDashboard() {
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{t('Career Services CRM', 'نظام إدارة المرشحين')}</h1>
             <p className="text-slate-500 mt-1">{t('Manage candidate engagement and counseling efficiently.', 'إدارة وتوجيه المرشحين المهنيين بفعالية.')}</p>
           </div>
-          <Button onClick={fetchCandidates} variant="outline" className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} /> 
-            {t('Sync Nafis Data', 'مزامنة بيانات نافس')}
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-white shadow-sm border border-slate-200 rounded-xl p-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setView('candidates')}
+                className={`rounded-lg px-4 ${view === 'candidates' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {t('Candidates', 'المرشحون')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setView('messages')}
+                className={`rounded-lg px-4 ${view === 'messages' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {t('Messages', 'الرسائل')}
+              </Button>
+            </div>
+            {view === 'candidates' && (
+              <Button onClick={fetchCandidates} variant="outline" className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
+                {t('Sync Nafis Data', 'مزامنة بيانات نافس')}
+              </Button>
+            )}
+          </div>
         </div>
+
+        {view === 'messages' && (
+          <Messages senderRole="career_services_operator" showNewConversation />
+        )}
+
+        {view === 'candidates' && (
+        <>
+
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -454,6 +486,8 @@ export default function CareerServicesDashboard() {
             )}
           </CardContent>
         </Card>
+        </>
+        )}
       </main>
 
       {/* Slide-out Edit Drawer */}

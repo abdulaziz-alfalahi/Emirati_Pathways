@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { Users, Calendar, FileText, Clock, Plus, Brain, Loader2, Target, BarChart2, X } from 'lucide-react';
+import { Users, Calendar, FileText, Clock, Plus, Brain, Loader2, Target, BarChart2, X, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
+import Messages from '@/components/recruiter/Messages';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -313,6 +314,9 @@ const CoachDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'clients', label: t('Clients', 'العملاء'), icon: <Users className="h-4 w-4" />, content: clientsTab },
+    // stopPropagation: EducationPathwayLayout's click delegation would otherwise
+    // pop a false "coming soon" toast on the real buttons inside Messages.
+    { id: 'messages', label: t('Messages', 'الرسائل'), icon: <MessageSquare className="h-4 w-4" />, content: <div onClick={e => e.stopPropagation()}><Messages senderRole="coach" showNewConversation /></div> },
   ];
 
   return (

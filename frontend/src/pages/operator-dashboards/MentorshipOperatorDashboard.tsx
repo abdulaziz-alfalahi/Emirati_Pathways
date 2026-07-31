@@ -3,6 +3,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import MentorshipEnrollmentManager from '@/components/mentorship/MentorshipEnrollmentManager';
+import Messages from '@/components/recruiter/Messages';
 import {
     UserCheck, Users, Briefcase, Settings, Heart,
     Clock, TrendingUp, Plus, Search, Eye, Star, MessageSquare, Target
@@ -54,6 +55,7 @@ const MentorshipOperatorDashboard: React.FC = () => {
         { id: 'mentors', label: t('Mentors', 'المرشدون'), icon: UserCheck },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: Briefcase },
         { id: 'matches', label: t('Matches', 'المطابقات'), icon: Heart },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -227,6 +229,7 @@ const MentorshipOperatorDashboard: React.FC = () => {
                 {!loading && activeTab === 'mentors' && renderMentors()}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'matches' && renderMatches()}
+                {activeTab === 'messages' && <Messages senderRole="mentorship_operator" showNewConversation />}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>

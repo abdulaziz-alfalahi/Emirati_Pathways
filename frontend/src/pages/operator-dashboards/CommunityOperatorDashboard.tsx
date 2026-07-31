@@ -6,6 +6,7 @@ import {
     MessageSquare, Users, Calendar, Flag, Settings, Heart,
     Clock, TrendingUp, Plus, Eye, ThumbsUp, AlertTriangle, FileText
 } from 'lucide-react';
+import Messages from '@/components/recruiter/Messages';
 
 const brand = {
     primary: '#DB2777', secondary: '#EC4899', accent: '#F9A8D4',
@@ -58,6 +59,7 @@ const CommunityOperatorDashboard: React.FC = () => {
         { id: 'content', label: t('Content', 'المحتوى'), icon: FileText },
         { id: 'flagged', label: t('Flagged', 'مبلّغ عنه'), icon: Flag },
         { id: 'events', label: t('Events', 'الفعاليات'), icon: Calendar },
+        { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -248,6 +250,7 @@ const CommunityOperatorDashboard: React.FC = () => {
                 {!loading && activeTab === 'content' && renderContent()}
                 {!loading && activeTab === 'flagged' && renderFlagged()}
                 {!loading && activeTab === 'events' && renderEvents()}
+                {activeTab === 'messages' && <Messages senderRole="community_operator" showNewConversation />}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>

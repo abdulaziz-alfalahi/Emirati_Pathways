@@ -13,6 +13,7 @@ import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessm
 import ParentInternshipTracking from '@/components/internship/ParentInternshipTracking';
 import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
+import Messages from '@/components/recruiter/Messages';
 import {
     Users, GraduationCap, Calendar, BookOpen, MapPin, Clock,
     ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Award, Star, Heart,
@@ -269,6 +270,7 @@ const ParentDashboardPage: React.FC = () => {
                         <TabsTrigger value="resources" className="flex-1">{t('Resources', 'الموارد')}</TabsTrigger>
                         <TabsTrigger value="opportunities" className="flex-1">{t('Opportunities', 'الفرص')}</TabsTrigger>
                         <TabsTrigger value="internships" className="flex-1">{t('Internships', 'التدريب')}</TabsTrigger>
+                        <TabsTrigger value="messages" className="flex-1">{t('Messages', 'الرسائل')}</TabsTrigger>
                     </TabsList>
 
                     {/* ────── OVERVIEW TAB ────── */}
@@ -617,6 +619,12 @@ const ParentDashboardPage: React.FC = () => {
                             <p className="text-sm text-muted-foreground">{t('Track internship progress and respond to consent requests for minors', 'تابع تقدّم التدريبات واستجب لطلبات الموافقة الخاصة بالقاصرين')}</p>
                         </div>
                         <ParentInternshipTracking />
+                    </TabsContent>
+
+                    {/* ────── MESSAGES TAB ────── */}
+                    <TabsContent value="messages" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Parents may start conversations; the backend restricts recipients to staff. */}
+                        <Messages senderRole="parent" showNewConversation />
                     </TabsContent>
                 </Tabs>
             </main>
