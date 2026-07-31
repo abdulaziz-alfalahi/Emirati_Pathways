@@ -389,7 +389,10 @@ def list_assessment_centers():
 @require_roles(*_OPERATOR_ROLES)
 def list_center_assessors(center_id):
     rows = execute_query(
-        """SELECT ctm.user_id, COALESCE(u.full_name, ctm.user_id) AS full_name, ctm.invitation_status,
+        """SELECT ctm.user_id,
+                  COALESCE(u.full_name,
+                           NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+                           u.email, ctm.user_id) AS full_name, ctm.invitation_status,
                   ap.certification_level, ap.specialization, ap.nqf_authorization_level, ap.is_active
            FROM company_team_members ctm
            LEFT JOIN users u ON u.id = ctm.user_id
