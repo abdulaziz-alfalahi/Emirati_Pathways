@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessmentOverview';
 import ParentInternshipTracking from '@/components/internship/ParentInternshipTracking';
 import { restClient } from '@/utils/api';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
 import Messages from '@/components/recruiter/Messages';
+import ChildConversationsViewer from '@/components/parent/ChildConversationsViewer';
 import {
     Users, GraduationCap, Calendar, BookOpen, MapPin, Clock,
     ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Award, Star, Heart,
@@ -32,7 +33,20 @@ const ParentDashboardPage: React.FC = () => {
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    const [activeTab, setActiveTab] = useState('overview');
+    // Tab is URL-controlled so deep links like
+    // /guardian-dashboard?tab=messages&to=<id>&ctxTitle=<title> open directly.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'overview';
+    const handleTabChange = (value: string) => {
+        const next = new URLSearchParams(searchParams);
+        next.set('tab', value);
+        // Deep-link params have served their purpose once the user changes tab.
+        next.delete('to');
+        next.delete('recipientId');
+        next.delete('ctxTitle');
+        next.delete('conversationId');
+        setSearchParams(next, { replace: true });
+    };
     const [childApplications, setChildApplications] = useState<any[]>([]);
     const [apiChildren, setApiChildren] = useState<any[] | null>(null);
     const [apiLoading, setApiLoading] = useState(true);
@@ -261,7 +275,7 @@ const ParentDashboardPage: React.FC = () => {
                 </div>
 
                 {/* ── Tabbed Content ── */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                     <TabsList className={`flex w-full bg-muted/50 p-1 rounded-xl shadow-sm ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
                         <TabsTrigger value="overview" className="flex-1">{t('Overview', 'نظرة عامة')}</TabsTrigger>
                         <TabsTrigger value="children" className="flex-1">{t('Children', 'الأبناء')}</TabsTrigger>
@@ -625,6 +639,12 @@ const ParentDashboardPage: React.FC = () => {
                     <TabsContent value="messages" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Parents may start conversations; the backend restricts recipients to staff. */}
                         <Messages senderRole="parent" showNewConversation />
+                        {/* Guardian oversight of MINOR children's conversations (read-only).
+                            The viewer loads the parent's verified children itself from
+                            /api/parent/children — the page's childrenData ids come from the
+                            students table, not users.id, so they can't address the guardian
+                            endpoints. Renders nothing when no children are linked. */}
+                        <ChildConversationsViewer />
                     </TabsContent>
                 </Tabs>
             </main>
