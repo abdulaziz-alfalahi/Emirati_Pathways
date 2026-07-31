@@ -193,26 +193,24 @@ def submit_role_request():
             
             requester_name = user_data.get('full_name', '') or user_data.get('email')
             
-            if hasattr(current_app, 'notification_system') and current_app.notification_system:
-                for recipient in recipients:
-                    recipient_id = recipient['id']
-                    current_app.notification_system.send_notification(
-                        user_id=str(recipient_id),
-                        notification_type=NotificationType.ROLE_REQUEST,
-                        title="New Role Request",
-                        message=f"{requester_name} has requested the role: {requested_role}",
-                        data={
-                            'request_id': req_id,
-                            'requester_id': user_id,
-                            'role': requested_role,
-                            'operator_targets': operator_roles,
-                            'link': '/admin-dashboard?tab=requests'
-                        },
-                        priority=NotificationPriority.HIGH
-                    )
-                logger.info(f"Role request notifications sent to {len(recipients)} operators (targets: {operator_roles})")
-            else:
-                logger.warning("Notification system not initialized, skipping notifications")
+            # notification_helper writes the real notifications table + socket
+            # push. The old current_app.notification_system path was Redis-only
+            # AND never initialized on the main app, so no reviewer was ever
+            # notified of any role request.
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            for recipient in recipients:
+                _notify(
+                    user_id=str(recipient['id']),
+                    notification_type='role_request',
+                    title="New Role Request",
+                    message=f"{requester_name} has requested the role: {requested_role}",
+                    metadata={'request_id': req_id, 'requester_id': user_id,
+                              'role': requested_role, 'priority': 'high',
+                              'link': '/admin-dashboard?tab=requests'})
+            logger.info(f"Role request notifications sent to {len(recipients)} operators (targets: {operator_roles})")
                 
         except Exception as notify_err:
             logger.error(f"Failed to send notifications: {notify_err}")
@@ -381,37 +379,28 @@ def action_request(request_id):
             
         conn.commit()
         
-        # --- Notify Candidate ---
+        # --- Notify Candidate --- (real notifications table; the old path was
+        # Redis-only and never initialized, so decisions were silent)
         try:
-            if hasattr(current_app, 'notification_system') and current_app.notification_system:
-                candidate_id = str(req['user_id'])
-                role_name = req['requested_role']
-                
-                if new_status == 'approved':
-                    title = "Role Request Approved"
-                    message = f"Congratulations! Your request for the role '{role_name}' has been approved."
-                    priority = NotificationPriority.HIGH
-                else:
-                    title = "Role Request Rejected"
-                    message = f"Your request for the role '{role_name}' has been rejected."
-                    if notes:
-                        message += f" Reason: {notes}"
-                    priority = NotificationPriority.MEDIUM
-                
-                current_app.notification_system.send_notification(
-                    user_id=candidate_id,
-                    notification_type=NotificationType.ROLE_DECISION,
-                    title=title,
-                    message=message,
-                    data={
-                        'request_id': request_id,
-                        'role': role_name,
-                        'status': new_status,
-                        'notes': notes
-                    },
-                    priority=priority
-                )
-                logger.info(f"Role decision notification sent to user {candidate_id}")
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            candidate_id = str(req['user_id'])
+            role_name = req['requested_role']
+            if new_status == 'approved':
+                title = "Role Request Approved"
+                message = f"Congratulations! Your request for the role '{role_name}' has been approved."
+            else:
+                title = "Role Request Rejected"
+                message = f"Your request for the role '{role_name}' has been rejected."
+                if notes:
+                    message += f" Reason: {notes}"
+            _notify(user_id=candidate_id, notification_type='role_decision',
+                    title=title, message=message,
+                    metadata={'request_id': request_id, 'role': role_name,
+                              'status': new_status, 'notes': notes})
+            logger.info(f"Role decision notification sent to user {candidate_id}")
         except Exception as notify_err:
             logger.error(f"Failed to notify candidate: {notify_err}")
 
@@ -570,27 +559,23 @@ def operator_action_request(request_id):
         
         conn.commit()
         
-        # Notify candidate
+        # Notify candidate (real notifications table — see admin path above)
         try:
-            if hasattr(current_app, 'notification_system') and current_app.notification_system:
-                candidate_id = str(req['user_id'])
-                role_name = req['requested_role']
-                if new_status == 'approved':
-                    title, message = "Role Request Approved", f"Your request for '{role_name}' has been approved."
-                    priority = NotificationPriority.HIGH
-                else:
-                    title = "Role Request Rejected"
-                    message = f"Your request for '{role_name}' has been rejected."
-                    if notes: message += f" Reason: {notes}"
-                    priority = NotificationPriority.MEDIUM
-                
-                current_app.notification_system.send_notification(
-                    user_id=candidate_id,
-                    notification_type=NotificationType.ROLE_DECISION,
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            candidate_id = str(req['user_id'])
+            role_name = req['requested_role']
+            if new_status == 'approved':
+                title, message = "Role Request Approved", f"Your request for '{role_name}' has been approved."
+            else:
+                title = "Role Request Rejected"
+                message = f"Your request for '{role_name}' has been rejected."
+                if notes: message += f" Reason: {notes}"
+            _notify(user_id=candidate_id, notification_type='role_decision',
                     title=title, message=message,
-                    data={'request_id': request_id, 'role': role_name, 'status': new_status},
-                    priority=priority
-                )
+                    metadata={'request_id': request_id, 'role': role_name, 'status': new_status})
         except Exception as notify_err:
             logger.error(f"Failed to notify candidate: {notify_err}")
         

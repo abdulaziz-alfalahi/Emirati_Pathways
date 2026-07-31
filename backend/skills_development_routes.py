@@ -662,6 +662,30 @@ def assessment_consent(assessment_id):
         else:
             cur.execute("UPDATE assessments SET consent_status='denied', status='cancelled', "
                         "updated_at=NOW() WHERE id=%s", (assessment_id,))
+        # Close the loop with whoever asked: a grant silently dropped the
+        # assessment into the assessor pool; a deny silently cancelled it.
+        try:
+            cur.execute("SELECT requested_by, assessor_id, assessment_title FROM assessments WHERE id=%s",
+                        (assessment_id,))
+            req_row = cur.fetchone()
+            if req_row:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                verdict = 'granted' if decision == 'grant' else 'denied'
+                title = (req_row.get('assessment_title') if isinstance(req_row, dict)
+                         else req_row[2]) or 'Assessment'
+                for target in {(req_row.get('requested_by') if isinstance(req_row, dict) else req_row[0]),
+                               (req_row.get('assessor_id') if isinstance(req_row, dict) else req_row[1])}:
+                    if target:
+                        _notify(user_id=str(target),
+                                notification_type='assessment_consent',
+                                title=f"Candidate {verdict} assessment consent",
+                                message=f"Consent for '{title}' was {verdict} by the candidate.",
+                                metadata={'assessment_id': str(assessment_id), 'decision': verdict})
+        except Exception as notify_err:
+            logger.warning(f"consent notify failed: {notify_err}")
         conn.commit(); cur.close(); conn.close()
         return jsonify({'success': True,
                         'message': 'Consent granted — the assessment is now open to assessors'

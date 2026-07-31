@@ -30,6 +30,26 @@ public_offer_bp = Blueprint("public_offer", __name__, url_prefix="/api/offers")
 
 
 
+def _notify_offer_response(offer_row: dict, verdict: str) -> None:
+    """Tell the recruiter the candidate's decision — the public accept/decline
+    routes were silent in both directions (C1 gap 4d). Best-effort."""
+    try:
+        try:
+            from backend.notification_helper import create_notification as _notify
+        except ImportError:
+            from notification_helper import create_notification as _notify
+        recruiter = offer_row.get("recruiter_id")
+        if recruiter:
+            _notify(user_id=str(recruiter),
+                    notification_type=f'offer_{verdict}',
+                    title=f'Offer {verdict}',
+                    message=f'The candidate has {verdict} your job offer.',
+                    metadata={'offer_id': str(offer_row.get("id")),
+                              'candidate_id': str(offer_row.get("candidate_id") or '')})
+    except Exception as notify_err:  # pragma: no cover
+        logger.warning(f"offer response notify failed: {notify_err}")
+
+
 def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:
     cursor.execute(
         """
@@ -357,6 +377,20 @@ def send_offer(offer_id):
 
             base_url = os.getenv("PUBLIC_BASE_URL", f"http://localhost:{os.getenv('PORT', '5003')}")
             sign_url = f"{base_url}/api/offers/{offer_id}/accept?token={token}"
+            # The candidate never learned an offer was sent on this route.
+            try:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                if updated.get("candidate_id"):
+                    _notify(user_id=str(updated["candidate_id"]),
+                            notification_type='offer_received',
+                            title='You have received a job offer',
+                            message='A job offer has been sent to you. Review it in your dashboard.',
+                            metadata={'offer_id': str(offer_id), 'link': '/candidate-dashboard?tab=offers'})
+            except Exception as notify_err:
+                logger.warning(f"offer send notify failed: {notify_err}")
             return jsonify({"success": True, "message": "Offer sent", "data": {"offer": updated, "sign_url": sign_url}})
         finally:
             cursor.close(); conn.close()
@@ -397,6 +431,7 @@ def accept_offer(offer_id):
             )
             updated = dict(cursor.fetchone())
             conn.commit()
+            _notify_offer_response(updated, 'accepted')
             return jsonify({"success": True, "message": "Offer accepted", "data": updated})
         finally:
             cursor.close(); conn.close()
@@ -437,6 +472,7 @@ def decline_offer(offer_id):
             )
             updated = dict(cursor.fetchone())
             conn.commit()
+            _notify_offer_response(updated, 'declined')
             return jsonify({"success": True, "message": "Offer declined", "data": updated})
         finally:
             cursor.close(); conn.close()

@@ -489,6 +489,10 @@ def student_apply():
     eng, err = _upsert_engagement(internship_id, _me(), 'student')
     if err:
         return err
+    # The student-initiated leg was the only silent one in the handshake.
+    _notify(_parties(eng) - {_me()}, 'internship_update', 'New internship application',
+            'A student applied to an internship — coordinator and recruiter review needed.',
+            {'engagement_id': str(eng.get('id'))})
     return jsonify({'success': True, 'data': _serialize(eng),
                     'message': 'Application submitted — awaiting recruiter and coordinator review'}), 201
 

@@ -155,6 +155,23 @@ def schedule(app_id):
                    assessor_id = COALESCE(assessor_id, %s), updated_at = NOW()
                WHERE id::text = %s""",
             (when, me, str(app_id)), fetch_all=False)
+        # A date was being set with no signal to the person being assessed.
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            cand = execute_query(
+                "SELECT candidate_id, assessment_title FROM assessments WHERE id::text = %s",
+                (str(app_id),), fetch_one=True)
+            if cand and cand.get('candidate_id'):
+                _notify(user_id=str(cand['candidate_id']),
+                        notification_type='assessment_scheduled',
+                        title='Assessment scheduled',
+                        message=f"Your assessment '{cand.get('assessment_title') or 'Assessment'}' has been scheduled for {when}.",
+                        metadata={'assessment_id': str(app_id), 'scheduled_at': when})
+        except Exception as notify_err:
+            logger.warning(f"assessment schedule notify failed: {notify_err}")
         return jsonify({'success': True, 'message': 'Candidate scheduled'})
     except Exception as e:
         logger.error(f"assessor schedule failed: {e}")
@@ -178,7 +195,8 @@ def complete(app_id):
             return jsonify({'success': False, 'message': 'score must be between 0 and 100'}), 400
         feedback = (data.get('feedback') or '')[:8000]
         skills = [s for s in (data.get('skills_to_verify') or []) if isinstance(s, str) and s.strip()][:20]
-        row = execute_query("SELECT id, candidate_id, status, assessor_id, assessment_title "
+        row = execute_query("SELECT id, candidate_id, status, assessor_id, assessment_title, "
+                            "requested_by, pass_fail_status "
                             "FROM assessments WHERE id::text = %s",
                             (str(app_id),), fetch_one=True)
         if not row:
@@ -278,6 +296,31 @@ def complete(app_id):
                     (passport['id'], title, title, issuer, nqf, cert_no, str(app_id), score),
                     fetch_all=False)
                 cert_issued = True
+
+        # Tell the candidate their result, and close the loop with the
+        # recruiter who requested the assessment (counterpart of the
+        # assessment_requested notification).
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            outcome = 'passed' if (row.get('pass_fail_status') or ('pass' if score >= 60 else 'fail')) in ('pass', 'passed') else 'completed'
+            a_title = row.get('assessment_title') or 'Assessment'
+            if row.get('candidate_id'):
+                _notify(user_id=str(row['candidate_id']),
+                        notification_type='assessment_completed',
+                        title='Assessment result available',
+                        message=f"Your assessment '{a_title}' has been evaluated (score {int(score)}).",
+                        metadata={'assessment_id': str(app_id), 'score': score})
+            if row.get('requested_by'):
+                _notify(user_id=str(row['requested_by']),
+                        notification_type='assessment_completed',
+                        title='Requested assessment completed',
+                        message=f"The assessment '{a_title}' you requested has been {outcome} (score {int(score)}).",
+                        metadata={'assessment_id': str(app_id), 'score': score})
+        except Exception as notify_err:
+            logger.warning(f"assessment complete notify failed: {notify_err}")
 
         return jsonify({'success': True, 'message': 'Evaluation completed',
                         'skills_stamped': stamped, 'skills_verified': skills_verified,

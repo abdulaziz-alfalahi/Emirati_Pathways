@@ -134,6 +134,26 @@ def handle_directives():
             """
             params = (author_id, data['title'], data.get('body', ''), data['category'], data.get('priority', 'normal'))
             directive = execute_query(query, params, fetch_one=True, commit=True)
+            # A directive nobody hears about directs nobody — notify the
+            # platform operations team.
+            try:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                ops = execute_query(
+                    """SELECT id FROM users WHERE is_active = TRUE AND (
+                           role IN ('admin', 'platform_operator')
+                           OR jsonb_exists(COALESCE(secondary_roles, '[]'::jsonb), 'platform_operator'))""",
+                    fetch_all=True) or []
+                for op in ops:
+                    _notify(user_id=str(op['id']), notification_type='board_directive',
+                            title='New board directive',
+                            message=f"Directive issued: {data['title']}",
+                            metadata={'directive_id': str(directive.get('id')) if directive else None,
+                                      'priority': data.get('priority', 'normal')})
+            except Exception as notify_err:
+                logger.warning(f"directive notify failed: {notify_err}")
             return jsonify(directive), 201
         except Exception as e:
             logger.error(f"Error creating directive: {str(e)}")
@@ -155,6 +175,21 @@ def respond_directive(directive_id):
             VALUES (%s, %s, %s) RETURNING *
         """
         response = execute_query(query, (directive_id, responder_id, data['body']), fetch_one=True, commit=True)
+        # Tell the directive's author their directive got a response.
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            d = execute_query("SELECT author_id, title FROM board_directives WHERE id::text = %s",
+                              (str(directive_id),), fetch_one=True)
+            if d and d.get('author_id') and str(d['author_id']) != str(responder_id):
+                _notify(user_id=str(d['author_id']), notification_type='board_directive',
+                        title='Response to your directive',
+                        message=f"Your directive '{d.get('title') or ''}' received a response.",
+                        metadata={'directive_id': str(directive_id)})
+        except Exception as notify_err:
+            logger.warning(f"directive response notify failed: {notify_err}")
         return jsonify(response), 201
     except Exception as e:
         logger.error(f"Error responding to directive: {str(e)}")
