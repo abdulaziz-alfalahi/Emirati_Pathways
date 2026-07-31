@@ -1,20 +1,20 @@
 
-export const formatTime = (timestamp: string) => {
+export const formatTime = (timestamp: string, locale: 'en' | 'ar' = 'en') => {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString(locale === 'ar' ? 'ar-AE' : 'en-US', { hour: '2-digit', minute: '2-digit' });
 };
 
-export const formatDate = (timestamp: string) => {
+export const formatDate = (timestamp: string, locale: 'en' | 'ar' = 'en') => {
   const date = new Date(timestamp);
   const now = new Date();
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   if (date.toDateString() === now.toDateString()) {
-    return 'Today';
+    return locale === 'ar' ? 'اليوم' : 'Today';
   } else if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday';
+    return locale === 'ar' ? 'أمس' : 'Yesterday';
   } else {
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(locale === 'ar' ? 'ar-AE' : 'en-US');
   }
 };

@@ -9,6 +9,7 @@ import { formatDate } from './messageUtils';
 import { Conversation } from './types';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import OnlineIndicator from '@/components/ui/OnlineIndicator';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -27,9 +28,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   onDeleteConversation
 }) => {
-  const { isOnline, onlineUsers } = useOnlinePresence();
-  console.log('[ConversationList] onlineUsers set:', [...onlineUsers]);
-  console.log('[ConversationList] participantIds:', conversations.map(c => c.participantId));
+  const { isOnline } = useOnlinePresence();
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   // Filter conversations by search query
   const filteredConversations = conversations.filter(conversation =>
     conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -38,12 +40,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
   return (
     <>
       <CardHeader className="px-4 pb-2">
-        <CardTitle>Conversations</CardTitle>
-        <CardDescription>Your recent message threads</CardDescription>
+        <CardTitle>{t('Conversations', 'المحادثات')}</CardTitle>
+        <CardDescription>{t('Your recent message threads', 'سلاسل رسائلك الأخيرة')}</CardDescription>
         <div className="relative my-2">
           <Search className="absolute start-2 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={t('Search conversations...', 'بحث في المحادثات...')}
             className="ps-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -77,9 +79,14 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       />
                     </div>
                     <div>
-                      <div className="font-semibold">
+                      <div className="font-semibold truncate max-w-[180px]">
                         {conversation.participantName}
                       </div>
+                      {conversation.jobTitle && (
+                        <div className="text-xs text-muted-foreground font-medium truncate max-w-[180px] mb-0.5">
+                          {conversation.jobTitle}
+                        </div>
+                      )}
                       <div className="text-sm text-muted-foreground truncate max-w-[180px]">
                         {conversation.lastMessage}
                       </div>
@@ -87,7 +94,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <div className="text-xs text-muted-foreground">
-                      {formatDate(conversation.lastMessageTime)}
+                      {formatDate(conversation.lastMessageTime, language)}
                     </div>
                     <div className="flex items-center gap-1">
                       {conversation.unreadCount > 0 && (
@@ -103,7 +110,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                           e.stopPropagation();
                           if (onDeleteConversation) onDeleteConversation(conversation.id);
                         }}
-                        title="Delete conversation"
+                        title={t('Delete conversation', 'حذف المحادثة')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -114,7 +121,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             ))
           ) : (
             <div className="py-10 text-center text-muted-foreground">
-              No conversations found
+              {t('No conversations found', 'لم يتم العثور على محادثات')}
             </div>
           )}
         </div>

@@ -26,7 +26,14 @@ export function useUnreadMessageCount() {
     useEffect(() => {
         fetchCount();
         const interval = setInterval(fetchCount, 60000); // Poll every 60s
-        return () => clearInterval(interval);
+        // Refresh immediately when messaging UI signals a change
+        // (mark-read or inbound socket message dispatches 'unread-refresh').
+        const handleRefresh = () => fetchCount();
+        window.addEventListener('unread-refresh', handleRefresh);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('unread-refresh', handleRefresh);
+        };
     }, [user?.id]);
 
     return { unreadCount, refreshUnreadCount: fetchCount };

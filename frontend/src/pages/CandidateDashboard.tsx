@@ -33,7 +33,7 @@ import CVProfile from '@/components/candidate/CVProfile';
 import CandidateAvailabilityControl from '@/components/candidate/CandidateAvailabilityControl';
 import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
-import Messages from '@/components/candidate/Messages';
+import Messages from '@/components/recruiter/Messages';
 import CandidateInterviews from '@/components/candidate/Interviews';
 import { CandidateOffers } from '@/components/candidate/CandidateOffers';
 import StudentInternshipEngagement from '@/components/internship/StudentInternshipEngagement';
@@ -746,7 +746,7 @@ const CandidateDashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="messages" className="space-y-6 mt-6">
-              <Messages />
+              <Messages senderRole="candidate" showNewConversation />
             </TabsContent>
 
             {user?.company_id && (
