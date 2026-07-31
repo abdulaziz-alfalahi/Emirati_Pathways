@@ -209,11 +209,14 @@ class MentorSystem:
         self.industry_index: Dict[str, List[str]] = defaultdict(list)
         self.availability_index: Dict[AvailabilityStatus, List[str]] = defaultdict(list)
         self.uae_national_mentors: List[str] = []
-        
-        # Initialize sample data
-        self._initialize_sample_data()
-        
-        logger.info("✅ Mentor System initialized successfully")
+
+        # No sample seeding: the two invented mentors ("Dr. Ahmed Al Mansouri",
+        # "Fatima Al Zahra", 25 mentees each, 4.9 ratings) surfaced as real data
+        # on the operator dashboard. Real mentors live in the mentor_profiles
+        # table; this in-memory store starts — and honestly stays — empty unless
+        # explicitly populated.
+
+        logger.info("✅ Mentor System initialized (empty in-memory store)")
     
     def _initialize_sample_data(self):
         """Initialize sample mentor data"""

@@ -187,22 +187,14 @@ const MentorshipOperatorDashboard: React.FC = () => {
         </div>
     );
 
+    // No fabricated values: there is no settings store behind this tab yet, so
+    // it says so instead of asserting an auto-matching algorithm, session
+    // frequency and mentee cap that do not exist (same class as the NAFIS
+    // settings-tab fabrication removed in the Operations pass).
     const renderSettings = () => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {[
-                { title: t('Auto-Matching Algorithm', 'خوارزمية المطابقة التلقائية'), desc: t('Use AI to match mentees with mentors based on skills and goals', 'استخدام الذكاء الاصطناعي لمطابقة المتدربين مع المرشدين'), value: t('Enabled', 'مفعّل') },
-                { title: t('Session Frequency', 'تكرار الجلسات'), desc: t('Recommended meeting frequency for mentorship pairs', 'عدد الجلسات الموصى بها لأزواج الإرشاد'), value: t('Bi-weekly', 'كل أسبوعين') },
-                { title: t('Max Mentees per Mentor', 'الحد الأقصى للمتدربين'), desc: t('Maximum number of mentees a single mentor can take', 'الحد الأقصى لعدد المتدربين لكل مرشد'), value: '8' },
-                { title: t('Feedback Requirement', 'متطلبات التقييم'), desc: t('Require feedback after every session', 'طلب تقييم بعد كل جلسة'), value: t('Required', 'مطلوب') },
-            ].map((s, i) => (
-                <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{s.title}</div>
-                        <div style={{ fontSize: 13, color: brand.textSecondary, marginTop: 2 }}>{s.desc}</div>
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: brand.primary, background: brand.indigoBg, padding: '6px 14px', borderRadius: 6 }}>{s.value}</span>
-                </div>
-            ))}
+        <div style={{ background: brand.cardBg, borderRadius: 12, padding: 40, border: `1px solid ${brand.border}`, textAlign: 'center', color: brand.textSecondary }}>
+            {t('Programme settings are not yet configurable — no settings store exists. Values shown here previously were illustrative, not live configuration.',
+               'إعدادات البرنامج غير قابلة للتهيئة بعد — لا يوجد مخزن إعدادات. القيم التي كانت تظهر هنا سابقاً كانت توضيحية وليست إعدادات فعلية.')}
         </div>
     );
 

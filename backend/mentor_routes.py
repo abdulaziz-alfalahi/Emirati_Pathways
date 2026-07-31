@@ -23,6 +23,10 @@ try:
     from backend.auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES, ADMIN_ROLES
 except ImportError:
     from auth.access_control import require_roles, resolve_roles, OPERATOR_ROLES, ADMIN_ROLES
+try:
+    from backend.db_utils import execute_query
+except ImportError:  # pragma: no cover
+    from db_utils import execute_query
 
 # Who may act as a skill-verifying mentor / manage mentor profiles for others.
 _MENTOR_ROLES = tuple(OPERATOR_ROLES | {'mentor'})
@@ -611,36 +615,61 @@ def list_mentors():
 @mentor_bp.route('/operator/stats', methods=['GET'])
 @require_roles(*OPERATOR_ROLES)
 def mentorship_operator_stats():
-    """Aggregate statistics for the Mentorship Operator Dashboard."""
+    """Aggregate statistics for the Mentorship Operator Dashboard.
+
+    Reads the mentor_profiles / mentorship_matching / mentorship_sessions
+    tables — the stores the enrolment tab actually writes to. The old
+    implementation read the in-memory sample store, so the Overview showed
+    two invented mentors with 50 fabricated pairs while real enrolments
+    never appeared.
+    """
     try:
-        stats = mentor_system.get_mentor_statistics()
-        all_mentors = mentor_system.search_mentors({})
+        rows = execute_query(
+            """SELECT mp.user_id,
+                      COALESCE(u.full_name,
+                               NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+                               u.email, mp.user_id) AS name,
+                      mp.current_company, mp.expertise_areas, mp.is_available,
+                      mp.rating, mp.total_reviews,
+                      (SELECT COUNT(*) FROM mentorship_matching mm
+                        WHERE mm.mentor_id = mp.user_id
+                          AND LOWER(COALESCE(mm.match_status, '')) IN ('accepted', 'active')) AS mentees,
+                      (SELECT COUNT(*) FROM mentorship_sessions ms
+                        WHERE ms.mentor_id = mp.user_id) AS sessions
+               FROM mentor_profiles mp
+               LEFT JOIN users u ON u.id = mp.user_id
+               ORDER BY name""") or []
 
-        active_count = sum(1 for m in all_mentors if m.availability.status.value == 'available')
-        total_mentees = sum(m.total_mentees for m in all_mentors)
-        avg_rating = round(sum(m.rating for m in all_mentors if m.rating > 0) / max(len([m for m in all_mentors if m.rating > 0]), 1), 1)
+        pending = execute_query(
+            """SELECT COUNT(*) AS c FROM mentorship_matching
+               WHERE LOWER(COALESCE(match_status, '')) = 'pending'""",
+            fetch_one=True) or {'c': 0}
 
-        # Build mentor list summary for the Mentors tab
         mentor_list = []
-        for m in all_mentors:
+        for m in rows:
+            expertise = m.get('expertise_areas') or []
+            if isinstance(expertise, str):
+                expertise = [expertise]
             mentor_list.append({
-                'name': m.full_name,
-                'expertise': [e.area.value.replace('_', ' ').title() for e in m.primary_expertise][:2],
-                'company': m.company,
-                'mentees': m.total_mentees,
-                'rating': m.rating,
-                'status': m.availability.status.value,
-                'sessions': len(m.testimonials)
+                'name': m['name'],
+                'expertise': list(expertise)[:2],
+                'company': m.get('current_company'),
+                'mentees': int(m.get('mentees') or 0),
+                # Null until real reviews exist — never a seeded 4.9.
+                'rating': float(m['rating']) if m.get('rating') and (m.get('total_reviews') or 0) > 0 else None,
+                'status': 'available' if m.get('is_available') else 'unavailable',
+                'sessions': int(m.get('sessions') or 0),
             })
 
+        rated = [m['rating'] for m in mentor_list if m['rating'] is not None]
         return jsonify({
             'success': True,
             'stats': {
-                'total_mentors': len(all_mentors),
-                'active_mentors': active_count,
-                'total_mentee_pairs': total_mentees,
-                'average_rating': avg_rating,
-                'pending_matches': stats.get('pending_matches', 0),
+                'total_mentors': len(mentor_list),
+                'active_mentors': sum(1 for m in mentor_list if m['status'] == 'available'),
+                'total_mentee_pairs': sum(m['mentees'] for m in mentor_list),
+                'average_rating': round(sum(rated) / len(rated), 1) if rated else None,
+                'pending_matches': int(pending.get('c') or 0),
             },
             'mentors': mentor_list,
             'message': 'Mentorship operator stats retrieved successfully'
