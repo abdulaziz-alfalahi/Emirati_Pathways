@@ -245,8 +245,16 @@ const CandidateMatching = () => {
     queryKey: ['analytics'],
     queryFn: async () => {
       try {
-        const response = await restClient.get('/api/recruiter/analytics'); // Assuming this exists or keep failing gracefully
-        return response.data?.success ? response.data.data : null;
+        const response = await restClient.get('/api/recruiter/analytics');
+        const data = response.data?.success ? response.data.data : null;
+        // The endpoint returns honest nulls with available:false until real
+        // analytics are wired (#26). That payload is a truthy object, so it
+        // passed the `analytics &&` render guard and .toFixed(null) white-
+        // screened the whole tab (issue #243). No data -> no strip.
+        if (!data || data.available === false || data.average_score == null || data.qualification_rate == null) {
+          return null;
+        }
+        return data;
       } catch (error) {
         return null;
       }
