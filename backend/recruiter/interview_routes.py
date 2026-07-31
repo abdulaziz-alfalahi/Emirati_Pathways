@@ -113,6 +113,33 @@ interview_bp = Blueprint('recruiter_interviews', __name__)
 interview_engine = InterviewSchedulingEngine()
 
 
+def _notify_interview_staff(context, ntype, message):
+    """Notify the interviewer and any panelists about a lifecycle event —
+    previously only the candidate heard about reschedules/cancellations.
+    Best-effort; context carries interviewer_id + interviewers (jsonb)."""
+    try:
+        try:
+            from backend.notification_helper import create_notification as _notify
+        except ImportError:
+            from notification_helper import create_notification as _notify
+        recipients = set()
+        if context.get('interviewer_id'):
+            recipients.add(str(context['interviewer_id']))
+        panel = context.get('interviewers') or []
+        if isinstance(panel, list):
+            for p in panel:
+                pid = p.get('id') if isinstance(p, dict) else p
+                if pid:
+                    recipients.add(str(pid))
+        for uid in recipients:
+            _notify(user_id=uid, notification_type=ntype,
+                    title=message.split('.')[0],
+                    message=message,
+                    metadata={'interview_title': context.get('interview_title')})
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"interview staff notify failed: {e}")
+
+
 
 def serialize_interview(interview: dict) -> dict:
     """Serialize interview data for JSON response"""
@@ -437,9 +464,11 @@ def cancel_interview(interview_id):
                     # Simplified query: Get candidate_id directly from interview_schedules
                     # Use LEFT JOIN for job details to ensure we get partial data if job is missing
                     cur.execute("""
-                        SELECT 
+                        SELECT
                             i.interview_title,
                             i.candidate_id,
+                            i.interviewer_id,
+                            i.interviewers,
                             COALESCE(jp.title, 'Job Opportunity') as job_title
                         FROM interview_schedules i
                         LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
@@ -450,6 +479,12 @@ def cancel_interview(interview_id):
                     ctx_conn.close()
 
                 if context:
+                    # Interviewer + panelists were never told (gap 3d) — only
+                    # the candidate was.
+                    _notify_interview_staff(
+                        context, 'interview_cancelled',
+                        f"Interview '{context.get('interview_title') or 'Interview'}' was cancelled." +
+                        (f" Reason: {reason}" if reason else ''))
                     communication_service.create_notification(
                         user_id=str(context['candidate_id']),
                         notification_type=NotificationType.INTERVIEW_CANCELLED,
@@ -563,6 +598,7 @@ def reschedule_interview(interview_id):
                     cur = ctx_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                     cur.execute("""
                         SELECT i.candidate_id, i.interview_title,
+                               i.interviewer_id, i.interviewers,
                                COALESCE(jp.title, 'Job Opportunity') as job_title
                         FROM interview_schedules i
                         LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
@@ -571,8 +607,13 @@ def reschedule_interview(interview_id):
                     context = cur.fetchone()
                 finally:
                     ctx_conn.close()
-                
+
                 if context:
+                    # Interviewer + panelists were never told (gap 3c).
+                    _notify_interview_staff(
+                        context, 'interview_rescheduled',
+                        f"Interview '{context.get('interview_title') or 'Interview'}' was rescheduled "
+                        f"to {data.get('scheduled_date', '')} {data.get('scheduled_time', '')}".strip() + '.')
                     communication_service.create_notification(
                         user_id=str(context['candidate_id']),
                         notification_type=NotificationType.INTERVIEW_RESCHEDULED,
@@ -628,8 +669,30 @@ def complete_interview(interview_id):
         conn = get_db_connection()
         success, message = interview_engine.complete_interview(conn, interview_id, data)
         conn.close()
-        
+
         if success:
+            # Gap 7b: completion was silent for the candidate.
+            try:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                _c = get_db_connection()
+                _cur = _c.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                _cur.execute("SELECT candidate_id, interview_title FROM interview_schedules "
+                             "WHERE interview_id = %s OR id::text = %s",
+                             (interview_id, str(interview_id)))
+                _row = _cur.fetchone()
+                _c.close()
+                if _row and _row.get('candidate_id'):
+                    _notify(user_id=str(_row['candidate_id']),
+                            notification_type='interview_completed',
+                            title='Interview completed',
+                            message=f"Your interview '{_row.get('interview_title') or 'Interview'}' has been completed. "
+                                    "You will hear about next steps through your application.",
+                            metadata={'interview_id': str(interview_id), 'link': '/applications'})
+            except Exception as notify_err:
+                logger.warning(f"interview complete notify failed: {notify_err}")
             return jsonify({
                 'success': True,
                 'message': message
@@ -702,6 +765,71 @@ def confirm_interview(interview_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+@interview_bp.route('/<interview_id>/candidate-response', methods=['POST'])
+@jwt_required()
+def candidate_interview_response(interview_id):
+    """Candidate confirms or declines their own interview.
+
+    Gap 3g: the only confirm endpoint was recruiter-guarded, so a candidate
+    could not respond at all and the recruiter could never be notified.
+    """
+    try:
+        me = str(get_jwt_identity())
+        data = request.get_json(silent=True) or {}
+        decision = str(data.get('decision') or '').strip().lower()
+        if decision not in ('confirmed', 'declined'):
+            return jsonify({'success': False, 'error': "decision must be 'confirmed' or 'declined'"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cur.execute("""
+                SELECT interview_id, candidate_id, recruiter_id, interview_title, status
+                FROM interview_schedules
+                WHERE interview_id = %s OR id::text = %s
+            """, (interview_id, str(interview_id)))
+            row = cur.fetchone()
+        finally:
+            cur.close()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Interview not found'}), 404
+        if str(row['candidate_id']) != me:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Not your interview'}), 403
+        if (row.get('status') or '') in ('cancelled', 'canceled', 'completed'):
+            conn.close()
+            return jsonify({'success': False, 'error': f"Interview is already {row['status']}"}), 409
+
+        success, message = interview_engine.update_interview(
+            conn, row['interview_id'], {'confirmation_status': decision})
+        if success and decision == 'confirmed':
+            interview_engine.update_interview(conn, row['interview_id'], {'status': 'confirmed'})
+        conn.close()
+        if not success:
+            return jsonify({'success': False, 'error': message}), 400
+
+        # Close the loop with the recruiter.
+        try:
+            try:
+                from backend.notification_helper import create_notification as _notify
+            except ImportError:
+                from notification_helper import create_notification as _notify
+            if row.get('recruiter_id'):
+                _notify(user_id=str(row['recruiter_id']),
+                        notification_type=f'interview_{decision}',
+                        title=f'Candidate {decision} the interview',
+                        message=f"The candidate has {decision} '{row.get('interview_title') or 'the interview'}'.",
+                        metadata={'interview_id': str(row['interview_id'])})
+        except Exception as notify_err:
+            logger.warning(f"candidate response notify failed: {notify_err}")
+
+        return jsonify({'success': True, 'message': f'Interview {decision}'}), 200
+    except Exception as e:
+        logger.error(f"candidate interview response failed: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @interview_bp.route('/<interview_id>/remind', methods=['POST'])
@@ -991,6 +1119,25 @@ def submit_scorecard(interview_id):
         result = cur.fetchone()
         conn.commit()
         conn.close()
+
+        # Gap 7c: the organizer had no signal a panelist's scorecard came in.
+        try:
+            try:
+                _organizer = str(_iv.get('recruiter_id') or '')
+            except NameError:  # _iv only exists when the authz lookup ran
+                _organizer = ''
+            if _organizer and _organizer != panelist_id:
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                _notify(user_id=_organizer,
+                        notification_type='scorecard_submitted',
+                        title='Interview scorecard submitted',
+                        message='A panelist submitted their scorecard for your interview.',
+                        metadata={'interview_id': str(interview_id), 'panelist_id': panelist_id})
+        except Exception as notify_err:
+            logger.warning(f"scorecard notify failed: {notify_err}")
 
         return jsonify({
             'success': True,

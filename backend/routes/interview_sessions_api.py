@@ -613,12 +613,25 @@ def create_session():
                     content=msg_content,
                     message_type=MessageType.INTERVIEW_INVITE,
                     metadata={
-                        'session_id': session_id, 
+                        'session_id': session_id,
                         'meeting_link': meeting_link,
                         'scheduled_at': scheduled_at,
                         'job_id': job_id
                     }
                 )
+                # send_message() only inserts the chat row — the bell
+                # notification is built in the REST route, not the service, so
+                # these invites were invisible until the recipient opened chat.
+                try:
+                    from backend.notification_helper import create_notification as _notify
+                except ImportError:
+                    from notification_helper import create_notification as _notify
+                _notify(user_id=str(p_id),
+                        notification_type='interview_scheduled',
+                        title='Interview session invitation',
+                        message=f"You have been invited to an interview session on {scheduled_at}.",
+                        metadata={'session_id': session_id, 'scheduled_at': str(scheduled_at),
+                                  'link': meeting_link})
             except Exception as notify_err:
                 logger.error(f"Failed to notify participant {p_id}: {notify_err}")
         
@@ -703,13 +716,18 @@ def update_session_status(session_id):
         status = data.get('status')
         outcome = data.get('outcome')
         
-        valid_statuses = ['scheduled', 'in_progress', 'completed', 'cancelled', 'no_show', 'passed', 'failed']
+        # 'accepted'/'confirmed'/'declined' are what the candidate Confirm
+        # button sends — they were missing from this list, so every candidate
+        # confirmation 400'd and the recruiter never heard back (gap 3g).
+        valid_statuses = ['scheduled', 'in_progress', 'completed', 'cancelled', 'no_show',
+                          'passed', 'failed', 'accepted', 'confirmed', 'declined']
         if status and status not in valid_statuses:
             return jsonify({
                 'success': False,
                 'message': f'Invalid status. Must be one of: {valid_statuses}'
             }), 400
-        
+        db_status = 'confirmed' if status == 'accepted' else status
+
         # Try database update first
         try:
             query = """
@@ -717,9 +735,28 @@ def update_session_status(session_id):
                 SET status = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE interview_id = %s
             """
-            execute_query(query, (status, session_id), fetch_all=False)
+            execute_query(query, (db_status, session_id), fetch_all=False)
         except:
             pass  # Fallback to success response even if DB fails
+
+        # Tell the recruiter the candidate's decision.
+        if db_status in ('confirmed', 'declined'):
+            try:
+                row = execute_query(
+                    "SELECT recruiter_id, interview_title FROM interview_schedules WHERE interview_id = %s",
+                    (session_id,), fetch_one=True)
+                if row and row.get('recruiter_id'):
+                    try:
+                        from backend.notification_helper import create_notification as _notify
+                    except ImportError:
+                        from notification_helper import create_notification as _notify
+                    _notify(user_id=str(row['recruiter_id']),
+                            notification_type=f'interview_{db_status}',
+                            title=f'Candidate {db_status} the interview',
+                            message=f"The candidate has {db_status} '{row.get('interview_title') or 'the interview'}'.",
+                            metadata={'interview_id': str(session_id)})
+            except Exception as notify_err:
+                logger.warning(f"session status notify failed: {notify_err}")
         
         return jsonify({
             'success': True,
