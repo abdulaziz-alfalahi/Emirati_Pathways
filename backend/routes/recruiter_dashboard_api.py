@@ -2102,8 +2102,19 @@ def create_offer_legacy():
                 jp_result = execute_query(jp_query, (jd_id,), fetch_one=True)
                 if jp_result:
                     job_posting_id = jp_result.get('id')
+                    # Timeline rows first (recorder reads pre-update status; the
+                    # offer notification is created separately below).
+                    try:
+                        from backend.application_history import record_status_change
+                    except ImportError:
+                        from application_history import record_status_change
+                    app_rows = execute_query(
+                        "SELECT id FROM job_applications WHERE job_id = %s AND candidate_id = %s",
+                        (job_posting_id, str(candidate_id))) or []
+                    for ar in app_rows:
+                        record_status_change(ar['id'], 'offer', notify_candidate=False)
                     update_query = """
-                        UPDATE job_applications 
+                        UPDATE job_applications
                         SET status = 'offer', updated_at = NOW()
                         WHERE job_id = %s AND candidate_id = %s
                     """

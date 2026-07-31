@@ -51,6 +51,8 @@ interface Application {
     phone?: string;
   };
   applicationType?: 'job' | 'internship' | 'gig' | 'other';
+  /** Recorded status transitions, oldest first (job applications only). */
+  timeline?: { status: string; at: string; note?: string | null }[];
   // Extra details for internships/gigs
   description?: string;
   duration?: string;
@@ -90,24 +92,27 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const loadApplications = async () => {
     setLoading(true);
     try {
-      // Fetch job applications
+      // Fetch job applications. (/api/jobs/applications never existed as a
+      // collection GET — the silent catch below hid a permanent 404, so this
+      // tab showed no job applications at all.)
       let jobApps: Application[] = [];
       try {
-        const response = await restClient.get('/api/jobs/applications');
+        const response = await restClient.get('/api/applications/my-applications');
         if (response.data.success) {
-          jobApps = (response.data.data.applications || []).map((app: any, index: number) => ({
-            id: app.application_id || app.id || `job-${index}-${Date.now()}`,
-            jobTitle: app.jobTitle || app.job_title || 'Unknown Position',
-            company: app.company || 'Confidential',
-            location: app.location || 'UAE',
-            appliedDate: app.appliedDate || app.applied_date || app.submitted_at || new Date().toISOString(),
+          jobApps = (response.data.data || []).map((app: any, index: number) => ({
+            id: app.id || `job-${index}-${Date.now()}`,
+            jobTitle: app.job_title || 'Unknown Position',
+            company: app.company_name || 'Confidential',
+            location: [app.city, app.emirate].filter(Boolean).join(', ') || 'UAE',
+            appliedDate: app.created_at || new Date().toISOString(),
             status: app.status || 'pending',
-            lastUpdate: app.lastUpdate || app.last_updated || app.updated_at || new Date().toISOString(),
-            notes: app.notes,
-            interviewDate: app.interviewDate || app.interview_date,
-            interviewType: app.interviewType || app.interview_type,
-            contactPerson: app.contactPerson || app.contact_person,
+            lastUpdate: app.updated_at || app.created_at || new Date().toISOString(),
+            notes: undefined,
+            interviewDate: app.interview_date,
+            interviewType: app.interview_type,
+            contactPerson: undefined,
             applicationType: 'job',
+            timeline: app.timeline || [],
           }));
         }
       } catch { /* job applications endpoint may fail — continue */ }
@@ -339,6 +344,21 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
             <p className="font-medium">{formatDateFromString(application.lastUpdate)}</p>
           </div>
         </div>
+
+        {/* Status timeline — the hiring journey, not just the latest state (C1-CAN-5) */}
+        {(application.timeline?.length ?? 0) > 1 && (
+          <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center gap-1 text-xs text-slate-600" dir="ltr">
+            {application.timeline!.map((step, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="text-slate-300 mx-1">→</span>}
+                <span className={i === application.timeline!.length - 1 ? 'font-semibold text-teal-700' : ''}>
+                  <span className="capitalize">{step.status.replace(/_/g, ' ')}</span>
+                  <span className="text-slate-400 ms-1">{formatDateFromString(step.at)}</span>
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
 
         {application.interviewDate && application.status !== 'withdrawn' && (
           <div className="bg-purple-50 rounded-lg p-4 mb-4">

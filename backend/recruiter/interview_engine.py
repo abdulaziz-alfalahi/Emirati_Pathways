@@ -391,6 +391,23 @@ class InterviewSchedulingEngine:
         # in PostgreSQL/psycopg2, causing conn.commit() to silently roll back everything
         try:
             cur.execute("SAVEPOINT pre_app_update")
+            # Timeline rows first (recorder reads the pre-update status; no
+            # duplicate notification — interview_scheduled is sent separately).
+            try:
+                try:
+                    from backend.application_history import record_status_change
+                except ImportError:
+                    from application_history import record_status_change
+                cur.execute("""
+                    SELECT id FROM job_applications
+                    WHERE candidate_id::text = %s
+                      AND job_id::text IN (SELECT id::text FROM job_postings WHERE jd_id::text = %s)
+                      AND status NOT IN ('withdrawn', 'rejected', 'interview')
+                """, (str(candidate_id), str(jd_id)))
+                for (app_id,) in cur.fetchall():
+                    record_status_change(app_id, 'interview', notify_candidate=False)
+            except Exception as hist_err:
+                self.logger.warning(f"history record failed: {hist_err}")
             cur.execute("""
                 UPDATE job_applications
                 SET status = 'interview'

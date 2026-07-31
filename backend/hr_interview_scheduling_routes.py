@@ -613,7 +613,13 @@ def schedule_interview():
 
             new_interview = _combine_scheduled(dict(cursor.fetchone()))
 
-            # Update application status
+            # Update application status (timeline row first; the interview
+            # notification itself is sent below)
+            try:
+                from backend.application_history import record_status_change
+            except ImportError:
+                from application_history import record_status_change
+            record_status_change(data['application_id'], 'interview_scheduled', notify_candidate=False)
             cursor.execute("""
                 UPDATE job_applications
                 SET status = 'interview_scheduled'
@@ -958,7 +964,13 @@ def cancel_interview(interview_id):
 
             updated_interview = _combine_scheduled(dict(cursor.fetchone()))
 
-            # Update application status back to under review
+            # Update application status back to under review (timeline row first)
+            try:
+                from backend.application_history import record_status_change
+            except ImportError:
+                from application_history import record_status_change
+            record_status_change(interview['application_id'], 'under_review',
+                                 note='Interview cancelled', notify_candidate=False)
             cursor.execute("""
                 UPDATE job_applications
                 SET status = 'under_review'

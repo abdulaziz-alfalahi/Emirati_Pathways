@@ -305,6 +305,18 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             # Mark 'new' applicants as viewed (clears the "New" badge)
             # Update status from 'pending'/'submitted' to 'under_review' when recruiter views them
             try:
+                # Record the transition per application (timeline + candidate
+                # notification) BEFORE the bulk update — the recorder reads the
+                # current status itself.
+                try:
+                    from backend.application_history import record_status_change
+                except ImportError:
+                    from application_history import record_status_change
+                pending_rows = execute_query(
+                    "SELECT id FROM job_applications WHERE job_id = %s AND status IN ('pending', 'submitted')",
+                    (job_id,)) or []
+                for pr in pending_rows:
+                    record_status_change(pr['id'], 'under_review')
                 update_query = """
                     UPDATE job_applications
                     SET status = 'under_review'

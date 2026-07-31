@@ -927,10 +927,16 @@ def withdraw_candidate_application(application_id):
                                 'message': f'Cannot withdraw application with status: {current_status}'
                             }), 400
                         
-                        # Update the application status
+                        # Update the application status (timeline row first;
+                        # candidate is the actor, no self-notification)
+                        try:
+                            from backend.application_history import record_status_change
+                        except ImportError:
+                            from application_history import record_status_change
+                        record_status_change(str(application_id), 'withdrawn', notify_candidate=False)
                         cursor.execute("""
-                            UPDATE job_applications 
-                            SET status = 'withdrawn', 
+                            UPDATE job_applications
+                            SET status = 'withdrawn',
                                 last_updated = NOW()
                             WHERE id = %s
                         """, (str(application_id),))

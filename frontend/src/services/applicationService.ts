@@ -42,6 +42,10 @@ export interface Application {
   experience_match_percentage?: number;
   created_at: string;
   updated_at: string;
+  /** Recorded status transitions, oldest first (application_status_history). */
+  timeline?: { status: string; at: string; note?: string | null }[];
+  interview_date?: string | null;
+  interview_type?: string | null;
   reviewed_at?: string;
   shortlisted_at?: string;
   rejected_at?: string;

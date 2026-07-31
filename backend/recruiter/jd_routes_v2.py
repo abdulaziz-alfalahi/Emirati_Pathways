@@ -1371,6 +1371,20 @@ def add_to_shortlist():
             # G2: Sync job_applications.status → 'shortlisted'
             try:
                 sync_cur = conn.cursor()
+                # Timeline rows (no extra notification — application_shortlisted
+                # is already sent below). Recorded before the UPDATE.
+                try:
+                    from backend.application_history import record_status_change
+                except ImportError:
+                    from application_history import record_status_change
+                sync_cur.execute("""
+                    SELECT id FROM job_applications
+                    WHERE candidate_id::text = %s
+                      AND (job_id::text = %s OR job_id::text = %s)
+                      AND status NOT IN ('accepted', 'withdrawn', 'offered', 'shortlisted')
+                """, (str(candidate_id), str(jd_id), str(job_id_int)))
+                for (app_id,) in sync_cur.fetchall():
+                    record_status_change(app_id, 'shortlisted', notify_candidate=False)
                 sync_cur.execute("""
                     UPDATE job_applications 
                     SET status = 'shortlisted', updated_at = NOW()

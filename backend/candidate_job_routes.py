@@ -1828,11 +1828,24 @@ def respond_to_offer(offer_id):
                         logger.warning(f"G7 NAFIS placement update skipped (table may not exist): {nafis_err}")
                         conn.rollback()
                     
-                    # G2: Sync job_applications status to 'accepted'
+                    # G2: Sync job_applications status to 'accepted'.
+                    # The live table keys on candidate_id — the old
+                    # user_id::text predicate referenced a non-existent column,
+                    # so this sync silently rolled back on every accept.
                     try:
+                        try:
+                            from backend.application_history import record_status_change
+                        except ImportError:
+                            from application_history import record_status_change
+                        metamorphosis_cur.execute("""
+                            SELECT id FROM job_applications
+                            WHERE candidate_id::text = %s AND job_id::text = %s AND status != 'accepted'
+                        """, (str(candidate_id_for_link), str(jd_id)))
+                        for (acc_app_id,) in metamorphosis_cur.fetchall():
+                            record_status_change(acc_app_id, 'accepted', notify_candidate=False)
                         metamorphosis_cur.execute("""
                             UPDATE job_applications SET status = 'accepted', updated_at = NOW()
-                            WHERE user_id::text = %s AND job_id::text = %s AND status != 'accepted'
+                            WHERE candidate_id::text = %s AND job_id::text = %s AND status != 'accepted'
                         """, (str(candidate_id_for_link), str(jd_id)))
                     except Exception:
                         conn.rollback()
