@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, CheckCheck, Send, Paperclip, X, FileText, Image as ImageIcon, Download, AlertCircle, RotateCcw, Loader2, Search as SearchIcon, ArrowLeft, ChevronUp, ChevronDown } from 'lucide-react';
+import { Check, CheckCheck, Send, Paperclip, X, FileText, Image as ImageIcon, Download, AlertCircle, RotateCcw, Loader2, Search as SearchIcon, ArrowLeft, ChevronUp, ChevronDown, ShieldCheck } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -211,8 +211,18 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>
+              <CardTitle className="flex items-center gap-2">
                 {participantName}
+                {conversationData?.guardianVisible && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                    title={t('This participant is a minor — their verified guardian can view this conversation.',
+                             'هذا المشارك قاصر — يمكن لولي أمره الموثّق الاطلاع على هذه المحادثة.')}
+                  >
+                    <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                    {t('Guardian can view', 'مرئية لولي الأمر')}
+                  </span>
+                )}
               </CardTitle>
               <CardDescription>
                 {isTyping ? (

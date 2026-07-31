@@ -33,4 +33,6 @@ export interface Conversation {
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
+  /** A verified guardian may read this thread (a minor is a participant). */
+  guardianVisible?: boolean;
 }

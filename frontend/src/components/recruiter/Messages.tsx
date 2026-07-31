@@ -165,7 +165,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
             jobTitle: c.job_title || undefined,
             lastMessage: c.last_message_content || t('No messages yet', 'لا توجد رسائل بعد'),
             lastMessageTime: c.last_message_at || c.created_at,
-            unreadCount: c.unread_count || 0
+            unreadCount: c.unread_count || 0,
+            guardianVisible: !!c.guardian_visible
           };
         });
         setConversations(mappedConversations);
