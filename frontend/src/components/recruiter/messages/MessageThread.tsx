@@ -12,6 +12,7 @@ import { Conversation, Message, Attachment } from './types';
 import EmptyConversation from './EmptyConversation';
 import { useNavigate } from 'react-router-dom';
 import { Users, Briefcase } from 'lucide-react';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface MessageThreadProps {
   messages: Message[];
@@ -126,6 +127,9 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   onBack,
 }) => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── In-thread search ──────────────
@@ -188,7 +192,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   // Use a stable wrapper always
 
   // Create safe defaults if not found, to preserve component structure
-  const participantName = conversationData ? conversationData.participantName : 'Unknown Participant';
+  const participantName = conversationData ? conversationData.participantName : t('Unknown Participant', 'مشارك مجهول');
   const participantInitial = participantName.charAt(0);
 
   return (
@@ -212,9 +216,9 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               </CardTitle>
               <CardDescription>
                 {isTyping ? (
-                  <span className="text-blue-500 animate-pulse">typing...</span>
+                  <span className="text-blue-500 animate-pulse">{t('typing...', 'يكتب...')}</span>
                 ) : (
-                  conversationData.participantRole || 'Participant'
+                  conversationData.participantRole || t('Participant', 'مشارك')
                 )}
               </CardDescription>
             </div>
@@ -225,7 +229,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
             </Button>
             {onScheduleInterview && conversationData && (
               <Button variant="outline" size="sm" onClick={onScheduleInterview}>
-                Schedule Interview
+                {t('Schedule Interview', 'جدولة مقابلة')}
               </Button>
             )}
           </div>
@@ -240,13 +244,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                 ref={searchInputRef}
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setMatchIndex(0); }}
-                placeholder="Search messages…"
+                placeholder={t('Search messages…', 'بحث في الرسائل…')}
                 className="w-full h-8 ps-8 pe-3 text-sm border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
             {searchQuery.length >= 2 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                <span>{matchingIds.length > 0 ? `${matchIndex + 1}/${matchingIds.length}` : '0 results'}</span>
+                <span>{matchingIds.length > 0 ? `${matchIndex + 1}/${matchingIds.length}` : t('0 results', 'لا نتائج')}</span>
                 <Button variant="ghost" size="icon" className="h-6 w-6" disabled={matchingIds.length === 0}
                   onClick={() => setMatchIndex(i => (i - 1 + matchingIds.length) % matchingIds.length)}>
                   <ChevronUp className="h-3 w-3" />
@@ -264,7 +268,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         <div ref={scrollRef} className="flex-1 p-6 overflow-y-auto" onScroll={handleScroll}>
           {!conversationData ? (
             <div className="flex flex-col justify-center items-center h-full text-muted-foreground">
-              <p>Select a valid conversation.</p>
+              <p>{t('Select a valid conversation.', 'اختر محادثة صالحة.')}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -276,7 +280,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               )}
               {hasMore && !loadingMore && messages.length > 0 && (
                 <button onClick={onLoadMore} className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                  Load older messages
+                  {t('Load older messages', 'تحميل الرسائل الأقدم')}
                 </button>
               )}
               {messages.length === 0 && (
@@ -284,7 +288,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                   <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800">
                     <Send className="h-6 w-6 text-slate-400" />
                   </div>
-                  <p>No messages yet. Start the conversation!</p>
+                  <p>{t('No messages yet. Start the conversation!', 'لا توجد رسائل بعد. ابدأ المحادثة!')}</p>
                 </div>
               )}
               {messages.map((message, index) => {
@@ -300,7 +304,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                     {showTimestamp && (
                       <div className="flex justify-center my-4">
                         <Badge variant="outline" className="bg-background">
-                          {formatDate(message.timestamp)}
+                          {formatDate(message.timestamp, language)}
                         </Badge>
                       </div>
                     )}
@@ -313,7 +317,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                             <span className="p-2 bg-blue-100 text-blue-600 rounded-full">
                               <Users className="h-4 w-4" />
                             </span>
-                            <h4 className="font-semibold text-sm">Candidate Discussion Started</h4>
+                            <h4 className="font-semibold text-sm">{t('Candidate Discussion Started', 'بدأت مناقشة المرشح')}</h4>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">{message.content}</p>
 
@@ -327,7 +331,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                                 onClick={() => navigate(`/candidate-profile/${safeMetadata.candidate_id}`)}
                               >
                                 <Briefcase className="h-3 w-3 me-2" />
-                                View Candidate Profile
+                                {t('View Candidate Profile', 'عرض ملف المرشح')}
                               </Button>
                             );
                           })()}
@@ -357,18 +361,18 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                             </div>
                             <div className={`text-xs text-muted-foreground mt-1 flex items-center gap-0.5 ${isCurrentUser ? 'justify-end' : ''}`}>
                               {message._optimistic ? (
-                                <span className="text-muted-foreground italic">Sending...</span>
+                                <span className="text-muted-foreground italic">{t('Sending...', 'جارٍ الإرسال...')}</span>
                               ) : message._failed ? (
                                 <button
                                   onClick={() => onRetryMessage?.(message)}
                                   className="text-red-500 flex items-center gap-1 hover:underline"
                                 >
                                   <AlertCircle className="h-3 w-3" />
-                                  Failed · Tap to retry
+                                  {t('Failed · Tap to retry', 'فشل الإرسال · اضغط لإعادة المحاولة')}
                                 </button>
                               ) : (
                                 <>
-                                  {formatTime(message.timestamp)}
+                                  {formatTime(message.timestamp, language)}
                                   <ReadReceipt message={message} isCurrentUser={isCurrentUser} />
                                 </>
                               )}
@@ -453,7 +457,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
               </Button>
             )}
             <Input
-              placeholder="Type your message..."
+              placeholder={t('Type your message...', 'اكتب رسالتك...')}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => {

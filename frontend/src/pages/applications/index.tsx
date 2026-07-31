@@ -655,13 +655,15 @@ const ApplicationsPage: React.FC = () => {
                           </Button>
                         )}
 
-                        <Button
-                          variant="outline"
-                          onClick={() => handleOpenMessageDialog(application)}
-                        >
-                          <MessageSquare className="h-4 w-4 me-2" />
-                          Message
-                        </Button>
+                        {application.recruiter_id && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleOpenMessageDialog(application)}
+                          >
+                            <MessageSquare className="h-4 w-4 me-2" />
+                            Message
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -941,12 +943,15 @@ const ApplicationsPage: React.FC = () => {
 
       {/* Quick Message Dialog */}
       {
-        selectedApplicationForMessage && (
+        selectedApplicationForMessage?.recruiter_id && (
           <QuickMessageDialog
             isOpen={isMessageDialogOpen}
             onOpenChange={setIsMessageDialogOpen}
-            recipientId="recruiter-id" // This should be dynamically set based on the application
-            recipientName="Recruiter Name" // This should be dynamically set
+            recipientId={selectedApplicationForMessage.recruiter_id}
+            recipientName={
+              [selectedApplicationForMessage.company_name, selectedApplicationForMessage.job_title]
+                .filter(Boolean).join(' — ') || 'Recruiter'
+            }
             recipientRole="recruiter"
             context={{
               type: 'job_application',

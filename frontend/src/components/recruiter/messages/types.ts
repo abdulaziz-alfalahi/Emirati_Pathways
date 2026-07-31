@@ -29,6 +29,7 @@ export interface Conversation {
   participantId: string;
   participantName: string;
   participantRole?: string; // Derived role of the OTHER participant
+  jobTitle?: string;        // Optional job context (e.g. the vacancy this thread is about)
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;

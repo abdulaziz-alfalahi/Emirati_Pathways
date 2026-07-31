@@ -11,6 +11,7 @@ import { restClient } from '@/utils/api';
 import { messagingService } from '@/services/messagingService';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/components/notifications/NotificationSystem';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { Plus, Send, Search, X, Loader2 } from 'lucide-react';
 
 interface PlatformUser {
@@ -26,12 +27,15 @@ interface MessagesProps {
   showNewConversation?: boolean;
 }
 
-const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewConversation = false }) => {
+const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewConversation = true }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const userId = String(user?.id || '');
   const { socket } = useNotifications();
+  const { language } = useLanguage();
+  const isRTL = language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -69,14 +73,51 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
   // ─── Mobile responsive state ──────────
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
 
-  // Auto-select conversation from URL if present
+  // Auto-select conversation from URL if present.
+  // Also supports deep links via ?to=<userId> or ?recipientId=<userId>:
+  // creates (or reuses) a conversation with that user and opens it.
+  const deepLinkHandledRef = useRef<string | null>(null);
   useEffect(() => {
     const conversationIdParam = searchParams.get('conversationId');
-    if (conversationIdParam && conversationIdParam !== selectedConversation) {
-      setSelectedConversation(conversationIdParam);
-      selectedConversationRef.current = conversationIdParam;
-      setIsLoading(true);
-      fetchMessages(conversationIdParam).finally(() => setIsLoading(false));
+    if (conversationIdParam) {
+      if (conversationIdParam !== selectedConversation) {
+        setSelectedConversation(conversationIdParam);
+        selectedConversationRef.current = conversationIdParam;
+        setIsLoading(true);
+        fetchMessages(conversationIdParam).finally(() => setIsLoading(false));
+      }
+      return;
+    }
+
+    const recipientParam = searchParams.get('to') || searchParams.get('recipientId');
+    if (recipientParam && deepLinkHandledRef.current !== recipientParam) {
+      deepLinkHandledRef.current = recipientParam;
+      (async () => {
+        setIsLoading(true);
+        try {
+          const res = await restClient.post('/api/communication/conversations', {
+            participants: [recipientParam],
+            sender_role: senderRole,
+          });
+          const convId = res.data?.data?.id;
+          if (convId) {
+            setSelectedConversation(convId);
+            selectedConversationRef.current = convId;
+            await fetchMessages(convId);
+            await fetchConversations();
+            setMobileView('thread');
+          }
+        } catch (error) {
+          console.error('Failed to open conversation from deep link', error);
+          toast({
+            title: t('Error', 'خطأ'),
+            description: t('Could not open the conversation.', 'تعذر فتح المحادثة.'),
+            variant: 'destructive',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      })();
     }
   }, [searchParams]);
 
@@ -84,7 +125,6 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
   const fetchConversations = async () => {
     if (!user) return;
     try {
-      console.log('Fetching conversations for user:', user?.id);
       const response = await restClient.get('/api/communication/conversations', {
         params: { role: senderRole }
       });
@@ -105,33 +145,30 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
           const otherName = (pNames[otherId] && pNames[otherId] !== 'None None')
             ? pNames[otherId]
-            : 'Unknown User/Candidate';
+            : t('Unknown User', 'مستخدم مجهول');
 
           const otherRole = (pRoles[otherId])
             ? pRoles[otherId]
             : 'candidate'; // Default to candidate
-
-          console.log(`[Messages] Mapping Conv ${c.id}: User=${currentUserId}, Other=${otherId}, Name=${otherName}, Role=${otherRole}`);
 
           return {
             id: c.id,
             participantId: otherId,
             participantName: otherName,
             participantRole: otherRole,
-            lastMessage: c.last_message_content || 'No messages yet',
+            jobTitle: c.job_title || undefined,
+            lastMessage: c.last_message_content || t('No messages yet', 'لا توجد رسائل بعد'),
             lastMessageTime: c.last_message_at || c.created_at,
             unreadCount: c.unread_count || 0
           };
         });
         setConversations(mappedConversations);
-      } else {
-        console.warn('Fetch conversations success=false or no data', response.data);
       }
     } catch (error) {
       console.error("Failed to fetch conversations", error);
       toast({
-        title: "Network Error",
-        description: "Could not load messages. Please try refreshing.",
+        title: t('Network Error', 'خطأ في الشبكة'),
+        description: t('Could not load messages. Please try refreshing.', 'تعذر تحميل الرسائل. يرجى إعادة تحميل الصفحة.'),
         variant: "destructive"
       });
     }
@@ -153,7 +190,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
         const mappedMsgs: Message[] = backendMsgs.map((m: any) => ({
           id: m.id,
           senderId: m.sender_id,
-          senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : 'User',
+          senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : t('User', 'مستخدم'),
           recipientId: m.recipient_id,
           recipientName: '',
           content: m.content || '',
@@ -193,7 +230,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
         const olderMsgs: Message[] = backendMsgs.map((m: any) => ({
           id: m.id,
           senderId: m.sender_id,
-          senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : 'User',
+          senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : t('User', 'مستخدم'),
           recipientId: m.recipient_id,
           recipientName: '',
           content: m.content || '',
@@ -236,6 +273,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       setConversations(prev =>
         prev.map(c => c.id === conversationId ? { ...c, unreadCount: 0 } : c)
       );
+      // Let the global unread badge refresh itself
+      window.dispatchEvent(new Event('unread-refresh'));
     } finally {
       setIsLoading(false);
     }
@@ -258,7 +297,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       const mapped: Message = {
         id: msgData.id,
         senderId: msgData.sender_id,
-        senderName: (msgData.sender_name && msgData.sender_name !== 'None None') ? msgData.sender_name : 'User',
+        senderName: (msgData.sender_name && msgData.sender_name !== 'None None') ? msgData.sender_name : t('User', 'مستخدم'),
         recipientId: msgData.recipient_id,
         recipientName: '',
         content: msgData.content || '',
@@ -287,6 +326,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
       // Always refresh conversation list to update last message preview & ordering
       fetchConversations();
+      // Let the global unread badge refresh itself
+      window.dispatchEvent(new Event('unread-refresh'));
     };
 
     // ─── Typing indicator listener ──────────
@@ -369,7 +410,11 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
           }
         } catch (err) {
           console.error('File upload failed:', err);
-          toast({ title: 'Upload Error', description: `Failed to upload ${files[i].name}`, variant: 'destructive' });
+          toast({
+            title: t('Upload Error', 'خطأ في الرفع'),
+            description: t(`Failed to upload ${files[i].name}`, `فشل رفع ${files[i].name}`),
+            variant: 'destructive'
+          });
         }
       }
       setPendingAttachments(prev => [...prev, ...newAttachments]);
@@ -382,13 +427,13 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Send Message
-  const handleSendMessage = async () => {
-    const hasContent = newMessage.trim() || pendingAttachments.length > 0;
-    if (!hasContent || !selectedConversation || !user) return;
-
+  // ─── Shared send logic (used by both new sends and retries) ──────────
+  const performSend = async (content: string, attachments: Attachment[]) => {
+    if (!selectedConversation || !user) return;
     const conversation = conversations.find(c => c.id === selectedConversation);
     if (!conversation) return;
+
+    const displayContent = content || (attachments.length > 0 ? `📎 ${attachments.map(a => a.filename).join(', ')}` : '');
 
     // ── Optimistic UI: show message immediately ──
     const tempId = `_opt_${Date.now()}`;
@@ -398,29 +443,25 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       senderName: (user as any).full_name || (user as any).name || user.email || 'You',
       recipientId: conversation.participantId,
       recipientName: conversation.participantName,
-      content: newMessage || (pendingAttachments.length > 0 ? `📎 ${pendingAttachments.map(a => a.filename).join(', ')}` : ''),
+      content: displayContent,
       timestamp: new Date().toISOString(),
       read: false,
       status: 'sent',
-      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
       _optimistic: true,
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
-    const savedMessage = newMessage;
-    const savedAttachments = [...pendingAttachments];
-    setNewMessage('');
-    setPendingAttachments([]);
 
     try {
       const metadata: any = {};
-      if (savedAttachments.length > 0) {
-        metadata.attachments = savedAttachments;
+      if (attachments.length > 0) {
+        metadata.attachments = attachments;
       }
 
       const payload = {
         recipient_id: conversation.participantId,
-        content: savedMessage || (savedAttachments.length > 0 ? `📎 ${savedAttachments.map(a => a.filename).join(', ')}` : ''),
+        content: displayContent,
         conversation_id: selectedConversation,
         message_type: 'text',
         sender_role: senderRole,
@@ -429,12 +470,15 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
       const response = await restClient.post('/api/communication/messages', payload);
       if (response.data.success) {
-        // Replace optimistic message with real one from server
-        const realMsg = response.data.data?.message;
-        if (realMsg) {
+        // Replace optimistic message with the real one from the server.
+        // The API returns the message directly at response.data.data.
+        const realMsg = response.data.data;
+        if (realMsg && realMsg.id) {
           setMessages(prev => prev.map(m => m.id === tempId ? {
             ...m,
-            id: realMsg.id || m.id,
+            id: realMsg.id,
+            timestamp: realMsg.created_at || m.timestamp,
+            status: realMsg.status || m.status,
             _optimistic: false,
           } : m));
         } else {
@@ -450,18 +494,38 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       // Mark as failed so UI shows retry indicator
       setMessages(prev => prev.map(m => m.id === tempId ? { ...m, _optimistic: false, _failed: true } : m));
       toast({
-        title: 'Error',
-        description: 'Failed to send message.',
+        title: t('Error', 'خطأ'),
+        description: t('Failed to send message.', 'فشل إرسال الرسالة.'),
         variant: 'destructive'
       });
     }
   };
 
+  // Send Message
+  const handleSendMessage = async () => {
+    const hasContent = newMessage.trim() || pendingAttachments.length > 0;
+    if (!hasContent || !selectedConversation || !user) return;
+
+    const savedMessage = newMessage;
+    const savedAttachments = [...pendingAttachments];
+    setNewMessage('');
+    setPendingAttachments([]);
+
+    await performSend(savedMessage, savedAttachments);
+  };
+
+  // Retry a failed message: drop the failed entry and re-send its content
+  const handleRetryMessage = async (failedMessage: Message) => {
+    setMessages(prev => prev.filter(m => m.id !== failedMessage.id));
+    await performSend(failedMessage.content, failedMessage.attachments || []);
+  };
+
   // Handle Delete Conversation
   const handleDeleteConversation = async (conversationId: string) => {
+    if (!window.confirm(t('Are you sure you want to delete this conversation?', 'هل أنت متأكد من حذف هذه المحادثة؟'))) return;
+
     try {
       // Optimistic update
-      const previousConversations = [...conversations];
       setConversations(prev => prev.filter(c => c.id !== conversationId));
 
       if (selectedConversation === conversationId) {
@@ -472,14 +536,14 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       await restClient.delete(`/api/communication/conversations/${conversationId}`);
 
       toast({
-        title: "Conversation Deleted",
-        description: "The conversation has been removed from your list.",
+        title: t('Conversation Deleted', 'تم حذف المحادثة'),
+        description: t('The conversation has been removed from your list.', 'تمت إزالة المحادثة من قائمتك.'),
       });
     } catch (error) {
       console.error("Failed to delete conversation", error);
       toast({
-        title: "Error",
-        description: "Failed to delete conversation. Please try again.",
+        title: t('Error', 'خطأ'),
+        description: t('Failed to delete conversation. Please try again.', 'فشل حذف المحادثة. يرجى المحاولة مرة أخرى.'),
         variant: "destructive"
       });
       // Re-fetch to restore state if failed
@@ -510,14 +574,18 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
     const timer = setTimeout(async () => {
       setSearchingUsers(true);
       try {
-        const res = await restClient.get('/api/admin/users', {
-          params: { search: userSearch, per_page: 10, page: 1 },
+        const res = await restClient.get('/api/communication/contacts', {
+          params: { q: userSearch },
         });
-        const users: PlatformUser[] =
-          (res as any)?.data?.data?.users ||
-          (res as any)?.data?.users ||
-          (res as any)?.users ||
-          [];
+        const contacts: { id: string | number; name?: string; role?: string }[] =
+          res?.data?.data?.contacts || [];
+        const users: PlatformUser[] = contacts.map(c => ({
+          id: c.id,
+          full_name: c.name,
+          name: c.name,
+          email: '',
+          role: c.role,
+        }));
         setFoundUsers(users.filter((u: PlatformUser) => String(u.id) !== userId));
       } catch { setFoundUsers([]); }
       finally { setSearchingUsers(false); }
@@ -550,11 +618,11 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
         setSelectedConversation(convRes.data.id);
         selectedConversationRef.current = convRes.data.id;
         fetchMessages(convRes.data.id);
-        toast({ title: 'Conversation created', description: 'Your message has been sent.' });
+        toast({ title: t('Conversation created', 'تم إنشاء المحادثة'), description: t('Your message has been sent.', 'تم إرسال رسالتك.') });
       }
     } catch (e) {
       console.error('Create conversation failed', e);
-      toast({ title: 'Error', description: 'Failed to create conversation.', variant: 'destructive' });
+      toast({ title: t('Error', 'خطأ'), description: t('Failed to create conversation.', 'فشل إنشاء المحادثة.'), variant: 'destructive' });
     } finally {
       setCreatingConv(false);
     }
@@ -564,12 +632,12 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Messages</h2>
-          <p className="text-muted-foreground">Communicate with candidates and team members</p>
+          <h2 className="text-2xl font-bold">{t('Messages', 'الرسائل')}</h2>
+          <p className="text-muted-foreground">{t('Communicate with candidates and team members', 'تواصل مع المرشحين وأعضاء الفريق')}</p>
         </div>
         {showNewConversation && (
           <Button onClick={() => setShowNewDialog(true)}>
-            <Plus className="h-4 w-4 me-1" /> New Message
+            <Plus className="h-4 w-4 me-1" /> {t('New Message', 'رسالة جديدة')}
           </Button>
         )}
       </div>
@@ -578,7 +646,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
       {showNewConversation && showNewDialog && (
         <Card className="p-4 space-y-4 border-primary/30 shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-base">New Conversation</h3>
+            <h3 className="font-semibold text-base">{t('New Conversation', 'محادثة جديدة')}</h3>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setShowNewDialog(false); setSelectedUser(null); }}>
               <X className="h-4 w-4" />
             </Button>
@@ -587,26 +655,26 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
           {/* Recipient search */}
           {!selectedUser ? (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">{userSearch.length < 2 ? 'Recent contacts' : 'Search results'}</label>
+              <label className="text-sm font-medium text-muted-foreground">{userSearch.length < 2 ? t('Recent contacts', 'جهات الاتصال الأخيرة') : t('Search results', 'نتائج البحث')}</label>
               <div className="relative">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
-                  placeholder="Search by name…"
+                  placeholder={t('Search by name…', 'ابحث بالاسم…')}
                   className="ps-9 h-9"
                   autoFocus
                 />
               </div>
-              {searchingUsers && <p className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Searching…</p>}
+              {searchingUsers && <p className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> {t('Searching…', 'جارٍ البحث…')}</p>}
               {foundUsers.length > 0 && (() => {
                 // Group users by role
                 const grouped: Record<string, PlatformUser[]> = {};
                 foundUsers.forEach(u => {
-                  const roleLabel = u.role === 'recruiter' ? 'Recruiters'
-                    : u.role === 'admin' || u.role === 'admin' ? 'Admins'
-                      : u.role === 'employer_admin' ? 'HR Managers'
-                        : 'Candidates';
+                  const roleLabel = u.role === 'recruiter' ? t('Recruiters', 'مسؤولو التوظيف')
+                    : u.role === 'admin' ? t('Admins', 'المشرفون')
+                      : u.role === 'employer_admin' ? t('HR Managers', 'مديرو الموارد البشرية')
+                        : t('Candidates', 'المرشحون');
                   (grouped[roleLabel] = grouped[roleLabel] || []).push(u);
                 });
                 return (
@@ -624,8 +692,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                               {(u.full_name || u.name || '?')?.[0]?.toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-medium truncate">{u.full_name || u.name || 'User'}</p>
-                              <p className="text-xs text-muted-foreground truncate">{u.role?.replace('_', ' ') || 'User'}</p>
+                              <p className="font-medium truncate">{u.full_name || u.name || t('User', 'مستخدم')}</p>
+                              <p className="text-xs text-muted-foreground truncate">{u.role?.replace('_', ' ') || t('User', 'مستخدم')}</p>
                             </div>
                           </button>
                         ))}
@@ -641,8 +709,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                 {(selectedUser.full_name || selectedUser.name || '?')?.[0]?.toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{selectedUser.full_name || selectedUser.name || 'User'}</p>
-                <p className="text-xs text-muted-foreground truncate">{selectedUser.role?.replace('_', ' ') || 'User'}</p>
+                <p className="text-sm font-medium truncate">{selectedUser.full_name || selectedUser.name || t('User', 'مستخدم')}</p>
+                <p className="text-xs text-muted-foreground truncate">{selectedUser.role?.replace('_', ' ') || t('User', 'مستخدم')}</p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedUser(null)}>
                 <X className="h-3 w-3" />
@@ -652,27 +720,27 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
           {/* Subject */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground">Subject (optional)</label>
-            <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder="e.g. Application follow-up" className="h-9" />
+            <label className="text-sm font-medium text-muted-foreground">{t('Subject (optional)', 'الموضوع (اختياري)')}</label>
+            <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder={t('e.g. Application follow-up', 'مثال: متابعة الطلب')} className="h-9" />
           </div>
 
           {/* Initial message */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground">Message</label>
+            <label className="text-sm font-medium text-muted-foreground">{t('Message', 'الرسالة')}</label>
             <textarea
               value={newInitialMsg}
               onChange={e => setNewInitialMsg(e.target.value)}
-              placeholder="Type your message…"
+              placeholder={t('Type your message…', 'اكتب رسالتك…')}
               rows={3}
               className="w-full border rounded-md p-2 text-sm resize-none focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
             />
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setShowNewDialog(false); setSelectedUser(null); }}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => { setShowNewDialog(false); setSelectedUser(null); }}>{t('Cancel', 'إلغاء')}</Button>
             <Button size="sm" disabled={!selectedUser || !newInitialMsg.trim() || creatingConv} onClick={handleCreateConversation}>
               {creatingConv ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Send className="h-4 w-4 me-1" />}
-              Send
+              {t('Send', 'إرسال')}
             </Button>
           </div>
         </Card>
@@ -706,6 +774,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
             pendingAttachments={pendingAttachments}
             onAttachFiles={handleAttachFiles}
             onRemoveAttachment={handleRemoveAttachment}
+            onRetryMessage={handleRetryMessage}
             hasMore={hasMore}
             loadingMore={loadingMore}
             onLoadMore={loadOlderMessages}
@@ -730,7 +799,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
               if (!conv) return null;
               return (
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Candidate Profile</h3>
+                  <h3 className="font-semibold text-lg">{t('Candidate Profile', 'ملف المرشح')}</h3>
                   <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
                     <div className="w-20 h-20 bg-slate-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-slate-500">
                       {conv.participantName.charAt(0)}
@@ -738,18 +807,18 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                     <h4 className="font-bold text-lg">{conv.participantName}</h4>
                     <p className="text-sm text-muted-foreground mb-4">
                       {conv.participantRole === 'recruiter' || conv.participantRole === 'admin'
-                        ? 'Team Member'
-                        : 'Candidate'}
+                        ? t('Team Member', 'عضو الفريق')
+                        : t('Candidate', 'مرشح')}
                     </p>
 
                     {/* ONLY show profile buttons if it is a candidate */}
                     {(conv.participantRole !== 'recruiter' && conv.participantRole !== 'admin') && (
                       <div className="grid gap-2">
                         <Button className="w-full" variant="outline" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
-                          View Full Profile
+                          {t('View Full Profile', 'عرض الملف الكامل')}
                         </Button>
                         <Button className="w-full" variant="ghost" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
-                          View Application
+                          {t('View Application', 'عرض الطلب')}
                         </Button>
                       </div>
                     )}
@@ -757,11 +826,11 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
 
                   {/* Quick Notes / Context Placeholder */}
                   <div className="bg-white p-4 rounded-lg border shadow-sm">
-                    <h4 className="font-semibold text-sm mb-2">About</h4>
+                    <h4 className="font-semibold text-sm mb-2">{t('About', 'نبذة')}</h4>
                     <p className="text-xs text-muted-foreground">
                       {(conv.participantRole === 'recruiter' || conv.participantRole === 'admin')
-                        ? "Internal team member. View team settings for more details."
-                        : "Profile details are loading..."}
+                        ? t('Internal team member. View team settings for more details.', 'عضو فريق داخلي. راجع إعدادات الفريق لمزيد من التفاصيل.')
+                        : t('Profile details are loading...', 'جارٍ تحميل تفاصيل الملف...')}
                     </p>
                   </div>
                 </div>

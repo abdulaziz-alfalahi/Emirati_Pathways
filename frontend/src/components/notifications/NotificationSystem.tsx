@@ -379,9 +379,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const loadPreferences = useCallback(async () => {
     try {
-      const response = await restClient.get('/api/communication/notifications/preferences', {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
+      const response = await restClient.get('/api/communication/notifications/preferences');
       if (response.data.success && response.data.data) {
         setPreferences(prev => ({ ...prev, ...response.data.data }));
       }
@@ -395,7 +393,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     try {
       const response = await restClient.get('/api/communication/notifications', {
-        headers: { Authorization: `Bearer ${authToken}` },
         params: { limit: 50 }
       });
       if (response.data.success && response.data.data) {
@@ -468,9 +465,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     try {
       // Call REST API
-      await restClient.post(`/api/communication/notifications/${notificationId}/read`, {}, {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
+      await restClient.post(`/api/communication/notifications/${notificationId}/read`, {});
 
       // Also emit via socket if available for cross-device sync
       if (socket && isConnected) {
@@ -490,9 +485,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     setUnreadCount(0);
 
     try {
-      await restClient.post('/api/communication/notifications/mark-all-read', {}, {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
+      await restClient.post('/api/communication/notifications/mark-all-read', {});
 
       if (socket && isConnected) {
         socket.emit('mark_read', { user_id: userId, notification_id: 'all' });
@@ -510,9 +503,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const updatePreferences = useCallback(async (newPreferences: NotificationPreferences) => {
     try {
-      await restClient.post('/api/communication/notifications/preferences', newPreferences, {
-        headers: { Authorization: `Bearer ${authToken}` }
-      });
+      await restClient.post('/api/communication/notifications/preferences', newPreferences);
       setPreferences(newPreferences);
       toast.success('Notification preferences updated');
     } catch (error) {

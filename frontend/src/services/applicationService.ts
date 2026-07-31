@@ -54,6 +54,8 @@ export interface Application {
   reviewed_by?: string;
   hiring_manager_id?: string;
   hr_contact_id?: string;
+  /** Owning recruiter of the job posting (my-applications rows include this). */
+  recruiter_id?: string;
   job_title?: string;
   company_name?: string;
   candidate_name?: string;

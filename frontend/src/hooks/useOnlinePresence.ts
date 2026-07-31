@@ -11,24 +11,16 @@ export function useOnlinePresence() {
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        if (!socket) {
-            console.log('[Presence] socket is null/undefined, skipping');
-            return;
-        }
-
-        console.log('[Presence] Hook effect running. socket.connected:', socket.connected, 'socket.id:', socket.id);
+        if (!socket) return;
 
         // Ask the server for the current list once on mount / reconnect
         socket.emit('get_online_users');
-        console.log('[Presence] Emitted get_online_users event');
 
         const handleOnlineUsers = (data: { users: string[] }) => {
-            console.log('[Presence] online_users list received:', data.users);
             setOnlineUsers(new Set(data.users));
         };
 
         const handleUserOnline = (data: { user_id: string }) => {
-            console.log('[Presence] user_online event:', data.user_id);
             setOnlineUsers(prev => {
                 const next = new Set(prev);
                 next.add(data.user_id);
@@ -37,7 +29,6 @@ export function useOnlinePresence() {
         };
 
         const handleUserOffline = (data: { user_id: string }) => {
-            console.log('[Presence] user_offline event:', data.user_id);
             setOnlineUsers(prev => {
                 const next = new Set(prev);
                 next.delete(data.user_id);
