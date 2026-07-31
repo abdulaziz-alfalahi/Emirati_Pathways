@@ -2,12 +2,13 @@
 // Read-only tracking of each child's engagements; the only parent action is
 // granting/denying consent, which is requested for minors only.
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import internshipEngagementService, { Engagement, ConsentAuditEntry, stageLabel } from '@/services/internshipEngagementService';
-import { Briefcase, Building2, ShieldCheck, Loader2, AlertCircle, RefreshCw, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Loader2, AlertCircle, RefreshCw, History, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 
 const stagePillClass: Record<Engagement['stage'], string> = {
     proposed: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -20,8 +21,19 @@ const stagePillClass: Record<Engagement['stage'], string> = {
 
 const ParentInternshipTracking: React.FC = () => {
     const { i18n } = useTranslation();
+    const navigate = useNavigate();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => (isRTL ? ar : en);
+
+    // Deep link into the guardian Messages tab, pre-targeting the school
+    // coordinator with a context title ("Child — Internship").
+    const messageCoordinator = (e: Engagement) => {
+        const coordinatorId = (e.coordinator_id || '').trim();
+        if (!coordinatorId) return;
+        const childName = e.student_name || t('Your child', 'ابنك/ابنتك');
+        const ctxTitle = `${childName} — ${e.internship_title || t('Internship', 'تدريب')}`;
+        navigate(`/guardian-dashboard?tab=messages&to=${coordinatorId}&ctxTitle=${encodeURIComponent(ctxTitle)}`);
+    };
 
     const [engagements, setEngagements] = useState<Engagement[]>([]);
     const [loading, setLoading] = useState(true);
@@ -233,6 +245,19 @@ const ParentInternshipTracking: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Contact the school coordinator about this engagement */}
+                                        {(e.coordinator_id || '').trim() && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="w-full gap-1.5"
+                                                onClick={() => messageCoordinator(e)}
+                                            >
+                                                <MessageCircle className="h-4 w-4" />
+                                                {t('Message coordinator', 'مراسلة المنسق')}
+                                            </Button>
+                                        )}
 
                                         {/* The only parent action: consent for minors */}
                                         {e.parent_consent_status === 'pending' && (

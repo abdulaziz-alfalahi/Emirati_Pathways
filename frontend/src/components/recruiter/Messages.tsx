@@ -90,6 +90,11 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
     }
 
     const recipientParam = searchParams.get('to') || searchParams.get('recipientId');
+    // Optional context title for the new conversation (e.g. "Child — Internship").
+    let ctxTitle = searchParams.get('ctxTitle');
+    if (ctxTitle) {
+      try { ctxTitle = decodeURIComponent(ctxTitle); } catch { /* keep raw value */ }
+    }
     if (recipientParam && deepLinkHandledRef.current !== recipientParam) {
       deepLinkHandledRef.current = recipientParam;
       (async () => {
@@ -98,6 +103,7 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
           const res = await restClient.post('/api/communication/conversations', {
             participants: [recipientParam],
             sender_role: senderRole,
+            ...(ctxTitle ? { title: ctxTitle } : {}),
           });
           const convId = res.data?.data?.id;
           if (convId) {

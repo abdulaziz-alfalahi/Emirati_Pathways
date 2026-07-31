@@ -25,6 +25,7 @@ export interface Engagement {
   internship_title?: string;
   internship_company?: string;
   student_name?: string;
+  coordinator_id?: string | null;
   initiated_by: 'student' | 'coordinator';
   stage: 'proposed' | 'confirmed' | 'active' | 'completed' | 'declined' | 'withdrawn';
   recruiter_status: 'pending' | 'approved' | 'declined';

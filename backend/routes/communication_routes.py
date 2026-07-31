@@ -38,6 +38,78 @@ def _sanitize(text: str) -> str:
         return bleach.clean(text, tags=[], strip=True)
     return text or ''
 
+
+def _staff_msg_roles():
+    """Roles that may start conversations with anyone."""
+    try:
+        from backend.auth.access_control import RECRUITER_ROLES, OPERATOR_ROLES
+    except ImportError:  # pragma: no cover
+        from auth.access_control import RECRUITER_ROLES, OPERATOR_ROLES
+    return RECRUITER_ROLES | OPERATOR_ROLES | {
+        'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
+        'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
+        'board_member', 'compliance_auditor'}
+
+
+def _family_linked(user_a: str, user_b: str) -> bool:
+    """True if a VERIFIED parent-child link exists between the two users, in
+    either direction. Owner decision 2026-07-31: parents and their own
+    children may message each other (parents share platform resources with
+    their children) — the one exception to the candidates-with-staff-only
+    rule."""
+    try:
+        conn = communication_service._get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM parent_child_links
+                   WHERE verified IS DISTINCT FROM FALSE
+                     AND ((parent_user_id = %s AND child_user_id = %s)
+                       OR (parent_user_id = %s AND child_user_id = %s))
+                   LIMIT 1""",
+                (str(user_a), str(user_b), str(user_b), str(user_a)))
+            hit = cur.fetchone() is not None
+        conn.close()
+        return hit
+    except Exception as e:
+        logger.warning(f"family link check failed: {e}")
+        return False
+
+
+def _verified_child_of(parent_id: str, child_id: str) -> bool:
+    """True if child_id is a verified child of parent_id (directional)."""
+    try:
+        conn = communication_service._get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM parent_child_links
+                   WHERE verified IS DISTINCT FROM FALSE
+                     AND parent_user_id = %s AND child_user_id = %s LIMIT 1""",
+                (str(parent_id), str(child_id)))
+            hit = cur.fetchone() is not None
+        conn.close()
+        return hit
+    except Exception as e:
+        logger.warning(f"child link check failed: {e}")
+        return False
+
+
+def _is_minor_user(user_id: str) -> bool:
+    """Minor per recorded DOB (same rule as internship consent); unknown DOB
+    => adult."""
+    try:
+        conn = communication_service._get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT EXTRACT(YEAR FROM age(dob))::int < 18 AS minor
+                   FROM candidate_profiles WHERE user_id = %s AND dob IS NOT NULL""",
+                (str(user_id),))
+            row = cur.fetchone()
+        conn.close()
+        return bool(row and row[0])
+    except Exception as e:
+        logger.warning(f"minor check failed: {e}")
+        return False
+
 @communication_bp.route('/conversations', methods=['GET'])
 @jwt_required()
 def get_user_conversations():
@@ -182,15 +254,13 @@ def create_conversation():
         title = data.get('title', 'Conversation')
 
         # Same policy as POST /messages: staff may start conversations with
-        # anyone; candidates only with staff (was completely unchecked).
+        # anyone; candidates/parents only with staff or verified family
+        # (was completely unchecked).
         try:
-            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+            from backend.auth.access_control import resolve_roles
         except ImportError:  # pragma: no cover
-            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
-        _STAFF = RECRUITER_ROLES | OPERATOR_ROLES | {
-            'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
-            'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
-            'board_member', 'compliance_auditor'}
+            from auth.access_control import resolve_roles
+        _STAFF = _staff_msg_roles()
         if not (resolve_roles() & _STAFF):
             others = [p for p in participants if p != current_user_id]
             try:
@@ -206,9 +276,13 @@ def create_conversation():
             except Exception as _e:
                 logger.warning(f"participant role check failed: {_e}")
                 staff_count = 0
-            if staff_count < len(others):
+            _non_staff = len(others) - staff_count
+            _family_ok = (len(others) == 1 and _non_staff == 1
+                          and _family_linked(current_user_id, others[0]))
+            if staff_count < len(others) and not _family_ok:
                 return jsonify({'success': False,
-                                'message': 'You can only start conversations with platform staff.'}), 403
+                                'message': 'You can only start conversations with platform staff '
+                                           'or your own family members.'}), 403
 
         # FIX: Extract roles for strict separation
         participant_roles = {}
@@ -474,21 +548,18 @@ def send_message():
         # conversation is open to staff roles, while candidates may only
         # start conversations with staff (never with other candidates).
         try:
-            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+            from backend.auth.access_control import resolve_roles
         except ImportError:  # pragma: no cover
-            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
-        _STAFF_ROLES = RECRUITER_ROLES | OPERATOR_ROLES | {
-            'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
-            'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
-            'board_member', 'compliance_auditor',
-        }
+            from auth.access_control import resolve_roles
+        _STAFF_ROLES = _staff_msg_roles()
         if conversation_id:
             _conv = communication_service.get_conversation(conversation_id)
             if not _conv or str(current_user_id) not in [str(p) for p in (_conv.participants or [])]:
                 return jsonify({'success': False,
                                 'message': 'You are not a participant in this conversation'}), 403
         elif not (resolve_roles() & _STAFF_ROLES):
-            # A candidate opening a NEW thread: the counterpart must be staff.
+            # A candidate/parent opening a NEW thread: the counterpart must be
+            # staff — or verified family (parent↔own child, owner decision).
             _is_staff_recipient = False
             try:
                 _c = communication_service._get_db_connection()
@@ -504,10 +575,10 @@ def send_message():
                     _is_staff_recipient = bool(_rec_roles & _STAFF_ROLES)
             except Exception as _authz_err:
                 logger.warning(f"recipient role check failed: {_authz_err}")
-            if not _is_staff_recipient:
+            if not _is_staff_recipient and not _family_linked(current_user_id, recipient_id):
                 return jsonify({'success': False,
                                 'message': 'You can only start conversations with platform staff '
-                                           '(recruiters, mentors, support).'}), 403
+                                           'or your own family members.'}), 403
 
         # Convert message type string to enum
         try:
@@ -1227,7 +1298,12 @@ def get_messaging_contacts():
                     sql += " ORDER BY name LIMIT 20"
                     cur.execute(sql, tuple(params))
                 else:
-                    # Candidates: job owners of their applications + existing counterparts.
+                    # Candidates/parents: job owners of their applications,
+                    # staff on their own AND their children's internship
+                    # engagements, verified family links (both directions —
+                    # a parent's children and a child's parents), plus
+                    # existing counterparts. Without the family/engagement
+                    # sources a fresh parent's picker was empty.
                     sql = (f"""
                         SELECT DISTINCT u.id, {name_expr} AS name, u.role FROM users u
                         WHERE CAST(u.id AS TEXT) != %s AND CAST(u.id AS TEXT) IN (
@@ -1236,12 +1312,27 @@ def get_messaging_contacts():
                             JOIN job_postings jp ON jp.id::text = ja.job_id
                             WHERE ja.candidate_id = %s
                             UNION
+                            SELECT staff FROM (
+                                SELECT unnest(ARRAY[ia.coordinator_id, ia.recruiter_id, i.posted_by]) AS staff
+                                FROM internship_applications ia
+                                JOIN internships i ON i.id = ia.internship_id
+                                WHERE ia.user_id = %s OR ia.user_id IN (
+                                    SELECT child_user_id FROM parent_child_links
+                                    WHERE parent_user_id = %s AND verified IS DISTINCT FROM FALSE)
+                            ) eng WHERE staff IS NOT NULL AND TRIM(staff) != ''
+                            UNION
+                            SELECT child_user_id FROM parent_child_links
+                            WHERE parent_user_id = %s AND verified IS DISTINCT FROM FALSE
+                            UNION
+                            SELECT parent_user_id FROM parent_child_links
+                            WHERE child_user_id = %s AND verified IS DISTINCT FROM FALSE
+                            UNION
                             SELECT cp2.user_id FROM conversation_participants cp1
                             JOIN conversation_participants cp2
                               ON cp1.conversation_id = cp2.conversation_id
                             WHERE cp1.user_id = %s AND cp2.user_id != %s
                         )""")
-                    params = [current_user_id, current_user_id, current_user_id, current_user_id]
+                    params = [current_user_id] * 8
                     if q:
                         sql += f" AND {name_expr} ILIKE %s"
                         params.append(f"%{q}%")
@@ -1254,6 +1345,56 @@ def get_messaging_contacts():
     except Exception as e:
         logger.error(f"contacts failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to load contacts'}), 500
+
+
+@communication_bp.route('/children/<child_id>/conversations', methods=['GET'])
+@jwt_required()
+def guardian_child_conversations(child_id):
+    """Guardian oversight (owner-approved 2026-07-31): a verified parent may
+    READ a MINOR child's conversations — list view. Adults' conversations are
+    never exposed; the link must be verified and directional (parent→child)."""
+    try:
+        me = str(get_jwt_identity())
+        if not _verified_child_of(me, child_id):
+            return jsonify({'success': False, 'message': 'Not your verified child'}), 403
+        if not _is_minor_user(child_id):
+            return jsonify({'success': False,
+                            'message': 'Oversight applies to minor children only'}), 403
+        convs = communication_service.get_user_conversations(str(child_id))
+        return jsonify({'success': True, 'data': {
+            'conversations': [c.to_dict() for c in convs],
+            'read_only': True,
+        }})
+    except Exception as e:
+        logger.error(f"guardian conversations failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load conversations'}), 500
+
+
+@communication_bp.route('/children/<child_id>/conversations/<conversation_id>/messages', methods=['GET'])
+@jwt_required()
+def guardian_child_messages(child_id, conversation_id):
+    """Guardian oversight — read-only thread view of a minor child's
+    conversation. No write path exists for guardians."""
+    try:
+        me = str(get_jwt_identity())
+        if not _verified_child_of(me, child_id):
+            return jsonify({'success': False, 'message': 'Not your verified child'}), 403
+        if not _is_minor_user(child_id):
+            return jsonify({'success': False,
+                            'message': 'Oversight applies to minor children only'}), 403
+        conv = communication_service.get_conversation(conversation_id)
+        if not conv or str(child_id) not in [str(p) for p in (conv.participants or [])]:
+            return jsonify({'success': False, 'message': 'Conversation not found'}), 404
+        result = communication_service.get_conversation_messages(
+            conversation_id, limit=100, offset=0)
+        msgs = result.get('messages', []) if isinstance(result, dict) else result
+        return jsonify({'success': True, 'data': {
+            'messages': [m.to_dict() if hasattr(m, 'to_dict') else m for m in msgs],
+            'read_only': True,
+        }})
+    except Exception as e:
+        logger.error(f"guardian messages failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load messages'}), 500
 
 
 ALLOWED_EXTENSIONS = {
