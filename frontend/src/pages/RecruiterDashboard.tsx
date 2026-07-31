@@ -84,7 +84,12 @@ const RecruiterDashboard: React.FC = () => {
   const { language, toggleLanguage } = useLanguage();
   const isRTL = i18n.language === 'ar';
   const b = (en: string, ar: string) => isRTL ? ar : en;
-  const currentTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab') || 'overview';
+  // Internship postings and proposals share one top-level tab (feedback
+  // fb_1785460450). ?tab=internship-proposals stays a valid deep link — it
+  // selects the merged tab with the Proposals sub-view.
+  const currentTab = rawTab === 'internship-proposals' ? 'postings' : rawTab;
+  const internshipSubTab: 'postings' | 'proposals' = rawTab === 'internship-proposals' ? 'proposals' : 'postings';
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
   const [roiCalculatorOpen, setRoiCalculatorOpen] = useState(false);
@@ -319,7 +324,7 @@ const RecruiterDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('overview')}>{b('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('jobs')}>{b('My Jobs', 'وظائفي')}</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('candidates')}>{b('Candidates', 'المرشحون')}</TabsTrigger>
@@ -334,7 +339,6 @@ const RecruiterDashboard: React.FC = () => {
               </TabsTrigger>
               <TabsTrigger value="offers" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('offers')}>{b('Offers', 'العروض')}</TabsTrigger>
               <TabsTrigger value="postings" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('postings')}>{b('Internships & Gigs', 'التدريب والعمل الحر')}</TabsTrigger>
-              <TabsTrigger value="internship-proposals" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('internship-proposals')}>{b('Internship Proposals', 'طلبات التدريب')}</TabsTrigger>
             </TabsList>
 
             {/* ════════════════════════════════════════════════════════════
@@ -533,12 +537,27 @@ const RecruiterDashboard: React.FC = () => {
 
             {/* Postings Tab */}
             <TabsContent value="postings" className="space-y-6">
-              <RecruiterPostings />
-            </TabsContent>
-
-            {/* Internship Proposals Tab */}
-            <TabsContent value="internship-proposals" className="space-y-6">
-              <RecruiterInternshipProposals />
+              {/* Postings and Proposals are one surface with two views; the
+                  switch writes the URL so both remain deep-linkable. */}
+              <div className="inline-flex rounded-lg bg-white p-1 shadow-sm border border-slate-200/80" role="tablist" aria-label={b('Internship views', 'عروض التدريب')}>
+                <button
+                  role="tab"
+                  aria-selected={internshipSubTab === 'postings'}
+                  onClick={() => handleTabChange('postings')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-dubai-medium transition-colors ${internshipSubTab === 'postings' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {b('Postings', 'الإعلانات')}
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={internshipSubTab === 'proposals'}
+                  onClick={() => handleTabChange('internship-proposals')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-dubai-medium transition-colors ${internshipSubTab === 'proposals' ? 'bg-teal-50 text-teal-700' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  {b('Proposals', 'طلبات التدريب')}
+                </button>
+              </div>
+              {internshipSubTab === 'postings' ? <RecruiterPostings /> : <RecruiterInternshipProposals />}
             </TabsContent>
 
             {/* Messages Tab */}
