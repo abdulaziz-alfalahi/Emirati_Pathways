@@ -93,6 +93,37 @@ def _verified_child_of(parent_id: str, child_id: str) -> bool:
         return False
 
 
+def _guardian_visible_conversations(conversation_ids):
+    """Subset of the given conversation ids that a guardian can view: any
+    participant who is a MINOR (recorded DOB) with a VERIFIED parent link.
+    Powers the transparency marker — staff talking to a minor deserve to
+    know a guardian may read the thread (owner-approved)."""
+    ids = [str(c) for c in (conversation_ids or []) if c]
+    if not ids:
+        return set()
+    try:
+        conn = communication_service._get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT DISTINCT cp.conversation_id
+                   FROM conversation_participants cp
+                   JOIN parent_child_links pcl
+                     ON pcl.child_user_id = cp.user_id
+                    AND pcl.verified IS DISTINCT FROM FALSE
+                   JOIN candidate_profiles cprof
+                     ON cprof.user_id = cp.user_id
+                    AND cprof.dob IS NOT NULL
+                    AND EXTRACT(YEAR FROM age(cprof.dob))::int < 18
+                   WHERE cp.conversation_id = ANY(%s::uuid[])""",
+                (ids,))
+            hits = {str(r[0]) for r in cur.fetchall()}
+        conn.close()
+        return hits
+    except Exception as e:
+        logger.warning(f"guardian visibility lookup failed: {e}")
+        return set()
+
+
 def _is_minor_user(user_id: str) -> bool:
     """Minor per recorded DOB (same rule as internship consent); unknown DOB
     => adult."""
@@ -123,12 +154,21 @@ def get_user_conversations():
         
         # FIX: Pass role to service for strict filtering
         conversations = communication_service.get_user_conversations(current_user_id, role=role)
-        
+
+        # Transparency marker: flag threads a guardian may read (a verified
+        # minor is a participant) so counterparts see it in the UI.
+        guardian_ids = _guardian_visible_conversations([c.id for c in conversations])
+        payload = []
+        for conv in conversations:
+            d = conv.to_dict()
+            d['guardian_visible'] = str(conv.id) in guardian_ids
+            payload.append(d)
+
         return jsonify({
             'success': True,
             'data': {
-                'conversations': [conv.to_dict() for conv in conversations],
-                'total_count': len(conversations)
+                'conversations': payload,
+                'total_count': len(payload)
             }
         }), 200
         
@@ -187,11 +227,13 @@ def get_conversation(conversation_id):
                 'message': 'Access denied'
             }), 403
         
+        d = conversation.to_dict()
+        d['guardian_visible'] = str(conversation.id) in _guardian_visible_conversations([conversation.id])
         return jsonify({
             'success': True,
-            'data': conversation.to_dict()
+            'data': d
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Error getting conversation: {str(e)}")
         return jsonify({

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, ShieldCheck } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -79,8 +79,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       />
                     </div>
                     <div>
-                      <div className="font-semibold truncate max-w-[180px]">
+                      <div className="font-semibold truncate max-w-[180px] flex items-center gap-1">
                         {conversation.participantName}
+                        {conversation.guardianVisible && (
+                          <ShieldCheck className="h-3 w-3 shrink-0 text-amber-600" aria-label="Guardian can view" />
+                        )}
                       </div>
                       {conversation.jobTitle && (
                         <div className="text-xs text-muted-foreground font-medium truncate max-w-[180px] mb-0.5">
