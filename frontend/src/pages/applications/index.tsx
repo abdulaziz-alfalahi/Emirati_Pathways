@@ -592,18 +592,25 @@ const ApplicationsPage: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Timeline */}
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            {application.reviewed_at && (
-                              <span>Reviewed: {formatDate(application.reviewed_at)}</span>
-                            )}
-                            {application.shortlisted_at && (
-                              <span>Shortlisted: {formatDate(application.shortlisted_at)}</span>
-                            )}
-                            {application.offer_made_at && (
-                              <span>Offer Made: {formatDate(application.offer_made_at)}</span>
-                            )}
-                          </div>
+                          {/* Timeline — real recorded transitions (C1-CAN-5) */}
+                          {(application.timeline?.length ?? 0) > 0 && (
+                            <div className="flex flex-wrap items-center gap-1 text-xs text-gray-600">
+                              {application.timeline!.map((step, i) => (
+                                <React.Fragment key={i}>
+                                  {i > 0 && <span className="text-gray-300 mx-1">→</span>}
+                                  <span className={i === application.timeline!.length - 1 ? 'font-semibold text-teal-700' : ''}>
+                                    {step.status.replace(/_/g, ' ')}
+                                    <span className="text-gray-400 ms-1">{formatDate(step.at)}</span>
+                                  </span>
+                                </React.Fragment>
+                              ))}
+                              {application.interview_date && (
+                                <span className="ms-2 text-purple-700">
+                                  · Interview {formatDate(application.interview_date)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -893,27 +900,34 @@ const ApplicationsPage: React.FC = () => {
 
                   <div>
                     <h3 className="font-semibold mb-2">Timeline</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Applied:</span>
-                        <span>{formatDate(selectedApplication.created_at)}</span>
-                      </div>
-                      {selectedApplication.reviewed_at && (
-                        <div className="flex justify-between">
-                          <span>Reviewed:</span>
-                          <span>{formatDate(selectedApplication.reviewed_at)}</span>
+                    <div className="space-y-0 text-sm">
+                      {(selectedApplication.timeline?.length
+                        ? selectedApplication.timeline
+                        : [{ status: 'submitted', at: selectedApplication.created_at, note: null }]
+                      ).map((step, i, arr) => (
+                        <div key={i} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-2.5 h-2.5 rounded-full mt-1 ${i === arr.length - 1 ? 'bg-teal-600' : 'bg-gray-300'}`} />
+                            {i < arr.length - 1 && <div className="w-px flex-1 bg-gray-200 my-0.5" />}
+                          </div>
+                          <div className="pb-3">
+                            <span className={`capitalize ${i === arr.length - 1 ? 'font-semibold text-teal-700' : 'text-gray-700'}`}>
+                              {step.status.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-gray-400 ms-2">{formatDate(step.at)}</span>
+                            {step.note && <p className="text-xs text-gray-500">{step.note}</p>}
+                          </div>
                         </div>
-                      )}
-                      {selectedApplication.shortlisted_at && (
-                        <div className="flex justify-between">
-                          <span>Shortlisted:</span>
-                          <span>{formatDate(selectedApplication.shortlisted_at)}</span>
-                        </div>
-                      )}
-                      {selectedApplication.offer_made_at && (
-                        <div className="flex justify-between">
-                          <span>Offer Made:</span>
-                          <span>{formatDate(selectedApplication.offer_made_at)}</span>
+                      ))}
+                      {selectedApplication.interview_date && (
+                        <div className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="w-2.5 h-2.5 rounded-full mt-1 bg-purple-500" />
+                          </div>
+                          <div>
+                            <span className="text-purple-700">Interview scheduled</span>
+                            <span className="text-gray-400 ms-2">{formatDate(selectedApplication.interview_date)}</span>
+                          </div>
                         </div>
                       )}
                     </div>

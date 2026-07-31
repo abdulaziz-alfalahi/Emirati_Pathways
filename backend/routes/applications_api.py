@@ -56,6 +56,11 @@ def _caller_may_manage_company(user_id, company_id):
         return False
     return bool(ctx and (ctx.get('is_member') or ctx.get('is_growth_operator')))
 
+try:
+    from backend.application_history import record_status_change as _record_status
+except ImportError:  # pragma: no cover
+    from application_history import record_status_change as _record_status
+
 # Statuses a candidate may see; transitions the candidate may set themselves.
 _CANDIDATE_SETTABLE = {'withdrawn'}
 _VALID_STATUSES = {'submitted', 'under_review', 'shortlisted', 'interview',
@@ -66,6 +71,7 @@ _BASE_SELECT = """
            ja.expected_salary, ja.applied_at, ja.submitted_at, ja.updated_at,
            COALESCE(ja.interview_date::timestamp, sched.scheduled_date::timestamp) AS interview_date,
            COALESCE(ja.interview_type, sched.interview_type) AS interview_type,
+           hist.timeline,
            jp.title AS job_title, jp.emirate, jp.city,
            COALESCE(c.name, c.company_name, '') AS company_name
     FROM job_applications ja
@@ -85,6 +91,15 @@ _BASE_SELECT = """
         ORDER BY isch.scheduled_date DESC NULLS LAST
         LIMIT 1
     ) sched ON TRUE
+    LEFT JOIN LATERAL (
+        -- Status timeline (C1-CAN-5): every recorded transition, oldest first.
+        SELECT json_agg(json_build_object(
+                   'status', h.new_status,
+                   'at', h.changed_at,
+                   'note', h.notes) ORDER BY h.changed_at) AS timeline
+        FROM application_status_history h
+        WHERE h.application_id = ja.id
+    ) hist ON TRUE
 """
 
 
@@ -106,6 +121,10 @@ def _row_out(r):
         'created_at': (r.get('applied_at') or r.get('submitted_at')).isoformat()
                       if (r.get('applied_at') or r.get('submitted_at')) else None,
         'updated_at': r['updated_at'].isoformat() if r.get('updated_at') else None,
+        # Recorded transitions, oldest first (backfilled from submitted_at +
+        # current status by migration 041; live transitions append via
+        # application_history.record_status_change).
+        'timeline': r.get('timeline') or [],
     }
 
 
@@ -199,6 +218,7 @@ def withdraw(application_id):
             return jsonify({'success': False, 'message': 'Application not found'}), 404
         if row['candidate_id'] != user_id:
             return jsonify({'success': False, 'message': 'Forbidden'}), 403
+        _record_status(application_id, 'withdrawn', changed_by=user_id)
         execute_query("UPDATE job_applications SET status = 'withdrawn', updated_at = NOW() WHERE id = %s",
                       (application_id,), fetch_all=False)
         return jsonify({'success': True, 'message': 'Application withdrawn'})
@@ -224,6 +244,10 @@ def set_status(application_id):
         # this application's job (audit H1 — cross-company BOLA).
         if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(row['job_id'])):
             return jsonify({'success': False, 'message': 'Forbidden'}), 403
+        # Timeline + candidate notification (C1-CAN-5) — before the UPDATE so
+        # the previous status is captured.
+        _record_status(application_id, status, changed_by=get_jwt_identity(),
+                       note=data.get('notes'))
         execute_query(
             "UPDATE job_applications SET status = %s, notes = COALESCE(%s, notes), updated_at = NOW() WHERE id = %s",
             (status, data.get('notes'), application_id), fetch_all=False)
