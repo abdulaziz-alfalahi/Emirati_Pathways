@@ -1905,7 +1905,29 @@ def respond_to_offer(offer_id):
                     INSERT INTO notifications (user_id, type, title, content, metadata)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (str(recruiter_id), notif_type, notif_title, notif_content, notif_metadata))
-                
+
+                # Gap 4e: the company's HR managers also need the decision —
+                # accepted team members with an HR-side role, minus the
+                # recruiter already notified above.
+                try:
+                    cur.execute("""
+                        SELECT DISTINCT ctm.user_id
+                        FROM company_team_members ctm
+                        JOIN job_postings jp ON jp.company_id = ctm.company_id
+                        WHERE jp.jd_id::text = %s
+                          AND ctm.invitation_status = 'accepted'
+                          AND ctm.role IN ('employer_admin', 'hr_manager', 'hr')
+                          AND ctm.user_id::text != %s
+                    """, (str(offer.get('jd_id') or ''), str(recruiter_id)))
+                    for hr_row in cur.fetchall():
+                        hr_uid = hr_row[0] if not isinstance(hr_row, dict) else hr_row['user_id']
+                        cur.execute("""
+                            INSERT INTO notifications (user_id, type, title, content, metadata)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (str(hr_uid), notif_type, notif_title, notif_content, notif_metadata))
+                except Exception as hr_err:
+                    logger.warning(f"HR-manager offer notify failed: {hr_err}")
+
                 conn.commit()
             except Exception as notif_err:
                 logger.error(f"Failed to create recruiter notification: {notif_err}")
