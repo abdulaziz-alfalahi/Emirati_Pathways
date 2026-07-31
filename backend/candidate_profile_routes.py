@@ -876,9 +876,13 @@ def get_crm_candidates():
                     cp.preferred_schedule,
                     cp.alternative_phone,
                     cp.unavailability_reason,
-                    cp.role_preferences
+                    cp.role_preferences,
+                    COALESCE(au.full_name,
+                             NULLIF(TRIM(CONCAT_WS(' ', au.first_name, au.last_name)), ''),
+                             au.email) AS assigned_to_name
                 FROM users u
                 LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+                LEFT JOIN users au ON au.id = cp.assigned_to
                 WHERE (u.role = 'candidate' OR u.user_type = 'candidate')
             """
             if supervisor:
@@ -911,6 +915,9 @@ def get_crm_candidates():
                         'job_seeker_type': c['job_seeker_type'],
                         'counseling_remarks': c['counseling_remarks'],
                         'assigned_to': c['assigned_to'],
+                        # Display name for id-valued assignments; null for legacy
+                        # name-valued rows (the raw value is then already a name).
+                        'assigned_to_name': c['assigned_to_name'],
                         'preferred_locations': c['preferred_locations'],
                         'preferred_sector': c['preferred_sector'],
                         'preferred_work_setup': c['preferred_work_setup'],

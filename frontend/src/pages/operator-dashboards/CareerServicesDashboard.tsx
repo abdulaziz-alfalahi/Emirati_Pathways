@@ -62,6 +62,10 @@ export default function CareerServicesDashboard() {
             phone: user.phone || '-',
             remarks: profile.counseling_remarks || '',
             assignedTo: profile.assigned_to || 'Unassigned',
+            // assigned_to stores a user id (EID) for new writes; legacy rows hold
+            // free-text names. The backend resolves id→name; fall back to the raw
+            // value so legacy name-rows still display their name, never an EID.
+            assignedToName: profile.assigned_to_name || profile.assigned_to || 'Unassigned',
             preferredLocations: Array.isArray(profile.preferred_locations)
               ? profile.preferred_locations
               : (typeof profile.preferred_locations === 'string'
@@ -368,13 +372,13 @@ export default function CareerServicesDashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            {candidate.assignedTo !== 'Unassigned' && (
+                            {candidate.assignedToName !== 'Unassigned' && (
                               <div className="w-6 h-6 rounded-full bg-[#006E6D] text-white flex items-center justify-center text-[10px] font-bold">
-                                {getInitials(candidate.assignedTo)}
+                                {getInitials(candidate.assignedToName)}
                               </div>
                             )}
-                            <span className={`font-medium ${candidate.assignedTo === 'Unassigned' ? 'text-amber-500' : 'text-slate-700'}`}>
-                              {candidate.assignedTo}
+                            <span className={`font-medium ${candidate.assignedToName === 'Unassigned' ? 'text-amber-500' : 'text-slate-700'}`}>
+                              {candidate.assignedToName}
                             </span>
                           </div>
                         </td>
@@ -529,8 +533,11 @@ export default function CareerServicesDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Unassigned">Unassigned</SelectItem>
+                        {/* Value is the operator's user id — names as values broke
+                            the agent caseload scoping, which matches assigned_to
+                            against the JWT identity (an id). */}
                         {operators.map((op) => (
-                          <SelectItem key={op.id} value={op.name}>{op.name}</SelectItem>
+                          <SelectItem key={op.id} value={op.id}>{op.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
