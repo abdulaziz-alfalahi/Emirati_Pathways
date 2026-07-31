@@ -199,10 +199,12 @@ export const OfferApprovalPanel: React.FC = () => {
   };
 
   const formatCurrency = (amount: number, currency: string = 'AED') => {
+    // salary_currency is nullable in offer_approval_requests, and an explicit
+    // null bypasses the default parameter — Intl throws RangeError on it.
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
-      currency: currency
-    }).format(amount);
+      currency: currency || 'AED'
+    }).format(amount || 0);
   };
 
   const getStatusBadge = (status: string) => {

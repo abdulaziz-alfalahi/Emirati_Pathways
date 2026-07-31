@@ -6,8 +6,9 @@ export interface OpsData {
         total_users: number;
         registrations_today: number;
         registrations_week: number;
-        uptime: string;
-        response_time: string;
+        /** Null until a real uptime/latency probe is connected — never a fabricated reading. */
+        uptime: string | null;
+        response_time: string | null;
     };
     talent_pipeline: {
         total_candidates: number;

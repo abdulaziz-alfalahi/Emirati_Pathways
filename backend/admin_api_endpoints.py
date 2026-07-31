@@ -614,10 +614,13 @@ def get_health_metrics():
             'providers': admin_health_metrics,
             'summary': {
                 'total_providers': len(admin_health_metrics),
-                'healthy_providers': len([m for m in admin_health_metrics.values() if m.get('health_score', 0) > 90]),
-                'average_health_score': sum(m.get('health_score', 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0,
-                'average_response_time': sum(m.get('response_time', 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0,
-                'total_error_rate': sum(m.get('error_rate', 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0
+                # health_score et al. are PRESENT with value None until a real probe
+                # exists — .get(k, 0) still returns None, and None > 90 / sum(None)
+                # raise TypeError. `or 0` covers the null-with-key case.
+                'healthy_providers': len([m for m in admin_health_metrics.values() if (m.get('health_score') or 0) > 90]),
+                'average_health_score': sum((m.get('health_score') or 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0,
+                'average_response_time': sum((m.get('response_time') or 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0,
+                'total_error_rate': sum((m.get('error_rate') or 0) for m in admin_health_metrics.values()) / len(admin_health_metrics) if admin_health_metrics else 0
             }
         }
         
@@ -812,7 +815,9 @@ def get_admin_statistics():
             conn.close()
         
         # Health summary
-        health_scores = [m.get('health_score', 0) for m in admin_health_metrics.values()]
+        # Key exists with value None until a real probe runs — sum()/comparisons
+        # below would TypeError without the `or 0`.
+        health_scores = [(m.get('health_score') or 0) for m in admin_health_metrics.values()]
         avg_health = sum(health_scores) / len(health_scores) if health_scores else 0
         
         statistics = {
