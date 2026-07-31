@@ -209,8 +209,8 @@ const OperationsWallDisplay: React.FC = () => {
                             label={t('Registrations This Week', 'تسجيلات الأسبوع')}
                             value={(ph?.registrations_week || 0).toLocaleString(locale)}
                         />
-                        <Tile icon={Globe} label={t('Uptime', 'التشغيل')} value={ph?.uptime || '—'} tone="success" />
-                        <Tile icon={Zap} label={t('Response Time', 'وقت الاستجابة')} value={ph?.response_time || '—'} />
+                        <Tile icon={Globe} label={t('Online Now', 'متصلون الآن')} value={(ph?.online_now ?? 0).toLocaleString(locale)} tone="success" />
+                        <Tile icon={Zap} label={t('DB Response', 'استجابة قاعدة البيانات')} value={ph?.response_time || '—'} />
                     </section>
 
                     {/* ── Row 2: interviews + screening — the live operational picture ── */}

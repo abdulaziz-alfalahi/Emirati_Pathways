@@ -6,9 +6,12 @@ export interface OpsData {
         total_users: number;
         registrations_today: number;
         registrations_week: number;
-        /** Null until a real uptime/latency probe is connected — never a fabricated reading. */
+        /** Null until a real SLA/availability record exists — never a fabricated reading. */
         uptime: string | null;
+        /** Measured DB roundtrip for this request, e.g. "3.2 ms". */
         response_time: string | null;
+        /** Authenticated Socket.IO connections right now. */
+        online_now: number;
     };
     talent_pipeline: {
         total_candidates: number;
@@ -54,6 +57,10 @@ export interface FunnelData {
     signups?: number;
     profile_completion?: number;
     job_applications?: number;
+    interviewed?: number;
+    hired?: number;
+    /** Ships with the number so "completion" can't be misread as a stored score. */
+    profile_completion_definition?: string;
 }
 
 /** How the feed is doing. Drives the wall display's stale-data banner.
@@ -126,6 +133,9 @@ export function useOperationsData(): UseOperationsDataResult {
                     signups: fa.signup ?? 0,
                     profile_completion: fa.profile_completion ?? 0,
                     job_applications: fa.job_applied ?? 0,
+                    interviewed: fa.interviewed ?? 0,
+                    hired: fa.hired ?? 0,
+                    profile_completion_definition: fa.profile_completion_definition,
                 } : null);
                 gotSomething = true;
             }

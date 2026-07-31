@@ -45,6 +45,23 @@ def get_operations_stats():
         week_start = today - timedelta(days=today.weekday())  # Monday
 
         # ─── 1. Platform Health ───────────────────────────────────────────
+        # Real DB roundtrip latency, measured on the open connection (query
+        # only — connect cost excluded, and the label says "DB").
+        import time as _time
+        _t0 = _time.perf_counter()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        db_roundtrip_ms = round((_time.perf_counter() - _t0) * 1000, 1)
+
+        # Real presence: authenticated Socket.IO connections right now.
+        # Accurate because this service runs exactly 1 gunicorn worker
+        # (Socket.IO/gevent constraint) — the dict is process-local.
+        try:
+            from backend.app import online_users as _online
+        except ImportError:  # pragma: no cover
+            from app import online_users as _online
+        online_now = len(_online)
+
         cur.execute("SELECT COUNT(*) as c FROM users")
         total_users = safe_int(cur.fetchone()['c'])
 
@@ -58,10 +75,12 @@ def get_operations_stats():
             'total_users': total_users,
             'registrations_today': registrations_today,
             'registrations_week': registrations_week,
-            # No real uptime/latency probe is connected — return null instead of
-            # asserting measured values we haven't measured. (#26)
+            # No SLA uptime record exists — null, never an asserted %. (#26)
             'uptime': None,
-            'response_time': None,
+            # Measured this request: DB query roundtrip.
+            'response_time': f"{db_roundtrip_ms} ms",
+            # Authenticated sockets connected right now.
+            'online_now': online_now,
         }
 
         # ─── 2. Talent Pipeline ───────────────────────────────────────────
