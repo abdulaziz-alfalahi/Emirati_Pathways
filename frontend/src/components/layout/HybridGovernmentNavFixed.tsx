@@ -7,9 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notifications/NotificationSystem';
 import { AccessibilityToolbar } from '@/components/accessibility/AccessibilityToolbar';
-import { normalizeRole, getDashboardRoute, ROLE_DISPLAY_NAMES } from '@/types/auth';
+import { normalizeRole, getDashboardRoute, ROLE_DISPLAY_NAMES, ROLE_DASHBOARD_MAP } from '@/types/auth';
 import { roleLabel, langOf } from '@/utils/enumLabels';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 
 interface HybridGovernmentNavProps {
@@ -53,10 +53,35 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
   const navigate = useNavigate();
+  const location = useLocation();
   const { flags } = useFeatureFlags();
 
-  // Get user role from authenticated user, fallback to prop
-  const userRole = user?.role || propUserRole;
+  // The switcher label must reflect the dashboard being VIEWED, not the
+  // primary role: landing on /assessor-dashboard by redirect used to leave
+  // the label at "Candidate" (recurring UAT observation in all 4 clusters).
+  // Invert ROLE_DASHBOARD_MAP by longest prefix; when several roles share a
+  // route, prefer one the user actually holds.
+  const routeActiveRole = useMemo(() => {
+    const path = location.pathname;
+    const matches = Object.entries(ROLE_DASHBOARD_MAP)
+      .filter(([, route]) => path === route || path.startsWith(route + '/'))
+      .map(([role, route]) => ({ role, len: route.length }));
+    // The recruiter surface also lives at /recruiter?tab=… (not just /recruiter-dashboard).
+    if (path === '/recruiter' || path.startsWith('/recruiter/')) {
+      matches.push({ role: 'recruiter', len: path.length });
+    }
+    if (!matches.length) return undefined;
+    const mine = new Set(
+      [user?.role, user?.user_type, ...(user?.roles || []), ...(user?.secondary_roles || [])]
+        .filter(Boolean)
+        .map((r: any) => String(normalizeRole(r) || r).toLowerCase())
+    );
+    matches.sort((a, b) => b.len - a.len);
+    return (matches.find(m => mine.has(m.role)) || matches[0]).role;
+  }, [location.pathname, user]);
+
+  // Get user role: viewed surface first, then authenticated user, then prop
+  const userRole = routeActiveRole || user?.role || propUserRole;
   // C2: the nav must consider ALL of the user's roles (primary + user_type +
   // roles[] + secondary_roles), not just the primary. The self-serve grant
   // loop writes operator roles into secondary_roles only, so filtering on the
@@ -346,6 +371,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     (() => {
                       // Compute available roles for switcher
                       const rawRoles = [
+                        // Include the primary role: the highlight compares
+                        // against it, and omitting it left NOTHING highlighted
+                        // whenever role wasn't mirrored into the other fields.
+                        user?.role,
                         ...(user?.roles || []),
                         user?.user_type,
                         ...(user?.secondary_roles || [])
