@@ -222,8 +222,15 @@ const OperationsMonitoringCenter: React.FC = () => {
                                     icon={UserCheck}
                                     sub={{ label: t('Today', 'اليوم'), value: `+${ph?.registrations_today || 0}` }}
                                 />
-                                <BigStat label={t('Uptime', 'التشغيل')} value={ph?.uptime || '—'} icon={Globe} tone="success" />
-                                <BigStat label={t('Response Time', 'وقت الاستجابة')} value={ph?.response_time || '—'} icon={Zap} />
+                                {/* Real presence count replaced the Uptime tile — no SLA
+                                    record exists, so that tile could only ever show "—". */}
+                                <BigStat
+                                    label={t('Online Now', 'متصلون الآن')}
+                                    value={(ph?.online_now ?? 0).toLocaleString(locale)}
+                                    icon={Globe}
+                                    tone="success"
+                                />
+                                <BigStat label={t('DB Response', 'استجابة قاعدة البيانات')} value={ph?.response_time || '—'} icon={Zap} />
                             </div>
                         </section>
 
@@ -412,8 +419,10 @@ const OperationsMonitoringCenter: React.FC = () => {
                                             {(() => {
                                                 const steps = [
                                                     { label: t('Signups', 'التسجيلات'), value: funnelData.signups || 0 },
-                                                    { label: t('Profile Completion', 'إكمال الملف'), value: funnelData.profile_completion || 0 },
+                                                    { label: t('Profiles Edited', 'ملفات معدّلة'), value: funnelData.profile_completion || 0 },
                                                     { label: t('Job Applications', 'طلبات التوظيف'), value: funnelData.job_applications || 0 },
+                                                    { label: t('Interviewed', 'تمت مقابلتهم'), value: funnelData.interviewed || 0 },
+                                                    { label: t('Hired', 'تم توظيفهم'), value: funnelData.hired || 0 },
                                                 ];
                                                 // Scale against the LARGEST step, not the first. Live data has the
                                                 // first step reporting 0 while later steps are non-zero, which made

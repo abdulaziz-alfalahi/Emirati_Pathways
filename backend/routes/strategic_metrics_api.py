@@ -121,31 +121,94 @@ def get_executive_impact_metrics():
 @require_roles(*GOVERNANCE_ROLES)
 def get_operations_live_metrics():
     """
-    Serves real-time system health, NAFIS sync status, and active user metrics.
+    Real system-health signals and conversion-funnel counts. Everything here is
+    measured or counted; anything without an honest source stays null with a
+    marker (uptime_percent — no SLA record exists to derive it from).
     """
+    import time as _time
+
+    db_latency_ms = None
+    funnel = None
+    last_batch = None
+    if get_db_connection:
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                _t0 = _time.perf_counter()
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+                db_latency_ms = round((_time.perf_counter() - _t0) * 1000, 1)
+
+                cursor.execute("SELECT COUNT(*) FROM users WHERE role IN ('candidate', 'job_seeker')")
+                signups = cursor.fetchone()[0]
+                # "Completed" = the profile was ever actually edited after its
+                # (bulk-import) creation. There is no stored completeness score;
+                # the definition ships with the number so it can't be misread.
+                cursor.execute("""SELECT COUNT(*) FROM candidate_profiles
+                                  WHERE updated_at > created_at + INTERVAL '1 minute'""")
+                profiles_completed = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM candidate_assessments WHERE LOWER(status) = 'completed'")
+                assessments_taken = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM job_applications")
+                applications = cursor.fetchone()[0]
+                cursor.execute("""SELECT COUNT(*) FROM interview_schedules
+                                  WHERE LOWER(status) IN ('completed', 'conducted', 'done')""")
+                interviewed = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM job_offers WHERE LOWER(status) IN ('accepted', 'signed')")
+                hired = cursor.fetchone()[0]
+                funnel = {
+                    'signup': signups,
+                    'profile_completion': profiles_completed,
+                    'assessment_taken': assessments_taken,
+                    'job_applied': applications,
+                    'interviewed': interviewed,
+                    'hired': hired,
+                    'source': 'live',
+                    'profile_completion_definition': 'profiles edited after creation (no stored completeness score)',
+                }
+                # NAFIS is a manual CSV import, not a live connector — report the
+                # last batch as exactly that.
+                cursor.execute("""SELECT status, created_at FROM nafis_import_batches
+                                  ORDER BY created_at DESC LIMIT 1""")
+                row = cursor.fetchone()
+                if row:
+                    last_batch = {'status': row[0], 'at': row[1].isoformat() if row[1] else None}
+            conn.close()
+        except Exception as e:
+            logger.warning(f"operations-live probes failed: {e}")
+
+    try:
+        from backend.app import online_users as _online
+    except ImportError:  # pragma: no cover
+        from app import online_users as _online
+
     data = {
         'system_health': {
-            # No probe is connected — do not assert a health status or uptime we
-            # haven't measured. Surfaced as null "not implemented" like the peers. (#26)
-            'nafis_sync_status': {'value': None, 'source': 'not_implemented', 'message': 'Real NAFIS sync-status probe not yet connected'},
-            'last_sync': None,
-            'db_latency_ms': {'value': None, 'source': 'not_implemented', 'message': 'Real latency probe not yet connected'},
-            'active_sessions': {'value': None, 'source': 'not_implemented', 'message': 'Real session count not yet connected'},
-            'uptime_percent': {'value': None, 'source': 'not_implemented', 'message': 'Real uptime probe not yet connected'}
+            'nafis_sync_status': (
+                {'value': last_batch['status'], 'source': 'import_batch_log',
+                 'message': 'Status of the most recent manual NAFIS CSV import batch'}
+                if last_batch else
+                {'value': None, 'source': 'unavailable', 'message': 'No NAFIS import batches recorded'}
+            ),
+            'last_sync': last_batch['at'] if last_batch else None,
+            'last_sync_kind': 'manual_csv_import_batch',
+            'db_latency_ms': (
+                {'value': db_latency_ms, 'source': 'measured', 'message': 'SELECT 1 roundtrip on an open connection'}
+                if db_latency_ms is not None else
+                {'value': None, 'source': 'unavailable', 'message': 'DB probe failed'}
+            ),
+            # Accurate under the 1-worker gunicorn deployment (process-local dict).
+            'active_sessions': {'value': len(_online), 'source': 'socketio_presence',
+                                'message': 'Authenticated Socket.IO connections right now'},
+            'uptime_percent': {'value': None, 'source': 'not_implemented',
+                               'message': 'No SLA/availability record exists to derive an uptime percentage from'}
         },
-        # No real activity/funnel telemetry connected — empty + null with honest
-        # markers instead of the old fabricated time-series and funnel counts.
         'live_activity': [],
         'live_activity_source': 'unavailable',
-        'funnel_analytics': {
-            'signup': None,
-            'profile_completion': None,
-            'assessment_taken': None,
-            'job_applied': None,
-            'interviewed': None,
-            'hired': None,
-            'source': 'unavailable',
-            'message': 'Conversion funnel not yet connected to a real source'
+        'funnel_analytics': funnel or {
+            'signup': None, 'profile_completion': None, 'assessment_taken': None,
+            'job_applied': None, 'interviewed': None, 'hired': None,
+            'source': 'unavailable', 'message': 'DB unavailable'
         }
     }
     return jsonify({'success': True, 'data': data})
