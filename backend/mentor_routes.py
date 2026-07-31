@@ -632,10 +632,10 @@ def mentorship_operator_stats():
                       mp.current_company, mp.expertise_areas, mp.is_available,
                       mp.rating, mp.total_reviews,
                       (SELECT COUNT(*) FROM mentorship_matching mm
-                        WHERE mm.mentor_id = mp.user_id
+                        WHERE mm.mentor_id = mp.id
                           AND LOWER(COALESCE(mm.match_status, '')) IN ('accepted', 'active')) AS mentees,
                       (SELECT COUNT(*) FROM mentorship_sessions ms
-                        WHERE ms.mentor_id = mp.user_id) AS sessions
+                        WHERE ms.mentor_id = mp.id) AS sessions
                FROM mentor_profiles mp
                LEFT JOIN users u ON u.id = mp.user_id
                ORDER BY name""") or []
