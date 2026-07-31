@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, AttributionControl } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
@@ -60,11 +60,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ lat, lng, onLocationSel
         <div className="space-y-2 w-full">
             {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
             <div className="border rounded-lg overflow-hidden" style={{ height }}>
+                {/* attributionControl recreated without the default "Leaflet"
+                    prefix link — its hover/click surfaced library marketing
+                    text that read as a platform message (fb_1783583721). The
+                    OpenStreetMap credit below is required and stays. */}
                 <MapContainer
                     center={position ? [position.lat, position.lng] : defaultCenter}
                     zoom={11}
                     style={{ height: "100%", width: "100%" }}
+                    attributionControl={false}
                 >
+                    <AttributionControl prefix={false} />
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
