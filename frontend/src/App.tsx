@@ -1116,7 +1116,8 @@ const App: React.FC = () => {
             <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
               <FeatureFlagsProvider>
                 <AppContent />
-                <Toaster />
+                {/* Toaster mounts once, inside AppContent (wall-display aware).
+                    A second mount here stacked two viewports over each other. */}
                 <HotToaster position="top-center" />
               </FeatureFlagsProvider>
             </ThemeProvider>
