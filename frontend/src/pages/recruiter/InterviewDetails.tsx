@@ -130,10 +130,13 @@ export default function InterviewDetailsPage() {
                   {!recordings && <div className="text-sm text-slate-500">No recordings found</div>}
                   {recordings && (
                     <div className="space-y-2">
-                      <div className="text-sm">Available: {recordings.available ? 'Yes' : 'No'}</div>
-                      {recordings.stream_token && (
+                      {/* Payload fields are recording_available/streaming_url — the old
+                          available/stream_token reads meant "Available: No" and no link
+                          even when a recording existed. */}
+                      <div className="text-sm">Available: {recordings.recording_available ? 'Yes' : 'No'}</div>
+                      {recordings.streaming_url && (
                         <div className="text-sm">
-                          <a className="text-ehrdc-teal underline" href={API(`/api/video-interview/stream/${sessionId}?token=${encodeURIComponent(recordings.stream_token)}`)} target="_blank">Open Recording</a>
+                          <a className="text-ehrdc-teal underline" href={API(recordings.streaming_url)} target="_blank">Open Recording</a>
                         </div>
                       )}
                     </div>

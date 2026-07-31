@@ -121,6 +121,9 @@ const GovernmentDashboard: React.FC = () => {
   const { language, toggleLanguage } = useLanguage();
   const isRTL = i18n.language === 'ar';
   const b = (en: string, ar: string) => isRTL ? ar : en;
+  // Percentage metrics the backend reports as null (not yet measured) must say
+  // so — interpolating null renders a literal "null%".
+  const pct = (v: number | null | undefined) => v == null ? b('Not available', 'غير متاح') : `${v}%`;
   const currentTab = searchParams.get('tab') || 'overview';
 
   // ── User Data ──────────────────────────────────────────────────
@@ -497,7 +500,7 @@ const GovernmentDashboard: React.FC = () => {
                         {[
                           { label: b('Active Programs', 'البرامج النشطة'), value: dashboardData.initiatives.activePrograms, color: 'text-blue-600' },
                           { label: b('Beneficiaries', 'المستفيدون'), value: (dashboardData.initiatives.beneficiaries ?? 0).toLocaleString(), color: 'text-green-600' },
-                          { label: b('Avg. Completion', 'متوسط الإنجاز'), value: `${dashboardData.initiatives.completionRate}%`, color: 'text-purple-600' },
+                          { label: b('Avg. Completion', 'متوسط الإنجاز'), value: pct(dashboardData.initiatives.completionRate), color: 'text-purple-600' },
                           { label: b('Success Stories', 'قصص النجاح'), value: dashboardData.initiatives.successStories, color: 'text-orange-600' },
                         ].map((item, i) => (
                           <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
@@ -524,11 +527,11 @@ const GovernmentDashboard: React.FC = () => {
                       <div className="space-y-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                         <div className="flex items-center justify-between p-2">
                           <span className="text-sm text-slate-600 font-dubai-medium">{b('Unemployment Rate', 'معدل البطالة')}</span>
-                          <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium">{dashboardData.workforce.unemploymentRate}%</Badge>
+                          <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px] font-dubai-medium">{pct(dashboardData.workforce.unemploymentRate)}</Badge>
                         </div>
                         <div className="flex items-center justify-between p-2">
                           <span className="text-sm text-slate-600 font-dubai-medium">{b('Skills Gap Index', 'مؤشر الفجوة المهارية')}</span>
-                          <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">{dashboardData.workforce.skillsGapIndex}%</Badge>
+                          <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">{pct(dashboardData.workforce.skillsGapIndex)}</Badge>
                         </div>
                         <div className="flex items-center justify-between p-2">
                           <span className="text-sm text-slate-600 font-dubai-medium">{b('Training Programs', 'برامج التدريب')}</span>
@@ -672,7 +675,7 @@ const GovernmentDashboard: React.FC = () => {
                 {[
                   { label: b('Total Workforce', 'إجمالي القوى العاملة'), value: (dashboardData.workforce.totalWorkforce ?? 0).toLocaleString(), icon: Users, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
                   { label: b('Emirati Nationals', 'المواطنون الإماراتيون'), value: (dashboardData.emiratization.totalEmiratiEmployees ?? 0).toLocaleString(), icon: Shield, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-                  { label: b('Unemployment Rate', 'معدل البطالة'), value: `${dashboardData.workforce.unemploymentRate}%`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+                  { label: b('Unemployment Rate', 'معدل البطالة'), value: pct(dashboardData.workforce.unemploymentRate), icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
                   { label: b('Training Programs', 'برامج التدريب'), value: dashboardData.workforce.trainingPrograms, icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
                 ].map((stat, i) => (
                   <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
@@ -698,7 +701,7 @@ const GovernmentDashboard: React.FC = () => {
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                     <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 text-center">
-                      <p className="text-3xl font-dubai-bold text-amber-700">{dashboardData.workforce.skillsGapIndex}%</p>
+                      <p className="text-3xl font-dubai-bold text-amber-700">{pct(dashboardData.workforce.skillsGapIndex)}</p>
                       <p className="text-sm text-amber-600 font-dubai-medium mt-1">{b('Skills Gap Index', 'مؤشر الفجوة')}</p>
                     </div>
                     <div className="p-4 rounded-xl bg-green-50 border border-green-100 text-center">

@@ -1227,7 +1227,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                       <p style={{ marginTop: 8, color: colors.textSecondary }}>{t('Loading leaderboard analytics...', 'جاري تحميل تحليلات لوحة الصدارة...')}</p>
                     </td>
                   </tr>
-                ) : sortedLeaderboard.filter(c => c.company_name.toLowerCase().includes(searchTerm.toLowerCase()) || c.recruiter_name.toLowerCase().includes(searchTerm.toLowerCase())).map(company => (
+                ) : sortedLeaderboard.filter(c => c.company_name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.recruiter_name || '').toLowerCase().includes(searchTerm.toLowerCase())).map(company => (
                   <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}`, background: company.flagged ? colors.redBg + '10' : 'transparent' }}>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 600, color: colors.text }}>{company.company_name}</div>

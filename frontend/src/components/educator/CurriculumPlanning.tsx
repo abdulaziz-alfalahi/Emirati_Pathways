@@ -107,7 +107,9 @@ const CurriculumPlanning: React.FC = () => {
     try {
       // restClient so cookie auth + CSRF work (was raw fetch + Bearer placeholder).
       const res = await restClient.get('/api/curriculum/standards');
-      setUaeStandards(res.data?.standards || []);
+      // The route returns {success, data: [...], count} — reading .standards
+      // meant the list was always empty even when standards exist.
+      setUaeStandards(res.data?.data || []);
     } catch (error) {
       console.error('Error fetching UAE standards:', error);
       // Honest empty state — do not substitute fabricated curriculum standards.
