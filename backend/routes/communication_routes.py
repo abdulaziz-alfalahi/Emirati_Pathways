@@ -180,7 +180,36 @@ def create_conversation():
         application_id = data.get('application_id')
         job_id = data.get('job_id')
         title = data.get('title', 'Conversation')
-        
+
+        # Same policy as POST /messages: staff may start conversations with
+        # anyone; candidates only with staff (was completely unchecked).
+        try:
+            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        except ImportError:  # pragma: no cover
+            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        _STAFF = RECRUITER_ROLES | OPERATOR_ROLES | {
+            'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
+            'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
+            'board_member', 'compliance_auditor'}
+        if not (resolve_roles() & _STAFF):
+            others = [p for p in participants if p != current_user_id]
+            try:
+                _c = communication_service._get_db_connection()
+                with _c.cursor() as _cur:
+                    _cur.execute(
+                        "SELECT COUNT(*) FROM users WHERE CAST(id AS TEXT) = ANY(%s) AND ("
+                        "  role = ANY(%s) OR EXISTS (SELECT 1 FROM jsonb_array_elements_text("
+                        "    COALESCE(secondary_roles, '[]'::jsonb)) r WHERE r = ANY(%s)))",
+                        (others, list(_STAFF), list(_STAFF)))
+                    staff_count = _cur.fetchone()[0]
+                _c.close()
+            except Exception as _e:
+                logger.warning(f"participant role check failed: {_e}")
+                staff_count = 0
+            if staff_count < len(others):
+                return jsonify({'success': False,
+                                'message': 'You can only start conversations with platform staff.'}), 403
+
         # FIX: Extract roles for strict separation
         participant_roles = {}
         sender_role = data.get('sender_role')
@@ -327,22 +356,31 @@ def mark_conversation_as_read(conversation_id):
     Mark all messages in a conversation as read
     """
     try:
-        current_user_id = get_jwt_identity()
-        
+        current_user_id = str(get_jwt_identity())
+
+        # Only participants may mark a conversation read (was unchecked).
+        _conv = communication_service.get_conversation(conversation_id)
+        if not _conv or current_user_id not in [str(p) for p in (_conv.participants or [])]:
+            return jsonify({'success': False, 'message': 'Not a participant'}), 403
+
         success = communication_service.mark_conversation_as_read(conversation_id, current_user_id)
-        
+
         if success:
-            # Emit socket event so the sender sees ✓✓ in real-time
+            # Emit ✓✓ ONLY to the other participants' rooms — the old
+            # broadcast leaked conversation ids + reader ids platform-wide.
             try:
                 from flask import current_app
                 socketio = current_app.extensions.get('socketio')
                 if socketio:
-                    socketio.emit('message_read', {
+                    payload = {
                         'conversation_id': conversation_id,
                         'reader_id': current_user_id,
                         'all': True,
                         'read_at': datetime.utcnow().isoformat()
-                    })
+                    }
+                    for p in (_conv.participants or []):
+                        if str(p) != current_user_id:
+                            socketio.emit('message_read', payload, room=str(p))
             except Exception as emit_err:
                 logger.warning(f"Failed to emit message_read socket event: {emit_err}")
 
@@ -428,7 +466,49 @@ def send_message():
                 'success': False,
                 'message': 'Recipient ID is required (or valid Conversation ID)'
             }), 400
-        
+
+        # ── Authorization (messaging BOLA fix) ────────────────────────────
+        # This route previously verified NOTHING: any JWT could post into any
+        # conversation by UUID, or open a thread with any user on the platform.
+        # Policy: replying requires being a participant; starting a new
+        # conversation is open to staff roles, while candidates may only
+        # start conversations with staff (never with other candidates).
+        try:
+            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        except ImportError:  # pragma: no cover
+            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        _STAFF_ROLES = RECRUITER_ROLES | OPERATOR_ROLES | {
+            'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
+            'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
+            'board_member', 'compliance_auditor',
+        }
+        if conversation_id:
+            _conv = communication_service.get_conversation(conversation_id)
+            if not _conv or str(current_user_id) not in [str(p) for p in (_conv.participants or [])]:
+                return jsonify({'success': False,
+                                'message': 'You are not a participant in this conversation'}), 403
+        elif not (resolve_roles() & _STAFF_ROLES):
+            # A candidate opening a NEW thread: the counterpart must be staff.
+            _is_staff_recipient = False
+            try:
+                _c = communication_service._get_db_connection()
+                with _c.cursor() as _cur:
+                    _cur.execute(
+                        "SELECT role, COALESCE(secondary_roles, '[]'::jsonb)::text "
+                        "FROM users WHERE CAST(id AS TEXT) = %s", (str(recipient_id),))
+                    _r = _cur.fetchone()
+                _c.close()
+                if _r:
+                    _rec_roles = {(_r[0] or '').lower()} | {
+                        s.strip(' "').lower() for s in _r[1].strip('[]').split(',') if s.strip(' "')}
+                    _is_staff_recipient = bool(_rec_roles & _STAFF_ROLES)
+            except Exception as _authz_err:
+                logger.warning(f"recipient role check failed: {_authz_err}")
+            if not _is_staff_recipient:
+                return jsonify({'success': False,
+                                'message': 'You can only start conversations with platform staff '
+                                           '(recruiters, mentors, support).'}), 403
+
         # Convert message type string to enum
         try:
             message_type = MessageType(message_type_str)
@@ -545,8 +625,16 @@ def mark_message_as_read(message_id):
     Mark a message as read
     """
     try:
-        current_user_id = get_jwt_identity()
-        
+        current_user_id = str(get_jwt_identity())
+
+        # The service used to ignore user_id and return True unconditionally —
+        # any user could "read" any message id. Verify the message is
+        # addressed to (a conversation containing) the caller first.
+        _own = communication_service.get_message_conversation_participants(message_id) \
+            if hasattr(communication_service, 'get_message_conversation_participants') else None
+        if _own is not None and current_user_id not in [str(p) for p in _own]:
+            return jsonify({'success': False, 'message': 'Not a participant'}), 403
+
         success = communication_service.mark_message_as_read(message_id, current_user_id)
         
         if success:
@@ -691,15 +779,23 @@ def mark_all_notifications_as_read():
     Mark all notifications as read for the current user
     """
     try:
-        current_user_id = get_jwt_identity()
-        
-        notifications = communication_service.get_user_notifications(current_user_id, unread_only=True)
-        marked_count = 0
-        
-        for notification in notifications:
-            if communication_service.mark_notification_as_read(notification.id, current_user_id):
-                marked_count += 1
-        
+        current_user_id = str(get_jwt_identity())
+
+        # One UPDATE for all rows. The old loop fetched with the default
+        # limit=20 and updated one-by-one, so "mark all read" cleared at most
+        # 20 notifications per click.
+        conn = communication_service._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE notifications SET is_read = TRUE, read_at = NOW()
+                       WHERE user_id = %s AND (is_read = FALSE OR is_read IS NULL)""",
+                    (current_user_id,))
+                marked_count = cur.rowcount
+            conn.commit()
+        finally:
+            conn.close()
+
         return jsonify({
             'success': True,
             'message': f'Marked {marked_count} notifications as read'
@@ -1020,7 +1116,10 @@ def create_candidate_discussion():
                 'error': 'candidate_id and job_id are required'
             }), 400
         
-        from services.communication_service import CommunicationService
+        try:
+            from backend.services.communication_service import CommunicationService
+        except ImportError:
+            from services.communication_service import CommunicationService
         comm_service = CommunicationService()
         
         result = comm_service.create_candidate_discussion(
@@ -1064,7 +1163,10 @@ def add_discussion_participant(conversation_id):
                 'error': 'user_id is required'
             }), 400
         
-        from services.communication_service import CommunicationService
+        try:
+            from backend.services.communication_service import CommunicationService
+        except ImportError:
+            from services.communication_service import CommunicationService
         comm_service = CommunicationService()
         
         result = comm_service.add_participant_to_discussion(conversation_id, user_id)
@@ -1086,10 +1188,79 @@ def add_discussion_participant(conversation_id):
 # FILE UPLOAD ENDPOINT
 # =====================================================
 
+@communication_bp.route('/contacts', methods=['GET'])
+@jwt_required()
+def get_messaging_contacts():
+    """Who the caller may start a conversation with (?q= filters by name).
+
+    Staff roles: search all active users. Candidates: staff tied to their
+    applications (job owners) plus existing conversation counterparts —
+    mirroring the send-path policy, and replacing the admin-only
+    /api/admin/users picker that left every other role unable to start a
+    conversation at all.
+    """
+    try:
+        current_user_id = str(get_jwt_identity())
+        q = (request.args.get('q') or '').strip()
+        try:
+            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        except ImportError:  # pragma: no cover
+            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+        _STAFF = RECRUITER_ROLES | OPERATOR_ROLES | {
+            'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
+            'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
+            'board_member', 'compliance_auditor'}
+        is_staff = bool(resolve_roles() & _STAFF)
+
+        conn = communication_service._get_db_connection()
+        try:
+            from psycopg2.extras import RealDictCursor
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                name_expr = ("COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email)")
+                if is_staff:
+                    sql = (f"SELECT u.id, {name_expr} AS name, u.role FROM users u "
+                           "WHERE u.is_active IS NOT FALSE AND CAST(u.id AS TEXT) != %s")
+                    params = [current_user_id]
+                    if q:
+                        sql += f" AND {name_expr} ILIKE %s"
+                        params.append(f"%{q}%")
+                    sql += " ORDER BY name LIMIT 20"
+                    cur.execute(sql, tuple(params))
+                else:
+                    # Candidates: job owners of their applications + existing counterparts.
+                    sql = (f"""
+                        SELECT DISTINCT u.id, {name_expr} AS name, u.role FROM users u
+                        WHERE CAST(u.id AS TEXT) != %s AND CAST(u.id AS TEXT) IN (
+                            SELECT COALESCE(jp.recruiter_id::text, jp.posted_by::text, jp.created_by::text)
+                            FROM job_applications ja
+                            JOIN job_postings jp ON jp.id::text = ja.job_id
+                            WHERE ja.candidate_id = %s
+                            UNION
+                            SELECT cp2.user_id FROM conversation_participants cp1
+                            JOIN conversation_participants cp2
+                              ON cp1.conversation_id = cp2.conversation_id
+                            WHERE cp1.user_id = %s AND cp2.user_id != %s
+                        )""")
+                    params = [current_user_id, current_user_id, current_user_id, current_user_id]
+                    if q:
+                        sql += f" AND {name_expr} ILIKE %s"
+                        params.append(f"%{q}%")
+                    sql += " ORDER BY name LIMIT 20"
+                    cur.execute(sql, tuple(params))
+                rows = [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
+        return jsonify({'success': True, 'data': {'contacts': rows}})
+    except Exception as e:
+        logger.error(f"contacts failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load contacts'}), 500
+
+
 ALLOWED_EXTENSIONS = {
     'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
     'txt', 'csv', 'zip', 'rar',
-    'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg',
+    # svg removed: served same-origin it is a stored-XSS vector.
+    'png', 'jpg', 'jpeg', 'gif', 'webp',
 }
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
@@ -1121,7 +1292,10 @@ def upload_file():
         file.seek(0)
 
         # Save file
-        upload_dir = os.path.join(current_app.root_path, '..', 'uploads', 'messages')
+        # Must live under backend/uploads — that is where serve_uploads()
+        # resolves /uploads/* from. The old repo-root path meant every
+        # attachment 404'd on retrieval.
+        upload_dir = os.path.join(current_app.root_path, 'uploads', 'messages')
         os.makedirs(upload_dir, exist_ok=True)
 
         safe_name = secure_filename(file.filename)
