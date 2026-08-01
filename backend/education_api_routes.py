@@ -91,6 +91,41 @@ def query_one(sql, params=None):
         return None
 
 
+def execute(sql, params=None):
+    """Execute a write statement and COMMIT (query_all/query_one are
+    read-only and never commit). Returns rowcount, 0 on failure."""
+    db = get_db()
+    if not db:
+        return 0
+    try:
+        cursor = db.cursor()
+        cursor.execute(sql, params or ())
+        db.commit()
+        return cursor.rowcount
+    except Exception as e:
+        logger.error(f"Write failed: {e}")
+        db.rollback()
+        return 0
+
+
+def execute_returning(sql, params=None):
+    """Execute a write with RETURNING, COMMIT, and return the row as a dict."""
+    db = get_db()
+    if not db:
+        return None
+    try:
+        cursor = db.cursor()
+        cursor.execute(sql, params or ())
+        row = cursor.fetchone()
+        cols = [d[0] for d in cursor.description] if cursor.description else []
+        db.commit()
+        return dict(zip(cols, row)) if row else None
+    except Exception as e:
+        logger.error(f"Write failed: {e}")
+        db.rollback()
+        return None
+
+
 # ═══════════════════════════════════════════
 # UNIVERSITIES
 # ═══════════════════════════════════════════
@@ -1105,41 +1140,239 @@ def ensure_community_tables():
 @education_bp.route('/community/operator/stats', methods=['GET'])
 @require_roles(*OPERATOR_ROLES)
 def community_operator_stats():
-    """Aggregate statistics for the Community Operator Dashboard."""
-    ensure_community_tables()
-    groups = query_all("SELECT * FROM community_groups ORDER BY member_count DESC")
-    content = query_all("SELECT * FROM community_content ORDER BY created_at DESC")
-    events = query_all("SELECT * FROM community_events ORDER BY event_date DESC")
+    """Community Operator Dashboard — REAL data.
 
-    active_groups = sum(1 for g in groups if g.get('is_active'))
-    published = sum(1 for c in content if c.get('status') == 'published')
-    pending = [c for c in content if c.get('status') == 'pending']
+    Reads the communities members actually join (`communities` +
+    `community_memberships`, migration 039/042) and real posts
+    (`community_posts`). The old version served a parallel set of seeded
+    demo tables with invented member counts — governing nothing.
+    """
+    communities = query_all("""
+        SELECT c.id, c.name, c.name_ar, c.description, c.category, c.verified,
+               c.is_active, c.posts_count, c.created_at,
+               COUNT(cm.id) FILTER (WHERE cm.role IS DISTINCT FROM 'x') AS member_count,
+               COUNT(cm.id) FILTER (WHERE cm.role = 'moderator') AS moderator_count
+        FROM communities c
+        LEFT JOIN community_memberships cm ON cm.community_id = c.id
+        GROUP BY c.id ORDER BY member_count DESC, c.name""") or []
+
+    content = query_all("""
+        SELECT p.id, p.author_name, p.community_name, p.content, p.status,
+               p.flagged, p.likes, p.comments, p.community_id
+        FROM community_posts p ORDER BY p.id DESC LIMIT 100""") or []
+    pending = [c for c in content if (c.get('status') or '') == 'pending']
     flagged = [c for c in content if c.get('flagged')]
-    upcoming_events = [e for e in events if e.get('status') == 'upcoming']
+    published = sum(1 for c in content if (c.get('status') or '') == 'published')
 
-    # Serialize dates
-    for c in content:
-        if c.get('created_at'):
-            c['created_at'] = str(c['created_at'])
+    events = query_all("SELECT * FROM community_events ORDER BY event_date DESC LIMIT 100") or []
+    upcoming_events = [e for e in events if e.get('status') == 'upcoming']
     for e in events:
         if e.get('event_date'):
             e['event_date'] = str(e['event_date'])
         if e.get('created_at'):
             e['created_at'] = str(e['created_at'])
+    for c in communities:
+        if c.get('created_at'):
+            c['created_at'] = str(c['created_at'])
 
     return jsonify({
         'stats': {
-            'active_communities': active_groups,
+            'active_communities': sum(1 for c in communities if c.get('is_active')),
+            'total_members': sum(int(c.get('member_count') or 0) for c in communities),
             'published_stories': published,
             'flagged_content': len(flagged),
             'upcoming_events': len(upcoming_events),
-            'total_members': sum(g.get('member_count', 0) for g in groups),
         },
-        'groups': groups,
+        'communities': communities,
         'content_queue': pending,
         'flagged_content': flagged,
         'events': events,
     })
+
+
+def _notify_user(user_id, ntype, title, message, meta=None):
+    try:
+        try:
+            from backend.notification_helper import create_notification
+        except ImportError:
+            from notification_helper import create_notification
+        create_notification(str(user_id), ntype, title, message, meta or {})
+    except Exception as e:
+        logger.warning(f"community notify failed: {e}")
+
+
+@education_bp.route('/community/operator/communities', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_create():
+    """Create a real community (appears immediately on the member-facing
+    Communities page, which reads the same table)."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'message': 'name is required'}), 400
+    dup = query_one("SELECT id FROM communities WHERE LOWER(name) = LOWER(%s)", (name,))
+    if dup:
+        return jsonify({'success': False, 'message': 'A community with this name already exists'}), 409
+    row = execute_returning("""
+        INSERT INTO communities (name, name_ar, description, description_ar,
+                                 category, category_ar, members, posts_count,
+                                 verified, is_active, created_by, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,0,0,%s,TRUE,%s,NOW()) RETURNING id""",
+        (name, data.get('name_ar'), data.get('description'), data.get('description_ar'),
+         data.get('category'), data.get('category_ar'),
+         bool(data.get('verified', True)), str(get_jwt_identity())))
+    return jsonify({'success': True, 'data': {'id': row['id'] if row else None},
+                    'message': 'Community created'}), 201
+
+
+@education_bp.route('/community/operator/communities/<int:community_id>', methods=['PUT'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_update(community_id):
+    """Edit / verify / activate-deactivate a community."""
+    data = request.get_json(silent=True) or {}
+    fields, params = [], []
+    for col in ('name', 'name_ar', 'description', 'description_ar', 'category', 'category_ar'):
+        if col in data:
+            fields.append(f"{col} = %s")
+            params.append(data[col])
+    for col in ('verified', 'is_active'):
+        if col in data:
+            fields.append(f"{col} = %s")
+            params.append(bool(data[col]))
+    if not fields:
+        return jsonify({'success': False, 'message': 'Nothing to update'}), 400
+    params.append(community_id)
+    execute(f"UPDATE communities SET {', '.join(fields)} WHERE id = %s", tuple(params))
+    return jsonify({'success': True, 'message': 'Community updated'})
+
+
+@education_bp.route('/community/operator/communities/<int:community_id>/members', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_members(community_id):
+    """Real membership roster with resolved names and roles."""
+    rows = query_all("""
+        SELECT cm.user_id, cm.role, cm.created_at,
+               COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+                        u.email, cm.user_id) AS name
+        FROM community_memberships cm
+        LEFT JOIN users u ON u.id = cm.user_id
+        WHERE cm.community_id = %s
+        ORDER BY (cm.role = 'moderator') DESC, name""", (community_id,)) or []
+    for r in rows:
+        if r.get('created_at'):
+            r['created_at'] = str(r['created_at'])
+    return jsonify({'success': True, 'data': {'members': rows}})
+
+
+@education_bp.route('/community/operator/communities/<int:community_id>/moderators', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_assign_moderator(community_id):
+    """Assign a moderator — upserts the membership with role='moderator' and
+    tells the person."""
+    data = request.get_json(silent=True) or {}
+    user_id = str(data.get('user_id') or '').strip()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'user_id is required'}), 400
+    user = query_one("SELECT id FROM users WHERE CAST(id AS TEXT) = %s AND is_active IS NOT FALSE", (user_id,))
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    community = query_one("SELECT id, name FROM communities WHERE id = %s", (community_id,))
+    if not community:
+        return jsonify({'success': False, 'message': 'Community not found'}), 404
+    existing = query_one(
+        "SELECT id FROM community_memberships WHERE community_id = %s AND user_id = %s",
+        (community_id, user_id))
+    if existing:
+        execute("UPDATE community_memberships SET role = 'moderator' WHERE id = %s", (existing['id'],))
+    else:
+        execute("""INSERT INTO community_memberships (user_id, community_id, role, created_at)
+                   VALUES (%s, %s, 'moderator', NOW())""", (user_id, community_id))
+    _notify_user(user_id, 'moderator_assigned', 'You are now a community moderator',
+                 f"You have been assigned as a moderator of '{community['name']}'.",
+                 {'community_id': community_id, 'link': '/communities'})
+    return jsonify({'success': True, 'message': 'Moderator assigned'}), 201
+
+
+@education_bp.route('/community/operator/communities/<int:community_id>/moderators/<user_id>', methods=['DELETE'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_remove_moderator(community_id, user_id):
+    """Demote a moderator back to a regular member (keeps their membership)."""
+    execute("""UPDATE community_memberships SET role = 'member'
+               WHERE community_id = %s AND user_id = %s AND role = 'moderator'""",
+            (community_id, str(user_id)))
+    return jsonify({'success': True, 'message': 'Moderator removed'})
+
+
+@education_bp.route('/community/operator/communities/<int:community_id>/announce', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_announce(community_id):
+    """Broadcast an announcement to every member of the community
+    (notification fan-out through the canonical helper)."""
+    data = request.get_json(silent=True) or {}
+    title = (data.get('title') or '').strip()
+    message = (data.get('message') or '').strip()
+    if not title or not message:
+        return jsonify({'success': False, 'message': 'title and message are required'}), 400
+    community = query_one("SELECT id, name FROM communities WHERE id = %s", (community_id,))
+    if not community:
+        return jsonify({'success': False, 'message': 'Community not found'}), 404
+    members = query_all(
+        "SELECT user_id FROM community_memberships WHERE community_id = %s", (community_id,)) or []
+    for m in members:
+        _notify_user(m['user_id'], 'community_announcement',
+                     f"[{community['name']}] {title}", message,
+                     {'community_id': community_id, 'link': '/communities'})
+    return jsonify({'success': True,
+                    'message': f'Announcement sent to {len(members)} members',
+                    'data': {'recipients': len(members)}})
+
+
+@education_bp.route('/community/operator/events', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_create_event():
+    """Create a real community event."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    event_date = (data.get('event_date') or '').strip()
+    if not name or not event_date:
+        return jsonify({'success': False, 'message': 'name and event_date are required'}), 400
+    row = execute_returning("""
+        INSERT INTO community_events (name, name_ar, event_date, location, registrations, status)
+        VALUES (%s,%s,%s,%s,0,'upcoming') RETURNING id""",
+        (name, data.get('name_ar'), event_date, data.get('location')))
+    return jsonify({'success': True, 'data': {'id': row['id'] if row else None},
+                    'message': 'Event created'}), 201
+
+
+@education_bp.route('/community/operator/events/<int:event_id>', methods=['PUT'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_update_event(event_id):
+    """Update event status (e.g. cancel/complete)."""
+    data = request.get_json(silent=True) or {}
+    status = (data.get('status') or '').strip()
+    if status not in ('upcoming', 'completed', 'cancelled'):
+        return jsonify({'success': False, 'message': 'status must be upcoming/completed/cancelled'}), 400
+    execute("UPDATE community_events SET status = %s WHERE id = %s", (status, event_id))
+    return jsonify({'success': True, 'message': f'Event {status}'})
+
+
+@education_bp.route('/community/operator/content/<int:post_id>', methods=['PUT'])
+@require_roles(*OPERATOR_ROLES)
+def community_operator_moderate_content(post_id):
+    """Approve / reject / unflag a real community post."""
+    data = request.get_json(silent=True) or {}
+    action = (data.get('action') or '').strip()
+    if action == 'approve':
+        execute("UPDATE community_posts SET status = 'published', flagged = FALSE WHERE id = %s", (post_id,))
+    elif action == 'reject':
+        execute("UPDATE community_posts SET status = 'rejected' WHERE id = %s", (post_id,))
+    elif action == 'unflag':
+        execute("UPDATE community_posts SET flagged = FALSE WHERE id = %s", (post_id,))
+    elif action == 'remove':
+        execute("UPDATE community_posts SET status = 'removed', flagged = FALSE WHERE id = %s", (post_id,))
+    else:
+        return jsonify({'success': False, 'message': 'action must be approve/reject/unflag/remove'}), 400
+    return jsonify({'success': True, 'message': f'Content {action}d' if not action.endswith('e') else f'Content {action}d'})
 
 
 # ═══════════════════════════════════════════
