@@ -21,9 +21,10 @@ docker run -d --name interview-agent --restart unless-stopped \
   -e LIVEKIT_URL="${LIVEKIT_URL:-ws://livekit-server:7880}" \
   -e STT_BASE_URL="${STT_BASE_URL:-http://stt-whisper:8000/v1}" \
   -e STT_MODEL="${STT_MODEL:-Systran/faster-whisper-small}" \
-  -e HTTPS_PROXY=http://10.61.192.2:8080 \
-  -e NO_PROXY=localhost,127.0.0.1,livekit-server,stt-whisper,10.228.145.0/24 \
   interview-agent:latest
+# No proxy env at runtime: every runtime dependency (LiveKit, STT, DB) is
+# internal, and the Rust livekit client routes ws through HTTPS_PROXY while
+# ignoring NO_PROXY (403 at the corporate proxy).
 
 sleep 5
 docker logs interview-agent 2>&1 | tail -5
