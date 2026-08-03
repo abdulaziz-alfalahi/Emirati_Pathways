@@ -870,6 +870,14 @@ def get_crm_candidates():
                     cp.job_seeker_type,
                     cp.counseling_remarks,
                     cp.assigned_to,
+                    cp.crm_segments,
+                    cp.crm_reference,
+                    cp.cv_status,
+                    cp.looking_status,
+                    cp.date_of_call,
+                    cp.education_level,
+                    cp.age_group,
+                    cp.emirate_of_residence,
                     cp.preferred_locations,
                     cp.preferred_sector,
                     cp.preferred_work_setup,
@@ -915,6 +923,14 @@ def get_crm_candidates():
                         'job_seeker_type': c['job_seeker_type'],
                         'counseling_remarks': c['counseling_remarks'],
                         'assigned_to': c['assigned_to'],
+                        'crm_segments': c['crm_segments'] or [],
+                        'crm_reference': c['crm_reference'],
+                        'cv_status': c['cv_status'],
+                        'looking_status': c['looking_status'],
+                        'date_of_call': str(c['date_of_call']) if c['date_of_call'] else None,
+                        'education_level': c['education_level'],
+                        'age_group': c['age_group'],
+                        'emirate_of_residence': c['emirate_of_residence'],
                         # Display name for id-valued assignments; null for legacy
                         # name-valued rows (the raw value is then already a name).
                         'assigned_to_name': c['assigned_to_name'],
@@ -943,6 +959,76 @@ def get_crm_candidates():
             'success': False,
             'message': 'Failed to get CRM candidates'
         }), 500
+
+@candidate_profile_bp.route('/crm-stats', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def get_crm_stats():
+    """Aggregates + roster-movement series for the Career Services dashboard.
+
+    Mirrors the CRM team's "Main Master File" workbook dashboards (segments,
+    call/work/looking status, education, age, emirate, weekly added/removed)
+    so the team can work on-platform instead of Excel. Roster = profiles with
+    a crm_reference (imported via scripts/import_crm_master.py) — live edits
+    on the platform update these same rows.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            def breakdown(col):
+                cursor.execute(f"""
+                    SELECT COALESCE(NULLIF(TRIM({col}), ''), 'Unknown') AS label, COUNT(*) AS count
+                    FROM candidate_profiles WHERE crm_reference IS NOT NULL
+                    GROUP BY 1 ORDER BY 2 DESC
+                """)
+                return [dict(r) for r in cursor.fetchall()]
+
+            cursor.execute("SELECT COUNT(*) AS n FROM candidate_profiles WHERE crm_reference IS NOT NULL")
+            total = cursor.fetchone()['n']
+
+            cursor.execute("""
+                SELECT seg AS label, COUNT(*) AS count
+                FROM candidate_profiles, jsonb_array_elements_text(crm_segments) seg
+                WHERE crm_reference IS NOT NULL
+                GROUP BY 1 ORDER BY 2 DESC
+            """)
+            segments = [dict(r) for r in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT period_label AS label, period_date, added, removed
+                FROM crm_roster_history WHERE period_type = 'week'
+                ORDER BY period_date DESC LIMIT 26
+            """)
+            weeks = [dict(r, period_date=str(r['period_date'])) for r in cursor.fetchall()][::-1]
+
+            cursor.execute("""
+                SELECT period_label AS label, period_date, added, removed
+                FROM crm_roster_history WHERE period_type = 'month'
+                ORDER BY period_date
+            """)
+            months = [dict(r, period_date=str(r['period_date'])) for r in cursor.fetchall()]
+
+            return jsonify({'success': True, 'data': {
+                'total_roster': total,
+                'segments': segments,
+                'call_status': breakdown('call_status'),
+                'work_status': breakdown('work_status'),
+                'looking_status': breakdown('looking_status'),
+                'job_seeker_type': breakdown('job_seeker_type'),
+                'cv_status': breakdown('cv_status'),
+                'education_level': breakdown('education_level'),
+                'age_group': breakdown('age_group'),
+                'gender': breakdown('gender'),
+                'emirate_of_residence': breakdown('emirate_of_residence'),
+                'roster_history': {'weeks': weeks, 'months': months},
+            }})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error getting CRM stats: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to get CRM stats'}), 500
+
 
 @candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
 @require_roles(*CAREER_SERVICES_ROLES)
@@ -988,6 +1074,8 @@ def update_crm_candidate(user_id):
                     UPDATE candidate_profiles SET
                         call_status = %s,
                         work_status = %s,
+                        cv_status = COALESCE(%s, cv_status),
+                        looking_status = COALESCE(%s, looking_status),
                         counseling_remarks = %s,
                         assigned_to = %s,
                         preferred_locations = %s,
@@ -1002,6 +1090,8 @@ def update_crm_candidate(user_id):
                 """, (
                     data.get('callStatus'),
                     data.get('workStatus'),
+                    data.get('cvStatus'),
+                    data.get('lookingStatus'),
                     data.get('remarks'),
                     assigned_to_val,
                     preferred_locations,
