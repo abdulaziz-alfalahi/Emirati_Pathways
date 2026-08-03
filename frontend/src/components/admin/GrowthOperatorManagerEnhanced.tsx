@@ -512,10 +512,11 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
 
   // Filter operators
   const filteredOperators = operators.filter(op => {
+    // Null-safe: operators granted via secondary_roles can have no name/email
+    // yet (pre-created by EID) — .toLowerCase() on null crashed the whole tab.
     const matchesSearch = !searchTerm ||
-      op.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      op.email.toLowerCase().includes(searchTerm.toLowerCase());
-    op.email.toLowerCase().includes(searchTerm.toLowerCase());
+      (op.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (op.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDomain = !filterDomain || filterDomain === 'ALL_DOMAINS' || op.domains.includes(filterDomain);
     const matchesStatus = !filterStatus || filterStatus === 'ALL_STATUS' ||
       (filterStatus === 'active' && op.is_active) ||
