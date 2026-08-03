@@ -1,0 +1,8 @@
+# Transcription agent (backend/agent.py) — ISOLATED from requirements.txt:
+# livekit-plugins-openai requires a newer openai than the backend's pin
+# (openai==1.12.0), so the agent runs in its own container (Dockerfile.agent).
+livekit-agents>=1.0
+livekit-plugins-openai>=1.0
+livekit-plugins-silero>=1.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0

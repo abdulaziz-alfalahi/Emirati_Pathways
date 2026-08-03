@@ -1,0 +1,12 @@
+# LiveKit interview transcription agent — small dedicated image so its
+# livekit-agents/openai deps never collide with the backend's pins.
+# Build (from repo root):  docker build -f deployment/Dockerfile.agent -t interview-agent:latest .
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY backend/agent-requirements.txt .
+RUN pip install --no-cache-dir -r agent-requirements.txt
+
+COPY backend/agent.py .
+
+CMD ["python", "agent.py", "start"]
