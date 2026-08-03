@@ -5,6 +5,15 @@ sheet (same format as the 2026-07-27 request). Purpose: deploy and operate
 the on-prem speech-to-text service (interview transcription) on the GPUAAS
 nodes. All traffic stays inside the DGHR-EM tenant.
 
+**Status 2026-08-03** — checked against the request actually sent to Moro
+(`DGHR_EM_Firewall_Request_FILLED.xlsx`): APP01-02→GPU:8001, APPDEV→GPU
+:8001/7860-7882 and Jump→GPU:22 already EXIST in the live policy; the only
+missing must-have is **APPQA (10.228.145.5) → GPU :8001** (staging cannot
+reach GPU STT without it). Delta workbook prepared and handed to the owner:
+`~/Downloads/DGHR_EM_Firewall_Request_DELTA_APPQA_GPU.xlsx` (2 APPQA rows +
+optional GPU→proxy:8080 model-download egress; workaround for the latter is
+scp via the existing Jump→GPU SSH rule).
+
 | Source Tenant | Source Server | Source IP | Dest Tenant | Dest Server | Dest IP | Service (ports) | Protocol | Remark |
 |---|---|---|---|---|---|---|---|---|
 | DGHR-EM | APPQA | 10.228.145.5 | DGHR-EM | GPUAAS-01 | 10.228.145.194 | 8001 | TCP | Interview STT API (faster-whisper, OpenAI-compatible) — staging app → GPU inference |
