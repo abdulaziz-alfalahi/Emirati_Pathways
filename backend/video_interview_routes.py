@@ -351,6 +351,35 @@ Be objective and base scores on the actual transcript content. Consider UAE prof
             'message': str(e)
         }), 500
 
+@video_interview_bp.route('/sessions/<session_id>/transcript', methods=['GET'])
+@jwt_required()
+def get_session_transcript(session_id):
+    """Server-side transcript written by the LiveKit transcription agent —
+    labelled per speaker, both sides of the conversation (the old browser
+    path captured only the recruiter's microphone)."""
+    try:
+        try:
+            from backend.db_utils import execute_query
+        except ImportError:
+            from db_utils import execute_query
+        rows = execute_query(
+            """SELECT participant_identity, participant_name, text, language,
+                      created_at
+               FROM interview_transcripts
+               WHERE room_name = %s ORDER BY created_at""",
+            (str(session_id),)) or []
+        return jsonify({'success': True, 'data': {'segments': [{
+            'identity': r['participant_identity'],
+            'name': r['participant_name'],
+            'text': r['text'],
+            'language': r['language'],
+            'at': r['created_at'].isoformat() if r.get('created_at') else None,
+        } for r in rows], 'source': 'server_stt'}})
+    except Exception as e:
+        logger.error(f"transcript fetch failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load transcript'}), 500
+
+
 @video_interview_bp.route('/sessions/<session_id>/report', methods=['GET'])
 @jwt_required()
 def get_interview_report(session_id):
