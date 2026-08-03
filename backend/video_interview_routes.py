@@ -6,6 +6,7 @@ Revolutionary AI-powered video interview system endpoints
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
+import os
 import requests as http_requests
 from backend.video_interview_system import video_interview_engine, InterviewStatus, InterviewType
 from datetime import datetime
@@ -121,6 +122,19 @@ def start_interview_session(session_id):
             _notify_recruiter_candidate_joined(session_id, user_id, _role)
         except Exception as _notif_err:
             logger.warning(f"Recruiter join-notification skipped: {_notif_err}")
+
+        # Summon the transcription agent into the room (best-effort; the
+        # direct-join agent replaces the LiveKit dispatch protocol, which the
+        # OSS server answers with 501).
+        try:
+            _room = session_config.get('room_id')
+            if _room:
+                http_requests.post(
+                    os.getenv('AGENT_JOIN_URL', 'http://interview-agent:8080/join'),
+                    json={'room': _room}, timeout=3,
+                    proxies={'http': None, 'https': None})
+        except Exception as _agent_err:
+            logger.warning(f"transcription agent join skipped: {_agent_err}")
         
         return jsonify({
             'success': True,

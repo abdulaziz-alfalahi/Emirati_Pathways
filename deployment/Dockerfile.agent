@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r agent-requirements.txt
 
 COPY backend/agent.py .
 
-CMD ["python", "agent.py", "start"]
+CMD ["python", "agent.py"]
