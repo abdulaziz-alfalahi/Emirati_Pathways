@@ -3,7 +3,8 @@ import logging
 import os
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
+from decimal import Decimal
 from typing import Dict, List, Any, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -450,10 +451,15 @@ Return a JSON object with:
             conn.close()
 
     def _serialize_session(self, session):
-        # Convert datetime/UUID to string
+        # Convert non-JSON types to string. SELECT s.* pulls the raw
+        # scheduled_date (date) and scheduled_time (time) columns, which Flask's
+        # JSON provider rejects ("Object of type time is not JSON serializable"
+        # — 500 on /sessions/admin/all, feedback fb_1785729286).
         for k, v in session.items():
-            if isinstance(v, (datetime, uuid.UUID)):
+            if isinstance(v, (datetime, date, time, uuid.UUID, timedelta)):
                 session[k] = str(v)
+            elif isinstance(v, Decimal):
+                session[k] = float(v)
         return session
 
 interview_service = InterviewService()

@@ -623,6 +623,10 @@ class AdministratorSystem:
     def update_user_roles(self, user_id: int, roles: List[str], admin_user_id: int) -> bool:
         """Update user roles — preserves the user's original role alongside new ones"""
         try:
+            # Normalize to canonical lowercase slugs: a Title-Case grant (e.g.
+            # 'Recruiter') stored verbatim failed every role guard for that user
+            # (feedback fb_1785734800 — recruiter 403'd on /jd/create).
+            roles = [r.strip().lower().replace(' ', '_') for r in (roles or []) if r and r.strip()]
             # Check user exists
             current_user = self.get_user_details(user_id)
             if not current_user:
