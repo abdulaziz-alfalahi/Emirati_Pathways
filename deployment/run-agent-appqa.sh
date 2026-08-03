@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # LiveKit interview transcription agent (backend/agent.py) as a container
-# from the backend image. Joins every LiveKit room via agent dispatch,
-# transcribes each participant's track via the STT server, writes labelled
-# segments to interview_transcripts.
+# from a dedicated image. Direct-join mode: the backend POSTs {room} to
+# :8080/join when an interview starts; the agent joins as a hidden participant,
+# transcribes each track via the STT server, writes labelled segments to
+# interview_transcripts.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Dedicated image (deps isolated from the backend's pins).
+# Dedicated image (deps isolated from the backend's pins). Context MUST be
+# backend/ — the repo root has no .dockerignore and fills /var on APPQA.
 docker build -f deployment/Dockerfile.agent -t interview-agent:latest \
   --build-arg HTTPS_PROXY=http://10.61.192.2:8080 \
-  --build-arg HTTP_PROXY=http://10.61.192.2:8080 .
+  --build-arg HTTP_PROXY=http://10.61.192.2:8080 backend/
 
 docker rm -f interview-agent 2>/dev/null || true
 docker run -d --name interview-agent --restart unless-stopped \
