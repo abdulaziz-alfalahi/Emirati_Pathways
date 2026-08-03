@@ -7,6 +7,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Dedicated image (deps isolated from the backend's pins).
+docker build -f deployment/Dockerfile.agent -t interview-agent:latest \
+  --build-arg HTTPS_PROXY=http://10.61.192.2:8080 \
+  --build-arg HTTP_PROXY=http://10.61.192.2:8080 .
+
 docker rm -f interview-agent 2>/dev/null || true
 docker run -d --name interview-agent --restart unless-stopped \
   --network emirati_net \
@@ -16,8 +21,7 @@ docker run -d --name interview-agent --restart unless-stopped \
   -e STT_MODEL="${STT_MODEL:-Systran/faster-whisper-small}" \
   -e HTTPS_PROXY=http://10.61.192.2:8080 \
   -e NO_PROXY=localhost,127.0.0.1,livekit-server,stt-whisper,10.228.145.0/24 \
-  emirati_backend:latest \
-  python agent.py start
+  interview-agent:latest
 
 sleep 5
 docker logs interview-agent 2>&1 | tail -5

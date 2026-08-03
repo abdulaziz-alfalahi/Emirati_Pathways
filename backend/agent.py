@@ -37,7 +37,17 @@ logger.setLevel(logging.INFO)
 STT_BASE_URL = os.getenv("STT_BASE_URL",
                          os.getenv("GRANITE_SPEECH_URL", "http://127.0.0.1:8001/v1"))
 STT_MODEL = os.getenv("STT_MODEL", "Systran/faster-whisper-small")
+
+# Same DATABASE_URL composition as backend/app.py — the shared .env carries
+# DB_* parts, not a URL.
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    import urllib.parse
+    DATABASE_URL = (
+        f"postgresql://{urllib.parse.quote_plus(os.getenv('DB_USER', ''))}:"
+        f"{urllib.parse.quote_plus(os.getenv('DB_PASSWORD', ''))}@"
+        f"{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/"
+        f"{os.getenv('DB_NAME', '')}")
 
 _vad = None
 
