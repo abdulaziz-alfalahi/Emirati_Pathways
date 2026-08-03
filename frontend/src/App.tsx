@@ -33,6 +33,7 @@ const UAEPassCallback = lazy(() => import('@/pages/auth/UAEPassCallback'));
 const VerifyJob = lazy(() => import('@/pages/public/VerifyJob').then(m => ({ default: m.VerifyJob })));
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
 const JoinTeamPage = lazy(() => import('@/pages/public/JoinTeamPage'));
+const JoinStaffPage = lazy(() => import('@/pages/public/JoinStaffPage'));
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
 // Lazy loaded components for better performance
@@ -262,6 +263,7 @@ const AppContent: React.FC = () => {
               <Route path="/verify-job/:token" element={<VerifyJob />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
+              <Route path="/join-staff/:token" element={<JoinStaffPage />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -309,6 +311,7 @@ const AppContent: React.FC = () => {
               <Route path="/verify-job/:token" element={<VerifyJob />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
+              <Route path="/join-staff/:token" element={<JoinStaffPage />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -1034,6 +1037,7 @@ const AppContent: React.FC = () => {
               <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
+              <Route path="/join-staff/:token" element={<JoinStaffPage />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
               {/* Login Test Route */}
@@ -1082,6 +1086,7 @@ const AppContent: React.FC = () => {
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
+              <Route path="/join-staff/:token" element={<JoinStaffPage />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
