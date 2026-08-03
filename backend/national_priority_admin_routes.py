@@ -18,24 +18,32 @@ from backend.db import get_db_connection
 from backend.national_priority_engine import ensure_weights_table
 from backend.priority_fairness import compute_fairness_snapshot
 
+try:
+    from backend.auth.access_control import resolve_roles, ADMIN_ROLES
+except ImportError:  # pragma: no cover
+    from auth.access_control import resolve_roles, ADMIN_ROLES
+
 logger = logging.getLogger(__name__)
 
 national_priority_admin_bp = Blueprint(
     'national_priority_admin', __name__, url_prefix='/api/admin/national-priority-weights'
 )
 
-_ADMIN_ROLES = {'admin', 'super_user', 'super_admin', 'platform_administrator'}
-
 
 def _require_admin():
-    """Return a (response, 403) if the caller isn't an EHRDC admin, else None."""
+    """Return a (response, 403) if the caller isn't an EHRDC admin, else None.
+
+    Uses resolve_roles() (primary + secondary_roles + DB) — the previous raw
+    ``get_jwt()['role']`` check 403'd real admins whose admin grant lives in
+    secondary_roles, and its private role set was missing 'administrator'
+    (feedback fb_1785729620).
+    """
     try:
-        role = (get_jwt() or {}).get('role', '')
+        if resolve_roles() & ADMIN_ROLES:
+            return None
     except Exception:
-        role = ''
-    if role not in _ADMIN_ROLES:
-        return jsonify({"error": "Forbidden - admin access required"}), 403
-    return None
+        pass
+    return jsonify({"error": "Forbidden - admin access required"}), 403
 
 
 @national_priority_admin_bp.route('', methods=['GET'])

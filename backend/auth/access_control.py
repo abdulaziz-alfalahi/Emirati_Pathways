@@ -132,6 +132,11 @@ def resolve_roles():
     # canonical `student` so guards match regardless of how it was granted.
     if roles & {'school_student', 'university_student', 'Student'}:
         roles.add('student')
+    # Role slugs are lowercase, but grants have arrived Title-Cased (e.g. a
+    # 'Recruiter' secondary role 403'd a real recruiter on /jd/create). Fold
+    # every resolved role to its lowercase slug so guards match regardless of
+    # how the grant was stored.
+    roles |= {r.lower() for r in roles if isinstance(r, str)}
     return roles
 
 

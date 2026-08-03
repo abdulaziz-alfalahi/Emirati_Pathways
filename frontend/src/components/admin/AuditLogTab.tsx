@@ -12,6 +12,7 @@ import {
   Calendar,
   Search
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 // ── Types ─────────────────────────────────────────────
 
@@ -72,8 +73,9 @@ const AuditLogTab: React.FC = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/audit-log/stats');
-      const json = await res.json();
+      // restClient, not raw fetch — raw fetch sends no credentials, so the
+      // admin-gated endpoint 401s and the tab renders empty (fb_1785729392).
+      const { data: json } = await restClient.get('/api/admin/audit-log/stats');
       if (json.success && json.data) {
         setStats(json.data);
       }
@@ -92,8 +94,7 @@ const AuditLogTab: React.FC = () => {
       if (startDate) params.set('start_date', startDate);
       if (endDate) params.set('end_date', endDate);
 
-      const res = await fetch(`/api/admin/audit-log?${params.toString()}`);
-      const json = await res.json();
+      const { data: json } = await restClient.get(`/api/admin/audit-log?${params.toString()}`);
       if (json.success) {
         setEntries(json.data || []);
         if (json.pagination) setPagination(json.pagination);

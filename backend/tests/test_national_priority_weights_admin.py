@@ -38,8 +38,12 @@ def client(app):
 
 
 def _auth(app, role):
+    # Nonexistent identity: the guard now resolves roles from the DB as well as
+    # the claim, and the previously used id (784000000000040) is a real admin
+    # in dghr_prod — which would (correctly) pass the admin gate regardless of
+    # the claim under test.
     with app.app_context():
-        tok = create_access_token(identity='784000000000040', additional_claims={'role': role})
+        tok = create_access_token(identity='784999999999040', additional_claims={'role': role})
     return {'Authorization': f'Bearer {tok}'}
 
 

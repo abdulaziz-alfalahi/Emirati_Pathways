@@ -253,7 +253,12 @@ def list_growth_operators():
         
         offset = (page - 1) * per_page
         
-        # Get users who are growth operators (check primary role, secondary_roles, and assignments)
+        # Get users who hold ANY operator role — primary OR secondary — plus
+        # anyone with a domain assignment. The old primary-role-only filter
+        # (role LIKE 'growth_operator%') hid every operator granted via
+        # secondary_roles, which is how the persona model assigns them
+        # (feedback fb_1785728963: "Operators tab does not show the assigned
+        # operators" — 1 of 12 real operators was listed).
         query = """
             SELECT DISTINCT
                 u.id,
@@ -262,12 +267,14 @@ def list_growth_operators():
                 u.first_name,
                 u.last_name,
                 u.role,
+                u.secondary_roles,
                 u.is_active,
                 u.created_at,
                 u.last_login
             FROM users u
             LEFT JOIN growth_operator_assignments goa ON u.id::text = goa.user_id::text AND goa.is_active = true
-            WHERE u.role LIKE 'growth_operator%%'
+            WHERE u.role ILIKE '%%operator%%'
+               OR u.secondary_roles::text ILIKE '%%operator%%'
                OR goa.user_id IS NOT NULL
         """
         params = []
@@ -368,7 +375,8 @@ def list_growth_operators():
             SELECT COUNT(DISTINCT u.id) as total
             FROM users u
             LEFT JOIN growth_operator_assignments goa ON u.id::text = goa.user_id::text AND goa.is_active = true
-            WHERE u.role LIKE 'growth_operator%%'
+            WHERE u.role ILIKE '%%operator%%'
+               OR u.secondary_roles::text ILIKE '%%operator%%'
                OR goa.user_id IS NOT NULL
         """
         total_result = execute_query(count_query, fetch_one=True)
