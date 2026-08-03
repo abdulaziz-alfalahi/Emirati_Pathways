@@ -34,6 +34,7 @@ const VerifyJob = lazy(() => import('@/pages/public/VerifyJob').then(m => ({ def
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
 const JoinTeamPage = lazy(() => import('@/pages/public/JoinTeamPage'));
 const JoinStaffPage = lazy(() => import('@/pages/public/JoinStaffPage'));
+import MaintenanceGate from '@/components/common/MaintenanceGate';
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
 // Lazy loaded components for better performance
@@ -231,6 +232,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
+    <MaintenanceGate>
     <div className="App min-h-screen bg-background">
       {!isWallDisplay && <SkipNavigation />}
       {isAuthenticated && user && user.id && (
@@ -1098,6 +1100,7 @@ const AppContent: React.FC = () => {
       {!isWallDisplay && <Toaster />}
       {!isWallDisplay && <FeedbackWidget />}
     </div>
+  </MaintenanceGate>
   );
 };
 

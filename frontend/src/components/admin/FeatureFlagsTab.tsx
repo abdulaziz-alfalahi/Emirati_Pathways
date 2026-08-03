@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Power, Settings, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 import toast from 'react-hot-toast';
+import MaintenanceModePanel from '@/components/admin/MaintenanceModePanel';
 
 // Maps feature-flag key_name → frontend route (only flags with real pages)
 const FLAG_ROUTE_MAP: Record<string, string> = {
@@ -104,6 +105,10 @@ const FeatureFlagsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Platform-wide maintenance switch — separate from the per-module flags
+          below: this holds ALL traffic, so it must not be mistaken for one. */}
+      <MaintenanceModePanel />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h2 className="text-xl font-bold text-gray-900 font-dubai-bold flex items-center">

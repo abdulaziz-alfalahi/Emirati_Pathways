@@ -329,6 +329,18 @@ def rate_limit_auth():
 
 
 @app.before_request
+def _maintenance_gate():
+    """Hold API traffic while an admin has maintenance mode on (fb_1785729286).
+    Health probes, auth and the maintenance endpoints stay open, and admins
+    bypass it — so maintenance can always be switched off from the UI."""
+    try:
+        from backend.maintenance_mode import maintenance_gate
+    except ImportError:  # pragma: no cover
+        from maintenance_mode import maintenance_gate
+    return maintenance_gate()
+
+
+@app.before_request
 def _assign_request_id():
     """T4.4: give every request a correlation id (honor inbound X-Request-ID)."""
     g.request_id = request.headers.get('X-Request-ID') or secrets.token_hex(8)
@@ -703,6 +715,8 @@ _additional_blueprints = [
     ('backend.video_interview_routes', 'video_interview_bp', '/api/video-interview', 'Video Interview'),
     ('backend.recruiter.jd_routes_v2', 'jd_bp', None, 'Recruiter JD V2'),
     ('backend.routes.growth_routes', 'growth_bp', None, 'Growth Operator'),
+    ('backend.routes.maintenance_routes', 'maintenance_bp', None, 'Maintenance Status'),
+    ('backend.routes.maintenance_routes', 'maintenance_admin_bp', None, 'Maintenance Admin'),
     ('backend.routes.staff_invitation_routes', 'staff_invitation_bp', None, 'Staff Invitations'),
     ('backend.routes.staff_invitation_routes', 'staff_invitation_public_bp', None, 'Staff Invitations (public)'),
     ('backend.routes.nafis_talent_routes', 'nafis_talent_bp', None, 'NAFIS Talent'),
