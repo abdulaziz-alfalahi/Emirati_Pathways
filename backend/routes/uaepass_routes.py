@@ -321,6 +321,17 @@ def uaepass_callback():
                     invitation_result = NafisTalentSystem().redeem_seeker_invitation_for_user(
                         invitation_token, user_id, is_new_user=is_new_user
                     )
+                elif invitation_type == 'staff':
+                    # Platform-staff invite (EHRDC CRM/operators, typically
+                    # non-nationals) — grants the operator-set platform role.
+                    # No company involved, unlike 'team'/'company'.
+                    try:
+                        from backend.staff_invitation_system import StaffInvitationSystem
+                    except ImportError:
+                        from staff_invitation_system import StaffInvitationSystem
+                    invitation_result = StaffInvitationSystem().redeem_staff_invitation_for_user(
+                        invitation_token, user_id, is_new_user=is_new_user
+                    )
                 elif invitation_type == 'team':
                     # HR-manager team invite — join the platform + the workspace
                     # with the invited role (carries company_id, resolved by token).

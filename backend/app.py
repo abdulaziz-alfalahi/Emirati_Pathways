@@ -703,6 +703,8 @@ _additional_blueprints = [
     ('backend.video_interview_routes', 'video_interview_bp', '/api/video-interview', 'Video Interview'),
     ('backend.recruiter.jd_routes_v2', 'jd_bp', None, 'Recruiter JD V2'),
     ('backend.routes.growth_routes', 'growth_bp', None, 'Growth Operator'),
+    ('backend.routes.staff_invitation_routes', 'staff_invitation_bp', None, 'Staff Invitations'),
+    ('backend.routes.staff_invitation_routes', 'staff_invitation_public_bp', None, 'Staff Invitations (public)'),
     ('backend.routes.nafis_talent_routes', 'nafis_talent_bp', None, 'NAFIS Talent'),
     ('backend.routes.demand_signal_routes', 'demand_signal_bp', None, 'NAFIS Demand Signals'),
     ('backend.recruiter.jd_upload_routes', 'jd_upload_routes', None, 'JD Upload'),
