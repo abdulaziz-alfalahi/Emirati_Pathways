@@ -23,7 +23,7 @@ interface AuditLogEntry {
   action: string;
   resource_type: string | null;
   resource_id: string | null;
-  details: string | null;
+  details: string | Record<string, unknown> | null;
   ip_address: string | null;
   created_at: string;
 }
@@ -44,6 +44,21 @@ interface AuditLogStats {
 }
 
 // ── Component ─────────────────────────────────────────
+
+// The details column is a JSONB object for most actions (e.g. {old_role,
+// new_role, target_user_id}); rendering it raw crashed React ("Objects are
+// not valid as a React child" — the actual crash behind fb_1785729392).
+const formatDetails = (details: string | Record<string, unknown> | null): string => {
+  if (details == null) return '';
+  if (typeof details === 'string') return details;
+  try {
+    return Object.entries(details)
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
+      .join(', ');
+  } catch {
+    return JSON.stringify(details);
+  }
+};
 
 const AuditLogTab: React.FC = () => {
   // Data
@@ -375,8 +390,8 @@ const AuditLogTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {entry.resource_type || '—'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={entry.details || ''}>
-                      {entry.details || '—'}
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={formatDetails(entry.details)}>
+                      {formatDetails(entry.details) || '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                       {entry.ip_address || '—'}
