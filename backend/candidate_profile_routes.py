@@ -1008,8 +1008,14 @@ def get_crm_stats():
             """)
             months = [dict(r, period_date=str(r['period_date'])) for r in cursor.fetchall()]
 
+            # Roster vintage = the newest period in the movement history, which
+            # tracks the master-file drop date (auto-updates on every import).
+            cursor.execute("SELECT MAX(period_date) AS d FROM crm_roster_history")
+            _as_of = cursor.fetchone()['d']
+
             return jsonify({'success': True, 'data': {
                 'total_roster': total,
+                'roster_as_of': str(_as_of) if _as_of else None,
                 'segments': segments,
                 'call_status': breakdown('call_status'),
                 'work_status': breakdown('work_status'),

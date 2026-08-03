@@ -327,7 +327,13 @@ export default function CareerServicesDashboard() {
             {/* KPI row from live roster data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: t('Total Roster', 'إجمالي السجل'), value: stats.total_roster, color: 'text-slate-900' },
+                {
+                  label: stats.roster_as_of
+                    ? t(`CRM Roster — as of ${new Date(stats.roster_as_of).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                        `سجل المتابعة — بتاريخ ${new Date(stats.roster_as_of).toLocaleDateString('ar-AE', { day: 'numeric', month: 'short', year: 'numeric' })}`)
+                    : t('CRM Roster', 'سجل المتابعة'),
+                  value: stats.total_roster, color: 'text-slate-900',
+                },
                 { label: t('Active Job Seekers', 'الباحثون النشطون'), value: stats.segments?.find((s: any) => s.label === 'active')?.count ?? 0, color: 'text-[#09897A]' },
                 { label: t('1st Priority', 'الأولوية الأولى'), value: stats.segments?.find((s: any) => s.label === 'priority_1')?.count ?? 0, color: 'text-teal-700' },
                 { label: t('No Answer', 'لا يوجد رد'), value: stats.segments?.find((s: any) => s.label === 'no_answer')?.count ?? 0, color: 'text-rose-500' },
