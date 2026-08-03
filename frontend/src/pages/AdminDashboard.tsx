@@ -7,6 +7,7 @@ import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
 import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AuditLogTab from '@/components/admin/AuditLogTab';
+import StaffInvitationsTab from '@/components/admin/StaffInvitationsTab';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
 import NationalPriorityWeightsTab from '@/components/admin/NationalPriorityWeightsTab';
@@ -440,6 +441,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="requests" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <UserPlus className="h-3.5 w-3.5" />
                   {b('Requests', 'الطلبات')}
+                </TabsTrigger>
+                <TabsTrigger value="staff-invitations" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Send className="h-3.5 w-3.5" />
+                  {b('Invitations', 'الدعوات')}
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Shield className="h-3.5 w-3.5" />
@@ -1287,6 +1292,11 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
 
 
 
+
+              {/* Staff magic-link invitations — non-nationals cannot self-register */}
+              <TabsContent value="staff-invitations" className="space-y-6">
+                <StaffInvitationsTab isRTL={isRTL} />
+              </TabsContent>
 
               {/* Audit Log Tab (G13) */}
               <TabsContent value="audit" className="space-y-6">
