@@ -110,7 +110,7 @@ def parse_sheet_rows(ws):
         out[eid] = {
             'crm_reference': _s(g('Reference'), 30),
             'full_name': _s(g('Full Name')),
-            'gender': _s(g('Gender'), 12),
+            'gender': (_s(g('Gender'), 12) or '').capitalize() or None,  # workbook mixes 'female'/'Female'
             'dob': _dt(g('Date Of Birth')),
             'age_group': _s(g('Age Group'), 20),
             'education_level': _s(g('Education'), 80),
