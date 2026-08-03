@@ -6,7 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle, BarChart3, TrendingUp } from 'lucide-react';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip,
+  Legend, CartesianGrid, PieChart, Pie, Cell, LineChart, Line,
+} from 'recharts';
 import { restClient } from '@/utils/api';
 import { toast } from '@/components/ui/use-toast';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
@@ -20,15 +24,18 @@ export default function CareerServicesDashboard() {
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
-  const [view, setView] = useState<'candidates' | 'messages'>('candidates');
+  const [view, setView] = useState<'candidates' | 'analytics' | 'messages'>('candidates');
   const [candidates, setCandidates] = useState<any[]>([]);
   const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [stats, setStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   // Filters and Pagination
   const [searchTerm, setSearchTerm] = useState('');
   const [callStatusFilter, setCallStatusFilter] = useState('All');
   const [workStatusFilter, setWorkStatusFilter] = useState('All');
+  const [segmentFilter, setSegmentFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -41,7 +48,20 @@ export default function CareerServicesDashboard() {
   useEffect(() => {
     fetchCandidates();
     fetchOperators();
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await restClient.get('/api/profile/crm-stats');
+      if (res.data?.success) setStats(res.data.data);
+    } catch (e) {
+      console.error('Failed to fetch CRM stats', e);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const fetchCandidates = async () => {
     setLoading(true);
@@ -61,6 +81,10 @@ export default function CareerServicesDashboard() {
             callStatus: profile.call_status || 'Pending',
             workStatus: profile.work_status || 'Unknown',
             jobSeekerType: profile.job_seeker_type || 'Unknown',
+            segments: Array.isArray(profile.crm_segments) ? profile.crm_segments : [],
+            crmReference: profile.crm_reference || null,
+            cvStatus: profile.cv_status || '',
+            lookingStatus: profile.looking_status || '',
             phone: user.phone || '-',
             remarks: profile.counseling_remarks || '',
             assignedTo: profile.assigned_to || 'Unassigned',
@@ -118,6 +142,8 @@ export default function CareerServicesDashboard() {
       callStatus: candidate.callStatus,
       workStatus: candidate.workStatus,
       remarks: candidate.remarks,
+      cvStatus: candidate.cvStatus || '',
+      lookingStatus: candidate.lookingStatus || 'none',
       assignedTo: candidate.assignedTo,
       preferredLocations: Array.isArray(candidate.preferredLocations)
         ? candidate.preferredLocations
@@ -140,6 +166,8 @@ export default function CareerServicesDashboard() {
     try {
       const payload = {
         ...editForm,
+        lookingStatus: editForm.lookingStatus === 'none' ? null : editForm.lookingStatus,
+        cvStatus: editForm.cvStatus || null,
         preferredSector: editForm.preferredSector === 'none' ? null : editForm.preferredSector,
         preferredWorkSetup: editForm.preferredWorkSetup === 'none' ? null : editForm.preferredWorkSetup,
         preferredSchedule: editForm.preferredSchedule === 'none' ? null : editForm.preferredSchedule,
@@ -175,9 +203,10 @@ export default function CareerServicesDashboard() {
                             cleanEid.includes(cleanSearch);
       const matchesCallStatus = callStatusFilter === 'All' || c.callStatus === callStatusFilter;
       const matchesWorkStatus = workStatusFilter === 'All' || c.workStatus === workStatusFilter;
-      return matchesSearch && matchesCallStatus && matchesWorkStatus;
+      const matchesSegment = segmentFilter === 'All' || (c.segments || []).includes(segmentFilter);
+      return matchesSearch && matchesCallStatus && matchesWorkStatus && matchesSegment;
     });
-  }, [candidates, searchTerm, callStatusFilter, workStatusFilter]);
+  }, [candidates, searchTerm, callStatusFilter, workStatusFilter, segmentFilter]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
@@ -192,6 +221,26 @@ export default function CareerServicesDashboard() {
   const contactedCount = candidates.filter(c => c.callStatus === 'Answered').length;
   const noAnswerCount = candidates.filter(c => c.callStatus === 'No Answer' || c.callStatus === 'Invalid Number').length;
   const unassignedCount = candidates.filter(c => c.assignedTo === 'Unassigned' || !c.assignedTo).length;
+
+  // CRM roster segments (imported from the team's Main Master File; the
+  // segment slug is stored in candidate_profiles.crm_segments).
+  const SEGMENT_LABELS: Record<string, { en: string; ar: string }> = {
+    active: { en: 'Active JS', ar: 'باحث نشط' },
+    priority_1: { en: '1st Priority', ar: 'أولوية أولى' },
+    priority_2: { en: '2nd Priority', ar: 'أولوية ثانية' },
+    priority_3: { en: '3rd Priority', ar: 'أولوية ثالثة' },
+    hatta: { en: 'Hatta', ar: 'حتا' },
+    cda: { en: 'CDA', ar: 'هيئة تنمية المجتمع' },
+    special_request: { en: 'Special Request', ar: 'طلب خاص' },
+    gdo: { en: 'GDO', ar: 'GDO' },
+    no_answer: { en: 'No Answer', ar: 'لا يوجد رد' },
+    prev_employed_21_24: { en: 'Prev Employed 21-24', ar: 'عمل سابقاً 21-24' },
+    never_employed_21_24: { en: 'Never Employed 21-24', ar: 'لم يعمل 21-24' },
+  };
+  const segmentLabel = (seg: string) =>
+    SEGMENT_LABELS[seg] ? (isRTL ? SEGMENT_LABELS[seg].ar : SEGMENT_LABELS[seg].en) : seg;
+
+  const CHART_COLORS = ['#0D3B3F', '#3A8E8D', '#76B6B5', '#09897A', '#52ACA1', '#C5EAE1', '#94A3B8', '#F59E0B', '#FB7185', '#64748B'];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -233,6 +282,15 @@ export default function CareerServicesDashboard() {
               <Button
                 size="sm"
                 variant="ghost"
+                onClick={() => setView('analytics')}
+                className={`rounded-lg px-4 ${view === 'analytics' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <BarChart3 className="h-4 w-4 me-1.5" />
+                {t('Analytics', 'التحليلات')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => setView('messages')}
                 className={`rounded-lg px-4 ${view === 'messages' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
               >
@@ -250,6 +308,178 @@ export default function CareerServicesDashboard() {
 
         {view === 'messages' && (
           <Messages senderRole="career_services_operator" showNewConversation />
+        )}
+
+        {view === 'analytics' && (
+          statsLoading ? (
+            <div className="flex flex-col justify-center items-center py-24 bg-white rounded-2xl shadow-sm">
+              <Loader2 className="h-10 w-10 animate-spin text-[#006E6D] mb-4" />
+              <p className="text-slate-500 font-medium">{t('Loading analytics...', 'جاري تحميل التحليلات...')}</p>
+            </div>
+          ) : !stats ? (
+            <div className="flex flex-col justify-center items-center py-24 bg-white rounded-2xl shadow-sm text-center">
+              <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
+              <p className="text-slate-600 font-medium">{t('Analytics are unavailable right now.', 'التحليلات غير متاحة حالياً.')}</p>
+              <Button onClick={fetchStats} variant="outline" className="mt-4 rounded-xl">{t('Retry', 'إعادة المحاولة')}</Button>
+            </div>
+          ) : (
+          <div className="space-y-6">
+            {/* KPI row from live roster data */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: t('Total Roster', 'إجمالي السجل'), value: stats.total_roster, color: 'text-slate-900' },
+                { label: t('Active Job Seekers', 'الباحثون النشطون'), value: stats.segments?.find((s: any) => s.label === 'active')?.count ?? 0, color: 'text-[#09897A]' },
+                { label: t('1st Priority', 'الأولوية الأولى'), value: stats.segments?.find((s: any) => s.label === 'priority_1')?.count ?? 0, color: 'text-teal-700' },
+                { label: t('No Answer', 'لا يوجد رد'), value: stats.segments?.find((s: any) => s.label === 'no_answer')?.count ?? 0, color: 'text-rose-500' },
+              ].map((kpi) => (
+                <Card key={kpi.label} className="border-none shadow-sm bg-white rounded-2xl">
+                  <CardContent className="p-6">
+                    <p className="text-sm font-medium text-slate-500 mb-1">{kpi.label}</p>
+                    <h3 className={`text-3xl font-bold ${kpi.color}`}>{Number(kpi.value).toLocaleString()}</h3>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Weekly added / removed */}
+            <Card className="border-none shadow-sm bg-white rounded-2xl">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-[#09897A]" />{t('Roster Movement — Weekly', 'حركة السجل — أسبوعياً')}</CardTitle>
+                <CardDescription>{t('Job seekers added and removed per weekly refresh (last 26 weeks)', 'الباحثون المضافون والمحذوفون في كل تحديث أسبوعي (آخر 26 أسبوعاً)')}</CardDescription>
+              </CardHeader>
+              <CardContent className="h-72" dir="ltr">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.roster_history?.weeks || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F6" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <ChartTooltip />
+                    <Legend />
+                    <Bar dataKey="added" name={t('Added', 'مضاف')} fill="#09897A" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="removed" name={t('Removed', 'محذوف')} fill="#FB7185" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Monthly trend */}
+            <Card className="border-none shadow-sm bg-white rounded-2xl">
+              <CardHeader>
+                <CardTitle className="text-lg">{t('Roster Movement — Monthly', 'حركة السجل — شهرياً')}</CardTitle>
+                <CardDescription>{t('Full history since May 2024', 'السجل الكامل منذ مايو 2024')}</CardDescription>
+              </CardHeader>
+              <CardContent className="h-72" dir="ltr">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stats.roster_history?.months || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F6" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <ChartTooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="added" name={t('Added', 'مضاف')} stroke="#09897A" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="removed" name={t('Removed', 'محذوف')} stroke="#FB7185" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Segments + Work status */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-none shadow-sm bg-white rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('Segments', 'الشرائح')}</CardTitle>
+                  <CardDescription>{t('Candidates per CRM segment (a candidate can be in several)', 'المرشحون حسب الشريحة (قد يكون المرشح في أكثر من شريحة)')}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80" dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={(stats.segments || []).map((s: any) => ({ ...s, name: segmentLabel(s.label) }))} layout="vertical" margin={{ left: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F6" />
+                      <XAxis type="number" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11 }} />
+                      <ChartTooltip />
+                      <Bar dataKey="count" name={t('Candidates', 'المرشحون')} fill="#3A8E8D" radius={[0, 3, 3, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm bg-white rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('Work & Call Status', 'حالة العمل والاتصال')}</CardTitle>
+                  <CardDescription>{t('Current roster breakdown', 'توزيع السجل الحالي')}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80" dir="ltr">
+                  <div className="grid grid-cols-2 h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={stats.work_status || []} dataKey="count" nameKey="label" innerRadius="45%" outerRadius="70%" paddingAngle={2}>
+                          {(stats.work_status || []).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <ChartTooltip />
+                        <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={stats.call_status || []} dataKey="count" nameKey="label" innerRadius="45%" outerRadius="70%" paddingAngle={2}>
+                          {(stats.call_status || []).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[(i + 3) % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <ChartTooltip />
+                        <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Demographics row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="border-none shadow-sm bg-white rounded-2xl">
+                <CardHeader><CardTitle className="text-lg">{t('Education', 'التعليم')}</CardTitle></CardHeader>
+                <CardContent className="h-64" dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={stats.education_level || []} dataKey="count" nameKey="label" outerRadius="70%">
+                        {(stats.education_level || []).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                      </Pie>
+                      <ChartTooltip />
+                      <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-sm bg-white rounded-2xl">
+                <CardHeader><CardTitle className="text-lg">{t('Age Groups', 'الفئات العمرية')}</CardTitle></CardHeader>
+                <CardContent className="h-64" dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.age_group || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#EEF2F6" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <ChartTooltip />
+                      <Bar dataKey="count" name={t('Candidates', 'المرشحون')} fill="#0D3B3F" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-sm bg-white rounded-2xl">
+                <CardHeader><CardTitle className="text-lg">{t('Gender', 'النوع')}</CardTitle></CardHeader>
+                <CardContent className="h-64" dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={stats.gender || []} dataKey="count" nameKey="label" outerRadius="70%">
+                        {(stats.gender || []).map((_: any, i: number) => <Cell key={i} fill={CHART_COLORS[(i + 1) % CHART_COLORS.length]} />)}
+                      </Pie>
+                      <ChartTooltip />
+                      <Legend verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          )
         )}
 
         {view === 'candidates' && (
@@ -314,6 +544,17 @@ export default function CareerServicesDashboard() {
                 />
               </div>
               <div className="flex w-full md:w-auto gap-3">
+                <Select value={segmentFilter} onValueChange={(val) => { setSegmentFilter(val); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-full md:w-[180px] bg-slate-50 border-slate-200 rounded-xl">
+                    <SelectValue placeholder="Segment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">{t('All Segments', 'كل الشرائح')}</SelectItem>
+                    {Object.keys(SEGMENT_LABELS).map(seg => (
+                      <SelectItem key={seg} value={seg}>{segmentLabel(seg)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={callStatusFilter} onValueChange={(val) => { setCallStatusFilter(val); setCurrentPage(1); }}>
                   <SelectTrigger className="w-full md:w-[160px] bg-slate-50 border-slate-200 rounded-xl">
                     <SelectValue placeholder="Call Status" />
@@ -392,7 +633,19 @@ export default function CareerServicesDashboard() {
                           <div className="text-slate-600 font-medium">{candidate.phone}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <Badge variant="outline" className="text-slate-600 bg-slate-50 border-slate-200">{candidate.jobSeekerType}</Badge>
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge variant="outline" className="text-slate-600 bg-slate-50 border-slate-200">{candidate.jobSeekerType}</Badge>
+                            {(candidate.segments || []).length > 0 && (
+                              <div className="flex flex-wrap gap-1 max-w-[220px]">
+                                {candidate.segments.slice(0, 3).map((seg: string) => (
+                                  <Badge key={seg} className="bg-teal-50 text-teal-800 border border-teal-100 hover:bg-teal-100 text-[10px] px-1.5 py-0">{segmentLabel(seg)}</Badge>
+                                ))}
+                                {candidate.segments.length > 3 && (
+                                  <Badge className="bg-slate-100 text-slate-500 border-none text-[10px] px-1.5 py-0">+{candidate.segments.length - 3}</Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
@@ -575,6 +828,33 @@ export default function CareerServicesDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">{t('Looking for Work', 'يبحث عن عمل')}</label>
+                    <Select
+                      value={editForm.lookingStatus || 'none'}
+                      onValueChange={(val) => setEditForm({...editForm, lookingStatus: val})}
+                    >
+                      <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11">
+                        <SelectValue placeholder={t('Select', 'اختر')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t('Not set', 'غير محدد')}</SelectItem>
+                        <SelectItem value="Looking For Work">Looking For Work</SelectItem>
+                        <SelectItem value="Not Looking For Work">Not Looking For Work</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">{t('CV Status', 'حالة السيرة الذاتية')}</label>
+                    <Input
+                      value={editForm.cvStatus || ''}
+                      onChange={(e) => setEditForm({...editForm, cvStatus: e.target.value})}
+                      placeholder={t('e.g. Received updated CV', 'مثال: تم استلام سيرة محدثة')}
+                      className="bg-slate-50 border-slate-200 rounded-xl h-11"
+                    />
                   </div>
 
                   {/* New Counseling Fields */}
