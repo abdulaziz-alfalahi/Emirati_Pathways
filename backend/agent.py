@@ -22,6 +22,13 @@ import json
 import logging
 import os
 
+# The shared backend/.env carries corporate proxy vars; every destination the
+# agent talks to (livekit-server, stt-whisper, the DB) is internal, and the
+# Rust livekit client routes ws through HTTPS_PROXY while ignoring NO_PROXY —
+# so drop them before any client library reads the environment.
+for _k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"):
+    os.environ.pop(_k, None)
+
 from aiohttp import web
 from livekit import api as lk_api
 from livekit import rtc
