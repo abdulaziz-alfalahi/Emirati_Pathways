@@ -843,9 +843,16 @@ def get_feedback_stats():
         # Get basic counts
         stats = execute_query(
             """
-            SELECT 
+            SELECT
                 COUNT(*) as total,
-                SUM(CASE WHEN status != 'resolved' THEN 1 ELSE 0 END) as open,
+                -- "Open" = needs someone here to act. Answered/wont_fix are
+                -- closed outcomes, and needs_info is waiting on the reporter,
+                -- so counting them as open hid the real queue (migration 047).
+                SUM(CASE WHEN status IN ('open', 'in_progress', 'pending_clarification')
+                         THEN 1 ELSE 0 END) as open,
+                SUM(CASE WHEN status = 'needs_info' THEN 1 ELSE 0 END) as awaiting_reporter,
+                SUM(CASE WHEN severity IN ('HIGH', 'CRITICAL')
+                          AND status IN ('open', 'in_progress') THEN 1 ELSE 0 END) as high_open,
                 SUM(CASE WHEN type = 'bug' THEN 1 ELSE 0 END) as bugs,
                 SUM(CASE WHEN type = 'feature' THEN 1 ELSE 0 END) as features,
                 SUM(CASE WHEN created_at::date = CURRENT_DATE THEN 1 ELSE 0 END) as today
@@ -853,12 +860,14 @@ def get_feedback_stats():
             """,
             fetch_one=True
         )
-        
+
         return jsonify({
             'success': True,
             'stats': {
                 'total': int(stats.get('total', 0)),
                 'open': int(stats.get('open', 0)),
+                'awaiting_reporter': int(stats.get('awaiting_reporter', 0) or 0),
+                'high_open': int(stats.get('high_open', 0) or 0),
                 'bugs': int(stats.get('bugs', 0)),
                 'features': int(stats.get('features', 0)),
                 'today': int(stats.get('today', 0))
@@ -871,21 +880,39 @@ def get_feedback_stats():
             'stats': {'total': 0, 'open': 0, 'bugs': 0, 'features': 0, 'today': 0}
         })
 
+def _feedback_screenshot_dir():
+    """Absolute directory for feedback screenshots, inside the mounted uploads
+    volume so they survive container recreation. UPLOAD_FOLDER wins when set."""
+    import os
+    base = os.environ.get('UPLOAD_FOLDER') or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
+    return os.path.join(base, 'feedback_screenshots')
+
+
 def _save_feedback_screenshot(feedback_id, data_url):
-    """Decode a base64 data-URL screenshot to a file; return the relative path (or None)."""
+    """Decode a base64 data-URL screenshot to a file; return the relative path (or None).
+
+    Screenshots persist under uploads/ (docker volume). They were previously
+    written to backend/data/, which is inside the container image — every
+    redeploy destroyed them (54 rows on the live DB point at files lost that
+    way before 2026-08-04).
+    """
     if not data_url or not isinstance(data_url, str) or ',' not in data_url:
         return None
     try:
         import os, base64
         header, b64 = data_url.split(',', 1)
         ext = 'jpg' if ('jpeg' in header or 'jpg' in header) else ('png' if 'png' in header else 'img')
-        base = os.path.dirname(os.path.dirname(__file__))
-        out_dir = os.path.join(base, 'data', 'feedback_screenshots')
+        # Write under uploads/, which is the ONLY path backed by a docker volume
+        # (emirati_pathways_upload_data). The previous location — backend/data/ —
+        # lives inside the container image, so every redeploy silently destroyed
+        # every feedback screenshot ever captured.
+        out_dir = _feedback_screenshot_dir()
         os.makedirs(out_dir, exist_ok=True)
         fname = f"{feedback_id}.{ext}"
         with open(os.path.join(out_dir, fname), 'wb') as fh:
             fh.write(base64.b64decode(b64))
-        return f"data/feedback_screenshots/{fname}"
+        return f"uploads/feedback_screenshots/{fname}"
     except Exception as e:
         logger.error(f"Failed to save feedback screenshot for {feedback_id}: {e}")
         return None
@@ -946,9 +973,16 @@ def get_feedback_screenshot(feedback_id):
         if not rel:
             return jsonify({'success': False, 'message': 'No screenshot for this feedback'}), 404
         base = os.path.dirname(os.path.dirname(__file__))
-        full = os.path.join(base, rel)
-        if not os.path.exists(full):
-            return jsonify({'success': False, 'message': 'Screenshot file missing'}), 404
+        # Try the stored path, then the legacy location: screenshots used to be
+        # written to backend/data/ (unmounted, wiped on every redeploy). Rows
+        # from before the move keep their old path.
+        candidates = [os.path.join(base, rel),
+                      os.path.join(_feedback_screenshot_dir(), os.path.basename(rel)),
+                      os.path.join(base, 'data', 'feedback_screenshots', os.path.basename(rel))]
+        full = next((p for p in candidates if os.path.exists(p)), None)
+        if not full:
+            return jsonify({'success': False, 'message': 'Screenshot file missing',
+                            'reason': 'lost_before_persistence_fix'}), 404
         return send_file(full)
     except Exception as e:
         logger.error(f"Error serving feedback screenshot {feedback_id}: {e}")
@@ -978,13 +1012,25 @@ def submit_feedback():
         # Save the screenshot to a file (path stored in DB) instead of inlining base64.
         screenshot_path = _save_feedback_screenshot(feedback_id, data.get('screenshot'))
 
+        # Title and severity are stored as columns as well as inside the message
+        # text, so the admin tab can sort/filter by them (migration 047). The
+        # widget already collects both; older clients simply send neither.
+        _title = (data.get('title') or '').strip()[:300] or None
+        if not _title:
+            import re as _re
+            _m = _re.match(r'^\[([^\]]{1,255})\]', data.get('message') or '')
+            _title = _m.group(1).strip() if _m else None
+        _sev = (data.get('severity') or '').strip().upper() or None
+        if _sev not in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
+            _sev = None
+
         execute_query(
             """
             INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs,
                                   network_logs, session_state, breadcrumbs, app_version, screenshot_path,
-                                  created_at, screenshot)
+                                  title, severity, created_at, screenshot)
             VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s,
-                    CURRENT_TIMESTAMP, NULL)
+                    %s, %s, CURRENT_TIMESTAMP, NULL)
             """,
             (
                 feedback_id,
@@ -1000,6 +1046,8 @@ def submit_feedback():
                 json.dumps(data.get('breadcrumbs', [])),
                 data.get('appVersion'),
                 screenshot_path,
+                _title,
+                _sev,
             ),
             fetch_all=False
         )
@@ -1053,9 +1101,24 @@ def update_feedback_status(feedback_id):
         data = request.json
         new_status = data.get('status')
         resolution_notes = data.get('resolution_notes')
-        
+        # "PR #265", an issue number, or any short pointer to the work that
+        # closed the report — 181 resolved rows carried no trace of the fix.
+        resolution_ref = (data.get('resolution_ref') or '').strip()[:200] or None
+
         if not new_status:
             return jsonify({'success': False, 'message': 'Status is required'}), 400
+
+        # Beyond open/resolved, so the open list means "needs attention":
+        #   in_progress — being worked on now
+        #   needs_info  — waiting on the reporter (their action, not ours)
+        #   answered    — a question, answered; nothing to build
+        #   wont_fix    — considered and declined
+        # pending_clarification is the legacy value the clarify flow writes.
+        _ALLOWED = {'open', 'in_progress', 'needs_info', 'answered',
+                    'resolved', 'wont_fix', 'pending_clarification'}
+        if new_status not in _ALLOWED:
+            return jsonify({'success': False,
+                            'message': f"Unknown status '{new_status}'"}), 400
             
         # 1. Fetch Feedback Details (for notification)
         # We need user_id and message.
@@ -1068,9 +1131,20 @@ def update_feedback_status(feedback_id):
         feedback_item = cursor.fetchone()
         
         # 2. Update Status
+        # COALESCE on the ref so a later status change does not wipe a
+        # previously recorded PR link when the caller omits it.
+        _closing = new_status in ('resolved', 'answered', 'wont_fix')
         cursor.execute(
-            "UPDATE feedback SET status = %s, resolution_notes = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-            (new_status, resolution_notes, feedback_id)
+            """UPDATE feedback
+               SET status = %s,
+                   resolution_notes = %s,
+                   resolution_ref = COALESCE(%s, resolution_ref),
+                   resolved_by = CASE WHEN %s THEN %s ELSE resolved_by END,
+                   resolved_at = CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = %s""",
+            (new_status, resolution_notes, resolution_ref,
+             _closing, str(get_jwt_identity() or '')[:15], _closing, feedback_id)
         )
         conn.commit()
         
@@ -1081,7 +1155,11 @@ def update_feedback_status(feedback_id):
         
         logger.info(f"Checking notification trigger: status='{new_status}', user_id='{target_user_id}'")
         
-        if new_status and new_status.lower() == 'resolved' and feedback_item and target_user_id:
+        # Also notify on 'answered' and 'needs_info': a question that was
+        # answered, or one waiting on the reporter, is exactly when they most
+        # need to hear back — previously only 'resolved' reached them.
+        if (new_status and new_status.lower() in ('resolved', 'answered', 'needs_info')
+                and feedback_item and target_user_id):
             try:
                 # Skip guest
                 if str(target_user_id).lower() != 'guest':

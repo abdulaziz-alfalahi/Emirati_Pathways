@@ -103,6 +103,32 @@ const AdminDashboard = () => {
   });
 
   const [feedbackList, setFeedbackList] = useState([]);
+  // Triage filters: with 183 reports the tab was unusable without them.
+  const [fbStatusFilter, setFbStatusFilter] = useState('needs_attention');
+  const [fbSeverityFilter, setFbSeverityFilter] = useState('all');
+  const [fbSearch, setFbSearch] = useState('');
+  const [fbNotes, setFbNotes] = useState('');
+  const [fbRef, setFbRef] = useState('');
+
+  // "Needs attention" = the queue someone here must act on. Answered / won't
+  // fix are closed outcomes and needs_info is waiting on the reporter, so
+  // lumping them in with open was what let a real report sit unnoticed.
+  const visibleFeedback = React.useMemo(() => {
+    const NEEDS = ['open', 'in_progress', 'pending_clarification'];
+    const q = fbSearch.trim().toLowerCase();
+    return (feedbackList as any[]).filter((f) => {
+      const st = (f.status || 'open').toLowerCase();
+      const okStatus = fbStatusFilter === 'all' ? true
+        : fbStatusFilter === 'needs_attention' ? NEEDS.includes(st)
+        : st === fbStatusFilter;
+      const okSeverity = fbSeverityFilter === 'all' || f.severity === fbSeverityFilter;
+      const okSearch = !q
+        || (f.title || '').toLowerCase().includes(q)
+        || (f.message || '').toLowerCase().includes(q)
+        || String(f.user_id || '').toLowerCase().includes(q);
+      return okStatus && okSeverity && okSearch;
+    });
+  }, [feedbackList, fbStatusFilter, fbSeverityFilter, fbSearch]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
 
   // Invitation pipeline data
@@ -212,9 +238,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const updateFeedbackStatus = async (id: string, newStatus: string) => {
+  const updateFeedbackStatus = async (id: string, newStatus: string, extra?: { resolution_notes?: string; resolution_ref?: string }) => {
     try {
-      const response = await restClient.put(`/api/feedback/${id}/status`, { status: newStatus });
+      const response = await restClient.put(`/api/feedback/${id}/status`, { status: newStatus, ...(extra || {}) });
       if (response.data && response.data.success) {
         toast({
           title: "Success",
@@ -222,7 +248,7 @@ const AdminDashboard = () => {
         });
         // Optimistic update
         setFeedbackList((prev: any[]) => prev.map((item: any) =>
-          item.id === id ? { ...item, status: newStatus } : item
+          item.id === id ? { ...item, status: newStatus, ...(extra || {}) } : item
         ));
       }
     } catch (error) {
@@ -747,11 +773,48 @@ const AdminDashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                      <Input
+                        placeholder="Search title, message or reporter..."
+                        value={fbSearch}
+                        onChange={(e) => setFbSearch(e.target.value)}
+                        className="max-w-xs h-9"
+                      />
+                      <select
+                        value={fbStatusFilter}
+                        onChange={(e) => setFbStatusFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="needs_attention">Needs attention</option>
+                        <option value="all">All statuses</option>
+                        <option value="open">Open</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="needs_info">Awaiting reporter</option>
+                        <option value="answered">Answered</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="wont_fix">Won't fix</option>
+                      </select>
+                      <select
+                        value={fbSeverityFilter}
+                        onChange={(e) => setFbSeverityFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <option value="all">All severities</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                      </select>
+                      <span className="text-xs text-muted-foreground">
+                        {visibleFeedback.length} of {feedbackList.length}
+                      </span>
+                    </div>
                     <div className="rounded-md border">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50 border-b">
                           <tr className="text-start">
                             <th className="p-3 font-medium">Type</th>
+                            <th className="p-3 font-medium">Severity</th>
                             <th className="p-3 font-medium">Status</th>
                             <th className="p-3 font-medium">Message</th>
                             <th className="p-3 font-medium">User & Page</th>
@@ -762,10 +825,10 @@ const AdminDashboard = () => {
                         <tbody>
                           {loadingFeedback ? (
                             <tr><td colSpan={5} className="p-4 text-center">Loading...</td></tr>
-                          ) : feedbackList.length === 0 ? (
-                            <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No feedback received yet.</td></tr>
+                          ) : visibleFeedback.length === 0 ? (
+                            <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No feedback matches these filters.</td></tr>
                           ) : (
-                            feedbackList.map((item: any) => (
+                            visibleFeedback.map((item: any) => (
                               <tr key={item.id} className="border-b hover:bg-muted/50 transition-colors">
                                 <td className="p-3">
                                   <div className="flex flex-col gap-1">
@@ -775,19 +838,36 @@ const AdminDashboard = () => {
                                   </div>
                                 </td>
                                 <td className="p-3">
+                                  {item.severity ? (
+                                    <Badge className={
+                                      item.severity === 'CRITICAL' ? 'bg-red-600 text-white border-0'
+                                      : item.severity === 'HIGH' ? 'bg-orange-500 text-white border-0'
+                                      : item.severity === 'LOW' ? 'bg-slate-200 text-slate-700 border-0'
+                                      : 'bg-amber-100 text-amber-800 border-0'}>
+                                      {item.severity}
+                                    </Badge>
+                                  ) : <span className="text-xs text-muted-foreground">—</span>}
+                                </td>
+                                <td className="p-3">
                                   {(() => {
                                     const nStatus = item.status ? item.status.toLowerCase() : 'open';
-                                    if (nStatus === 'resolved') {
-                                      return <Badge variant="outline" className="text-green-600 border-green-600">RESOLVED</Badge>;
-                                    } else if (nStatus === 'pending_clarification') {
-                                      return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">NEED DETAIL</Badge>;
-                                    } else {
-                                      return <Badge className="bg-blue-600 text-white">OPEN</Badge>;
-                                    }
+                                    const MAP: Record<string, { label: string; cls: string }> = {
+                                      resolved: { label: 'RESOLVED', cls: 'text-green-600 border-green-600 bg-transparent border' },
+                                      answered: { label: 'ANSWERED', cls: 'bg-teal-100 text-teal-800 border-0' },
+                                      wont_fix: { label: "WON'T FIX", cls: 'bg-slate-200 text-slate-600 border-0' },
+                                      in_progress: { label: 'IN PROGRESS', cls: 'bg-indigo-600 text-white border-0' },
+                                      needs_info: { label: 'AWAITING REPORTER', cls: 'bg-amber-500 text-white border-0' },
+                                      pending_clarification: { label: 'NEED DETAIL', cls: 'bg-amber-500 text-white border-0' },
+                                    };
+                                    const m = MAP[nStatus] || { label: 'OPEN', cls: 'bg-blue-600 text-white border-0' };
+                                    return <Badge className={m.cls}>{m.label}</Badge>;
                                   })()}
                                 </td>
                                 <td className="p-3 max-w-md">
-                                  <p className="font-medium truncate">{item.message}</p>
+                                  <p className="font-medium truncate">{item.title || item.message}</p>
+                                  {item.resolution_ref && (
+                                    <p className="text-xs text-teal-700">Fixed in {item.resolution_ref}</p>
+                                  )}
                                   <p className="text-xs text-muted-foreground truncate font-mono">
                                     {item.console_logs && item.console_logs.length > 0 ? `${item.console_logs.length} logs captured` : 'No logs'}
                                   </p>
@@ -811,6 +891,9 @@ const AdminDashboard = () => {
                                       className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white font-medium"
                                       onClick={() => {
                                         setSelectedFeedback(item);
+                                        // Never carry one report's notes into another.
+                                        setFbNotes(item.resolution_notes || '');
+                                        setFbRef(item.resolution_ref || '');
                                         setIsDetailsOpen(true);
                                       }}
                                     >
@@ -1174,6 +1257,43 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                               </div>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="border-t pt-4 space-y-3">
+                          <p className="text-sm font-medium text-slate-700">Triage</p>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            <select
+                              value={(selectedFeedback.status || 'open').toLowerCase()}
+                              onChange={async (e) => {
+                                const st = e.target.value;
+                                await updateFeedbackStatus(selectedFeedback.id, st, {
+                                  resolution_notes: fbNotes || undefined,
+                                  resolution_ref: fbRef || undefined,
+                                });
+                                setSelectedFeedback((prev: any) => prev ? { ...prev, status: st } : null);
+                              }}
+                              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                              <option value="open">Open</option>
+                              <option value="in_progress">In progress</option>
+                              <option value="needs_info">Awaiting reporter</option>
+                              <option value="answered">Answered</option>
+                              <option value="resolved">Resolved</option>
+                              <option value="wont_fix">Won't fix</option>
+                            </select>
+                            <Input
+                              placeholder="Fixed in… e.g. PR #265"
+                              value={fbRef}
+                              onChange={(e) => setFbRef(e.target.value)}
+                              className="h-9 max-w-[200px]"
+                            />
+                          </div>
+                          <Textarea
+                            rows={2}
+                            placeholder="Resolution notes — the reporter sees these."
+                            value={fbNotes}
+                            onChange={(e) => setFbNotes(e.target.value)}
+                          />
                         </div>
 
                         <DialogFooter className="border-t pt-4">
