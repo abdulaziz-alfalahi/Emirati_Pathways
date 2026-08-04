@@ -22,11 +22,12 @@ export default function InterviewDetailsPage() {
       // /api/video-interview/sessions was never implemented — the dropdown
       // called a 404 and was therefore always empty (feedback fb_1785820412).
       // The recruiter's real sessions come from the interviews API.
-      const r = await restClient.get('/api/interviews/sessions?role=recruiter');
+      const r = await restClient.get('/api/interviews/sessions/my?role=recruiter');
       const rows = r.data?.data || r.data?.sessions || [];
       setSessions((rows as any[]).map((s: any) => ({
         ...s,
-        session_id: s.session_id || s.id || s.interview_id,
+        // The analysis/recording endpoints key off interview_id, not the row id.
+        session_id: s.interview_id || s.session_id || s.id,
         candidate_name: s.candidate_display_name || s.candidate_name || s.candidate_id,
       })));
     } catch (e: any) {

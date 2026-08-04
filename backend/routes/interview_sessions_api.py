@@ -240,10 +240,29 @@ def list_sessions():
                 # time). Engaged sessions -> 'completed'; never-engaged -> 'expired'.
                 # Runs on read (no cron needed); idempotent and non-fatal.
                 try:
+                    # 1. A finished call settles immediately — do not make the
+                    #    recruiter wait 30 minutes past the window to stop
+                    #    seeing 'in progress' (feedback fb_1785826985).
+                    cur.execute("""
+                        UPDATE interview_schedules sch
+                        SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+                        FROM video_interview_sessions vs
+                        WHERE (sch.candidate_id::text = %s OR sch.recruiter_id::text = %s)
+                          AND vs.interview_id::text = sch.interview_id::text
+                          AND vs.ended_at IS NOT NULL
+                          AND sch.status IN ('in_progress','joined','started')
+                    """, (user_id_str, user_id_str))
+
+                    # 2. Window fully past: settle by what ACTUALLY happened.
+                    #    'accepted' used to count as engaged, so an interview
+                    #    the candidate accepted but never attended was reported
+                    #    'Completed' without anyone joining (fb_1785825798).
+                    #    Accepting is intent; only joining is attendance.
                     cur.execute("""
                         UPDATE interview_schedules
                         SET status = CASE
-                                WHEN status IN ('in_progress','accepted','joined','started') THEN 'completed'
+                                WHEN status IN ('in_progress','joined','started') THEN 'completed'
+                                WHEN status IN ('accepted','confirmed') THEN 'no_show'
                                 ELSE 'expired'
                             END,
                             updated_at = CURRENT_TIMESTAMP
