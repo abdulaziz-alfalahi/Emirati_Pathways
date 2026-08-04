@@ -110,9 +110,13 @@ const PublicCVViewer: React.FC = () => {
                           Securely shared via <span className="font-semibold text-teal-400">Emirati Pathways</span> Platform
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse" />
-                        <span className="text-xs text-slate-300 font-medium">Closed Platform Protected Profile</span>
+                    {/* Read as an access error ("it said it is a platform
+                        protected profile" — fb_1785817165). The CV IS shown;
+                        only the contact details are withheld, so say that. */}
+                    <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5"
+                         title="The CV is fully visible. Email and phone are withheld — use the contact form to reach this candidate through the platform.">
+                        <div className="w-2.5 h-2.5 rounded-full bg-teal-500" />
+                        <span className="text-xs text-slate-300 font-medium">Contact details protected — message via the platform</span>
                     </div>
                 </div>
 

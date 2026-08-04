@@ -449,8 +449,12 @@ const CVProfile: React.FC = () => {
     // Persist it so every other surface shows the SAME number. The dashboard
     // Overview reads the stored ats_score; while only this component computed
     // it, the two tabs disagreed (feedback fb_1785810051).
-    if (data?.id && Number.isFinite(overall)) {
-      restClient.put(`/api/cv/${data.id}`, { ats_score: Math.round(overall) })
+    // Only for a real CV row (uuid) — a legacy numeric id is not a user_cvs
+    // record and produced a 500 on the update endpoint.
+    const isUuid = typeof data?.id === 'string'
+      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id);
+    if (isUuid && Number.isFinite(overall)) {
+      restClient.put(`/api/cv/${data.id}`, { atsScore: Math.round(overall) })
         .catch(() => { /* display is already correct; persistence is best-effort */ });
     }
   };

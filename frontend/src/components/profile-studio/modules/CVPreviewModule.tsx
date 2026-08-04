@@ -118,27 +118,49 @@ export const CVPreviewModule = () => {
                 height: element.scrollHeight,
                 windowHeight: element.scrollHeight
             });
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
 
-            const ratio = pageWidth / canvasWidth;
-            const scaledHeight = canvasHeight * ratio;
+            // Real page margins. The previous version placed one tall image at
+            // x=0 and shifted it up per page, so the CV ran edge to edge with
+            // no header/footer space and lines were sliced in half at every
+            // page break (feedback fb_1785816969). Each page is now cropped
+            // from the canvas and drawn inside the margins.
+            const MARGIN_X = 10;   // mm
+            const MARGIN_TOP = 12; // mm
+            const MARGIN_BOTTOM = 14; // mm — leaves room for the page footer
+            const contentWidth = pageWidth - MARGIN_X * 2;
+            const contentHeight = pageHeight - MARGIN_TOP - MARGIN_BOTTOM;
 
-            let heightLeft = scaledHeight;
-            let position = 0;
+            // Canvas pixels per mm of rendered content.
+            const pxPerMm = canvas.width / contentWidth;
+            const pageHeightPx = Math.floor(contentHeight * pxPerMm);
+            const totalPages = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
 
-            pdf.addImage(imgData, 'PNG', 0, position, pageWidth, scaledHeight);
-            heightLeft -= pageHeight;
+            const slice = document.createElement('canvas');
+            const sctx = slice.getContext('2d');
 
-            while (heightLeft > 0) {
-                position = heightLeft - scaledHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pageWidth, scaledHeight);
-                heightLeft -= pageHeight;
+            for (let page = 0; page < totalPages; page++) {
+                const sourceY = page * pageHeightPx;
+                const sliceHeightPx = Math.min(pageHeightPx, canvas.height - sourceY);
+                slice.width = canvas.width;
+                slice.height = sliceHeightPx;
+                if (sctx) {
+                    // White backing so a short final page is not transparent.
+                    sctx.fillStyle = '#ffffff';
+                    sctx.fillRect(0, 0, slice.width, slice.height);
+                    sctx.drawImage(canvas, 0, sourceY, canvas.width, sliceHeightPx,
+                                   0, 0, canvas.width, sliceHeightPx);
+                }
+                if (page > 0) pdf.addPage();
+                pdf.addImage(slice.toDataURL('image/png'), 'PNG',
+                             MARGIN_X, MARGIN_TOP, contentWidth, sliceHeightPx / pxPerMm);
+
+                pdf.setFontSize(8);
+                pdf.setTextColor(150);
+                pdf.text(`${page + 1} / ${totalPages}`, pageWidth / 2,
+                         pageHeight - MARGIN_BOTTOM / 2, { align: 'center' });
             }
 
             pdf.save(`${profile?.headline || 'CV'}_${template}_Emirati_Pathway.pdf`);
