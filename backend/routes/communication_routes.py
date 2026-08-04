@@ -1335,8 +1335,24 @@ def get_messaging_contacts():
                            "WHERE u.is_active IS NOT FALSE AND CAST(u.id AS TEXT) != %s")
                     params = [current_user_id]
                     if q:
-                        sql += f" AND {name_expr} ILIKE %s"
+                        # Staff also search by Emirates ID and phone, not just
+                        # name — the CRM team routinely has only the number or
+                        # the EID in front of them (feedback fb_1785827971).
+                        # Phone comparison strips non-digits and the local/
+                        # country prefix so 0501234567, +971501234567 and
+                        # 971501234567 all match the same person.
+                        digits = ''.join(ch for ch in q if ch.isdigit())
+                        clauses = [f"{name_expr} ILIKE %s"]
                         params.append(f"%{q}%")
+                        if digits:
+                            clauses.append("CAST(u.id AS TEXT) LIKE %s")
+                            params.append(f"%{digits}%")
+                            clauses.append("COALESCE(u.emirates_id_enc, '') LIKE %s")
+                            params.append(f"%{digits}%")
+                            clauses.append(
+                                "REGEXP_REPLACE(COALESCE(u.phone, ''), '[^0-9]', '', 'g') LIKE %s")
+                            params.append(f"%{digits.lstrip('0').lstrip('971') or digits}%")
+                        sql += " AND (" + " OR ".join(clauses) + ")"
                     sql += " ORDER BY name LIMIT 20"
                     cur.execute(sql, tuple(params))
                 else:
