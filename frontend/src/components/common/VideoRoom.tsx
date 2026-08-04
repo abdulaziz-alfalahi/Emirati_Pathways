@@ -62,18 +62,31 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     // Ref keeps the P2P effect in sync with localStream without being a dependency
     const localStreamRef = useRef<MediaStream | null>(null);
     localStreamRef.current = localStream;
+    // Live connection state — read inside the fallback timeout, which would
+    // otherwise close over a stale value.
+    const [isConnected, setIsConnected] = useState(false);
+    const isConnectedRef = useRef(false);
+    isConnectedRef.current = isConnected;
 
-    // Auto-fallback to direct call if LiveKit takes > 10 seconds to connect
+    // Auto-fallback to direct call ONLY if LiveKit never connects.
+    // This timer used to fire unconditionally: it flipped connectionFailed
+    // after 10s even when the call was already up, which unmounted LiveKitRoom
+    // and cancelled a working connection — the server logged both participants
+    // joining, then the browser reported ConnectionError/'Cancelled' and the
+    // picture died (feedback fb_1785825538, fb_1785826235). It now checks
+    // whether we actually connected, and allows longer for the handshake
+    // through the WAF/TURN path.
     useEffect(() => {
-        if (livekitUrl && token && !connectionFailed) {
+        if (livekitUrl && token && !connectionFailed && !isConnected) {
             const timer = setTimeout(() => {
-                console.warn("LiveKit connection timed out after 10s. Falling back to Direct Connection.");
+                if (isConnectedRef.current) return;   // connected in the meantime
+                console.warn("LiveKit did not connect within 20s. Falling back to Direct Connection.");
                 setConnectionFailed(true);
                 toast.info("Switching to backup Direct Connection mode...");
-            }, 10000);
+            }, 20000);
             return () => clearTimeout(timer);
         }
-    }, [livekitUrl, token, connectionFailed]);
+    }, [livekitUrl, token, connectionFailed, isConnected]);
 
     // Setup Local Camera Stream
     useEffect(() => {
@@ -346,9 +359,18 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     connect={true}
                     video={!isObserver}
                     audio={!isObserver}
+                    onConnected={() => {
+                        console.log("LiveKit connected.");
+                        setIsConnected(true);
+                    }}
                     onDisconnected={onEndCall}
-                    onError={(err) => {
+                    onError={(err: any) => {
+                        // A cancelled handshake is what our own teardown looks
+                        // like; never treat it as a server failure once we are
+                        // connected, or we tear down a working call.
+                        const cancelled = err?.reasonName === 'Cancelled' || err?.reason === 3;
                         console.error("LiveKit connection error:", err);
+                        if (isConnectedRef.current || cancelled) return;
                         setConnectionFailed(true);
                         toast.error("LiveKit connection failed. Switching to Direct Call.");
                     }}
