@@ -544,7 +544,12 @@ export const FeedbackWidget = () => {
                 removed: unmotivated perpetual motion on every page, and neither honoured
                 prefers-reduced-motion. Hover feedback is now a subtle scale, gated behind
                 `motion-safe`. */}
-            <div className="fixed bottom-24 end-6 z-50 group feedback-trigger-btn">
+            {/* Above dialog layers (overlay z-[90], content z-[100]): at z-50 the
+                button was buried by any open modal — e.g. "Edit Details" — so a
+                user could not report a bug about the thing they were looking at
+                (feedback fb_1785829639). The screenshot routine hides
+                .feedback-trigger-btn before capture, so it never appears in shots. */}
+            <div className="fixed bottom-24 end-6 z-[110] group feedback-trigger-btn">
                 <Button
                     onClick={() => setIsOpen(true)}
                     aria-label="Send feedback or report an issue"
