@@ -310,7 +310,7 @@ def list_sessions():
                             isched.interview_round,
                             u.full_name as recruiter_name,
                             jp.title as job_title,
-                            COALESCE(comp.company_name, '') as company_name
+                            COALESCE(NULLIF(comp.name, ''), comp.company_name, '') as company_name
                         FROM interview_schedules isched
                         LEFT JOIN users u ON isched.recruiter_id::text = u.id::text
                         LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
@@ -339,7 +339,7 @@ def list_sessions():
                             u.last_name as candidate_last_name,
                             u.email as candidate_email,
                             jp.title as job_title,
-                            COALESCE(comp.company_name, '') as company_name
+                            COALESCE(NULLIF(comp.name, ''), comp.company_name, '') as company_name
                         FROM interview_schedules isched
                         LEFT JOIN users u ON isched.candidate_id::text = u.id::text
                         LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text

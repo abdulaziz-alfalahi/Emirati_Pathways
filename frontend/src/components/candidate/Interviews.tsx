@@ -12,7 +12,6 @@ import { VideoRoom } from '@/components/common/VideoRoom';
 import { langOf, interviewRoundLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 
-import { Switch } from '@/components/ui/switch';
 
 export default function CandidateInterviews() {
     const { i18n } = useTranslation();
@@ -23,7 +22,19 @@ export default function CandidateInterviews() {
     const [sessions, setSessions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeSession, setActiveSession] = useState<any>(null);
-    const [showCancelled, setShowCancelled] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('upcoming');
+
+    // 'upcoming' = anything still ahead or in progress; the old default simply
+    // hid cancelled interviews and showed everything else forever.
+    const matchesStatusFilter = (session: any) => {
+        const st = String(session.status || 'scheduled').toLowerCase();
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'upcoming') {
+            return !['cancelled', 'completed', 'no_show', 'expired'].includes(st);
+        }
+        if (statusFilter === 'scheduled') return ['scheduled', 'rescheduled', 'accepted', 'confirmed'].includes(st);
+        return st === statusFilter;
+    };
     const [livekitUrl, setLivekitUrl] = useState<string>('');
     const [livekitToken, setLivekitToken] = useState<string>('');
     const [isConnecting, setIsConnecting] = useState(false);
@@ -192,11 +203,25 @@ export default function CandidateInterviews() {
                     <h2 className="text-3xl font-bold tracking-tight">{t('My Interviews', 'مقابلاتي')}</h2>
                     <p className="text-muted-foreground">{t('Join your scheduled video sessions.', 'انضم إلى جلسات الفيديو المجدولة.')}</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <Switch id="show-cancelled" checked={showCancelled} onCheckedChange={setShowCancelled} />
-                    <label htmlFor="show-cancelled" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {t('Show Cancelled', 'إظهار الملغاة')}
+                {/* Requested by a candidate: filter by status instead of a
+                    single show/hide-cancelled switch (fb_1785828292). */}
+                <div className="flex items-center gap-2">
+                    <label htmlFor="status-filter" className="text-sm text-muted-foreground">
+                        {t('Show', 'عرض')}
                     </label>
+                    <select
+                        id="status-filter"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                        <option value="upcoming">{t('Upcoming', 'القادمة')}</option>
+                        <option value="all">{t('All', 'الكل')}</option>
+                        <option value="scheduled">{t('Scheduled', 'مجدولة')}</option>
+                        <option value="completed">{t('Completed', 'مكتملة')}</option>
+                        <option value="cancelled">{t('Cancelled', 'ملغاة')}</option>
+                        <option value="no_show">{t('No show', 'لم يحضر')}</option>
+                    </select>
                 </div>
             </div>
 
@@ -205,7 +230,7 @@ export default function CandidateInterviews() {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {sessions
-                        .filter(session => showCancelled || session.status !== 'cancelled')
+                        .filter(matchesStatusFilter)
                         .map((session) => (
                             <Card key={session.id} className={`hover:shadow-md transition-shadow ${session.status === 'cancelled' ? 'opacity-60 bg-slate-50' : ''}`}>
                                 <CardHeader className="pb-2">
@@ -307,7 +332,7 @@ export default function CandidateInterviews() {
                         ))}
 
                     {sessions
-                        .filter(session => showCancelled || session.status !== 'cancelled')
+                        .filter(matchesStatusFilter)
                         .length === 0 && (
                             <div className="col-span-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-lg">
                                 <Video className="h-12 w-12 text-gray-300 mb-4" />
