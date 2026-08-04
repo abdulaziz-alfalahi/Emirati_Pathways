@@ -116,6 +116,23 @@ def start_interview_session(session_id):
         
         session_config = video_interview_engine.start_interview_session(session_id, user_id)
 
+        # Stamp the real start of the call (migration 049). Attendance was
+        # previously judged from the SCHEDULED window alone, so a ten-second
+        # join looked identical to a full interview.
+        try:
+            from backend.db_utils import execute_query as _eq
+        except ImportError:  # pragma: no cover
+            from db_utils import execute_query as _eq
+        try:
+            _eq("""UPDATE interview_schedules
+                   SET started_at = COALESCE(started_at, NOW()),
+                       status = CASE WHEN status IN ('completed','cancelled') THEN status
+                                     ELSE 'in_progress' END,
+                       updated_at = NOW()
+                   WHERE interview_id = %s""", (session_id,), fetch_all=False)
+        except Exception as _start_err:
+            logger.warning(f"could not stamp interview start: {_start_err}")
+
         # Notify the recruiter that the candidate has joined (best-effort, debounced).
         try:
             _role = (request.get_json(silent=True) or {}).get('role')
@@ -163,6 +180,25 @@ def end_interview_session(session_id):
         logger.info(f"Ending interview session {session_id} for user {user_id}")
         
         success = video_interview_engine.end_interview_session(session_id, user_id)
+
+        # Stamp the end and settle the status by the owner's attendance rule:
+        # a call shorter than two minutes was not an interview.
+        try:
+            from backend.db_utils import execute_query as _eq
+        except ImportError:  # pragma: no cover
+            from db_utils import execute_query as _eq
+        try:
+            _eq("""UPDATE interview_schedules
+                   SET ended_at = NOW(),
+                       status = CASE
+                           WHEN started_at IS NOT NULL
+                                AND NOW() - started_at >= INTERVAL '2 minutes' THEN 'completed'
+                           WHEN started_at IS NOT NULL THEN 'no_show'
+                           ELSE status END,
+                       updated_at = NOW()
+                   WHERE interview_id = %s""", (session_id,), fetch_all=False)
+        except Exception as _end_err:
+            logger.warning(f"could not stamp interview end: {_end_err}")
         
         if success:
             return jsonify({
