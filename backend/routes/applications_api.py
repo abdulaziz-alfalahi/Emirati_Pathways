@@ -22,11 +22,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 try:
     from backend.db_utils import execute_query
-    from backend.auth.access_control import require_roles, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+    from backend.auth.access_control import (require_auth, require_roles, resolve_roles,
+                                             RECRUITER_ROLES, ADMIN_ROLES)
     from backend.workspace_middleware import get_company_context
 except ImportError:  # pragma: no cover — app also runs from backend/ as cwd
     from db_utils import execute_query
-    from auth.access_control import require_roles, resolve_roles, RECRUITER_ROLES, ADMIN_ROLES
+    from auth.access_control import (require_auth, require_roles, resolve_roles,
+                                     RECRUITER_ROLES, ADMIN_ROLES)
     from workspace_middleware import get_company_context
 
 logger = logging.getLogger(__name__)
@@ -154,7 +156,7 @@ def _row_out(r):
 
 
 @applications_bp.route('/my-applications', methods=['GET'])
-@jwt_required()
+@require_auth
 def my_applications():
     """Applications belonging to the authenticated candidate."""
     try:
@@ -170,7 +172,7 @@ def my_applications():
 
 
 @applications_bp.route('/apply', methods=['POST'])
-@jwt_required()
+@require_auth
 def apply():
     """Submit an application to a job posting."""
     try:
@@ -232,7 +234,7 @@ def apply():
 
 
 @applications_bp.route('/<application_id>', methods=['GET'])
-@jwt_required()
+@require_auth
 def get_application(application_id):
     try:
         user_id = get_jwt_identity()
@@ -251,7 +253,7 @@ def get_application(application_id):
 
 
 @applications_bp.route('/<application_id>/withdraw', methods=['POST'])
-@jwt_required()
+@require_auth
 def withdraw(application_id):
     try:
         user_id = get_jwt_identity()

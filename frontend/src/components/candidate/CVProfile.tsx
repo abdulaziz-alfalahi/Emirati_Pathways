@@ -445,6 +445,14 @@ const CVProfile: React.FC = () => {
     const overall = breakdown.personalInfo + breakdown.experience + breakdown.education + breakdown.skills + breakdown.keywords;
 
     setAtsScore({ overall, breakdown, recommendations });
+
+    // Persist it so every other surface shows the SAME number. The dashboard
+    // Overview reads the stored ats_score; while only this component computed
+    // it, the two tabs disagreed (feedback fb_1785810051).
+    if (data?.id && Number.isFinite(overall)) {
+      restClient.put(`/api/cv/${data.id}`, { ats_score: Math.round(overall) })
+        .catch(() => { /* display is already correct; persistence is best-effort */ });
+    }
   };
 
   /**

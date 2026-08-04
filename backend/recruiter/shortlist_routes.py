@@ -156,7 +156,7 @@ def add_to_shortlist():
                     notification_type='application_shortlisted',
                     title='You have been shortlisted',
                     message='A recruiter shortlisted you for a position. Check your applications for details.',
-                    metadata={'jd_id': str(jd_id), 'link': '/applications'})
+                    metadata={'jd_id': str(jd_id), 'link': '/candidate-dashboard?tab=applications'})
         except Exception as notify_err:
             logger.warning(f"shortlist notify failed: {notify_err}")
 
@@ -355,7 +355,7 @@ def update_shortlist_status(shortlist_id):
                         title='Update on your application',
                         message='There is an update on one of your applications. Check your applications for details.',
                         metadata={'shortlist_id': str(shortlist_id), 'new_status': status,
-                                  'link': '/applications'})
+                                  'link': '/candidate-dashboard?tab=applications'})
             except Exception as notify_err:
                 logger.warning(f"shortlist status notify failed: {notify_err}")
 
