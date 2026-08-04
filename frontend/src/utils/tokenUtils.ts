@@ -9,8 +9,24 @@ export function getAuthToken(): string | null {
         || localStorage.getItem('token');
 }
 
+/** True when the browser holds a cookie session (the CSRF cookie is set
+ *  alongside the auth cookies). */
+export function hasCookieSession(): boolean {
+    try {
+        return typeof document !== 'undefined'
+            && document.cookie.split('; ').some(c => c.startsWith('csrf_access_token='));
+    } catch {
+        return false;
+    }
+}
+
 export function getAuthHeaders(): Record<string, string> {
-    const token = getAuthToken();
+    // A cookie session is authoritative. Sending a stale localStorage bearer
+    // alongside it made the backend reject the request as 'Invalid token'
+    // WITHOUT falling back to the valid cookie — which knocked users out of
+    // job details, privacy settings and the interview join button
+    // (fb_1785825540, fb_1785828743, fb_1785829470, fb_1785830436).
+    const token = hasCookieSession() ? null : getAuthToken();
     return token
         ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         : { 'Content-Type': 'application/json' };

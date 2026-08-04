@@ -22,7 +22,12 @@ const apiClient = axios.create({
 // Request Interceptor: Attach Token & CSRF Token
 apiClient.interceptors.request.use(
     (config) => {
-        const token = getToken();
+        // Same rule as restClient/tokenUtils: never send a possibly-stale
+        // bearer when a cookie session exists — the backend rejects on the
+        // bearer and never checks the valid cookie.
+        const hasCookie = typeof document !== 'undefined'
+            && document.cookie.split('; ').some(c => c.startsWith('csrf_access_token='));
+        const token = hasCookie ? null : getToken();
         if (token && token !== 'cookie_authenticated') {
             config.headers.Authorization = `Bearer ${token}`;
         }

@@ -103,6 +103,41 @@ def get_all_sessions_admin():
         logger.error(f"Error listing admin sessions: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@interview_bp.route('/guest/<token>', methods=['GET'])
+def get_guest_session(token):
+    """Resolve a guest interview invitation link (no auth — that is the point).
+
+    The guest lobby has always called this, but no route was ever wired to the
+    service function, so every shared interview link 404'd and neither the
+    assessor nor an external interviewer could join (feedback fb_1785828427,
+    fb_1785828301).
+
+    Returns only what the lobby needs to show the invitation and join the room
+    — never the candidate's contact details or internal notes.
+    """
+    try:
+        session = interview_service.get_session_by_guest_token(token)
+        if not session:
+            return jsonify({'success': False, 'message': 'Invalid or expired invitation'}), 404
+        if str(session.get('status') or '').lower() in ('cancelled', 'declined'):
+            return jsonify({'success': False, 'message': 'This interview was cancelled'}), 410
+        safe = {
+            'id': session.get('interview_id') or session.get('id'),
+            'room_id': session.get('room_id') or session.get('interview_id'),
+            'status': session.get('status'),
+            'scheduled_at': session.get('scheduled_at'),
+            'duration_minutes': session.get('duration_minutes'),
+            'interview_type': session.get('interview_type'),
+            'job_title': session.get('job_title'),
+            'recruiter_name': session.get('recruiter_display_name')
+                              or session.get('recruiter_first_name'),
+        }
+        return jsonify({'success': True, 'data': safe}), 200
+    except Exception as e:
+        logger.error(f"Guest session lookup failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load interview details'}), 500
+
+
 @interview_bp.route('/sessions/<session_id>', methods=['GET'])
 @jwt_required()
 def get_session(session_id):
