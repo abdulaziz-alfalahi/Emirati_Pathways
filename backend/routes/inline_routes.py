@@ -127,11 +127,18 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 from workspace_middleware import get_company_context
             _me = str(get_jwt_identity())
             _job = execute_query(
-                "SELECT company_id FROM job_postings WHERE id::text = %s OR jd_id = %s LIMIT 1",
+                """SELECT company_id,
+                          COALESCE(recruiter_id::text, posted_by::text, created_by::text) AS owner
+                   FROM job_postings WHERE id::text = %s OR jd_id = %s LIMIT 1""",
                 (str(job_id), str(job_id)), fetch_one=True)
             _company_id = (_job or {}).get('company_id')
-            _ok = False
-            if _company_id:
+            _owner = (_job or {}).get('owner')
+            # The job's own recruiter always qualifies. 31 of 329 live postings
+            # have no company_id (JD-builder drafts), and a company-only check
+            # denied their creator their own applicant list — reported as
+            # 'applicants list unavailable' (feedback fb_1785752603).
+            _ok = bool(_owner and str(_owner) == _me)
+            if not _ok and _company_id:
                 try:
                     _ctx = get_company_context(_me, str(_company_id))
                     _ok = bool(_ctx and (_ctx.get('is_member') or _ctx.get('is_growth_operator')))
