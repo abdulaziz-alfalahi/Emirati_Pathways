@@ -62,6 +62,14 @@ def get_cv_fixed(cv_id):
 def update_cv_fixed(cv_id):
     try:
         user_eid = str(get_jwt_identity())
+        # user_cvs.id is a uuid; anything else must 404 rather than blow up the
+        # ::uuid cast with a 500 (feedback fb_1785816969 captured PUT /api/cv/2
+        # returning 'Internal server error').
+        import uuid as _uuid
+        try:
+            _uuid.UUID(str(cv_id))
+        except (ValueError, AttributeError, TypeError):
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
         # Ownership check — only the owner may modify their CV
         owner = execute_query("SELECT user_id FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
         if not owner:
@@ -73,8 +81,9 @@ def update_cv_fixed(cv_id):
         cv_data = data.get('cvData', {})
         title = data.get('title')
         template_id = data.get('templateId')
-        cv_score = data.get('cvScore')
-        ats_score = data.get('atsScore')
+        # Accept both spellings — callers send camelCase or snake_case.
+        cv_score = data.get('cvScore', data.get('cv_score'))
+        ats_score = data.get('atsScore', data.get('ats_score'))
         
         # Build update query
         update_fields = []

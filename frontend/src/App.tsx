@@ -1085,6 +1085,13 @@ const AppContent: React.FC = () => {
                 <UAEPassCallback />
               </Suspense>
             } />
+            {/* Links shared with people OUTSIDE the platform must resolve for
+                signed-out visitors — they were only registered in the
+                authenticated group, so a shared CV bounced to /auth
+                (feedback fb_1785817165). */}
+            <Route path="/cv/share/:id" element={<PublicCVViewer />} />
+            <Route path="/public/job/:token" element={<VerifyJob />} />
+            <Route path="/jobs/:token" element={<VerifyJob />} />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
