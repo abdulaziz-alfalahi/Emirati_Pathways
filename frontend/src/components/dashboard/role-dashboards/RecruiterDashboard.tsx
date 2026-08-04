@@ -38,56 +38,11 @@ import {
 } from 'lucide-react';
 
 // Role Switcher Button Component
-const RoleSwitcherButton = () => {
-  const handleRoleSwitch = () => {
-    console.log('🔄 Switching to role selector from Recruiter Dashboard');
-    
-    // Clear authentication state to allow role switching
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('auth_token');
-    
-    // Force navigation to HTML role selector
-    window.location.href = '/role_selector.html';
-  };
-
-  return (
-    <button 
-      onClick={handleRoleSwitch}
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: '25px',
-        fontWeight: '600',
-        cursor: 'pointer',
-        zIndex: 1000,
-        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-        fontSize: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        transition: 'all 0.3s ease'
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
-      }}
-    >
-      <RotateCcw size={16} />
-      Switch Role
-    </button>
-  );
-};
+// The floating "Switch Role" button that used to live here has been removed
+// (feedback: "why there are two role switchers?"). It duplicated the header's
+// role switcher AND was destructive: it deleted the stored user and every auth
+// token, then sent the user to a legacy static /role_selector.html page — i.e.
+// it silently signed you out. The header switcher is the supported one.
 
 interface RecruiterDashboardProps {
   activeTab: string;
@@ -143,7 +98,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ activeTab }) =>
 
   return (
   <Layout>
-    <RoleSwitcherButton />
     
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">  {/* Added container constraints */}
       <div className="space-y-8">

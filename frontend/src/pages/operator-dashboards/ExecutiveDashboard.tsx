@@ -259,10 +259,16 @@ const ExecutiveDashboard: React.FC = () => {
   const kpis = executiveData?.kpis || {};
   const statCards = [
     {
-      label: b('Total Placements', 'إجمالي التعيينات'),
-      value: (kpis.total_placed || 0).toLocaleString(),
+      // Confirmed hires + accepted offers only. This card used to show
+      // (registered − still active) + offers, i.e. roster attrition presented
+      // as placements — 1,542 on a platform with no hires at all
+      // ("the number incorrect 1542 what does it mean?").
+      label: b('Confirmed Placements', 'التعيينات المؤكدة'),
+      value: kpis.total_placed != null ? Number(kpis.total_placed).toLocaleString() : '—',
       icon: Briefcase, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100',
-      sub: `${b('Economic Value', 'القيمة الاقتصادية')}: AED ${kpis.economic_value_aed || '—'}`
+      sub: kpis.roster_exits != null
+        ? `${Number(kpis.roster_exits).toLocaleString()} ${b('left the active roster (not placements)', 'غادروا سجل الباحثين النشطين (ليست تعيينات)')}`
+        : b('Hires and accepted offers', 'التعيينات والعروض المقبولة')
     },
     {
       label: b('Emiratisation Target', 'هدف التوطين'),
@@ -384,8 +390,8 @@ const ExecutiveDashboard: React.FC = () => {
                   </div>
                   <p className="text-sm text-slate-500 font-dubai-medium mt-0.5">
                     {isRTL
-                      ? <>تتبع <span className="text-emerald-600 font-bold">{kpis.active_partners || 0} شريك</span> مع <span className="text-emerald-600 font-bold">{(kpis.total_placed || 0).toLocaleString()} تعيين</span> حتى الآن.</>
-                      : <>Tracking <span className="text-emerald-600 font-bold">{kpis.active_partners || 0} partners</span> with <span className="text-emerald-600 font-bold">{(kpis.total_placed || 0).toLocaleString()} placements</span> to date.</>}
+                      ? <>تتبع <span className="text-emerald-600 font-bold">{kpis.active_partners || 0} شريك</span> مع <span className="text-emerald-600 font-bold">{Number(kpis.total_placed || 0).toLocaleString()} تعيين مؤكد</span> حتى الآن.</>
+                      : <>Tracking <span className="text-emerald-600 font-bold">{kpis.active_partners || 0} partners</span> with <span className="text-emerald-600 font-bold">{Number(kpis.total_placed || 0).toLocaleString()} confirmed placements</span> to date.</>}
                   </p>
                 </div>
               </div>

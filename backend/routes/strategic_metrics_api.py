@@ -39,7 +39,17 @@ def get_db_counts():
             db_candidates = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM companies")
             db_companies = cursor.fetchone()[0]
-            cursor.execute("SELECT COUNT(*) FROM job_offers")
+            # Real placements only: an application that reached 'hired' or an
+            # offer the candidate accepted. Counting ALL job_offers (including
+            # pending ones) overstated it, and the caller then added roster
+            # attrition on top — see below.
+            cursor.execute("""
+                SELECT
+                  (SELECT COUNT(*) FROM job_applications
+                    WHERE LOWER(status) IN ('hired', 'placed')) +
+                  (SELECT COUNT(*) FROM job_offers
+                    WHERE LOWER(COALESCE(status, '')) IN ('accepted', 'signed'))
+            """)
             db_offers = cursor.fetchone()[0]
             return db_candidates, db_companies, db_offers
     except Exception:
@@ -85,7 +95,14 @@ def get_executive_impact_metrics():
         # baselines (the old 3054/1514 defaults were invented).
         registered_cnt = excel_data.get('registered', {}).get('total', 0)
         active_cnt = excel_data.get('active', {}).get('total', 0)
-        total_placed = max(0, registered_cnt - active_cnt) + (db_offers or 0)
+        # Placements are COUNTED, never inferred. This used to report
+        # (registered - still active) + offers as "Total Placements" — i.e.
+        # roster attrition relabelled as jobs found, which produced 1,542
+        # placements on a platform with zero hires (feedback: "the number
+        # incorrect 1542 what does it mean?"). People leave the active roster
+        # for many reasons; that figure is reported separately and honestly.
+        total_placed = db_offers
+        roster_exits = max(0, registered_cnt - active_cnt)
         raw_nomination = excel_data.get('rapid_nomination', [])
         strategic_impact = [
             {'month': item.get('month', ''),
@@ -96,6 +113,7 @@ def get_executive_impact_metrics():
     else:
         # Real DB counts only; None surfaces as "not available" when the read failed.
         total_placed = db_offers
+        roster_exits = None
         strategic_impact = []
 
     # emiratization % and economic value have NO real aggregation behind them —
@@ -104,12 +122,17 @@ def get_executive_impact_metrics():
     data = {
         'kpis': {
             'total_placed': total_placed,
+            # Left the active job-seeker roster — NOT placements.
+            'roster_exits': roster_exits,
             'active_partners': db_companies,
             'emiratization_target_progress': None,
             'economic_value_aed': None,
             'source': 'partial',
-            'message': ('Placements and partners are real counts; emiratization % '
-                        'and economic value are not yet connected to a real source.')
+            'message': ('Placements are counted from confirmed hires and accepted '
+                        'offers; partners is a real count. Roster exits are people no '
+                        'longer on the active job-seeker roster, which is NOT the same '
+                        'as being placed. Emiratization % and economic value are not '
+                        'yet connected to a real source.')
         },
         'strategic_impact': strategic_impact,   # from the master file when present, else empty
         'sector_distribution': [],
