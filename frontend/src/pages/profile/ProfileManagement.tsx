@@ -649,7 +649,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                       <div className="mt-6">
                         <h4 className="font-medium mb-3">Quick Actions</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Button variant="outline" onClick={() => setActiveTab('personal')}>
+                          <Button variant="outline" onClick={() => navigate('/candidate/profile/identity')}>
                             <User className="h-4 w-4 me-2" />
                             Update Personal Information
                           </Button>
@@ -671,9 +671,12 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                               Manage Certifications
                             </Button>
                           )}
-                          <Button variant="outline">
+                          {/* Had no handler at all, so it did nothing when clicked
+                              (feedback fb_1785828743). The real visibility controls
+                              live in the Profile Studio identity module. */}
+                          <Button variant="outline" onClick={() => navigate('/candidate/profile/identity')}>
                             <Settings className="h-4 w-4 me-2" />
-                            Privacy Settings
+                            Privacy & Visibility
                           </Button>
                         </div>
                       </div>

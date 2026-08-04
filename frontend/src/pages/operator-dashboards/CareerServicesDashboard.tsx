@@ -198,9 +198,18 @@ export default function CareerServicesDashboard() {
       const cleanName = candidateName.toLowerCase().replace(/[^a-z0-9]/g, '');
       const cleanEid = candidateEid.toLowerCase().replace(/[^a-z0-9]/g, '');
       
-      const matchesSearch = !cleanSearch || 
-                            cleanName.includes(cleanSearch) || 
-                            cleanEid.includes(cleanSearch);
+      // Phone search, requested by the CRM team — they often have only the
+      // number to hand. Compare digits so 0501234567, +971501234567 and
+      // 971501234567 all find the same person.
+      const digitsOnly = (v: any) => String(v || '').replace(/\D/g, '');
+      const searchDigits = digitsOnly(searchTerm).replace(/^0+|^971/, '');
+      const candidateDigits = digitsOnly(c.phone) + digitsOnly(c.alternativePhone);
+      const phoneMatch = searchDigits.length >= 4 && candidateDigits.includes(searchDigits);
+
+      const matchesSearch = !cleanSearch ||
+                            cleanName.includes(cleanSearch) ||
+                            cleanEid.includes(cleanSearch) ||
+                            phoneMatch;
       const matchesCallStatus = callStatusFilter === 'All' || c.callStatus === callStatusFilter;
       const matchesWorkStatus = workStatusFilter === 'All' || c.workStatus === workStatusFilter;
       const matchesSegment = segmentFilter === 'All' || (c.segments || []).includes(segmentFilter);
@@ -543,7 +552,7 @@ export default function CareerServicesDashboard() {
               <div className="relative w-full md:w-96">
                 <Search className={`absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
                 <Input 
-                  placeholder={t('Search by name or EID...', 'ابحث بالاسم أو الهوية...')}
+                  placeholder={t('Search by name, EID or phone...', 'ابحث بالاسم أو الهوية أو رقم الهاتف...')}
                   className={`ps-10 ${isRTL ? 'pe-3' : ''} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6D]`}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
@@ -673,7 +682,7 @@ export default function CareerServicesDashboard() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 max-w-xs">
+                        <td className="px-6 py-4 max-w-[170px]">
                           <p className="text-slate-600 truncate" title={candidate.remarks}>
                             {candidate.remarks || <span className="text-slate-400 italic">No remarks yet</span>}
                           </p>
@@ -682,7 +691,7 @@ export default function CareerServicesDashboard() {
                           <Button 
                             size="sm" 
                             onClick={() => handleEditClick(candidate)} 
-                            className="bg-white text-[#006E6D] border border-[#006E6D]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+                            className="bg-white text-[#006E6D] border border-[#006E6D]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg transition-opacity"
                           >
                             {t('Edit Details', 'تعديل التفاصيل')}
                           </Button>

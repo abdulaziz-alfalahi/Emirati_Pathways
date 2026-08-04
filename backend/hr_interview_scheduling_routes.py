@@ -551,6 +551,22 @@ def schedule_interview():
             sched_date = scheduled_dt.date()
             sched_time = scheduled_dt.time()
 
+            # Reject a start time in the past. Nothing stopped an interview
+            # being booked for a moment that had already gone, which then
+            # settled straight to expired/no-show and confused everyone
+            # (feedback: "outdated interview should not be allowed to
+            # schedules"). A small grace window allows for clock skew and for
+            # booking something starting right now.
+            try:
+                _now = datetime.now(scheduled_dt.tzinfo) if scheduled_dt.tzinfo else datetime.now()
+                if scheduled_dt < _now - timedelta(minutes=5):
+                    return jsonify({
+                        'success': False,
+                        'message': 'That date and time have already passed. Choose a future slot.'
+                    }), 400
+            except Exception:
+                pass  # never block scheduling on a clock comparison problem
+
             # Check if the time slot is available
             cursor.execute("""
                 SELECT interview_id FROM interview_schedules
@@ -833,6 +849,22 @@ def reschedule_interview(interview_id):
                 }), 400
             new_date = new_scheduled_dt.date()
             new_time = new_scheduled_dt.time()
+
+            # Reject a start time in the past. Nothing stopped an interview
+            # being booked for a moment that had already gone, which then
+            # settled straight to expired/no-show and confused everyone
+            # (feedback: "outdated interview should not be allowed to
+            # schedules"). A small grace window allows for clock skew and for
+            # booking something starting right now.
+            try:
+                _now = datetime.now(new_scheduled_dt.tzinfo) if new_scheduled_dt.tzinfo else datetime.now()
+                if new_scheduled_dt < _now - timedelta(minutes=5):
+                    return jsonify({
+                        'success': False,
+                        'message': 'That date and time have already passed. Choose a future slot for the rescheduled interview.'
+                    }), 400
+            except Exception:
+                pass  # never block scheduling on a clock comparison problem
 
             # Check if the new time slot is available
             cursor.execute("""
