@@ -163,9 +163,15 @@ export default function RecruiterInterviews() {
     }
 
     try {
-      await restClient.put(`/api/recruiter/interviews/${rescheduleSession.id}`, {
-        scheduled_date: rescheduleData.date,
-        scheduled_time: rescheduleData.time
+      // PUT /api/recruiter/interviews/<id> does not exist — rescheduling
+      // silently failed, which is why the candidate never saw a rescheduled
+      // interview (feedback fb_1785825371). The real endpoint is
+      // POST .../reschedule, which updates the date/time, sets the status to
+      // 'rescheduled' and notifies the candidate.
+      // The endpoint derives BOTH date and time from new_scheduled_date, so it
+      // must carry the time too — sending the date alone books midnight.
+      await restClient.post(`/api/recruiter/interviews/${rescheduleSession.id}/reschedule`, {
+        new_scheduled_date: `${rescheduleData.date}T${rescheduleData.time}`,
       });
 
       toast.success("Interview rescheduled successfully");

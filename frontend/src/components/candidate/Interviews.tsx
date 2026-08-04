@@ -223,22 +223,33 @@ export default function CandidateInterviews() {
                                         </div>
                                         <Badge variant={
                                             session.status === 'cancelled' ? 'destructive' :
+                                                session.status === 'rescheduled' && !isPastWindow(session) ? 'default' :
                                                 session.status === 'completed' ? 'secondary' :
                                                     (isPastWindow(session) ? 'outline' : 'default')
                                         }>
                                             {(() => {
                                                 // A past-window session that never completed/cancelled reads as
                                                 // "Expired" regardless of a stale stored status (accepted/in_progress).
-                                                if (isPastWindow(session) && session.status !== 'completed' && session.status !== 'cancelled') {
+                                                // A RESCHEDULED interview whose new time has not yet passed is not
+                                                // expired — it is simply moved, and saying "Expired" right after
+                                                // rescheduling was alarming and wrong (feedback fb_1785825371).
+                                                if (isPastWindow(session) && session.status !== 'completed'
+                                                    && session.status !== 'cancelled' && session.status !== 'rescheduled') {
+                                                    return t('Expired', 'منتهية');
+                                                }
+                                                if (session.status === 'rescheduled' && isPastWindow(session)) {
                                                     return t('Expired', 'منتهية');
                                                 }
                                                 const statusMap: Record<string, string> = {
                                                     scheduled: t('Scheduled', 'مجدولة'),
+                                                    rescheduled: t('Rescheduled', 'أُعيد جدولتها'),
                                                     completed: t('Completed', 'مكتملة'),
                                                     cancelled: t('Cancelled', 'ملغاة'),
                                                     confirmed: t('Confirmed', 'مؤكدة'),
                                                     accepted: t('In Progress', 'جارية'),
                                                     in_progress: t('In Progress', 'جارية'),
+                                                    no_show: t('No show', 'لم يحضر'),
+                                                    expired: t('Expired', 'منتهية'),
                                                 };
                                                 return statusMap[session.status] || session.status;
                                             })()}
