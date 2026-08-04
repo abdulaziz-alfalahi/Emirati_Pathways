@@ -982,84 +982,76 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
-  const handleAIGenerate = (field: 'description' | 'responsibilities' | 'benefits' | 'requirements') => {
+  const handleAIGenerate = async (field: 'description' | 'responsibilities' | 'benefits' | 'requirements') => {
     if (!jdData.basic_info.title) {
       toast.error('Enter a job title first');
       return;
     }
 
-    // Simulate AI generation
-    toast.loading('AI is generating content...', { duration: 1000 });
+    // Real generation via the platform AI service. This used to be a
+    // setTimeout that pasted hardcoded boilerplate tagged "[AI Generated]" —
+    // recruiters saw text labelled as AI-written that no model had produced
+    // (feedback fb_1785833472). If the service is unavailable we say so and
+    // change nothing, rather than inventing content.
+    const featureByField = {
+      description: 'jd_description',
+      responsibilities: 'jd_responsibilities',
+      requirements: 'jd_requirements',
+      benefits: 'jd_benefits',
+    } as const;
 
-    setTimeout(() => {
-      if (field === 'description') {
-        setJDData(prev => ({
-          ...prev,
-          description: (prev.description || '') + (prev.description ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${jdData.basic_info.title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`
-        }));
-        toast.dismiss();
-        toast.success('Content Generated');
-      } else if (field === 'responsibilities') {
-        const newItems = [
-          { category: 'core', description: `[AI] Lead key initiatives for ${jdData.basic_info.title}` },
-          { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
-          { category: 'core', description: `[AI] Ensure high-quality deliverables` }
-        ];
-        const current = Array.isArray(jdData.responsibilities) ? jdData.responsibilities : [];
-        const filteredNew = newItems.filter(item => 
-          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-        );
-        toast.dismiss();
-        if (filteredNew.length === 0) {
-          toast("Responsibilities already generated", { icon: 'ℹ️' });
-          return;
-        }
-        toast.success('Content Generated');
-        setJDData(prev => ({
-          ...prev,
-          responsibilities: [...(Array.isArray(prev.responsibilities) ? prev.responsibilities : []), ...filteredNew]
-        }));
-      } else if (field === 'benefits') {
-        const newItems = [
-          { category: 'compensation', description: `[AI] Competitive compensation package` },
-          { category: 'development', description: `[AI] Professional growth opportunities` },
-          { category: 'perks', description: `[AI] Modern work environment` }
-        ];
-        const current = Array.isArray(jdData.benefits) ? jdData.benefits : [];
-        const filteredNew = newItems.filter(item => 
-          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-        );
-        toast.dismiss();
-        if (filteredNew.length === 0) {
-          toast("Benefits already generated", { icon: 'ℹ️' });
-          return;
-        }
-        toast.success('Content Generated');
-        setJDData(prev => ({
-          ...prev,
-          benefits: [...(Array.isArray(prev.benefits) ? prev.benefits : []), ...filteredNew]
-        }));
-      } else if (field === 'requirements') {
-        const newItems = [
-          { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
-          { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
-        ];
-        const current = Array.isArray(jdData.requirements) ? jdData.requirements : [];
-        const filteredNew = newItems.filter(item => 
-          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-        );
-        toast.dismiss();
-        if (filteredNew.length === 0) {
-          toast("Requirements already generated", { icon: 'ℹ️' });
-          return;
-        }
-        toast.success('Content Generated');
-        setJDData(prev => ({
-          ...prev,
-          requirements: [...(Array.isArray(prev.requirements) ? prev.requirements : []), ...filteredNew]
-        }));
+    const loadingId = toast.loading('Generating…');
+    try {
+      const res = await restClient.post('/api/ai/assist', {
+        feature: featureByField[field],
+        language: 'en',
+        context: {
+          title: jdData.basic_info.title,
+          department: jdData.basic_info.department,
+          employment_type: jdData.basic_info.employment_type,
+          seniority: jdData.basic_info.experience_level,
+          company: jdData.basic_info.company,
+          emirate: jdData.basic_info.emirate,
+          skills: (jdData.skills || []).map((s: any) => s?.name || s).filter(Boolean).slice(0, 15),
+        },
+      });
+      toast.dismiss(loadingId);
+      const text: string = res.data?.text?.trim() || '';
+      if (!res.data?.success || !text) {
+        toast.error(res.data?.message || 'AI assistant is currently unavailable — please write this section manually.');
+        return;
       }
-    }, 1000);
+
+      const lines = text.split('\n').map(l => l.replace(/^[-•*\d.\s]+/, '').trim()).filter(Boolean);
+      if (field === 'description') {
+        setJDData(prev => ({ ...prev, description: text }));
+      } else if (field === 'responsibilities') {
+        const current = Array.isArray(jdData.responsibilities) ? jdData.responsibilities : [];
+        const additions = lines
+          .filter(l => !current.some((c: any) => c.description?.toLowerCase().trim() === l.toLowerCase()))
+          .map(l => ({ category: 'core', description: l }));
+        if (!additions.length) { toast('Nothing new to add', { icon: 'ℹ️' }); return; }
+        setJDData(prev => ({ ...prev, responsibilities: [...current, ...additions] }));
+      } else if (field === 'requirements') {
+        const current = Array.isArray(jdData.requirements) ? jdData.requirements : [];
+        const additions = lines
+          .filter(l => !current.some((c: any) => (c.description || c)?.toString().toLowerCase().trim() === l.toLowerCase()))
+          .map(l => ({ category: 'general', description: l }));
+        if (!additions.length) { toast('Nothing new to add', { icon: 'ℹ️' }); return; }
+        setJDData(prev => ({ ...prev, requirements: [...current, ...additions] }));
+      } else {
+        const current = Array.isArray(jdData.benefits) ? jdData.benefits : [];
+        const additions = lines
+          .filter(l => !current.some((c: any) => c.description?.toLowerCase().trim() === l.toLowerCase()))
+          .map(l => ({ category: 'perks', description: l }));
+        if (!additions.length) { toast('Nothing new to add', { icon: 'ℹ️' }); return; }
+        setJDData(prev => ({ ...prev, benefits: [...current, ...additions] }));
+      }
+      toast.success('Content generated — review and edit before publishing.');
+    } catch {
+      toast.dismiss(loadingId);
+      toast.error('AI assistant is currently unavailable — please write this section manually.');
+    }
   };
 
   const renderBasicInfo = () => (

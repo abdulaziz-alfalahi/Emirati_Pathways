@@ -44,6 +44,33 @@ _BASE_SYSTEM = (
 
 # feature key -> (task instruction, allowed context keys)
 _FEATURES = {
+    # Job-description writing for recruiters. The JD wizard used to fabricate
+    # this locally — a setTimeout that inserted hardcoded boilerplate tagged
+    # "[AI Generated]", so recruiters saw text literally labelled as AI-written
+    # that no model had produced (feedback fb_1785833472, fb_1785734951,
+    # fb_1785735017). These write real content from the posting's own fields.
+    'jd_description': (
+        "Write a concise, professional job description (120-180 words) for this "
+        "role in the UAE market. Plain prose, no headings, no bullet points, and "
+        "no placeholders — write only what the given details support.",
+        {'title', 'department', 'employment_type', 'seniority', 'company', 'emirate', 'skills'},
+    ),
+    'jd_responsibilities': (
+        "List 5-7 concrete day-to-day responsibilities for this role. One per "
+        "line, no numbering, no preamble, each a single sentence.",
+        {'title', 'department', 'employment_type', 'seniority', 'skills'},
+    ),
+    'jd_requirements': (
+        "List 5-7 realistic candidate requirements for this role (qualifications, "
+        "experience, skills). One per line, no numbering, no preamble.",
+        {'title', 'department', 'employment_type', 'seniority', 'skills'},
+    ),
+    'jd_benefits': (
+        "List 4-6 benefits an employer in the UAE would credibly offer for this "
+        "role. One per line, no numbering, no preamble. Do not invent specific "
+        "figures or policies that were not provided.",
+        {'title', 'department', 'employment_type', 'seniority', 'company'},
+    ),
     'career_path': (
         "Suggest 2-3 realistic career directions for this person in the UAE "
         "job market, with concrete first steps for each.",

@@ -1671,6 +1671,23 @@ def save_jd(jd_id):
             if not verified:
                 cur.close()
                 conn.close()
+                # Distinguish "no company linked" from "company awaiting
+                # approval". Recruiters created without a workspace (operator
+                # role grant / JD-builder drafts) were told their company was
+                # awaiting verification when they had NO company at all — an
+                # instruction they could never act on, because there is nothing
+                # for operations to verify (feedback fb_1785831167,
+                # fb_1785833573). The gate itself is unchanged: publishing
+                # still requires a verified company.
+                if not company_id:
+                    return jsonify({
+                        'success': False,
+                        'error_code': 'no_company_linked',
+                        'message': 'Your account is not linked to a company yet, so this '
+                                   'posting cannot be published. It is saved as a draft. '
+                                   'Ask platform operations to link your account to your '
+                                   'company — publishing unlocks once that company is verified.',
+                    }), 403
                 return jsonify({
                     'success': False,
                     'error_code': 'company_not_verified',
