@@ -109,6 +109,44 @@ const AdminDashboard = () => {
   const [fbSearch, setFbSearch] = useState('');
   const [fbNotes, setFbNotes] = useState('');
   const [fbRef, setFbRef] = useState('');
+  // Suggested duplicates for the open report (matched on the error
+  // fingerprint, so different wording — or a different language — still lands
+  // together). Suggestions only: grouping is confirmed by the admin.
+  const [fbSimilar, setFbSimilar] = useState<any[]>([]);
+  const [fbSimilarPeople, setFbSimilarPeople] = useState(0);
+
+  const loadSimilar = async (id: string) => {
+    setFbSimilar([]); setFbSimilarPeople(0);
+    try {
+      const res = await restClient.get(`/api/feedback/${id}/similar`);
+      if (res.data?.success) {
+        setFbSimilar(res.data.data || []);
+        setFbSimilarPeople(res.data.people || 0);
+      }
+    } catch { /* suggestions are optional — never block the drawer */ }
+  };
+
+  const linkDuplicate = async (childId: string, parentId: string) => {
+    try {
+      await restClient.post(`/api/feedback/${childId}/group`, { parent_id: parentId });
+      toast({ title: 'Grouped', description: 'Both reporters still get their own reply when you resolve this.' });
+      await loadSimilar(parentId);
+      loadFeedbackList();
+    } catch {
+      toast({ title: 'Could not group these reports', variant: 'destructive' });
+    }
+  };
+
+  const unlinkDuplicate = async (childId: string, parentId: string) => {
+    try {
+      await restClient.delete(`/api/feedback/${childId}/group`);
+      toast({ title: 'Ungrouped' });
+      await loadSimilar(parentId);
+      loadFeedbackList();
+    } catch {
+      toast({ title: 'Could not ungroup', variant: 'destructive' });
+    }
+  };
 
   // "Needs attention" = the queue someone here must act on. Answered / won't
   // fix are closed outcomes and needs_info is waiting on the reporter, so
@@ -118,8 +156,10 @@ const AdminDashboard = () => {
     const q = fbSearch.trim().toLowerCase();
     return (feedbackList as any[]).filter((f) => {
       const st = (f.status || 'open').toLowerCase();
+      // Grouped duplicates are hidden from the action queue — they follow
+      // their parent — but stay visible under "All statuses".
       const okStatus = fbStatusFilter === 'all' ? true
-        : fbStatusFilter === 'needs_attention' ? NEEDS.includes(st)
+        : fbStatusFilter === 'needs_attention' ? (NEEDS.includes(st) && !f.duplicate_of)
         : st === fbStatusFilter;
       const okSeverity = fbSeverityFilter === 'all' || f.severity === fbSeverityFilter;
       const okSearch = !q
@@ -868,6 +908,9 @@ const AdminDashboard = () => {
                                   {item.resolution_ref && (
                                     <p className="text-xs text-teal-700">Fixed in {item.resolution_ref}</p>
                                   )}
+                                  {item.duplicate_of && (
+                                    <p className="text-xs text-indigo-700">Grouped with an earlier report</p>
+                                  )}
                                   <p className="text-xs text-muted-foreground truncate font-mono">
                                     {item.console_logs && item.console_logs.length > 0 ? `${item.console_logs.length} logs captured` : 'No logs'}
                                   </p>
@@ -894,6 +937,7 @@ const AdminDashboard = () => {
                                         // Never carry one report's notes into another.
                                         setFbNotes(item.resolution_notes || '');
                                         setFbRef(item.resolution_ref || '');
+                                        loadSimilar(item.id);
                                         setIsDetailsOpen(true);
                                       }}
                                     >
@@ -1258,6 +1302,40 @@ ${screenshotUrl ? `URL: ${screenshotUrl}\nFile (read on APPQA): ${item.screensho
                             </div>
                           </div>
                         </div>
+
+                        {fbSimilar.length > 0 && (
+                          <div className="border-t pt-4 space-y-2">
+                            <p className="text-sm font-medium text-slate-700">
+                              Similar reports · {fbSimilar.length} report{fbSimilar.length === 1 ? '' : 's'} from {fbSimilarPeople} {fbSimilarPeople === 1 ? 'person' : 'people'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Matched on the same underlying error. Grouping keeps every reporter's own report — resolving this one replies to all of them.
+                            </p>
+                            <div className="space-y-2 max-h-52 overflow-y-auto">
+                              {fbSimilar.map((sim: any) => (
+                                <div key={sim.id} className="flex items-start justify-between gap-3 rounded-md border p-2">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{sim.title || sim.preview}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {sim.role} · {sim.status} · {sim.created_at ? new Date(sim.created_at).toLocaleDateString() : ''}
+                                    </p>
+                                  </div>
+                                  {sim.duplicate_of === selectedFeedback.id ? (
+                                    <Button size="sm" variant="outline" className="shrink-0"
+                                      onClick={() => unlinkDuplicate(sim.id, selectedFeedback.id)}>
+                                      Ungroup
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="outline" className="shrink-0"
+                                      onClick={() => linkDuplicate(sim.id, selectedFeedback.id)}>
+                                      Same issue
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="border-t pt-4 space-y-3">
                           <p className="text-sm font-medium text-slate-700">Triage</p>

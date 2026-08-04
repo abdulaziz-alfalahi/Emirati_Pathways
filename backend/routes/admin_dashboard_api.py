@@ -1024,13 +1024,25 @@ def submit_feedback():
         if _sev not in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'):
             _sev = None
 
+        # Language-independent signature of the failure, used to SUGGEST that
+        # this report is the same problem someone else already reported
+        # (migration 048). Grouping itself is always admin-confirmed.
+        try:
+            from backend.feedback_fingerprint import compute_fingerprint
+        except ImportError:  # pragma: no cover
+            from feedback_fingerprint import compute_fingerprint
+        _fp = compute_fingerprint(
+            data.get('networkLogs') or [],
+            (data.get('metadata') or {}).get('path') or data.get('pageUrl'),
+            data.get('consoleLogs') or [])
+
         execute_query(
             """
             INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs,
                                   network_logs, session_state, breadcrumbs, app_version, screenshot_path,
-                                  title, severity, created_at, screenshot)
+                                  title, severity, fingerprint, created_at, screenshot)
             VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb, %s, %s,
-                    %s, %s, CURRENT_TIMESTAMP, NULL)
+                    %s, %s, %s, CURRENT_TIMESTAMP, NULL)
             """,
             (
                 feedback_id,
@@ -1048,6 +1060,7 @@ def submit_feedback():
                 screenshot_path,
                 _title,
                 _sev,
+                _fp,
             ),
             fetch_all=False
         )
@@ -1146,8 +1159,25 @@ def update_feedback_status(feedback_id):
             (new_status, resolution_notes, resolution_ref,
              _closing, str(get_jwt_identity() or '')[:15], _closing, feedback_id)
         )
+        # Grouped duplicates follow their parent. Every reporter keeps their own
+        # row and gets their own reply — closing the parent must not leave the
+        # other people who reported the same problem without an answer
+        # (migration 048).
+        cascaded_to = []
+        if _closing:
+            cursor.execute(
+                """UPDATE feedback
+                   SET status = %s, resolution_notes = COALESCE(%s, resolution_notes),
+                       resolution_ref = COALESCE(%s, resolution_ref),
+                       resolved_by = %s, resolved_at = CURRENT_TIMESTAMP,
+                       updated_at = CURRENT_TIMESTAMP
+                   WHERE duplicate_of = %s AND status <> %s
+                   RETURNING id, user_id, role, message""",
+                (new_status, resolution_notes, resolution_ref,
+                 str(get_jwt_identity() or '')[:15], feedback_id, new_status))
+            cascaded_to = cursor.fetchall() or []
         conn.commit()
-        
+
         # 3. Send Notification
         notification_status = 'skipped'
         notification_error = None
@@ -1189,11 +1219,37 @@ def update_feedback_status(feedback_id):
                             'feedback_id': feedback_id,
                             'priority': 'high',
                             'link': target_link,
-                            'type': 'feedback_resolution' 
+                            'type': 'feedback_resolution'
                         }
                     )
                     logger.info("Notification sent successfully")
                     notification_status = 'sent'
+
+                    # Same reply to everyone whose grouped duplicate just closed
+                    # — grouping must never cost a reporter their answer.
+                    for dup in cascaded_to:
+                        dup_uid = dup.get('user_id') if isinstance(dup, dict) else None
+                        if not dup_uid or str(dup_uid).lower() == 'guest' or str(dup_uid) == str(target_user_id):
+                            continue
+                        dup_msg = (dup.get('message') or '')
+                        dup_preview = (dup_msg[:50] + '...') if len(dup_msg) > 50 else dup_msg
+                        dup_role = dup.get('role') or 'candidate'
+                        dup_base = ('/recruiter-dashboard' if dup_role in ('recruiter', 'employer_admin')
+                                    else '/admin-dashboard' if dup_role == 'admin' else '/candidate-dashboard')
+                        try:
+                            communication_service.create_notification(
+                                user_id=str(dup_uid),
+                                notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
+                                metadata={
+                                    'title': 'Issue Resolved',
+                                    'message': f"We have resolved your reported issue: '{dup_preview}'. Thank you for your feedback!",
+                                    'feedback_id': dup.get('id'),
+                                    'priority': 'high',
+                                    'link': f"{dup_base}?action=feedback_history",
+                                    'type': 'feedback_resolution',
+                                })
+                        except Exception as _e:
+                            logger.warning(f"cascade notification failed for {dup_uid}: {_e}")
                 else:
                     logger.info("Skipping notification for guest user")
                     notification_status = 'skipped_guest'
@@ -1264,6 +1320,98 @@ def update_feedback_status(feedback_id):
     except Exception as e:
         logger.error(f"Failed to update feedback status: {e}")
         return jsonify({'success': False, 'message': 'Failed to update feedback status'}), 500
+
+@feedback_bp.route('/<feedback_id>/similar', methods=['GET'])
+@admin_required
+def get_similar_feedback(feedback_id):
+    """Reports that look like the same problem — SUGGESTIONS, not a grouping.
+
+    Matched on the error fingerprint (migration 048), which is language- and
+    wording-independent, so two people describing the same failure differently
+    still land together. Bounded to a 90-day window: an endpoint that broke
+    again months later is a regression, not the same incident.
+    """
+    try:
+        row = execute_query(
+            "SELECT fingerprint, duplicate_of FROM feedback WHERE id = %s",
+            (feedback_id,), fetch_one=True)
+        if not row:
+            return jsonify({'success': False, 'message': 'Feedback not found'}), 404
+        fp = row.get('fingerprint')
+        if not fp:
+            return jsonify({'success': True, 'data': [], 'people': 0,
+                            'reason': 'no diagnostics captured for this report'})
+
+        rows = execute_query(
+            """SELECT id, user_id, role, title, severity, status, created_at,
+                      duplicate_of, LEFT(message, 160) AS preview
+               FROM feedback
+               WHERE fingerprint = %s AND id <> %s
+                 AND created_at > (SELECT created_at FROM feedback WHERE id = %s) - INTERVAL '90 days'
+                 AND created_at < (SELECT created_at FROM feedback WHERE id = %s) + INTERVAL '90 days'
+               ORDER BY created_at DESC LIMIT 50""",
+            (fp, feedback_id, feedback_id, feedback_id)) or []
+        for r in rows:
+            if isinstance(r.get('created_at'), datetime):
+                r['created_at'] = r['created_at'].isoformat()
+        people = len({str(r.get('user_id')) for r in rows if r.get('user_id')} |
+                     {str(execute_query("SELECT user_id FROM feedback WHERE id = %s",
+                                        (feedback_id,), fetch_one=True).get('user_id'))})
+        return jsonify({'success': True, 'data': rows, 'people': people,
+                        'fingerprint': fp})
+    except Exception as e:
+        logger.error(f"Error finding similar feedback for {feedback_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@feedback_bp.route('/<feedback_id>/group', methods=['POST', 'DELETE'])
+@admin_required
+def group_feedback(feedback_id):
+    """Link this report to a parent (POST {parent_id}) or unlink it (DELETE).
+
+    Deliberately admin-confirmed: one fingerprint can have several root causes
+    (a 403 from a role check is indistinguishable from a 403 from company
+    scoping), so nothing is merged automatically. Groups stay one level deep —
+    linking to a child re-points at that child's parent — and no report is ever
+    deleted or hidden: each reporter keeps their own row and their own reply.
+    """
+    try:
+        me = str(get_jwt_identity() or '')[:15]
+        if request.method == 'DELETE':
+            execute_query(
+                """UPDATE feedback SET duplicate_of = NULL, grouped_at = NULL,
+                          grouped_by = NULL, updated_at = CURRENT_TIMESTAMP
+                   WHERE id = %s""", (feedback_id,), fetch_all=False)
+            return jsonify({'success': True, 'message': 'Ungrouped'})
+
+        parent_id = ((request.json or {}).get('parent_id') or '').strip()
+        if not parent_id:
+            return jsonify({'success': False, 'message': 'parent_id is required'}), 400
+        if parent_id == feedback_id:
+            return jsonify({'success': False, 'message': 'A report cannot be its own duplicate'}), 400
+
+        parent = execute_query(
+            "SELECT id, duplicate_of FROM feedback WHERE id = %s", (parent_id,), fetch_one=True)
+        if not parent:
+            return jsonify({'success': False, 'message': 'Parent report not found'}), 404
+        # Keep it flat: point at the parent's parent if it has one.
+        root = parent.get('duplicate_of') or parent['id']
+        if root == feedback_id:
+            return jsonify({'success': False, 'message': 'That would create a loop'}), 400
+
+        execute_query(
+            """UPDATE feedback SET duplicate_of = %s, grouped_at = CURRENT_TIMESTAMP,
+                      grouped_by = %s, updated_at = CURRENT_TIMESTAMP
+               WHERE id = %s""", (root, me, feedback_id), fetch_all=False)
+        # Any children of this report follow it to the new root (stays 1 deep).
+        execute_query(
+            "UPDATE feedback SET duplicate_of = %s WHERE duplicate_of = %s",
+            (root, feedback_id), fetch_all=False)
+        return jsonify({'success': True, 'parent_id': root})
+    except Exception as e:
+        logger.error(f"Error grouping feedback {feedback_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @feedback_bp.route('/<feedback_id>/clarify', methods=['POST'])
 @jwt_required()
