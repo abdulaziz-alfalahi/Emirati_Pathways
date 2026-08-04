@@ -52,11 +52,18 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
                     <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                     <span className="text-sm text-[#6B7280] capitalize">{user.role}</span>
                   </div>
+                  {/* Show who is signed in. This said "UAE National" for
+                      EVERY user — wrong for platform staff, who are often not
+                      nationals (feedback fb_1785822926). */}
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-medium">U</span>
+                      <span className="text-white text-xs font-medium">
+                        {((user as any)?.full_name || (user as any)?.first_name || 'U').trim().charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                    <span className="hidden sm:block text-sm text-[#374151]">UAE National</span>
+                    <span className="hidden sm:block text-sm text-[#374151]">
+                      {(user as any)?.full_name || (user as any)?.email || ''}
+                    </span>
                   </div>
                 </div>
               ) : (

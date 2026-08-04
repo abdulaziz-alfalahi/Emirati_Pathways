@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import HybridGovernmentNav from '@/components/layout/HybridGovernmentNav';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getDisplayName } from '@/utils/nameUtils';
 import {
@@ -384,9 +383,11 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const displayRole = isNewMember ? 'New Member' : (roleConfig.label || currentUser.primaryRole);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50" >
-      <HybridGovernmentNav showAuthButtons={false} currentPage="profile" userRole={currentUser.primaryRole} />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    /* No nav here: this renders inside /profile, which already sits under the
+       platform header — the extra bar produced a second, differently-styled
+       navigation strip in the middle of the page (feedback fb_1785822854). */
+    <div className="bg-transparent">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 space-y-6">
         <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4 me-2" />
           Back

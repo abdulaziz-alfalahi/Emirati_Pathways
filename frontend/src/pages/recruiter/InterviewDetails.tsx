@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { restClient } from '@/utils/api';
 
 const API = (p: string) => `${p}`;
 
@@ -11,8 +12,6 @@ export default function InterviewDetailsPage() {
   const [sp] = useSearchParams();
   const { toast } = useToast();
   const [sessionId, setSessionId] = useState(sp.get('session') || '');
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [report, setReport] = useState<any>(null);
@@ -20,10 +19,16 @@ export default function InterviewDetailsPage() {
 
   const loadSessions = async () => {
     try {
-      const r = await fetch(API('/api/video-interview/sessions'), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
-      setSessions(j.sessions || []);
+      // /api/video-interview/sessions was never implemented — the dropdown
+      // called a 404 and was therefore always empty (feedback fb_1785820412).
+      // The recruiter's real sessions come from the interviews API.
+      const r = await restClient.get('/api/interviews/sessions?role=recruiter');
+      const rows = r.data?.data || r.data?.sessions || [];
+      setSessions((rows as any[]).map((s: any) => ({
+        ...s,
+        session_id: s.session_id || s.id || s.interview_id,
+        candidate_name: s.candidate_display_name || s.candidate_name || s.candidate_id,
+      })));
     } catch (e: any) {
       toast({ title: 'Failed to load sessions', description: e?.message || 'Error', variant: 'destructive' });
     }
@@ -32,10 +37,8 @@ export default function InterviewDetailsPage() {
   const loadReport = async () => {
     if (!sessionId) return;
     try {
-      const r = await fetch(API(`/api/video-interview/sessions/${sessionId}/report`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
-      setReport(j.report || null);
+      const r = await restClient.get(`/api/video-interview/sessions/${sessionId}/report`);
+      setReport(r.data?.report || null);
     } catch (e: any) {
       toast({ title: 'Failed to load report', description: e?.message || 'Error', variant: 'destructive' });
     }
@@ -44,10 +47,8 @@ export default function InterviewDetailsPage() {
   const loadRecordings = async () => {
     if (!sessionId) return;
     try {
-      const r = await fetch(API(`/api/video-interview/sessions/${sessionId}/recordings`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
-      setRecordings(j.recording_info || null);
+      const r = await restClient.get(`/api/video-interview/sessions/${sessionId}/recordings`);
+      setRecordings(r.data?.recording_info || null);
     } catch (e: any) {
       toast({ title: 'Failed to load recordings', description: e?.message || 'Error', variant: 'destructive' });
     }
@@ -78,18 +79,30 @@ export default function InterviewDetailsPage() {
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Interview Details</CardTitle>
-          <CardDescription>Pick a session to view AI analysis and recordings</CardDescription>
+          <CardDescription>
+            Review a completed video interview: choose one of your interview sessions to see its
+            AI analysis (competency signals and summary) and any recording that was captured.
+            Sessions appear here once they have been scheduled; analysis and recordings become
+            available after the interview has finished.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 mb-3">
             <select className="p-2 border rounded" value={sessionId} onChange={e => setSessionId(e.target.value)}>
               <option value="">Select session</option>
               {sessions.map(s => (
-                <option key={s.session_id} value={s.session_id}>{s.session_id} • {s.status}</option>
+                <option key={s.session_id} value={s.session_id}>
+                  {[s.candidate_name, s.job_title].filter(Boolean).join(' — ') || s.session_id} • {s.status}
+                </option>
               ))}
             </select>
             <Button variant="outline" onClick={loadSessions}>Refresh</Button>
           </div>
+          {sessions.length === 0 && (
+            <p className="text-sm text-muted-foreground mb-3">
+              No interview sessions yet — schedule an interview from a candidate's application and it will appear here.
+            </p>
+          )}
 
           <Tabs defaultValue="ai" className="w-full">
             <TabsList className="mb-3">
