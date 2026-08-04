@@ -474,6 +474,10 @@ export const FeedbackWidget = () => {
 
             await restClient.post('/api/feedback/submit', {
                 message: formattedMessage,
+                // Also sent as discrete fields so triage can sort/filter by
+                // them; they remain in the message text for readability.
+                title: title.trim(),
+                severity: type === 'bug' ? severity.toUpperCase() : null,
                 type,
                 pageUrl: window.location.href,
                 consoleLogs,
@@ -796,10 +800,24 @@ export const FeedbackWidget = () => {
                                                         <div className="text-amber-800 font-medium">
                                                             <strong>Support Request:</strong> {item.resolution_notes}
                                                         </div>
-                                                        <ClarificationReplyForm 
-                                                            feedbackId={item.id} 
-                                                            onSuccess={fetchHistory} 
+                                                        <ClarificationReplyForm
+                                                            feedbackId={item.id}
+                                                            onSuccess={fetchHistory}
                                                         />
+                                                    </div>
+                                                )}
+                                                {/* Closed reports: show the reply itself, not just a status
+                                                    chip. The resolution note is often the actual answer to
+                                                    the reporter's question, and they never saw it. */}
+                                                {['resolved', 'answered', 'wont_fix'].includes(String(item.status || '').toLowerCase())
+                                                  && item.resolution_notes && (
+                                                    <div className="bg-teal-50 border border-teal-200 rounded p-2.5 my-2 text-xs">
+                                                        <div className="text-teal-900 whitespace-pre-wrap">
+                                                            <strong>Reply from the team:</strong> {item.resolution_notes}
+                                                        </div>
+                                                        {item.resolution_ref && (
+                                                            <div className="text-teal-700 mt-1">Fixed in {item.resolution_ref}</div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 <div className="flex justify-end">
