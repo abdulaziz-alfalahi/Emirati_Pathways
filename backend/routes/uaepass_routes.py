@@ -29,7 +29,7 @@ import psycopg2.extras
 from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassConfig, UAEPassError
 from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
 from backend.utils.contact_identity import canonical_email, canonical_phone, phone_match_variants
-from backend.auth.access_control import ADMIN_ROLES, HR_ROLES, OPERATOR_ROLES
+from backend.auth.access_control import ADMIN_ROLES, HR_ROLES, OPERATOR_ROLES, require_auth
 
 # Roles that must never be acquired through an unverified contact-point
 # match (issue #95). An email or phone claim from UAE Pass proves the
@@ -450,7 +450,7 @@ def uaepass_logout():
 
 
 @uaepass_bp.route('/profile', methods=['GET'])
-@jwt_required()
+@require_auth
 def uaepass_profile():
     """
     Get the user's UAE Pass profile attributes (from our DB).

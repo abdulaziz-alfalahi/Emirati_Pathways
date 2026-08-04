@@ -21,7 +21,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const handleLanguageToggle = () => {
     setLanguage(language === 'en' ? 'ar' : 'en');
@@ -126,11 +126,15 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                     </div>
                   )}
                   <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''}`}>
+                    {/* Was a hardcoded "UAE National" for every signed-in
+                        user — false for non-national staff (fb_1785822926). */}
                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">U</span>
+                      <span className="text-white text-sm font-medium">
+                        {((user as any)?.full_name || (user as any)?.first_name || 'U').trim().charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <span className="hidden sm:block text-sm text-slate-700">
-                      {t('uae_national', 'UAE National')}
+                      {(user as any)?.full_name || (user as any)?.email || ''}
                     </span>
                   </div>
                 </div>

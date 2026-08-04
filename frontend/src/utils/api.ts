@@ -27,8 +27,13 @@ export const restClient: AxiosInstance = axios.create({
 
 // Add request interceptor to inject token and CSRF token
 restClient.interceptors.request.use((config) => {
+  // A cookie session is authoritative when one exists. Attaching a stale
+  // localStorage bearer alongside it made the backend reject the request as
+  // 'Invalid token' WITHOUT ever looking at the valid cookie — which logged
+  // people out of pages at random (feedback fb_1785823035/23460/23507).
+  const hasCookieSession = !!getCookie('csrf_access_token');
   const token = getAuthToken();
-  if (token && token !== 'cookie_authenticated') {
+  if (!hasCookieSession && token && token !== 'cookie_authenticated') {
     config.headers.Authorization = `Bearer ${token}`;
   }
   // Ensure no legacy/inline headers send the placeholder or null/undefined values
