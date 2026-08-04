@@ -84,7 +84,12 @@ def record_status_change(application_id, new_status, changed_by=None,
                 notification_type='application_update',
                 title=title,
                 message=f"Your application for {job} is now: {new_status.replace('_', ' ')}",
+                # Land on the dashboard's Applications tab, not the legacy
+                # standalone /applications page — that page has no platform
+                # navigation or theme, and its list is a different data path
+                # (feedback fb_1785809872).
                 metadata={'application_id': str(application_id),
-                          'new_status': new_status, 'link': '/applications'})
+                          'new_status': new_status,
+                          'link': '/candidate-dashboard?tab=applications'})
     except Exception as e:  # pragma: no cover
         logger.warning(f"application history record failed for {application_id}: {e}")

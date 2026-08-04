@@ -447,9 +447,23 @@ const CandidateDashboard: React.FC = () => {
                       <CircularProgress value={dashboardData.profile.completionPercentage} />
                       <div className="mt-3 flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{t('ATS Compatibility', 'توافق ATS')}</span>
-                        <Badge className={`text-[10px] ${(dashboardData.profile.ats_score || 0) >= 80 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                          {(dashboardData.profile.ats_score || 0) >= 80 ? t('High', 'عالي') : t('Medium', 'متوسط')}
-                        </Badge>
+                        {/* Show the actual score, not a bucket: an unscored
+                            profile (0) was labelled "Medium" here while the
+                            Profile & CV tab showed its own computed number —
+                            the mismatch in feedback fb_1785810051. */}
+                        {dashboardData.profile.ats_score ? (
+                          <Badge className={`text-[10px] ${dashboardData.profile.ats_score >= 80
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : dashboardData.profile.ats_score >= 50
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                            {dashboardData.profile.ats_score}%
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[10px] bg-slate-100 text-slate-600 border-slate-200">
+                            {t('Not scored yet', 'لم يُحتسب بعد')}
+                          </Badge>
+                        )}
                       </div>
                       <Button
                         onClick={() => navigate('/candidate/profile')}
