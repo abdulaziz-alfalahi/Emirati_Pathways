@@ -41,11 +41,32 @@ def _company_of_job(job_id):
     return row['company_id'] if row else None
 
 
-def _caller_may_manage_company(user_id, company_id):
+def _caller_owns_job(user_id, job_id):
+    """True if the caller created/owns this job posting.
+
+    31 of 329 live postings have no company_id (created through the JD builder,
+    which only stores a company when it resolves to a real UUID). A company-only
+    check locks those jobs' own recruiter out of their applicants — reported as
+    'applicants list unavailable' (feedback fb_1785752603). Ownership is checked
+    against the posting's own recruiter columns, so this unblocks the owner
+    without widening cross-company access.
+    """
+    if not job_id:
+        return False
+    row = execute_query(
+        """SELECT COALESCE(recruiter_id::text, posted_by::text, created_by::text) AS owner
+           FROM job_postings WHERE id::text = %s OR jd_id = %s LIMIT 1""",
+        (str(job_id), str(job_id)), fetch_one=True)
+    return bool(row and row.get('owner') and str(row['owner']) == str(user_id))
+
+
+def _caller_may_manage_company(user_id, company_id, job_id=None):
     """Recruiter-side authorization: the caller must be an accepted team member
-    (or growth operator) of the company that owns the job — or a platform admin.
-    Closes the cross-company BOLA (audit H1)."""
+    (or growth operator) of the company that owns the job, the job's own
+    recruiter, or a platform admin. Closes the cross-company BOLA (audit H1)."""
     if resolve_roles() & ADMIN_ROLES:
+        return True
+    if job_id is not None and _caller_owns_job(user_id, job_id):
         return True
     if not company_id:
         return False
@@ -264,7 +285,7 @@ def set_status(application_id):
             return jsonify({'success': False, 'message': 'Application not found'}), 404
         # Company scoping: the recruiter must belong to the company that owns
         # this application's job (audit H1 — cross-company BOLA).
-        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(row['job_id'])):
+        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(row['job_id']), row['job_id']):
             return jsonify({'success': False, 'message': 'Forbidden'}), 403
         # Timeline + candidate notification (C1-CAN-5) — before the UPDATE so
         # the previous status is captured.
@@ -286,7 +307,7 @@ def job_applications(job_id):
     try:
         # Company scoping: only staff of the job's company (or admin) may read
         # its applicant pipeline (audit H1 — cross-company BOLA).
-        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(job_id)):
+        if not _caller_may_manage_company(get_jwt_identity(), _company_of_job(job_id), job_id):
             return jsonify({'success': False, 'message': 'Forbidden'}), 403
         rows = execute_query(
             _BASE_SELECT + " WHERE ja.job_id = %s ORDER BY COALESCE(ja.applied_at, ja.submitted_at) DESC",
