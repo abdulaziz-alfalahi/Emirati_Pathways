@@ -26,6 +26,8 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { restClient } from '@/utils/api';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
 import {
   Target, Brain, FileText, CheckCircle, Clock,
   Users, Building2, Briefcase, BarChart3, Award,
@@ -38,6 +40,7 @@ const CHART_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#14B8A6', '#E
 
 const ExecutiveDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const { i18n } = useTranslation();
   const { language, toggleLanguage } = useLanguage();
@@ -255,6 +258,100 @@ const ExecutiveDashboard: React.FC = () => {
     }
   };
 
+  // ── Recommendation implementation tracking (migration 052) ──────
+  const [recSummary, setRecSummary] = useState<any>(null);
+
+  const fetchRecommendations = async () => {
+    try {
+      const res = await restClient.get('/api/board/recommendations/summary');
+      setRecSummary(res.data?.data || null);
+    } catch { setRecSummary(null); }
+  };
+
+  const updateTracking = async (id: string, patch: any) => {
+    try {
+      const res = await restClient.put(`/api/board/directives/${id}/tracking`, patch);
+      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
+      fetchRecommendations();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+    }
+  };
+
+  const [boardSettings, setBoardSettings] = useState<any>(null);
+  const [quorumDraft, setQuorumDraft] = useState('');
+  const canManageBoard = (() => {
+    const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
+      .filter(Boolean).map((r: string) => String(r).toLowerCase());
+    return roles.some(r => ['admin', 'administrator', 'platform_operator', 'board_operator'].includes(r));
+  })();
+
+  const fetchBoardSettings = async () => {
+    try {
+      const res = await restClient.get('/api/board/meetings/settings');
+      setBoardSettings(res.data?.data || null);
+      setQuorumDraft(String(res.data?.data?.quorum_required ?? ''));
+    } catch { setBoardSettings(null); }
+  };
+
+  const saveQuorum = async () => {
+    try {
+      const res = await restClient.put('/api/board/meetings/settings', {
+        quorum_required: quorumDraft === '' ? null : Number(quorumDraft),
+      });
+      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
+      toast.success(b('Quorum saved', 'تم حفظ النصاب'));
+      fetchBoardSettings();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+    }
+  };
+
+  const fetchMeetings = async () => {
+    setMeetingsLoading(true);
+    try {
+      const res = await restClient.get('/api/board/meetings?scope=upcoming');
+      setMeetings(res.data?.data || []);
+    } catch {
+      setMeetings([]);
+    } finally {
+      setMeetingsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMeetings(); fetchBoardSettings(); fetchRecommendations(); }, []);
+
+  const joinMeeting = async (m: any) => {
+    setJoiningId(m.id);
+    try {
+      const res = await restClient.post(`/api/board/meetings/${m.id}/join`);
+      const d = res.data?.data;
+      if (!res.data?.success || !d?.token) {
+        toast.error(res.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+        return;
+      }
+      // Hand off to the shared video room, same as interviews.
+      navigate(`/board-meeting/${m.id}`, { state: { token: d.token, url: d.livekit_url, title: d.meeting_title } });
+    } catch (e: any) {
+      // The API says WHY (too early, ended, not invited) — show that, not a generic error.
+      toast.error(e?.response?.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  const rsvp = async (m: any, response: 'accepted' | 'declined') => {
+    try {
+      await restClient.post(`/api/board/meetings/${m.id}/rsvp`, { response });
+      toast.success(response === 'accepted' ? b('Attendance confirmed', 'تم تأكيد الحضور')
+                                            : b('Response recorded', 'تم تسجيل ردك'));
+      fetchMeetings();
+    } catch {
+      toast.error(b('Could not record your response', 'تعذّر تسجيل ردك'));
+    }
+  };
+
+
   // ── Top-Level KPI Cards ────────────────────────────────────────
   const kpis = executiveData?.kpis || {};
   const statCards = [
@@ -428,11 +525,12 @@ const ExecutiveDashboard: React.FC = () => {
 
           {/* ─── Tabs ─── */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-6 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               {[
                 { value: 'overview', label: b('Overview', 'نظرة عامة') },
                 { value: 'strategic', label: b('Strategic Impact', 'التأثير الاستراتيجي') },
                 { value: 'insights', label: b('AI Insights', 'رؤى ذكية') },
+                { value: 'meetings', label: b('Meetings', 'الاجتماعات') },
                 { value: 'directives', label: b('Directives', 'التوجيهات') },
                 { value: 'demographics', label: b('Demographics', 'التركيبة السكانية') },
                 { value: 'emiratisation', label: b('Emiratisation', 'التوطين') },
@@ -726,7 +824,194 @@ const ExecutiveDashboard: React.FC = () => {
             {/* ═══════════════════════════════════════════════════════
                               DIRECTIVES TAB
                ═══════════════════════════════════════════════════════ */}
+            <TabsContent value="meetings" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>{b('Upcoming board meetings', 'اجتماعات المجلس القادمة')}</CardTitle>
+                  <CardDescription>
+                    {b('Join the meeting from here when it opens — 15 minutes before the scheduled start.',
+                       'انضم إلى الاجتماع من هنا عند فتحه — قبل 15 دقيقة من الموعد المحدد.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Board-wide quorum — a fixed rule, not a per-meeting choice
+                      (owner ruling). Each meeting snapshots it at creation, so
+                      changing it never rewrites whether a past meeting was quorate. */}
+                  <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 border p-3">
+                    <span className="text-sm text-slate-700">
+                      {b('Board quorum:', 'نصاب المجلس:')}{' '}
+                      <strong>{boardSettings?.quorum_required ?? b('not set', 'غير محدد')}</strong>
+                      {boardSettings?.quorum_required ? b(' members', ' أعضاء') : ''}
+                    </span>
+                    {canManageBoard && (
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="number" min={1}
+                          value={quorumDraft}
+                          onChange={(e) => setQuorumDraft(e.target.value)}
+                          className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm"
+                          aria-label={b('Quorum', 'النصاب')}
+                        />
+                        <Button size="sm" variant="outline" onClick={saveQuorum}>
+                          {b('Save', 'حفظ')}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          {b('Applies to meetings created from now on.', 'تُطبَّق على الاجتماعات الجديدة.')}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  {meetingsLoading ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">{b('Loading…', 'جارٍ التحميل…')}</p>
+                  ) : meetings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      {b('No upcoming meetings scheduled.', 'لا توجد اجتماعات مجدولة.')}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {meetings.map((m: any) => {
+                        const when = m.scheduled_at ? new Date(m.scheduled_at) : null;
+                        const opensAt = when ? new Date(when.getTime() - 15 * 60000) : null;
+                        const canJoin = m.is_virtual && opensAt ? new Date() >= opensAt : false;
+                        return (
+                          <div key={m.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border p-4">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">{isRTL && m.title_ar ? m.title_ar : m.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {when ? when.toLocaleString(isRTL ? 'ar-AE' : 'en-GB',
+                                  { dateStyle: 'full', timeStyle: 'short' }) : ''}
+                                {m.duration_minutes ? ` · ${m.duration_minutes} ${b('min', 'دقيقة')}` : ''}
+                              </p>
+                              {!m.is_virtual && m.location && (
+                                <p className="text-xs text-slate-500 mt-1">{b('In person:', 'حضورياً:')} {m.location}</p>
+                              )}
+                              {(isRTL ? m.agenda_ar : m.agenda) && (
+                                <p className="text-xs text-slate-600 mt-1 line-clamp-2">{isRTL ? m.agenda_ar : m.agenda}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {m.my_invite_status === 'invited' && (
+                                <>
+                                  <Button size="sm" variant="outline" onClick={() => rsvp(m, 'accepted')}>
+                                    {b('Accept', 'قبول')}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => rsvp(m, 'declined')}>
+                                    {b('Decline', 'اعتذار')}
+                                  </Button>
+                                </>
+                              )}
+                              {m.is_virtual ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => joinMeeting(m)}
+                                  disabled={joiningId === m.id || !canJoin}
+                                  title={canJoin ? '' : b('Opens 15 minutes before the start', 'يفتح قبل 15 دقيقة من البدء')}
+                                  className="bg-emerald-700 hover:bg-emerald-800"
+                                >
+                                  {joiningId === m.id ? b('Joining…', 'جارٍ الانضمام…') : b('Join meeting', 'انضم للاجتماع')}
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">{b('In person', 'حضورياً')}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="directives" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Implementation status of board recommendations. Percentages are
+                  set by each recommendation's owner — the platform never infers
+                  them — and the overall figure states how much of the portfolio
+                  it actually covers. */}
+              {recSummary && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="text-base text-slate-800 font-dubai-bold">
+                      {b('Implementation of board recommendations', 'تنفيذ توصيات المجلس')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: b('Completed', 'مكتملة'), value: recSummary.counts?.completed ?? 0, cls: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                        { label: b('In progress', 'قيد التنفيذ'), value: recSummary.counts?.in_progress ?? 0, cls: 'text-blue-700 bg-blue-50 border-blue-100' },
+                        { label: b('Outstanding', 'لم تبدأ'), value: recSummary.counts?.outstanding ?? 0, cls: 'text-amber-700 bg-amber-50 border-amber-100' },
+                        { label: b('Overall completion', 'نسبة الإنجاز الإجمالية'),
+                          value: recSummary.overall_completion_percent == null ? b('Not set', 'غير محددة') : `${recSummary.overall_completion_percent}%`,
+                          cls: 'text-slate-800 bg-slate-50 border-slate-200' },
+                      ].map((k: any) => (
+                        <div key={k.label} className={`rounded-xl border p-4 text-center ${k.cls}`}>
+                          <p className="text-2xl font-dubai-bold">{k.value}</p>
+                          <p className="text-xs mt-1">{k.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {recSummary.overall_completion_percent == null
+                        ? b('No recommendations are being tracked yet.', 'لا توجد توصيات قيد المتابعة بعد.')
+                        : `${b('Completed counts as 100%, outstanding as 0%; in-progress uses the percentage its owner recorded.', 'المكتملة تُحتسب 100%، وغير المبدوءة 0%، وقيد التنفيذ حسب النسبة التي سجّلها مالكها.')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('have a percentage recorded.', 'منها سُجِّلت لها نسبة.')}`}
+                    </p>
+
+                    <div className="space-y-2">
+                      {(recSummary.items || []).map((it: any) => (
+                        <div key={it.id} className="rounded-lg border p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-slate-900 truncate">{it.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {it.owner_name ? `${b('Owner:', 'المسؤول:')} ${it.owner_name}` : b('No owner assigned', 'لم يُحدَّد مسؤول')}
+                                {it.due_date ? ` · ${b('Due', 'الاستحقاق')} ${new Date(it.due_date).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB')}` : ''}
+                                {it.overdue ? ` · ${b('OVERDUE', 'متأخرة')}` : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <select
+                                value={it.status}
+                                onChange={(e) => updateTracking(it.id, { status: e.target.value })}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                              >
+                                <option value="open">{b('Outstanding', 'لم تبدأ')}</option>
+                                <option value="in_progress">{b('In progress', 'قيد التنفيذ')}</option>
+                                <option value="completed">{b('Completed', 'مكتملة')}</option>
+                                <option value="deferred">{b('Deferred', 'مؤجلة')}</option>
+                                <option value="cancelled">{b('Cancelled', 'ملغاة')}</option>
+                              </select>
+                              <input
+                                type="number" min={0} max={100}
+                                defaultValue={it.completion_percent ?? ''}
+                                placeholder="%"
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v === '' || Number(v) === it.completion_percent) return;
+                                  updateTracking(it.id, { completion_percent: Number(v) });
+                                }}
+                                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+                                aria-label={b('Completion percent', 'نسبة الإنجاز')}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+                            <div
+                              className="h-1.5 rounded-full bg-emerald-600"
+                              style={{ width: `${it.completion_percent ?? 0}%` }}
+                            />
+                          </div>
+                          {it.completion_percent == null && (
+                            <p className="text-[11px] text-slate-400 mt-1">{b('Progress not yet recorded', 'لم تُسجَّل نسبة الإنجاز')}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="md:col-span-2 space-y-4">
                   <h3 className="text-lg font-dubai-bold text-slate-800" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
