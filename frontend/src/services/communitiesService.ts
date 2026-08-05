@@ -392,12 +392,12 @@ export class CommunitiesService {
 
     // Log the action
     // TODO: Connect to Flask API - await supabase.from('moderation_logs').insert({
-      group_id: groupId,
-      moderator_id: user.user.id,
-      target_post_id: postId,
-      action_type: action,
-      reason
-    });
+    // group_id: groupId,
+    // moderator_id: user.user.id,
+    // target_post_id: postId,
+    // action_type: action,
+    // reason
+    // });
   }
 
   static async getUserMembershipStatus(groupId: string): Promise<GroupMember | null> {

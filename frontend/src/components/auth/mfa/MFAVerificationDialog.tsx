@@ -67,10 +67,10 @@ export const MFAVerificationDialog: React.FC<MFAVerificationDialogProps> = ({
     setIsLoading(true);
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.verify({
-        factorId: selectedFactor.id,
-        challengeId: challenge.id,
-        code: verificationCode
-      });
+      // factorId: selectedFactor.id,
+      // challengeId: challenge.id,
+      // code: verificationCode
+      // });
 
       if (error) {
         setAttempts(prev => prev + 1);
@@ -113,8 +113,8 @@ export const MFAVerificationDialog: React.FC<MFAVerificationDialogProps> = ({
     setIsLoading(true);
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.challenge({
-        factorId: selectedFactor.id
-      });
+      // factorId: selectedFactor.id
+      // });
 
       if (error) throw error;
 

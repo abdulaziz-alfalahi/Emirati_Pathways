@@ -61,8 +61,8 @@ export const processPdfWithTextFallback = async (
     
     // Create a timeout promise to handle long-running processes
     // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke('extract-resume-data', {
-      body: { fileContent: pdfText },
-    });
+    // body: { fileContent: pdfText },
+    // });
     
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('PDF text extraction timed out after 25 seconds')), 25000);

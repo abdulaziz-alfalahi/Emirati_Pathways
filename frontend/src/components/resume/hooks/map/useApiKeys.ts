@@ -18,8 +18,8 @@ export const useApiKeys = () => {
     queryFn: async () => {
       try {
         // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('get-api-keys', {
-          method: 'POST'
-        });
+        // method: 'POST'
+        // });
         
         if (error) {
           throw error;
@@ -29,8 +29,8 @@ export const useApiKeys = () => {
         if (!data || (!data.mapbox_access_token && !data.MAPBOX_ACCESS_TOKEN)) {
           // Try with GET instead
           // TODO: Connect to Flask API - const getResponse = await supabase.functions.invoke('get-api-keys', {
-            method: 'GET'
-          });
+          // method: 'GET'
+          // });
           
           if (getResponse.error || !getResponse.data || 
               (!getResponse.data.mapbox_access_token && !getResponse.data.MAPBOX_ACCESS_TOKEN)) {

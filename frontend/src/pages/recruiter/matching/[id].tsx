@@ -66,12 +66,12 @@ const JobMatchingPage = () => {
     try {
       // Call match-resume-job edge function to find matching candidates
       // TODO: Connect to Flask API - const response = await supabase.functions.invoke('match-resume-job', {
-        body: {
-          jobData: jobDescription,
-          jobId: id,
-          threshold: matchThreshold
-        }
-      });
+      // body: {
+      // jobData: jobDescription,
+      // jobId: id,
+      // threshold: matchThreshold
+      // }
+      // });
       
       if (response.error) throw response.error;
       

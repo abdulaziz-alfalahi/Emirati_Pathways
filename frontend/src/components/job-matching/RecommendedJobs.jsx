@@ -68,13 +68,13 @@ export function RecommendedJobs({ limit = 3 }) {
           try {
             // Call edge function to match user with jobs
             // TODO: Connect to Flask API - const { data: generatedMatches, error: generationError } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
-              body: { 
-                resumeData: profileData.resume_data,
-                resumeId: user.id,
-                threshold: 30, // Lower threshold to ensure some results
-                limit: limit
-              }
-            });
+            // body: {
+            // resumeData: profileData.resume_data,
+            // resumeId: user.id,
+            // threshold: 30, // Lower threshold to ensure some results
+            // limit: limit
+            // }
+            // });
             
             if (generationError) throw generationError;
             

@@ -96,8 +96,8 @@ export const AssessmentUpload: React.FC = () => {
         const filePath = `assessments/${assessment.id}/${Date.now()}.${fileExt}`;
         
         // TODO: Connect to Flask API - const { error: uploadError } = await supabase.storage
-          .from('assessment-materials')
-          .upload(filePath, assessmentFile);
+        // .from('assessment-materials')
+        // .upload(filePath, assessmentFile);
           
         if (uploadError) throw uploadError;
       }

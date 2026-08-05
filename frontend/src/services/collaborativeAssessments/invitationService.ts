@@ -10,8 +10,8 @@ interface InvitationEmailData {
 export const sendInvitationEmail = async (data: InvitationEmailData) => {
   try {
     // TODO: Connect to Flask API - const { error } = await supabase.functions.invoke('send-invitation-email', {
-      body: data
-    });
+    // body: data
+    // });
 
     if (error) {
       console.error('Error sending invitation email:', error);

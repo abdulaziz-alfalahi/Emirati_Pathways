@@ -140,8 +140,8 @@ const UserRolesAdminPage: React.FC = React.memo(() => {
       setProcessingUserId(userId);
 
       // TODO: Connect to Flask API - const { error } = await supabase.functions.invoke('assign-user-role', {
-        body: { userId, role }
-      });
+      // body: { userId, role }
+      // });
 
       if (error) {
         throw error;

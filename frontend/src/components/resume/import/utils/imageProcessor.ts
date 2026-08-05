@@ -303,8 +303,8 @@ const processPdfWithFallbacks = async (file: File, startTime: number, processing
       
       // Create a timeout promise for the API call
       // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke('extract-resume-data', {
-        body: { fileContent: pdfText },
-      });
+      // body: { fileContent: pdfText },
+      // });
       
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Text extraction API call timed out after 25 seconds')), 25000);
