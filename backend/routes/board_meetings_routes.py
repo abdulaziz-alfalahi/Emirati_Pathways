@@ -82,7 +82,10 @@ def list_meetings():
         order = 'ASC' if scope == 'upcoming' else 'DESC'
         rows = execute_query(f"""
             SELECT m.*,
-                   (SELECT COUNT(*) FROM board_meeting_attendees a WHERE a.meeting_id = m.id) AS attendee_count,
+                   -- Observers joined without an invitation; they are not part
+                   -- of the invited board, so they must not inflate this count.
+                   (SELECT COUNT(*) FROM board_meeting_attendees a
+                     WHERE a.meeting_id = m.id AND a.invite_status <> 'observer') AS attendee_count,
                    (SELECT COUNT(*) FROM board_meeting_attendees a
                      WHERE a.meeting_id = m.id AND a.invite_status = 'attended') AS attended_count,
                    (SELECT a.invite_status FROM board_meeting_attendees a
@@ -234,11 +237,23 @@ def join_meeting(meeting_id):
         token = video_interview_engine.generate_livekit_token(meeting['room_name'], me, display)
 
         # Record attendance + open the meeting on first join.
-        execute_query("""
-            UPDATE board_meeting_attendees
-            SET invite_status = 'attended', joined_at = COALESCE(joined_at, NOW())
-            WHERE meeting_id::text = %s AND user_id = %s
-        """, (str(meeting_id), me), fetch_all=False)
+        if invite:
+            execute_query("""
+                UPDATE board_meeting_attendees
+                SET invite_status = 'attended', joined_at = COALESCE(joined_at, NOW())
+                WHERE meeting_id::text = %s AND user_id = %s
+            """, (str(meeting_id), me), fetch_all=False)
+        else:
+            # An admin joining a meeting they were not invited to. The UPDATE
+            # above would match nothing and they would be in the room with no
+            # record of it, which defeats the point of an attendance register.
+            # Recorded as 'observer' (migration 053) so the register is
+            # complete without them counting toward quorum.
+            execute_query("""
+                INSERT INTO board_meeting_attendees (meeting_id, user_id, invite_status, joined_at)
+                VALUES (%s::uuid, %s, 'observer', NOW())
+                ON CONFLICT (meeting_id, user_id) DO NOTHING
+            """, (str(meeting_id), me), fetch_all=False)
         execute_query("""
             UPDATE board_meetings
             SET status = CASE WHEN status = 'scheduled' THEN 'in_progress' ELSE status END,

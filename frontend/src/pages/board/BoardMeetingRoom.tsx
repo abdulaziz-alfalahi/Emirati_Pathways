@@ -86,6 +86,7 @@ const BoardMeetingRoom: React.FC = () => {
           userId={user?.id?.toString() || 'board-member'}
           userName={(user as any)?.full_name || (user as any)?.name || 'Board member'}
           onEndCall={leave}
+          remoteLabel={{ name: 'Board member', role: 'EHRDC Board' }}
           livekitUrl={url}
           token={token}
         />
