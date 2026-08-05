@@ -29,7 +29,6 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDropdownEnter = useCallback((groupId: string) => {
@@ -393,45 +392,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       return (
                         <div className="hidden sm:flex items-center relative">
                           <div className="w-2 h-2 bg-primary rounded-full me-2"></div>
-                          {hasMultipleRoles ? (
-                            <>
-                              <button
-                                onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-                                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                              >
-                                {getRoleDisplayName(userRole)}
-                                <ChevronDown className={`h-3 w-3 transition-transform ${roleSwitcherOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                              {roleSwitcherOpen && (
-                                <div
-                                  className="absolute top-full end-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 py-1 min-w-[180px]"
-                                  onMouseLeave={() => setRoleSwitcherOpen(false)}
-                                >
-                                  {uniqueRoles.map(role => (
-                                    <button
-                                      key={role}
-                                      onClick={async () => {
-                                        if (role !== userRole.toLowerCase()) {
-                                          await authContext.switchRole(role);
-                                          navigate(getDashboardRoute(role));
-                                        }
-                                        setRoleSwitcherOpen(false);
-                                      }}
-                                      className={`w-full text-start px-4 py-2 text-sm transition-colors ${normalizeRole(userRole) === role
-                                          ? 'bg-[#F0F7F7] text-primary font-medium'
-                                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                        }`}
-                                    >
-                                      {getRoleDisplayName(role)}
-                                      {normalizeRole(userRole) === role && (
-                                        <span className="text-xs text-slate-400 ms-2">•</span>
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </>
-                          ) : (
+                          {/* Current-role INDICATOR only. This used to be a second
+                              role-switcher dropdown sitting next to the account
+                              menu, which already has a Switch Role section — two
+                              menus offering the same action, and worse, each using
+                              its own label map, so one role showed two different
+                              names ('HR Manager' here vs 'Employer' there;
+                              'Board Member' vs 'EHDC Board Member'). Switching now
+                              lives in one place: the account menu (fb_1785840837). */}
+                          {(
                             <span className="text-sm text-muted-foreground">
                               {(user?.full_name === 'New Member' || (user?.first_name === 'New' && user?.last_name === 'Member'))
                                 ? (isRTL ? 'عضو جديد' : 'New Member')
