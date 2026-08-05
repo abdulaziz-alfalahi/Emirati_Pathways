@@ -84,7 +84,7 @@ const BoardMeetingRoom: React.FC = () => {
         <VideoRoom
           sessionId={meetingId || ''}
           userId={user?.id?.toString() || 'board-member'}
-          userName={(user as any)?.full_name || user?.username || 'Board member'}
+          userName={(user as any)?.full_name || (user as any)?.name || 'Board member'}
           onEndCall={leave}
           livekitUrl={url}
           token={token}

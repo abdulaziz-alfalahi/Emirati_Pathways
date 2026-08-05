@@ -26,7 +26,6 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { restClient } from '@/utils/api';
-import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import {
   Target, Brain, FileText, CheckCircle, Clock,
@@ -258,6 +257,11 @@ const ExecutiveDashboard: React.FC = () => {
     }
   };
 
+  // ── Board meetings (migration 050) ─────────────────────────────
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(false);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+
   // ── Recommendation implementation tracking (migration 052) ──────
   const [recSummary, setRecSummary] = useState<any>(null);
 
@@ -271,10 +275,10 @@ const ExecutiveDashboard: React.FC = () => {
   const updateTracking = async (id: string, patch: any) => {
     try {
       const res = await restClient.put(`/api/board/directives/${id}/tracking`, patch);
-      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
+      if (!res.data?.success) { toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' }); return; }
       fetchRecommendations();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+      toast({ title: e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
     }
   };
 
@@ -299,11 +303,11 @@ const ExecutiveDashboard: React.FC = () => {
       const res = await restClient.put('/api/board/meetings/settings', {
         quorum_required: quorumDraft === '' ? null : Number(quorumDraft),
       });
-      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
-      toast.success(b('Quorum saved', 'تم حفظ النصاب'));
+      if (!res.data?.success) { toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' }); return; }
+      toast({ title: b('Quorum saved', 'تم حفظ النصاب') });
       fetchBoardSettings();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+      toast({ title: e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
     }
   };
 
@@ -327,14 +331,14 @@ const ExecutiveDashboard: React.FC = () => {
       const res = await restClient.post(`/api/board/meetings/${m.id}/join`);
       const d = res.data?.data;
       if (!res.data?.success || !d?.token) {
-        toast.error(res.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+        toast({ title: res.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'), variant: 'destructive' });
         return;
       }
       // Hand off to the shared video room, same as interviews.
       navigate(`/board-meeting/${m.id}`, { state: { token: d.token, url: d.livekit_url, title: d.meeting_title } });
     } catch (e: any) {
       // The API says WHY (too early, ended, not invited) — show that, not a generic error.
-      toast.error(e?.response?.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+      toast({ title: e?.response?.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'), variant: 'destructive' });
     } finally {
       setJoiningId(null);
     }
@@ -343,11 +347,11 @@ const ExecutiveDashboard: React.FC = () => {
   const rsvp = async (m: any, response: 'accepted' | 'declined') => {
     try {
       await restClient.post(`/api/board/meetings/${m.id}/rsvp`, { response });
-      toast.success(response === 'accepted' ? b('Attendance confirmed', 'تم تأكيد الحضور')
-                                            : b('Response recorded', 'تم تسجيل ردك'));
+      toast({ title: response === 'accepted' ? b('Attendance confirmed', 'تم تأكيد الحضور')
+                                             : b('Response recorded', 'تم تسجيل ردك') });
       fetchMeetings();
     } catch {
-      toast.error(b('Could not record your response', 'تعذّر تسجيل ردك'));
+      toast({ title: b('Could not record your response', 'تعذّر تسجيل ردك'), variant: 'destructive' });
     }
   };
 
