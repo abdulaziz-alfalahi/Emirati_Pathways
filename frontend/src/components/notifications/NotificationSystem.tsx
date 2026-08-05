@@ -596,9 +596,28 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     const metadata = notification.metadata || {};
 
     // ─── Cross-role routing: switch role if notification is for a different role ───
-    const recipientRole = metadata.recipient_role;
+    // recipient_role is only set by a handful of senders (6 of 197 recent
+    // notifications carried it), so the switch almost never fired and the user
+    // landed on another role's dashboard while still in their current role
+    // ("my profile is not switching as per the notification"). Fall back to
+    // deriving the role from the destination, which every notification has —
+    // this also fixes notifications that were already sent.
+    const roleForRoute = (path?: string): string | undefined => {
+      if (!path) return undefined;
+      const base = String(path).split('?')[0].replace(/\/+$/, '');
+      const hit = Object.entries(ROLE_DASHBOARD_MAP as Record<string, string>)
+        .find(([, route]) => route.replace(/\/+$/, '') === base);
+      return hit?.[0];
+    };
+    const recipientRole = metadata.recipient_role
+      || roleForRoute(metadata.link || (notification as any).link);
     if (recipientRole && user?.role && recipientRole !== user.role) {
-      try { await switchRole(recipientRole); } catch { /* best effort */ }
+      // Only switch to a role the user actually holds — never grant one.
+      const held = [user.role, ...((user as any)?.secondary_roles || [])]
+        .filter(Boolean).map((r: string) => String(r).toLowerCase());
+      if (held.includes(String(recipientRole).toLowerCase())) {
+        try { await switchRole(recipientRole); } catch { /* best effort */ }
+      }
     }
 
     // Priority 1: Explicit Link in Metadata (Deep Linking Feature)

@@ -446,10 +446,16 @@ const AppContent: React.FC = () => {
                 }
               />
 
+              {/* Career-services staff need this: counselling a candidate is their
+                  job, and they already see the same candidate PII in the CRM
+                  (/api/profile/crm-candidates is gated to exactly these roles).
+                  Their absence here is why 'View Profile' and 'View Application'
+                  bounced an operator to the home page (fb_1785823460/823507). */}
               <Route
                 path="/candidate-profile/:candidateId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'recruiter', 'employer_admin', 'employer_admin', 'admin', 'admin']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'admin',
+                                                 'career_services_operator', 'call_center_agent', 'operator']}>
                     <CandidateProfilePage />
                   </ProtectedRoute>
                 }
