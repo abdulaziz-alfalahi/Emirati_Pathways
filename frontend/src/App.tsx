@@ -150,7 +150,6 @@ const ServiceCatalog = lazy(() => import('@/pages/operator-dashboards/ServiceCat
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
 const CareerServicesDashboard = lazy(() => import('@/pages/operator-dashboards/CareerServicesDashboard'));
-const BoardPortal = lazy(() => import('@/pages/BoardPortal'));
 const BoardMeetingRoom = lazy(() => import('@/pages/board/BoardMeetingRoom'));
 // Phase 2-4 New Role Dashboards
 const AdvisorDashboard = lazy(() => import('@/pages/AdvisorDashboard'));

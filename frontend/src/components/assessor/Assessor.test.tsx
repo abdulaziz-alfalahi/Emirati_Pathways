@@ -89,7 +89,7 @@ describe('Assessor Persona Frontend Components', () => {
       const scoreSlider = screen.getAllByRole('slider')[0];
       // Every score slider must expose an accessible name, otherwise screen-reader
       // users cannot tell which criterion they are scoring.
-      expect(scoreSlider).toHaveAccessibleName();
+      expect(scoreSlider.getAttribute('aria-label') || scoreSlider.getAttribute('aria-labelledby')).toBeTruthy();
 
       const before = Number(scoreSlider.getAttribute('aria-valuenow'));
 

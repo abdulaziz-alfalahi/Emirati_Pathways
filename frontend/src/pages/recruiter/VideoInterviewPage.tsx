@@ -608,7 +608,7 @@ const VideoInterviewPage = () => {
                     <VideoRoom
                         sessionId={sessionId}
                         userId={user?.id?.toString() || 'anonymous'}
-                        userName={user?.username || user?.first_name || 'User'}
+                        userName={user?.full_name || user?.first_name || 'User'}
                         onEndCall={handleEndSession}
                         isRecruiter={user?.role === 'recruiter'}
                         livekitUrl={livekitDetails?.url}

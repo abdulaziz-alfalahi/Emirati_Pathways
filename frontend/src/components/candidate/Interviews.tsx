@@ -96,7 +96,7 @@ export default function CandidateInterviews() {
     const getUserData = () => {
         return {
             id: user?.id || '',
-            name: user?.full_name || user?.first_name || user?.name || 'Candidate'
+            name: user?.full_name || user?.first_name || user?.user_metadata?.name || 'Candidate'
         };
     };
 
@@ -186,7 +186,7 @@ export default function CandidateInterviews() {
             <div className="h-[calc(100vh-100px)]">
                 <VideoRoom
                     sessionId={activeSession.id}
-                    userId={userData.id}
+                    userId={String(userData.id)}
                     userName={userData.name}
                     onEndCall={handleEndCall}
                     livekitUrl={livekitUrl}

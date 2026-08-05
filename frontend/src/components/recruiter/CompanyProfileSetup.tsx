@@ -247,7 +247,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
   };
 
   const addToArray = (field: string, value: string) => {
-    const list = profile[field as keyof CompanyProfile];
+    const list = profile[field as keyof CompanyProfile] as unknown[] | undefined;
     if (value.trim() && Array.isArray(list) && !list.includes(value.trim())) {
       setProfile(prev => ({
         ...prev,

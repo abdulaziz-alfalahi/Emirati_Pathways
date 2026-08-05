@@ -212,8 +212,8 @@ i18n
       lookupSessionStorage: 'preferred-language',
       caches: ['localStorage', 'sessionStorage'],
     },
-    whitelist: ['en', 'ar'],
-    nonExplicitWhitelist: true,
+    supportedLngs: ['en', 'ar'],
+    nonExplicitSupportedLngs: true,
     saveMissing: false,
 
     react: {

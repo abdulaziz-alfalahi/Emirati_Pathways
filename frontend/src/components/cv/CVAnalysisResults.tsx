@@ -345,7 +345,7 @@ const CVAnalysisResults: React.FC<CVAnalysisResultsProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.entries(analysis.score_breakdown).map(([key, value]) => (
                     <div key={key} className="text-center">
-                      <div className="text-lg font-semibold text-blue-600">{value}</div>
+                      <div className="text-lg font-semibold text-blue-600">{String(value)}</div>
                       <div className="text-sm text-gray-500 capitalize">
                         {key.replace('_', ' ')}
                       </div>

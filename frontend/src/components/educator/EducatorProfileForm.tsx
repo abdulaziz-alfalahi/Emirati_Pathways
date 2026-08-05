@@ -361,7 +361,7 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
     setProfileData(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof EducatorProfileData],
+        ...(prev[parent as keyof EducatorProfileData] as Record<string, unknown>),
         [field]: value
       }
     }));
@@ -382,7 +382,7 @@ const EducatorProfileForm: React.FC<EducatorProfileFormProps> = ({
   };
 
   const addToArray = (field: string, value: string) => {
-    if (value.trim() && !profileData[field as keyof EducatorProfileData]?.includes(value.trim())) {
+    if (value.trim() && !(profileData[field as keyof EducatorProfileData] as string[] | undefined)?.includes(value.trim())) {
       setProfileData(prev => ({
         ...prev,
         [field]: [...(prev[field as keyof EducatorProfileData] as string[]), value.trim()]

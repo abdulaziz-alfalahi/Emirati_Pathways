@@ -636,7 +636,7 @@ const WorkspaceSettings: React.FC = () => {
                 </div>
 
                 {progression.career_path.length === 0 ? (
-                  <div style={{ padding: '24px 0', textCenter: 'center', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
+                  <div style={{ padding: '24px 0', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
                     {t('No stages defined yet. Click "Add Stage" to begin.', 'لا توجد مراحل محددة بعد. انقر على "إضافة مرحلة" للبدء.')}
                   </div>
                 ) : (
@@ -790,7 +790,7 @@ const WorkspaceSettings: React.FC = () => {
                 </div>
 
                 {progression.promotion_criteria.length === 0 ? (
-                  <div style={{ padding: '20px 0', textCenter: 'center', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
                     {t('No criteria items added yet.', 'لم يتم إضافة معايير بعد.')}
                   </div>
                 ) : (
@@ -834,7 +834,7 @@ const WorkspaceSettings: React.FC = () => {
 
               {/* Emiratisation Support */}
               <div style={{ background: brand.white, borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', justifyContent: 'space-between', marginBottom: 18, paddingBottom: 12, borderBottom: `1px solid ${brand.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, paddingBottom: 12, borderBottom: `1px solid ${brand.border}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 8, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Globe size={18} style={{ color: brand.primary }} />
@@ -864,7 +864,7 @@ const WorkspaceSettings: React.FC = () => {
                 </div>
 
                 {progression.emiratisation_support.length === 0 ? (
-                  <div style={{ padding: '20px 0', textCenter: 'center', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: brand.textSecondary, fontSize: 13 }}>
                     {t('No support programs added yet.', 'لم يتم إضافة برامج دعم بعد.')}
                   </div>
                 ) : (

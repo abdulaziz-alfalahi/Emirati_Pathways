@@ -381,7 +381,7 @@ const AssessorProfileForm: React.FC<AssessorProfileFormProps> = ({
     setProfileData(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof AssessorProfileData],
+        ...(prev[parent as keyof AssessorProfileData] as Record<string, unknown>),
         [field]: value
       }
     }));
@@ -402,7 +402,7 @@ const AssessorProfileForm: React.FC<AssessorProfileFormProps> = ({
   };
 
   const addToArray = (field: string, value: string) => {
-    if (value.trim() && !profileData[field as keyof AssessorProfileData]?.includes(value.trim())) {
+    if (value.trim() && !(profileData[field as keyof AssessorProfileData] as string[] | undefined)?.includes(value.trim())) {
       setProfileData(prev => ({
         ...prev,
         [field]: [...(prev[field as keyof AssessorProfileData] as string[]), value.trim()]

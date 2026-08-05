@@ -16,6 +16,13 @@ export interface SavedCV {
   template_name: string;
   template_category: string;
   full_name: string;
+  /**
+   * Which CV is the one shown on the candidate's public profile. Returned by
+   * GET /api/cv/list (cv_storage_manager.get_user_cvs selects it) and set via
+   * PUT /api/cv/<id>/visible, which enforces mutual exclusivity per user.
+   * Optional because the CV endpoints do not all return the same column set.
+   */
+  is_visible?: boolean;
 }
 
 export interface CVData {

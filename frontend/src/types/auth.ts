@@ -20,6 +20,7 @@ export type Permission =
   | 'bulk_import_candidates'
   | 'onboard_candidates'
   | 'manage_candidate_engagement'
+  | 'manage_candidate_counselling'
   
   // Education & Training
   | 'manage_institutions'
@@ -38,8 +39,10 @@ export type Permission =
   | 'manage_positions'
   | 'manage_nafis_sync'
   | 'view_operations_center'
+  | 'manage_board_meetings'
   
   // Profile & Basic Access
+  | 'view_dashboard'
   | 'view_jobs'
   | 'apply_jobs'
   | 'manage_profile'
@@ -196,6 +199,7 @@ export const GROWTH_OPERATOR_DOMAINS: Record<GrowthOperatorDomain, {
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'candidate': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
+  'student': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv', 'view_dashboard'],
   'employer_admin': ['manage_candidates', 'view_analytics', 'post_jobs', 'manage_positions'],
   'recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
   'training_provider': ['view_analytics', 'manage_profile'],
@@ -210,6 +214,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'platform_operator': ['view_all_analytics', 'view_operations_center', 'view_analytics', 'generate_reports'],
   'compliance_auditor': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'board_member': ['view_all_analytics', 'view_analytics', 'generate_reports'],
+  'board_operator': ['manage_board_meetings', 'view_dashboard', 'view_analytics'],
   'professional_dev_operator': ['manage_training', 'manage_certifications', 'onboard_mentors', 'onboard_assessment', 'manage_mentorship_programs', 'manage_assessment_centers', 'view_analytics'],
   'career_services_operator': ['view_dashboard', 'manage_candidate_counselling', 'view_analytics'],
   'advisor': ['view_analytics', 'manage_profile'],

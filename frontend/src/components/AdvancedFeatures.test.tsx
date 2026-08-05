@@ -83,7 +83,7 @@ describe('Advanced Features Frontend Components', () => {
         it('renders the responsive layout with sidebar on desktop', () => {
             render(
                 <MemoryRouter>
-                    <NotificationProvider>
+                    <NotificationProvider userId="test-user" userType="candidate" authToken="test-token">
                         <ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>
                     </NotificationProvider>
                 </MemoryRouter>
@@ -97,7 +97,7 @@ describe('Advanced Features Frontend Components', () => {
             Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
             render(
                 <MemoryRouter>
-                    <NotificationProvider>
+                    <NotificationProvider userId="test-user" userType="candidate" authToken="test-token">
                         <ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>
                     </NotificationProvider>
                 </MemoryRouter>

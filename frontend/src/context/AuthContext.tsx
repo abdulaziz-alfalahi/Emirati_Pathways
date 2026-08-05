@@ -25,6 +25,7 @@ export interface User {
     first_name?: string;
     last_name?: string;
     user_type?: string;
+    company_id?: string;
     roles?: string[];
     secondary_roles?: string[];
   };
