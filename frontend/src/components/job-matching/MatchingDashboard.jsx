@@ -93,13 +93,13 @@ export function MatchingDashboard({ initialTab = 'candidates' }) {
       
       // Call matching function
       // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('match-resume-job/candidate-to-jobs', {
-        body: { 
-          resumeData: candidateData.resume_data,
-          resumeId: selectedCandidate,
-          threshold,
-          limit
-        }
-      });
+      // body: {
+      // resumeData: candidateData.resume_data,
+      // resumeId: selectedCandidate,
+      // threshold,
+      // limit
+      // }
+      // });
       
       if (error) {
         throw new Error(error.message);
@@ -151,13 +151,13 @@ export function MatchingDashboard({ initialTab = 'candidates' }) {
       
       // Call matching function
       // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('match-resume-job/job-to-candidates', {
-        body: { 
-          jobData,
-          jobId: selectedJob,
-          threshold,
-          limit
-        }
-      });
+      // body: {
+      // jobData,
+      // jobId: selectedJob,
+      // threshold,
+      // limit
+      // }
+      // });
       
       if (error) {
         throw new Error(error.message);

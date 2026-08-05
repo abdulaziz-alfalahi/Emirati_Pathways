@@ -79,8 +79,8 @@ export const useFetchUserRoles = () => {
       try {
         // Use the edge function to fetch roles instead of direct query
         // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('get-user-roles', {
-          body: { userId }
-        });
+        // body: { userId }
+        // });
   
         if (error) {
           throw error;

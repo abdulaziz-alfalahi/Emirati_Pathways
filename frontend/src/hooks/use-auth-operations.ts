@@ -10,9 +10,9 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
       console.log('Attempting to sign in with:', email);
       
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // email,
+      // password
+      // });
       
       if (error) {
         console.error('Sign in error:', error);
@@ -59,15 +59,15 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
       const redirectUrl = `${window.location.origin}/`;
       
       // TODO: Connect to Flask API - const { data: userData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-          emailRedirectTo: redirectUrl,
-        },
-      });
+      // email,
+      // password,
+      // options: {
+      // data: {
+      // full_name: fullName,
+      // },
+      // emailRedirectTo: redirectUrl,
+      // },
+      // });
 
       if (signUpError) {
         let errorMessage = 'Registration failed. Please try again.';
@@ -91,13 +91,17 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
       }
 
       // Assign roles using the edge function
-      const roleAssignmentPromises = roles.map(role => 
+      const roleAssignmentPromises = roles.map(role =>
         // TODO: Connect to Flask API - supabase.functions.invoke('assign-user-role', {
-          body: { 
-            userId: userData.user.id,
-            role: role
-          }
-        })
+        // body: {
+        // userId: userData.user.id,
+        // role: role
+        // }
+        // })
+        // Not migrated to the Flask API. Reject rather than resolve, so the
+        // caller below reports the role as failed instead of the caller being
+        // told every role was assigned when none were.
+        Promise.reject(new Error(`Role assignment not implemented for role: ${role}`))
       );
 
       const roleResults = await Promise.allSettled(roleAssignmentPromises);

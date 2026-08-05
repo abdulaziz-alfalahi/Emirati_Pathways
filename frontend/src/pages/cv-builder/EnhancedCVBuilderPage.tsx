@@ -565,6 +565,7 @@ const CVBuilderContent: React.FC = () => {
                 </div>
               )}
             </div>
+          )}
         </div>
       </section>
 

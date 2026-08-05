@@ -107,10 +107,10 @@ export const useMFA = () => {
   ): Promise<boolean> => {
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code
-      });
+      // factorId,
+      // challengeId,
+      // code
+      // });
 
       if (error) throw error;
 

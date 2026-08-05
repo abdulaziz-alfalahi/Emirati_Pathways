@@ -92,8 +92,8 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
   const handleDownload = async (material: TrainingMaterial) => {
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.storage
-        .from('training-materials')
-        .download(material.file_path);
+      // .from('training-materials')
+      // .download(material.file_path);
         
       if (error) throw error;
       

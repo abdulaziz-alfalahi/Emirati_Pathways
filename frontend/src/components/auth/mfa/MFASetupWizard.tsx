@@ -42,9 +42,9 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
     setIsLoading(true);
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'Authenticator App'
-      });
+      // factorType: 'totp',
+      // friendlyName: 'Authenticator App'
+      // });
 
       if (error) throw error;
 
@@ -69,16 +69,16 @@ export const MFASetupWizard: React.FC<MFASetupWizardProps> = ({
     setIsLoading(true);
     try {
       // TODO: Connect to Flask API - const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId
-      });
+      // factorId
+      // });
 
       if (challengeError) throw challengeError;
 
       // TODO: Connect to Flask API - const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challengeData.id,
-        code: verificationCode
-      });
+      // factorId,
+      // challengeId: challengeData.id,
+      // code: verificationCode
+      // });
 
       if (verifyError) throw verifyError;
 

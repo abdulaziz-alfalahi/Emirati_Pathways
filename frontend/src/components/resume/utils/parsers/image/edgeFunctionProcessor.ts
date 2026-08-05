@@ -31,12 +31,12 @@ export const processWithEdgeFunction = async (
     });
     
     // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke<EdgeFunctionResponse>('extract-resume-from-image', {
-      body: { 
-        imageData,
-        fileName: file.name,
-        fileType: file.type 
-      },
-    });
+    // body: {
+    // imageData,
+    // fileName: file.name,
+    // fileType: file.type
+    // },
+    // });
     
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Edge function processing timed out after 50 seconds')), 50000);

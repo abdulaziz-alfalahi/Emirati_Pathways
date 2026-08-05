@@ -76,14 +76,14 @@ class CrossPhaseAnalyticsService {
       if (!user.user) return;
 
       // TODO: Connect to Flask API - await supabase.from('user_journey_analytics').insert({
-        user_id: user.user.id,
-        phase: event.phase,
-        event_type: event.event_type,
-        event_data: event.event_data,
-        session_id: this.sessionId,
-        ip_address: await this.getClientIP(),
-        user_agent: navigator.userAgent
-      });
+      // user_id: user.user.id,
+      // phase: event.phase,
+      // event_type: event.event_type,
+      // event_data: event.event_data,
+      // session_id: this.sessionId,
+      // ip_address: await this.getClientIP(),
+      // user_agent: navigator.userAgent
+      // });
     } catch (error) {
       console.warn('Failed to track analytics event:', error);
     }
@@ -97,14 +97,14 @@ class CrossPhaseAnalyticsService {
       if (!user.user) return;
 
       // TODO: Connect to Flask API - await supabase.from('phase_transitions').insert({
-        user_id: user.user.id,
-        from_phase: transition.from_phase,
-        to_phase: transition.to_phase,
-        transition_reason: transition.transition_reason,
-        readiness_score: transition.readiness_score,
-        completion_percentage: transition.completion_percentage,
-        transition_data: transition.transition_data || {}
-      });
+      // user_id: user.user.id,
+      // from_phase: transition.from_phase,
+      // to_phase: transition.to_phase,
+      // transition_reason: transition.transition_reason,
+      // readiness_score: transition.readiness_score,
+      // completion_percentage: transition.completion_percentage,
+      // transition_data: transition.transition_data || {}
+      // });
     } catch (error) {
       console.warn('Failed to track phase transition:', error);
     }
@@ -117,15 +117,15 @@ class CrossPhaseAnalyticsService {
       // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       
       // TODO: Connect to Flask API - await supabase.from('feature_usage_analytics').insert({
-        user_id: user.user?.id,
-        feature_name: usage.feature_name,
-        phase: usage.phase,
-        action_type: usage.action_type,
-        duration_seconds: usage.duration_seconds,
-        success_rate: usage.success_rate,
-        error_data: usage.error_data,
-        usage_context: usage.usage_context || {}
-      });
+      // user_id: user.user?.id,
+      // feature_name: usage.feature_name,
+      // phase: usage.phase,
+      // action_type: usage.action_type,
+      // duration_seconds: usage.duration_seconds,
+      // success_rate: usage.success_rate,
+      // error_data: usage.error_data,
+      // usage_context: usage.usage_context || {}
+      // });
     } catch (error) {
       console.warn('Failed to track feature usage:', error);
     }
@@ -139,13 +139,13 @@ class CrossPhaseAnalyticsService {
       if (!user.user) return;
 
       // TODO: Connect to Flask API - await supabase.from('user_journey_milestones').insert({
-        user_id: user.user.id,
-        phase: milestone.phase,
-        milestone_type: milestone.milestone_type,
-        milestone_name: milestone.milestone_name,
-        milestone_data: milestone.milestone_data || {},
-        points_earned: milestone.points_earned || 0
-      });
+      // user_id: user.user.id,
+      // phase: milestone.phase,
+      // milestone_type: milestone.milestone_type,
+      // milestone_name: milestone.milestone_name,
+      // milestone_data: milestone.milestone_data || {},
+      // points_earned: milestone.points_earned || 0
+      // });
     } catch (error) {
       console.warn('Failed to track milestone:', error);
     }
@@ -157,15 +157,15 @@ class CrossPhaseAnalyticsService {
       if (!user.user) return;
 
       // TODO: Connect to Flask API - await supabase.from('analytics_consent').upsert({
-        user_id: user.user.id,
-        essential_analytics: consent.essential_analytics,
-        performance_analytics: consent.performance_analytics,
-        personalization_analytics: consent.personalization_analytics,
-        marketing_analytics: consent.marketing_analytics,
-        consent_updated_at: new Date().toISOString(),
-        ip_address: await this.getClientIP(),
-        user_agent: navigator.userAgent
-      });
+      // user_id: user.user.id,
+      // essential_analytics: consent.essential_analytics,
+      // performance_analytics: consent.performance_analytics,
+      // personalization_analytics: consent.personalization_analytics,
+      // marketing_analytics: consent.marketing_analytics,
+      // consent_updated_at: new Date().toISOString(),
+      // ip_address: await this.getClientIP(),
+      // user_agent: navigator.userAgent
+      // });
 
       this.isTrackingEnabled = consent.essential_analytics;
     } catch (error) {
@@ -224,15 +224,15 @@ class CrossPhaseAnalyticsService {
     try {
       const defaultSettings = this.getDefaultConsentSettings();
       // TODO: Connect to Flask API - await supabase.from('analytics_consent').insert({
-        user_id: userId,
-        essential_analytics: defaultSettings.essential_analytics,
-        performance_analytics: defaultSettings.performance_analytics,
-        personalization_analytics: defaultSettings.personalization_analytics,
-        marketing_analytics: defaultSettings.marketing_analytics,
-        consent_updated_at: new Date().toISOString(),
-        ip_address: await this.getClientIP(),
-        user_agent: navigator.userAgent
-      });
+      // user_id: userId,
+      // essential_analytics: defaultSettings.essential_analytics,
+      // performance_analytics: defaultSettings.performance_analytics,
+      // personalization_analytics: defaultSettings.personalization_analytics,
+      // marketing_analytics: defaultSettings.marketing_analytics,
+      // consent_updated_at: new Date().toISOString(),
+      // ip_address: await this.getClientIP(),
+      // user_agent: navigator.userAgent
+      // });
     } catch (error) {
       console.warn('Failed to create initial consent record:', error);
     }

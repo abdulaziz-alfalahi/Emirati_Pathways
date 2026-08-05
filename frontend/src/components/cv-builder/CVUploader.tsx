@@ -442,14 +442,8 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
                   )}
                 </CardContent>
               </Card>
-                        </span>
-                        <span>{Math.round(progress)}%</span>
-                      </div>
-    </div>
-  )
-}
-                </CardContent >
-              </Card >
+            </div>
+          )}
 
   { uploadStatus === 'success' && Object.keys(parsingStats).length > 0 && (
     <Card className="bg-green-50 border-green-200">
@@ -535,11 +529,9 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     </div>
   )
 }
-            </div >
-          )}
-        </CardContent >
-      </Card >
-    </div >
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -44,12 +44,12 @@ export const ImageImportDialog: React.FC<ImageImportDialogProps> = ({
       
       // Call the Edge Function for processing
       // TODO: Connect to Flask API - const response = await supabase.functions.invoke('parse-resume', {
-        body: {
-          fileData,
-          fileName: file.name,
-          fileType: file.type
-        }
-      });
+      // body: {
+      // fileData,
+      // fileName: file.name,
+      // fileType: file.type
+      // }
+      // });
       
       // Dismiss loading toast
       toast.dismiss(toastId);

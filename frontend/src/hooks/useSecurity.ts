@@ -53,19 +53,19 @@ export const useSecurity = () => {
     if (user && canAccessSecurityData) {
       try {
         // TODO: Connect to Flask API - await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'security_event',
-          resource: 'security_monitoring',
-          details: {
-            type: event.type,
-            severity: event.severity,
-            description: event.description,
-            client_ip: event.clientIP,
-            user_agent: event.userAgent
-          },
-          severity: event.severity,
-          category: 'security_event'
-        });
+        // user_id: user.id,
+        // action: 'security_event',
+        // resource: 'security_monitoring',
+        // details: {
+        // type: event.type,
+        // severity: event.severity,
+        // description: event.description,
+        // client_ip: event.clientIP,
+        // user_agent: event.userAgent
+        // },
+        // severity: event.severity,
+        // category: 'security_event'
+        // });
       } catch (error) {
         console.error('Failed to log security event:', error);
       }

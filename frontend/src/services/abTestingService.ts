@@ -157,10 +157,10 @@ class ABTestingService {
       if (!user.user) return;
 
       // TODO: Connect to Flask API - await supabase.from('ab_testing_assignments').insert({
-        experiment_id: experimentId,
-        user_id: user.user.id,
-        variant
-      });
+      // experiment_id: experimentId,
+      // user_id: user.user.id,
+      // variant
+      // });
     } catch (error) {
       console.error('Failed to assign user to variant:', error);
     }

@@ -66,12 +66,12 @@ const LinkedInImportDialog: React.FC<LinkedInImportDialogProps> = ({
   const handleLinkedInAuth = async () => {
     try {
       // TODO: Connect to Flask API - const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'linkedin_oidc',
-        options: {
-          redirectTo: `${window.location.origin}/resume-builder?linkedin_auth=true`,
-          scopes: 'r_liteprofile r_emailaddress',
-        }
-      });
+      // provider: 'linkedin_oidc',
+      // options: {
+      // redirectTo: `${window.location.origin}/resume-builder?linkedin_auth=true`,
+      // scopes: 'r_liteprofile r_emailaddress',
+      // }
+      // });
       
       if (error) {
         throw error;
