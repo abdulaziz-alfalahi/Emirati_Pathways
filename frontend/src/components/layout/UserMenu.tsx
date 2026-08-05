@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getDisplayName } from '@/utils/nameUtils';
+import { roleLabel, langOf } from '@/utils/enumLabels';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,15 +41,22 @@ const UserMenu: React.FC = () => {
   const { language, isRTL } = useLanguage();
   const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
-  // Role label helper based on language
+  // Role label helper — single source of truth: src/utils/enumLabels.ts.
+  // This used to read its own ROLE_DISPLAY_NAMES map while the header pill used
+  // enumLabels, so the SAME role was named differently depending on which menu
+  // you opened ('Employer' here vs 'HR Manager' there, 'EHDC Board Member' vs
+  // 'Board Member', 'Nafis Talent Operator' vs 'Talent Operator') — visible in
+  // the two screenshots on feedback fb_1785840837.
   const getRoleLabel = (role: string): string => {
     // Normalize first so a stale 'job_seeker' (pre-migration session) or a legacy
     // 'university_student' resolves to candidate/student before the label lookup.
-    const key = normalizeRole(role) as string;
-    if (isRTL) {
-      return ROLE_DISPLAY_NAMES_AR[key] || ROLE_DISPLAY_NAMES[key as UserRole] || role;
-    }
-    return ROLE_DISPLAY_NAMES[key as UserRole] || role;
+    const key = String(normalizeRole(role) || role);
+    const label = roleLabel(key, langOf(isRTL));
+    // roleLabel echoes the raw value when unmapped; fall back to the old maps
+    // rather than showing a bare token.
+    if (label !== key) return label;
+    return (isRTL ? ROLE_DISPLAY_NAMES_AR[key] : undefined)
+      || ROLE_DISPLAY_NAMES[key as UserRole] || role;
   };
 
   // Add error handling wrapper around useAuth
