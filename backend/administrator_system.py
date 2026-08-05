@@ -632,6 +632,23 @@ class AdministratorSystem:
             if not current_user:
                 raise Exception("User not found")
 
+            # Company-bound roles require a company (owner ruling 2026-08-05).
+            # An admin granting 'recruiter' to someone with no employer created
+            # an account that can never publish and can never be verified —
+            # there is no company to verify. Employers arrive through the
+            # onboarding chain: operator magic link -> company representative
+            # joins under that company -> representative invites their team.
+            try:
+                from backend.auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+            except ImportError:  # pragma: no cover
+                from auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+            _requested_bound = set(roles) & COMPANY_BOUND_ROLES
+            if _requested_bound and not has_company_membership(user_id):
+                raise ValueError(
+                    f"Cannot grant {', '.join(sorted(_requested_bound))} to a user who "
+                    "belongs to no company. Invite them to their company's team first "
+                    "(or onboard the company itself), then the role follows automatically.")
+
             # Preserve the user's original/current role so they can switch back
             original_role = current_user.get('role')
             existing_secondary = current_user.get('secondary_roles') or []

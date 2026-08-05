@@ -37,6 +37,34 @@ ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_
 BOARD_ROLES = ADMIN_ROLES | {'board_member'}
 HR_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'hr', 'hr_manager', 'talent_operator', 'employer_relations'}
 RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator', 'employer_relations'}
+# Roles that only mean something INSIDE a company. Owner ruling 2026-08-05:
+# nobody may hold one of these without a company — a recruiter with no employer
+# cannot publish a job, has no company name to show, and cannot be verified,
+# which is exactly the dead end 16 of 17 recruiter-side accounts were in.
+# The only supported way in is the company onboarding chain: operator issues a
+# magic link -> the company representative joins under that company -> the
+# representative invites their own team (/join-team). These roles are therefore
+# NOT self-requestable and cannot be granted to a user with no membership.
+COMPANY_BOUND_ROLES = {'recruiter', 'employer_admin', 'hr', 'hr_manager'}
+
+
+def has_company_membership(user_id):
+    """True if the user is an accepted member of any company.
+
+    Reads company_team_members — the same table the workspace ACL trusts.
+    hr_profiles is legacy display data and is deliberately not consulted.
+    """
+    if not user_id:
+        return False
+    try:
+        row = execute_query(
+            """SELECT 1 FROM company_team_members
+               WHERE user_id::text = %s AND invitation_status = 'accepted' LIMIT 1""",
+            (str(user_id),), fetch_one=True)
+        return bool(row)
+    except Exception as e:  # pragma: no cover — never block on a lookup failure
+        logger.warning(f"company membership lookup failed for {user_id}: {e}")
+        return False
 # The full operator family (growth/education/assessment/mentorship/community/platform/etc.) plus admin.
 OPERATOR_ROLES = ADMIN_ROLES | {
     'operator', 'growth_operator', 'talent_operator', 'employer_relations',

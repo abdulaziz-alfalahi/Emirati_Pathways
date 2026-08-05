@@ -114,6 +114,32 @@ def submit_role_request():
         if requested_role not in allowed_roles:
              return jsonify({'success': False, 'message': 'Invalid role requested'}), 400
 
+        # Company-bound roles are NOT self-requestable (owner ruling 2026-08-05).
+        # Granting them here produced recruiters with no employer: they cannot
+        # publish (nothing to verify), show no company name, and no operator can
+        # fix it because there is no company to attach. Employers join through
+        # the onboarding chain instead — an operator issues the company magic
+        # link, the company representative joins under that company, and the
+        # representative invites their own team.
+        try:
+            from backend.auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+        except ImportError:  # pragma: no cover
+            from auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+        # The request map uses display labels ('HR Manager', 'HR/Recruiter'),
+        # not slugs, so normalise before comparing.
+        _canon = str(_canon_requested_role(requested_role)).strip().lower().replace('/', '_').replace(' ', '_')
+        _company_bound = COMPANY_BOUND_ROLES | {'hr_recruiter', 'hr_manager', 'recruiter', 'employer_admin'}
+        if _canon in _company_bound and not has_company_membership(user_id):
+            return jsonify({
+                'success': False,
+                'error_code': 'company_bound_role',
+                'message': ('This role is granted by your employer, not by request. '
+                            'Ask your company administrator to invite you to their '
+                            'team on the platform. If your company is not on the '
+                            'platform yet, ask EHRDC platform operations to send it '
+                            'an onboarding invitation.'),
+            }), 400
+
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
