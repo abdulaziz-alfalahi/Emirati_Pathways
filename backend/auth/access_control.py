@@ -34,7 +34,10 @@ except ImportError:  # pragma: no cover
 
 ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_administrator'}
 # Convenience role sets for common privileged surfaces (admin always included).
-BOARD_ROLES = ADMIN_ROLES | {'board_member'}
+# board_operator = the board secretary: an EHRDC team member assigned this
+# role by an admin (owner ruling 2026-08-05 — no magic link; they are
+# already staff). Schedules meetings, keeps minutes, tracks recommendations.
+BOARD_ROLES = ADMIN_ROLES | {'board_member', 'board_operator'}
 HR_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'hr', 'hr_manager', 'talent_operator', 'employer_relations'}
 RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator', 'employer_relations'}
 # Roles that only mean something INSIDE a company. Owner ruling 2026-08-05:
@@ -70,6 +73,7 @@ OPERATOR_ROLES = ADMIN_ROLES | {
     'operator', 'growth_operator', 'talent_operator', 'employer_relations',
     'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator',
     'platform_operator', 'professional_dev_operator', 'career_services_operator',
+    'board_operator',
 }
 # Career-services counselling CRM (candidate pipeline, counselling notes, PII).
 # Kept tight — this surface exposes candidate national IDs / phones.

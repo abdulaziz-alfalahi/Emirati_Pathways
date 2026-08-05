@@ -256,6 +256,7 @@ const ROLES: Domain = {
   // Arabic they fell through to the title-case fallback and rendered as
   // English inside an otherwise-Arabic role switcher.
   'board member': { en: 'Board Member', ar: 'عضو مجلس الإدارة' },
+  'board operator': { en: 'Board Secretary', ar: 'أمين سر المجلس' },
   'platform operator': { en: 'Platform Operator', ar: 'مشغّل المنصة' },
   'career services operator': { en: 'Career Services Operator', ar: 'مشغّل الخدمات المهنية' },
   'employer relations': { en: 'Employer Relations', ar: 'علاقات أصحاب العمل' },

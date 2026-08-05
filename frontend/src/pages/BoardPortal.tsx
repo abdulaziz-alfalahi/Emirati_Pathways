@@ -81,6 +81,35 @@ export default function BoardPortal() {
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
+  const [boardSettings, setBoardSettings] = useState<any>(null);
+  const [quorumDraft, setQuorumDraft] = useState('');
+  const canManageBoard = (() => {
+    const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
+      .filter(Boolean).map((r: string) => String(r).toLowerCase());
+    return roles.some(r => ['admin', 'administrator', 'platform_operator', 'board_operator'].includes(r));
+  })();
+
+  const fetchBoardSettings = async () => {
+    try {
+      const res = await restClient.get('/api/board/meetings/settings');
+      setBoardSettings(res.data?.data || null);
+      setQuorumDraft(String(res.data?.data?.quorum_required ?? ''));
+    } catch { setBoardSettings(null); }
+  };
+
+  const saveQuorum = async () => {
+    try {
+      const res = await restClient.put('/api/board/meetings/settings', {
+        quorum_required: quorumDraft === '' ? null : Number(quorumDraft),
+      });
+      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
+      toast.success(b('Quorum saved', 'تم حفظ النصاب'));
+      fetchBoardSettings();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+    }
+  };
+
   const fetchMeetings = async () => {
     setMeetingsLoading(true);
     try {
@@ -93,7 +122,7 @@ export default function BoardPortal() {
     }
   };
 
-  useEffect(() => { fetchMeetings(); }, []);
+  useEffect(() => { fetchMeetings(); fetchBoardSettings(); }, []);
 
   const joinMeeting = async (m: any) => {
     setJoiningId(m.id);
@@ -335,6 +364,33 @@ export default function BoardPortal() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* Board-wide quorum — a fixed rule, not a per-meeting choice
+                      (owner ruling). Each meeting snapshots it at creation, so
+                      changing it never rewrites whether a past meeting was quorate. */}
+                  <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 border p-3">
+                    <span className="text-sm text-slate-700">
+                      {b('Board quorum:', 'نصاب المجلس:')}{' '}
+                      <strong>{boardSettings?.quorum_required ?? b('not set', 'غير محدد')}</strong>
+                      {boardSettings?.quorum_required ? b(' members', ' أعضاء') : ''}
+                    </span>
+                    {canManageBoard && (
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="number" min={1}
+                          value={quorumDraft}
+                          onChange={(e) => setQuorumDraft(e.target.value)}
+                          className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm"
+                          aria-label={b('Quorum', 'النصاب')}
+                        />
+                        <Button size="sm" variant="outline" onClick={saveQuorum}>
+                          {b('Save', 'حفظ')}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          {b('Applies to meetings created from now on.', 'تُطبَّق على الاجتماعات الجديدة.')}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                   {meetingsLoading ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">{b('Loading…', 'جارٍ التحميل…')}</p>
                   ) : meetings.length === 0 ? (
