@@ -211,6 +211,139 @@ def update_directive_status(directive_id):
         logger.error(f"Error updating directive status: {str(e)}")
         return jsonify({'error': 'Failed to update directive status'}), 500
 
+@board_portal_bp.route('/recommendations/summary', methods=['GET'])
+@optional_auth
+def recommendations_summary():
+    """Implementation status of board recommendations (migration 052).
+
+    Counts by state, plus an overall completion percentage.
+
+    The overall figure is the plain average of the percentages people have
+    actually set — it is NOT inferred from statuses, dates or activity. Two
+    numbers are returned alongside it so the board can judge how much of the
+    portfolio the average speaks for: `assessed` (recommendations with a
+    percentage set) and `unassessed`. A completed recommendation with no
+    percentage recorded counts as 100 because its status is itself the
+    statement; anything else without a percentage is excluded from the
+    average rather than silently treated as zero.
+    """
+    try:
+        rows = execute_query("""
+            SELECT d.id, d.title, d.category, d.priority, d.status, d.owner_id, d.due_date,
+                   d.completion_percent, d.completion_note, d.completion_updated_at,
+                   COALESCE(u.full_name, u.email) AS owner_name
+            FROM board_directives d
+            LEFT JOIN users u ON u.id = d.owner_id
+            ORDER BY d.created_at DESC
+        """, fetch_all=True) or []
+
+        def norm(st):
+            # Legacy 'resolved' predates this feature; treat it as completed
+            # rather than rewriting historical records.
+            st = (st or 'open').lower()
+            return 'completed' if st in ('resolved', 'completed') else st
+
+        counts = {'completed': 0, 'in_progress': 0, 'outstanding': 0, 'deferred': 0, 'cancelled': 0}
+        contributing = []
+        items = []
+        for r in rows:
+            st = norm(r.get('status'))
+            pct = r.get('completion_percent')
+            if st == 'completed':
+                counts['completed'] += 1
+                contributing.append(100 if pct is None else pct)
+            elif st == 'in_progress':
+                counts['in_progress'] += 1
+                if pct is not None:
+                    contributing.append(pct)
+            elif st in ('deferred', 'cancelled'):
+                counts[st] += 1          # excluded from the average entirely
+            else:
+                counts['outstanding'] += 1
+                if pct is not None:
+                    contributing.append(pct)
+            items.append({
+                'id': str(r['id']), 'title': r.get('title'), 'category': r.get('category'),
+                'priority': r.get('priority'), 'status': st,
+                'owner_id': r.get('owner_id'), 'owner_name': r.get('owner_name'),
+                'due_date': r['due_date'].isoformat() if r.get('due_date') else None,
+                'completion_percent': pct,
+                'completion_note': r.get('completion_note'),
+                'completion_updated_at': r['completion_updated_at'].isoformat()
+                                          if r.get('completion_updated_at') else None,
+                'overdue': bool(r.get('due_date') and st not in ('completed', 'cancelled')
+                                and r['due_date'] < datetime.now().date()),
+            })
+
+        tracked = counts['completed'] + counts['in_progress'] + counts['outstanding']
+        overall = round(sum(contributing) / len(contributing)) if contributing else None
+        return jsonify({'success': True, 'data': {
+            'counts': counts,
+            'total_tracked': tracked,
+            'assessed': len(contributing),
+            'unassessed': max(0, tracked - len(contributing)),
+            # None — never 0 — when nothing has been assessed yet.
+            'overall_completion_percent': overall,
+            'basis': 'Average of completion percentages set by recommendation owners. '
+                     'Deferred and cancelled recommendations are excluded.',
+            'items': items,
+        }})
+    except Exception as e:
+        logger.error(f"recommendations summary failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load recommendations'}), 500
+
+
+@board_portal_bp.route('/directives/<directive_id>/tracking', methods=['PUT'])
+@optional_auth
+def update_directive_tracking(directive_id):
+    """Set owner, due date, status and completion percentage.
+
+    Every percentage change records who made it and when — a board-facing
+    figure must be attributable.
+    """
+    data = request.json or {}
+    allowed_status = {'open', 'in_progress', 'completed', 'deferred', 'cancelled'}
+    status = (data.get('status') or '').strip().lower() or None
+    if status and status not in allowed_status:
+        return jsonify({'success': False, 'message': f"Unknown status '{status}'"}), 400
+
+    pct = data.get('completion_percent', 'unset')
+    if pct not in ('unset', None):
+        try:
+            pct = int(pct)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'completion_percent must be a whole number'}), 400
+        if not 0 <= pct <= 100:
+            return jsonify({'success': False, 'message': 'completion_percent must be between 0 and 100'}), 400
+
+    try:
+        me = str(get_jwt_identity() or '')[:15]
+        sets, params = [], []
+        if status:
+            sets.append('status = %s'); params.append(status)
+        if 'owner_id' in data:
+            sets.append('owner_id = %s'); params.append((data.get('owner_id') or None) and str(data['owner_id'])[:15])
+        if 'due_date' in data:
+            sets.append('due_date = %s'); params.append(data.get('due_date') or None)
+        if pct != 'unset':
+            sets.extend(['completion_percent = %s', 'completion_updated_by = %s',
+                         'completion_updated_at = NOW()'])
+            params.extend([pct, me])
+        if 'completion_note' in data:
+            sets.append('completion_note = %s'); params.append(data.get('completion_note') or None)
+        if not sets:
+            return jsonify({'success': False, 'message': 'Nothing to update'}), 400
+        sets.append('updated_at = NOW()')
+        params.append(str(directive_id))
+        # NB this module's execute_query does not commit unless asked.
+        execute_query(f"UPDATE board_directives SET {', '.join(sets)} WHERE id::text = %s",
+                      tuple(params), commit=True)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"update directive tracking failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update the recommendation'}), 500
+
+
 @board_portal_bp.route('/briefing-pack', methods=['GET'])
 @optional_auth
 def get_briefing_pack():
