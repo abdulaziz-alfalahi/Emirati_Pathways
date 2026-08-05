@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,6 +75,55 @@ export default function BoardPortal() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // ── Board meetings (migration 050) ─────────────────────────────
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(false);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+
+  const fetchMeetings = async () => {
+    setMeetingsLoading(true);
+    try {
+      const res = await restClient.get('/api/board/meetings?scope=upcoming');
+      setMeetings(res.data?.data || []);
+    } catch {
+      setMeetings([]);
+    } finally {
+      setMeetingsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMeetings(); }, []);
+
+  const joinMeeting = async (m: any) => {
+    setJoiningId(m.id);
+    try {
+      const res = await restClient.post(`/api/board/meetings/${m.id}/join`);
+      const d = res.data?.data;
+      if (!res.data?.success || !d?.token) {
+        toast.error(res.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+        return;
+      }
+      // Hand off to the shared video room, same as interviews.
+      navigate(`/board-meeting/${m.id}`, { state: { token: d.token, url: d.livekit_url, title: d.meeting_title } });
+    } catch (e: any) {
+      // The API says WHY (too early, ended, not invited) — show that, not a generic error.
+      toast.error(e?.response?.data?.message || b('Could not join the meeting', 'تعذّر الانضمام إلى الاجتماع'));
+    } finally {
+      setJoiningId(null);
+    }
+  };
+
+  const rsvp = async (m: any, response: 'accepted' | 'declined') => {
+    try {
+      await restClient.post(`/api/board/meetings/${m.id}/rsvp`, { response });
+      toast.success(response === 'accepted' ? b('Attendance confirmed', 'تم تأكيد الحضور')
+                                            : b('Response recorded', 'تم تسجيل ردك'));
+      fetchMeetings();
+    } catch {
+      toast.error(b('Could not record your response', 'تعذّر تسجيل ردك'));
+    }
+  };
 
   const fetchDashboardData = async (isRetry = false) => {
     setLoading(true);
@@ -265,6 +315,7 @@ export default function BoardPortal() {
           {/* ─── Tabs ─── */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
             <TabsList className="grid w-full grid-cols-4 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+              <TabsTrigger value="meetings" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('meetings')}>{b('Meetings', 'الاجتماعات')}</TabsTrigger>
               <TabsTrigger value="scorecards" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('scorecards')}>{b('Scorecards', 'بطاقات الأداء')}</TabsTrigger>
               <TabsTrigger value="insights" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('insights')}>{b('AI Insights', 'رؤى الذكاء الاصطناعي')}</TabsTrigger>
               <TabsTrigger value="directives" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('directives')}>{b('Directives', 'التوجيهات')}</TabsTrigger>
@@ -274,6 +325,78 @@ export default function BoardPortal() {
             {/* ═══════════════════════════════════════════════════════
                               SCORECARDS TAB
                ═══════════════════════════════════════════════════════ */}
+            <TabsContent value="meetings" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>{b('Upcoming board meetings', 'اجتماعات المجلس القادمة')}</CardTitle>
+                  <CardDescription>
+                    {b('Join the meeting from here when it opens — 15 minutes before the scheduled start.',
+                       'انضم إلى الاجتماع من هنا عند فتحه — قبل 15 دقيقة من الموعد المحدد.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {meetingsLoading ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">{b('Loading…', 'جارٍ التحميل…')}</p>
+                  ) : meetings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      {b('No upcoming meetings scheduled.', 'لا توجد اجتماعات مجدولة.')}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {meetings.map((m: any) => {
+                        const when = m.scheduled_at ? new Date(m.scheduled_at) : null;
+                        const opensAt = when ? new Date(when.getTime() - 15 * 60000) : null;
+                        const canJoin = m.is_virtual && opensAt ? new Date() >= opensAt : false;
+                        return (
+                          <div key={m.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border p-4">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900">{isRTL && m.title_ar ? m.title_ar : m.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {when ? when.toLocaleString(isRTL ? 'ar-AE' : 'en-GB',
+                                  { dateStyle: 'full', timeStyle: 'short' }) : ''}
+                                {m.duration_minutes ? ` · ${m.duration_minutes} ${b('min', 'دقيقة')}` : ''}
+                              </p>
+                              {!m.is_virtual && m.location && (
+                                <p className="text-xs text-slate-500 mt-1">{b('In person:', 'حضورياً:')} {m.location}</p>
+                              )}
+                              {(isRTL ? m.agenda_ar : m.agenda) && (
+                                <p className="text-xs text-slate-600 mt-1 line-clamp-2">{isRTL ? m.agenda_ar : m.agenda}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {m.my_invite_status === 'invited' && (
+                                <>
+                                  <Button size="sm" variant="outline" onClick={() => rsvp(m, 'accepted')}>
+                                    {b('Accept', 'قبول')}
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => rsvp(m, 'declined')}>
+                                    {b('Decline', 'اعتذار')}
+                                  </Button>
+                                </>
+                              )}
+                              {m.is_virtual ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => joinMeeting(m)}
+                                  disabled={joiningId === m.id || !canJoin}
+                                  title={canJoin ? '' : b('Opens 15 minutes before the start', 'يفتح قبل 15 دقيقة من البدء')}
+                                  className="bg-emerald-700 hover:bg-emerald-800"
+                                >
+                                  {joiningId === m.id ? b('Joining…', 'جارٍ الانضمام…') : b('Join meeting', 'انضم للاجتماع')}
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">{b('In person', 'حضورياً')}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="scorecards" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
               {/* ─── Stat Cards ─── */}

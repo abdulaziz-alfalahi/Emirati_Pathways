@@ -715,6 +715,7 @@ _additional_blueprints = [
     ('backend.video_interview_routes', 'video_interview_bp', '/api/video-interview', 'Video Interview'),
     ('backend.recruiter.jd_routes_v2', 'jd_bp', None, 'Recruiter JD V2'),
     ('backend.routes.growth_routes', 'growth_bp', None, 'Growth Operator'),
+    ('backend.routes.board_meetings_routes', 'board_meetings_bp', None, 'Board Meetings'),
     ('backend.routes.maintenance_routes', 'maintenance_bp', None, 'Maintenance Status'),
     ('backend.routes.maintenance_routes', 'maintenance_admin_bp', None, 'Maintenance Admin'),
     ('backend.routes.staff_invitation_routes', 'staff_invitation_bp', None, 'Staff Invitations'),
