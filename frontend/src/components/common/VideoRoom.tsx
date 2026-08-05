@@ -27,6 +27,9 @@ interface VideoRoomProps {
     onEndCall: () => void;
     isRecruiter?: boolean;
     isObserver?: boolean;
+    /** Overrides the interview-specific placeholder shown for the other seat.
+     *  Board meetings and other non-interview rooms must pass this. */
+    remoteLabel?: { name: string; role: string };
     livekitUrl?: string;
     token?: string;
 }
@@ -38,6 +41,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     onEndCall, 
     isObserver = false,
     isRecruiter = false,
+    remoteLabel,
     livekitUrl,
     token
 }) => {
@@ -384,9 +388,10 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
         );
     }
 
-    // Determine roles and labels
-    const remoteRoleLabel = isRecruiter ? "Candidate" : "Interviewer / Recruiter";
-    const remoteName = isRecruiter ? "Emirati Candidate" : "HR Specialist";
+    // Determine roles and labels. The interview labels are wrong outside an
+    // interview — a board meeting showed the other seat as "HR Specialist".
+    const remoteRoleLabel = remoteLabel?.role ?? (isRecruiter ? "Candidate" : "Interviewer / Recruiter");
+    const remoteName = remoteLabel?.name ?? (isRecruiter ? "Emirati Candidate" : "HR Specialist");
 
     return (
         <div className="h-full w-full min-h-[550px] flex flex-col bg-slate-950 text-white rounded-xl overflow-hidden shadow-2xl relative border border-slate-850">
