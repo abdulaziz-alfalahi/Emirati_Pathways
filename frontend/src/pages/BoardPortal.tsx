@@ -81,6 +81,26 @@ export default function BoardPortal() {
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
+  // ── Recommendation implementation tracking (migration 052) ──────
+  const [recSummary, setRecSummary] = useState<any>(null);
+
+  const fetchRecommendations = async () => {
+    try {
+      const res = await restClient.get('/api/board/recommendations/summary');
+      setRecSummary(res.data?.data || null);
+    } catch { setRecSummary(null); }
+  };
+
+  const updateTracking = async (id: string, patch: any) => {
+    try {
+      const res = await restClient.put(`/api/board/directives/${id}/tracking`, patch);
+      if (!res.data?.success) { toast.error(res.data?.message || b('Could not save', 'تعذّر الحفظ')); return; }
+      fetchRecommendations();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'));
+    }
+  };
+
   const [boardSettings, setBoardSettings] = useState<any>(null);
   const [quorumDraft, setQuorumDraft] = useState('');
   const canManageBoard = (() => {
@@ -122,7 +142,7 @@ export default function BoardPortal() {
     }
   };
 
-  useEffect(() => { fetchMeetings(); fetchBoardSettings(); }, []);
+  useEffect(() => { fetchMeetings(); fetchBoardSettings(); fetchRecommendations(); }, []);
 
   const joinMeeting = async (m: any) => {
     setJoiningId(m.id);
@@ -586,6 +606,93 @@ export default function BoardPortal() {
                               DIRECTIVES TAB
                ═══════════════════════════════════════════════════════ */}
             <TabsContent value="directives" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Implementation status of board recommendations. Percentages are
+                  set by each recommendation's owner — the platform never infers
+                  them — and the overall figure states how much of the portfolio
+                  it actually covers. */}
+              {recSummary && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="text-base text-slate-800 font-dubai-bold">
+                      {b('Implementation of board recommendations', 'تنفيذ توصيات المجلس')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: b('Completed', 'مكتملة'), value: recSummary.counts?.completed ?? 0, cls: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                        { label: b('In progress', 'قيد التنفيذ'), value: recSummary.counts?.in_progress ?? 0, cls: 'text-blue-700 bg-blue-50 border-blue-100' },
+                        { label: b('Outstanding', 'لم تبدأ'), value: recSummary.counts?.outstanding ?? 0, cls: 'text-amber-700 bg-amber-50 border-amber-100' },
+                        { label: b('Overall completion', 'نسبة الإنجاز الإجمالية'),
+                          value: recSummary.overall_completion_percent == null ? b('Not set', 'غير محددة') : `${recSummary.overall_completion_percent}%`,
+                          cls: 'text-slate-800 bg-slate-50 border-slate-200' },
+                      ].map((k: any) => (
+                        <div key={k.label} className={`rounded-xl border p-4 text-center ${k.cls}`}>
+                          <p className="text-2xl font-dubai-bold">{k.value}</p>
+                          <p className="text-xs mt-1">{k.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {recSummary.overall_completion_percent == null
+                        ? b('No completion percentages have been recorded yet.', 'لم تُسجَّل أي نسب إنجاز بعد.')
+                        : `${b('Based on', 'بناءً على')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('recommendations with a percentage recorded by their owner.', 'توصية سجّل مالكها نسبة إنجازها.')}`}
+                    </p>
+
+                    <div className="space-y-2">
+                      {(recSummary.items || []).map((it: any) => (
+                        <div key={it.id} className="rounded-lg border p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-slate-900 truncate">{it.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {it.owner_name ? `${b('Owner:', 'المسؤول:')} ${it.owner_name}` : b('No owner assigned', 'لم يُحدَّد مسؤول')}
+                                {it.due_date ? ` · ${b('Due', 'الاستحقاق')} ${new Date(it.due_date).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB')}` : ''}
+                                {it.overdue ? ` · ${b('OVERDUE', 'متأخرة')}` : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <select
+                                value={it.status}
+                                onChange={(e) => updateTracking(it.id, { status: e.target.value })}
+                                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                              >
+                                <option value="open">{b('Outstanding', 'لم تبدأ')}</option>
+                                <option value="in_progress">{b('In progress', 'قيد التنفيذ')}</option>
+                                <option value="completed">{b('Completed', 'مكتملة')}</option>
+                                <option value="deferred">{b('Deferred', 'مؤجلة')}</option>
+                                <option value="cancelled">{b('Cancelled', 'ملغاة')}</option>
+                              </select>
+                              <input
+                                type="number" min={0} max={100}
+                                defaultValue={it.completion_percent ?? ''}
+                                placeholder="%"
+                                onBlur={(e) => {
+                                  const v = e.target.value;
+                                  if (v === '' || Number(v) === it.completion_percent) return;
+                                  updateTracking(it.id, { completion_percent: Number(v) });
+                                }}
+                                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+                                aria-label={b('Completion percent', 'نسبة الإنجاز')}
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+                            <div
+                              className="h-1.5 rounded-full bg-emerald-600"
+                              style={{ width: `${it.completion_percent ?? 0}%` }}
+                            />
+                          </div>
+                          {it.completion_percent == null && (
+                            <p className="text-[11px] text-slate-400 mt-1">{b('Progress not yet recorded', 'لم تُسجَّل نسبة الإنجاز')}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="md:col-span-2 space-y-4">
                   <h3 className="text-lg font-dubai-bold text-slate-800" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
