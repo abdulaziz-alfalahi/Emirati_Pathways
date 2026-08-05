@@ -1008,11 +1008,21 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         context: {
           title: jdData.basic_info.title,
           department: jdData.basic_info.department,
-          employment_type: jdData.basic_info.employment_type,
-          seniority: jdData.basic_info.experience_level,
-          company: jdData.basic_info.company,
+          // These read basic_info.employment_type/.experience_level/.company
+          // and jdData.skills, none of which exist on JDData — every one of
+          // them reached the AI as undefined, so the assistant was writing
+          // sections without the job type, seniority or employer it was told
+          // it had. Mapped to the real fields; the company comes from the
+          // signed-in user, since a JD has no company field of its own.
+          employment_type: jdData.basic_info.job_type,
+          seniority: jdData.basic_info.job_level,
+          company: user?.company_name,
           emirate: jdData.basic_info.emirate,
-          skills: (jdData.skills || []).map((s: any) => s?.name || s).filter(Boolean).slice(0, 15),
+          skills: (jdData.requirements || [])
+            .filter((r) => r.category === 'skills')
+            .map((r) => r.description)
+            .filter(Boolean)
+            .slice(0, 15),
         },
       });
       toast.dismiss(loadingId);
@@ -1036,7 +1046,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         const current = Array.isArray(jdData.requirements) ? jdData.requirements : [];
         const additions = lines
           .filter(l => !current.some((c: any) => (c.description || c)?.toString().toLowerCase().trim() === l.toLowerCase()))
-          .map(l => ({ category: 'general', description: l }));
+          .map(l => ({ category: 'general', description: l, is_required: true }));
         if (!additions.length) { toast('Nothing new to add', { icon: 'ℹ️' }); return; }
         setJDData(prev => ({ ...prev, requirements: [...current, ...additions] }));
       } else {

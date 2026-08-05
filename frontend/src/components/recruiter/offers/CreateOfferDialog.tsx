@@ -243,7 +243,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       case 0:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Autocomplete
                 options={candidates}
                 getOptionLabel={(option) =>
@@ -261,7 +261,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Position Title"
@@ -272,7 +272,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               />
             </Grid>
             {selectedCandidate && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Alert severity="info">
                   <Typography variant="body2">
                     <strong>Selected:</strong> {getDisplayName(selectedCandidate)}
@@ -295,7 +295,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       case 1:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Salary Amount"
@@ -312,7 +312,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Currency</InputLabel>
                 <Select
@@ -327,7 +327,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <FormControl fullWidth>
                 <InputLabel>Period</InputLabel>
                 <Select
@@ -340,7 +340,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Alert severity="info">
                 Total compensation package will be calculated including base salary and benefits.
               </Alert>
@@ -351,7 +351,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       case 2:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth required>
                 <InputLabel>Contract Type</InputLabel>
                 <Select
@@ -366,7 +366,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Start Date"
@@ -379,7 +379,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 helperText="Select the proposed start date"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Probation Period (months)"
@@ -389,7 +389,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 helperText="Standard probation period"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Work Schedule</InputLabel>
                 <Select
@@ -435,12 +435,12 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       case 4:
         return (
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom>
                 Standard Benefits
               </Typography>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Annual Leave Days"
@@ -449,7 +449,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 onChange={(e) => setAnnualLeave(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Flight Tickets per Year"
@@ -458,7 +458,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 onChange={(e) => setFlightTickets(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Housing Allowance (AED)"
@@ -467,7 +467,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 onChange={(e) => setHousingAllowance(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Transportation Allowance (AED)"
@@ -476,7 +476,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 onChange={(e) => setTransportAllowance(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControl fullWidth>
                 <InputLabel>Health Insurance</InputLabel>
                 <Select
@@ -489,7 +489,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Autocomplete
                 multiple
                 freeSolo
@@ -558,7 +558,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 )}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <TextField
                   size="small"

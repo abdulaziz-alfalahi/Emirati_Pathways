@@ -300,7 +300,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
           <Grid container spacing={3}>
             {/* Candidate Information */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
                 <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                   CANDIDATE INFORMATION
@@ -317,7 +317,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             </Grid>
 
             {/* Status */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Box display="flex" alignItems="center" gap={2}>
                 <Typography variant="subtitle2" color="textSecondary">
                   Status:
@@ -329,26 +329,26 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               </Box>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Divider />
             </Grid>
 
             {/* Position & Compensation */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 <AttachMoneyIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                 Position & Compensation
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" color="textSecondary">
                 Position Title
               </Typography>
               <Typography variant="body1">{currentOffer.position_title}</Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               {editMode ? (
                 <TextField
                   fullWidth
@@ -373,26 +373,26 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               )}
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Divider />
             </Grid>
 
             {/* Contract Details */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 <CalendarIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                 Contract Details
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" color="textSecondary">
                 Contract Type
               </Typography>
               <Typography variant="body1">{currentOffer.contract_type}</Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               {editMode ? (
                 <TextField
                   fullWidth
@@ -413,7 +413,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               )}
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="body2" color="textSecondary">
                 Probation Period
               </Typography>
@@ -421,7 +421,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             </Grid>
 
             {currentOffer.work_location && (
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="body2" color="textSecondary">
                   Work Location
                 </Typography>
@@ -430,7 +430,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             )}
 
             {currentOffer.work_schedule && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <Typography variant="body2" color="textSecondary">
                   Work Schedule
                 </Typography>
@@ -438,12 +438,12 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               </Grid>
             )}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Divider />
             </Grid>
 
             {/* Benefits */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 <CardGiftcardIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                 Benefits & Perks
@@ -451,7 +451,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             </Grid>
 
             {currentOffer.benefits && (
-              <Grid item xs={12}>
+              <Grid size={12}>
                 <List dense>
                   {currentOffer.benefits.annual_leave_days && (
                     <ListItem>
@@ -508,16 +508,16 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             {/* Timeline */}
             {(currentOffer.sent_at || currentOffer.approved_at || currentOffer.candidate_response_at) && (
               <>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Divider />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                     Timeline
                   </Typography>
                 </Grid>
                 {currentOffer.approved_at && (
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="textSecondary">
                       Approved At
                     </Typography>
@@ -525,7 +525,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   </Grid>
                 )}
                 {currentOffer.sent_at && (
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="textSecondary">
                       Sent At
                     </Typography>
@@ -533,7 +533,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   </Grid>
                 )}
                 {currentOffer.response_deadline && (
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="textSecondary">
                       Response Deadline
                     </Typography>
@@ -541,7 +541,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   </Grid>
                 )}
                 {currentOffer.candidate_response && (
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="body2" color="textSecondary">
                       Candidate Response
                     </Typography>

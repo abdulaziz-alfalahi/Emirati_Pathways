@@ -12,7 +12,7 @@ import { Eye, Users, MapPin, Building, Calendar, Briefcase, Plus, ArrowLeft } fr
 import { restClient } from '@/utils/api';
 
 const ActiveVacancies: React.FC = () => {
-  const { user, roles, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   // Show loading state while checking authentication
@@ -35,10 +35,24 @@ const ActiveVacancies: React.FC = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if the user has the recruiter role (or is using mock auth)
-  const isRecruiter = isMockToken ||
-    (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
-    (user?.email && user.email.includes('recruit'));
+  // Check if the user has the recruiter role (or is using mock auth).
+  //
+  // `roles` was destructured from useAuth(), which does not expose it — it was
+  // always undefined, so this collapsed to the email check below it: anyone
+  // whose address merely contained "recruit" passed, and an actual recruiter
+  // whose role sat in secondary_roles did not. Both are gone. Roles are read
+  // from every field the backend populates, mirroring resolve_roles() server
+  // side, which is the rule for role checks in this codebase.
+  const userRoles = [
+    user?.role,
+    user?.user_type,
+    ...(user?.roles || []),
+    ...(user?.secondary_roles || []),
+  ]
+    .filter(Boolean)
+    .map((r) => String(r).toLowerCase());
+
+  const isRecruiter = isMockToken || userRoles.includes('recruiter');
 
   // Redirect to dashboard if not a recruiter
   if (!isRecruiter) {

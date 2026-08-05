@@ -336,13 +336,51 @@ export interface ProgramFilters {
   programType?: string[];
 }
 
+/**
+ * Parameters accepted by schoolProgramsAPIService.getPrograms.
+ *
+ * This previously declared a nested { query, filters } shape with a different
+ * sortBy union, which no caller and no service ever used — the service reads a
+ * flat shape and sorts by title/school/category/date/popularity. It is written
+ * here to match what the code actually does; changing the service to the old
+ * shape instead would have broken the two live callers, which pass
+ * `{ status: 'published' }` and `{}`.
+ */
 export interface SearchParams {
-  query?: string;
-  filters?: ProgramFilters;
-  sortBy?: 'relevance' | 'name' | 'date' | 'rating' | 'fees';
+  search?: string;
+  /** 'all' is accepted and means "no category filter". */
+  category?: ProgramCategory | 'all';
+  status?: SchoolProgram['status'] | 'all';
+  featured?: boolean;
+  ageRange?: { min: number; max: number };
+  sortBy?: 'title' | 'school' | 'category' | 'date' | 'popularity';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+}
+
+/** A selectable category returned by schoolProgramsAPIService.getCategories(). */
+export interface ProgramCategoryOption {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  description_en: string;
+  description_ar: string;
+}
+
+/**
+ * Aggregate counts for the school-programs admin dashboard.
+ *
+ * Distinct from ProgramAnalytics below, which describes ONE program. The
+ * service returns these aggregates, so it was never assignable to
+ * ProgramAnalytics.
+ */
+export interface ProgramsDashboardStats {
+  totalPrograms: number;
+  publishedPrograms: number;
+  draftPrograms: number;
+  underReviewPrograms: number;
+  categoryDistribution: Record<string, number>;
 }
 
 // Analytics and Performance
@@ -377,8 +415,11 @@ export interface ProgramsResponse {
   total: number;
   page: number;
   limit: number;
-  hasMore: boolean;
-  filters: ProgramFilters;
+  // The service returns these; it never returned the previously declared
+  // `hasMore`/`filters`. Both live consumers read only `.programs`.
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface ProgramSubmissionResponse {

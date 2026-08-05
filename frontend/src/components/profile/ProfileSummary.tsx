@@ -10,33 +10,7 @@ import {
   CardDescription
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { UserRole } from '@/context/AuthContext';
-
-const roleLabels: Record<UserRole, string> = {
-  school_student: 'School Student',
-  national_service_participant: 'National Service Participant',
-  university_student: 'University Student',
-  intern: 'Internship Trainee',
-  full_time_employee: 'Full-Time Employee',
-  part_time_employee: 'Part-Time Employee',
-  gig_worker: 'Gig Worker',
-  jobseeker: 'Jobseeker',
-  lifelong_learner: 'Lifelong Learner',
-  entrepreneur: 'Entrepreneur',
-  retiree: 'Retiree',
-  educational_institution: 'Educational Institution',
-  parent: 'Parent',
-  private_sector_recruiter: 'Private Sector Recruiter',
-  government_representative: 'Government Representative',
-  retiree_advocate: 'Retiree Advocate',
-  training_center: 'Training Center',
-  assessment_center: 'Assessment Center',
-  mentor: 'Mentor',
-  career_advisor: 'Career Advisor',
-  platform_operator: 'Platform Operator',
-  administrator: 'Administrator',
-  super_user: 'Super User'
-};
+import { getRoleDisplayName } from '@/types/auth';
 
 interface ProfileSummaryProps {
   refreshCounter?: number;
@@ -46,6 +20,8 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
   const { user } = useAuth();
   const roles = user?.roles || user?.user_metadata?.roles || [];
   const [profilePhotoUrl, setProfilePhotoUrl] = React.useState<string | null>(null);
+  const [profileBio, setProfileBio] = React.useState<string>('');
+  const [profileContact, setProfileContact] = React.useState<string>('');
   const [uploading, setUploading] = React.useState(false);
 
   React.useEffect(() => {
@@ -60,8 +36,16 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.success && data.data.profile_photo_url) {
-        setProfilePhotoUrl(data.data.profile_photo_url);
+      if (data.success && data.data) {
+        if (data.data.profile_photo_url) {
+          setProfilePhotoUrl(data.data.profile_photo_url);
+        }
+        // GET /api/auth/profile returns professional_summary and contact
+        // details; it has never returned `bio` or `contact`, which is why
+        // reading those off user_metadata always showed the placeholder.
+        setProfileBio(data.data.professional_summary || '');
+        const contact = data.data.contact_info || data.data;
+        setProfileContact([contact.email, contact.phone].filter(Boolean).join(' · '));
       }
     } catch (err) {
       console.error("Failed to fetch profile", err);
@@ -114,13 +98,12 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
     return fullName.substring(0, 2).toUpperCase();
   };
 
-  const getBio = () => {
-    return (user?.user_metadata?.bio as string) || 'No bio provided';
-  };
+  // bio/contact live on the candidate profile record, not on the auth user's
+  // metadata — reading them off user_metadata always yielded the placeholder.
+  const getBio = () => profileBio || 'No bio provided';
 
-  const getContact = () => {
-    return (user?.user_metadata?.contact as string) || 'No contact information provided';
-  };
+  const getContact = () =>
+    profileContact || 'No contact information provided';
 
   return (
     <Card>
@@ -169,7 +152,7 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
                   key={role}
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emirati-teal/10 text-emirati-teal"
                 >
-                  {roleLabels[role]}
+                  {getRoleDisplayName(role)}
                 </span>
               ))}
             </div>

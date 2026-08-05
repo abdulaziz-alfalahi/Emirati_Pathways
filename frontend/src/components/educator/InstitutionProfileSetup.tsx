@@ -270,14 +270,14 @@ const InstitutionProfileSetup: React.FC<InstitutionProfileSetupProps> = ({
     setProfile(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof InstitutionProfile],
+        ...(prev[parent as keyof InstitutionProfile] as Record<string, unknown>),
         [field]: value
       }
     }));
   };
 
   const addToArray = (field: string, value: string) => {
-    if (value.trim() && !profile[field as keyof InstitutionProfile]?.includes(value.trim())) {
+    if (value.trim() && !(profile[field as keyof InstitutionProfile] as string[] | undefined)?.includes(value.trim())) {
       setProfile(prev => ({
         ...prev,
         [field]: [...(prev[field as keyof InstitutionProfile] as string[]), value.trim()]

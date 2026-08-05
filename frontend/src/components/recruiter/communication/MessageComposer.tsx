@@ -170,7 +170,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       <Grid container spacing={3}>
         {/* Recipients */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -198,7 +198,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         </Grid>
 
         {/* Message Form */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent>
               <Box sx={{ mb: 3 }}>
@@ -222,7 +222,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                     </Typography>
                     <Grid container spacing={1}>
                       {templates.map((template) => (
-                        <Grid item xs={12} sm={6} key={template.name}>
+                        <Grid size={{ xs: 12, sm: 6 }} key={template.name}>
                           <Button
                             fullWidth
                             variant="outlined"

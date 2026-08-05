@@ -30,7 +30,7 @@ describe('apiClient', () => {
 
     // Run the request interceptor by calling apiClient.interceptors.request handlers
     // We can test the interceptor indirectly by inspecting a request config
-    const config = await apiClient.interceptors.request.handlers[0].fulfilled({
+    const config = await (apiClient.interceptors.request as any).handlers[0].fulfilled({
       headers: {} as any,
     } as any);
 
@@ -40,7 +40,7 @@ describe('apiClient', () => {
   test('request interceptor does NOT attach Authorization header when no token', async () => {
     vi.mocked(getAuthToken).mockReturnValue(null);
 
-    const config = await apiClient.interceptors.request.handlers[0].fulfilled({
+    const config = await (apiClient.interceptors.request as any).handlers[0].fulfilled({
       headers: {} as any,
     } as any);
 
@@ -50,7 +50,7 @@ describe('apiClient', () => {
   test('response interceptor passes through successful responses', async () => {
     const mockResponse = { data: { success: true }, status: 200 };
 
-    const result = await apiClient.interceptors.response.handlers[0].fulfilled(
+    const result = await (apiClient.interceptors.response as any).handlers[0].fulfilled(
       mockResponse as any
     );
 
@@ -64,7 +64,7 @@ describe('apiClient', () => {
     };
 
     await expect(
-      apiClient.interceptors.response.handlers[0].rejected(mockError)
+      (apiClient.interceptors.response as any).handlers[0].rejected(mockError)
     ).rejects.toBe(mockError);
   });
 });

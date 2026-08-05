@@ -127,7 +127,7 @@ describe('CVUploadComponent', () => {
 
     await waitFor(() => {
       expect(onUploadSuccess).toHaveBeenCalledTimes(1);
-      expect(textarea.value).toBe(''); // Textarea should be cleared on success
+      expect((textarea as HTMLTextAreaElement).value).toBe(''); // Textarea should be cleared on success
     });
   });
 

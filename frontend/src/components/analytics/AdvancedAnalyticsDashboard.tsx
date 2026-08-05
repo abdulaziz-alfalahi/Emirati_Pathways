@@ -564,10 +564,8 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart cx="50%" cy="50%" innerRadius="10%" outerRadius="80%" data={dashboardData.emiratization_progress?.progress_towards_targets?.slice(0, 6) || []}>
                       <RadialBar
-                        minAngle={15}
                         label={{ position: 'insideStart', fill: '#fff' }}
                         background
-                        clockWise
                         dataKey="progress_percentage"
                       />
                       <Legend iconSize={18} layout="vertical" verticalAlign="middle" wrapperStyle={{ paddingLeft: '20px' }} />

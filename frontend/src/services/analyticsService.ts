@@ -19,6 +19,27 @@ interface AnalyticsEvent {
 class AnalyticsService {
   private sessionId: string;
 
+  /**
+   * Current user id, or null when signed out.
+   *
+   * The Supabase call this replaces (`supabase.auth.getUser()`) was commented
+   * out by the Flask migration, but the lines using its `user` result were left
+   * behind. Every tracking call therefore threw a ReferenceError on `user.user`
+   * and was swallowed by the surrounding catch — analytics recorded nothing at
+   * all. Reads the same localStorage 'user' record AuthContext writes.
+   */
+  private getCurrentUserId(): string | null {
+    try {
+      const raw = localStorage.getItem('user');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const id = parsed?.id ?? parsed?.user_id;
+      return id != null ? String(id) : null;
+    } catch {
+      return null;
+    }
+  }
+
   constructor() {
     // Generate a session ID for this browser session
     this.sessionId = this.generateSessionId();
@@ -30,11 +51,11 @@ class AnalyticsService {
 
   async trackRoleSwitch(fromRole: UserRole | null, toRole: UserRole): Promise<void> {
     try {
-      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
+      const userId = this.getCurrentUserId();
+      if (!userId) return;
 
       const event: RoleSwitchEvent = {
-        user_id: user.user.id,
+        user_id: userId,
         from_role: fromRole,
         to_role: toRole,
         timestamp: new Date().toISOString(),
@@ -54,12 +75,10 @@ class AnalyticsService {
 
   async trackEvent(eventType: string, eventData: Record<string, any>): Promise<void> {
     try {
-      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
-      
       const analyticsEvent: AnalyticsEvent = {
         event_type: eventType,
         event_data: eventData,
-        user_id: user.user?.id,
+        user_id: this.getCurrentUserId() ?? undefined,
         timestamp: new Date().toISOString(),
         session_id: this.sessionId
       };

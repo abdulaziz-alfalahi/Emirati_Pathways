@@ -143,7 +143,7 @@ const UserMenu: React.FC = () => {
   const currentRole = getUserRole() || 'candidate';
 
   return (
-    <DropdownMenu>
+    <DropdownMenu dir={isRTL ? 'rtl' : 'ltr'}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10 border-2 border-ehrdc-teal">
@@ -153,7 +153,7 @@ const UserMenu: React.FC = () => {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-64" dir={isRTL ? 'rtl' : 'ltr'}>
+      <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-64">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">

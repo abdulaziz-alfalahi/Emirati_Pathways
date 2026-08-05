@@ -457,15 +457,15 @@ export const IdentityModule = () => {
                         className="flex items-center justify-center gap-2 bg-background border border-border hover:bg-muted text-foreground px-6 py-3 rounded-full font-medium shadow-sm hover:shadow-md transition-all self-start md:self-auto"
                     >
                         <Video size={20} className="text-purple-600" />
-                        <span>{profile?.video_intro_url ? t('Re-record Video', 'إعادة تسجيل الفيديو') : t('Record Video', 'تسجيل فيديو')}</span>
+                        <span>{profile?.media?.video_intro ? t('Re-record Video', 'إعادة تسجيل الفيديو') : t('Record Video', 'تسجيل فيديو')}</span>
                     </button>
                 </div>
 
-                {profile?.video_intro_url && (
+                {profile?.media?.video_intro && (
                     <div className="mt-6 max-w-md bg-muted p-4 rounded-xl border border-border">
                         <h4 className="text-sm font-semibold mb-3 text-foreground">{t('Your Current Video Pitch', 'فيديو تعريفي الحالي')}</h4>
                         <video 
-                            src={profile.video_intro_url} 
+                            src={profile.media.video_intro} 
                             controls 
                             className="w-full aspect-video rounded-lg shadow-sm border border-border bg-black"
                         />

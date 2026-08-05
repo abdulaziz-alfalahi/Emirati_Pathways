@@ -7,7 +7,9 @@ import {
   SearchParams,
   ProgramsResponse,
   ProgramAnalytics,
-  ProgramCategory
+  ProgramCategory,
+  ProgramCategoryOption,
+  ProgramsDashboardStats
 } from '../types/schoolPrograms';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : '/api');
@@ -115,7 +117,7 @@ class SchoolProgramsAPIService {
   }
 
   // Get program categories
-  async getCategories(): Promise<ProgramCategory[]> {
+  async getCategories(): Promise<ProgramCategoryOption[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/school-programs/categories`);
 
@@ -138,7 +140,7 @@ class SchoolProgramsAPIService {
   }
 
   // Get program analytics
-  async getAnalytics(): Promise<ProgramAnalytics> {
+  async getAnalytics(): Promise<ProgramsDashboardStats> {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`);
 
@@ -148,44 +150,37 @@ class SchoolProgramsAPIService {
 
       const stats = await response.json();
 
-      // Transform API response to match ProgramAnalytics interface
+      // Only the counts the API actually provides. averageSatisfaction (4.5)
+      // and monthlyGrowth (12.5) used to be returned here as hardcoded
+      // constants with no data behind them; nothing rendered them, and
+      // inventing platform metrics is exactly what we do not do.
       return {
         totalPrograms: stats.totalPrograms,
         publishedPrograms: stats.publishedPrograms,
         draftPrograms: stats.totalPrograms - stats.publishedPrograms - stats.pendingReviews,
         underReviewPrograms: stats.pendingReviews,
-        categoryDistribution: {}, // Would need additional API endpoint
-        averageSatisfaction: 4.5, // Would need additional calculation
-        totalEnrollments: 0, // Would need additional API endpoint
-        monthlyGrowth: 12.5 // Would need additional calculation
+        categoryDistribution: {}, // needs a dedicated API endpoint
       };
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      // Return default analytics
+      // Return zeroed counts on failure
       return {
         totalPrograms: 0,
         publishedPrograms: 0,
         draftPrograms: 0,
         underReviewPrograms: 0,
         categoryDistribution: {},
-        averageSatisfaction: 0,
-        totalEnrollments: 0,
-        monthlyGrowth: 0
       };
     }
   }
 
-  // Search programs with advanced filters
-  async searchPrograms(filters: ProgramFilters): Promise<SchoolProgram[]> {
-    const params: SearchParams = {
-      search: filters.query,
-      category: filters.category,
-      status: 'published',
-      ageRange: filters.ageRange,
-      sortBy: filters.sortBy
-    };
-
-    const response = await this.getPrograms(params);
+  // Search published programs with advanced filters.
+  // Previously took ProgramFilters and read .query/.sortBy off it, neither of
+  // which exists on that type, and passed its ProgramCategory[] where a single
+  // category is expected. It takes SearchParams directly — the shape its body
+  // was building anyway. No caller was affected; nothing calls this yet.
+  async searchPrograms(params: SearchParams): Promise<SchoolProgram[]> {
+    const response = await this.getPrograms({ status: 'published', ...params });
     return response.programs;
   }
 
@@ -201,7 +196,7 @@ class SchoolProgramsAPIService {
   }
 
   // Get programs by category
-  async getProgramsByCategory(category: string, limit: number = 10): Promise<SchoolProgram[]> {
+  async getProgramsByCategory(category: ProgramCategory, limit: number = 10): Promise<SchoolProgram[]> {
     const response = await this.getPrograms({
       category,
       status: 'published',

@@ -315,7 +315,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
             Add Negotiation Entry
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Proposed Salary"
@@ -332,7 +332,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               {proposedSalary && (
                 <Alert severity="info">
                   {(() => {
@@ -348,7 +348,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                 </Alert>
               )}
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Housing Allowance"
@@ -358,7 +358,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                 helperText="Optional benefit adjustment"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Transportation Allowance"
@@ -368,7 +368,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                 helperText="Optional benefit adjustment"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Notes"
