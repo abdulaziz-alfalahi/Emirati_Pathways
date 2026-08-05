@@ -635,8 +635,8 @@ export default function BoardPortal() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {recSummary.overall_completion_percent == null
-                        ? b('No completion percentages have been recorded yet.', 'لم تُسجَّل أي نسب إنجاز بعد.')
-                        : `${b('Based on', 'بناءً على')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('recommendations with a percentage recorded by their owner.', 'توصية سجّل مالكها نسبة إنجازها.')}`}
+                        ? b('No recommendations are being tracked yet.', 'لا توجد توصيات قيد المتابعة بعد.')
+                        : `${b('Completed counts as 100%, outstanding as 0%; in-progress uses the percentage its owner recorded.', 'المكتملة تُحتسب 100%، وغير المبدوءة 0%، وقيد التنفيذ حسب النسبة التي سجّلها مالكها.')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('have a percentage recorded.', 'منها سُجِّلت لها نسبة.')}`}
                     </p>
 
                     <div className="space-y-2">

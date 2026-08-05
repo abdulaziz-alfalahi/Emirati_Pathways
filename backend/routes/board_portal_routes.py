@@ -260,8 +260,13 @@ def recommendations_summary():
                 counts[st] += 1          # excluded from the average entirely
             else:
                 counts['outstanding'] += 1
-                if pct is not None:
-                    contributing.append(pct)
+                # An OUTSTANDING recommendation counts as 0 even without an
+                # explicit percentage: 'outstanding' means work has not
+                # started, and that status was itself set by a person, so this
+                # is reading their statement rather than inferring one.
+                # Excluding them instead produced a 100% headline sitting next
+                # to '3 outstanding' — which reads as "all done".
+                contributing.append(0 if pct is None else pct)
             items.append({
                 'id': str(r['id']), 'title': r.get('title'), 'category': r.get('category'),
                 'priority': r.get('priority'), 'status': st,
@@ -276,16 +281,23 @@ def recommendations_summary():
             })
 
         tracked = counts['completed'] + counts['in_progress'] + counts['outstanding']
+        # 'assessed' counts recommendations whose owner recorded a percentage
+        # explicitly — the figure the board should weigh the average against.
+        explicit = sum(1 for r in rows
+                       if r.get('completion_percent') is not None
+                       and norm(r.get('status')) not in ('deferred', 'cancelled'))
         overall = round(sum(contributing) / len(contributing)) if contributing else None
         return jsonify({'success': True, 'data': {
             'counts': counts,
             'total_tracked': tracked,
-            'assessed': len(contributing),
-            'unassessed': max(0, tracked - len(contributing)),
+            'assessed': explicit,
+            'unassessed': max(0, tracked - explicit),
             # None — never 0 — when nothing has been assessed yet.
             'overall_completion_percent': overall,
-            'basis': 'Average of completion percentages set by recommendation owners. '
-                     'Deferred and cancelled recommendations are excluded.',
+            'basis': 'Average across tracked recommendations. Completed counts as 100%, '
+                     'outstanding as 0%, and in-progress uses the percentage its owner '
+                     'recorded (excluded if none has been recorded). Deferred and '
+                     'cancelled recommendations are excluded.',
             'items': items,
         }})
     except Exception as e:
