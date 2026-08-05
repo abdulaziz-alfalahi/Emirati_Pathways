@@ -27,8 +27,14 @@ jobs:
       - name: Install dependencies
         run: cd frontend && npm ci
 
+      # `npx tsc --noEmit` resolves frontend/tsconfig.json, which is a
+      # solution-style config ("files": [], project references only) — it checks
+      # ZERO files and always passed, which is how a merged PR white-screened
+      # /executive (#295). `npm run typecheck` points at tsconfig.app.json, the
+      # config that actually covers src/. The tree is clean as of #299, so this
+      # gate starts green.
       - name: TypeScript type check
-        run: cd frontend && npx tsc --noEmit
+        run: cd frontend && npm run typecheck
 
       - name: Build production bundle
         run: cd frontend && npm run build
