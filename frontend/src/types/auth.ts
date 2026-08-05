@@ -83,6 +83,7 @@ export type UserRole =
   | 'platform_operator'
   | 'compliance_auditor'
   | 'board_member'
+  | 'board_operator'
   | 'professional_dev_operator'
   | 'career_services_operator'
   | 'advisor'
@@ -109,6 +110,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'platform_operator': 'Platform Operations Officer',
   'compliance_auditor': 'Compliance Auditor',
   'board_member': 'EHDC Board Member',
+  'board_operator': 'Board Secretary',
   'professional_dev_operator': 'Professional Development Operator',
   'career_services_operator': 'Career Services Operator',
   'advisor': 'Academic Advisor',
@@ -136,6 +138,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'platform_operator': '/operations-center',
   'compliance_auditor': '/demographics',
   'board_member': '/executive',
+  'board_operator': '/board-portal',
   'professional_dev_operator': '/professional-dev-dashboard',
   'career_services_operator': '/career-services-dashboard',
   'advisor': '/advisor-dashboard',

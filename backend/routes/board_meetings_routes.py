@@ -123,6 +123,13 @@ def create_meeting():
     slug = re.sub(r'[^a-zA-Z0-9]+', '-', title).strip('-')[:40] or 'board'
     room_name = f"board-{slug}-{uuid.uuid4().hex[:8]}".lower()
 
+    # Quorum is a FIXED board-wide rule (owner ruling 2026-08-05), not a
+    # per-meeting choice. Snapshot it onto the meeting so that changing the
+    # board rule later never rewrites whether a past meeting was quorate.
+    _settings = execute_query("SELECT quorum_required FROM board_settings WHERE id = 1",
+                              fetch_one=True) or {}
+    quorum = _settings.get('quorum_required')
+
     try:
         row = execute_query("""
             INSERT INTO board_meetings
@@ -133,7 +140,7 @@ def create_meeting():
         """, (title, data.get('title_ar'), data.get('agenda'), data.get('agenda_ar'),
               when, int(data.get('duration_minutes') or 60), data.get('location'),
               bool(data.get('is_virtual', True)), room_name,
-              data.get('quorum_required'), str(get_jwt_identity())[:15]), fetch_one=True)
+              quorum, str(get_jwt_identity())[:15]), fetch_one=True)
         meeting_id = row['id']
 
         # Invitees: explicit list, or every board member by default.
@@ -298,3 +305,51 @@ def end_meeting(meeting_id):
     except Exception as e:
         logger.error(f"end board meeting failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to end meeting'}), 500
+
+
+@board_meetings_bp.route('/settings', methods=['GET'])
+@require_roles(*BOARD_ROLES)
+def get_board_settings():
+    """The board-wide quorum rule. Readable by the board; only organisers set it."""
+    row = execute_query("SELECT quorum_required, quorum_basis, updated_at FROM board_settings WHERE id = 1",
+                        fetch_one=True) or {}
+    return jsonify({'success': True, 'data': {
+        'quorum_required': row.get('quorum_required'),
+        'quorum_basis': row.get('quorum_basis'),
+        'updated_at': row['updated_at'].isoformat() if row.get('updated_at') else None,
+    }})
+
+
+@board_meetings_bp.route('/settings', methods=['PUT'])
+@require_roles(*ORGANISER_ROLES)
+def set_board_settings():
+    """Set the board-wide quorum. Applies to meetings created from now on —
+    existing meetings keep the rule they were created under."""
+    data = request.get_json() or {}
+    raw = data.get('quorum_required')
+    quorum = None
+    if raw not in (None, ''):
+        try:
+            quorum = int(raw)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'quorum_required must be a whole number'}), 400
+        if quorum < 1:
+            return jsonify({'success': False, 'message': 'Quorum must be at least 1'}), 400
+        seats = (execute_query("""
+            SELECT COUNT(*) AS n FROM users
+            WHERE role = 'board_member' OR secondary_roles::text ILIKE '%%board_member%%'
+        """, fetch_one=True) or {}).get('n') or 0
+        if seats and quorum > seats:
+            return jsonify({'success': False,
+                            'message': f'Quorum ({quorum}) cannot exceed the {seats} board members on the platform.'}), 400
+    try:
+        execute_query("""
+            UPDATE board_settings
+            SET quorum_required = %s, quorum_basis = %s, updated_by = %s, updated_at = NOW()
+            WHERE id = 1
+        """, (quorum, (data.get('quorum_basis') or '').strip() or None,
+              str(get_jwt_identity())[:15]), fetch_all=False)
+        return jsonify({'success': True, 'data': {'quorum_required': quorum}})
+    except Exception as e:
+        logger.error(f"set board settings failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save the quorum rule'}), 500
