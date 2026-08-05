@@ -24,6 +24,92 @@ interface AnalysisData {
 }
 
 // ─── AI Analysis Sidebar (Web Speech API + AI) ────────────────
+
+/**
+ * Structured interview questions generated from the job description, so the
+ * interviewer works from the JD instead of improvising (owner request, and
+ * feedback fb_1785828628 "Interview Questions should appear here to evaluate
+ * the candidate"). Recruiter-side only — the candidate never sees these.
+ */
+const InterviewQuestionsPanel: React.FC<{ sessionId: string }> = ({ sessionId }) => {
+    const [questions, setQuestions] = useState<string[]>([]);
+    const [asked, setAsked] = useState<Record<number, boolean>>({});
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const generate = useCallback(async () => {
+        setLoading(true); setError(null);
+        try {
+            // Pull the interview's job context, then ask the AI service for
+            // questions grounded in it.
+            let ctx: any = { title: 'this role' };
+            try {
+                const sess = await restClient.get(`/api/video-interview/sessions/${sessionId}`);
+                const d = sess.data?.data || sess.data?.session || {};
+                ctx = {
+                    title: d.job_title || d.title || 'this role',
+                    department: d.department,
+                    seniority: d.experience_level || d.seniority,
+                    employment_type: d.employment_type,
+                    skills: d.required_skills || d.skills,
+                    responsibilities: d.responsibilities,
+                    requirements: d.requirements,
+                };
+            } catch { /* fall back to the title alone */ }
+
+            const res = await restClient.post('/api/ai/assist', {
+                feature: 'interview_questions', language: 'en', context: ctx,
+            });
+            const text: string = res.data?.text || '';
+            const parsed = text.split('\n').map(l => l.replace(/^[-•*\d.\s]+/, '').trim()).filter(Boolean);
+            if (!res.data?.success || parsed.length === 0) {
+                setError('Question generation is unavailable right now.');
+            } else {
+                setQuestions(parsed);
+            }
+        } catch {
+            setError('Question generation is unavailable right now.');
+        } finally {
+            setLoading(false);
+        }
+    }, [sessionId]);
+
+    return (
+        <Card className="mb-4">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between">
+                    <span>Interview Questions</span>
+                    <Button size="sm" variant="outline" onClick={generate} disabled={loading}>
+                        {loading ? 'Generating…' : questions.length ? 'Regenerate' : 'Generate from JD'}
+                    </Button>
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+                {error && <p className="text-xs text-amber-700">{error}</p>}
+                {!error && questions.length === 0 && !loading && (
+                    <p className="text-xs text-slate-500">
+                        Generate a structured set of questions based on this job description.
+                    </p>
+                )}
+                <ol className="space-y-2">
+                    {questions.map((q, i) => (
+                        <li key={i} className="flex gap-2 items-start">
+                            <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={!!asked[i]}
+                                onChange={() => setAsked(a => ({ ...a, [i]: !a[i] }))}
+                                aria-label="Mark as asked"
+                            />
+                            <span className={asked[i] ? 'line-through text-slate-400' : ''}>{q}</span>
+                        </li>
+                    ))}
+                </ol>
+            </CardContent>
+        </Card>
+    );
+};
+
 const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
     const [history, setHistory] = useState<{ time: string; score: number }[]>([]);
@@ -531,7 +617,9 @@ const VideoInterviewPage = () => {
                 </div>
 
                 {/* AI Analysis Sidebar - takes 1/4 of the space */}
-                <div className="lg:col-span-1 lg:ps-4 mt-4 lg:mt-0">
+                <div className="lg:col-span-1 lg:ps-4 mt-4 lg:mt-0 overflow-y-auto">
+                    {/* Interviewer-only: the candidate does not see these. */}
+                    {user?.role === 'recruiter' && <InterviewQuestionsPanel sessionId={sessionId} />}
                     <AIAnalysisSidebar sessionId={sessionId} />
                 </div>
             </div>
