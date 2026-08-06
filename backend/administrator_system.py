@@ -688,8 +688,24 @@ class AdministratorSystem:
                 [r for r in existing_secondary if r]
             ))  # dict.fromkeys preserves order and deduplicates
             
-            # The first role in the requested list becomes primary
-            primary_role = roles[0] if roles else original_role or 'candidate'
+            # Preserve the existing primary role when it is still selected.
+            #
+            # This used to be `roles[0]` — the first CHECKED BOX in the admin
+            # dialog — so ticking one extra role silently rewrote users.role,
+            # which is the authoritative role field. Because the checkbox list is
+            # rendered in the API's order (Administrator first), granting any
+            # role to a user who also had Administrator ticked promoted their
+            # primary role to admin. Observed live: adding board_operator to an
+            # account flipped its role from 'candidate' to 'admin'.
+            #
+            # The dialog has no notion of a primary role, so a save must not
+            # change one. Fall back to the first requested role only when the
+            # current primary is being removed.
+            _selected = {r.strip().lower() for r in roles}
+            if original_role and str(original_role).strip().lower() in _selected:
+                primary_role = original_role
+            else:
+                primary_role = roles[0] if roles else original_role or 'candidate'
             
             # Keep user_type in sync with role (P3/C5). user_type is the legacy
             # mirror of role (migration 006); leaving it stale here re-created
