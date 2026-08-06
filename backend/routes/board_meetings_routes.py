@@ -290,6 +290,115 @@ def rsvp(meeting_id):
         return jsonify({'success': False, 'message': 'Failed to record your response'}), 500
 
 
+@board_meetings_bp.route('/<meeting_id>', methods=['PUT'])
+@require_roles(*ORGANISER_ROLES)
+def update_meeting(meeting_id):
+    """Edit or reschedule a scheduled meeting.
+
+    Only fields present in the body change, so the secretary can reschedule
+    without restating the agenda. A completed or cancelled meeting is a closed
+    record and is refused — governance history is not rewritten.
+    """
+    data = request.get_json() or {}
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if meeting.get('status') in ('completed', 'cancelled'):
+        return jsonify({'success': False,
+                        'message': 'This meeting is closed and can no longer be edited.'}), 409
+
+    sets, params, rescheduled_to = [], [], None
+    if 'title' in data:
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'success': False, 'message': 'Title cannot be empty'}), 400
+        sets.append('title = %s'); params.append(title)
+    for field in ('title_ar', 'agenda', 'agenda_ar', 'location'):
+        if field in data:
+            sets.append(f'{field} = %s'); params.append(data.get(field))
+    if 'is_virtual' in data:
+        sets.append('is_virtual = %s'); params.append(bool(data.get('is_virtual')))
+    if 'duration_minutes' in data:
+        try:
+            sets.append('duration_minutes = %s'); params.append(int(data['duration_minutes']))
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'duration_minutes must be a number'}), 400
+    if data.get('scheduled_at'):
+        try:
+            when = datetime.fromisoformat(str(data['scheduled_at']).replace('Z', '+00:00'))
+        except ValueError:
+            return jsonify({'success': False, 'message': 'scheduled_at must be an ISO datetime'}), 400
+        now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+        if when < now - timedelta(minutes=5):
+            return jsonify({'success': False,
+                            'message': 'That date and time have already passed. Choose a future slot.'}), 400
+        if meeting.get('scheduled_at') and when != meeting['scheduled_at']:
+            rescheduled_to = when
+        sets.append('scheduled_at = %s'); params.append(when)
+
+    if not sets:
+        return jsonify({'success': False, 'message': 'Nothing to update'}), 400
+
+    try:
+        params.append(str(meeting_id))
+        row = execute_query(f"""
+            UPDATE board_meetings SET {', '.join(sets)}, updated_at = NOW()
+            WHERE id::text = %s RETURNING *
+        """, tuple(params), fetch_one=True)
+
+        # Only a moved meeting warrants interrupting the board again; editing an
+        # agenda typo should not fire a notification to every member.
+        if rescheduled_to is not None:
+            invitees = [r['user_id'] for r in (execute_query(
+                "SELECT user_id FROM board_meeting_attendees WHERE meeting_id::text = %s",
+                (str(meeting_id),)) or [])]
+            _notify_invitees(meeting_id, f"Rescheduled: {row.get('title')}",
+                             rescheduled_to, invitees)
+        return jsonify({'success': True, 'data': _row(row)})
+    except Exception as e:
+        logger.error(f"update board meeting failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update meeting'}), 500
+
+
+@board_meetings_bp.route('/<meeting_id>/cancel', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def cancel_meeting(meeting_id):
+    """Cancel a scheduled meeting and tell everyone who was invited.
+
+    The row is kept, not deleted: a cancelled board meeting is itself part of
+    the record, and /join already refuses a cancelled meeting with a 410.
+    """
+    data = request.get_json() or {}
+    reason = (data.get('reason') or '').strip()
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if meeting.get('status') == 'completed':
+        return jsonify({'success': False,
+                        'message': 'This meeting has already been held and cannot be cancelled.'}), 409
+    if meeting.get('status') == 'cancelled':
+        return jsonify({'success': True, 'data': _row(meeting)})
+
+    try:
+        row = execute_query("""
+            UPDATE board_meetings SET status = 'cancelled', updated_at = NOW()
+            WHERE id::text = %s RETURNING *
+        """, (str(meeting_id),), fetch_one=True)
+        invitees = [r['user_id'] for r in (execute_query(
+            "SELECT user_id FROM board_meeting_attendees WHERE meeting_id::text = %s",
+            (str(meeting_id),)) or [])]
+        title = row.get('title')
+        _notify_invitees(meeting_id,
+                         f"Cancelled: {title}" + (f" — {reason}" if reason else ''),
+                         row.get('scheduled_at'), invitees)
+        return jsonify({'success': True, 'data': _row(row)})
+    except Exception as e:
+        logger.error(f"cancel board meeting failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to cancel meeting'}), 500
+
+
 @board_meetings_bp.route('/<meeting_id>/end', methods=['POST'])
 @require_roles(*ORGANISER_ROLES)
 def end_meeting(meeting_id):

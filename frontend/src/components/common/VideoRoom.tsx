@@ -53,7 +53,6 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
 
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(true);
-    const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [simulatedSignal, setSimulatedSignal] = useState(5); // 5 bars
 
     // Detection logic for Mock/Simulation mode
@@ -530,19 +529,20 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
 
                 {/* Center controls: Screen Share & AI info */}
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => {
-                            setIsScreenSharing(!isScreenSharing);
-                            toast.success(isScreenSharing ? "Stopped screen sharing" : "Simulating screen sharing...");
-                        }}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
-                            isScreenSharing 
-                                ? 'bg-sky-500/20 border-sky-500 text-sky-400 hover:bg-sky-500/30' 
-                                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750'
-                        }`}
+                    {/* This control used to flip a label and toast "Simulating
+                        screen sharing..." while sharing nothing — a presenter
+                        would believe the room could see their screen. Real
+                        sharing exists only on the LiveKit path, whose built-in
+                        conference UI provides it; this is the backup direct
+                        connection, which carries camera and microphone only.
+                        Say so rather than pretend. */}
+                    <button
+                        disabled
+                        title="Screen sharing is unavailable on the backup direct connection. It works when the call runs over the meeting server."
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold bg-slate-800/60 border-slate-700 text-slate-500 cursor-not-allowed"
                     >
                         <Monitor className="h-4 w-4" />
-                        <span>{isScreenSharing ? "Sharing" : "Share Screen"}</span>
+                        <span>Share Screen unavailable</span>
                     </button>
                     
                     <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/20 text-xs text-teal-400 font-medium">

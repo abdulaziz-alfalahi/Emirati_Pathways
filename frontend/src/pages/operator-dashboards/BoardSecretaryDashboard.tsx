@@ -44,6 +44,7 @@ const BoardSecretaryDashboard: React.FC = () => {
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: '', title_ar: '', agenda: '', scheduled_at: '',
@@ -67,6 +68,52 @@ const BoardSecretaryDashboard: React.FC = () => {
     }
   };
 
+  // datetime-local needs 'YYYY-MM-DDTHH:mm' in LOCAL time; an ISO string from
+  // the API is UTC, so slicing it directly would shift the displayed time.
+  const toLocalInput = (iso: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const startEdit = (m: any) => {
+    setEditingId(m.id);
+    setForm({
+      title: m.title || '',
+      title_ar: m.title_ar || '',
+      agenda: m.agenda || '',
+      scheduled_at: toLocalInput(m.scheduled_at),
+      duration_minutes: m.duration_minutes || 60,
+      is_virtual: m.is_virtual !== false,
+      location: m.location || '',
+    });
+    setShowForm(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({ title: '', title_ar: '', agenda: '', scheduled_at: '', duration_minutes: 60, is_virtual: true, location: '' });
+  };
+
+  const cancelMeeting = async (m: any) => {
+    const reason = window.prompt(
+      b('Cancelling notifies everyone invited. Reason (optional):',
+        'سيتم إشعار جميع المدعوين بالإلغاء. السبب (اختياري):') || '') ;
+    if (reason === null) return; // dismissed the prompt
+    try {
+      const res = await restClient.post(`/api/board/meetings/${m.id}/cancel`, { reason });
+      if (!res.data?.success) {
+        toast({ title: res.data?.message || b('Could not cancel', 'تعذّر الإلغاء'), variant: 'destructive' });
+        return;
+      }
+      toast({ title: b('Meeting cancelled — everyone invited has been notified', 'تم إلغاء الاجتماع وإشعار جميع المدعوين') });
+      fetchMeetings();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not cancel', 'تعذّر الإلغاء'), variant: 'destructive' });
+    }
+  };
+
   const createMeeting = async () => {
     if (!form.title.trim()) {
       toast({ title: b('A title is required', 'العنوان مطلوب'), variant: 'destructive' });
@@ -80,18 +127,25 @@ const BoardSecretaryDashboard: React.FC = () => {
     try {
       // datetime-local yields local wall time with no zone; send it as-is and
       // let the server parse it as an ISO datetime.
-      const res = await restClient.post('/api/board/meetings', {
+      const payload = {
         ...form,
         duration_minutes: Number(form.duration_minutes) || 60,
         scheduled_at: form.scheduled_at,
-      });
+      };
+      const res = editingId
+        ? await restClient.put(`/api/board/meetings/${editingId}`, payload)
+        : await restClient.post('/api/board/meetings', payload);
       if (!res.data?.success) {
-        toast({ title: res.data?.message || b('Could not schedule the meeting', 'تعذّر جدولة الاجتماع'), variant: 'destructive' });
+        toast({ title: res.data?.message || b('Could not save the meeting', 'تعذّر حفظ الاجتماع'), variant: 'destructive' });
         return;
       }
-      toast({ title: b('Meeting scheduled — board members have been notified', 'تمت جدولة الاجتماع وتم إشعار أعضاء المجلس') });
+      toast({
+        title: editingId
+          ? b('Meeting updated — members are notified only if the date changed', 'تم تحديث الاجتماع — يتم إشعار الأعضاء فقط عند تغيير الموعد')
+          : b('Meeting scheduled — board members have been notified', 'تمت جدولة الاجتماع وتم إشعار أعضاء المجلس'),
+      });
       setShowForm(false);
-      setForm({ title: '', title_ar: '', agenda: '', scheduled_at: '', duration_minutes: 60, is_virtual: true, location: '' });
+      resetForm();
       fetchMeetings();
     } catch (e: any) {
       toast({
@@ -274,7 +328,11 @@ const BoardSecretaryDashboard: React.FC = () => {
                        'جدولة اجتماع تُشعر جميع أعضاء المجلس.')}
                   </CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setShowForm((v) => !v)} className="gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => { if (showForm) { setShowForm(false); resetForm(); } else { resetForm(); setShowForm(true); } }}
+                  className="gap-2 shrink-0"
+                >
                   <Plus className="h-4 w-4" />
                   {b('Schedule meeting', 'جدولة اجتماع')}
                 </Button>
@@ -282,6 +340,12 @@ const BoardSecretaryDashboard: React.FC = () => {
               <CardContent className="space-y-4">
                 {showForm && (
                   <div className="rounded-lg border bg-white p-4 space-y-4">
+                    <p className="text-sm font-medium text-gray-900">
+                      {editingId
+                        ? b('Edit meeting — members are notified only if you change the date or time',
+                            'تعديل الاجتماع — يتم إشعار الأعضاء فقط عند تغيير التاريخ أو الوقت')
+                        : b('New meeting', 'اجتماع جديد')}
+                    </p>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
                         <Label htmlFor="bm-title">{b('Title', 'العنوان')}</Label>
@@ -352,9 +416,9 @@ const BoardSecretaryDashboard: React.FC = () => {
                     <div className="flex gap-2">
                       <Button onClick={createMeeting} disabled={saving} className="gap-2">
                         {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {b('Schedule', 'جدولة')}
+                        {editingId ? b('Save changes', 'حفظ التغييرات') : b('Schedule', 'جدولة')}
                       </Button>
-                      <Button variant="ghost" onClick={() => setShowForm(false)}>
+                      <Button variant="ghost" onClick={() => { setShowForm(false); resetForm(); }}>
                         {b('Cancel', 'إلغاء')}
                       </Button>
                     </div>
@@ -405,6 +469,17 @@ const BoardSecretaryDashboard: React.FC = () => {
                               {b('Close meeting', 'إنهاء الاجتماع')}
                             </Button>
                           )}
+                          <Button size="sm" variant="ghost" onClick={() => startEdit(m)}>
+                            {b('Edit', 'تعديل')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => cancelMeeting(m)}
+                          >
+                            {b('Cancel meeting', 'إلغاء الاجتماع')}
+                          </Button>
                         </div>
                       </div>
                     ))}
