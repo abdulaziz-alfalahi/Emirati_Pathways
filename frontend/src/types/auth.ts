@@ -141,7 +141,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'platform_operator': '/operations-center',
   'compliance_auditor': '/demographics',
   'board_member': '/executive',
-  'board_operator': '/board-portal',
+  'board_operator': '/board-secretary',
   'professional_dev_operator': '/professional-dev-dashboard',
   'career_services_operator': '/career-services-dashboard',
   'advisor': '/advisor-dashboard',

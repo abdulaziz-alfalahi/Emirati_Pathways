@@ -48,7 +48,18 @@ const BoardMeetingRoom: React.FC = () => {
     })();
   }, [meetingId, token, title]);
 
-  const leave = () => navigate('/board-portal?tab=meetings');
+  // /board-portal is a redirect to the board member dashboard, so it sent the
+  // secretary to the wrong place on leaving. Return each role to the workspace
+  // it joined from.
+  const leave = () => {
+    const roles = [
+      (user as any)?.role,
+      ...(((user as any)?.secondary_roles) || []),
+    ]
+      .filter(Boolean)
+      .map((r: string) => String(r).toLowerCase());
+    navigate(roles.includes('board_operator') ? '/board-secretary' : '/executive?tab=meetings');
+  };
 
   if (loading) {
     return (

@@ -146,6 +146,7 @@ const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboard
 const OperationsWallDisplay = lazy(() => import('@/pages/operator-dashboards/OperationsWallDisplay'));
 const DemographicsAnalytics = lazy(() => import('@/pages/operator-dashboards/DemographicsAnalytics'));
 const ExecutiveDashboard = lazy(() => import('@/pages/operator-dashboards/ExecutiveDashboard'));
+const BoardSecretaryDashboard = lazy(() => import('@/pages/operator-dashboards/BoardSecretaryDashboard'));
 const ServiceCatalog = lazy(() => import('@/pages/operator-dashboards/ServiceCatalog'));
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
@@ -975,6 +976,14 @@ const AppContent: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['board_member', 'admin', 'admin', 'platform_operator', 'compliance_auditor', 'platform_operator']}>
                     <ExecutiveDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/board-secretary"
+                element={
+                  <ProtectedRoute allowedRoles={['board_operator', 'admin', 'platform_operator']}>
+                    <BoardSecretaryDashboard />
                   </ProtectedRoute>
                 }
               />

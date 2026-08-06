@@ -180,7 +180,7 @@ def _notify_invitees(meeting_id, title, when, invitees):
                     user_id=str(uid), notification_type='board_meeting_scheduled',
                     title='Board meeting scheduled',
                     message=f"{title} — {when.strftime('%d %b %Y, %H:%M')}",
-                    metadata={'meeting_id': str(meeting_id), 'link': '/board-portal?tab=meetings'})
+                    metadata={'meeting_id': str(meeting_id), 'link': '/executive?tab=meetings'})
             except Exception as _e:
                 logger.warning(f"board meeting notification failed for {uid}: {_e}")
     except Exception as e:  # pragma: no cover
