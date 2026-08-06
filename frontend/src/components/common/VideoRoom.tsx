@@ -68,6 +68,32 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     // Live connection state — read inside the fallback timeout, which would
     // otherwise close over a stale value.
     const [isConnected, setIsConnected] = useState(false);
+    // Which inputs this machine actually has. LiveKitRoom is told to publish
+    // video/audio on connect; when the device is missing or permission is
+    // denied it aborts the whole connection ("Client initiated disconnect")
+    // and we drop to the degraded direct call, where screen sharing does not
+    // exist. A board member on a desktop with no webcam would therefore lose
+    // the ability to SEE a presentation, which is the opposite of what they
+    // need. null = still probing.
+    const [inputs, setInputs] = useState<{ cam: boolean; mic: boolean } | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const probe = async () => {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                if (cancelled) return;
+                setInputs({
+                    cam: devices.some(d => d.kind === 'videoinput'),
+                    mic: devices.some(d => d.kind === 'audioinput'),
+                });
+            } catch {
+                if (!cancelled) setInputs({ cam: false, mic: false });
+            }
+        };
+        probe();
+        return () => { cancelled = true; };
+    }, []);
     const isConnectedRef = useRef(false);
     isConnectedRef.current = isConnected;
 
@@ -340,6 +366,17 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     }, []);
 
     // If we have a valid, secure connection and shouldn't mock, use LiveKitRoom
+    // Wait for the device probe before mounting LiveKitRoom: flipping
+    // video/audio props mid-handshake would tear the connection down and land
+    // us back on the degraded path we are trying to avoid.
+    if (!shouldMock && livekitUrl && token && inputs === null) {
+        return (
+            <div className="h-full w-full min-h-[500px] flex items-center justify-center bg-slate-950 text-slate-300 rounded-xl">
+                <span className="text-sm">Preparing your camera and microphone…</span>
+            </div>
+        );
+    }
+
     if (!shouldMock && livekitUrl && token) {
         return (
             <div className="h-full w-full min-h-[500px] flex flex-col relative">
@@ -360,8 +397,8 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     serverUrl={livekitUrl}
                     token={token}
                     connect={true}
-                    video={!isObserver}
-                    audio={!isObserver}
+                    video={!isObserver && !!inputs?.cam}
+                    audio={!isObserver && !!inputs?.mic}
                     onConnected={() => {
                         console.log("LiveKit connected.");
                         setIsConnected(true);
