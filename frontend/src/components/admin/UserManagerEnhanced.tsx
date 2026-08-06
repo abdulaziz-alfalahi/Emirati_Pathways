@@ -161,6 +161,8 @@ interface ValidationErrors {
   password?: string;
   full_name?: string;
   roles?: string;
+  /** Server-side rejection (e.g. a role the platform refuses to grant). */
+  general?: string;
 }
 
 /**
@@ -750,6 +752,7 @@ const UserManagerEnhanced: React.FC = () => {
   const handleUpdateUser = async () => {
     if (!selectedUser || !validateForm()) return;
 
+    setValidationErrors({});
     try {
       await restClient.put(`/api/admin/users/${selectedUser.id}`, {
         username: formData.username,
@@ -766,8 +769,10 @@ const UserManagerEnhanced: React.FC = () => {
       fetchUsers();
     } catch (err: any) {
       console.error('Failed to update user:', err);
+      // Was written to `email`, which mislabelled role errors as email errors —
+      // and the edit dialog rendered neither.
       setValidationErrors({
-        email: err.response?.data?.message || 'Failed to update user'
+        general: err.response?.data?.message || 'Failed to update user'
       });
     }
   };
@@ -1737,6 +1742,19 @@ const UserManagerEnhanced: React.FC = () => {
             </div>
 
             <div className="px-6 py-4 space-y-4">
+              {/* Save failures used to be written into validationErrors and then
+                  never rendered anywhere in this dialog, so a rejected save was
+                  indistinguishable from a dead button. */}
+              {Object.keys(validationErrors).length > 0 && (
+                <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-medium text-red-800">Could not save this user</p>
+                  <ul className="mt-1 list-disc list-inside text-sm text-red-700">
+                    {Object.entries(validationErrors).map(([field, message]) => (
+                      <li key={field}>{message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {/* Same form fields as create, but without password requirement */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
