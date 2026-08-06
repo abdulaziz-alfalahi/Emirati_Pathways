@@ -272,18 +272,8 @@ const ExecutiveDashboard: React.FC = () => {
     } catch { setRecSummary(null); }
   };
 
-  const updateTracking = async (id: string, patch: any) => {
-    try {
-      const res = await restClient.put(`/api/board/directives/${id}/tracking`, patch);
-      if (!res.data?.success) { toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' }); return; }
-      fetchRecommendations();
-    } catch (e: any) {
-      toast({ title: e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
-    }
-  };
 
   const [boardSettings, setBoardSettings] = useState<any>(null);
-  const [quorumDraft, setQuorumDraft] = useState('');
   const canManageBoard = (() => {
     const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
       .filter(Boolean).map((r: string) => String(r).toLowerCase());
@@ -294,22 +284,9 @@ const ExecutiveDashboard: React.FC = () => {
     try {
       const res = await restClient.get('/api/board/meetings/settings');
       setBoardSettings(res.data?.data || null);
-      setQuorumDraft(String(res.data?.data?.quorum_required ?? ''));
     } catch { setBoardSettings(null); }
   };
 
-  const saveQuorum = async () => {
-    try {
-      const res = await restClient.put('/api/board/meetings/settings', {
-        quorum_required: quorumDraft === '' ? null : Number(quorumDraft),
-      });
-      if (!res.data?.success) { toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' }); return; }
-      toast({ title: b('Quorum saved', 'تم حفظ النصاب') });
-      fetchBoardSettings();
-    } catch (e: any) {
-      toast({ title: e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
-    }
-  };
 
   const fetchMeetings = async () => {
     setMeetingsLoading(true);
@@ -847,22 +824,13 @@ const ExecutiveDashboard: React.FC = () => {
                       <strong>{boardSettings?.quorum_required ?? b('not set', 'غير محدد')}</strong>
                       {boardSettings?.quorum_required ? b(' members', ' أعضاء') : ''}
                     </span>
+                    {/* Setting the quorum is the secretary's job, not a member's.
+                        Point them at the workspace that owns it rather than
+                        offering a second place to write the same rule. */}
                     {canManageBoard && (
-                      <span className="flex items-center gap-2">
-                        <input
-                          type="number" min={1}
-                          value={quorumDraft}
-                          onChange={(e) => setQuorumDraft(e.target.value)}
-                          className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm"
-                          aria-label={b('Quorum', 'النصاب')}
-                        />
-                        <Button size="sm" variant="outline" onClick={saveQuorum}>
-                          {b('Save', 'حفظ')}
-                        </Button>
-                        <span className="text-xs text-muted-foreground">
-                          {b('Applies to meetings created from now on.', 'تُطبَّق على الاجتماعات الجديدة.')}
-                        </span>
-                      </span>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/board-secretary')}>
+                        {b('Manage in Board Secretariat', 'الإدارة في أمانة المجلس')}
+                      </Button>
                     )}
                   </div>
                   {meetingsLoading ? (
@@ -974,29 +942,23 @@ const ExecutiveDashboard: React.FC = () => {
                               </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <select
-                                value={it.status}
-                                onChange={(e) => updateTracking(it.id, { status: e.target.value })}
-                                className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                              >
-                                <option value="open">{b('Outstanding', 'لم تبدأ')}</option>
-                                <option value="in_progress">{b('In progress', 'قيد التنفيذ')}</option>
-                                <option value="completed">{b('Completed', 'مكتملة')}</option>
-                                <option value="deferred">{b('Deferred', 'مؤجلة')}</option>
-                                <option value="cancelled">{b('Cancelled', 'ملغاة')}</option>
-                              </select>
-                              <input
-                                type="number" min={0} max={100}
-                                defaultValue={it.completion_percent ?? ''}
-                                placeholder="%"
-                                onBlur={(e) => {
-                                  const v = e.target.value;
-                                  if (v === '' || Number(v) === it.completion_percent) return;
-                                  updateTracking(it.id, { completion_percent: Number(v) });
-                                }}
-                                className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
-                                aria-label={b('Completion percent', 'نسبة الإنجاز')}
-                              />
+                              <span className="rounded-full border px-2.5 py-0.5 text-xs text-slate-700 bg-slate-50">
+                                {({
+                                  open: b('Outstanding', 'لم تبدأ'),
+                                  outstanding: b('Outstanding', 'لم تبدأ'),
+                                  in_progress: b('In progress', 'قيد التنفيذ'),
+                                  completed: b('Completed', 'مكتملة'),
+                                  resolved: b('Completed', 'مكتملة'),
+                                  deferred: b('Deferred', 'مؤجلة'),
+                                  cancelled: b('Cancelled', 'ملغاة'),
+                                } as Record<string, string>)[String(it.status || 'open').toLowerCase()]
+                                  || it.status}
+                              </span>
+                              <span className="text-xs text-muted-foreground w-16 text-end">
+                                {it.completion_percent == null
+                                  ? b('not set', 'غير محددة')
+                                  : `${it.completion_percent}%`}
+                              </span>
                             </div>
                           </div>
                           <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
