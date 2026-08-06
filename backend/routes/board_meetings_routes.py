@@ -13,9 +13,13 @@ Access model:
   - Joining is refused to anyone not on the invitee list, so a board meeting
     room cannot be entered by a non-attendee who guesses the meeting id.
 """
+import json
 import logging
 import os
 import re
+import time
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime, timedelta
 
@@ -429,6 +433,163 @@ def end_meeting(meeting_id):
     except Exception as e:
         logger.error(f"end board meeting failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to end meeting'}), 500
+
+
+# ── Live room control (LiveKit server API) ──────────────────────────────
+# Spoken to over its Twirp HTTP API rather than the async python SDK: this
+# process runs under gevent, and mixing an asyncio client into a gevent worker
+# is a known source of hangs. Plain HTTP keeps it boring.
+LIVEKIT_HTTP = (os.getenv('LIVEKIT_HTTP_URL')
+                or (os.getenv('LIVEKIT_URL', '') or '')
+                .replace('wss://', 'https://').replace('ws://', 'http://')
+                or 'http://livekit-server:7880')
+
+
+def _room_admin_token(room_name):
+    """Short-lived token granting admin over exactly one room."""
+    import jwt as _jwt
+    key, secret = os.getenv('LIVEKIT_API_KEY'), os.getenv('LIVEKIT_API_SECRET')
+    if not key or not secret:
+        raise RuntimeError('LiveKit API credentials are not configured')
+    now = int(time.time())
+    return _jwt.encode(
+        {'iss': key, 'sub': 'board-control', 'nbf': now, 'exp': now + 120,
+         'video': {'room': room_name, 'roomAdmin': True}},
+        secret, algorithm='HS256')
+
+
+def _livekit_call(method, room_name, payload):
+    """POST to livekit.RoomService/<method>. Returns the decoded JSON body."""
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        f"{LIVEKIT_HTTP.rstrip('/')}/twirp/livekit.RoomService/{method}",
+        data=body, method='POST',
+        headers={'Content-Type': 'application/json',
+                 'Authorization': f'Bearer {_room_admin_token(room_name)}'})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        raw = resp.read().decode() or '{}'
+    return json.loads(raw)
+
+
+@board_meetings_bp.route('/<meeting_id>/participants', methods=['GET'])
+@require_roles(*ORGANISER_ROLES)
+def list_participants(meeting_id):
+    """Who is in the room right now, joined to the invitation record.
+
+    Live state comes from LiveKit; names come from users, because a LiveKit
+    identity is an Emirates ID and no secretary should have to read one.
+    """
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    try:
+        data = _livekit_call('ListParticipants', meeting['room_name'],
+                             {'room': meeting['room_name']})
+    except urllib.error.HTTPError as e:
+        # A room with nobody in it does not exist yet as far as LiveKit is
+        # concerned; that is an empty list, not an error to show the secretary.
+        if e.code in (404, 500):
+            return jsonify({'success': True, 'data': []})
+        logger.error(f"livekit list participants failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not read the room'}), 502
+    except Exception as e:
+        logger.error(f"livekit list participants failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not read the room'}), 502
+
+    live = data.get('participants') or []
+    ids = [p.get('identity') for p in live if p.get('identity')]
+    names = {}
+    if ids:
+        rows = execute_query(
+            "SELECT id, full_name, email FROM users WHERE id = ANY(%s)", (ids,)) or []
+        names = {str(r['id']): (r.get('full_name') or r.get('email')) for r in rows}
+
+    invited = {str(r['user_id']): r['invite_status'] for r in (execute_query(
+        "SELECT user_id, invite_status FROM board_meeting_attendees WHERE meeting_id::text = %s",
+        (str(meeting_id),)) or [])}
+
+    out = []
+    for p in live:
+        identity = str(p.get('identity') or '')
+        tracks = p.get('tracks') or []
+        out.append({
+            'identity': identity,
+            'name': names.get(identity) or p.get('name') or identity,
+            'joined_at': p.get('joinedAt'),
+            'is_invited': identity in invited,
+            'invite_status': invited.get(identity),
+            'mic_muted': all(t.get('muted', True) for t in tracks
+                             if t.get('source') == 'MICROPHONE') if tracks else None,
+            'sharing_screen': any(t.get('source') == 'SCREEN_SHARE' and not t.get('muted')
+                                  for t in tracks),
+        })
+    out.sort(key=lambda x: (not x['is_invited'], x['name'].lower()))
+    return jsonify({'success': True, 'data': out})
+
+
+@board_meetings_bp.route('/<meeting_id>/participants/remove', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def remove_participant(meeting_id):
+    """Remove someone from the live room.
+
+    They are disconnected but NOT struck from the attendance record: they were
+    in the meeting, and the register has to keep saying so.
+    """
+    identity = (request.get_json() or {}).get('identity')
+    if not identity:
+        return jsonify({'success': False, 'message': 'identity is required'}), 400
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if str(identity) == str(get_jwt_identity()):
+        return jsonify({'success': False,
+                        'message': 'You cannot remove yourself — use Leave.'}), 400
+    try:
+        _livekit_call('RemoveParticipant', meeting['room_name'],
+                      {'room': meeting['room_name'], 'identity': str(identity)})
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"livekit remove participant failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not remove that participant'}), 502
+
+
+@board_meetings_bp.route('/<meeting_id>/participants/mute', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def mute_participant(meeting_id):
+    """Mute a participant's microphone.
+
+    Only muting is offered. LiveKit cannot force a microphone back ON, and it
+    should not be able to: un-muting someone remotely would let a chair open a
+    live mic in a board member's room without their knowledge.
+    """
+    data = request.get_json() or {}
+    identity = data.get('identity')
+    if not identity:
+        return jsonify({'success': False, 'message': 'identity is required'}), 400
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    try:
+        info = _livekit_call('ListParticipants', meeting['room_name'],
+                             {'room': meeting['room_name']})
+        target = next((p for p in (info.get('participants') or [])
+                       if str(p.get('identity')) == str(identity)), None)
+        if not target:
+            return jsonify({'success': False, 'message': 'That participant is no longer in the room'}), 404
+        mics = [t for t in (target.get('tracks') or []) if t.get('source') == 'MICROPHONE']
+        if not mics:
+            return jsonify({'success': False, 'message': 'That participant has no microphone published'}), 400
+        for t in mics:
+            _livekit_call('MutePublishedTrack', meeting['room_name'],
+                          {'room': meeting['room_name'], 'identity': str(identity),
+                           'track_sid': t.get('sid'), 'muted': True})
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"livekit mute participant failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not mute that participant'}), 502
 
 
 @board_meetings_bp.route('/settings', methods=['GET'])
