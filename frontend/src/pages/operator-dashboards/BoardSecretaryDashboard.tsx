@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { restClient } from '@/utils/api';
 import {
   CalendarDays, Video, Users, Gavel, Loader2, Archive, Plus, Clock, MapPin,
@@ -31,7 +32,7 @@ const BoardSecretaryDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const b = (en: string, ar: string) => (isRTL ? ar : en);
 
@@ -231,8 +232,11 @@ const BoardSecretaryDashboard: React.FC = () => {
   }, {});
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className={`min-h-screen bg-[#FAFBFC] font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
+
+      {/* pt-20 clears the fixed header, matching the other dashboards. */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">
