@@ -373,6 +373,13 @@ def update_user(user_id: int):
             'data': user,
             'message': 'User updated successfully'
         })
+    # A rejected role change is a validation failure, not a server fault. It was
+    # being swallowed by the generic handler below and returned as a bare 500
+    # with "Failed to update user", so the admin was told nothing about WHY —
+    # the actual reason existed only in the container log.
+    except ValueError as e:
+        logger.warning(f"Rejected user update for {user_id}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:
         logger.error(f"Failed to update user: {str(e)}")
         return jsonify({
@@ -405,6 +412,9 @@ def update_user_roles(user_id):
                 'status': 'error',
                 'message': 'Failed to update user roles'
             }), 500
+    except ValueError as e:
+        logger.warning(f"Rejected role update for {user_id}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 400
     except Exception as e:
         logger.error(f"Failed to update user roles: {str(e)}")
         return jsonify({

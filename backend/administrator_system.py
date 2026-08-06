@@ -642,10 +642,33 @@ class AdministratorSystem:
                 from backend.auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
             except ImportError:  # pragma: no cover
                 from auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
-            _requested_bound = set(roles) & COMPANY_BOUND_ROLES
-            if _requested_bound and not has_company_membership(user_id):
+            # Only roles being ADDED are checked. Roles the user already holds are
+            # pre-existing data, and refusing the whole update because of them made
+            # every such account uneditable: an admin could not grant an unrelated
+            # role, and could not even open the account to correct it. That is not
+            # hypothetical — 16 recruiter accounts have no company membership, and
+            # the platform owner's own account (employer_admin + recruiter, no
+            # company) could not be granted board_operator because of it.
+            # Granting a company-bound role to a user with no company is still
+            # refused, which is the rule this guard exists to enforce.
+            _existing_roles = set()
+            _cur_role = (current_user.get('role') or '').strip().lower()
+            if _cur_role:
+                _existing_roles.add(_cur_role)
+            _cur_secondary = current_user.get('secondary_roles') or []
+            if isinstance(_cur_secondary, str):
+                try:
+                    _cur_secondary = json.loads(_cur_secondary)
+                except Exception:
+                    _cur_secondary = [_cur_secondary]
+            _existing_roles |= {
+                str(r).strip().lower() for r in _cur_secondary if r and str(r).strip()
+            }
+
+            _newly_bound = (set(roles) & COMPANY_BOUND_ROLES) - _existing_roles
+            if _newly_bound and not has_company_membership(user_id):
                 raise ValueError(
-                    f"Cannot grant {', '.join(sorted(_requested_bound))} to a user who "
+                    f"Cannot grant {', '.join(sorted(_newly_bound))} to a user who "
                     "belongs to no company. Invite them to their company's team first "
                     "(or onboard the company itself), then the role follows automatically.")
 
