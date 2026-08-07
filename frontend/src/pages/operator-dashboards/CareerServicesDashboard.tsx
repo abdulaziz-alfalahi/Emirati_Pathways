@@ -143,6 +143,21 @@ export default function CareerServicesDashboard() {
             // free-text names. The backend resolves id→name; fall back to the raw
             // value so legacy name-rows still display their name, never an EID.
             assignedToName: profile.assigned_to_name || profile.assigned_to || 'Unassigned',
+            dateOfCall: profile.date_of_call || null,
+            educationLevel: profile.education_level || '',
+            isStudent: profile.is_student,
+            specialization: profile.specialization || '',
+            englishLevel: profile.english_proficiency || '',
+            salaryExpectations: profile.salary_expectations || '',
+            candidatesSource: profile.candidates_source || '',
+            previousWorkLocation: profile.previous_work_location || '',
+            gpa: profile.gpa || '',
+            graduationDate: profile.graduation_date || '',
+            subSpecialization: profile.sub_specialization || '',
+            experienceDuration: profile.experience_duration || '',
+            militaryStatus: profile.military_status || '',
+            fieldPreference: profile.field_preference || '',
+            jobSearchDuration: profile.job_search_duration || '',
             preferredLocations: Array.isArray(profile.preferred_locations)
               ? profile.preferred_locations
               : (typeof profile.preferred_locations === 'string'
@@ -207,6 +222,21 @@ export default function CareerServicesDashboard() {
       alternativePhone: candidate.alternativePhone || '',
       unavailabilityReason: candidate.unavailabilityReason || 'none',
       rolePreferences: candidate.rolePreferences || '',
+      educationLevel: candidate.educationLevel || '',
+      isStudent: candidate.isStudent === true ? 'yes' : candidate.isStudent === false ? 'no' : '',
+      specialization: candidate.specialization || '',
+      englishLevel: candidate.englishLevel || '',
+      salaryExpectations: candidate.salaryExpectations || '',
+      candidatesSource: candidate.candidatesSource || '',
+      previousWorkLocation: candidate.previousWorkLocation || '',
+      gpa: candidate.gpa || '',
+      graduationDate: candidate.graduationDate || '',
+      subSpecialization: candidate.subSpecialization || '',
+      experienceDuration: candidate.experienceDuration || '',
+      militaryStatus: candidate.militaryStatus || '',
+      fieldPreference: candidate.fieldPreference || '',
+      jobSearchDuration: candidate.jobSearchDuration || '',
+      dateOfCall: candidate.dateOfCall || null,
     });
     setIsSheetOpen(true);
   };
@@ -217,6 +247,11 @@ export default function CareerServicesDashboard() {
     try {
       const payload = {
         ...editForm,
+        // Study Status is a Yes/No question in the form and a boolean in the
+        // database; '' means the agent has not asked yet, which is not false.
+        isStudent: editForm.isStudent === 'yes' ? true
+                 : editForm.isStudent === 'no' ? false
+                 : null,
         lookingStatus: editForm.lookingStatus === 'none' ? null : editForm.lookingStatus,
         cvStatus: editForm.cvStatus || null,
         preferredSector: editForm.preferredSector === 'none' ? null : editForm.preferredSector,
@@ -915,7 +950,12 @@ export default function CareerServicesDashboard() {
 
       {/* Slide-out Edit Drawer */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side={isRTL ? 'left' : 'right'} className="w-full sm:max-w-md p-0 flex flex-col bg-white border-none shadow-2xl">
+        {/* Was sm:max-w-md — a narrow strip that could not show a counselling
+            record, which is what prompted the full-page request
+            (fb_1785994462). Now takes most of the screen on a desktop and
+            lays the fields out in columns, while still closing back to the
+            list with the agent's place and filters intact. */}
+        <SheetContent side={isRTL ? 'left' : 'right'} className="w-full sm:max-w-4xl lg:max-w-5xl p-0 flex flex-col bg-white border-none shadow-2xl">
           <div className="px-6 py-6 border-b border-slate-100 bg-slate-50/80">
             <SheetHeader className="text-start space-y-1">
               <SheetTitle className="text-xl font-bold text-slate-900">{t('Edit Candidate', 'تعديل بيانات المرشح')}</SheetTitle>
@@ -941,6 +981,76 @@ export default function CareerServicesDashboard() {
                   </div>
                 </div>
 
+                {/* Counselling record — the fields the team fills in on a
+                    call (fb_1786009859). Two columns because the panel is now
+                    wide enough; every one is optional, since a record is built
+                    up over several calls. */}
+                <div className="rounded-xl border border-slate-200 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-800">{t('Counselling record', 'سجل التوجيه')}</h4>
+                    {editingCandidate.dateOfCall && (
+                      <span className="text-xs text-slate-500">
+                        {t('Last saved', 'آخر حفظ')}{' '}
+                        {new Date(editingCandidate.dateOfCall).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB',
+                          { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {([
+                      ['educationLevel', t('Education', 'التعليم'),
+                        ['Below High School','High School','Diploma','High Diploma',"Bachelor's Degree",'Master Degree','Doctorate']],
+                      ['isStudent', t('Currently studying', 'يدرس حالياً'), ['yes','no']],
+                      ['specialization', t('Specialization', 'التخصص'),
+                        ['Below High School','High School','Business and Management','Technology','Healthcare','Education','Engineering','Arts and Humanities','Sciences','Legal and Compliance']],
+                      ['militaryStatus', t('Military status', 'الخدمة الوطنية'),
+                        ['completed','not_yet_joined','exempted','in_service','not_required']],
+                      ['englishLevel', t('English level', 'مستوى الإنجليزية'), ['Weak','Average','Excellent']],
+                      ['fieldPreference', t('Field preference', 'تفضيل المجال'),
+                        ['same_field','different_field','any_field']],
+                    ] as [string, string, string[]][]).map(([key, label, opts]) => (
+                      <div className="space-y-2" key={key}>
+                        <label className="text-sm font-semibold text-slate-700">{label}</label>
+                        <Select
+                          value={editForm[key] || ''}
+                          onValueChange={(val) => setEditForm({ ...editForm, [key]: val })}
+                        >
+                          <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11">
+                            <SelectValue placeholder={t('Not recorded', 'غير مسجّل')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {opts.map((o) => (
+                              <SelectItem key={o} value={o}>
+                                {o.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                    {([
+                      ['subSpecialization', t('Sub specialization', 'التخصص الفرعي')],
+                      ['gpa', t('GPA', 'المعدل')],
+                      ['graduationDate', t('Graduation date', 'تاريخ التخرج')],
+                      ['previousWorkLocation', t('Previous work location', 'مكان العمل السابق')],
+                      ['experienceDuration', t('Experience duration', 'مدة الخبرة')],
+                      ['jobSearchDuration', t('How long looking for work', 'مدة البحث عن عمل')],
+                      ['salaryExpectations', t('Salary expectations', 'الراتب المتوقع')],
+                      ['candidatesSource', t('Candidate source', 'مصدر المرشح')],
+                    ] as [string, string][]).map(([key, label]) => (
+                      <div className="space-y-2" key={key}>
+                        <label className="text-sm font-semibold text-slate-700">{label}</label>
+                        <Input
+                          value={editForm[key] || ''}
+                          onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                          placeholder={t('Not recorded', 'غير مسجّل')}
+                          className="bg-slate-50 border-slate-200 rounded-xl h-11"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">{t('Call Status', 'حالة الاتصال')}</label>
@@ -955,6 +1065,11 @@ export default function CareerServicesDashboard() {
                         <SelectItem value="Pending">Pending</SelectItem>
                         <SelectItem value="Answered">Answered</SelectItem>
                         <SelectItem value="No Answer">No Answer</SelectItem>
+                        <SelectItem value="No Number">No Number</SelectItem>
+                        <SelectItem value="Not Reachable">Not Reachable</SelectItem>
+                        <SelectItem value="Call Back">Call Back</SelectItem>
+                        <SelectItem value="Wrong Number">Wrong Number</SelectItem>
+                        <SelectItem value="Switched Off">Switched Off</SelectItem>
                         <SelectItem value="Invalid Number">Invalid Number</SelectItem>
                       </SelectContent>
                     </Select>
