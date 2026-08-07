@@ -220,15 +220,38 @@ def create_historical_meeting():
                         'message': 'That date is in the future. Use Schedule meeting for a meeting still to come.'}), 400
 
     try:
-        row = execute_query("""
-            INSERT INTO board_meetings
-                (title, title_ar, agenda, agenda_ar, scheduled_at, duration_minutes,
-                 location, is_virtual, room_name, status, is_historical, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, false, NULL, 'completed', true, %s)
-            RETURNING *
-        """, (title, data.get('title_ar'), data.get('agenda'), data.get('agenda_ar'),
-              when, int(data.get('duration_minutes') or 0) or None,
-              data.get('location'), str(get_jwt_identity())[:15]), fetch_one=True)
+        # duration_minutes is NOT NULL, but how long a 2022 meeting ran is often
+        # simply not known. Rather than invent a figure, the column is left out
+        # of the INSERT so the table default applies, and the archive view never
+        # displays a duration for a historical record — an unknown must not be
+        # dressed up as a measurement.
+        try:
+            duration = int(data.get('duration_minutes'))
+            duration = duration if duration > 0 else None
+        except (TypeError, ValueError):
+            duration = None
+
+        if duration is None:
+            row = execute_query("""
+                INSERT INTO board_meetings
+                    (title, title_ar, agenda, agenda_ar, scheduled_at,
+                     location, is_virtual, room_name, status, is_historical, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, false, NULL, 'completed', true, %s)
+                RETURNING *
+            """, (title, data.get('title_ar'), data.get('agenda'), data.get('agenda_ar'),
+                  when, data.get('location'), str(get_jwt_identity())[:15]), fetch_one=True)
+        else:
+            row = execute_query("""
+                INSERT INTO board_meetings
+                    (title, title_ar, agenda, agenda_ar, scheduled_at, duration_minutes,
+                     location, is_virtual, room_name, status, is_historical, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, false, NULL, 'completed', true, %s)
+                RETURNING *
+            """, (title, data.get('title_ar'), data.get('agenda'), data.get('agenda_ar'),
+                  when, duration, data.get('location'), str(get_jwt_identity())[:15]), fetch_one=True)
+
+        if not row:
+            return jsonify({'success': False, 'message': 'Failed to record the meeting'}), 500
         return jsonify({'success': True, 'data': _row(row)}), 201
     except Exception as e:
         logger.error(f"create historical board meeting failed: {e}")
