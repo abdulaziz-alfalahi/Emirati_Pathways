@@ -23,6 +23,8 @@ import {
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { ROLE_DASHBOARD_MAP } from '@/types/auth';
 import InteractiveDashboardDemo from '@/components/demo/InteractiveDashboardDemo';
 
 // Import translations
@@ -140,6 +142,22 @@ const DashboardMockup: React.FC = () => (
 /*  BilingualHomePage                                                   */
 /* ================================================================== */
 const BilingualHomePage: React.FC = () => {
+
+  // Every call to action on this page pointed at /auth, which redirects an
+  // already-authenticated visitor to their own dashboard. So a signed-in
+  // career services operator clicking "Get Started as Recruiter", "Create Free
+  // Account" or "Explore Features" was silently dumped back on the Career
+  // Services CRM every time — reported as "multiple features redirecting to the
+  // same Candidate Details page" (fb_1785994987, fb_1785995310). Sign-up
+  // prompts do not belong in front of someone who is already signed in.
+  const { isAuthenticated, user } = useAuth();
+  const signedInDashboard = (() => {
+    const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
+      .filter(Boolean)
+      .map((r: string) => String(r).toLowerCase());
+    const match = roles.find((r) => (ROLE_DASHBOARD_MAP as Record<string, string>)[r]);
+    return match ? (ROLE_DASHBOARD_MAP as Record<string, string>)[match] : '/dashboard';
+  })();
   const { i18n } = useTranslation();
   const { language: contextLanguage, isRTL, toggleLanguage } = useLanguage();
   const currentLanguage = contextLanguage;
@@ -380,10 +398,12 @@ const BilingualHomePage: React.FC = () => {
                   nowhere to go. `ms-2` is logical so the arrow flips in RTL. */}
               <div className="flex flex-wrap items-center gap-4">
                 <Link
-                  to="/auth"
+                  to={isAuthenticated ? signedInDashboard : '/auth'}
                   className="inline-flex shrink-0 items-center whitespace-nowrap rounded-pill bg-brand-teal-600 px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-brand-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-600 focus-visible:ring-offset-2"
                 >
-                  {translations.hero?.primaryCta || 'Get Started'}
+                  {isAuthenticated
+                    ? (isRTL ? 'الذهاب إلى لوحتي' : 'Go to my dashboard')
+                    : (translations.hero?.primaryCta || 'Get Started')}
                   <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
                 </Link>
                 <Link
@@ -507,13 +527,15 @@ const BilingualHomePage: React.FC = () => {
                   ))}
                 </div>
 
-                <Link
-                  to={`/auth?role=${persona.id}`}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-6 rounded-xl font-dubai-medium transition-all duration-200 flex items-center justify-center text-sm"
-                >
-                  {persona.getStarted}
-                  <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
-                </Link>
+                {!isAuthenticated && (
+                  <Link
+                    to={`/auth?role=${persona.id}`}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-6 rounded-xl font-dubai-medium transition-all duration-200 flex items-center justify-center text-sm"
+                  >
+                    {persona.getStarted}
+                    <ArrowRight className={`w-4 h-4 ms-2 rtl:rotate-180`} />
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -593,19 +615,34 @@ const BilingualHomePage: React.FC = () => {
               'Join thousands of UAE professionals already using the platform to advance their careers'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link
-              to="/auth"
-              className="bg-card text-primary hover:bg-accent px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
-            >
-              {translations.cta?.primaryButton || 'Create Free Account'}
-              <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180`} />
-            </Link>
-            <Link
-              to="/auth"
-              className="text-white border border-white/30 hover:bg-white/10 px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 flex items-center"
-            >
-              {translations.cta?.secondaryButton || 'Explore Features'}
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to={signedInDashboard}
+                className="bg-card text-primary hover:bg-accent px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
+              >
+                {isRTL ? 'الذهاب إلى لوحتي' : 'Go to my dashboard'}
+                <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180`} />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  className="bg-card text-primary hover:bg-accent px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 hover:shadow-lg flex items-center"
+                >
+                  {translations.cta?.primaryButton || 'Create Free Account'}
+                  <ArrowRight className={`w-5 h-5 ms-2 rtl:rotate-180`} />
+                </Link>
+                {/* Was also /auth — a second button to the same destination,
+                    part of the same report. Points at the mission page, which
+                    is what "explore" should mean. */}
+                <Link
+                  to="/our-mission"
+                  className="text-white border border-white/30 hover:bg-white/10 px-8 py-4 rounded-full font-dubai-medium text-lg transition-all duration-200 flex items-center"
+                >
+                  {translations.cta?.secondaryButton || 'Explore Features'}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
