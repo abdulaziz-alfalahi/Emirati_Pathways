@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle, BarChart3, TrendingUp } from 'lucide-react';
+import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle, BarChart3, TrendingUp, MessageCircle, MessageSquare, Mail, StickyNote } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip,
   Legend, CartesianGrid, PieChart, Pie, Cell, LineChart, Line,
@@ -18,6 +18,7 @@ import Messages from '@/components/recruiter/Messages';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function CareerServicesDashboard() {
   const { language, toggleLanguage } = useLanguage();
@@ -43,11 +44,22 @@ export default function CareerServicesDashboard() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
+  // When the roster genuinely last came from NAFIS. The refresh button below
+  // re-reads this database and contacts NAFIS not at all, so its own timestamp
+  // would say nothing about the freshness of the data.
+  const [lastImport, setLastImport] = useState<any>(null);
+  // Anonymised and consent-test rows have no contact details, so an agent
+  // working the call list only discovers that after opening them.
+  const [hideUncontactable, setHideUncontactable] = useState(false);
+  const [quickRemarkFor, setQuickRemarkFor] = useState<any>(null);
+  const [quickRemark, setQuickRemark] = useState('');
+  const [savingQuickRemark, setSavingQuickRemark] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchCandidates();
     fetchOperators();
+    fetchLastImport();
     fetchStats();
   }, []);
 
@@ -60,6 +72,45 @@ export default function CareerServicesDashboard() {
       console.error('Failed to fetch CRM stats', e);
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  const fetchLastImport = async () => {
+    try {
+      const res = await restClient.get('/api/profile/crm-last-import');
+      setLastImport(res.data?.data || null);
+    } catch {
+      setLastImport(null);
+    }
+  };
+
+  // A record with no phone and no email cannot be worked by an agent.
+  const isUncontactable = (c: any) => {
+    const phone = String(c.phone || '').replace(/[^0-9]/g, '');
+    const email = String(c.email || '').trim();
+    const anonymised = /anonymized|anonymised/i.test(String(c.email || '') + String(c.name || ''));
+    return anonymised || (!phone && !email);
+  };
+
+  const saveQuickRemark = async () => {
+    if (!quickRemarkFor || !quickRemark.trim()) return;
+    setSavingQuickRemark(true);
+    try {
+      const res = await restClient.put(`/api/profile/crm-candidates/${quickRemarkFor.id}`, {
+        remarks: quickRemark.trim(),
+      });
+      if (!res.data?.success) {
+        toast({ title: res.data?.message || t('Could not save the remark', 'تعذّر حفظ الملاحظة'), variant: 'destructive' });
+        return;
+      }
+      toast({ title: t('Remark saved', 'تم حفظ الملاحظة') });
+      setQuickRemarkFor(null);
+      setQuickRemark('');
+      fetchCandidates();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || t('Could not save the remark', 'تعذّر حفظ الملاحظة'), variant: 'destructive' });
+    } finally {
+      setSavingQuickRemark(false);
     }
   };
 
@@ -189,9 +240,15 @@ export default function CareerServicesDashboard() {
   };
 
   // Filtering Logic
+  const uncontactableCount = useMemo(
+    () => candidates.filter(isUncontactable).length, [candidates]);
+
   const filteredCandidates = useMemo(() => {
     const cleanSearch = searchTerm.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     return candidates.filter(c => {
+      // Anonymised / consent-test rows carry no way to reach anyone, so an
+      // agent working the list only finds that out after opening them.
+      if (hideUncontactable && isUncontactable(c)) return false;
       const candidateName = c.name ? String(c.name) : '';
       const candidateEid = c.eid ? String(c.eid) : '';
       
@@ -215,7 +272,7 @@ export default function CareerServicesDashboard() {
       const matchesSegment = segmentFilter === 'All' || (c.segments || []).includes(segmentFilter);
       return matchesSearch && matchesCallStatus && matchesWorkStatus && matchesSegment;
     });
-  }, [candidates, searchTerm, callStatusFilter, workStatusFilter, segmentFilter]);
+  }, [candidates, hideUncontactable, searchTerm, callStatusFilter, workStatusFilter, segmentFilter]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
@@ -307,10 +364,24 @@ export default function CareerServicesDashboard() {
               </Button>
             </div>
             {view === 'candidates' && (
-              <Button onClick={fetchCandidates} variant="outline" className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
-                {t('Sync Nafis Data', 'مزامنة بيانات نافس')}
-              </Button>
+              /* Labelled "Sync Nafis Data", this only re-read this database —
+                 it has never contacted NAFIS. Operators asked for a "last
+                 synced" time beside it, which would have put a reassuring
+                 timestamp on a button that syncs nothing. It now says what it
+                 does, and the real provenance of the roster is shown under it. */
+              <div className="flex flex-col items-end gap-1">
+                <Button onClick={() => { fetchCandidates(); fetchLastImport(); }} variant="outline"
+                        className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
+                  {t('Refresh list', 'تحديث القائمة')}
+                </Button>
+                <span className="text-[11px] text-slate-500">
+                  {lastImport?.imported_at
+                    ? t(`NAFIS data last imported ${new Date(lastImport.imported_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                        `آخر استيراد لبيانات نافس ${new Date(lastImport.imported_at).toLocaleDateString('ar-AE')}`)
+                    : t('No NAFIS import recorded', 'لا يوجد استيراد مسجّل من نافس')}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -596,6 +667,15 @@ export default function CareerServicesDashboard() {
                     <SelectItem value="Unknown">Unknown</SelectItem>
                   </SelectContent>
                 </Select>
+                <label className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideUncontactable}
+                    onChange={(e) => { setHideUncontactable(e.target.checked); setCurrentPage(1); }}
+                  />
+                  {t(`Hide records with no contact details (${uncontactableCount})`,
+                     `إخفاء السجلات بدون بيانات اتصال (${uncontactableCount})`)}
+                </label>
               </div>
             </div>
           </div>
@@ -688,6 +768,52 @@ export default function CareerServicesDashboard() {
                           </p>
                         </td>
                         <td className="px-6 py-4 text-end">
+                          {/* Quick actions requested by the CRM team: the daily
+                              loop is call, message, note. Each is disabled when
+                              the underlying detail is missing, so a dead link is
+                              never offered as though it would work. */}
+                          <div className="flex items-center justify-end gap-1 mb-1">
+                            {(() => {
+                              const digits = String(candidate.phone || '').replace(/\D/g, '');
+                              const intl = digits ? (digits.startsWith('971') ? digits : `971${digits.replace(/^0+/, '')}`) : '';
+                              return (
+                                <>
+                                  <a href={digits ? `tel:+${intl}` : undefined}
+                                     title={digits ? t('Call', 'اتصال') : t('No phone number on record', 'لا يوجد رقم هاتف')}
+                                     aria-label={t('Call', 'اتصال')}
+                                     className={`p-1.5 rounded-md ${digits ? 'text-[#006E6D] hover:bg-[#F0F7F7]' : 'text-slate-300 pointer-events-none'}`}>
+                                    <Phone className="h-4 w-4" />
+                                  </a>
+                                  <a href={digits ? `https://wa.me/${intl}` : undefined}
+                                     target="_blank" rel="noopener noreferrer"
+                                     title={digits ? t('WhatsApp', 'واتساب') : t('No phone number on record', 'لا يوجد رقم هاتف')}
+                                     aria-label="WhatsApp"
+                                     className={`p-1.5 rounded-md ${digits ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-300 pointer-events-none'}`}>
+                                    <MessageCircle className="h-4 w-4" />
+                                  </a>
+                                  <a href={digits ? `sms:+${intl}` : undefined}
+                                     title={digits ? t('SMS', 'رسالة نصية') : t('No phone number on record', 'لا يوجد رقم هاتف')}
+                                     aria-label="SMS"
+                                     className={`p-1.5 rounded-md ${digits ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-300 pointer-events-none'}`}>
+                                    <MessageSquare className="h-4 w-4" />
+                                  </a>
+                                  <a href={candidate.email ? `mailto:${candidate.email}` : undefined}
+                                     title={candidate.email || t('No email on record', 'لا يوجد بريد إلكتروني')}
+                                     aria-label={t('Email', 'بريد إلكتروني')}
+                                     className={`p-1.5 rounded-md ${candidate.email ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-300 pointer-events-none'}`}>
+                                    <Mail className="h-4 w-4" />
+                                  </a>
+                                  <button
+                                    onClick={() => { setQuickRemarkFor(candidate); setQuickRemark(candidate.remarks || ''); }}
+                                    title={t('Add a remark', 'إضافة ملاحظة')}
+                                    aria-label={t('Add a remark', 'إضافة ملاحظة')}
+                                    className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100">
+                                    <StickyNote className="h-4 w-4" />
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </div>
                           <Button 
                             size="sm" 
                             onClick={() => handleEditClick(candidate)} 
@@ -757,6 +883,35 @@ export default function CareerServicesDashboard() {
         </>
         )}
       </main>
+
+      {/* Quick remark — the CRM team wanted to note a call outcome without
+          opening the full record and losing their place in the list. */}
+      <Dialog open={!!quickRemarkFor} onOpenChange={(o) => { if (!o) { setQuickRemarkFor(null); setQuickRemark(''); } }}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{t('Add a remark', 'إضافة ملاحظة')}</DialogTitle>
+            <DialogDescription>
+              {quickRemarkFor?.name}
+              {quickRemarkFor?.phone ? ` · ${quickRemarkFor.phone}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={5}
+            value={quickRemark}
+            onChange={(e) => setQuickRemark(e.target.value)}
+            placeholder={t('What came out of the call?', 'ما نتيجة المكالمة؟')}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setQuickRemarkFor(null); setQuickRemark(''); }}>
+              {t('Cancel', 'إلغاء')}
+            </Button>
+            <Button onClick={saveQuickRemark} disabled={savingQuickRemark || !quickRemark.trim()} className="gap-2">
+              {savingQuickRemark && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t('Save remark', 'حفظ الملاحظة')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Slide-out Edit Drawer */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

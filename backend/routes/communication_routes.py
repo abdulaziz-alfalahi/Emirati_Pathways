@@ -1316,14 +1316,25 @@ def get_messaging_contacts():
         current_user_id = str(get_jwt_identity())
         q = (request.args.get('q') or '').strip()
         try:
-            from backend.auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+            from backend.auth.access_control import (
+                resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES,
+                CAREER_SERVICES_ROLES, ADMIN_ROLES)
         except ImportError:  # pragma: no cover
-            from auth.access_control import resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES
+            from auth.access_control import (
+                resolve_roles, RECRUITER_ROLES, OPERATOR_ROLES,
+                CAREER_SERVICES_ROLES, ADMIN_ROLES)
         _STAFF = RECRUITER_ROLES | OPERATOR_ROLES | {
             'call_center_agent', 'mentor', 'coach', 'assessor', 'advisor',
             'internship_coordinator', 'training_provider', 'hr_manager', 'hr',
             'board_member', 'compliance_auditor'}
-        is_staff = bool(resolve_roles() & _STAFF)
+        _roles = resolve_roles()
+        is_staff = bool(_roles & _STAFF)
+        # Operators asked to see the Emirates ID and phone in the results so
+        # they can tell two similarly-named people apart before opening a
+        # conversation with the wrong one (fb_1786012604). Shown only to the
+        # roles the EID policy already trusts with it — career services, the
+        # call centre and admin — not to every staff role that can search.
+        may_see_identifiers = bool(_roles & (CAREER_SERVICES_ROLES | ADMIN_ROLES))
 
         conn = communication_service._get_db_connection()
         try:
@@ -1331,7 +1342,9 @@ def get_messaging_contacts():
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 name_expr = ("COALESCE(u.full_name, NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email)")
                 if is_staff:
-                    sql = (f"SELECT u.id, {name_expr} AS name, u.role FROM users u "
+                    ident_cols = (", u.phone, CAST(u.id AS TEXT) AS emirates_id"
+                                  if may_see_identifiers else "")
+                    sql = (f"SELECT u.id, {name_expr} AS name, u.role{ident_cols} FROM users u "
                            "WHERE u.is_active IS NOT FALSE AND CAST(u.id AS TEXT) != %s")
                     params = [current_user_id]
                     if q:
