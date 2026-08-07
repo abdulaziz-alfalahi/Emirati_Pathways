@@ -265,6 +265,15 @@ def join_meeting(meeting_id):
             WHERE id::text = %s
         """, (str(meeting_id),), fetch_all=False)
 
+        # Open a presence interval (migration 054). ON CONFLICT covers a double
+        # join — a refresh or a reconnect must not open a second interval and
+        # double-count the time.
+        execute_query("""
+            INSERT INTO board_meeting_presence (meeting_id, user_id, joined_at)
+            VALUES (%s::uuid, %s, NOW())
+            ON CONFLICT (meeting_id, user_id) WHERE left_at IS NULL DO NOTHING
+        """, (str(meeting_id), me), fetch_all=False)
+
         return jsonify({'success': True, 'data': {
             'room_name': meeting['room_name'],
             'token': token,
@@ -403,6 +412,103 @@ def cancel_meeting(meeting_id):
         return jsonify({'success': False, 'message': 'Failed to cancel meeting'}), 500
 
 
+@board_meetings_bp.route('/<meeting_id>/attendance', methods=['GET'])
+@require_roles(*BOARD_ROLES)
+def meeting_attendance(meeting_id):
+    """Per-member attendance record for one meeting.
+
+    Duration is the SUM of presence intervals, not last_leave - first_join, so
+    time a member spent away after dropping out is not counted as attendance.
+    Every figure here is measured; nothing is inferred.
+    """
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    try:
+        rows = execute_query("""
+            SELECT a.user_id,
+                   COALESCE(u.full_name, u.email, a.user_id) AS name,
+                   a.invite_status,
+                   MIN(p.joined_at)                                   AS first_joined_at,
+                   MAX(p.left_at)                                     AS last_left_at,
+                   COUNT(p.id)                                        AS session_count,
+                   COALESCE(SUM(EXTRACT(EPOCH FROM (
+                       COALESCE(p.left_at, NOW()) - p.joined_at))), 0) AS present_seconds,
+                   BOOL_OR(p.ended_reason = 'assumed')                 AS any_assumed
+            FROM board_meeting_attendees a
+            LEFT JOIN users u ON u.id = a.user_id
+            LEFT JOIN board_meeting_presence p
+                   ON p.meeting_id = a.meeting_id AND p.user_id = a.user_id
+            WHERE a.meeting_id::text = %s
+            GROUP BY a.user_id, u.full_name, u.email, a.invite_status
+            ORDER BY 7 DESC, 2
+        """, (str(meeting_id),)) or []
+
+        # The yardstick is how long the meeting actually ran, not what was
+        # scheduled — a meeting that overran or finished early would otherwise
+        # make every percentage wrong.
+        started, ended = meeting.get('started_at'), meeting.get('ended_at')
+        if started and ended:
+            meeting_seconds = max((ended - started).total_seconds(), 0)
+        else:
+            meeting_seconds = (int(meeting.get('duration_minutes') or 60)) * 60
+
+        out = []
+        for r in rows:
+            secs = float(r.get('present_seconds') or 0)
+            out.append({
+                'user_id': r['user_id'],
+                'name': r.get('name'),
+                'invite_status': r.get('invite_status'),
+                'first_joined_at': r['first_joined_at'].isoformat() if r.get('first_joined_at') else None,
+                'last_left_at': r['last_left_at'].isoformat() if r.get('last_left_at') else None,
+                'session_count': int(r.get('session_count') or 0),
+                'present_seconds': int(secs),
+                # None, not 0, when we have no measured duration to divide.
+                'present_percent': (round(min(secs / meeting_seconds, 1) * 100)
+                                    if meeting_seconds and secs else None),
+                # True when at least one interval was closed by the meeting
+                # ending rather than the member leaving — an upper bound.
+                'duration_is_upper_bound': bool(r.get('any_assumed')),
+            })
+        return jsonify({'success': True, 'data': {
+            'meeting_seconds': int(meeting_seconds),
+            'meeting_ran': bool(started and ended),
+            'attendees': out,
+        }})
+    except Exception as e:
+        logger.error(f"board attendance failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load attendance'}), 500
+
+
+@board_meetings_bp.route('/<meeting_id>/leave', methods=['POST'])
+@require_roles(*BOARD_ROLES)
+def leave_meeting(meeting_id):
+    """Close the caller's open presence interval.
+
+    Best-effort by nature: a browser that crashes or loses its connection never
+    calls this. Anything still open when the meeting is closed is settled by
+    end_meeting and marked 'assumed', so a duration is never quietly
+    overstated as if it had been observed.
+    """
+    me = str(get_jwt_identity())
+    try:
+        execute_query("""
+            UPDATE board_meeting_presence
+            SET left_at = NOW(), ended_reason = 'left'
+            WHERE meeting_id::text = %s AND user_id = %s AND left_at IS NULL
+        """, (str(meeting_id), me), fetch_all=False)
+        execute_query("""
+            UPDATE board_meeting_attendees SET left_at = NOW()
+            WHERE meeting_id::text = %s AND user_id = %s
+        """, (str(meeting_id), me), fetch_all=False)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"leave board meeting failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to record leaving'}), 500
+
+
 @board_meetings_bp.route('/<meeting_id>/end', methods=['POST'])
 @require_roles(*ORGANISER_ROLES)
 def end_meeting(meeting_id):
@@ -415,6 +521,17 @@ def end_meeting(meeting_id):
         execute_query("""
             UPDATE board_meeting_attendees SET invite_status = 'absent'
             WHERE meeting_id::text = %s AND invite_status IN ('invited','accepted')
+        """, (str(meeting_id),), fetch_all=False)
+        # Anyone still shown as present when the meeting closed. 'assumed' means
+        # they never signalled leaving, so treat the duration as an upper bound.
+        execute_query("""
+            UPDATE board_meeting_presence
+            SET left_at = NOW(), ended_reason = 'assumed'
+            WHERE meeting_id::text = %s AND left_at IS NULL
+        """, (str(meeting_id),), fetch_all=False)
+        execute_query("""
+            UPDATE board_meeting_attendees SET left_at = COALESCE(left_at, NOW())
+            WHERE meeting_id::text = %s AND invite_status IN ('attended','observer')
         """, (str(meeting_id),), fetch_all=False)
         row = execute_query("""
             SELECT (SELECT COUNT(*) FROM board_meeting_attendees a

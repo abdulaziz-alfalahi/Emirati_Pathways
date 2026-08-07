@@ -120,6 +120,11 @@ const BoardMeetingRoom: React.FC = () => {
   // secretary to the wrong place on leaving. Return each role to the workspace
   // it joined from.
   const leave = () => {
+    // Tell the server we have gone, so attendance duration is measured rather
+    // than assumed. keepalive lets the request survive the navigation away.
+    if (meetingId) {
+      restClient.post(`/api/board/meetings/${meetingId}/leave`, {}).catch(() => {});
+    }
     const roles = [
       (user as any)?.role,
       ...(((user as any)?.secondary_roles) || []),
