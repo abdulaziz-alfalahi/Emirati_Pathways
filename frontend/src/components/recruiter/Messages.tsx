@@ -27,6 +27,26 @@ interface MessagesProps {
   showNewConversation?: boolean;
 }
 
+/**
+ * Is the other side of this conversation a candidate?
+ *
+ * This used to be `participantRole === 'recruiter' || === 'admin'` — a two-role
+ * denylist, so EVERY other staff role fell through to "Candidate": call centre
+ * agents, career services operators, advisors, coaches, assessors, mentors,
+ * board members and all the operator roles. They were shown a "View Full
+ * Profile" button that navigated to /candidate-profile/<their staff id>, where
+ * no candidate record exists — the "Profile Not Found" a career services
+ * operator reported after opening a conversation with a CC Agent
+ * (fb_1786012200).
+ *
+ * Inverted to an allowlist: only a candidate or an enrolment-verified student
+ * has a candidate profile. Any role added in future is treated as staff, which
+ * is the safe direction to fail.
+ */
+const CANDIDATE_PARTICIPANT_ROLES = new Set(['candidate', 'student']);
+const isCandidateParticipant = (conv: { participantRole?: string }) =>
+  CANDIDATE_PARTICIPANT_ROLES.has(String(conv?.participantRole || '').toLowerCase());
+
 const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewConversation = true }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -806,26 +826,27 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
               if (!conv) return null;
               return (
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">{t('Candidate Profile', 'ملف المرشح')}</h3>
+                  <h3 className="font-semibold text-lg">
+                    {isCandidateParticipant(conv)
+                      ? t('Candidate Profile', 'ملف المرشح')
+                      : t('Team Member', 'عضو الفريق')}
+                  </h3>
                   <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
                     <div className="w-20 h-20 bg-slate-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-slate-500">
                       {conv.participantName.charAt(0)}
                     </div>
                     <h4 className="font-bold text-lg">{conv.participantName}</h4>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {conv.participantRole === 'recruiter' || conv.participantRole === 'admin'
-                        ? t('Team Member', 'عضو الفريق')
-                        : t('Candidate', 'مرشح')}
+                      {isCandidateParticipant(conv)
+                        ? t('Candidate', 'مرشح')
+                        : t('Team Member', 'عضو الفريق')}
                     </p>
 
-                    {/* ONLY show profile buttons if it is a candidate */}
-                    {(conv.participantRole !== 'recruiter' && conv.participantRole !== 'admin') && (
+                    {/* Only a candidate has a candidate profile to open. */}
+                    {isCandidateParticipant(conv) && (
                       <div className="grid gap-2">
                         <Button className="w-full" variant="outline" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
                           {t('View Full Profile', 'عرض الملف الكامل')}
-                        </Button>
-                        <Button className="w-full" variant="ghost" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
-                          {t('View Application', 'عرض الطلب')}
                         </Button>
                       </div>
                     )}
@@ -835,9 +856,9 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                   <div className="bg-white p-4 rounded-lg border shadow-sm">
                     <h4 className="font-semibold text-sm mb-2">{t('About', 'نبذة')}</h4>
                     <p className="text-xs text-muted-foreground">
-                      {(conv.participantRole === 'recruiter' || conv.participantRole === 'admin')
-                        ? t('Internal team member. View team settings for more details.', 'عضو فريق داخلي. راجع إعدادات الفريق لمزيد من التفاصيل.')
-                        : t('Profile details are loading...', 'جارٍ تحميل تفاصيل الملف...')}
+                      {isCandidateParticipant(conv)
+                        ? t('Profile details are loading...', 'جارٍ تحميل تفاصيل الملف...')
+                        : t('Internal team member. View team settings for more details.', 'عضو فريق داخلي. راجع إعدادات الفريق لمزيد من التفاصيل.')}
                     </p>
                   </div>
                 </div>
