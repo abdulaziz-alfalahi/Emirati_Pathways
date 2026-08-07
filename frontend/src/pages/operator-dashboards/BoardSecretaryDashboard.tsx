@@ -221,6 +221,60 @@ const BoardSecretaryDashboard: React.FC = () => {
     return h ? `${h}${b('h', 'س')} ${mnt}${b('m', 'د')}` : `${mnt}${b('m', 'د')}`;
   };
 
+  // ── Board members' offices ──────────────────────────────────────
+  // External email addresses, not platform users. Outbound email is blocked at
+  // the firewall, so what we queue is NOT delivered yet — the UI has to say so
+  // plainly, or a secretary will assume an office has been told when it has not.
+  const [offices, setOffices] = useState<any[]>([]);
+  const [officeQueue, setOfficeQueue] = useState<any[]>([]);
+  const [officeForm, setOfficeForm] = useState({ user_id: '', office_name: '', email: '', phone: '' });
+  const [savingOffice, setSavingOffice] = useState(false);
+
+  const fetchOffices = async () => {
+    try {
+      const [o, q] = await Promise.all([
+        restClient.get('/api/board/meetings/offices'),
+        restClient.get('/api/board/meetings/office-notifications'),
+      ]);
+      setOffices(o.data?.data || []);
+      setOfficeQueue(q.data?.data || []);
+    } catch {
+      setOffices([]);
+      setOfficeQueue([]);
+    }
+  };
+
+  const addOffice = async () => {
+    if (!officeForm.user_id || !officeForm.email.trim()) {
+      toast({ title: b('Choose a board member and enter an email address', 'اختر عضو المجلس وأدخل بريداً إلكترونياً'), variant: 'destructive' });
+      return;
+    }
+    setSavingOffice(true);
+    try {
+      const res = await restClient.post('/api/board/meetings/offices', officeForm);
+      if (!res.data?.success) {
+        toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
+        return;
+      }
+      toast({ title: b('Office contact saved', 'تم حفظ جهة اتصال المكتب') });
+      setOfficeForm({ user_id: '', office_name: '', email: '', phone: '' });
+      fetchOffices();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
+    } finally {
+      setSavingOffice(false);
+    }
+  };
+
+  const removeOffice = async (id: string) => {
+    try {
+      await restClient.delete(`/api/board/meetings/offices/${id}`);
+      fetchOffices();
+    } catch {
+      toast({ title: b('Could not remove', 'تعذّرت الإزالة'), variant: 'destructive' });
+    }
+  };
+
   // ── Board-wide quorum rule ──────────────────────────────────────
   const [boardSettings, setBoardSettings] = useState<any>(null);
   const [quorumDraft, setQuorumDraft] = useState('');
@@ -281,6 +335,7 @@ const BoardSecretaryDashboard: React.FC = () => {
     fetchMeetings();
     fetchBoardSettings();
     fetchRecommendations();
+    fetchOffices();
   }, []);
 
   const fmt = (iso: string) => {
@@ -375,11 +430,12 @@ const BoardSecretaryDashboard: React.FC = () => {
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
             <TabsTrigger value="meetings">{b('Meetings', 'الاجتماعات')}</TabsTrigger>
             <TabsTrigger value="attendance">{b('Attendance', 'الحضور')}</TabsTrigger>
             <TabsTrigger value="recommendations">{b('Recommendations', 'التوصيات')}</TabsTrigger>
             <TabsTrigger value="minutes">{b('Minutes', 'المحاضر')}</TabsTrigger>
+            <TabsTrigger value="offices">{b('Offices', 'المكاتب')}</TabsTrigger>
           </TabsList>
 
           {/* ── Meetings ─────────────────────────────────────────── */}
@@ -934,6 +990,143 @@ const BoardSecretaryDashboard: React.FC = () => {
                     </div>
                   );
                 })}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Offices ──────────────────────────────────────────── */}
+          <TabsContent value="offices" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {b("Board members' offices", 'مكاتب أعضاء المجلس')}
+                </CardTitle>
+                <CardDescription>
+                  {b('Offices are notified with the meeting details whenever a meeting is scheduled, rescheduled or cancelled.',
+                     'تُبلَّغ المكاتب بتفاصيل الاجتماع عند جدولته أو تغييره أو إلغائه.')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Say plainly that nothing is going out yet. A secretary who
+                    assumes an office was told will not follow up by phone. */}
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-900">
+                    {b('Email delivery is not switched on yet', 'إرسال البريد الإلكتروني غير مُفعَّل بعد')}
+                  </p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    {b('Outbound email is blocked on the network, so notices to these offices are queued rather than sent. They are listed below with the exact wording, so they can be forwarded by hand in the meantime. Nothing will need re-entering once email is enabled — the queue will go out on its own.',
+                       'البريد الصادر محجوب على الشبكة، لذا تُدرَج الإشعارات لهذه المكاتب في قائمة انتظار بدلاً من إرسالها. وهي مدرجة أدناه بنصّها الكامل ليتم تحويلها يدوياً في هذه الأثناء. ولن يحتاج أي شيء إلى إعادة إدخال عند تفعيل البريد.')}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-white p-4 space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="o-member">{b('Board member', 'عضو المجلس')}</Label>
+                      <select
+                        id="o-member"
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        value={officeForm.user_id}
+                        onChange={(e) => setOfficeForm({ ...officeForm, user_id: e.target.value })}
+                      >
+                        <option value="">{b('Select…', 'اختر…')}</option>
+                        {offices.map((m) => (
+                          <option key={m.user_id} value={m.user_id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="o-email">{b('Office email', 'بريد المكتب')}</Label>
+                      <Input id="o-email" type="email" value={officeForm.email}
+                             onChange={(e) => setOfficeForm({ ...officeForm, email: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="o-name">{b('Office name (optional)', 'اسم المكتب (اختياري)')}</Label>
+                      <Input id="o-name" value={officeForm.office_name}
+                             onChange={(e) => setOfficeForm({ ...officeForm, office_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="o-phone">{b('Phone (optional)', 'الهاتف (اختياري)')}</Label>
+                      <Input id="o-phone" value={officeForm.phone}
+                             onChange={(e) => setOfficeForm({ ...officeForm, phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <Button onClick={addOffice} disabled={savingOffice} className="gap-2">
+                    {savingOffice && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {b('Save office contact', 'حفظ جهة اتصال المكتب')}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {offices.map((m) => (
+                    <div key={m.user_id} className="rounded-lg border p-3">
+                      <p className="text-sm font-medium text-gray-900">{m.name}</p>
+                      {m.offices.length === 0 ? (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {b('No office recorded — this member’s office will not be notified.',
+                             'لم يُسجَّل مكتب — لن يتم إشعار مكتب هذا العضو.')}
+                        </p>
+                      ) : (
+                        <ul className="mt-2 space-y-1">
+                          {m.offices.map((o: any) => (
+                            <li key={o.id} className="flex items-center justify-between gap-3 text-sm">
+                              <span className="text-gray-700">
+                                {o.office_name ? `${o.office_name} — ` : ''}{o.email}
+                                {o.phone ? ` · ${o.phone}` : ''}
+                              </span>
+                              <Button size="sm" variant="ghost"
+                                      className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => removeOffice(o.id)}>
+                                {b('Remove', 'إزالة')}
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{b('Queued notices', 'الإشعارات المدرَجة')}</CardTitle>
+                <CardDescription>
+                  {b('What is waiting to reach the offices. "Queued" means it has not been delivered.',
+                     'ما ينتظر الوصول إلى المكاتب. "مدرَج" تعني أنه لم يُسلَّم بعد.')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {officeQueue.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    {b('Nothing queued yet. Notices appear here when a meeting is scheduled, rescheduled or cancelled.',
+                       'لا شيء مدرَج بعد. تظهر الإشعارات هنا عند جدولة اجتماع أو تغييره أو إلغائه.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {officeQueue.map((n) => (
+                      <div key={n.id} className="rounded-lg border p-3 flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{n.subject}</p>
+                          <p className="text-xs text-gray-600">
+                            {n.office_name ? `${n.office_name} — ` : ''}{n.office_email}
+                            {n.member_name ? ` · ${b('office of', 'مكتب')} ${n.member_name}` : ''}
+                          </p>
+                        </div>
+                        <Badge className={n.status === 'sent'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : n.status === 'failed'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-amber-100 text-amber-800'}>
+                          {n.status === 'sent' ? b('Sent', 'أُرسل')
+                            : n.status === 'failed' ? b('Failed', 'فشل')
+                            : b('Queued — not delivered', 'مدرَج — لم يُسلَّم')}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

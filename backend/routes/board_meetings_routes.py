@@ -166,7 +166,10 @@ def create_meeting():
             """, (meeting_id, str(uid)[:15]), fetch_all=False)
 
         _notify_invitees(meeting_id, title, when, invitees)
-        return jsonify({'success': True, 'data': _row(row)}), 201
+        queued = _queue_office_notifications(row, 'scheduled', invitees)
+        payload = _row(row)
+        payload['office_notifications_queued'] = queued
+        return jsonify({'success': True, 'data': payload}), 201
     except Exception as e:
         logger.error(f"create board meeting failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to create meeting'}), 500
@@ -190,6 +193,168 @@ def _notify_invitees(meeting_id, title, when, invitees):
                 logger.warning(f"board meeting notification failed for {uid}: {_e}")
     except Exception as e:  # pragma: no cover
         logger.warning(f"board meeting notifications skipped: {e}")
+
+
+# ── Board members' offices ──────────────────────────────────────────────
+# The offices are EXTERNAL email addresses, not platform users, so they cannot
+# be reached by in-app notifications. Outbound SMTP is blocked at the firewall
+# (item 2 of the infrastructure request; re-verified 2026-08-07), so what is
+# queued here is not delivered yet. It is queued rather than dropped so nothing
+# has to be re-entered when the port opens — and surfaced as undelivered so the
+# secretary can forward it by hand meanwhile.
+
+def _queue_office_notifications(meeting, kind, invitees):
+    """Queue an office notification per invited member. Never raises."""
+    try:
+        if not invitees:
+            return 0
+        rows = execute_query("""
+            SELECT o.user_id, o.email, o.office_name
+            FROM board_member_offices o
+            WHERE o.is_active AND o.user_id = ANY(%s)
+        """, ([str(u)[:15] for u in invitees],)) or []
+        if not rows:
+            return 0
+
+        when = meeting.get('scheduled_at')
+        when_text = when.strftime('%d %B %Y at %H:%M') if when else 'a date to be confirmed'
+        title = meeting.get('title') or 'Board meeting'
+        verb = {'scheduled': 'has been scheduled',
+                'rescheduled': 'has been rescheduled',
+                'cancelled': 'has been cancelled'}.get(kind, 'has been updated')
+        subject = f"EHRDC Board meeting {verb}: {title}"
+        where = meeting.get('location') or ('Online' if meeting.get('is_virtual') else 'To be confirmed')
+        body = (
+            f"The EHRDC Board meeting \"{title}\" {verb}.\n\n"
+            f"Date and time: {when_text}\n"
+            f"Duration: {meeting.get('duration_minutes') or 60} minutes\n"
+            f"Location: {where}\n\n"
+            f"{(meeting.get('agenda') or '').strip()}\n\n"
+            "This notice is sent to the office of the board member so the meeting "
+            "can be coordinated in advance.\n"
+        )
+        queued = 0
+        for r in rows:
+            execute_query("""
+                INSERT INTO board_office_notifications
+                    (meeting_id, board_member_id, office_email, office_name,
+                     kind, subject, body)
+                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s)
+            """, (str(meeting['id']), r['user_id'], r['email'], r.get('office_name'),
+                  kind, subject, body), fetch_all=False)
+            queued += 1
+        return queued
+    except Exception as e:
+        # Never let an office notice failure break the meeting itself.
+        logger.warning(f"queueing board office notifications failed: {e}")
+        return 0
+
+
+@board_meetings_bp.route('/offices', methods=['GET'])
+@require_roles(*ORGANISER_ROLES)
+def list_offices():
+    """Every board member with the office contacts recorded for them."""
+    try:
+        members = execute_query("""
+            SELECT id, COALESCE(full_name, email, id) AS name
+            FROM users
+            WHERE role = 'board_member' OR secondary_roles::text ILIKE '%%board_member%%'
+            ORDER BY 2
+        """) or []
+        offices = execute_query("""
+            SELECT id, user_id, office_name, email, phone, is_active
+            FROM board_member_offices WHERE is_active ORDER BY office_name NULLS LAST, email
+        """) or []
+        by_member = {}
+        for o in offices:
+            by_member.setdefault(str(o['user_id']), []).append({
+                'id': str(o['id']), 'office_name': o.get('office_name'),
+                'email': o.get('email'), 'phone': o.get('phone'),
+            })
+        return jsonify({'success': True, 'data': [
+            {'user_id': str(m['id']), 'name': m.get('name'),
+             'offices': by_member.get(str(m['id']), [])} for m in members
+        ]})
+    except Exception as e:
+        logger.error(f"list board offices failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load offices'}), 500
+
+
+@board_meetings_bp.route('/offices', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def add_office():
+    """Record an office contact for a board member."""
+    data = request.get_json() or {}
+    user_id = str(data.get('user_id') or '').strip()[:15]
+    email = (data.get('email') or '').strip()
+    if not user_id or not email:
+        return jsonify({'success': False, 'message': 'A board member and an email address are required'}), 400
+    if '@' not in email or '.' not in email.split('@')[-1]:
+        return jsonify({'success': False, 'message': 'That does not look like an email address'}), 400
+    try:
+        row = execute_query("""
+            INSERT INTO board_member_offices (user_id, office_name, email, phone, created_by)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (user_id, lower(email))
+            DO UPDATE SET office_name = EXCLUDED.office_name,
+                          phone = EXCLUDED.phone,
+                          is_active = true,
+                          updated_at = now()
+            RETURNING id
+        """, (user_id, data.get('office_name'), email, data.get('phone'),
+              str(get_jwt_identity())[:15]), fetch_one=True)
+        return jsonify({'success': True, 'data': {'id': str(row['id'])}}), 201
+    except Exception as e:
+        logger.error(f"add board office failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save the office contact'}), 500
+
+
+@board_meetings_bp.route('/offices/<office_id>', methods=['DELETE'])
+@require_roles(*ORGANISER_ROLES)
+def remove_office(office_id):
+    """Deactivate an office contact. The row stays: notifications already queued
+    to it are part of the record of who was told what."""
+    try:
+        execute_query("""
+            UPDATE board_member_offices SET is_active = false, updated_at = now()
+            WHERE id::text = %s
+        """, (str(office_id),), fetch_all=False)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"remove board office failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to remove the office contact'}), 500
+
+
+@board_meetings_bp.route('/office-notifications', methods=['GET'])
+@require_roles(*ORGANISER_ROLES)
+def office_notifications():
+    """What is queued for the offices, and whether it has actually gone out."""
+    try:
+        rows = execute_query("""
+            SELECT n.id, n.meeting_id, n.office_email, n.office_name, n.kind,
+                   n.subject, n.status, n.queued_at, n.sent_at, n.last_error,
+                   m.title AS meeting_title,
+                   COALESCE(u.full_name, u.email, n.board_member_id) AS member_name
+            FROM board_office_notifications n
+            LEFT JOIN board_meetings m ON m.id = n.meeting_id
+            LEFT JOIN users u ON u.id = n.board_member_id
+            ORDER BY n.queued_at DESC
+            LIMIT 100
+        """) or []
+        return jsonify({'success': True, 'data': [{
+            'id': str(r['id']),
+            'meeting_title': r.get('meeting_title'),
+            'member_name': r.get('member_name'),
+            'office_email': r.get('office_email'),
+            'office_name': r.get('office_name'),
+            'kind': r.get('kind'),
+            'status': r.get('status'),
+            'queued_at': r['queued_at'].isoformat() if r.get('queued_at') else None,
+            'sent_at': r['sent_at'].isoformat() if r.get('sent_at') else None,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"office notifications failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load office notifications'}), 500
 
 
 @board_meetings_bp.route('/historical', methods=['POST'])
@@ -437,6 +602,7 @@ def update_meeting(meeting_id):
                 (str(meeting_id),)) or [])]
             _notify_invitees(meeting_id, f"Rescheduled: {row.get('title')}",
                              rescheduled_to, invitees)
+            _queue_office_notifications(row, 'rescheduled', invitees)
         return jsonify({'success': True, 'data': _row(row)})
     except Exception as e:
         logger.error(f"update board meeting failed: {e}")
@@ -475,6 +641,7 @@ def cancel_meeting(meeting_id):
         _notify_invitees(meeting_id,
                          f"Cancelled: {title}" + (f" — {reason}" if reason else ''),
                          row.get('scheduled_at'), invitees)
+        _queue_office_notifications(row, 'cancelled', invitees)
         return jsonify({'success': True, 'data': _row(row)})
     except Exception as e:
         logger.error(f"cancel board meeting failed: {e}")
