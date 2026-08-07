@@ -548,8 +548,18 @@ export const FeedbackWidget = () => {
                 button was buried by any open modal — e.g. "Edit Details" — so a
                 user could not report a bug about the thing they were looking at
                 (feedback fb_1785829639). The screenshot routine hides
-                .feedback-trigger-btn before capture, so it never appears in shots. */}
-            <div className="fixed bottom-24 end-6 z-[110] group feedback-trigger-btn">
+                .feedback-trigger-btn before capture, so it never appears in shots.
+
+                pointer-events-auto is the other half of that fix, and without it
+                the first half looks like it worked while doing nothing. Radix
+                dialogs (the Sheet behind "Edit Details" is one) set
+                pointer-events: none on document.body while open; descendants
+                inherit it, so the button sat visibly on top of the overlay and
+                silently swallowed every click — reported again as "the Feedback
+                option appears but it is not clickable" (fb_1785994305).
+                Re-enabling pointer events on this container restores the click
+                without letting anything else through. */}
+            <div className="fixed bottom-24 end-6 z-[110] group feedback-trigger-btn pointer-events-auto">
                 <Button
                     onClick={() => setIsOpen(true)}
                     aria-label="Send feedback or report an issue"
