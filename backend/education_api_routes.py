@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 education_bp = Blueprint('education', __name__, url_prefix='/api/education')
 
 try:
-    from backend.auth.access_control import require_roles, OPERATOR_ROLES, PROFDEV_ROLES
+    from backend.auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES
 except ImportError:
-    from auth.access_control import require_roles, OPERATOR_ROLES, PROFDEV_ROLES
+    from auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES
 
 
 def get_db():
@@ -441,7 +441,7 @@ def create_scholarship():
 @jwt_required()
 def get_scholarship_applications(scholarship_id):
     """Get applications for a specific scholarship (educator / operator view)."""
-    if (get_jwt() or {}).get('role', '') not in _SCHOLARSHIP_REVIEWER_ROLES:
+    if not (resolve_roles() & set(_SCHOLARSHIP_REVIEWER_ROLES)):
         return jsonify({"error": "Forbidden - educator/operator access required"}), 403
     applications = query_all("""
         SELECT sa.id, sa.user_id, sa.scholarship_id, sa.status,

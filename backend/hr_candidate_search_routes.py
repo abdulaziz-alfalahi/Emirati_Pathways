@@ -21,9 +21,9 @@ from typing import Dict, List, Any
 import os
 
 try:
-    from backend.auth.access_control import require_roles, HR_ROLES
+    from backend.auth.access_control import resolve_roles, require_roles, HR_ROLES
 except ImportError:
-    from auth.access_control import require_roles, HR_ROLES
+    from auth.access_control import resolve_roles, require_roles, HR_ROLES
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -646,10 +646,9 @@ def match_candidates_to_job(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
-        if user_role not in allowed_roles:
-            return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
+        user_roles = resolve_roles()
+        if not (user_roles & {'employer_admin', 'recruiter', 'admin'}):
+            return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your roles: {sorted(user_roles) or ["none"]}'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

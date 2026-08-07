@@ -9,6 +9,11 @@ import psycopg2.extras
 import logging
 from backend.db import get_db_connection
 
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,7 @@ def recruiter_summary():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
+        if not (resolve_roles() & {'recruiter', 'employer_admin', 'admin'}):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

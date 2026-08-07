@@ -22,6 +22,11 @@ import json
 import logging
 from datetime import datetime
 
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
+
 logger = logging.getLogger(__name__)
 
 career_passport_bp = Blueprint('career_passport', __name__, url_prefix='/api/career-passport')
@@ -165,10 +170,10 @@ def _can_view_passport(conn, target_user_id):
     if caller == str(target_user_id):
         return True
     try:
-        role = (get_jwt() or {}).get('role', '')
+        roles = resolve_roles()
     except Exception:
-        role = ''
-    if role in _PASSPORT_VIEWER_ROLES:
+        roles = set()
+    if roles & set(_PASSPORT_VIEWER_ROLES):
         return True
     # Verified parent -> child link (table may be absent -> fail closed).
     try:
@@ -364,7 +369,7 @@ def award_stamp():
     Triggered by: course completion, certification, internship end, project milestone, etc.
     Only issuer roles may award stamps (a stamp is a verified credential).
     """
-    if (get_jwt() or {}).get('role', '') not in _STAMP_ISSUER_ROLES:
+    if not (resolve_roles() & set(_STAMP_ISSUER_ROLES)):
         return jsonify({"error": "Forbidden - stamp issuer access required"}), 403
     data = request.get_json(silent=True) or {}
     # user_id is the recipient the issuer is awarding to.
