@@ -922,6 +922,22 @@ def get_crm_candidates():
                     cp.alternative_phone,
                     cp.unavailability_reason,
                     cp.role_preferences,
+                    -- Counselling fields the team records on a call. Several
+                    -- already existed but were never returned, so the form
+                    -- could not show what a previous agent had established.
+                    cp.is_student,
+                    cp.specialization,
+                    cp.english_proficiency,
+                    cp.salary_expectations,
+                    cp.candidates_source,
+                    cp.previous_work_location,
+                    cp.gpa,
+                    cp.graduation_date,
+                    cp.sub_specialization,
+                    cp.experience_duration,
+                    cp.military_status,
+                    cp.field_preference,
+                    cp.job_search_duration,
                     COALESCE(au.full_name,
                              NULLIF(TRIM(CONCAT_WS(' ', au.first_name, au.last_name)), ''),
                              au.email) AS assigned_to_name
@@ -977,7 +993,20 @@ def get_crm_candidates():
                         'preferred_schedule': c['preferred_schedule'],
                         'alternative_phone': c['alternative_phone'],
                         'unavailability_reason': c['unavailability_reason'],
-                        'role_preferences': c['role_preferences']
+                        'role_preferences': c['role_preferences'],
+                        'is_student': c['is_student'],
+                        'specialization': c['specialization'],
+                        'english_proficiency': c['english_proficiency'],
+                        'salary_expectations': c['salary_expectations'],
+                        'candidates_source': c['candidates_source'],
+                        'previous_work_location': c['previous_work_location'],
+                        'gpa': c['gpa'],
+                        'graduation_date': c['graduation_date'],
+                        'sub_specialization': c['sub_specialization'],
+                        'experience_duration': c['experience_duration'],
+                        'military_status': c['military_status'],
+                        'field_preference': c['field_preference'],
+                        'job_search_duration': c['job_search_duration']
                     }
                 })
                 
@@ -1073,6 +1102,18 @@ def get_crm_stats():
         return jsonify({'success': False, 'message': 'Failed to get CRM stats'}), 500
 
 
+def _blank_to_none(v):
+    """'' and the dropdown's 'none' sentinel mean "not recorded", not a value.
+
+    Without this every COALESCE above would happily store an empty string, and
+    "no answer yet" would become indistinguishable from a recorded blank.
+    """
+    if v is None:
+        return None
+    v = str(v).strip()
+    return None if v == '' or v.lower() == 'none' else v
+
+
 @candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def update_crm_candidate(user_id):
@@ -1113,6 +1154,12 @@ def update_crm_candidate(user_id):
                 '', 'unassigned', 'none', 'null') else _assigned_raw
 
             if exists:
+                # COALESCE on every counselling field the form may omit: a
+                # counselling record is built over several calls, and a partial
+                # save must not blank what an earlier call established.
+                # date_of_call is stamped by the server on each save — the team
+                # asked for it to be automatic, and a client-supplied date would
+                # be a claim about when a call happened rather than a record.
                 cursor.execute("""
                     UPDATE candidate_profiles SET
                         call_status = %s,
@@ -1128,7 +1175,22 @@ def update_crm_candidate(user_id):
                         alternative_phone = %s,
                         unavailability_reason = %s,
                         role_preferences = %s,
-                        updated_at = CURRENT_TIMESTAMP
+                        education_level        = COALESCE(%s, education_level),
+                        is_student             = COALESCE(%s, is_student),
+                        specialization         = COALESCE(%s, specialization),
+                        english_proficiency    = COALESCE(%s, english_proficiency),
+                        salary_expectations    = COALESCE(%s, salary_expectations),
+                        candidates_source      = COALESCE(%s, candidates_source),
+                        previous_work_location = COALESCE(%s, previous_work_location),
+                        gpa                    = COALESCE(%s, gpa),
+                        graduation_date        = COALESCE(%s, graduation_date),
+                        sub_specialization     = COALESCE(%s, sub_specialization),
+                        experience_duration    = COALESCE(%s, experience_duration),
+                        military_status        = COALESCE(%s, military_status),
+                        field_preference       = COALESCE(%s, field_preference),
+                        job_search_duration    = COALESCE(%s, job_search_duration),
+                        date_of_call           = CURRENT_TIMESTAMP,
+                        updated_at             = CURRENT_TIMESTAMP
                     WHERE user_id = %s
                 """, (
                     data.get('callStatus'),
@@ -1144,6 +1206,20 @@ def update_crm_candidate(user_id):
                     data.get('alternativePhone'),
                     data.get('unavailabilityReason'),
                     data.get('rolePreferences'),
+                    _blank_to_none(data.get('educationLevel')),
+                    data.get('isStudent'),
+                    _blank_to_none(data.get('specialization')),
+                    _blank_to_none(data.get('englishLevel')),
+                    _blank_to_none(data.get('salaryExpectations')),
+                    _blank_to_none(data.get('candidatesSource')),
+                    _blank_to_none(data.get('previousWorkLocation')),
+                    _blank_to_none(data.get('gpa')),
+                    _blank_to_none(data.get('graduationDate')),
+                    _blank_to_none(data.get('subSpecialization')),
+                    _blank_to_none(data.get('experienceDuration')),
+                    _blank_to_none(data.get('militaryStatus')),
+                    _blank_to_none(data.get('fieldPreference')),
+                    _blank_to_none(data.get('jobSearchDuration')),
                     user_id
                 ))
             else:
