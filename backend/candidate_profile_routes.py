@@ -835,6 +835,43 @@ def upload_photo():
             'message': 'Failed to upload photo'
         }), 500
 
+@candidate_profile_bp.route('/crm-last-import', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def get_crm_last_import():
+    """When candidate data genuinely last came from NAFIS.
+
+    The CRM's refresh button re-reads this database; it does not contact NAFIS.
+    Operators asked to see a "last synced" time next to it, which would have
+    described the refresh and implied data had just arrived from NAFIS. What
+    they actually need to know is when the roster was last IMPORTED, which is
+    what this returns — from nafis_import_batches, the record of real imports.
+    Returns null when no import has ever run, rather than a comforting default.
+    """
+    try:
+        row = execute_query("""
+            SELECT batch_code, filename, total_records, successful, failed,
+                   duplicates, status, created_at
+            FROM nafis_import_batches
+            WHERE status = 'completed'
+            ORDER BY created_at DESC
+            LIMIT 1
+        """, fetch_one=True)
+        if not row:
+            return jsonify({'success': True, 'data': None})
+        return jsonify({'success': True, 'data': {
+            'batch_code': row.get('batch_code'),
+            'filename': row.get('filename'),
+            'total_records': row.get('total_records'),
+            'successful': row.get('successful'),
+            'failed': row.get('failed'),
+            'duplicates': row.get('duplicates'),
+            'imported_at': row['created_at'].isoformat() if row.get('created_at') else None,
+        }})
+    except Exception as e:
+        logger.error(f"crm last import failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to read the import history'}), 500
+
+
 @candidate_profile_bp.route('/crm-candidates', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_candidates():

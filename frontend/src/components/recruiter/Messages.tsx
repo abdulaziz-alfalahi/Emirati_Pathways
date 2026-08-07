@@ -20,6 +20,9 @@ interface PlatformUser {
   name?: string;
   email: string;
   role?: string;
+  /** Returned only to career-services, call-centre and admin roles. */
+  phone?: string;
+  emirates_id?: string;
 }
 
 interface MessagesProps {
@@ -604,7 +607,10 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
         const res = await restClient.get('/api/communication/contacts', {
           params: { q: userSearch },
         });
-        const contacts: { id: string | number; name?: string; role?: string }[] =
+        // emirates_id/phone are returned only to career-services, call-centre
+        // and admin roles; other staff get name and role as before.
+        const contacts: { id: string | number; name?: string; role?: string;
+                          phone?: string; emirates_id?: string }[] =
           res?.data?.data?.contacts || [];
         const users: PlatformUser[] = contacts.map(c => ({
           id: c.id,
@@ -612,6 +618,8 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
           name: c.name,
           email: '',
           role: c.role,
+          phone: c.phone,
+          emirates_id: c.emirates_id,
         }));
         setFoundUsers(users.filter((u: PlatformUser) => String(u.id) !== userId));
       } catch { setFoundUsers([]); }
@@ -720,6 +728,18 @@ const Messages: React.FC<MessagesProps> = ({ senderRole = 'recruiter', showNewCo
                             </div>
                             <div className="min-w-0">
                               <p className="font-medium truncate">{u.full_name || u.name || t('User', 'مستخدم')}</p>
+                              {/* Two people can share a name; the operator needs
+                                  to see WHICH record they are about to open a
+                                  conversation with (fb_1786012604). Only shown
+                                  when the backend returned these, which it does
+                                  solely for roles entitled to see them. */}
+                              {(u.emirates_id || u.phone) ? (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {u.emirates_id ? `${t('EID', 'الهوية')} ${u.emirates_id}` : ''}
+                                  {u.emirates_id && u.phone ? ' · ' : ''}
+                                  {u.phone || ''}
+                                </p>
+                              ) : null}
                               <p className="text-xs text-muted-foreground truncate">{u.role?.replace('_', ' ') || t('User', 'مستخدم')}</p>
                             </div>
                           </button>
