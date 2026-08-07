@@ -344,6 +344,9 @@ def office_notifications():
         return jsonify({'success': True, 'data': [{
             'id': str(r['id']),
             'meeting_title': r.get('meeting_title'),
+            # The queue view titles each row with this; selected but never
+            # returned, so every notice rendered with a blank heading.
+            'subject': r.get('subject'),
             'member_name': r.get('member_name'),
             'office_email': r.get('office_email'),
             'office_name': r.get('office_name'),
