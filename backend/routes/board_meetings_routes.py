@@ -61,6 +61,7 @@ def _row(m):
         'location': m.get('location'),
         'is_virtual': m.get('is_virtual'),
         'status': m.get('status'),
+        'is_historical': bool(m.get('is_historical')),
         'quorum_required': m.get('quorum_required'),
         'started_at': iso(m.get('started_at')),
         'ended_at': iso(m.get('ended_at')),
@@ -191,6 +192,49 @@ def _notify_invitees(meeting_id, title, when, invitees):
         logger.warning(f"board meeting notifications skipped: {e}")
 
 
+@board_meetings_bp.route('/historical', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def create_historical_meeting():
+    """Record a board meeting that was held before the platform existed.
+
+    Entered after the fact for the archive, so it gets no room and is never
+    joinable. It is stored as completed because it has been held — but with
+    is_historical set, so nothing presents its empty attendance record as
+    evidence that nobody attended.
+    """
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    held_on = (data.get('scheduled_at') or '').strip()
+    if not title:
+        return jsonify({'success': False, 'message': 'Title is required'}), 400
+    if not held_on:
+        return jsonify({'success': False, 'message': 'The date it was held is required'}), 400
+    try:
+        when = datetime.fromisoformat(held_on.replace('Z', '+00:00'))
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Date must be an ISO datetime'}), 400
+
+    now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+    if when > now:
+        return jsonify({'success': False,
+                        'message': 'That date is in the future. Use Schedule meeting for a meeting still to come.'}), 400
+
+    try:
+        row = execute_query("""
+            INSERT INTO board_meetings
+                (title, title_ar, agenda, agenda_ar, scheduled_at, duration_minutes,
+                 location, is_virtual, room_name, status, is_historical, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, false, NULL, 'completed', true, %s)
+            RETURNING *
+        """, (title, data.get('title_ar'), data.get('agenda'), data.get('agenda_ar'),
+              when, int(data.get('duration_minutes') or 0) or None,
+              data.get('location'), str(get_jwt_identity())[:15]), fetch_one=True)
+        return jsonify({'success': True, 'data': _row(row)}), 201
+    except Exception as e:
+        logger.error(f"create historical board meeting failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to record the meeting'}), 500
+
+
 @board_meetings_bp.route('/<meeting_id>/join', methods=['POST'])
 @require_roles(*BOARD_ROLES)
 def join_meeting(meeting_id):
@@ -317,7 +361,9 @@ def update_meeting(meeting_id):
                             (str(meeting_id),), fetch_one=True)
     if not meeting:
         return jsonify({'success': False, 'message': 'Meeting not found'}), 404
-    if meeting.get('status') in ('completed', 'cancelled'):
+    # A historical record is data entry about the past, not the record of a
+    # meeting this platform ran, so a typo in it must stay correctable.
+    if meeting.get('status') in ('completed', 'cancelled') and not meeting.get('is_historical'):
         return jsonify({'success': False,
                         'message': 'This meeting is closed and can no longer be edited.'}), 409
 
