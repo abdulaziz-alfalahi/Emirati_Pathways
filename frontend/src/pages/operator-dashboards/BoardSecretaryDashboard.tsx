@@ -310,6 +310,49 @@ const BoardSecretaryDashboard: React.FC = () => {
     return acc;
   }, {});
 
+  // Board meetings began in 2022, so every year from then is shown even when
+  // empty — an empty 2023 folder is the prompt to fill it, whereas a missing
+  // one just looks like the archive stops there.
+  const BOARD_FIRST_YEAR = 2022;
+  const archiveYears = (() => {
+    const years = new Set<string>(Object.keys(pastByYear));
+    for (let y = BOARD_FIRST_YEAR; y <= new Date().getFullYear(); y++) years.add(String(y));
+    return Array.from(years).filter((y) => y !== '—').sort((a, b2) => b2.localeCompare(a));
+  })();
+
+  // ── Recording a meeting held before the platform existed ─────────
+  const [showHistoricalForm, setShowHistoricalForm] = useState(false);
+  const [savingHistorical, setSavingHistorical] = useState(false);
+  const [historicalForm, setHistoricalForm] = useState({
+    title: '', title_ar: '', agenda: '', scheduled_at: '', location: '',
+  });
+
+  const createHistorical = async () => {
+    if (!historicalForm.title.trim() || !historicalForm.scheduled_at) {
+      toast({
+        title: b('A title and the date it was held are required', 'العنوان وتاريخ الانعقاد مطلوبان'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSavingHistorical(true);
+    try {
+      const res = await restClient.post('/api/board/meetings/historical', historicalForm);
+      if (!res.data?.success) {
+        toast({ title: res.data?.message || b('Could not record the meeting', 'تعذّر تسجيل الاجتماع'), variant: 'destructive' });
+        return;
+      }
+      toast({ title: b('Meeting added to the archive', 'تمت إضافة الاجتماع إلى الأرشيف') });
+      setShowHistoricalForm(false);
+      setHistoricalForm({ title: '', title_ar: '', agenda: '', scheduled_at: '', location: '' });
+      fetchMeetings();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not record the meeting', 'تعذّر تسجيل الاجتماع'), variant: 'destructive' });
+    } finally {
+      setSavingHistorical(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-[#FAFBFC] font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
@@ -790,30 +833,107 @@ const BoardSecretaryDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                {Object.keys(pastByYear).length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    {b('No meetings have been held yet.', 'لم تُعقد أي اجتماعات بعد.')}
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    {b(`Board meetings from ${BOARD_FIRST_YEAR} onwards.`, `اجتماعات المجلس من ${BOARD_FIRST_YEAR} فصاعداً.`)}
                   </p>
-                ) : (
-                  Object.keys(pastByYear)
-                    .sort((a, b2) => b2.localeCompare(a))
-                    .map((year) => (
-                      <div key={year}>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-2">{year}</h4>
+                  <Button size="sm" variant="outline" className="gap-2"
+                          onClick={() => setShowHistoricalForm((v) => !v)}>
+                    <Plus className="h-4 w-4" />
+                    {b('Add a past meeting', 'إضافة اجتماع سابق')}
+                  </Button>
+                </div>
+
+                {showHistoricalForm && (
+                  <div className="rounded-lg border bg-white p-4 space-y-4">
+                    <p className="text-sm font-medium text-gray-900">
+                      {b('Record a meeting held before the platform',
+                         'تسجيل اجتماع عُقد قبل المنصة')}
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="h-title">{b('Title', 'العنوان')}</Label>
+                        <Input id="h-title" value={historicalForm.title}
+                               onChange={(e) => setHistoricalForm({ ...historicalForm, title: e.target.value })}
+                               placeholder={b('e.g. Board Meeting 1/2022', 'مثال: اجتماع المجلس ١/٢٠٢٢')} />
+                      </div>
+                      <div>
+                        <Label htmlFor="h-title-ar">{b('Title (Arabic)', 'العنوان بالعربية')}</Label>
+                        <Input id="h-title-ar" dir="rtl" value={historicalForm.title_ar}
+                               onChange={(e) => setHistoricalForm({ ...historicalForm, title_ar: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="h-when">{b('Date held', 'تاريخ الانعقاد')}</Label>
+                        <Input id="h-when" type="datetime-local" value={historicalForm.scheduled_at}
+                               onChange={(e) => setHistoricalForm({ ...historicalForm, scheduled_at: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="h-loc">{b('Location', 'المكان')}</Label>
+                        <Input id="h-loc" value={historicalForm.location}
+                               onChange={(e) => setHistoricalForm({ ...historicalForm, location: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="h-agenda">{b('Agenda or notes', 'جدول الأعمال أو ملاحظات')}</Label>
+                      <Textarea id="h-agenda" rows={3} value={historicalForm.agenda}
+                                onChange={(e) => setHistoricalForm({ ...historicalForm, agenda: e.target.value })} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={createHistorical} disabled={savingHistorical} className="gap-2">
+                        {savingHistorical && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {b('Add to archive', 'إضافة إلى الأرشيف')}
+                      </Button>
+                      <Button variant="ghost" onClick={() => setShowHistoricalForm(false)}>
+                        {b('Cancel', 'إلغاء')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {archiveYears.map((year) => {
+                  const items = pastByYear[year] || [];
+                  return (
+                    <div key={year}>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                        {year}
+                        <span className="ms-2 text-xs font-normal text-gray-500">
+                          {items.length
+                            ? b(`${items.length} meeting${items.length > 1 ? 's' : ''}`, `${items.length} اجتماع`)
+                            : b('no meetings recorded', 'لا اجتماعات مسجّلة')}
+                        </span>
+                      </h4>
+                      {items.length === 0 ? (
+                        <div className="rounded-lg border border-dashed p-3 text-xs text-gray-500">
+                          {b('Nothing recorded for this year yet. Use "Add a past meeting" to enter one.',
+                             'لم يُسجَّل شيء لهذه السنة بعد. استخدم "إضافة اجتماع سابق" لإدخال اجتماع.')}
+                        </div>
+                      ) : (
                         <div className="space-y-2">
-                          {pastByYear[year].map((m: any) => (
+                          {items.map((m: any) => (
                             <div key={m.id} className="rounded-lg border p-3">
-                              <p className="text-sm font-medium text-gray-900">
-                                {isRTL && m.title_ar ? m.title_ar : m.title}
-                              </p>
-                              <p className="text-xs text-gray-600">{fmt(m.scheduled_at)}</p>
-                              {m.agenda && <p className="text-xs text-gray-500 mt-1">{m.agenda}</p>}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {isRTL && m.title_ar ? m.title_ar : m.title}
+                                  </p>
+                                  <p className="text-xs text-gray-600">{fmt(m.scheduled_at)}</p>
+                                  {m.agenda && <p className="text-xs text-gray-500 mt-1">{m.agenda}</p>}
+                                </div>
+                                {m.is_historical && (
+                                  <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-gray-600 bg-gray-50"
+                                        title={b('Held before the platform and entered for the archive, so no attendance was captured.',
+                                                 'عُقد قبل المنصة وأُدخل للأرشيف، لذا لم يُسجَّل الحضور.')}>
+                                    {b('Archived record', 'سجل مؤرشف')}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    ))
-                )}
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           </TabsContent>
