@@ -12,6 +12,11 @@ from flask_jwt_extended import jwt_required, get_jwt
 
 from quality_assurance_system import QualityAssuranceSystem, health_check
 
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +40,7 @@ def _conn_string() -> str:
 @jwt_required()
 def qa_health():
     claims = get_jwt()
-    if claims and claims.get('role') not in ('recruiter', 'admin'):
+    if not (resolve_roles() & {'recruiter', 'admin'}):
         return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
     result = health_check(_conn_string())
     return jsonify({"success": True, "data": result}), 200
@@ -46,7 +51,7 @@ def qa_health():
 def assessor_bias(assessor_id: int):
     try:
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        if not (resolve_roles() & {'recruiter', 'admin'}):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         date_from = request.args.get("from")
         date_to = request.args.get("to")
@@ -72,7 +77,7 @@ def assessor_bias(assessor_id: int):
 def assessor_dashboard(assessor_id: int):
     try:
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        if not (resolve_roles() & {'recruiter', 'admin'}):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         system = QualityAssuranceSystem(_conn_string())
         system.connect_db()

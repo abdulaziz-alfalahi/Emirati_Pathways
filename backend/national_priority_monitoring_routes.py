@@ -19,6 +19,10 @@ from backend.db import get_db_connection
 from backend.national_priority_engine import (
     ensure_weights_table, load_weights, compute_national_priority,
 )
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +36,10 @@ _BUCKETS = ("0-19", "20-39", "40-59", "60-79", "80-100")
 
 def _require_admin():
     try:
-        role = (get_jwt() or {}).get('role', '')
+        roles = resolve_roles()
     except Exception:
-        role = ''
-    if role not in _ADMIN_ROLES:
+        roles = set()
+    if not (roles & set(_ADMIN_ROLES)):
         return jsonify({"error": "Forbidden - admin access required"}), 403
     return None
 

@@ -1,4 +1,9 @@
 
+
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
 # =====================================================
 # INLINE CV ROUTES (FIXED FOR CONSISTENCY)
 # =====================================================
@@ -28,9 +33,7 @@ def get_cv_fixed(cv_id):
 
         # Ownership check — allow admin/recruiter to view any CV
         if cv['user_id'] != str(user_id):
-            claims = get_jwt()
-            role = claims.get('role', '')
-            if role not in ['admin', 'recruiter', 'platform_administrator', 'hr_manager']:
+            if not (resolve_roles() & {'admin', 'recruiter', 'platform_administrator', 'hr_manager'}):
                 return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
             
         cv_data = {

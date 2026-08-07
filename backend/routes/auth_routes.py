@@ -20,6 +20,12 @@ import logging
 import os
 import json
 
+try:
+    from backend.auth.access_control import resolve_roles
+except ImportError:  # pragma: no cover - app runs under both roots
+    from auth.access_control import resolve_roles
+
+
 # Helper for safe dataclass instantiation
 def _safe_init(dataclass_type, **kwargs):
     """Safely instantiate a dataclass by filtering out unknown arguments."""
@@ -768,9 +774,7 @@ def update_user_roles():
     """
     try:
         from flask_jwt_extended import get_jwt
-        claims = get_jwt()
-        current_role = claims.get('role', '')
-        if current_role not in ['admin', 'platform_administrator', 'super_admin']:
+        if not (resolve_roles() & {'admin', 'platform_administrator', 'super_admin'}):
             return jsonify({'error': 'Admin access required'}), 403
         
         user_id = get_jwt_identity()
