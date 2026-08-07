@@ -196,6 +196,31 @@ const BoardSecretaryDashboard: React.FC = () => {
     }
   };
 
+  // ── Per-meeting attendance detail (migration 054) ───────────────
+  // Durations are the SUM of presence intervals, so a member who dropped out
+  // and rejoined is not credited with the time they were away.
+  const [attendanceFor, setAttendanceFor] = useState<string | null>(null);
+  const [attendance, setAttendance] = useState<any>(null);
+
+  const openAttendance = async (m: any) => {
+    if (attendanceFor === m.id) { setAttendanceFor(null); setAttendance(null); return; }
+    setAttendanceFor(m.id);
+    setAttendance(null);
+    try {
+      const res = await restClient.get(`/api/board/meetings/${m.id}/attendance`);
+      setAttendance(res.data?.data || null);
+    } catch {
+      setAttendance(null);
+    }
+  };
+
+  const fmtDuration = (secs: number) => {
+    if (!secs) return b('none recorded', 'لم يُسجَّل');
+    const h = Math.floor(secs / 3600);
+    const mnt = Math.round((secs % 3600) / 60);
+    return h ? `${h}${b('h', 'س')} ${mnt}${b('m', 'د')}` : `${mnt}${b('m', 'د')}`;
+  };
+
   // ── Board-wide quorum rule ──────────────────────────────────────
   const [boardSettings, setBoardSettings] = useState<any>(null);
   const [quorumDraft, setQuorumDraft] = useState('');
@@ -550,6 +575,11 @@ const BoardSecretaryDashboard: React.FC = () => {
                             <p className="text-sm text-gray-600">{fmt(m.scheduled_at)}</p>
                           </div>
                           <div className="flex items-center gap-3">
+                            <Button size="sm" variant="ghost" onClick={() => openAttendance(m)}>
+                              {attendanceFor === m.id
+                                ? b('Hide detail', 'إخفاء التفاصيل')
+                                : b('Attendance detail', 'تفاصيل الحضور')}
+                            </Button>
                             <span className="text-sm text-gray-700">
                               {b(`${m.attended_count ?? 0} of ${m.attendee_count ?? 0} attended`,
                                  `حضر ${m.attended_count ?? 0} من ${m.attendee_count ?? 0}`)}
@@ -562,6 +592,75 @@ const BoardSecretaryDashboard: React.FC = () => {
                               </Badge>
                             )}
                           </div>
+                          {attendanceFor === m.id && (
+                            <div className="w-full mt-3 border-t pt-3">
+                              {!attendance ? (
+                                <p className="text-sm text-gray-500">{b('Loading…', 'جارٍ التحميل…')}</p>
+                              ) : attendance.attendees?.length === 0 ? (
+                                <p className="text-sm text-gray-500">
+                                  {b('No attendance was recorded for this meeting.', 'لم يُسجَّل حضور لهذا الاجتماع.')}
+                                </p>
+                              ) : (
+                                <>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="text-xs text-gray-500 text-start">
+                                          <th className="text-start font-medium py-1">{b('Member', 'العضو')}</th>
+                                          <th className="text-start font-medium py-1">{b('Joined', 'الانضمام')}</th>
+                                          <th className="text-start font-medium py-1">{b('Left', 'المغادرة')}</th>
+                                          <th className="text-start font-medium py-1">{b('Present for', 'مدة الحضور')}</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {attendance.attendees.map((a: any) => (
+                                          <tr key={a.user_id} className="border-t">
+                                            <td className="py-1.5">
+                                              {a.name}
+                                              {a.session_count > 1 && (
+                                                <span className="ms-2 text-xs text-amber-700">
+                                                  {b(`rejoined ${a.session_count - 1}×`, `عاد ${a.session_count - 1}×`)}
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td className="py-1.5 text-gray-600">
+                                              {a.first_joined_at
+                                                ? new Date(a.first_joined_at).toLocaleTimeString(isRTL ? 'ar-AE' : 'en-GB',
+                                                    { hour: '2-digit', minute: '2-digit' })
+                                                : b('did not join', 'لم ينضم')}
+                                            </td>
+                                            <td className="py-1.5 text-gray-600">
+                                              {a.last_left_at
+                                                ? new Date(a.last_left_at).toLocaleTimeString(isRTL ? 'ar-AE' : 'en-GB',
+                                                    { hour: '2-digit', minute: '2-digit' })
+                                                : '—'}
+                                            </td>
+                                            <td className="py-1.5">
+                                              {fmtDuration(a.present_seconds)}
+                                              {a.present_percent != null && (
+                                                <span className="text-xs text-gray-500 ms-1">({a.present_percent}%)</span>
+                                              )}
+                                              {a.duration_is_upper_bound && (
+                                                <span className="text-xs text-amber-700 ms-1" title={b(
+                                                  'This member never signalled leaving, so the interval was closed when the meeting was. Treat the duration as an upper bound.',
+                                                  'لم يُسجَّل خروج هذا العضو، لذا أُغلقت الفترة عند انتهاء الاجتماع. اعتبر المدة حداً أعلى.')}>
+                                                  {b('(up to)', '(حتى)')}
+                                                </span>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {b('Duration is the total time actually in the room, so a member who dropped out and rejoined is not credited with the time they were away. Percentages are against how long the meeting ran.',
+                                       'المدة هي إجمالي الوقت داخل الغرفة فعلياً، فلا تُحتسب فترة الانقطاع ضمن الحضور. النسب محسوبة على مدة انعقاد الاجتماع.')}
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
