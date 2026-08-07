@@ -10,9 +10,9 @@ Combined routes for Phase 4:
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 try:
-    from backend.auth.access_control import require_roles, require_auth, OPERATOR_ROLES
+    from backend.auth.access_control import require_roles, require_auth, resolve_roles, OPERATOR_ROLES
 except ImportError:  # pragma: no cover
-    from auth.access_control import require_roles, require_auth, OPERATOR_ROLES
+    from auth.access_control import require_roles, require_auth, resolve_roles, OPERATOR_ROLES
 import psycopg2, psycopg2.extras, os, json, logging, random
 
 logger = logging.getLogger(__name__)
@@ -23,8 +23,25 @@ _STAFF_ROLES = {'call_center_agent', 'admin', 'super_user', 'super_admin',
 
 
 def _is_staff():
+    """Staff test for the platform-ops surface.
+
+    This read ONLY the primary ``role`` claim, so anyone whose staff role sits
+    in ``secondary_roles`` was refused. That is the normal shape of an account
+    here — roles are granted additively by an operator, so the staff role is
+    usually secondary. A user carrying role='career_services_operator' with
+    secondary_roles=['career_services_operator','call_center_agent'] was 403'd
+    from the live chat agent console by the very role that qualifies them
+    (feedback fb_1786012767), and because no agent could staff the queue,
+    users watched "Connecting with an agent" forever (fb_1786008783,
+    fb_1786009930).
+
+    resolve_roles() is the canonical resolver — it unions the JWT claims with
+    users.role and users.secondary_roles. Hand-rolling this check is the
+    pattern that failed open twelve times in issue #96; it should not be
+    re-introduced here or anywhere else.
+    """
     try:
-        return (get_jwt() or {}).get('role', '') in _STAFF_ROLES
+        return bool(resolve_roles() & _STAFF_ROLES)
     except Exception:
         return False
 
