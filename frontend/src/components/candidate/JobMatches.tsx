@@ -304,14 +304,15 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     });
 
     try {
+      // Canonical saved-jobs store: migration 037's candidate_saved_jobs, served
+      // by /api/candidate/saved-jobs (which the list GET on line ~160 already
+      // reads). The old /api/jobs/<id>/save wrote the legacy `saved_jobs` table
+      // and in fact 500s on staging — saving here was silently failing. user_id
+      // is ignored server-side (JWT identity). See docs/api_v1_canonicalization.md.
       if (isBookmarked) {
-        await restClient.delete(`/api/jobs/${jobId}/unsave`, {
-          params: { user_id: candidateProfile?.id }
-        });
+        await restClient.delete(`/api/candidate/saved-jobs/${jobId}`);
       } else {
-        await restClient.post(`/api/jobs/${jobId}/save`, {
-          user_id: candidateProfile?.id
-        });
+        await restClient.post(`/api/candidate/saved-jobs/${jobId}`);
       }
     } catch (error) {
       console.error('Error bookmarking job:', error);
