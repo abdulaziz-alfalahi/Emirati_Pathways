@@ -67,14 +67,18 @@ The tangled one. Three conventions live, including two different DELETE shapes:
 | `MobileJobSearch.tsx` | `POST /api/jobs/<id>/save` | `DELETE /api/jobs/<id>/save` | `GET /api/jobs/saved` |
 | `JobMatchingPage.tsx` | `POST /api/candidate/saved-jobs/<id>` | `DELETE /api/candidate/saved-jobs/<id>` | `GET /api/candidate/saved-jobs` |
 
-**Canonical (RESTful, unambiguous):**
-- `GET /api/jobs/saved`
-- `POST /api/jobs/<id>/save`
-- `DELETE /api/jobs/<id>/save` *(one unsave verb: DELETE on the save resource; retire the separate `/unsave`)*
+**Store investigation (2026-08-08, live) changed this decision.** The `/api/jobs/*` and `candidate_jobs_bp` handlers read/write the **legacy `saved_jobs`** table; migration 037 created **`candidate_saved_jobs`** (EID-keyed, JWT-scoped) as its intended replacement, served by `candidate_job_bp` at `/api/candidate/saved-jobs`. Both tables are empty (0 rows), so there is nothing to migrate — but they are genuinely different stores, and on staging **`POST /api/jobs/<id>/save` returns 500** while the clean path works. Saving from `JobMatches` and `MobileJobSearch` was silently broken; only `JobMatchingPage` (already on the clean endpoints) worked.
 
-→ `/api/v1/jobs/saved`, `/api/v1/jobs/<id>/save`.
+So the earlier "canonicalise to `/api/jobs/*`" pick was wrong — those handlers point at the wrong (broken, empty) store.
 
-Reconciliation: confirm all conventions read/write the **same** saved-jobs store (migration 037) — verify before touching, this is the highest-divergence item. Move all three frontends onto the canonical shape. Retire `/api/candidate/saved-jobs*` and `/api/jobs/<id>/unsave`.
+**Canonical: the migration-037 store, via `candidate_job_bp`:**
+- `GET /api/candidate/saved-jobs`
+- `POST /api/candidate/saved-jobs/<id>`
+- `DELETE /api/candidate/saved-jobs/<id>`
+
+→ `/api/v1/candidate/saved-jobs`. Response shape `{ success, data: [{ job_id, ... }] }`.
+
+Reconciliation (**DONE — this PR**): pointed `JobMatches` and `MobileJobSearch` at the clean endpoints (and fixed `MobileJobSearch`'s parse, which expected the legacy `{ saved_jobs: [{ id }] }` shape). Retire the legacy `/api/jobs/saved`, `/api/jobs/<id>/save`, `/api/jobs/<id>/unsave` and the shadowed duplicate `candidate_jobs_bp` `GET /saved-jobs` in the cleanup follow-up.
 
 ### 5. Job matches
 
@@ -102,9 +106,9 @@ Every live caller uses **`/api/profile/availability`** (`CandidateAvailabilityCo
 | list applications | `GET /api/applications/my-applications` | `/api/jobs/applications`, `/api/candidate/applications` |
 | get application | `GET /api/applications/<id>` | — |
 | withdraw | `POST /api/applications/<id>/withdraw` | `/api/candidate/applications/<id>/withdraw`, `/api/jobs/applications/<id>/withdraw` |
-| save job | `POST /api/jobs/<id>/save` | `/api/candidate/saved-jobs/<id>` |
-| unsave job | `DELETE /api/jobs/<id>/save` | `/api/jobs/<id>/unsave`, `/api/candidate/saved-jobs/<id>` |
-| list saved | `GET /api/jobs/saved` | `/api/candidate/saved-jobs` |
+| save job | `POST /api/candidate/saved-jobs/<id>` | `/api/jobs/<id>/save` (500s, wrong store) |
+| unsave job | `DELETE /api/candidate/saved-jobs/<id>` | `/api/jobs/<id>/unsave`, `/api/jobs/<id>/save` |
+| list saved | `GET /api/candidate/saved-jobs` | `/api/jobs/saved`, dup `candidate_jobs_bp` |
 | job matches | `GET /api/candidate/job-matches` | `/api/jobs/matches` (dead) |
 | CV top vacancies | `GET /api/matching/visible/top-vacancies` | — (distinct) |
 | availability | `GET\|PUT /api/profile/availability` | `/api/candidate/profile/availability` |

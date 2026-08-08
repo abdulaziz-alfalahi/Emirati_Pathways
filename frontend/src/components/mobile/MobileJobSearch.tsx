@@ -138,7 +138,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
   const loadUserJobData = useCallback(async () => {
     try {
       const [savedResponse, appliedResponse] = await Promise.all([
-        restClient.get('/api/jobs/saved', {
+        restClient.get('/api/candidate/saved-jobs', {
           headers: { Authorization: `Bearer ${authToken}` }
         }),
         restClient.get('/api/applications', {
@@ -147,7 +147,9 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
       ]);
 
       if (savedResponse.data.success) {
-        setSavedJobs(new Set(savedResponse.data.saved_jobs?.map((job: any) => job.id) || []));
+        // Clean store shape: { success, data: [{ job_id, ... }] } (was the
+        // legacy { saved_jobs: [{ id }] } — different key and field).
+        setSavedJobs(new Set((savedResponse.data.data || []).map((job: any) => String(job.job_id ?? job.id))));
       }
 
       if (appliedResponse.data.success) {
@@ -163,8 +165,10 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
     try {
       const isSaved = savedJobs.has(jobId);
       
+      // Canonical saved-jobs store (migration 037). The old /api/jobs/<id>/save
+      // wrote the legacy `saved_jobs` table and 500s on staging.
       if (isSaved) {
-        await restClient.delete(`/api/jobs/${jobId}/save`, {
+        await restClient.delete(`/api/candidate/saved-jobs/${jobId}`, {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         setSavedJobs(prev => {
@@ -174,7 +178,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
         });
         toast.success('Job removed from saved');
       } else {
-        await restClient.post(`/api/jobs/${jobId}/save`, {}, {
+        await restClient.post(`/api/candidate/saved-jobs/${jobId}`, {}, {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         setSavedJobs(prev => new Set(prev).add(jobId));
