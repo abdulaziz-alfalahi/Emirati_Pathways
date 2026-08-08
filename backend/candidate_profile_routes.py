@@ -835,6 +835,17 @@ def upload_photo():
             'message': 'Failed to upload photo'
         }), 500
 
+# A record an agent can actually work: some phone or email, and not an
+# anonymised (deleted) account retained for referential integrity.
+UNCONTACTABLE_SQL = (
+    "(\n"
+    "    (COALESCE(NULLIF(TRIM(u.phone), ''), NULLIF(TRIM(cp.alternative_phone), '')) IS NOT NULL\n"
+    "     OR NULLIF(TRIM(u.email), '') IS NOT NULL)\n"
+    "    AND COALESCE(u.email, '') NOT ILIKE '%%@anonymized.local'\n"
+    ")"
+)
+
+
 @candidate_profile_bp.route('/crm-last-import', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_last_import():
@@ -946,12 +957,105 @@ def get_crm_candidates():
                 LEFT JOIN users au ON au.id = cp.assigned_to
                 WHERE (u.role = 'candidate' OR u.user_type = 'candidate')
             """
-            if supervisor:
-                cursor.execute(base + " ORDER BY u.created_at DESC LIMIT 100000")
-            else:
-                cursor.execute(base + " AND cp.assigned_to = %s ORDER BY u.created_at DESC LIMIT 100000",
-                               (me,))
+            # -- Filtering and pagination, in SQL ------------------------
+            # This used to select the whole roster (LIMIT 100000) and let the
+            # browser search, filter and paginate it. At 5,310 candidates that
+            # was already a 5.5 MB, 3.7-second response carrying every
+            # candidate's Emirates ID, phone and counselling notes. The platform
+            # targets all Dubai nationals aged 15+ -- of the order of 150,000
+            # people -- where the same approach is roughly 155 MB per page load.
+            # It also shipped the entire roster's PII to a browser in order to
+            # display twenty rows of it.
+            where, params = [], []
+            if not supervisor:
+                where.append("cp.assigned_to = %s")
+                params.append(me)
 
+            q = (request.args.get('q') or '').strip()
+            if q:
+                # Name, Emirates ID or phone -- the team routinely has only the
+                # number. Digits are compared with separators and the local or
+                # country prefix stripped, so 0501234567, +971501234567 and
+                # 971501234567 all find the same person.
+                digits = ''.join(ch for ch in q if ch.isdigit())
+                clauses = ["COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) ILIKE %s"]
+                params.append('%' + q + '%')
+                if digits:
+                    clauses.append("CAST(u.id AS TEXT) LIKE %s")
+                    params.append('%' + digits + '%')
+                    clauses.append("COALESCE(u.emirates_id_enc, '') LIKE %s")
+                    params.append('%' + digits + '%')
+                    stripped = digits.lstrip('0')
+                    stripped = stripped[3:] if stripped.startswith('971') else stripped
+                    clauses.append("REGEXP_REPLACE(COALESCE(u.phone,''),'[^0-9]','','g') LIKE %s")
+                    params.append('%' + (stripped or digits) + '%')
+                where.append("(" + " OR ".join(clauses) + ")")
+
+            for _param, _col in (('call_status', 'cp.call_status'),
+                                 ('work_status', 'cp.work_status')):
+                val = (request.args.get(_param) or '').strip()
+                if val and val.lower() != 'all':
+                    where.append("COALESCE(" + _col + ", 'Unknown') = %s")
+                    params.append(val)
+
+            segment = (request.args.get('segment') or '').strip()
+            if segment and segment.lower() != 'all':
+                where.append("cp.crm_segments::jsonb ? %s")
+                params.append(segment)
+
+            # The "hide" clause is kept OUT of `where` so the checkbox's own
+            # count can be measured against the other filters only. Folding it
+            # in would make the label read "hide 0 records" the moment it was
+            # ticked, which reads as though the toggle had found nothing.
+            hide_uncontactable = (request.args.get('hide_uncontactable') or '').lower() \
+                in ('1', 'true', 'yes')
+
+            where_sql = (" AND " + " AND ".join(where)) if where else ""
+            # No phone and no email means an agent cannot work the record.
+            # Anonymised rows are deleted accounts kept for referential
+            # integrity; they are not people anyone can ring.
+            page_where_sql = where_sql + (" AND " + UNCONTACTABLE_SQL if hide_uncontactable else "")
+
+            try:
+                page = max(int(request.args.get('page', 1)), 1)
+            except (TypeError, ValueError):
+                page = 1
+            try:
+                per_page = min(max(int(request.args.get('per_page', 20)), 1), 100)
+            except (TypeError, ValueError):
+                per_page = 20
+
+            _from = ("FROM users u LEFT JOIN candidate_profiles cp ON u.id = cp.user_id "
+                     "WHERE (u.role = 'candidate' OR u.user_type = 'candidate')")
+            scope_sql = _from + page_where_sql          # exactly what the page shows
+            filter_scope_sql = _from + where_sql        # same, minus the hide toggle
+
+            cursor.execute("SELECT COUNT(*) AS n " + scope_sql, tuple(params))
+            total = int((cursor.fetchone() or {}).get('n') or 0)
+
+            # Summary for the cards, computed over the SAME filter set as the
+            # page -- so the headline figures always describe what the agent is
+            # looking at, not a different population.
+            cursor.execute(
+                "SELECT "
+                " COUNT(*) FILTER (WHERE cp.call_status = 'Answered') AS contacted,"
+                " COUNT(*) FILTER (WHERE cp.call_status IN "
+                "   ('No Answer','Invalid Number','Not Reachable','Switched Off')) AS no_answer,"
+                " COUNT(*) FILTER (WHERE cp.assigned_to IS NULL) AS unassigned "
+                + scope_sql, tuple(params))
+            summary_row = cursor.fetchone() or {}
+
+            # How many the "hide" toggle would remove, so the checkbox can show
+            # a count without the client holding the roster to count it. Measured
+            # against the other filters but NOT against the toggle itself, so the
+            # number stays steady whether it is ticked or not.
+            cursor.execute(
+                "SELECT COUNT(*) AS n " + filter_scope_sql + " AND NOT " + UNCONTACTABLE_SQL,
+                tuple(params))
+            uncontactable_total = int((cursor.fetchone() or {}).get('n') or 0)
+
+            cursor.execute(base + page_where_sql + " ORDER BY u.created_at DESC LIMIT %s OFFSET %s",
+                           tuple(params) + (per_page, (page - 1) * per_page))
             candidates = cursor.fetchall()
             
             # Format the output for the frontend
@@ -1012,7 +1116,24 @@ def get_crm_candidates():
                 
             return jsonify({
                 'success': True,
-                'data': formatted
+                'data': formatted,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total,
+                    'total_pages': (total + per_page - 1) // per_page if per_page else 1,
+                },
+                # Headline figures for the CRM cards. Counted in SQL over
+                # the same filters as the page, because the client no
+                # longer holds the roster and must not infer totals from
+                # the twenty rows it can see.
+                'summary': {
+                    'total': total,
+                    'contacted': int(summary_row.get('contacted') or 0),
+                    'no_answer': int(summary_row.get('no_answer') or 0),
+                    'unassigned': int(summary_row.get('unassigned') or 0),
+                    'uncontactable': uncontactable_total,
+                },
             })
             
         finally:
