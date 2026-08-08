@@ -51,6 +51,45 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info(logger_init_msg)
 
+
+def _is_admin(uid):
+    """True only if the user id `uid` is a genuine admin.
+
+    These debug endpoints authenticate with the module's own
+    get_user_id_from_token() rather than @jwt_required(), so flask-jwt-extended's
+    request context is not established and resolve_roles() (which reads it) would
+    see no identity. So resolve admin straight from the DB for the id we already
+    hold — checking users.role AND secondary_roles, never a raw primary-role
+    claim (that fail-open pattern is issue #96). ADMIN_ROLES stays the single
+    source of which roles count as admin.
+    """
+    if not uid:
+        return False
+    try:
+        try:
+            from backend.auth.access_control import ADMIN_ROLES
+            from backend.db_utils import execute_query as _q
+        except ImportError:
+            from auth.access_control import ADMIN_ROLES
+            from db_utils import execute_query as _q
+        row = _q("SELECT role, secondary_roles FROM users WHERE id::text = %s",
+                 (str(uid),), fetch_one=True)
+        if not row:
+            return False
+        roles = set()
+        if row.get('role'):
+            roles.add(row['role'])
+        sec = row.get('secondary_roles') or []
+        if isinstance(sec, str):
+            try:
+                sec = json.loads(sec)
+            except Exception:
+                sec = [sec]
+        roles.update(sec or [])
+        return bool(roles & ADMIN_ROLES)
+    except Exception:
+        return False
+
 # Create blueprint
 enhanced_cv_bp = Blueprint('enhanced_cv', __name__, url_prefix='/api/cv')
 
@@ -667,10 +706,11 @@ def update_cv_visibility(cv_id):
 def get_debug_stats():
     """Get storage stats with debug records (admin only)"""
     try:
-        # Gate behind admin role
         user_id = get_user_id_from_token()
         if not user_id:
             return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        if not _is_admin(user_id):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
         stats = cv_storage_manager.get_storage_stats()
         return jsonify(stats), 200
     except Exception as e:
@@ -684,6 +724,11 @@ def debug_list_cvs(user_id):
         auth_user = get_user_id_from_token()
         if not auth_user:
             return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        # Reads another user's CV list by id. Without an admin gate this is a
+        # BOLA: any authenticated candidate could enumerate anyone else's CVs,
+        # including ones marked is_visible=false. Own list is /api/cv/list.
+        if str(auth_user) != str(user_id) and not _is_admin(auth_user):
+            return jsonify({'success': False, 'message': 'Forbidden'}), 403
         result = cv_storage_manager.get_user_cvs(user_id)
         return jsonify(result), 200
     except Exception as e:
