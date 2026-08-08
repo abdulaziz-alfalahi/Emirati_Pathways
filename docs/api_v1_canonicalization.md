@@ -88,7 +88,9 @@ Reconciliation (**DONE — this PR**): pointed `JobMatches` and `MobileJobSearch
 | `/api/jobs/matches` | *none* | retire (dead) |
 | `/api/matching/visible/top-vacancies` | `services/cvStorageService.ts` | **keep, distinct** — CV-scoped top vacancies, a different operation; include in v1 as-is |
 
-All must call the **one canonical scorer** (`backend/match_scoring.py`); confirm `/api/candidate/job-matches` does, so the number is identical to the web's.
+**Scorer parity is NOT confirmed — this opened a real gap (2026-08-08).** The live `/api/candidate/job-matches` (`candidate_job_routes.py`) scores with `enhanced_matching_engine` / `ai_matching_service`. The **canonical** `match_scoring.calculate_match_score` is used on the **recruiter** side (`inline_routes.py:307`, setting `candidate['match_score']`) and by the dead `/api/jobs/matches`. So the two sides use **different scorers** — despite the `inline_routes.py` comment "so BOTH sides show the SAME percentage" and the standing principle (GH #12, PR #214) that one disclosed scorer serves both.
+
+This is **not** a quick alias cleanup. The candidate side deliberately uses semantic/CV-based AI matching; whether that should be reconciled with the structured recruiter score — or whether they are intentionally different views — is a product decision on an owner-governed number. **Flagged for its own investigation; deliberately not changed here.**
 
 ### 6. Availability
 
@@ -118,7 +120,16 @@ Every live caller uses **`/api/profile/availability`** (`CandidateAvailabilityCo
 1. **Apply** — highest value (live data-integrity fix). **DONE (PR pending):** both web callers (`JobMatches.tsx`, `MobileJobSearch.tsx`) moved to `/api/applications/apply`; the canonical handler already covers the fields they send, so no widening was needed. Verified live: published job → 201 + owner notified; duplicate → 409; draft → 409 (test row cleaned up). The two legacy handlers are now unused; retire them in a follow-up once traffic confirms zero use.
 2. **Withdraw** — move `ApplicationTracker` onto the timeline-aware handler; confirm the status history now records the withdrawal.
 3. **Saved jobs** — collapse to the single RESTful shape after confirming one shared store.
-4. **Matches + availability** — retire the two dead aliases; confirm the scorer parity.
+4. **Matches + availability** — the dead aliases (`/api/jobs/matches`, `/api/candidate/profile/availability`) retire in the cleanup follow-up. **Scorer parity is a separate, unresolved finding** (see §5) needing its own investigation and an owner decision — not folded into this cleanup.
 5. Then, and only then, the `/api/v1` dual-mount (`api_versioning_plan.md` §3) over a surface with one implementation per operation.
+
+## Status (2026-08-08)
+
+- Step 1 (apply) — **done**, PR #326, live-verified.
+- Step 2 (withdraw) — **done**, PR #327, live-verified; surfaced and fixed a latent bug where every migration-041 timeline write silently rolled back (`fetch_all` on the INSERT).
+- Step 3 (saved jobs) — **done**, PR #328; fixed a live 500 — saving from two of three components hit a broken, empty legacy store.
+- Step 4 — dead-alias retirement deferred to cleanup; **scorer parity flagged as a real gap, not resolved.**
+- **Cleanup follow-up (pending):** retire the now-unused legacy handlers (apply ×2, withdraw ×2, saved ×4). Each is frontend-unused after steps 1–3; confirm no other consumer before removing.
+- **Then** the infra half of the versioning plan: split `candidate_profile_bp` (keep CRM off the v1 mount), the `/api/v1` dual-mount + contract tests + `client-status`, and the two security must-fixes (rotate `JWT_SECRET_KEY`, block dev-login in production).
 
 Each of steps 1–4 is a live-behaviour change verified through the WAF before merge, exactly like the CRM and BOLA fixes. None needs a migration — the columns and stores already exist.
