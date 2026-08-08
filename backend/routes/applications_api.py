@@ -263,7 +263,20 @@ def withdraw(application_id):
             return jsonify({'success': False, 'message': 'Application not found'}), 404
         if row['candidate_id'] != user_id:
             return jsonify({'success': False, 'message': 'Forbidden'}), 403
-        _record_status(application_id, 'withdrawn', changed_by=user_id)
+        # Terminal states cannot be withdrawn — you can't un-hire, un-reject, or
+        # re-withdraw. The parallel /api/candidate withdraw handler enforced this;
+        # the canonical one did not, so consolidating onto it must not lose the
+        # guard. (offer stays withdrawable — declining an offer by withdrawing is
+        # legitimate.)
+        if (row.get('status') or '') in ('withdrawn', 'rejected', 'hired'):
+            return jsonify({'success': False,
+                            'message': f"Cannot withdraw an application that is {row['status']}"}), 409
+        # Preserve the candidate's stated reason on the timeline entry rather than
+        # discarding it. The old handler kept it (string-appended to notes); this
+        # records it cleanly in application_status_history.notes.
+        reason = (request.get_json(silent=True) or {}).get('reason')
+        reason = str(reason)[:2000] if reason else None
+        _record_status(application_id, 'withdrawn', changed_by=user_id, note=reason)
         execute_query("UPDATE job_applications SET status = 'withdrawn', updated_at = NOW() WHERE id = %s",
                       (application_id,), fetch_all=False)
         return jsonify({'success': True, 'message': 'Application withdrawn'})

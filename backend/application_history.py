@@ -67,12 +67,18 @@ def record_status_change(application_id, new_status, changed_by=None,
         if previous == new_status:
             return
 
+        # fetch_all=False is REQUIRED: execute_query defaults to fetch_all=True,
+        # which calls cursor.fetchall() after the INSERT, raises "no results to
+        # fetch", and ROLLS THE ROW BACK. Without this every timeline write since
+        # migration 041 has silently no-op'd (all pre-existing rows came from the
+        # older application_status_tracker path, changed_by=NULL).
         execute_query(
             """INSERT INTO application_status_history
                    (id, application_id, previous_status, new_status, changed_by, notes)
                VALUES (gen_random_uuid(), %s, %s, %s, %s, %s)""",
             (str(application_id), previous, new_status,
-             str(changed_by) if changed_by else None, note))
+             str(changed_by) if changed_by else None, note),
+            fetch_all=False)
 
         candidate_id = row.get('candidate_id')
         # Candidate-initiated transitions (withdraw/accept) need no echo back.
