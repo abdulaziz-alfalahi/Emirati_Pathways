@@ -171,7 +171,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
       // Store the ID to withdraw before making the API call
       const applicationIdToWithdraw = String(selectedApplication.id);
 
-      const response = await restClient.post(`/api/candidate/applications/${applicationIdToWithdraw}/withdraw`, {
+      // Canonical withdraw path (docs/api_v1_canonicalization.md): same timeline
+      // hook and terminal-state guard, in the one lifecycle blueprint. The reason
+      // is recorded on the timeline entry (application_status_history.notes).
+      const response = await restClient.post(`/api/applications/${applicationIdToWithdraw}/withdraw`, {
         reason: withdrawReason
       });
 
