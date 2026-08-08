@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
@@ -48,6 +48,10 @@ export default function CareerServicesDashboard() {
   // re-reads this database and contacts NAFIS not at all, so its own timestamp
   // would say nothing about the freshness of the data.
   const [lastImport, setLastImport] = useState<any>(null);
+  // Paging and the headline counts are computed in SQL now, so they arrive
+  // with the page rather than being derived from an in-browser roster.
+  const [pageMeta, setPageMeta] = useState<any>(null);
+  const [summary, setSummary] = useState<any>(null);
   // Anonymised and consent-test rows have no contact details, so an agent
   // working the call list only discovers that after opening them.
   const [hideUncontactable, setHideUncontactable] = useState(false);
@@ -57,11 +61,20 @@ export default function CareerServicesDashboard() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetchCandidates();
     fetchOperators();
     fetchLastImport();
     fetchStats();
   }, []);
+
+  // Every page, search or filter change is a new query. The search box is
+  // debounced so typing an Emirates ID does not fire fifteen queries against
+  // a table that will eventually hold every Dubai national.
+  useEffect(() => {
+    const id = setTimeout(() => { fetchCandidates(); }, searchTerm ? 350 : 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, callStatusFilter, workStatusFilter, segmentFilter,
+      hideUncontactable]);
 
   const fetchStats = async () => {
     setStatsLoading(true);
@@ -82,14 +95,6 @@ export default function CareerServicesDashboard() {
     } catch {
       setLastImport(null);
     }
-  };
-
-  // A record with no phone and no email cannot be worked by an agent.
-  const isUncontactable = (c: any) => {
-    const phone = String(c.phone || '').replace(/[^0-9]/g, '');
-    const email = String(c.email || '').trim();
-    const anonymised = /anonymized|anonymised/i.test(String(c.email || '') + String(c.name || ''));
-    return anonymised || (!phone && !email);
   };
 
   const saveQuickRemark = async () => {
@@ -117,8 +122,25 @@ export default function CareerServicesDashboard() {
   const fetchCandidates = async () => {
     setLoading(true);
     try {
-      const res = await restClient.get(`/api/profile/crm-candidates?_cb=${Date.now()}`);
+      // Search, filters and paging are applied in SQL. This used to pull the
+      // whole roster down so the browser could do it: 5.5 MB and 3.7 seconds
+      // at 5,310 candidates, and every candidate's Emirates ID, phone and
+      // counselling notes shipped to the client in order to show twenty rows.
+      // The platform targets every Dubai national aged 15 and over.
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        per_page: String(itemsPerPage),
+        _cb: String(Date.now()),
+      });
+      if (searchTerm.trim()) params.set('q', searchTerm.trim());
+      if (callStatusFilter !== 'All') params.set('call_status', callStatusFilter);
+      if (workStatusFilter !== 'All') params.set('work_status', workStatusFilter);
+      if (segmentFilter !== 'All') params.set('segment', segmentFilter);
+      if (hideUncontactable) params.set('hide_uncontactable', 'true');
+      const res = await restClient.get(`/api/profile/crm-candidates?${params.toString()}`);
       if (res.data?.success && res.data?.data) {
+        setPageMeta(res.data.pagination || null);
+        setSummary(res.data.summary || null);
         const mapped = res.data.data.map((user: any) => {
           const profile = user.profile || {};
           const first = user.first_name || '';
@@ -274,54 +296,24 @@ export default function CareerServicesDashboard() {
     }
   };
 
-  // Filtering Logic
-  const uncontactableCount = useMemo(
-    () => candidates.filter(isUncontactable).length, [candidates]);
+  // The API returns exactly the rows for this page, already searched and
+  // filtered, so the table renders them as they arrive. The client-side
+  // filtering that used to live here went with the whole-roster fetch it
+  // depended on.
+  const filteredCandidates = candidates;
+  const paginatedCandidates = candidates;
+  const totalCandidates = pageMeta?.total ?? 0;
+  const totalPages = Math.max(pageMeta?.total_pages ?? 1, 1);
+  const activePage = pageMeta?.page ?? currentPage;
+  const uncontactableCount = summary?.uncontactable ?? 0;
 
-  const filteredCandidates = useMemo(() => {
-    const cleanSearch = searchTerm.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    return candidates.filter(c => {
-      // Anonymised / consent-test rows carry no way to reach anyone, so an
-      // agent working the list only finds that out after opening them.
-      if (hideUncontactable && isUncontactable(c)) return false;
-      const candidateName = c.name ? String(c.name) : '';
-      const candidateEid = c.eid ? String(c.eid) : '';
-      
-      const cleanName = candidateName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const cleanEid = candidateEid.toLowerCase().replace(/[^a-z0-9]/g, '');
-      
-      // Phone search, requested by the CRM team — they often have only the
-      // number to hand. Compare digits so 0501234567, +971501234567 and
-      // 971501234567 all find the same person.
-      const digitsOnly = (v: any) => String(v || '').replace(/\D/g, '');
-      const searchDigits = digitsOnly(searchTerm).replace(/^0+|^971/, '');
-      const candidateDigits = digitsOnly(c.phone) + digitsOnly(c.alternativePhone);
-      const phoneMatch = searchDigits.length >= 4 && candidateDigits.includes(searchDigits);
-
-      const matchesSearch = !cleanSearch ||
-                            cleanName.includes(cleanSearch) ||
-                            cleanEid.includes(cleanSearch) ||
-                            phoneMatch;
-      const matchesCallStatus = callStatusFilter === 'All' || c.callStatus === callStatusFilter;
-      const matchesWorkStatus = workStatusFilter === 'All' || c.workStatus === workStatusFilter;
-      const matchesSegment = segmentFilter === 'All' || (c.segments || []).includes(segmentFilter);
-      return matchesSearch && matchesCallStatus && matchesWorkStatus && matchesSegment;
-    });
-  }, [candidates, hideUncontactable, searchTerm, callStatusFilter, workStatusFilter, segmentFilter]);
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
-  const activePage = Math.min(currentPage, Math.max(1, totalPages));
-  const paginatedCandidates = filteredCandidates.slice(
-    (activePage - 1) * itemsPerPage,
-    activePage * itemsPerPage
-  );
-
-  // KPIs
-  const totalCount = candidates.length;
-  const contactedCount = candidates.filter(c => c.callStatus === 'Answered').length;
-  const noAnswerCount = candidates.filter(c => c.callStatus === 'No Answer' || c.callStatus === 'Invalid Number').length;
-  const unassignedCount = candidates.filter(c => c.assignedTo === 'Unassigned' || !c.assignedTo).length;
+  // KPIs are counted in SQL across the whole filtered set. Deriving them from
+  // `candidates` would now describe only the twenty rows on screen and
+  // silently understate every figure.
+  const totalCount = summary?.total ?? 0;
+  const contactedCount = summary?.contacted ?? 0;
+  const noAnswerCount = summary?.no_answer ?? 0;
+  const unassignedCount = summary?.unassigned ?? 0;
 
   // CRM roster segments (imported from the team's Main Master File; the
   // segment slug is stored in candidate_profiles.crm_segments).
@@ -865,10 +857,10 @@ export default function CareerServicesDashboard() {
             )}
             
             {/* Pagination */}
-            {!loading && filteredCandidates.length > 0 && (
+            {!loading && totalCandidates > 0 && (
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <span className="text-sm text-slate-500">
-                  {t('Showing', 'عرض')} <span className="font-medium text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> {t('to', 'إلى')} <span className="font-medium text-slate-900">{Math.min(currentPage * itemsPerPage, filteredCandidates.length)}</span> {t('of', 'من')} <span className="font-medium text-slate-900">{filteredCandidates.length}</span> {t('candidates', 'مرشحين')}
+                  {t('Showing', 'عرض')} <span className="font-medium text-slate-900">{(activePage - 1) * itemsPerPage + 1}</span> {t('to', 'إلى')} <span className="font-medium text-slate-900">{Math.min(activePage * itemsPerPage, totalCandidates)}</span> {t('of', 'من')} <span className="font-medium text-slate-900">{totalCandidates.toLocaleString()}</span> {t('candidates', 'مرشحين')}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button 
