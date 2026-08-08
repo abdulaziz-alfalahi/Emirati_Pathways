@@ -350,9 +350,14 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     );
 
     try {
-      const response = await restClient.post('/api/jobs/apply', {
+      // Canonical apply path: enforces published-only (409 on drafts), is
+      // withdrawn-aware, stamps submitted_at, and notifies the job owner. It also
+      // lives in the blueprint whose withdraw/status changes record the
+      // application timeline (migration 041). The old /api/jobs/apply did none of
+      // these. See docs/api_v1_canonicalization.md. user_id is ignored
+      // server-side (JWT identity is authoritative), so it is dropped here.
+      const response = await restClient.post('/api/applications/apply', {
         job_id: jobId,
-        user_id: candidateProfile?.id,
         cover_letter: letter
       });
 

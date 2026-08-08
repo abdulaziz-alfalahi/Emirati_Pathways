@@ -189,7 +189,11 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
   // Apply to job
   const applyToJob = async (jobId: string) => {
     try {
-      const response = await restClient.post(`/api/jobs/${jobId}/apply`, {
+      // Canonical apply path (job_id moves from the URL into the body). See
+      // docs/api_v1_canonicalization.md — this is the guarded, timeline-aware
+      // handler; the old /api/jobs/<id>/apply was an unguarded parallel.
+      const response = await restClient.post('/api/applications/apply', {
+        job_id: jobId,
         cover_letter: `I am interested in applying for this position. My profile demonstrates the skills and experience required for this role.`
       }, {
         headers: { Authorization: `Bearer ${authToken}` }
