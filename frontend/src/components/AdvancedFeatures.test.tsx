@@ -118,7 +118,8 @@ describe('Advanced Features Frontend Components', () => {
                     { id: '1', title: 'Test Job', company: 'Test Corp', location: 'Dubai', salary_range: '10k-15k', employment_type: 'Full-time', posted_date: '2025-09-19', description: 'A test job' }
                 ]
             });
-            mock.onGet('/api/jobs/saved').reply(200, { success: true, saved_jobs: [] });
+            // MobileJobSearch reads the canonical migration-037 store now.
+            mock.onGet('/api/candidate/saved-jobs').reply(200, { success: true, data: [] });
             mock.onGet('/api/applications').reply(200, { success: true, applications: [] });
         });
 
