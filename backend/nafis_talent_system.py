@@ -148,6 +148,91 @@ CREATE INDEX IF NOT EXISTS idx_seeker_inv_token ON seeker_invitations(token);
 """
 
 
+# ══════════════════════════════════════════════════════════════════════
+# NAFIS → candidate profile mapping
+#
+# The import captures ~28 structured fields per seeker. Until this existed,
+# redemption set only user_id + status and every one of those fields stayed
+# stranded in nafis_job_seekers: the candidate was asked to re-enter data the
+# government had already supplied, the career-services CRM (which reads users +
+# candidate_profiles) could not see any of it, and matching had no structured
+# input for these people.
+# ══════════════════════════════════════════════════════════════════════
+
+# NAFIS ships a free-text national-service value; candidate_profiles.military_status
+# is a documented enum (migration 057). Map the forms we can recognise and store
+# NULL for anything else — inventing a value would make "unknown" indistinguishable
+# from a real answer. Unrecognised values are logged so the real NAFIS vocabulary
+# can be added once live data arrives (the sample rows carry none today).
+_NATIONAL_SERVICE_TO_MILITARY = {
+    'completed': 'completed', 'complete': 'completed', 'done': 'completed',
+    'not yet joined': 'not_yet_joined', 'not_yet_joined': 'not_yet_joined',
+    'pending': 'not_yet_joined',
+    'exempted': 'exempted', 'exempt': 'exempted',
+    'in service': 'in_service', 'in_service': 'in_service', 'serving': 'in_service',
+    'not required': 'not_required', 'not_required': 'not_required',
+    'n/a': 'not_required', 'na': 'not_required',
+}
+
+
+def _military_status_from_national_service(value):
+    if value is None or str(value).strip() == '':
+        return None
+    mapped = _NATIONAL_SERVICE_TO_MILITARY.get(str(value).strip().lower())
+    if mapped is None:
+        logger.warning(
+            "NAFIS national_service value %r not recognised — storing NULL "
+            "rather than guessing. Add it to _NATIONAL_SERVICE_TO_MILITARY.", value)
+    return mapped
+
+
+def _gpa_text(value):
+    """nafis_job_seekers.gpa is numeric; candidate_profiles.gpa is TEXT on purpose
+    (migration 057 — institutions report 3.6/4, 88%, Distinction, Very Good).
+    Without this cast the COALESCE(varchar, numeric) fails outright.
+    Stringify faithfully rather than reformatting — 3.60 stays "3.60"."""
+    if value is None:
+        return None
+    return str(value).strip() or None
+
+
+def _experience_duration(years):
+    """experience_years (int) → the stated-duration text column (migration 057)."""
+    if years is None:
+        return None
+    try:
+        n = int(years)
+    except (TypeError, ValueError):
+        return None
+    return '1 year' if n == 1 else f'{n} years'
+
+
+# (nafis column, candidate_profiles column, transform or None)
+_NAFIS_PROFILE_MAP = [
+    ('full_name',                 'full_name',                  None),
+    ('gender',                    'gender',                     None),
+    ('date_of_birth',             'dob',                        None),
+    ('age_group',                 'age_group',                  None),
+    ('marital_status',            'marital_status',             None),
+    ('education_level',           'education_level',            None),
+    ('gpa',                       'gpa',                        _gpa_text),
+    ('is_student',                'is_student',                 None),
+    ('specialization',            'specialization',             None),
+    ('sub_specialization',        'sub_specialization',         None),
+    ('experience_years',          'experience_duration',        _experience_duration),
+    ('job_seeker_type',           'job_seeker_type',            None),
+    ('job_seeker_date',           'job_seeker_date',            None),
+    ('preferred_work_mode',       'preferred_work_setup',       None),
+    ('national_service',          'military_status',            _military_status_from_national_service),
+    ('emirate_of_origin',         'emirate_of_origin',          None),
+    ('emirate_of_residence',      'emirate_of_residence',       None),
+    ('city_name',                 'location',                   None),
+    ('phone',                     'phone',                      None),
+    ('is_person_of_determination', 'is_person_of_determination', None),
+    ('determination_type',        'determination_type',         None),
+]
+
+
 class NafisTalentSystem:
 
     def __init__(self, db_connection=None):
@@ -722,6 +807,12 @@ class NafisTalentSystem:
                     WHERE id = %s
                 """, (inv['id'],))
 
+                # Carry the imported NAFIS details onto the candidate's own
+                # record. Runs inside this transaction so the profile and the
+                # linkage commit together — a candidate is never left linked but
+                # with the imported data still stranded.
+                self._seed_profile_from_nafis(cur, inv['seeker_id'], str(user_id))
+
                 conn.commit()
                 logger.info(
                     f"Seeker invitation redeemed for user {user_id} "
@@ -752,6 +843,70 @@ class NafisTalentSystem:
                 conn.close()
             except Exception:
                 pass
+
+    def _seed_profile_from_nafis(self, cur, seeker_id, user_id):
+        """Copy the imported NAFIS fields onto the candidate's own record.
+
+        Runs inside the redemption transaction, on the caller's cursor.
+
+        THE CANDIDATE ALWAYS WINS: every column is written with
+        COALESCE(existing, imported), so anything the person (or a CRM agent)
+        has already entered is never overwritten. That makes this safe to run
+        again on a repeat callback — re-running can only fill blanks.
+
+        Also seeds users.fullname_ar / email / phone on the same terms, since
+        the Arabic name has no home on candidate_profiles and the platform is
+        bilingual.
+        """
+        cur.execute(
+            "SELECT %s FROM nafis_job_seekers WHERE id = %%s" % (
+                ', '.join(src for src, _dst, _t in _NAFIS_PROFILE_MAP)
+                + ', full_name_arabic, email'),
+            (seeker_id,))
+        seeker = cur.fetchone()
+        if not seeker:
+            logger.warning("NAFIS seeder: seeker %s vanished mid-redemption", seeker_id)
+            return
+
+        values = {}
+        for src, dst, transform in _NAFIS_PROFILE_MAP:
+            raw = seeker.get(src)
+            values[dst] = transform(raw) if transform else raw
+        # Provenance, so the CRM can tell imported data from agent-entered data.
+        values['candidates_source'] = 'NAFIS'
+
+        # candidate_profiles.user_id carries no unique constraint (only the PK),
+        # so an explicit update-or-insert rather than ON CONFLICT. It is de-facto
+        # unique today (5,295 rows / 5,295 distinct users).
+        cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (user_id,))
+        existing = cur.fetchone()
+
+        cols = list(values.keys())
+        if existing:
+            sets = ', '.join(f"{c} = COALESCE({c}, %s)" for c in cols)
+            cur.execute(
+                f"UPDATE candidate_profiles SET {sets}, updated_at = NOW() WHERE user_id = %s",
+                tuple(values[c] for c in cols) + (user_id,))
+        else:
+            placeholders = ', '.join(['%s'] * len(cols))
+            cur.execute(
+                f"INSERT INTO candidate_profiles (user_id, {', '.join(cols)}) "
+                f"VALUES (%s, {placeholders})",
+                (user_id,) + tuple(values[c] for c in cols))
+
+        # Arabic name + contact details live on users.
+        cur.execute("""
+            UPDATE users
+               SET fullname_ar = COALESCE(NULLIF(TRIM(COALESCE(fullname_ar, '')), ''), %s),
+                   email       = COALESCE(NULLIF(TRIM(COALESCE(email, '')), ''), %s),
+                   phone       = COALESCE(NULLIF(TRIM(COALESCE(phone, '')), ''), %s)
+             WHERE id = %s
+        """, (seeker.get('full_name_arabic'), seeker.get('email'),
+              seeker.get('phone'), user_id))
+
+        logger.info(
+            "NAFIS profile seeded for user %s from seeker %s (%d fields offered)",
+            user_id, seeker_id, len([v for v in values.values() if v is not None]))
 
     # ══════════════════════════════════════════════════════════
     # Queries

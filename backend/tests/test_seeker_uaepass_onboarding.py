@@ -94,17 +94,69 @@ def _system_with(fetch_results):
 
 
 def test_redeem_links_seeker_to_proven_user():
-    # invitation row (unused), then the users existence check.
+    # invitation row (unused), the users existence check, then the profile
+    # seeder's two reads: the NAFIS row, then the existing-profile lookup.
     system, conn, cur = _system_with([
         {'id': 5, 'seeker_id': 9, 'is_used': False, 'full_name': 'Sara A', 'emirates_id': '784...'},
         {'id': '784000000000420'},
+        {'full_name': 'Sara A', 'education_level': 'Bachelor', 'experience_years': 3,
+         'national_service': 'completed', 'is_person_of_determination': False,
+         'full_name_arabic': 'سارة', 'email': 's@test.ae', 'phone': '+9715000'},
+        None,   # no existing candidate_profiles row -> INSERT path
     ])
     res = system.redeem_seeker_invitation_for_user('tok', '784000000000420', is_new_user=True)
     assert res['role'] == 'candidate' and res['seeker_id'] == '9'
     sqls = ' '.join(c.args[0] for c in cur.execute.call_args_list)
     assert 'UPDATE nafis_job_seekers' in sqls and "status = 'profile_created'" in sqls
     assert 'UPDATE seeker_invitations' in sqls
+    # the imported data is carried onto the candidate's own record
+    assert 'INSERT INTO candidate_profiles' in sqls
+    assert 'fullname_ar' in sqls          # Arabic name seeded onto users
     conn.commit.assert_called_once()
+
+
+def test_redeem_seeds_profile_without_overwriting_candidate_data():
+    """An existing profile is filled in, never overwritten: COALESCE(existing, imported)."""
+    system, conn, cur = _system_with([
+        {'id': 5, 'seeker_id': 9, 'is_used': False, 'full_name': 'Sara A', 'emirates_id': '784...'},
+        {'id': '784000000000420'},
+        {'full_name': 'Sara A', 'education_level': 'Bachelor', 'experience_years': 1},
+        {'id': 77},   # existing candidate_profiles row -> UPDATE path
+    ])
+    system.redeem_seeker_invitation_for_user('tok', '784000000000420')
+    sqls = ' '.join(c.args[0] for c in cur.execute.call_args_list)
+    assert 'UPDATE candidate_profiles' in sqls
+    # every seeded column must be COALESCE(existing, imported) — the candidate wins
+    assert 'education_level = COALESCE(education_level, %s)' in sqls
+    assert 'INSERT INTO candidate_profiles' not in sqls
+
+
+def test_national_service_unknown_value_is_null_not_guessed():
+    from nafis_talent_system import _military_status_from_national_service as m
+    assert m('Completed') == 'completed'
+    assert m('in service') == 'in_service'
+    assert m('') is None
+    assert m(None) is None
+    # an unrecognised vocabulary must NOT be coerced into the enum
+    assert m('Deferred pending review') is None
+
+
+def test_gpa_numeric_is_cast_to_text():
+    """nafis gpa is numeric, candidate_profiles.gpa is TEXT (migration 057).
+    Without the cast the COALESCE(varchar, numeric) fails — caught live."""
+    from decimal import Decimal
+    from nafis_talent_system import _gpa_text as g
+    assert g(Decimal('3.60')) == '3.60'
+    assert g(None) is None
+    assert g('') is None
+
+
+def test_experience_duration_formatting():
+    from nafis_talent_system import _experience_duration as e
+    assert e(1) == '1 year'
+    assert e(5) == '5 years'
+    assert e(None) is None
+    assert e('junk') is None
 
 
 def test_redeem_invalid_token_raises():
