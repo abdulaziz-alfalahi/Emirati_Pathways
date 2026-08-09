@@ -97,10 +97,19 @@ class GrowthSystem:
         }
         
         try:
-            # Decode bytes if needed
-            if isinstance(csv_file_content, bytes):
-                csv_file_content = csv_file_content.decode('utf-8')
-                
+            # Decode robustly. A bare .decode('utf-8') used to raise
+            # UnicodeDecodeError on a cp1256 (Arabic Windows) export and take the
+            # ENTIRE import down with it — no rows landed at all.
+            try:
+                from backend.csv_encoding import decode_csv_bytes, looks_encoding_mangled
+            except ImportError:
+                from csv_encoding import decode_csv_bytes, looks_encoding_mangled
+            csv_file_content, _used_encoding = decode_csv_bytes(csv_file_content)
+            if _used_encoding not in ('utf-8-sig', 'utf-8', 'str'):
+                report['errors'].append(
+                    f"File was not UTF-8 (read as {_used_encoding}). Re-export as "
+                    f"'CSV UTF-8' if any Arabic text looks wrong.")
+
             reader = csv.DictReader(io.StringIO(csv_file_content))
             
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -130,7 +139,23 @@ class GrowthSystem:
                             report['errors'].append(f"Row {report['total_rows']}: Missing required fields (Name, Email, or Title)")
                             cur.execute("RELEASE SAVEPOINT sp_row")
                             continue
-                            
+
+                        # The spreadsheet already destroyed this text before upload
+                        # (Excel replaces anything it can't encode with '?'). We
+                        # cannot recover it here — the characters are gone — so
+                        # refuse the row rather than commit '???? ???????' under a
+                        # real company's identity, which is what happened to one
+                        # of the companies already on staging.
+                        if looks_encoding_mangled(company_name):
+                            report['errors'].append(
+                                f"Row {report['total_rows']}: company name looks corrupted "
+                                f"by the export ('{company_name[:40]}'). Re-export the file as "
+                                f"'CSV UTF-8' — the original characters cannot be recovered "
+                                f"from this file.")
+                            cur.execute("RELEASE SAVEPOINT sp_row")
+                            continue
+
+
                         # 2. Find or Create Shadow Company — resolved by trade
                         #    licence / normalised name, not exact string (#99)
                         logger.info(f"Processing company: {company_name}")
