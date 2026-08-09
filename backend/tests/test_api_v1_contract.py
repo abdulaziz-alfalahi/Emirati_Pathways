@@ -33,9 +33,9 @@ for p in (os.path.dirname(_backend), _backend):
 from app import create_app  # noqa: E402
 
 try:
-    from backend.api_v1 import V1_SURFACE, V1_PREFIX
+    from backend.api_v1 import V1_SURFACE, V1_PREFIX, v1_path_for
 except ImportError:  # pragma: no cover
-    from api_v1 import V1_SURFACE, V1_PREFIX
+    from api_v1 import V1_SURFACE, V1_PREFIX, v1_path_for
 
 
 @pytest.fixture(scope='module')
@@ -58,7 +58,7 @@ def test_every_published_path_is_actually_mounted(app):
     references something moved or deleted — clients would get 404s."""
     live = _v1_rules(app)
     for path, methods in V1_SURFACE.items():
-        v1_path = V1_PREFIX + path[len('/api'):]
+        v1_path = v1_path_for(path)
         assert v1_path in live, f'{v1_path} declared in V1_SURFACE but not mounted'
         missing = methods - live[v1_path]
         assert not missing, f'{v1_path} missing published methods {sorted(missing)}'
@@ -67,7 +67,7 @@ def test_every_published_path_is_actually_mounted(app):
 def test_no_unexpected_paths_on_the_published_surface(app):
     """Nothing may appear under /api/v1 that V1_SURFACE does not name.
     This is what stops an endpoint being published by accident."""
-    declared = {V1_PREFIX + p[len('/api'):] for p in V1_SURFACE}
+    declared = {v1_path_for(p) for p in V1_SURFACE}
     declared.add(f'{V1_PREFIX}/client-status')
     unexpected = sorted(set(_v1_rules(app)) - declared)
     assert not unexpected, f'undeclared paths published under /api/v1: {unexpected}'
@@ -81,7 +81,7 @@ def test_v1_shares_the_view_function_with_its_unversioned_twin(app):
 
     checked = 0
     for path in V1_SURFACE:
-        v1_path = V1_PREFIX + path[len('/api'):]
+        v1_path = v1_path_for(path)
         if path not in by_path or v1_path not in by_path:
             continue
         base_views = {app.view_functions[r.endpoint] for r in by_path[path]}
@@ -111,6 +111,27 @@ def test_retired_handlers_are_not_published(app):
     live = _v1_rules(app)
     for p in retired:
         assert p not in live, f'retired endpoint {p} must not be published'
+
+
+def test_v2_profile_island_is_published_under_its_natural_name(app):
+    """The /api/v2/profile/* island predates any versioning scheme — a "v2" with
+    no v1 predecessor. Published mechanically it would become
+    /api/v1/v2/profile/..., baking that accident into a contract phones hold for
+    months. It must appear as /api/v1/profile/... instead."""
+    live = _v1_rules(app)
+    assert not [p for p in live if '/v2/' in p], \
+        f'the v2 accident leaked into the published surface: {[p for p in live if "/v2/" in p]}'
+    for expected in ('/api/v1/profile/', '/api/v1/profile/readiness',
+                     '/api/v1/profile/identity', '/api/v1/profile/education'):
+        assert expected in live, f'{expected} missing from the published surface'
+
+
+def test_v2_profile_paths_still_serve_the_web(app):
+    """v2 is NOT retired here — the web calls it from five places. Only the
+    published NAME changed; the original path must keep working."""
+    rules = {str(r) for r in app.url_map.iter_rules()}
+    for p in ('/api/v2/profile/', '/api/v2/profile/readiness'):
+        assert p in rules, f'{p} must keep serving the web until callers move'
 
 
 def test_client_status_needs_no_auth_and_no_db(app):
