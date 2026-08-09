@@ -45,7 +45,11 @@ def app():
     """Create a Flask app with TESTING enabled (non-production)."""
     os.environ.setdefault("JWT_SECRET_KEY", SECRET)
     os.environ["ENABLE_DEV_LOGIN"] = "true"
-    os.environ.pop("FLASK_ENV", None)  # ensure NOT production
+    # Must be set EXPLICITLY. Popping it does not mean "not production" — unset
+    # FLASK_ENV defaults to 'production' everywhere in this app, so the old
+    # `pop()` here was silently relying on the dev-login guard's missing default
+    # (the fail-open this test suite now pins shut).
+    os.environ["FLASK_ENV"] = "development"
     test_app = create_app()
     test_app.config.update({"TESTING": True})
     return test_app
@@ -112,7 +116,9 @@ class TestDevLoginValidation:
 
     def test_dev_login_missing_user_id(self, client, monkeypatch):
         """POST with empty body → 400."""
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        # Set explicitly: unset FLASK_ENV means PRODUCTION everywhere in this
+        # app, so deleting it here would close the guard, not open it.
+        monkeypatch.setenv("FLASK_ENV", "development")
         resp = client.post("/api/auth/uaepass/dev-login", json={})
         assert resp.status_code == 400
         body = resp.get_json()
@@ -120,7 +126,9 @@ class TestDevLoginValidation:
 
     def test_dev_login_short_user_id(self, client, monkeypatch):
         """POST with too-short user_id → 400."""
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        # Set explicitly: unset FLASK_ENV means PRODUCTION everywhere in this
+        # app, so deleting it here would close the guard, not open it.
+        monkeypatch.setenv("FLASK_ENV", "development")
         resp = client.post(
             "/api/auth/uaepass/dev-login",
             json={"user_id": "123"},
@@ -129,7 +137,9 @@ class TestDevLoginValidation:
 
     def test_dev_login_no_json_body(self, client, monkeypatch):
         """POST with no Content-Type json → 400 or 415."""
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        # Set explicitly: unset FLASK_ENV means PRODUCTION everywhere in this
+        # app, so deleting it here would close the guard, not open it.
+        monkeypatch.setenv("FLASK_ENV", "development")
         resp = client.post(
             "/api/auth/uaepass/dev-login",
             data="not-json",
@@ -146,7 +156,9 @@ class TestDevLoginUserNotFound:
 
     def test_dev_login_returns_404_for_nonexistent_user(self, client, monkeypatch):
         """Mock _get_db so the user lookup returns no rows → 404."""
-        monkeypatch.delenv("FLASK_ENV", raising=False)
+        # Set explicitly: unset FLASK_ENV means PRODUCTION everywhere in this
+        # app, so deleting it here would close the guard, not open it.
+        monkeypatch.setenv("FLASK_ENV", "development")
 
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None  # no user found
