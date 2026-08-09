@@ -919,6 +919,26 @@ _log_security_warnings()
 
 
 # =====================================================
+# PUBLISHED /api/v1 SURFACE (the mobile app's frozen contract)
+# =====================================================
+# Runs LAST, after every blueprint is registered: it reads the finished url_map
+# and adds /api/v1 aliases pointing at the same view functions. Purely additive
+# — the web keeps calling the unversioned paths. See backend/api_v1.py and
+# docs/api_versioning_plan.md.
+try:
+    try:
+        from backend.routes.client_status_routes import client_status_bp
+        from backend.api_v1 import mount_v1
+    except ImportError:  # pragma: no cover - dual-root import (see CLAUDE.md)
+        from routes.client_status_routes import client_status_bp
+        from api_v1 import mount_v1
+    app.register_blueprint(client_status_bp)
+    mount_v1(app)
+except Exception as _v1_err:  # pragma: no cover - never block boot on the alias layer
+    logger.error(f"Failed to mount /api/v1 surface: {_v1_err}")
+
+
+# =====================================================
 # MAIN ENTRY POINT
 # =====================================================
 
