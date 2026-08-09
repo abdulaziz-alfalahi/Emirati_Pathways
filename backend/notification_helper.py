@@ -81,7 +81,22 @@ def create_notification(user_id, notification_type, title, message='', metadata=
             pass
         except Exception as push_err:
             logger.debug(f"G12: SocketIO push skipped: {push_err}")
-        
+
+        # Mobile push. SocketIO above only reaches a browser that is already
+        # open; this is the path that reaches a phone in someone's pocket.
+        # Delivery is NOT configured yet (no APNs/FCM credentials) — dispatch
+        # reports 'not_configured' and sends nothing. Wired now so switching it
+        # on is a credentials change, not a hunt for call sites. Never allowed to
+        # break the in-app notification already committed above.
+        try:
+            try:
+                from backend.push_dispatch import dispatch_push
+            except ImportError:  # pragma: no cover - dual-root import
+                from push_dispatch import dispatch_push
+            dispatch_push(user_id, title, message, metadata)
+        except Exception as mobile_err:  # pragma: no cover - defensive
+            logger.debug(f"mobile push skipped: {mobile_err}")
+
         return notification_id
     except Exception as e:
         logger.error(f"Failed to create notification: {e}")

@@ -103,6 +103,12 @@ V1_SURFACE = {
     '/api/communication/notifications/mark-all-read':               {'POST'},
     '/api/communication/notifications/preferences':                 {'GET', 'POST'},
 
+    # ── push device registry (migration 059) ────────────────────────
+    # The app registers on launch and on token rotation, and unregisters on
+    # sign-out — that sign-out call is what stops a shared phone receiving the
+    # previous user's notifications, so it must be on the published surface.
+    '/api/devices':                               {'GET', 'POST', 'DELETE'},
+
     # ── career passport ─────────────────────────────────────────────
     '/api/career-passport/passport':              {'GET'},
     '/api/career-passport/stamps':                {'GET'},

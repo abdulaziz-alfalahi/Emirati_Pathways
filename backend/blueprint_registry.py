@@ -100,6 +100,15 @@ def register_all_blueprints(app: Flask):
         logger.warning(f"⚠️ Candidate Profile routes not available: {e}")
 
     try:
+        # Mobile push device registry (migration 059). Registry only — push
+        # delivery is not configured yet; see backend/push_dispatch.py.
+        from backend.routes.device_routes import device_bp
+        app.register_blueprint(device_bp)
+        logger.info("✅ Device token registry routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Device routes not available: {e}")
+
+    try:
         from backend.routes.enhanced_cv_routes import enhanced_cv_bp
         app.register_blueprint(enhanced_cv_bp)
         logger.info("✅ Enhanced CV routes registered (via registry)")
