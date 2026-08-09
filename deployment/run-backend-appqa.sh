@@ -49,6 +49,18 @@ if docker ps -a --format '{{.Names}}' | grep -qx "$NAME"; then
     | awk '!seen[substr($0,1,index($0,"=")-1)]++' > "$BACKUP_DIR/backend.env"
   chmod 600 "$BACKUP_DIR/backend.env"
 
+  # Optional env overlay: any KEY=VALUE lines in this file win over the captured
+  # env (appended last; the container uses the last value for a repeated key).
+  # Used to apply a JWT secret rotation — see docs/jwt_rotation_runbook.md.
+  # Absent = no effect. Once the new container is running with these values, a
+  # later deploy re-captures them from it, so this stays a one-shot; remove it
+  # after use so it can't silently re-apply.
+  OVERLAY="${ENV_OVERLAY:-$HOME/appqa-backups/env-overlay.env}"
+  if [ -f "$OVERLAY" ]; then
+    echo "==> Applying env overlay from $OVERLAY"
+    grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$OVERLAY" >> "$BACKUP_DIR/backend.env"
+  fi
+
   # Rescue anything written inside the container (pre-volume containers only).
   docker cp "$NAME:/app/uploads" "$BACKUP_DIR/uploads" 2>/dev/null || true
   docker cp "$NAME:/app/data"    "$BACKUP_DIR/data"    2>/dev/null || true
