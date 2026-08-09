@@ -232,6 +232,18 @@ app.config['JWT_ACCESS_COOKIE_SAMESITE'] = 'Lax'
 
 jwt = JWTManager(app)
 
+# Seamless dual-key rotation for JWT_SECRET_KEY. No-op unless JWT_SECRET_KEY_OLD
+# is set (see docs/jwt_rotation_runbook.md) — lets the weak signing secret be
+# rotated without logging every user out at once.
+try:
+    try:
+        from backend.auth.jwt_rotation import install_key_rotation
+    except ImportError:
+        from auth.jwt_rotation import install_key_rotation
+    install_key_rotation(jwt, app)
+except Exception as _rot_err:
+    logger.warning(f"JWT key rotation not installed: {_rot_err}")
+
 # T4.4: apply hardened session/cookie settings from SecurityConfig (wires the
 # previously-unused security_config.py into the running app).
 try:
@@ -473,7 +485,13 @@ def on_connect(auth=None):
             return
 
         import jwt as pyjwt
-        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        # Accept the old signing key too during a rotation overlap (matches the
+        # library decode path). No-op unless JWT_SECRET_KEY_OLD is set.
+        try:
+            from backend.auth.jwt_rotation import decode_token_multikey
+        except ImportError:
+            from auth.jwt_rotation import decode_token_multikey
+        payload = decode_token_multikey(token, pyjwt, app)
         user_id = payload.get('sub') or payload.get('user_id')
         if user_id:
             user_id = str(user_id)
@@ -563,7 +581,11 @@ def on_join_notification_room(data):
         return
     try:
         import jwt as pyjwt
-        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        try:
+            from backend.auth.jwt_rotation import decode_token_multikey
+        except ImportError:
+            from auth.jwt_rotation import decode_token_multikey
+        payload = decode_token_multikey(token, pyjwt, app)
         user_id = str(payload.get('sub') or payload.get('user_id', ''))
     except Exception:
         return  # Reject invalid tokens silently
