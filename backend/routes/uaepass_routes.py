@@ -1019,7 +1019,13 @@ def dev_login():
 
     ⚠️ MUST be removed or disabled before production deployment.
     """
-    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+    # FLASK_ENV must default to 'production' here, exactly as app.py does.
+    # Without the default an UNSET FLASK_ENV read as None != 'production',
+    # so this auth bypass went LIVE on any box where the variable simply
+    # wasn't set — while the rest of the app treated that same box as
+    # production. A guard whose failure mode is 'allow' is issue #96.
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
+            and os.getenv('FLASK_ENV', 'production') != 'production'):
         return jsonify({'error': 'Not available'}), 404
 
     data = request.get_json() or {}
@@ -1095,7 +1101,13 @@ def dev_login_users():
     DEV-ONLY: List all test users available for dev login.
     GET /api/auth/uaepass/dev-login/users
     """
-    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+    # FLASK_ENV must default to 'production' here, exactly as app.py does.
+    # Without the default an UNSET FLASK_ENV read as None != 'production',
+    # so this auth bypass went LIVE on any box where the variable simply
+    # wasn't set — while the rest of the app treated that same box as
+    # production. A guard whose failure mode is 'allow' is issue #96.
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
+            and os.getenv('FLASK_ENV', 'production') != 'production'):
         return jsonify({'error': 'Not available'}), 404
 
     try:

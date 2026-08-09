@@ -900,7 +900,18 @@ def _log_security_warnings():
             logger.info("🔒 Dev-login is disabled (ENABLE_DEV_LOGIN not set)")
         logger.warning("=" * 72)
     else:
-        logger.info("🔒 Production mode — dev-login is DISABLED")
+        # This used to ASSERT "dev-login is DISABLED" without checking, so a
+        # production box with ENABLE_DEV_LOGIN=true logged a reassuring lie and
+        # nothing else. Refuse to boot instead: the flag mints a valid session
+        # for any Emirates ID with no proof of identity, so its presence in
+        # production is a misconfiguration to fail closed on — matching the
+        # FATAL treatment of a missing UAEPASS_EID_KEY above.
+        if os.getenv('ENABLE_DEV_LOGIN') == 'true':
+            raise RuntimeError(
+                "FATAL: ENABLE_DEV_LOGIN=true with FLASK_ENV=production. "
+                "Dev-login mints a session for ANY Emirates ID without proof of "
+                "identity and must never be enabled in production. Unset it.")
+        logger.info("🔒 Production mode — dev-login is DISABLED (verified)")
         logger.info("🔒 Authentication uses UAEPass integration")
 
 
