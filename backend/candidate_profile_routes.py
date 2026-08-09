@@ -29,8 +29,21 @@ except ImportError:  # pragma: no cover
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create blueprint
+# Two blueprints, ONE url_prefix. The paths are unchanged — this is purely a
+# separation of surfaces.
+#
+# WHY: this module served the candidate's own profile AND the career-services
+# CRM (/api/profile/crm-*) from a single blueprint. The mobile app's published
+# /api/v1 surface is allow-listed per blueprint, so mounting the candidate
+# profile would have dragged the CRM — raw Emirates IDs, counselling notes,
+# caseload assignment — onto the app's contract. Role guards would still hold,
+# but a published contract is a statement of intent, and that was never the
+# intent. See docs/api_versioning_plan.md §3.1a.
+#
+# candidate_profile_bp -> the candidate's own profile (v1 candidate surface)
+# crm_profile_bp       -> career-services operator CRM (NEVER on the v1 mount)
 candidate_profile_bp = Blueprint('candidate_profile', __name__, url_prefix='/api/profile')
+crm_profile_bp = Blueprint('crm_profile', __name__, url_prefix='/api/profile')
 
 @candidate_profile_bp.route('/health', methods=['GET'])
 def health_check():
@@ -846,7 +859,7 @@ UNCONTACTABLE_SQL = (
 )
 
 
-@candidate_profile_bp.route('/crm-last-import', methods=['GET'])
+@crm_profile_bp.route('/crm-last-import', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_last_import():
     """When candidate data genuinely last came from NAFIS.
@@ -883,7 +896,7 @@ def get_crm_last_import():
         return jsonify({'success': False, 'message': 'Failed to read the import history'}), 500
 
 
-@candidate_profile_bp.route('/crm-candidates', methods=['GET'])
+@crm_profile_bp.route('/crm-candidates', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_candidates():
     """Get all candidates for Career Services CRM.
@@ -1147,7 +1160,7 @@ def get_crm_candidates():
             'message': 'Failed to get CRM candidates'
         }), 500
 
-@candidate_profile_bp.route('/crm-stats', methods=['GET'])
+@crm_profile_bp.route('/crm-stats', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_stats():
     """Aggregates + roster-movement series for the Career Services dashboard.
@@ -1235,7 +1248,7 @@ def _blank_to_none(v):
     return None if v == '' or v.lower() == 'none' else v
 
 
-@candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
+@crm_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def update_crm_candidate(user_id):
     """Update CRM specific fields for a candidate.

@@ -88,9 +88,14 @@ def register_all_blueprints(app: Flask):
         logger.warning(f"⚠️ Profile V2 routes not available: {e}")
 
     try:
-        from backend.candidate_profile_routes import candidate_profile_bp
+        # Two blueprints, same url_prefix, paths unchanged. The CRM is kept on a
+        # separate blueprint so it can never be swept onto the published /api/v1
+        # mobile surface by a per-blueprint allowlist — see
+        # docs/api_versioning_plan.md §3.1a.
+        from backend.candidate_profile_routes import candidate_profile_bp, crm_profile_bp
         app.register_blueprint(candidate_profile_bp, url_prefix='/api/profile')
-        logger.info("✅ Candidate Profile routes registered")
+        app.register_blueprint(crm_profile_bp, url_prefix='/api/profile')
+        logger.info("✅ Candidate Profile + CRM Profile routes registered")
     except ImportError as e:
         logger.warning(f"⚠️ Candidate Profile routes not available: {e}")
 
