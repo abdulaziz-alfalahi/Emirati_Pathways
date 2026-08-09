@@ -30,6 +30,22 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 jobs_bp = Blueprint('jobs_api', __name__, url_prefix='/api/jobs')
 
+
+def _retired(replacement):
+    """410 for a handler superseded during the /api/v1 canonicalization.
+
+    The route stays registered on purpose (matching the OTP retirement in
+    nafis_talent_routes): a forgotten caller gets an actionable message naming
+    the endpoint that replaced this one, rather than an ambiguous 404.
+    See docs/api_v1_canonicalization.md.
+    """
+    return jsonify({
+        'success': False,
+        'message': f'This endpoint has been retired. Use {replacement} instead.',
+        'replacement': replacement,
+    }), 410
+
+
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
     """Execute a database query with error handling"""
     conn = get_db_connection()
@@ -381,129 +397,25 @@ def get_job(job_id):
 @jobs_bp.route('/saved', methods=['GET'])
 @optional_auth
 def get_saved_jobs():
-    """Get user's saved jobs"""
-    try:
-        user_id = request.args.get('user_id', type=int)
-        
-        if not user_id:
-            return jsonify({
-                'success': True,
-                'data': []
-            })
-        
-        # NOTE: Using job_postings for saved jobs (candidate-facing)
-        # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
-        query = """
-            SELECT 
-                j.id,
-                j.title,
-                COALESCE(c.company_name, c.name, 'Unknown') as company,
-                j.location,
-                j.employment_type as job_type,
-                CONCAT(j.salary_range_min, ' - ', j.salary_range_max, ' ', j.currency) as salary_range,
-                j.status,
-                j.created_at,
-                j.application_deadline,
-                s.created_at as saved_at
-            FROM saved_jobs s
-            JOIN job_postings j ON s.job_id = j.id
-            LEFT JOIN companies c ON j.company_id = c.id
-            WHERE s.user_id = %s
-            ORDER BY s.created_at DESC
-        """
-        
-        jobs = execute_query(query, (user_id,))
-        
-        return jsonify({
-            'success': True,
-            'data': jobs or []
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to get saved jobs: {e}")
-        return jsonify({
-            'success': True,
-            'data': []
-        })
+    """RETIRED — superseded by GET /api/candidate/saved-jobs (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('GET /api/candidate/saved-jobs')
 
 
 @jobs_bp.route('/<int:job_id>/save', methods=['POST'])
 @optional_auth
 def save_job(job_id):
-    """Save a job for later"""
-    try:
-        data = request.get_json() or {}
-        user_id = data.get('user_id')
-        
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'message': 'User ID required'
-            }), 400
-        
-        # Check if already saved
-        check_query = "SELECT id FROM saved_jobs WHERE user_id = %s AND job_id = %s"
-        existing = execute_query(check_query, (user_id, job_id), fetch_one=True)
-        
-        if existing:
-            return jsonify({
-                'success': True,
-                'message': 'Job already saved'
-            })
-        
-        # Save the job
-        insert_query = """
-            INSERT INTO saved_jobs (user_id, job_id)
-            VALUES (%s, %s)
-            RETURNING id
-        """
-        save_id = execute_query(insert_query, (user_id, job_id), return_id=True)
-        
-        return jsonify({
-            'success': True,
-            'data': {'id': save_id},
-            'message': 'Job saved'
-        }), 201
-        
-    except Exception as e:
-        logger.error(f"Failed to save job: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to save job'
-        }), 500
+    """RETIRED — superseded by POST /api/candidate/saved-jobs/<job_id> (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('POST /api/candidate/saved-jobs/<job_id>')
 
 
 @jobs_bp.route('/<int:job_id>/unsave', methods=['POST', 'DELETE'])
 @optional_auth
 def unsave_job(job_id):
-    """Remove a job from saved list"""
-    try:
-        if request.method == 'POST':
-            data = request.get_json() or {}
-            user_id = data.get('user_id')
-        else:
-            user_id = request.args.get('user_id', type=int)
-        
-        if not user_id:
-            return jsonify({
-                'success': False,
-                'message': 'User ID required'
-            }), 400
-        
-        query = "DELETE FROM saved_jobs WHERE user_id = %s AND job_id = %s"
-        execute_query(query, (user_id, job_id), fetch_all=False)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Job removed from saved list'
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to unsave job: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to remove job from saved list'
-        }), 500
+    """RETIRED — superseded by DELETE /api/candidate/saved-jobs/<job_id> (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('DELETE /api/candidate/saved-jobs/<job_id>')
 
 
 # =====================================================
@@ -525,20 +437,9 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 @jobs_bp.route('/<int:job_id>/apply', methods=['POST'])
 @optional_auth
 def apply_to_specific_job(job_id):
-    """Apply to a specific job (alternative endpoint)"""
-    try:
-        data = request.get_json() or {}
-        data['job_id'] = job_id
-        
-        # Reuse the main apply function
-        return apply_to_job()
-        
-    except Exception as e:
-        logger.error(f"Failed to apply to job: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to submit application'
-        }), 500
+    """RETIRED — superseded by POST /api/applications/apply (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('POST /api/applications/apply')
 
 
 @jobs_bp.route('/applications/<application_id>', methods=['GET'])
@@ -592,30 +493,9 @@ def get_application(application_id):
 @jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
 @require_auth
 def withdraw_application(application_id):
-    """Withdraw a job application — the owner (candidate) only. Was @optional_auth (no-op)
-    with no ownership check, so anyone could withdraw anyone's application."""
-    try:
-        caller = getattr(g, 'user_id', None)
-        # Scope the update to the caller's OWN application — a non-owner matches no row.
-        res = execute_query(
-            "UPDATE job_applications SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP "
-            "WHERE id = %s AND candidate_id::text = %s RETURNING id",
-            (application_id, str(caller)), fetch_one=True
-        )
-        if not res:
-            return jsonify({'success': False, 'message': 'Application not found or not yours'}), 404
-
-        return jsonify({
-            'success': True,
-            'message': 'Application withdrawn'
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to withdraw application: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to withdraw application'
-        }), 500
+    """RETIRED — superseded by POST /api/applications/<application_id>/withdraw (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('POST /api/applications/<application_id>/withdraw')
 
 
 # =====================================================
@@ -625,127 +505,9 @@ def withdraw_application(application_id):
 @jobs_bp.route('/matches', methods=['GET'])
 @optional_auth
 def get_job_matches():
-    """
-    Get job matches for a candidate based on their profile/CV
-    
-    Query params:
-        user_id: Candidate user ID
-        cv_id: CV ID to match against
-    """
-    try:
-        user_id = request.args.get('user_id', type=int)
-        cv_id = request.args.get('cv_id') # user_cvs.id is UUID string
-        
-        if not user_id:
-            return jsonify({
-                'success': True,
-                'data': []
-            })
-        
-        # Build the candidate profile the CANONICAL scorer expects, from the SAME
-        # sources the recruiter applicant view uses (backend/match_scoring.py) —
-        # user_skills (self-reported + assessment-verified) + users.profile_data —
-        # so the candidate's match % equals the recruiter's for the same job.
-        candidate = {'user_id': str(user_id), 'technical_skills': [], 'soft_skills': [],
-                     'work_experience': [], 'education': []}
-        skill_rows = execute_query(
-            "SELECT skill_name FROM user_skills WHERE user_id = %s", (str(user_id),))
-        candidate['technical_skills'] = [r['skill_name'] for r in (skill_rows or []) if r.get('skill_name')]
-        prof = execute_query(
-            "SELECT profile_data FROM users WHERE id = %s", (str(user_id),), fetch_one=True)
-        pdata = (prof or {}).get('profile_data') or {}
-        if isinstance(pdata, str):
-            try:
-                pdata = json.loads(pdata)
-            except Exception:
-                pdata = {}
-        if isinstance(pdata, dict):
-            candidate['work_experience'] = pdata.get('work_experience') or pdata.get('experience') or []
-            candidate['education'] = pdata.get('education') or []
-            # a CV without user_skills rows can still carry skills in profile_data
-            if not candidate['technical_skills']:
-                candidate['technical_skills'] = pdata.get('skills') or []
-
-        # Get matching jobs from job_postings
-        # Join with companies to get company name
-        # Cast IDs to text for comparison to handle type mismatches in schema
-        query = """
-            SELECT
-                jp.id,
-                jp.title,
-                c.name as company,
-                jp.location,
-                jp.employment_type as job_type,
-                jp.description,
-                jp.requirements,
-                jp.required_skills,
-                jp.salary_range_min,
-                jp.salary_range_max,
-                jp.currency,
-                jp.status,
-                jp.created_at,
-                jp.application_deadline
-            FROM job_postings jp
-            LEFT JOIN companies c ON jp.company_id::text = c.id::text
-            WHERE jp.status IN ('active', 'published')
-            AND jp.id::text NOT IN (
-                SELECT job_id FROM job_applications WHERE candidate_id = %s
-            )
-            ORDER BY jp.created_at DESC
-            LIMIT 20
-        """
-
-        jobs = execute_query(query, (str(user_id),))
-
-        # Calculate match scores via the ONE canonical scorer (same as recruiter side)
-        matches = []
-        for job in (jobs or []):
-            raw_reqs = job.get('requirements')
-            match_score = calculate_match_score(
-                candidate, {'required_skills': job.get('required_skills')})
-
-            # Format salary range from min/max
-            salary_str = "Not specified"
-            if job.get('salary_range_min'):
-                curr = job.get('currency', 'AED')
-                salary_str = f"{curr} {job['salary_range_min']}"
-                if job.get('salary_range_max'):
-                    salary_str += f" - {job['salary_range_max']}"
-            
-            matches.append({
-                'id': job['id'],
-                'title': job['title'],
-                'company': job['company'] or 'Unknown Company',
-                'location': job['location'],
-                'job_type': job['job_type'],
-                'description': job['description'],
-                'requirements': raw_reqs, # Return original structure
-                'salary_range': salary_str,
-                'status': job['status'],
-                'created_at': job['created_at'],
-                'application_deadline': job['application_deadline'],
-                'match_score': match_score,
-                'match_reasons': ['Skills match', 'Location preference'] if match_score > 75 else ['General match']
-            })
-        
-        # Sort by match score
-        matches.sort(key=lambda x: x['match_score'], reverse=True)
-        
-        return jsonify({
-            'success': True,
-            'data': matches
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to get job matches: {e}")
-        # Honest empty result on error — never serve fabricated jobs/scores (the old
-        # fallback returned invented Emirates NBD/Careem/ADNOC rows with hard-coded
-        # 92/88/85 match scores as if real).
-        return jsonify({
-            'success': False,
-            'data': [],
-            'message': 'Job matches are temporarily unavailable.'
-        }), 200
+    """RETIRED — superseded by GET /api/candidate/job-matches (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('GET /api/candidate/job-matches')
 
 
 # Also create an alias endpoint for candidate job matches
@@ -756,318 +518,36 @@ candidate_jobs_bp = Blueprint('candidate_jobs_api', __name__, url_prefix='/api/c
 
 
 
-@candidate_jobs_bp.route('/saved-jobs', methods=['GET'])
-@optional_auth
-def get_candidate_saved_jobs():
-    """Get candidate's saved jobs"""
-    try:
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity()
-        except Exception:
-            user_id = None
-            
-        if not user_id:
-            user_id = request.args.get('user_id')
-            
-        if not user_id:
-            return jsonify({'success': False, 'message': 'Authentication required'}), 401
-            
-        saved = execute_query(
-            """SELECT jp.id, jp.title, c.name as company, jp.location, sj.created_at as saved_at
-               FROM saved_jobs sj
-               LEFT JOIN job_postings jp ON sj.job_id = jp.id
-               LEFT JOIN companies c ON jp.company_id::text = c.id::text
-               WHERE sj.user_id::text = %s
-               ORDER BY sj.created_at DESC""",
-            (str(user_id),)
-        )
-        
-        # Convert date to string format
-        for item in (saved or []):
-            if item.get('saved_at') and hasattr(item['saved_at'], 'isoformat'):
-                item['saved_at'] = item['saved_at'].isoformat()
-                
-        return jsonify({
-            'success': True,
-            'data': saved or []
-        })
-    except Exception as e:
-        logger.error(f"Failed to get saved jobs: {e}")
-        return jsonify({'success': False, 'data': [], 'error': str(e)})
-
+# REMOVED: a duplicate GET /api/candidate/saved-jobs lived here and read the
+# LEGACY `saved_jobs` table, shadowing the canonical handler in
+# candidate_job_routes.py which reads migration 037's `candidate_saved_jobs`.
+# Two blueprints registering the same rule means routing order decides which
+# store a candidate sees — so this one is deleted outright rather than 410'd
+# (a 410 on a shadowed path is either meaningless or, if it won, an outage).
+# See docs/api_v1_canonicalization.md.
 
 @candidate_jobs_bp.route('/applications', methods=['GET'])
 @optional_auth
 def get_candidate_applications():
-    """Get candidate's job applications"""
-    try:
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity()
-        except Exception:
-            user_id = None
-            
-        if not user_id:
-            user_id = request.args.get('user_id')
-            
-        if not user_id:
-            return jsonify({'success': False, 'message': 'Authentication required'}), 401
-            
-        applications = execute_query(
-            """SELECT ja.id, ja.job_id, ja.status, ja.applied_at, ja.updated_at,
-                      jp.title as job_title, COALESCE(c.name, 'N/A') as company, jp.location
-               FROM job_applications ja
-               LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
-               LEFT JOIN companies c ON jp.company_id::text = c.id::text
-               WHERE ja.candidate_id::text = %s
-               ORDER BY ja.applied_at DESC""",
-            (str(user_id),)
-        )
-        
-        # Format dates
-        for app in (applications or []):
-            if app.get('applied_at') and hasattr(app['applied_at'], 'isoformat'):
-                app['applied_at'] = app['applied_at'].isoformat()
-            if app.get('updated_at') and hasattr(app['updated_at'], 'isoformat'):
-                app['updated_at'] = app['updated_at'].isoformat()
-                
-        return jsonify({
-            'success': True,
-            'data': applications or []
-        })
-    except Exception as e:
-        logger.error(f"Failed to get applications: {e}")
-        return jsonify({'success': False, 'data': [], 'error': str(e)})
+    """RETIRED — superseded by GET /api/applications/my-applications (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('GET /api/applications/my-applications')
 
 
 @candidate_jobs_bp.route('/applications', methods=['POST'])
 @optional_auth
 def submit_application():
-    """Submit a job application"""
-    try:
-        data = request.get_json() or {}
-        import uuid
-        application_id = f"app_{uuid.uuid4().hex[:8]}"
-        
-        return jsonify({
-            'success': True,
-            'message': 'Application submitted successfully',
-            'data': {
-                'id': application_id,
-                'job_id': data.get('job_id'),
-                'cover_letter': data.get('cover_letter'),
-                'resume_id': data.get('resume_id'),
-                'status': 'submitted',
-                'submitted_at': datetime.now().isoformat()
-            }
-        }), 201
-    except Exception as e:
-        logger.error(f"Failed to submit application: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+    """RETIRED — superseded by POST /api/applications/apply (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('POST /api/applications/apply')
 
 
 @candidate_jobs_bp.route('/applications/<application_id>/withdraw', methods=['POST'])
 @require_auth
 def withdraw_candidate_application(application_id):
-    """
-    Withdraw a job application
-    
-    This endpoint allows candidates to withdraw their job applications.
-    Only applications in 'pending', 'reviewed', or 'interview' status can be withdrawn.
-    
-    Args:
-        application_id: The ID of the application to withdraw
-        
-    Body (optional):
-        reason: The reason for withdrawal
-    """
-    try:
-        data = request.get_json() or {}
-        reason = data.get('reason', '')
-
-        # Ownership: only the application's own candidate may withdraw it (was @optional_auth
-        # no-op + UPDATE WHERE id=%s — anyone could withdraw anyone's application). (audit IDOR)
-        caller = getattr(g, 'user_id', None)
-        try:
-            _own = execute_query(
-                "SELECT candidate_id FROM job_applications WHERE id::text = %s",
-                (str(application_id),), fetch_one=True
-            )
-        except Exception:
-            _own = None
-        if _own and str(_own.get('candidate_id')) != str(caller):
-            if not (resolve_roles() & (RECRUITER_ROLES | ADMIN_ROLES)):
-                return jsonify({'success': False, 'message': 'Forbidden - not your application'}), 403
-
-        # Try to update in database
-        conn = get_db_connection()
-        if conn:
-            try:
-                cursor = conn.cursor()
-                updated = False
-                
-                # Try job_applications table with status column (used by job_application_routes.py)
-                try:
-                    cursor.execute("""
-                        SELECT id, status FROM job_applications 
-                        WHERE id = %s
-                    """, (str(application_id),))
-                    result = cursor.fetchone()
-                    
-                    if result:
-                        current_status = result[1]
-                        
-                        # Check if application can be withdrawn
-                        if current_status in ['withdrawn', 'rejected', 'offer_accepted', 'hired']:
-                            cursor.close()
-                            conn.close()
-                            return jsonify({
-                                'success': False,
-                                'message': f'Cannot withdraw application with status: {current_status}'
-                            }), 400
-                        
-                        # Update the application status (timeline row first;
-                        # candidate is the actor, no self-notification)
-                        try:
-                            from backend.application_history import record_status_change
-                        except ImportError:
-                            from application_history import record_status_change
-                        record_status_change(str(application_id), 'withdrawn', notify_candidate=False)
-                        cursor.execute("""
-                            UPDATE job_applications
-                            SET status = 'withdrawn',
-                                last_updated = NOW()
-                            WHERE id = %s
-                        """, (str(application_id),))
-                        conn.commit()
-                        updated = True
-                        logger.info(f"Application {application_id} withdrawn from job_applications table (status column)")
-                except Exception as e1:
-                    logger.debug(f"job_applications table (status column) query failed: {e1}")
-                    conn.rollback()
-                
-                # Try job_applications table with application_status column (schema from create_job_application_tables.sql)
-                if not updated:
-                    try:
-                        cursor.execute("""
-                            SELECT id, application_status FROM job_applications 
-                            WHERE id::text = %s
-                        """, (str(application_id),))
-                        result = cursor.fetchone()
-                        
-                        if result:
-                            current_status = result[1]
-                            
-                            # Check if application can be withdrawn
-                            if current_status in ['withdrawn', 'rejected', 'offer_accepted', 'hired']:
-                                cursor.close()
-                                conn.close()
-                                return jsonify({
-                                    'success': False,
-                                    'message': f'Cannot withdraw application with status: {current_status}'
-                                }), 400
-                            
-                            # Update the application status
-                            cursor.execute("""
-                                UPDATE job_applications 
-                                SET application_status = 'withdrawn', 
-                                    additional_notes = COALESCE(additional_notes, '') || %s,
-                                    updated_at = NOW()
-                                WHERE id::text = %s
-                            """, (
-                                f'\n[Withdrawn: {reason}]' if reason else '\n[Withdrawn by candidate]',
-                                str(application_id)
-                            ))
-                            conn.commit()
-                            updated = True
-                            logger.info(f"Application {application_id} withdrawn from job_applications table (application_status column)")
-                    except Exception as e2:
-                        logger.debug(f"job_applications table (application_status column) query failed: {e2}")
-                        conn.rollback()
-                
-                # Try applications table if job_applications didn't work (uses status column)
-                if not updated:
-                    try:
-                        cursor.execute("""
-                            SELECT id, status FROM applications 
-                            WHERE id::text = %s
-                        """, (str(application_id),))
-                        result = cursor.fetchone()
-                        
-                        if result:
-                            current_status = result[1]
-                            
-                            # Check if application can be withdrawn
-                            if current_status in ['withdrawn', 'rejected', 'offer', 'hired']:
-                                cursor.close()
-                                conn.close()
-                                return jsonify({
-                                    'success': False,
-                                    'message': f'Cannot withdraw application with status: {current_status}'
-                                }), 400
-                            
-                            # Update the application status
-                            cursor.execute("""
-                                UPDATE applications 
-                                SET status = 'withdrawn', 
-                                    notes = COALESCE(notes, '') || %s,
-                                    updated_at = NOW()
-                                WHERE id::text = %s
-                            """, (
-                                f'\n[Withdrawn: {reason}]' if reason else '\n[Withdrawn by candidate]',
-                                str(application_id)
-                            ))
-                            conn.commit()
-                            updated = True
-                            logger.info(f"Application {application_id} withdrawn from applications table")
-                    except Exception as e2:
-                        logger.debug(f"applications table query failed: {e2}")
-                        conn.rollback()
-                
-                cursor.close()
-                conn.close()
-                
-                if updated:
-                    return jsonify({
-                        'success': True,
-                        'message': 'Application withdrawn successfully',
-                        'data': {
-                            'application_id': application_id,
-                            'status': 'withdrawn',
-                            'withdrawn_at': datetime.now().isoformat()
-                        }
-                    })
-                else:
-                    logger.warning(f"Application {application_id} not found in any table")
-                    
-            except Exception as db_error:
-                logger.warning(f"Database error withdrawing application: {db_error}")
-                if conn:
-                    try:
-                        conn.close()
-                    except:
-                        pass
-        
-        # Fallback: Return success for demo purposes when DB is unavailable
-        logger.info(f"Returning fallback success for withdraw application {application_id}")
-        return jsonify({
-            'success': True,
-            'message': 'Application withdrawn successfully',
-            'data': {
-                'application_id': application_id,
-                'status': 'withdrawn',
-                'reason': reason,
-                'withdrawn_at': datetime.now().isoformat()
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Error withdrawing application {application_id}: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to withdraw application. Please try again.'
-        }), 500
+    """RETIRED — superseded by POST /api/applications/<application_id>/withdraw (see
+    docs/api_v1_canonicalization.md). Returns 410."""
+    return _retired('POST /api/applications/<application_id>/withdraw')
 
 
 # Register the blueprints function
