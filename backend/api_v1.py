@@ -123,6 +123,25 @@ V1_SURFACE = {
 }
 
 
+# The /api/v2/profile/* island predates any versioning scheme — ten profile
+# routes under a "v2" that has no v1 predecessor and never had one (see
+# api_versioning_plan.md §1). Left alone, the mechanical rule below would publish
+# them as `/api/v1/v2/profile/...`, baking that accident into a contract phones
+# hold for months. They are remapped to their natural home instead.
+#
+# `/api/v2/profile/*` itself is NOT retired here: the web calls it from five
+# places today. It stays as the unversioned-equivalent path until those move,
+# which is the plan's step 2. Only the PUBLISHED name changes.
+_V2_PROFILE = '/api/v2/profile'
+
+
+def v1_path_for(path):
+    """The published /api/v1 path for an internal path."""
+    if path.startswith(_V2_PROFILE):
+        return V1_PREFIX + '/profile' + path[len(_V2_PROFILE):]
+    return V1_PREFIX + path[len('/api'):]
+
+
 def mount_v1(app):
     """Alias the published surface under /api/v1. Purely additive.
 
@@ -154,7 +173,7 @@ def mount_v1(app):
             endpoint = f'{endpoint}_{"_".join(use).lower()}'
         seen_endpoints.add(endpoint)
 
-        v1_path = V1_PREFIX + path[len('/api'):]
+        v1_path = v1_path_for(path)
         try:
             app.add_url_rule(v1_path, endpoint=endpoint, view_func=view, methods=use)
             mounted.append((v1_path, use))
