@@ -299,8 +299,18 @@ class NafisTalentSystem:
         }
 
         try:
-            if isinstance(csv_content, bytes):
-                csv_content = csv_content.decode('utf-8-sig')
+            # utf-8-sig alone handled the BOM but still raised on a cp1256
+            # (Arabic Windows) export, taking the whole seeker import down.
+            # Candidate names here are Arabic, so this matters more, not less.
+            try:
+                from backend.csv_encoding import decode_csv_bytes
+            except ImportError:
+                from csv_encoding import decode_csv_bytes
+            csv_content, _used_encoding = decode_csv_bytes(csv_content)
+            if _used_encoding not in ('utf-8-sig', 'utf-8', 'str'):
+                report['errors'].append(
+                    f"File was not UTF-8 (read as {_used_encoding}). Re-export as "
+                    f"'CSV UTF-8' if any Arabic name looks wrong.")
 
             reader = csv.DictReader(io.StringIO(csv_content))
             batch_code = f"NAFIS-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
