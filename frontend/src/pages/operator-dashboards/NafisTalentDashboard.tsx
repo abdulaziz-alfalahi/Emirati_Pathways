@@ -240,6 +240,7 @@ const NafisTalentDashboard: React.FC = () => {
     const [selectedSeekers, setSelectedSeekers] = useState<Set<number>>(new Set());
     const [inviting, setInviting] = useState(false);
     const [inviteResult, setInviteResult] = useState<any>(null);
+    const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
     // Advanced filters state
     const [showFilters, setShowFilters] = useState(false);
@@ -832,6 +833,76 @@ const NafisTalentDashboard: React.FC = () => {
                         <button onClick={() => setInviteResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                             <X size={16} color={brand.textSecondary} />
                         </button>
+                    </div>
+                )}
+
+                {/* The magic links themselves.
+                    Email delivery is not configured yet (no SMTP host — see
+                    docs/app_store_accounts_request.md §3A), so the API returns the
+                    links and the operator passes them on by hand. Before this, they
+                    were discarded here and the only copy was in the container log,
+                    which meant needing shell access to the host to onboard anyone. */}
+                {inviteResult?.invitations?.length > 0 && (
+                    <div style={{
+                        background: brand.cardBg, borderRadius: 12, padding: 16,
+                        border: `1px solid ${brand.border}`, marginTop: 12,
+                    }}>
+                        {inviteResult.email_delivery_configured === false && (
+                            <div style={{
+                                display: 'flex', alignItems: 'flex-start', gap: 8,
+                                background: brand.redBg, borderRadius: 8, padding: 10, marginBottom: 12,
+                            }}>
+                                <AlertTriangle size={16} color={brand.redText} style={{ flexShrink: 0, marginTop: 2 }} />
+                                <div style={{ fontSize: 13, color: brand.redText }}>
+                                    <strong>Nothing has been emailed.</strong> Email delivery is not
+                                    configured on this environment. Copy each link below and send it
+                                    to the person yourself — the link is the only way in.
+                                </div>
+                            </div>
+                        )}
+                        <div style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary, marginBottom: 10 }}>
+                            Invitation links ({inviteResult.invitations.length})
+                        </div>
+                        {inviteResult.invitations.map((inv: any) => (
+                            <div key={inv.token || inv.magic_link} style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '8px 0', borderTop: `1px solid ${brand.border}`,
+                            }}>
+                                <div style={{ flex: '0 0 180px', minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {inv.name || inv.company_name || '—'}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: brand.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {inv.email || inv.company_email || ''}
+                                    </div>
+                                </div>
+                                <input
+                                    readOnly
+                                    value={inv.magic_link || ''}
+                                    onFocus={(e) => e.currentTarget.select()}
+                                    style={{
+                                        flex: 1, minWidth: 0, fontSize: 12, padding: '6px 8px',
+                                        border: `1px solid ${brand.border}`, borderRadius: 6,
+                                        background: brand.bg, color: brand.textSecondary,
+                                        fontFamily: 'monospace',
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard?.writeText(inv.magic_link || '');
+                                        setCopiedLink(inv.token || inv.magic_link);
+                                        setTimeout(() => setCopiedLink(null), 2000);
+                                    }}
+                                    style={{
+                                        flexShrink: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        padding: '6px 12px', borderRadius: 6, border: `1px solid ${brand.border}`,
+                                        background: brand.cardBg, color: brand.textPrimary,
+                                    }}
+                                >
+                                    {copiedLink === (inv.token || inv.magic_link) ? 'Copied' : 'Copy'}
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 )}
 

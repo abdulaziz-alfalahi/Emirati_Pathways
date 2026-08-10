@@ -218,9 +218,14 @@ def invite_companies():
         successful = [r for r in results if 'error' not in r]
         failed = [r for r in results if 'error' in r]
 
+        try:
+            from backend.email_delivery import email_configured, invitation_result_message
+        except ImportError:  # pragma: no cover - dual-root import
+            from email_delivery import email_configured, invitation_result_message
         return jsonify({
             'success': True,
-            'message': f"Sent {len(successful)} invitations ({len(failed)} failed)",
+            'email_delivery_configured': email_configured(),
+            'message': invitation_result_message(len(successful), len(failed)),
             'invitations': successful,
             'errors': failed,
         })
