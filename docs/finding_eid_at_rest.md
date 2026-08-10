@@ -17,7 +17,7 @@ Measured live on `dghr_prod`:
 | users with a non-NULL `emirates_id_enc` | **5,285** |
 | …that are plaintext 15-digit Emirates IDs | **5,271** |
 | …that are empty strings `''` | 14 |
-| …that contain actual ciphertext | **0** |
+| …that contained actual ciphertext | **1** (corrected 2026-08-10 — see below) |
 | rows where `users.id == users.emirates_id_enc` | **5,271** |
 
 The encryption function exists and works — `_encrypt_eid()` in `routes/uaepass_routes.py`, AES-256-GCM, called on the UAE Pass callback path (lines 628, 923). The **bulk CRM import scripts bypass it entirely** and write the raw EID:
@@ -26,6 +26,18 @@ The encryption function exists and works — `_encrypt_eid()` in `routes/uaepass
 - `scripts/update_candidates_master.py:190`, `scripts/migrate_crm_candidates.py:78` — same pattern
 
 So the `_enc` suffix describes an intention, not the data.
+
+**Correction (2026-08-10):** an earlier version of this document said *zero* rows
+contained ciphertext. That was wrong — there was **one** (user `784200243971312`,
+written 2026-07-20, a 60-char AES-GCM value). It matters, because it proves the
+mixed-format problem in §3 is **not hypothetical: it had already happened once**,
+and that user was consequently invisible to the CRM importer's plaintext lookup —
+silently receiving no master-file updates.
+
+That row has been restored to plaintext (`emirates_id_enc = users.id`; the
+ciphertext was written under an ephemeral key and was undecryptable anyway, and
+`users.id` already held the same real EID). The column is now 100% single-format,
+and P2 is fixed in code so it stays that way.
 
 ## 2. Why this is not a breach — and what the real risk is
 
