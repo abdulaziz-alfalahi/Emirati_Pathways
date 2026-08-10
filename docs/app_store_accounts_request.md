@@ -41,6 +41,43 @@ Google Play does **not** require a D-U-N-S number, but does verify the organizat
 
 Both Apple's and Google's developer agreements are **contracts**. Someone authorized to bind EHRDC must review and accept them. This needs **Legal** and an identified **authorized signatory** on the entity side before enrolment can complete — Apple will, during verification, contact a person of authority to confirm the enroller is entitled to act for EHRDC.
 
+## 3A. Platform email account — `emirati@ehrdc.gov.ae` (ADDED 2026-08-10)
+
+**This is now the most urgent item in this document.** It blocks onboarding testing today, whereas the store accounts block a release that is still months away.
+
+### What is needed
+
+1. **A mailbox / sending identity: `emirati@ehrdc.gov.ae`**, owned by EHRDC, to be the "from" address for all platform correspondence.
+2. **SMTP credentials and connection details** for it — host, port, authentication method, and whether TLS/STARTTLS is required.
+3. **Outbound SMTP reachability from the application servers.** *(See the warning below — this is a separate approval and the mailbox alone is not enough.)*
+
+### Why it is blocking
+
+The platform's entire onboarding model is invitation-based. An operator invites a jobseeker or a company, and the person receives a **magic link** by email that carries them into UAE Pass registration. There is no alternative route in — no self-registration.
+
+**Today no email leaves the platform at all.** No SMTP server is configured in any environment, so the invitation link is only written to the server log and an operator must copy it out and pass it on by hand. That is workable for one tester; it cannot onboard Dubai's nationals.
+
+Everything below is waiting on this: jobseeker invitations, company/employer invitations, staff invitations, application-status notifications, interview invitations, and the board-secretariat notices to members' offices (built and queued, undelivered — see migration 056).
+
+### ⚠️ Two separate approvals — the mailbox alone will not work
+
+The mailbox is a **provisioning** request (IT). Reaching the mail relay is a **network** request (Moro).
+
+Outbound SMTP from the application servers to the relay at **10.61.192.7:25** is currently **blocked at the firewall** — re-verified 2026-08-07: the connection from the backend container times out. This is item 2 of the outstanding infrastructure request already with Moro.
+
+**Both must be granted before a single email can be sent.** Granting the mailbox while the firewall stays closed changes nothing observable. Please progress them together.
+
+### Action
+
+| # | Action | Owner |
+|---|---|---|
+| 3A.1 | Create the mailbox `emirati@ehrdc.gov.ae` | IT / EHRDC |
+| 3A.2 | Issue SMTP credentials + connection details (host, port, auth, TLS) | IT / EHRDC |
+| 3A.3 | Confirm the display name to appear on outgoing mail (Arabic and English) | Platform team + Communications |
+| 3A.4 | Chase Moro item 2 — open outbound SMTP to 10.61.192.7:25 from the app servers | Platform team / Moro |
+
+A formal request for 3A.1–3A.2 in Arabic accompanies this document.
+
 ## 4. Action items
 
 | # | Action | Owner | Depends on |
