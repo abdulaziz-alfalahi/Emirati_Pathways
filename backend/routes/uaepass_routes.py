@@ -127,9 +127,21 @@ def mask_eid(eid: str) -> str:
 
 
 def _encrypt_eid(plaintext: str) -> str:
-    """
-    Encrypt Emirates ID for storage using AES-256-GCM.
-    Requires UAEPASS_EID_KEY to be configured in environment.
+    """Encrypt an Emirates ID using AES-256-GCM. Requires UAEPASS_EID_KEY.
+
+    CURRENTLY UNUSED — kept, not deleted, deliberately.
+
+    It used to write users.emirates_id_enc, which made that column mixed-format
+    and broke the CRM importers' plaintext lookup (P2 in
+    docs/finding_eid_at_rest.md). Nothing writes ciphertext there now.
+
+    Before reusing this for anything, note two things:
+      1. AES-GCM is NON-DETERMINISTIC (random nonce), so a column written with it
+         cannot be looked up by value — you need decrypt-every-row or a separate
+         deterministic index. That is what broke the importer.
+      2. It SILENTLY NULL-PADS a short key to 32 bytes rather than rejecting it,
+         so a weak value like "secret" is accepted as an AES-256 key. Fix that
+         before relying on it for real protection.
     """
     import base64
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -623,9 +635,23 @@ def _find_or_create_user(profile: dict) -> tuple:
     conn.autocommit = False
 
     raw_eid = profile.get('emirates_id', '')
-    eid_encrypted = ''
-    if raw_eid:
-        eid_encrypted = _encrypt_eid(raw_eid)
+    # P2 (docs/finding_eid_at_rest.md): write this column in PLAINTEXT, matching
+    # what the CRM importers write and read.
+    #
+    # It used to store AES-GCM ciphertext, which would have made the column
+    # mixed-format the moment anyone completed UAE Pass onboarding. Both CRM
+    # importers look candidates up by PLAINTEXT EID against this column, so an
+    # onboarded national would stop matching: no duplicate row (ON CONFLICT (id)
+    # DO NOTHING), but the update branch is skipped, so they would silently stop
+    # receiving master-file updates while the import report counted them as new.
+    #
+    # Writing NULL would break it identically — the importer's lookup skips NULLs
+    # too. Plaintext is the only value that keeps the column single-format.
+    #
+    # This is not a new disclosure: when UAE Pass supplies a valid EID the code
+    # below MIGRATES users.id to that same real EID, so the primary key already
+    # holds it in plaintext. Real protection is the deferred opaque-id layer.
+    eid_for_enc_column = strip_eid_hyphens(raw_eid) if raw_eid and is_valid_eid(raw_eid) else ''
 
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -673,7 +699,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                 profile.get('full_name'),
                 canonical_email(profile.get('email')),
                 canonical_phone(profile.get('phone')),
-                eid_encrypted,
+                eid_for_enc_column,
                 profile.get('fullname_ar'),
                 profile.get('nationality'),
                 profile.get('nationality_ar'),
@@ -730,7 +756,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                     profile.get('full_name'),
                     canonical_email(profile.get('email')),
                     canonical_phone(profile.get('phone')),
-                    eid_encrypted,
+                    eid_for_enc_column,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
@@ -803,7 +829,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                     profile.get('last_name'),
                     profile.get('full_name'),
                     canonical_phone(profile.get('phone')),
-                    eid_encrypted,
+                    eid_for_enc_column,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
@@ -880,7 +906,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                     profile.get('last_name'),
                     profile.get('full_name'),
                     canonical_email(profile.get('email')),
-                    eid_encrypted,
+                    eid_for_enc_column,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
@@ -917,10 +943,8 @@ def _find_or_create_user(profile: dict) -> tuple:
             max_seq = row['max_seq'] if row and row.get('max_seq') else 0
             eid_for_pk = f"784{'0000'}{max_seq + 1:07d}{'0'}"
 
-        # Encrypt EID before storage in the enc column (backward compat)
-        eid_encrypted = ''
-        if raw_eid:
-            eid_encrypted = _encrypt_eid(raw_eid)
+        # Plaintext, single-format — see the note at the first write site.
+        eid_for_enc_column = strip_eid_hyphens(raw_eid) if raw_eid and is_valid_eid(raw_eid) else ''
 
         cursor.execute("""
             INSERT INTO users (
@@ -951,7 +975,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             profile.get('nationality', 'UAE'),
             profile.get('nationality_ar', ''),
             profile['uaepass_uuid'],
-            eid_encrypted,
+            eid_for_enc_column,
             profile.get('fullname_ar', ''),
             profile.get('id_type', ''),
             profile.get('uaepass_usertype', ''),
