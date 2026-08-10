@@ -29,7 +29,9 @@ So the `_enc` suffix describes an intention, not the data.
 
 ## 2. Why this is not a breach — and what the real risk is
 
-**The Emirates ID was already in plaintext by design.** `users.id` *is* the 15-digit Emirates ID (CLAUDE.md), and `id == emirates_id_enc` for all 5,271 rows. This column is a redundant plaintext **copy of the primary key**, not protected data that leaked. Nothing is exposed here that the primary key does not already expose.
+**The Emirates ID was already in plaintext by design.** `users.id` *is* the 15-digit Emirates ID (CLAUDE.md), and `id == emirates_id_enc` for all 5,271 rows. This column is a plaintext **duplicate of the primary key** for those rows, not protected data that leaked. Nothing is exposed here that the primary key does not already expose.
+
+**One correction to an earlier draft:** the column is *not* purely redundant, so do not simply drop it. It differs from `users.id` on 1 row, and 41 users have synthetic `7840000…` ids — which is exactly the case the column was designed for: the id is a placeholder until UAE Pass supplies the real Emirates ID, which this column is meant to hold.
 
 The genuine risk is **a false assurance**. Anyone reading the schema — an auditor, a new engineer, whoever answers a data-protection questionnaire — will reasonably conclude that Emirates IDs are encrypted at rest. They are not. A compliance answer built on that reading would be wrong, and this platform has been bitten repeatedly by things that claim to work and quietly don't.
 
@@ -67,27 +69,57 @@ So, as soon as a national completes UAE Pass onboarding:
 
 **Net effect: every candidate who onboards through UAE Pass silently stops receiving CRM master-file updates, and the import report over-reports creations.** This is currently invisible because *nobody has completed UAE Pass onboarding yet* — it triggers on the first real one, i.e. precisely at the milestone we are working toward.
 
-## 4. Options
+## 4. Two separate problems
 
-**A. Rename the column to match reality** (e.g. `emirates_id`), leave the data plaintext.
-Honest, cheap, and removes the false assurance. Keeps the importers working unchanged. Concedes that the EID is plaintext at rest — which is already true of `users.id`, so it concedes nothing new. Requires a migration plus updating the ~6 code sites that reference it.
+An earlier draft of this document listed four "options" as if they were alternatives. They are not, and presenting them that way made the decision harder than it is. There are **two independent problems**, with different fixes and different urgency:
 
-**B. Actually encrypt, and fix the importers to match on ciphertext.**
-Makes the name true. But it buys very little while `users.id` remains the raw EID — an attacker or a careless query reads the primary key instead. It also means the importers must encrypt-then-compare (AES-GCM uses a random nonce, so ciphertext is not deterministic — they would have to decrypt every row to match, or keep a separate deterministic index). **This is the expensive option and it does not deliver the protection its name implies.**
+| | Problem | Fix | Urgency |
+|---|---|---|---|
+| **P1** | The column **name** promises encryption that does not exist | Rename it | Whenever convenient |
+| **P2** | The column is about to hold **two formats**, and the importer only understands one | Stop the callback writing ciphertext | **Before the first real UAE Pass onboarding** |
 
-**C. Stop writing the column from the callback** (leave it plaintext everywhere), and revisit under the opaque-id work.
-Smallest change that removes the §3 breakage. Keeps one consistent format so the importer keeps working. Defers the real question.
+Doing one does not fix the other. You most likely want both.
 
-**D. Do nothing.**
-Acceptable only until the first real UAE Pass onboarding. After that, §3 is live and silent.
+---
 
-## 5. Recommendation
+### P1 — the name is untrue
 
-**A or C now; the real fix is the deferred opaque-id layer.**
+**What:** `emirates_id_enc` contains plaintext (§1).
 
-Encrypting a column while the same value sits in the primary key is security theatre — it costs importer complexity and delivers no meaningful protection. The genuine control is the opaque-identifier layer already deferred to production (see the EID-visibility ruling: EHRDC and CRM operators keep the raw EID; other roles should not). Until that exists, the correct move is to make the schema **honest** rather than to make it look protected.
+**Why it matters:** false assurance. Someone answering "do you encrypt Emirates IDs at rest?" reads the schema, sees `_enc`, and says yes. That answer is wrong.
 
-Whichever is chosen, **§3 must be resolved before the first real UAE Pass onboarding**, or the CRM will quietly stop updating exactly the candidates who have successfully onboarded.
+**Fix — concretely, two changes and nothing else:**
+
+```sql
+ALTER TABLE users RENAME COLUMN emirates_id_enc TO emirates_id;
+```
+plus updating the ~6 code sites that use the old name.
+
+**No data changes. No security change.** The Emirates IDs remain exactly as readable as they are today. This does not protect anything — it stops the schema asserting something untrue.
+
+**Cost:** one migration, ~6 call sites. **Risk:** low; the rename is mechanical and the contract test suite will catch a missed reference.
+
+---
+
+### P2 — the mixed-format break (this is the one with a deadline)
+
+**What:** §3. The importers match on plaintext; the callback overwrites with ciphertext; the first onboarded candidate silently stops receiving CRM updates.
+
+**Fix — stop the UAE Pass callback writing ciphertext into this column** (`routes/uaepass_routes.py` lines 657, 714, 788, 865), so the column stays one consistent format and the importers keep matching.
+
+**Why this is the right direction rather than "teach the importers to handle ciphertext":** AES-GCM uses a random nonce, so the same Emirates ID encrypts to a different value every time. There is no way to look a candidate up by ciphertext — the importer would have to **decrypt every row on every run** to find one person, or maintain a second deterministic index. That is a large amount of machinery to protect a value that is sitting in plaintext in the primary key two columns away.
+
+**Cost:** small — remove or guard four assignments. **Risk:** low. **Deadline:** the first successful UAE Pass onboarding.
+
+---
+
+## 5. What this does *not* fix, and the real control
+
+Neither P1 nor P2 hides an Emirates ID from anyone. They cannot: **`users.id` is the Emirates ID by design.** Anything with read access to the users table has it regardless of what this column is called or contains.
+
+The genuine control is the **opaque-identifier layer already deferred to production** — the EID-visibility ruling (EHRDC and CRM operators keep the raw EID; other roles do not). Until that exists, the honest position is a schema that does not overstate its protections, not a column that looks encrypted.
+
+**Recommendation:** do **P2 before onboarding** (it prevents a silent data-integrity failure), and **P1 whenever convenient** (it prevents a wrong compliance answer). Treat the opaque-id layer as the actual remediation, tracked separately.
 
 ## 6. On `UAEPASS_EID_KEY` specifically
 
