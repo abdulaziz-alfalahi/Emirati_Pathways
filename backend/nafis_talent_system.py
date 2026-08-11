@@ -233,6 +233,29 @@ _NAFIS_PROFILE_MAP = [
 ]
 
 
+# Fields seeded ONLY when the redeemer's Emirates ID is verified against the
+# NAFIS record. These are personal-status attributes that UAE Pass has no
+# equivalent for, so the import is their only source — and mis-attributing them
+# to the wrong person is a genuine personal-data disclosure, not untidiness.
+# (Owner decisions 2026-08-11: age_group stays in tier 1; a positive EID
+# MISMATCH refuses redemption outright.)
+# See docs/scope_nafis_seeding_identity_gate.md.
+_TIER2_VERIFIED_ONLY = {
+    'is_person_of_determination',
+    'determination_type',
+    'marital_status',
+    'military_status',
+}
+
+
+def _eid_digits(value):
+    """Compare Emirates IDs on digits alone — NAFIS stores 784-1234-1234567-1,
+    UAE Pass returns unpunctuated."""
+    if not value:
+        return ''
+    return ''.join(ch for ch in str(value) if ch.isdigit())
+
+
 class NafisTalentSystem:
 
     def __init__(self, db_connection=None):
@@ -759,7 +782,8 @@ class NafisTalentSystem:
             except Exception:
                 pass
 
-    def redeem_seeker_invitation_for_user(self, token, user_id, is_new_user=False):
+    def redeem_seeker_invitation_for_user(self, token, user_id, is_new_user=False,
+                                          proven_eid=None):
         """Redeem a seeker invitation against a UAE-Pass-PROVEN identity.
 
         Replaces the OTP/accept flow (retired): the UAE Pass callback has
@@ -802,6 +826,28 @@ class NafisTalentSystem:
                 if not cur.fetchone():
                     raise ValueError("User account not found for seeker invitation redemption")
 
+                # Identity gate. Nothing else checks that the person completing
+                # UAE Pass is the person the invitation was issued to — the link
+                # is the only credential — so a forwarded or intercepted link
+                # would otherwise hand over the invitee's government-supplied
+                # profile, not merely an account.
+                #   MISMATCH  -> refuse (owner decision): a positive mismatch is
+                #                evidence the wrong person holds the link.
+                #   NO EID    -> proceed, but tier-2 fields are withheld. Most
+                #                UAE Pass personas return no EID today (SOP1),
+                #                so refusing here would block onboarding
+                #                entirely rather than make it safer.
+                proven = _eid_digits(proven_eid)
+                seeker_eid = _eid_digits(inv.get('emirates_id'))
+                if proven and seeker_eid and proven != seeker_eid:
+                    logger.warning(
+                        "Seeker invitation refused: proven EID does not match seeker %s",
+                        inv['seeker_id'])
+                    raise ValueError(
+                        "This invitation was issued to a different Emirates ID. "
+                        "Please ask the operator to reissue it to your identity.")
+                verified = bool(proven and seeker_eid and proven == seeker_eid)
+
                 # Link the NAFIS seeker record to the proven account and advance
                 # its lifecycle. Match by the invitation's seeker_id (the operator
                 # chose this person); the account already carries the real EID.
@@ -821,7 +867,7 @@ class NafisTalentSystem:
                 # record. Runs inside this transaction so the profile and the
                 # linkage commit together — a candidate is never left linked but
                 # with the imported data still stranded.
-                self._seed_profile_from_nafis(cur, inv['seeker_id'], str(user_id))
+                self._seed_profile_from_nafis(cur, inv['seeker_id'], str(user_id), verified=verified)
 
                 conn.commit()
                 logger.info(
@@ -854,7 +900,7 @@ class NafisTalentSystem:
             except Exception:
                 pass
 
-    def _seed_profile_from_nafis(self, cur, seeker_id, user_id):
+    def _seed_profile_from_nafis(self, cur, seeker_id, user_id, verified=False):
         """Copy the imported NAFIS fields onto the candidate's own record.
 
         Runs inside the redemption transaction, on the caller's cursor.
@@ -879,9 +925,19 @@ class NafisTalentSystem:
             return
 
         values = {}
+        withheld = []
         for src, dst, transform in _NAFIS_PROFILE_MAP:
+            if dst in _TIER2_VERIFIED_ONLY and not verified:
+                withheld.append(dst)
+                continue
             raw = seeker.get(src)
             values[dst] = transform(raw) if transform else raw
+        if withheld:
+            # Loud, not silent: a withheld field is a deliberate decision, and
+            # nothing should half-happen without a record of it.
+            logger.warning(
+                "NAFIS seeding: EID unverified for user %s (seeker %s) — withheld %s",
+                user_id, seeker_id, withheld)
         # Provenance, so the CRM can tell imported data from agent-entered data.
         values['candidates_source'] = 'NAFIS'
 
