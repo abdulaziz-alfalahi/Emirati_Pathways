@@ -1,6 +1,7 @@
 # Runbook: deploy GPU ASR on dghraz1gpuvm2 (10.228.145.195)
 
-**Status:** ready to run. Must be executed **on the GPU node** — port 22 is filtered from APPDEV and APPQA, so only the Jump Server can reach it.
+**Status: DEPLOYED AND VERIFIED 2026-08-11.** Warm inference 0.29 s for a 2 s clip — GPU-fast (the same on CPU takes tens of seconds). Kept as the reference procedure and for `.194`.
+**Originally:** ready to run. Must be executed **on the GPU node** — port 22 is filtered from APPDEV and APPQA, so only the Jump Server can reach it.
 **Target:** move interview transcription from CPU/`small` on APPQA to GPU/`large-v3` on the GPU node.
 
 ---
@@ -91,6 +92,7 @@ sudo docker run -d --name stt-whisper \
   --gpus all \
   -p 8001:8000 \
   -e WHISPER__MODEL=Systran/faster-whisper-large-v3 \
+  -e WHISPER__INFERENCE_DEVICE=cuda \
   -e HTTP_PROXY=http://10.61.192.2:8080 \
   -e HTTPS_PROXY=http://10.61.192.2:8080 \
   -e NO_PROXY=localhost,127.0.0.1,10.0.0.0/8 \
@@ -98,13 +100,35 @@ sudo docker run -d --name stt-whisper \
   fedirz/faster-whisper-server:latest-cuda
 ```
 
-The proxy variables inside the container matter: **the model is downloaded from Hugging Face on first start** (~3 GB), and without them the container starts and then hangs on the download.
+**`WHISPER__INFERENCE_DEVICE=cuda` is essential and easy to miss.** APPQA's container sets this to `cpu`. Without overriding it, `--gpus all` grants the container GPU access that the model never uses — inference silently runs on CPU at roughly 100× the latency, and every other signal (container healthy, API responding, correct transcripts) looks like success. Confirm via the warm-request timing in §7, not by assuming.
+
+The proxy variables inside the container matter too: **the model is downloaded from Hugging Face on first start** (~3 GB), and without them the container starts and then hangs on the download.
 
 `-p 8001:8000` matches the port the firewall already permits, and mirrors APPQA's mapping.
 
 ```bash
 sudo docker logs -f stt-whisper      # watch the model download; Ctrl-C when serving
 ```
+
+## 6a. The proxy trap that makes a healthy service look unreachable
+
+**This cost the most time during the real deployment and is invisible from the GPU node.**
+
+After the service was up and the port reachable, HTTP calls from APPQA still timed out. TCP connected; HTTP did not. The cause is on **APPQA**, not the GPU node:
+
+`~/.docker/config.json` contains a `proxies.default` block, so **the Docker CLI injects `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` into every `docker run`** — regardless of what the launch script does. `run-agent-appqa.sh` even carries a comment saying "no proxy env at runtime", which is true of the script and false of the resulting container.
+
+Its `noProxy` list did not include the GPU nodes, so internal traffic to `.195` was being sent to the corporate proxy, which cannot route to internal addresses — hence a timeout rather than a refusal.
+
+Fix once on APPQA, and every container created afterwards inherits it:
+
+```bash
+# add 10.228.145.194 and 10.228.145.195 to proxies.default.noProxy
+cp ~/.docker/config.json ~/.docker/config.json.bak-$(date +%Y%m%d)
+# edit noProxy to append: ,10.228.145.194,10.228.145.195
+```
+
+**Docker injects these at container CREATION.** Existing containers keep the old list until recreated — which is why the backend still could not reach the GPU node after the fix, while the freshly-relaunched agent could. The backend picks it up on its next deploy; it does not matter for transcription, because the **agent** does that work.
 
 ## 7. Verify
 
@@ -122,7 +146,21 @@ import socket; s=socket.socket(); s.settimeout(5)
 s.connect(('10.228.145.195',8001)); print('reachable'); s.close()"
 ```
 
-That call currently returns *ConnectionRefused*. Once it prints `reachable`, the path is live end to end.
+That call returns *ConnectionRefused* before deployment. Once it prints `reachable`, the TCP path is live.
+
+**But TCP reachable is not enough** — see §6a. Also confirm the HTTP API answers, and that inference is genuinely on the GPU:
+
+```bash
+# from APPQA, in the agent container
+docker exec interview-agent python -c "
+import urllib.request; urllib.request.urlopen('http://10.228.145.195:8001/v1/models', timeout=20).read(); print('API OK')"
+```
+
+**The decisive check is warm-request timing.** Send the same short clip twice after the model has loaded:
+- **~0.3 s** → running on the L40S (measured: 0.29 s)
+- **tens of seconds** → silently on CPU; `WHISPER__INFERENCE_DEVICE` did not take
+
+First request includes the ~3 GB model download (measured: 131 s) — do not read that as slow inference.
 
 ## 8. Point the agent at it
 
@@ -138,5 +176,5 @@ then re-run `run-agent-appqa.sh`.
 
 ## 9. Afterwards
 
-- `.194` (`dghraz1gpuvm1`) answers nothing from anywhere — establish whether it is powered off. It is the intended HA peer, and a single-node ASR has no failover.
+- **`.194` (`dghraz1gpuvm1`) is UP** — SSH from the Jump Server works (confirmed 2026-08-11). It is *not* powered off. But `APPQA → .194:8001` **times out** while `APPQA → .195:8001` was merely *refused*, and a dropped packet on a live host means the path is blocked in transit. **Moro implemented firewall item 1 for `.195` only.** So there is currently **no failover**: if `.195` fails, transcription stops. Deploying on `.194` is pointless until `APPQA → .194:8001` is opened — bundle that request with the next Moro communication, then repeat this runbook there.
 - The GPU node's SSH password is a weak default-pattern credential on hardware that will process interview recordings — personal data of nationals. Worth rotating before production, and worth checking whether the same credential is reused on `.194`.
