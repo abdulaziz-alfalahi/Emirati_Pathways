@@ -336,7 +336,10 @@ def uaepass_callback():
                     except ImportError:
                         from nafis_talent_system import NafisTalentSystem
                     invitation_result = NafisTalentSystem().redeem_seeker_invitation_for_user(
-                        invitation_token, user_id, is_new_user=is_new_user
+                        invitation_token, user_id, is_new_user=is_new_user,
+                        # The government-proven EID, so redemption can verify the
+                        # redeemer is the invitee. Empty for SOP1 personas.
+                        proven_eid=profile.get('emirates_id'),
                     )
                 elif invitation_type == 'staff':
                     # Platform-staff invite (EHRDC CRM/operators, typically
