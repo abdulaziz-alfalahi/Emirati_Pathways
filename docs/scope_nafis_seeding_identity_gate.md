@@ -36,7 +36,11 @@ Scope requested: `openid urn:uae:digitalid:profile:general`. Observed on the rea
 | `email`, `phone` | `fullname_ar` |
 | `nationality`, `uaepass_uuid` | `nationality_ar` |
 
-**The absent Emirates ID is the crux.** Of 14 UAE Pass users to date, 13 have synthetic `7840000…` ids — meaning no EID came back. Verification is impossible for those. If the pending attributes request changes this, the gate below starts working automatically.
+**UPDATE 2026-08-11 — the attributes request resolves this.** The request sent to UAE Pass asks for exactly what the gate needs: item 3 **Emirates ID (`idn`)**, plus `fullnameAR`, date of birth and emirate of issuance. It also requests **SOP2/SOP3 verified test personas**, because **SOP1 personas carry no verified EID, Arabic name or date of birth**.
+
+That explains what was previously unexplained: 13 of 14 users having synthetic `7840000…` ids and no Arabic name. **This was never a platform defect — it is the assurance level of the test personas.** UAE Pass confirmed on a call (2026-08-11) they will expedite. **The gate is therefore viable, not hypothetical** — it activates on the `idn` grant.
+
+**Gap found and fixed while scoping (PR #345):** `gender` was already being returned, parsed, and then **discarded** — nothing wrote it, so NAFIS filled the column and the first real onboarding recorded a woman as `Male` with the invited seeker's date of birth. `_persist_uaepass_demographics()` now stores UAE Pass demographics, **overwriting** (it supersedes), before redemption runs. Date of birth and emirate of issuance are mapped ahead of the grant.
 
 ## 4. Proposed design — two tiers, gated on EID match
 
@@ -61,8 +65,8 @@ Personal-status and identity fields. Mis-attribution here is a genuine personal-
 | `determination_type` | as above |
 | `marital_status` | personal status |
 | `military_status` | national-service status |
-| `full_name` | copying the invitee's **name** onto another person is the most visible conflation, and UAE Pass supplies this anyway (rank 1) |
-| `phone` | a third party's contact detail; UAE Pass supplies it (rank 1) |
+
+**Tier 2 is smaller than first drafted (2026-08-11).** `full_name`, `phone` and `gender` — and, on grant, `fullname_ar` and date of birth — all arrive from **UAE Pass at rank 1**, so NAFIS is never their source and gating them is unnecessary. What remains above is precisely the set UAE Pass has **no equivalent for**, and which can therefore only come from the import.
 
 When unverified, Tier 2 is skipped and a warning logged naming the seeker and user. Nothing silently half-happens.
 
@@ -76,7 +80,7 @@ Existing rows seeded before the gate (currently one: user `784000000000550`) are
 
 ## 6. Two decisions needed before building
 
-1. **Is the Tier 1 / Tier 2 split right?** Specifically: should `gender` and `age_group` be Tier 2? They are demographic rather than occupational. I have placed them in Tier 1 because matching and reporting use them and mis-attribution is low-harm, but that is a judgement call.
+1. **`gender` — RESOLVED.** It comes from UAE Pass at rank 1 (PR #345) and is no longer NAFIS-sourced. `age_group` remains a judgement call: demographic rather than occupational, but matching and reporting use it and mis-attribution is low-harm. Left in Tier 1 unless you disagree.
 2. **Behaviour when UAE Pass returns an EID that does NOT match** the NAFIS record — this is a genuine mismatch rather than missing data. Options: (a) refuse redemption outright, (b) link the account but seed nothing, (c) link and seed Tier 1 only. **Recommendation: (a) refuse** — a positive mismatch is evidence the wrong person holds the link, which is different from simply not knowing.
 
 ## 7. Effort
