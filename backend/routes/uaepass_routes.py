@@ -309,6 +309,11 @@ def uaepass_callback():
         if not user_data:
             raise UAEPassError("Failed to find or create user in database")
 
+        # Store the verified demographics UAE Pass returned. Runs BEFORE
+        # invitation redemption so the NAFIS seeding's COALESCE preserves them
+        # (owner directive: UAE Pass supersedes).
+        _persist_uaepass_demographics(user_data.get('id'), profile)
+
         # Step 4b: Redeem a company invitation against the PROVEN identity
         # (issues #90/#103). The old flow accepted invitations from an
         # unauthenticated body and matched accounts by phone; here the only
@@ -612,6 +617,70 @@ def _refuse_contact_link(cursor, matched_row, match_kind: str) -> bool:
         )
         return True
     return False
+
+
+def _persist_uaepass_demographics(user_id, profile):
+    """Store the government-verified demographic claims UAE Pass returns.
+
+    WHY: the OAuth layer already parses `gender` (and will parse date of birth
+    and emirate of issuance once UAE Pass grants them — items 5 and 8 of the
+    attributes request), but nothing wrote them anywhere. They were parsed and
+    dropped, and the NAFIS import then filled the same columns instead.
+
+    The visible consequence: the first real seeker onboarding recorded a woman as
+    `Male` with the invited seeker's date of birth, because UAE Pass's gender was
+    discarded and NAFIS's was not.
+
+    PRECEDENCE (owner directive 2026-08-11): what UAE Pass returns SUPERSEDES.
+    So these overwrite rather than COALESCE — UAE Pass is a government-verified
+    source and outranks both the NAFIS import and the candidate's own entry for
+    identity attributes. Writing them here, before invitation redemption runs,
+    also means the NAFIS seeding's COALESCE then leaves them alone.
+
+    Only writes columns for which UAE Pass actually returned a value, and only
+    for users who have (or are getting) a candidate profile — employers and
+    operators have no candidate_profiles row and must not be given one.
+    Never raises: a demographics write must not break authentication.
+    """
+    fields = {}
+    if (profile.get('gender') or '').strip():
+        fields['gender'] = profile['gender'].strip()
+    # Not returned yet — mapped now so they land automatically once granted.
+    if (profile.get('date_of_birth') or '').strip():
+        fields['dob'] = profile['date_of_birth'].strip()
+    if (profile.get('emirate_of_issuance') or '').strip():
+        fields['emirate_of_residence'] = profile['emirate_of_issuance'].strip()
+    if not fields:
+        return
+
+    try:
+        conn = _get_db()
+        if not conn:
+            return
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (str(user_id),))
+            existing = cur.fetchone()
+            cols = list(fields.keys())
+            if existing:
+                sets = ', '.join(f"{c} = %s" for c in cols)   # overwrite: UAE Pass supersedes
+                cur.execute(
+                    f"UPDATE candidate_profiles SET {sets}, updated_at = NOW() WHERE user_id = %s",
+                    tuple(fields[c] for c in cols) + (str(user_id),))
+            else:
+                cur.execute("SELECT role, user_type FROM users WHERE id = %s", (str(user_id),))
+                row = cur.fetchone()
+                if not row or 'candidate' not in (str(row[0] or '') + str(row[1] or '')):
+                    return          # employer/operator — no candidate profile
+                placeholders = ', '.join(['%s'] * len(cols))
+                cur.execute(
+                    f"INSERT INTO candidate_profiles (user_id, {', '.join(cols)}) "
+                    f"VALUES (%s, {placeholders})",
+                    (str(user_id),) + tuple(fields[c] for c in cols))
+            conn.commit()
+        conn.close()
+        logger.info("UAE Pass demographics stored for %s: %s", mask_eid(str(user_id)), cols)
+    except Exception as e:      # pragma: no cover - never block auth
+        logger.warning("UAE Pass demographics not stored for %s: %s", user_id, e)
 
 
 def _find_or_create_user(profile: dict) -> tuple:
