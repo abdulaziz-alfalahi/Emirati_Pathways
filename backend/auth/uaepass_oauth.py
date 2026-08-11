@@ -261,6 +261,15 @@ class UAEPassOAuth:
             'nationality': raw_profile.get('nationalityEN', 'UAE'),
             'nationality_ar': raw_profile.get('nationalityAR'),
             'gender': raw_profile.get('gender'),
+            # Requested from UAE Pass 2026-08 (items 5 and 8) but NOT yet
+            # released. Mapped now so they land automatically on grant,
+            # with no code change. Claim names to be confirmed by UAE Pass —
+            # several spellings accepted so whichever they use is captured.
+            'date_of_birth': (raw_profile.get('dateOfBirth')
+                              or raw_profile.get('dob')
+                              or raw_profile.get('birthDate') or ''),
+            'emirate_of_issuance': (raw_profile.get('emirateOfIssuance')
+                                    or raw_profile.get('idIssuanceEmirate') or ''),
             'id_type': raw_profile.get('idType'),
             'uaepass_usertype': raw_profile.get('userType'),
             'title_en': raw_profile.get('titleEN'),
