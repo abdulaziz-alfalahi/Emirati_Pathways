@@ -150,17 +150,40 @@ That call returns *ConnectionRefused* before deployment. Once it prints `reachab
 
 **But TCP reachable is not enough** — see §6a. Also confirm the HTTP API answers, and that inference is genuinely on the GPU:
 
+### DO NOT use `/v1/models` as a health check
+
+It calls **huggingface.co through the corporate proxy** to enumerate available
+models (`list_models.py` → `huggingface_hub.list_models()`). It therefore fails
+whenever the proxy is unhappy — `requests.exceptions.ProxyError` — **while the
+service is perfectly healthy**. This produced a false alarm during the real
+deployment: the endpoint returned nothing for 300 s and the container had been
+`Up 42 minutes` with zero restarts the whole time.
+
+Transcription uses the **locally cached** model and needs no internet, so probe
+the endpoint that matters:
+
 ```bash
-# from APPQA, in the agent container
-docker exec interview-agent python -c "
-import urllib.request; urllib.request.urlopen('http://10.228.145.195:8001/v1/models', timeout=20).read(); print('API OK')"
+# from APPQA, in the agent container — synthetic 2s tone, expects {"text":"."}
+docker exec interview-agent python3 -c "
+import wave, struct, math, io, urllib.request, time
+buf=io.BytesIO(); w=wave.open(buf,'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+w.writeframes(b''.join(struct.pack('<h', int(3000*math.sin(2*math.pi*440*t/16000))) for t in range(32000))); w.close()
+b='----t'
+body=(f'--{b}\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nSystran/faster-whisper-large-v3\r\n'
+      f'--{b}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.wav\"\r\nContent-Type: audio/wav\r\n\r\n').encode()+buf.getvalue()+f'\r\n--{b}--\r\n'.encode()
+req=urllib.request.Request('http://10.228.145.195:8001/v1/audio/transcriptions', data=body,
+    headers={'Content-Type': f'multipart/form-data; boundary={b}'})
+t0=time.time(); r=urllib.request.urlopen(req, timeout=180).read()
+print('%.2fs -> %s' % (time.time()-t0, r[:60].decode()))"
 ```
 
-**The decisive check is warm-request timing.** Send the same short clip twice after the model has loaded:
-- **~0.3 s** → running on the L40S (measured: 0.29 s)
+**The decisive check is warm-request timing.** Send the same short clip twice:
+- **~0.3 s warm** → running on the L40S (measured: 0.29 s, repeatedly)
 - **tens of seconds** → silently on CPU; `WHISPER__INFERENCE_DEVICE` did not take
 
-First request includes the ~3 GB model download (measured: 131 s) — do not read that as slow inference.
+Two latencies that are normal and must not be mistaken for faults:
+- **~131 s on the very first request ever** — the ~3 GB model downloading from Hugging Face.
+- **~3 s on the first request after an idle period** — the model is evicted when idle and reloads from the local cache into GPU memory (measured: 3.06 s, then 0.29 s). **Expect roughly a 3-second lag on the first utterance of an interview after a quiet spell.** If that matters for user experience, keep the model warm with a periodic synthetic request.
 
 ## 8. Point the agent at it
 
