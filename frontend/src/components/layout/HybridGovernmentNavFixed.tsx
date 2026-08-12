@@ -306,17 +306,21 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             {/* Government Logos Section */}
             <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
               <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
+                {/* shrink-0 + object-contain: these are flex children with no explicit width,
+                    so on a narrow viewport flex squeezed their width while h-20 held the
+                    height fixed — the logos rendered horizontally compressed (feedback
+                    fb_1786394087). A government crest must never be distorted. */}
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
-                  className="h-20 w-auto"
+                  className="h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
-                <div className="w-px h-16 bg-slate-300"></div>
+                <div className="w-px h-16 bg-slate-300 shrink-0"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-20 w-auto"
+                  className="h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>

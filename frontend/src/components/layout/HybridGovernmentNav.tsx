@@ -31,13 +31,13 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
-                  className="h-20 w-auto"
+                  className="h-20 w-auto shrink-0 object-contain"
                 />
-                <div className="w-px h-16 bg-slate-300"></div>
+                <div className="w-px h-16 bg-slate-300 shrink-0"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-18 w-auto"
+                  className="h-18 w-auto shrink-0 object-contain"
                   style={{ height: '4.5rem' }}
                 />
               </div>
