@@ -760,14 +760,24 @@ def get_job_matches():
                         raw_job = job_map.get(job_req.id)
                         if raw_job:
                             # Add match details
-                            raw_job['matchScore'] = int(score_obj.overall_score)
+                            # None when the engine WITHHELD the score (#352): too
+                            # little was known to publish a percentage. Kept as None
+                            # rather than coerced to 0, which would read as "assessed
+                            # and hopeless" instead of "not assessed".
+                            _score = score_obj.overall_score
+                            raw_job['matchScore'] = None if _score is None else int(_score)
+                            raw_job['matchCoverage'] = round(score_obj.coverage, 3)
+                            raw_job['matchWithheldReason'] = score_obj.withheld_reason
+                            raw_job['matchUnscored'] = score_obj.unscored
                             raw_job['matchBreakdown'] = score_obj.criteria_scores
                             raw_job['matchReasons'] = score_obj.match_reasons
-                            raw_job['is_perfect_match'] = (score_obj.overall_score > 85)
+                            raw_job['is_perfect_match'] = (_score is not None and _score > 85)
                             all_matches.append(raw_job)
                     
                     # Sort by score descending
-                    all_matches.sort(key=lambda x: x['matchScore'], reverse=True)
+                    # Withheld scores sort last rather than crashing the comparison.
+                    all_matches.sort(key=lambda x: (x['matchScore'] is not None,
+                                                    x['matchScore'] or 0), reverse=True)
                     
                     
                     # DEBUG: Log all match scores

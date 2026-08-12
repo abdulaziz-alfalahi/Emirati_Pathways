@@ -546,6 +546,34 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-3 space-y-3">
+                      {/* When the platform cannot score these jobs, say so plainly and
+                          once, at the top — a candidate should understand WHY there is
+                          no percentage and exactly what would produce one. Previously a
+                          number was shown regardless, which read as "you are already
+                          matched" to someone with an empty profile (#352). */}
+                      {recommendedJobs.length > 0 &&
+                       recommendedJobs.slice(0, 3).every(j => j.match_score === null || j.match_score === undefined) && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                          <p className="text-sm font-semibold text-amber-900">
+                            {t('We cannot match you to these jobs yet',
+                               'لا يمكننا مطابقتك مع هذه الوظائف بعد')}
+                          </p>
+                          <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                            {t('Match percentages are based on your skills and experience, and your profile does not have them yet. Add your skills or upload your CV and every job here will show how well it fits you.',
+                               'تعتمد نسب المطابقة على مهاراتك وخبرتك، وملفك لا يتضمنها بعد. أضف مهاراتك أو ارفع سيرتك الذاتية وستظهر لكل وظيفة هنا مدى ملاءمتها لك.')}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2.5">
+                            <Button size="sm" className="h-8 text-xs"
+                                    onClick={() => navigate('/candidate/profile/skills')}>
+                              {t('Add my skills', 'أضف مهاراتي')}
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8 text-xs"
+                                    onClick={() => navigate('/cv-builder')}>
+                              {t('Upload or build my CV', 'ارفع أو أنشئ سيرتي الذاتية')}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       {recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3).map((job, i) => (
                         <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
                           <div className="flex items-start justify-between">
@@ -565,9 +593,26 @@ const CandidateDashboard: React.FC = () => {
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <Badge className="bg-accent text-primary border border-teal-200 text-[11px] font-bold">
-                                ✦ {job.match_score}% {t('Match', 'تطابق')}
-                              </Badge>
+                              {/* A percentage is shown only when the backend actually
+                                  scored the job. When it withholds one (#352), say why
+                                  and what to do about it — the old build printed a
+                                  manufactured "45% Match" to candidates with an empty
+                                  profile, which quietly removed the reason to complete
+                                  it. */}
+                              {job.match_score === null || job.match_score === undefined ? (
+                                <Badge
+                                  className="bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-medium max-w-[190px] whitespace-normal text-start leading-snug py-1"
+                                  title={t('Add your skills and CV so jobs can be matched to your profile.',
+                                           'أضف مهاراتك وسيرتك الذاتية ليتم مطابقة الوظائف مع ملفك.')}
+                                >
+                                  {t('Not matched yet — add your skills',
+                                     'لم تتم المطابقة بعد — أضف مهاراتك')}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-accent text-primary border border-teal-200 text-[11px] font-bold">
+                                  ✦ {job.match_score}% {t('Match', 'تطابق')}
+                                </Badge>
+                              )}
                               {(job as any).hasApplied ? (
                                 <Badge className="bg-green-100 text-green-800 border-none text-[11px] font-medium py-1 px-2.5 flex items-center gap-1">
                                   <CheckCircle className="h-3.5 w-3.5" />
