@@ -43,6 +43,8 @@ interface MatchBreakdown {
   skills_match?: number;
   experience_match?: number;
   title_match?: number;
+  /** Removed from scoring (GH #12) — kept optional so older cached payloads
+   *  do not fail to parse. Not rendered. */
   location_match?: number;
   d33_alignment?: number;
   details?: {
@@ -903,25 +905,25 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                               )}
                             </h4>
 
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            {/* Location is NOT one of these tiles. It used to be scored
+                                out of 10 here, which put where a candidate lives into
+                                how well they fit the work — the geography factor GH #12
+                                ruled out. Commute is shown separately as information. */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               <div className="text-center p-2 bg-white rounded">
-                                <div className="text-lg font-bold text-blue-600">{job.matchBreakdown.skills_match || 0}/40</div>
+                                <div className="text-lg font-bold text-blue-600">{job.matchBreakdown.skills_match || 0}/44</div>
                                 <div className="text-xs text-muted-foreground">{t('Skills', 'المهارات')}</div>
                               </div>
                               <div className="text-center p-2 bg-white rounded">
-                                <div className="text-lg font-bold text-green-600">{job.matchBreakdown.experience_match || 0}/25</div>
+                                <div className="text-lg font-bold text-green-600">{job.matchBreakdown.experience_match || 0}/28</div>
                                 <div className="text-xs text-muted-foreground">{t('Experience', 'الخبرة')}</div>
                               </div>
                               <div className="text-center p-2 bg-white rounded">
-                                <div className="text-lg font-bold text-purple-600">{job.matchBreakdown.title_match || 0}/20</div>
+                                <div className="text-lg font-bold text-purple-600">{job.matchBreakdown.title_match || 0}/22</div>
                                 <div className="text-xs text-muted-foreground">{t('Title', 'المسمى')}</div>
                               </div>
                               <div className="text-center p-2 bg-white rounded">
-                                <div className="text-lg font-bold text-orange-600">{job.matchBreakdown.location_match || 0}/10</div>
-                                <div className="text-xs text-muted-foreground">{t('Location', 'الموقع')}</div>
-                              </div>
-                              <div className="text-center p-2 bg-white rounded">
-                                <div className="text-lg font-bold text-teal-600">{job.matchBreakdown.d33_alignment || 0}/5</div>
+                                <div className="text-lg font-bold text-teal-600">{job.matchBreakdown.d33_alignment || 0}/6</div>
                                 <div className="text-xs text-muted-foreground">D33</div>
                               </div>
                             </div>
