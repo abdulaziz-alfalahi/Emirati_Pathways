@@ -841,9 +841,14 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                         <Button size="sm" variant="outline" onClick={() => handleRoleSwitch(role)}>
                           Switch to Primary
                         </Button>
-                        <Button size="sm" variant="outline">
-                          Manage
-                        </Button>
+                        {/* A "Manage" button sat here with NO onClick — it rendered,
+                            looked like a control, and did nothing (#363). It is the
+                            second dead button reported on this page; the first was
+                            "Privacy & Visibility" (fb_1785828743). There is no
+                            destination it should lead to that "Switch to Primary"
+                            does not already cover, so it is removed rather than
+                            wired to something invented. A control that does nothing
+                            costs the user a support report to discover. */}
                       </div>
                     </div>
                   );
