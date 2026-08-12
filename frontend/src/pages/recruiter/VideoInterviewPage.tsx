@@ -16,7 +16,6 @@ interface AnalysisData {
     engagement: number;
     confidence: number;
     topics: string[];
-    body_language: string;
     speaking_pace: string;
     filler_word_count: number;
     key_phrases: string[];
@@ -268,7 +267,6 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                     sentiment: a.sentiment ?? 'Neutral',
                     sentiment_score: a.sentiment_score ?? 0.6,
                     speaking_pace: a.speaking_pace ?? 'Natural',
-                    body_language: a.body_language ?? 'Attentive',
                     filler_word_count: a.filler_word_count ?? 0,
                     topics: a.topics ?? [],
                     key_phrases: a.key_phrases ?? [],
@@ -423,14 +421,17 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 px-4 pb-4">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        {/* Body Language was shown here and has been REMOVED (#360).
+                            It was never measured: the backend prompt requests ten fields and
+                            body_language is not among them, and the endpoint receives only a
+                            transcript — no video is analysed anywhere in this feature. The UI
+                            fell back to the literal string 'Attentive' on every call, so every
+                            candidate was reported as attentive regardless of anything, beside
+                            real measurements and indistinguishable from one. */}
+                        <div className="grid grid-cols-1 gap-2 text-xs">
                             <div className="p-2 bg-slate-50 rounded-md border border-slate-100">
                                 <span className="text-slate-500 block">Pace</span>
                                 <span className="font-medium text-slate-800">{analysis.speaking_pace}</span>
-                            </div>
-                            <div className="p-2 bg-slate-50 rounded-md border border-slate-100">
-                                <span className="text-slate-500 block">Body Language</span>
-                                <span className="font-medium text-slate-800">{analysis.body_language}</span>
                             </div>
                         </div>
 
