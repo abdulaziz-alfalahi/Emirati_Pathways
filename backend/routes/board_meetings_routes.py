@@ -994,3 +994,243 @@ def set_board_settings():
     except Exception as e:
         logger.error(f"set board settings failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to save the quorum rule'}), 500
+
+
+# ══════════════════════════════════════════════════════════════════
+# MINUTES — official governance records (migration 060)
+#
+# Owner decisions 2026-08-11: readable by board members, the secretary and
+# Administrators; retained INDEFINITELY with deletion an Administrator-only act;
+# drafts visible to those same roles; PDF only, 50 MB.
+#
+# The core property: minutes are NEVER overwritten in place. A correction
+# inserts a new version and supersedes the previous one, which stays
+# retrievable. If a minute could be silently replaced, this archive could not
+# answer "what did the Board approve on that date?" — the only question it
+# exists to answer.
+# ══════════════════════════════════════════════════════════════════
+
+MINUTES_MAX_BYTES = 50 * 1024 * 1024        # 50 MB (owner decision)
+# The 50 MB rule is about the FILE. A multipart body carries part headers and
+# boundaries on top of it, so the transport allowance has to sit slightly above
+# the file limit — otherwise a genuinely valid 50 MB PDF is rejected by the
+# envelope rather than by the rule, and the caller is told the wrong thing.
+MINUTES_ENVELOPE_ALLOWANCE = 1 * 1024 * 1024
+MINUTES_ALLOWED_TYPES = {'application/pdf'}  # PDF only — must render identically in years
+
+
+def _storage():
+    try:
+        from backend import object_storage
+    except ImportError:  # pragma: no cover - dual-root import
+        import object_storage
+    return object_storage
+
+
+@board_meetings_bp.route('/<meeting_id>/minutes', methods=['GET'])
+@require_roles(*BOARD_ROLES)
+def list_minutes(meeting_id):
+    """Versions for a meeting, newest first. Drafts included (owner decision).
+
+    Soft-deleted rows are omitted — the tombstone exists for the audit trail,
+    not for the reader.
+    """
+    try:
+        rows = execute_query(
+            """SELECT id, filename, content_type, size_bytes, sha256, version,
+                      status, uploaded_by, uploaded_at, approved_by, approved_at
+                 FROM board_minutes
+                WHERE meeting_id = %s AND deleted_at IS NULL
+                ORDER BY version DESC""",
+            (meeting_id,)) or []
+        return jsonify({'success': True, 'data': [{
+            'id': str(r['id']),
+            'filename': r['filename'],
+            'size_bytes': r['size_bytes'],
+            'sha256': r['sha256'],
+            'version': r['version'],
+            'status': r['status'],
+            'uploaded_at': r['uploaded_at'].isoformat() if r.get('uploaded_at') else None,
+            'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"list minutes failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load minutes'}), 500
+
+
+@board_meetings_bp.route('/<meeting_id>/minutes', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def upload_minutes(meeting_id):
+    """Upload minutes for a meeting. Secretary only.
+
+    Uploading when a version already exists creates the NEXT version and marks
+    the previous one superseded. Nothing is overwritten.
+    """
+    st = _storage()
+    if not st.configured():
+        # Never accept a file we cannot actually store — a "success" here would
+        # lose a governance record.
+        return jsonify({'success': False,
+                        'message': 'Object storage is not configured; minutes cannot be accepted.'}), 503
+
+    # Reject an oversized body BEFORE touching it. There is no Flask-level
+    # MAX_CONTENT_LENGTH on this app (security_config declares one but only the
+    # cookie settings are ever applied), and on staging /api reaches the backend
+    # through Vite's proxy rather than nginx, so no edge limit applies either.
+    # Without this, `f.read()` would pull an arbitrarily large body into memory
+    # on a single-worker gevent server before the size check could fire.
+    declared = request.content_length or 0
+    if declared > MINUTES_MAX_BYTES + MINUTES_ENVELOPE_ALLOWANCE:
+        return jsonify({'success': False,
+                        'message': f'File exceeds the {MINUTES_MAX_BYTES // (1024*1024)} MB limit'}), 413
+
+    f = request.files.get('file')
+    if not f or not (f.filename or '').strip():
+        return jsonify({'success': False, 'message': 'A PDF file is required'}), 400
+
+    data = f.read()
+    if not data:
+        return jsonify({'success': False, 'message': 'The uploaded file is empty'}), 400
+    if len(data) > MINUTES_MAX_BYTES:
+        return jsonify({'success': False,
+                        'message': f'File exceeds the {MINUTES_MAX_BYTES // (1024*1024)} MB limit'}), 400
+
+    ctype = (f.mimetype or '').lower()
+    # Check the magic bytes too: a content-type header is caller-supplied and a
+    # renamed file would otherwise be archived as a PDF it is not.
+    if ctype not in MINUTES_ALLOWED_TYPES or not data.startswith(b'%PDF-'):
+        return jsonify({'success': False, 'message': 'Only PDF files are accepted'}), 400
+
+    meeting = execute_query("SELECT id FROM board_meetings WHERE id = %s",
+                            (meeting_id,), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+
+    user_id = str(get_jwt_identity())
+    try:
+        prev = execute_query(
+            """SELECT id, version FROM board_minutes
+                WHERE meeting_id = %s AND deleted_at IS NULL
+                ORDER BY version DESC LIMIT 1""",
+            (meeting_id,), fetch_one=True)
+        version = (prev['version'] + 1) if prev else 1
+
+        safe = re.sub(r'[^A-Za-z0-9._-]', '_', f.filename.strip())[:200]
+        key = f"minutes/{meeting_id}/v{version}-{safe}"
+
+        if not st.ensure_bucket():
+            return jsonify({'success': False,
+                            'message': 'Object storage is unavailable; minutes were not saved.'}), 503
+
+        # Store FIRST, then record. A row without an object is a record that
+        # cannot be served; an object without a row is merely unreferenced.
+        digest = st.put_object(key, data, content_type='application/pdf')
+
+        row = execute_query(
+            """INSERT INTO board_minutes
+                   (meeting_id, object_key, filename, content_type, size_bytes,
+                    sha256, version, status, uploaded_by)
+               VALUES (%s, %s, %s, 'application/pdf', %s, %s, %s, 'draft', %s)
+            RETURNING id, version, status""",
+            (meeting_id, key, safe, len(data), digest, version, user_id),
+            fetch_one=True)
+
+        if prev:
+            execute_query(
+                """UPDATE board_minutes
+                      SET status = 'superseded', superseded_by = %s
+                    WHERE id = %s""",
+                (row['id'], prev['id']), fetch_all=False)
+
+        logger.info("board minutes v%s uploaded for meeting %s by %s",
+                    version, meeting_id, user_id)
+        return jsonify({'success': True, 'data': {
+            'id': str(row['id']), 'version': row['version'],
+            'status': row['status'], 'sha256': digest,
+            'superseded_version': prev['version'] if prev else None,
+        }}), 201
+    except Exception as e:
+        logger.error(f"upload minutes failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to save the minutes'}), 500
+
+
+@board_meetings_bp.route('/minutes/<minute_id>/download', methods=['GET'])
+@require_roles(*BOARD_ROLES)
+def download_minutes(minute_id):
+    """Stream the document. Streamed through the backend rather than a presigned
+    URL, so every read passes the role check and is attributable.
+
+    The stored sha256 is re-verified before serving: if the bytes have changed,
+    this is no longer the record and must not be presented as one.
+    """
+    from flask import Response
+    row = execute_query(
+        """SELECT object_key, filename, sha256, deleted_at
+             FROM board_minutes WHERE id = %s""",
+        (minute_id,), fetch_one=True)
+    # 404 for deleted too — the tombstone is for the audit trail, not the reader.
+    if not row or row.get('deleted_at'):
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+
+    try:
+        import hashlib
+        data = _storage().get_object(row['object_key'])
+        if hashlib.sha256(data).hexdigest() != row['sha256']:
+            logger.error("INTEGRITY FAILURE for minutes %s — stored bytes do not "
+                         "match the recorded hash", minute_id)
+            return jsonify({'success': False,
+                            'message': 'Integrity check failed; this document cannot be served.'}), 500
+        return Response(data, mimetype='application/pdf', headers={
+            'Content-Disposition': f'attachment; filename="{row["filename"]}"',
+            'X-Content-SHA256': row['sha256'],
+        })
+    except Exception as e:
+        logger.error(f"download minutes failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to retrieve the document'}), 500
+
+
+@board_meetings_bp.route('/minutes/<minute_id>/approve', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def approve_minutes(minute_id):
+    """Mark a draft approved. Secretary only."""
+    user_id = str(get_jwt_identity())
+    row = execute_query("SELECT status, deleted_at FROM board_minutes WHERE id = %s",
+                        (minute_id,), fetch_one=True)
+    if not row or row.get('deleted_at'):
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    if row['status'] == 'superseded':
+        return jsonify({'success': False,
+                        'message': 'This version has been superseded and cannot be approved'}), 409
+    execute_query(
+        """UPDATE board_minutes SET status = 'approved', approved_by = %s, approved_at = now()
+            WHERE id = %s""", (user_id, minute_id), fetch_all=False)
+    logger.info("board minutes %s approved by %s", minute_id, user_id)
+    return jsonify({'success': True})
+
+
+@board_meetings_bp.route('/minutes/<minute_id>', methods=['DELETE'])
+@require_roles(*ADMIN_ROLES)
+def delete_minutes(minute_id):
+    """SOFT delete. Administrator only (owner decision).
+
+    The row is retained as a tombstone recording who removed it and when —
+    "retained indefinitely" and a hard delete that erases the evidence cannot
+    both be true. The object is left in the bucket, so a mistaken deletion is
+    recoverable without going to backup. A true purge is deliberately not
+    implemented.
+    """
+    user_id = str(get_jwt_identity())
+    reason = ((request.get_json(silent=True) or {}).get('reason') or '').strip()[:2000]
+    row = execute_query("SELECT id, deleted_at FROM board_minutes WHERE id = %s",
+                        (minute_id,), fetch_one=True)
+    if not row:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    if row.get('deleted_at'):
+        return jsonify({'success': True, 'already_deleted': True})
+    execute_query(
+        """UPDATE board_minutes
+              SET deleted_at = now(), deleted_by = %s, delete_reason = NULLIF(%s, '')
+            WHERE id = %s""", (user_id, reason, minute_id), fetch_all=False)
+    logger.warning("board minutes %s soft-deleted by administrator %s (reason: %s)",
+                   minute_id, user_id, reason or 'none given')
+    return jsonify({'success': True})
