@@ -76,7 +76,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
         .map((r: any) => String(normalizeRole(r) || r).toLowerCase())
     );
     matches.sort((a, b) => b.len - a.len);
-    return (matches.find(m => mine.has(m.role)) || matches[0]).role;
+    // Only label the surface with a role the user ACTUALLY holds. The previous
+    // `|| matches[0]` fell back to the route's role regardless, so a user who
+    // held none of them was labelled with one they do not have — e.g. a career
+    // services operator on /demographics was shown as "Compliance Auditor".
+    // That was invisible while denied users were bounced away instantly; now
+    // that a refusal keeps them on the page (#353), it is on screen. Returning
+    // undefined lets the caller fall through to the user's real role.
+    const held = matches.find(m => mine.has(m.role));
+    return held ? held.role : undefined;
   }, [location.pathname, user]);
 
   // Get user role: viewed surface first, then authenticated user, then prop

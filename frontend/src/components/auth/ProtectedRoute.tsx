@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import AccessDenied from './AccessDenied';
 import { ROLE_DASHBOARD_MAP, normalizeRole } from '@/types/auth';
 
 // Exported helper: map a role string to the correct dashboard path
@@ -60,9 +61,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!hasPermission) {
       console.log(`🛡️ Protected Route: Access denied. User role: ${userRole}, Required: ${allowedRoles.join(', ')}`);
 
-      // In a real app we might redirect to unauthorized, or dashboard
-      // For now, redirect to their dashboard if possible
-      return <Navigate to="/" replace />; // Fallback to home or specific error page
+      // Previously `<Navigate to="/" replace />` — a silent bounce to the home
+      // page with no message. The refusal was correct every time; the problem
+      // was that nothing SAID a refusal had happened, so six separate feedback
+      // reports described working guards as broken buttons (#353).
+      //
+      // Say so instead, and leave the URL alone so the user — and anyone
+      // reading their screenshot — can still see which page was refused.
+      const myRoles = [
+        userRole,
+        ...(((user as any).roles as string[]) || []),
+        ...(((user as any).secondary_roles as string[]) || []),
+      ].filter(Boolean) as string[];
+
+      return (
+        <AccessDenied
+          allowedRoles={allowedRoles}
+          userRoles={myRoles}
+          dashboardPath={getDashboardPath(userRole || '')}
+        />
+      );
     }
   }
 
