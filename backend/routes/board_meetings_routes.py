@@ -1011,6 +1011,11 @@ def set_board_settings():
 # ══════════════════════════════════════════════════════════════════
 
 MINUTES_MAX_BYTES = 50 * 1024 * 1024        # 50 MB (owner decision)
+# The 50 MB rule is about the FILE. A multipart body carries part headers and
+# boundaries on top of it, so the transport allowance has to sit slightly above
+# the file limit — otherwise a genuinely valid 50 MB PDF is rejected by the
+# envelope rather than by the rule, and the caller is told the wrong thing.
+MINUTES_ENVELOPE_ALLOWANCE = 1 * 1024 * 1024
 MINUTES_ALLOWED_TYPES = {'application/pdf'}  # PDF only — must render identically in years
 
 
@@ -1067,6 +1072,17 @@ def upload_minutes(meeting_id):
         # lose a governance record.
         return jsonify({'success': False,
                         'message': 'Object storage is not configured; minutes cannot be accepted.'}), 503
+
+    # Reject an oversized body BEFORE touching it. There is no Flask-level
+    # MAX_CONTENT_LENGTH on this app (security_config declares one but only the
+    # cookie settings are ever applied), and on staging /api reaches the backend
+    # through Vite's proxy rather than nginx, so no edge limit applies either.
+    # Without this, `f.read()` would pull an arbitrarily large body into memory
+    # on a single-worker gevent server before the size check could fire.
+    declared = request.content_length or 0
+    if declared > MINUTES_MAX_BYTES + MINUTES_ENVELOPE_ALLOWANCE:
+        return jsonify({'success': False,
+                        'message': f'File exceeds the {MINUTES_MAX_BYTES // (1024*1024)} MB limit'}), 413
 
     f = request.files.get('file')
     if not f or not (f.filename or '').strip():
