@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { ShieldOff, ArrowLeft, ArrowRight, LayoutDashboard } from 'lucide-react';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 
 /**
  * Shown when a signed-in user opens a page their role cannot access.
@@ -47,6 +48,10 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
   const mine = Array.from(new Set(userRoles.map((r) => r.toLowerCase())));
 
   return (
+    <>
+      {/* Keep the app frame. The old redirect at least left the user somewhere
+          they could navigate from; a bare card would be a step backwards. */}
+      <HybridGovernmentNavFixed />
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="flex items-start gap-4">
@@ -73,13 +78,13 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
           {mine.length > 0 && (
             <div className="flex flex-wrap gap-x-2 gap-y-1">
               <dt className="text-slate-500">{b('Your roles', 'أدوارك')}:</dt>
-              <dd className="text-slate-800">{mine.map(prettyRole).join('، ')}</dd>
+              <dd className="text-slate-800">{mine.map(prettyRole).join(b(', ', '، '))}</dd>
             </div>
           )}
           {allowed.length > 0 && (
             <div className="flex flex-wrap gap-x-2 gap-y-1">
               <dt className="text-slate-500">{b('Open to', 'متاحة لـ')}:</dt>
-              <dd className="text-slate-800">{allowed.map(prettyRole).join('، ')}</dd>
+              <dd className="text-slate-800">{allowed.map(prettyRole).join(b(', ', '، '))}</dd>
             </div>
           )}
         </dl>
@@ -101,6 +106,7 @@ const AccessDenied: React.FC<AccessDeniedProps> = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
 
