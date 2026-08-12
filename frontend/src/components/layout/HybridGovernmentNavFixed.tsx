@@ -304,7 +304,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
             {/* Government Logos Section */}
-            <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
+            <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center min-w-0 shrink-0 space-x-3 md:space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
               <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center shrink-0 space-x-2 sm:space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
                 {/* shrink-0 + object-contain: these are flex children with no explicit width,
                     so on a narrow viewport flex squeezed their width while h-20 held the
@@ -316,11 +316,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
-                <div className="w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
+                <div className="hidden sm:block w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
+                  className="hidden sm:block h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>

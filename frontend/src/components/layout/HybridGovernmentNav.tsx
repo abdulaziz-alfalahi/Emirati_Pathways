@@ -26,18 +26,18 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-24">
             {/* Government Logos Section */}
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center min-w-0 shrink-0 space-x-3 md:space-x-6">
               <div className="flex items-center shrink-0 space-x-2 sm:space-x-4">
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
                   className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                 />
-                <div className="w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
+                <div className="hidden sm:block w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-10 sm:h-14 w-auto shrink-0 object-contain md:h-[4.5rem]"
+                  className="hidden sm:block h-10 sm:h-14 w-auto shrink-0 object-contain md:h-[4.5rem]"
                 />
               </div>
               <div className="hidden md:block">
