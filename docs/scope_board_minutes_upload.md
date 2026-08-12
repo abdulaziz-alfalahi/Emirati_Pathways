@@ -1,6 +1,6 @@
 # Scope: board minutes upload
 
-**Status:** scope for review — not built. Needs the owner decisions in §6.
+**Status:** BUILT, DEPLOYED AND VERIFIED on APPQA (2026-08-12). All of §5 passes — 47/47 live checks, plus a byte-identical round trip through the public URL. §6 answered by the owner (2026-08-11); the answers are recorded there.
 **Unblocked by:** Moro's backup confirmation (2026-08-11). The feature was deliberately withheld until the object store had a confirmed backup; that condition is now met.
 
 ---
@@ -83,9 +83,15 @@ Stream through the backend rather than issuing presigned URLs. A presigned URL i
 - **Bilingual document handling.** The metadata is bilingual; the documents are whatever the secretariat produces.
 - **Retention/deletion policy.** See §6.
 
-## 5. Verification plan
+## 5. Verification — PASSED 2026-08-12
 
-Live, on APPQA, then cleaned up:
+Run live on APPQA against the real MinIO and the live DB, then cleaned up (0 rows, 0 objects remaining). **47 checks, 0 failures**, covering everything below plus: draft visible to members, member cannot upload, secretary cannot delete, superseded version cannot be approved, non-PDF bytes under a .pdf name refused, oversize refused, tombstone fields recorded, and a tampered object refused rather than served.
+
+Two things the in-process run could not see were tested separately through the public URL:
+- **Round trip through the WAF** — uploaded and downloaded byte-identical (sha256 match).
+- **Body limits** — the WAF passes 55 MB, and an oversized upload is refused with 413 *before* the body is read. nginx was raised from 50M to 60M so the application, not the edge, is what rejects an oversized file.
+
+Original plan, all passing:
 
 1. Upload as secretary → object lands in MinIO, row created, `sha256` matches the source file.
 2. Download → bytes identical to what was uploaded (verify the hash, don't just check HTTP 200).
@@ -93,12 +99,12 @@ Live, on APPQA, then cleaned up:
 4. Board member can read; a candidate and a recruiter get 404.
 5. Restart the MinIO container → the file is still there (proves the volume, not just the process).
 
-## 6. Decisions needed before building
+## 6. Decisions — ANSWERED by the owner, 2026-08-11
 
-1. **Retention.** Governance records often carry a statutory retention period. Rubrik keeps 3 months; that is a *backup* window, not a *records* policy. **How long must board minutes be retained, and may they ever be deleted?** This changes whether deletion is even implemented.
-2. **Who may read minutes?** Board members and secretary is the assumption. Do observers, the executive, or auditors need access? Getting this wrong in either direction is costly.
-3. **Approved-only, or drafts visible?** Whether board members see a document before the secretary marks it approved.
-4. **File types and size cap.** PDF only is the safest default for a record that must render identically years from now. Suggest PDF-only, 50 MB.
+1. **Retention.** Retained **indefinitely**. Deletion is an **Administrator-only** act. Implemented as a *soft* delete: the row survives as a tombstone recording who deleted it, when, and why, and the object stays in the bucket. "Retained indefinitely" and a hard delete that erases the evidence cannot both be true, so a true purge is deliberately not implemented.
+2. **Who may read.** Board **members**, the **secretary**, and **Administrators** — `BOARD_ROLES` exactly. Candidates and recruiters are refused.
+3. **Drafts.** **Visible** to all three roles before approval.
+4. **File types and size.** **PDF only, 50 MB.** Enforced server-side against the magic bytes as well as the declared content type, since the header is caller-supplied.
 
 ## 7. Effort
 
