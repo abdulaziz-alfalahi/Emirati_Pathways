@@ -399,15 +399,21 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-9' : 'grid-cols-8'} bg-card p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
-              <TabsTrigger value="overview" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
-              <TabsTrigger value="profile" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
-              <TabsTrigger value="jobs" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
-              <TabsTrigger value="applications" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
-              <TabsTrigger value="offers" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
-              <TabsTrigger value="interviews" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
-              <TabsTrigger value="internships" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">{t('Internships', 'التدريب')}</TabsTrigger>
-              <TabsTrigger value="messages" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">
+            {/* Eight (or nine) equal grid columns forced into the viewport left each
+                label roughly 40px on a phone, and TabsTrigger sets whitespace-nowrap,
+                so the text overflowed its cell and overlapped its neighbour — the
+                tabs became unreadable and could not be reliably tapped (feedback
+                fb_1786394132). Below md the strip is now a horizontally scrollable
+                row with non-shrinking triggers; from md up it is the original grid. */}
+            <TabsList className={`flex w-full justify-start overflow-x-auto md:grid ${user?.company_id ? 'md:grid-cols-9' : 'md:grid-cols-8'} bg-card p-1.5 rounded-xl shadow-sm border border-slate-200/80 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
+              <TabsTrigger value="overview" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
+              <TabsTrigger value="jobs" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
+              <TabsTrigger value="applications" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Applications', 'الطلبات')}</TabsTrigger>
+              <TabsTrigger value="offers" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Offers', 'العروض')}</TabsTrigger>
+              <TabsTrigger value="interviews" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="internships" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">{t('Internships', 'التدريب')}</TabsTrigger>
+              <TabsTrigger value="messages" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">
                 {t('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
                   <span className="ms-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
@@ -416,7 +422,7 @@ const CandidateDashboard: React.FC = () => {
                 )}
               </TabsTrigger>
               {user?.company_id && (
-                <TabsTrigger value="company" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm">
+                <TabsTrigger value="company" className="data-[state=active]:bg-accent data-[state=active]:text-primary data-[state=active]:shadow-none rounded-lg text-sm shrink-0">
                   <Building2 className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
                   {t('My Company', 'شركتي')}
                 </TabsTrigger>
