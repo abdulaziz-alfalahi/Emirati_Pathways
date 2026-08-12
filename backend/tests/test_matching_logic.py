@@ -14,8 +14,16 @@ class TestEnhancedMatching(unittest.TestCase):
     def setUp(self):
         self.engine = EnhancedMatchingEngine()
 
-    def test_perfect_match_with_emiratization(self):
-        """Test a perfect match scenario including Emiratization bonus"""
+    def test_perfect_match_carries_no_nationality_bonus(self):
+        """A strong match scores on merit alone.
+
+        This test previously asserted that a UAE national received a 15% bonus on
+        an Emiratization-priority job. That behaviour was removed (owner ruling
+        2026-08-12): GH #12 settled that national priority is a separate,
+        disclosed axis and never folded into the match score, and on a platform
+        that serves Emiratis a bonus every candidate qualifies for discriminates
+        between nobody — it simply inflated every score by 15%.
+        """
         candidate = MatchingProfile(
             id="1",
             skills=["Python", "Flask", "React", "SQL"],
@@ -51,10 +59,10 @@ class TestEnhancedMatching(unittest.TestCase):
         print(f"Breakdown: {score.criteria_scores}")
         print(f"Emiratization Bonus: {score.emiratization_bonus}")
         
-        # Should be very high score
+        # Should be very high score, earned entirely from the criteria
         self.assertGreater(score.overall_score, 90)
-        # Should have bonus
-        self.assertGreater(score.emiratization_bonus, 0)
+        # and NOT from nationality
+        self.assertEqual(score.emiratization_bonus, 0.0)
         # Industry and Career Level should be high
         self.assertEqual(score.criteria_scores.get(MatchingCriteria.INDUSTRY.value), 100.0)
         self.assertEqual(score.criteria_scores.get(MatchingCriteria.CAREER_LEVEL.value), 100.0)
@@ -201,3 +209,48 @@ class TestScoreHonesty(unittest.TestCase):
         self.assertEqual(score.coverage, 1.0)
         self.assertIsNotNone(score.overall_score)
         self.assertGreater(score.overall_score, 90)
+
+
+class TestScoringPrinciplesGH12(unittest.TestCase):
+    """GH #12: no geography factor, no flat nationality bonus. Commute stays
+    informational. `match_scoring.py` always complied; this engine did not."""
+
+    def setUp(self):
+        self.engine = EnhancedMatchingEngine()
+
+    def _pair(self, cand_emirate, job_emirate, national=True, priority=True):
+        cand = MatchingProfile(
+            id="c", skills=["Python", "SQL"], experience_years=4, education_level="Bachelor",
+            location={"emirate": cand_emirate}, salary_expectation={"min_salary": 12000, "max_salary": 18000},
+            languages=["English"], industry_experience=["Technology"], career_level="Mid_Level",
+            is_uae_national=national)
+        job = JobRequirements(
+            id="j", required_skills=["Python", "SQL"], preferred_skills=[], min_experience=3,
+            max_experience=8, education_requirements=["Bachelor"], location={"emirate": job_emirate},
+            salary_range={"min_salary": 10000, "max_salary": 20000}, languages=["English"],
+            industry="Technology", company_size="Large", career_level="Mid_Level",
+            emiratization_priority=priority)
+        return self.engine.calculate_match_score(cand, job)
+
+    def test_distance_does_not_change_the_score(self):
+        """Same candidate, same job, different emirate. The score must not move —
+        where someone lives is not evidence about whether they can do the work."""
+        same_city = self._pair("Dubai", "Dubai")
+        far_away = self._pair("Fujairah", "Dubai")
+        self.assertEqual(same_city.overall_score, far_away.overall_score)
+
+    def test_location_is_reported_as_informational_not_scored(self):
+        """Commute is still worth showing a candidate — just not in the number."""
+        score = self._pair("Fujairah", "Dubai")
+        self.assertIn('location', score.informational)
+        self.assertNotIn('location', score.criteria_scores)
+
+    def test_nationality_does_not_change_the_score(self):
+        """The 15% multiplier is gone: two identical candidates score identically
+        regardless of nationality or whether the job is priority-flagged."""
+        national = self._pair("Dubai", "Dubai", national=True, priority=True)
+        other = self._pair("Dubai", "Dubai", national=False, priority=True)
+        no_priority = self._pair("Dubai", "Dubai", national=True, priority=False)
+        self.assertEqual(national.overall_score, other.overall_score)
+        self.assertEqual(national.overall_score, no_priority.overall_score)
+        self.assertEqual(national.emiratization_bonus, 0.0)

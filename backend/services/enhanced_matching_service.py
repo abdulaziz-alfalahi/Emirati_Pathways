@@ -39,9 +39,19 @@ MIN_COVERAGE = 0.50
 # engine actually evaluates.
 EVALUATED_CRITERIA = [
     MatchingCriteria.SKILLS, MatchingCriteria.EXPERIENCE, MatchingCriteria.EDUCATION,
-    MatchingCriteria.LOCATION, MatchingCriteria.SALARY, MatchingCriteria.LANGUAGE,
+    MatchingCriteria.SALARY, MatchingCriteria.LANGUAGE,
     MatchingCriteria.INDUSTRY, MatchingCriteria.CAREER_LEVEL,
 ]
+
+# LOCATION is deliberately ABSENT from the list above. It held 0.10 of the
+# weighting, which made where a candidate lives a factor in whether they are a
+# good fit for the work — the geography factor GH #12 ruled out. It is still
+# computed and returned under `informational`, because commute IS useful to show
+# a candidate; it just must not move the score.
+#
+# Removing it needs no reweighting: the score is renormalised over whichever
+# criteria were assessed, so the remaining weights keep their relative
+# proportions exactly.
 
 
 @dataclass
@@ -54,11 +64,16 @@ class MatchScore:
     confidence_level: float
     match_reasons: List[str]
     improvement_suggestions: List[str]
+    # Always 0.0 — retained only so existing callers do not break. No nationality
+    # bonus is applied to a match score (GH #12; owner ruling 2026-08-12).
     emiratization_bonus: float = 0.0
     # Fraction of the evaluated weighting that rested on real data (0.0–1.0).
     coverage: float = 0.0
     # Criteria that could not be scored because neither side stated anything.
     unscored: List[str] = field(default_factory=list)
+    # Computed and worth showing, but deliberately NOT part of the score —
+    # currently location/commute (GH #12).
+    informational: Dict[str, float] = field(default_factory=dict)
     # 'no_skills' | 'insufficient_data' | None
     withheld_reason: Optional[str] = None
 
@@ -90,6 +105,7 @@ class JobRequirements:
     industry: str
     company_size: str
     career_level: str
+    # Read by callers for disclosure; NOT used in scoring (GH #12).
     emiratization_priority: bool = False
     visa_sponsorship: bool = True
 
@@ -106,6 +122,8 @@ class EnhancedMatchingEngine:
             MatchingCriteria.SKILLS: 0.25,
             MatchingCriteria.EXPERIENCE: 0.20,
             MatchingCriteria.EDUCATION: 0.15,
+            # Kept for reference only — LOCATION is not in EVALUATED_CRITERIA, so
+            # this weight is never applied (GH #12: no geography factor).
             MatchingCriteria.LOCATION: 0.10,
             MatchingCriteria.SALARY: 0.10,
             MatchingCriteria.EMIRATIZATION: 0.08,
@@ -117,7 +135,6 @@ class EnhancedMatchingEngine:
         
         # UAE-specific configurations
         self.uae_emirates = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain']
-        self.emiratization_bonus_multiplier = 1.15  # 15% bonus for UAE nationals
         
         # Skill similarity mappings (simplified - would use NLP/ML in production)
         self.skill_synonyms = {
@@ -155,6 +172,7 @@ class EnhancedMatchingEngine:
         """
         try:
             criteria_scores = {}
+            informational = {}
             unscored = []
             match_reasons = []
             improvement_suggestions = []
@@ -188,10 +206,9 @@ class EnhancedMatchingEngine:
             
             # 4. Location matching (10% weight)
             loc_score, loc_reasons, loc_suggestions = self._calculate_location_match(candidate, job)
-            if loc_score is None:
-                unscored.append(MatchingCriteria.LOCATION.value)
-            else:
-                criteria_scores[MatchingCriteria.LOCATION.value] = loc_score
+            # Informational only — never scored (GH #12, see EVALUATED_CRITERIA).
+            if loc_score is not None:
+                informational[MatchingCriteria.LOCATION.value] = loc_score
             match_reasons.extend(loc_reasons)
             improvement_suggestions.extend(loc_suggestions)
             
@@ -254,12 +271,14 @@ class EnhancedMatchingEngine:
             else:
                 overall_score = 0.0
 
-            # Apply Emiratization bonus
-            emiratization_bonus = 0.0
-            if candidate.is_uae_national and job.emiratization_priority:
-                emiratization_bonus = overall_score * (self.emiratization_bonus_multiplier - 1)
-                overall_score *= self.emiratization_bonus_multiplier
-                match_reasons.append("🇦🇪 UAE National with Emiratization priority job")
+            # NO nationality bonus. The multiplier that used to sit here raised a
+            # UAE national's score by 15% on Emiratization-priority jobs. Two
+            # reasons it is gone (owner ruling 2026-08-12):
+            #   • GH #12 settled that national priority is a SEPARATE, disclosed
+            #     axis and is never folded into the match score.
+            #   • The platform serves Emiratis. A bonus every candidate qualifies
+            #     for is not a discriminator — it just inflated every score by 15%
+            #     and made the number mean less.
 
             # Ensure score doesn't exceed 100
             overall_score = min(overall_score, 100.0)
@@ -282,13 +301,13 @@ class EnhancedMatchingEngine:
             return MatchScore(
                 overall_score=(None if overall_score is None else round(overall_score, 2)),
                 coverage=round(coverage, 3),
+                informational=informational,
                 unscored=unscored,
                 withheld_reason=withheld_reason,
                 criteria_scores=criteria_scores,
                 confidence_level=confidence_level,
                 match_reasons=match_reasons[:5],  # Top 5 reasons
                 improvement_suggestions=improvement_suggestions[:3],  # Top 3 suggestions
-                emiratization_bonus=emiratization_bonus
             )
             
         except Exception as e:

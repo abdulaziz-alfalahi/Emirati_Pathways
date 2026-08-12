@@ -329,28 +329,30 @@ JOB REQUIREMENTS:
 - Description: {job_requirements.get('description', 'Not specified')[:500]}
 
 SCORING CRITERIA:
-1. Skills Match (0-40 points): Semantic match of skills. deeply understand transferable skills.
-2. Experience Match (0-25 points):
+1. Skills Match (0-44 points): Semantic match of skills. deeply understand transferable skills.
+2. Experience Match (0-28 points):
    - Trainee/Intern applying to Senior/Lead roles = 0 points (FAIL)
    - Senior applying to Junior roles = 10-15 points (Overqualified)
-   - Exact level match = 25 points
-3. Title/Role Match (0-20 points): Relevance of current and past roles.
-4. Location Match (0-10 points): Proximity or willingness to relocate (if implied).
-5. D33/Strategic Alignment (0-5 points): Alignment with UAE strategic sectors.
+   - Exact level match = 28 points
+3. Title/Role Match (0-22 points): Relevance of current and past roles.
+4. D33/Strategic Alignment (0-6 points): Alignment with UAE strategic sectors.
 
 CRITICAL RULES:
 - BE STRICT on experience years. 0 years cannot match 5+ years.
 - BE LENIENT on skill names (e.g., "React" matches "ReactJS", "Frontend" matches "Web Dev").
+- DO NOT score location, distance, commute or willingness to relocate, and do not
+  let them influence any other score. Where someone lives is not evidence about
+  whether they can do the work. The job's location is given above only so you can
+  mention it in your advice; commute is shown to the candidate separately.
 
 Return ONLY a valid JSON object in this format:
 {{
   "total_score": <int 0-100>,
   "breakdown": {{
-    "skills_match": <int 0-40>,
-    "experience_match": <int 0-25>,
-    "title_match": <int 0-20>,
-    "location_match": <int 0-10>,
-    "d33_alignment": <int 0-5>
+    "skills_match": <int 0-44>,
+    "experience_match": <int 0-28>,
+    "title_match": <int 0-22>,
+    "d33_alignment": <int 0-6>
   }},
   "matching_skills": ["skill1", "skill2"],
   "missing_skills": ["skill1", "skill2"],
@@ -384,7 +386,6 @@ Return ONLY a valid JSON object in this format:
                         'skills_match': result.get('breakdown', {}).get('skills_match', 0),
                         'experience_match': result.get('breakdown', {}).get('experience_match', 0),
                         'title_match': result.get('breakdown', {}).get('title_match', 0),
-                        'location_match': result.get('breakdown', {}).get('location_match', 0),
                         'd33_alignment': result.get('breakdown', {}).get('d33_alignment', 0),
                         'details': {
                             'matching_skills': result.get('matching_skills', []),
