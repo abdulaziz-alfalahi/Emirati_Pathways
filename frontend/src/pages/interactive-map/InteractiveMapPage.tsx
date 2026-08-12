@@ -55,7 +55,12 @@ const InteractiveMapPage: React.FC = () => {
       setLoading(true);
       try {
         const [jobsRes, trainingRes] = await Promise.allSettled([
-          restClient.get('/api/jobs/map-data'),
+          // Was '/api/jobs/map-data', which has NO backend route and returned 404
+          // on every load — it appears in four different users' diagnostics (#363).
+          // Because these are Promise.allSettled, the failure was swallowed and the
+          // job map simply showed no jobs, silently. /api/jobs exists and carries
+          // everything this page needs.
+          restClient.get('/api/jobs'),
           restClient.get('/api/skills-development/training-programs'),
         ]);
         if (cancelled) return;
@@ -64,8 +69,11 @@ const InteractiveMapPage: React.FC = () => {
           const jobs = (jobsRes.value as any).data?.jobs || (jobsRes.value as any).data?.data?.jobs || [];
           jobs.forEach((j: any) => combinedLocations.push({
             id: j.id, title: j.title || j.job_title, type: 'job',
+            // /api/jobs returns `location` and `company`; the older shape used
+            // `emirate` and `company_name`. Accept both so this does not break
+            // again if the endpoint changes.
             emirate: j.emirate || j.location || 'Dubai',
-            company: j.company_name, salary_range: j.salary_range,
+            company: j.company_name || j.company, salary_range: j.salary_range,
           }));
         }
         if (trainingRes.status === 'fulfilled') {

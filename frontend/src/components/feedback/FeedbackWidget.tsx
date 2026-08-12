@@ -362,16 +362,26 @@ export const FeedbackWidget = () => {
         setIsCapturingScreenshot(true);
         setScreenshot(null);
         
-        // Hide the entire feedback UI so the shot shows only the page underneath:
-        // the dialog content ([role="dialog"]), its dark/blur overlay, the floating
-        // trigger button, and any toasts. The overlay is `fixed inset-0` with a
-        // theme-dependent z-index (currently z-[90]); the old selector `.fixed.inset-0.z-50`
-        // never matched it, which is why the darkened/blurred backdrop leaked into
-        // the screenshot. Match the overlay z-index-agnostically instead.
+        // Hide the feedback UI so the shot shows only the page underneath — but
+        // ONLY OUR OWN dialog. The previous selectors were '[role="dialog"]' and
+        // '.fixed.inset-0', which match EVERY dialog and every full-screen overlay
+        // on the page. So a user reporting a bug inside a modal (Edit Details, the
+        // JD builder) got a screenshot with that modal invisible, and watched it
+        // vanish as the capture ran — reported as the page "closing" (#361). It
+        // failed exactly when the screenshot mattered most.
+        //
+        // Our dialog is tagged with data-feedback-ui. Radix renders the overlay as
+        // a SIBLING of the content inside the same portal, so scoping the overlay
+        // search to that parent leaves other dialogs' overlays alone.
         const elementsToHide: HTMLElement[] = [];
+        const ownDialog = document.querySelector('[data-feedback-ui]') as HTMLElement | null;
+        if (ownDialog) {
+            elementsToHide.push(ownDialog);
+            ownDialog.parentElement?.querySelectorAll('.fixed.inset-0').forEach(el => {
+                if (el !== ownDialog) elementsToHide.push(el as HTMLElement);
+            });
+        }
         [
-            '[role="dialog"]',
-            '.fixed.inset-0',
             '.feedback-trigger-btn',
             '[data-radix-toast-viewport]',
             '[data-sonner-toaster]',
@@ -577,7 +587,7 @@ export const FeedbackWidget = () => {
 
             {/* Feedback Dialog */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[500px]" data-feedback-ui="">
                     <DialogHeader>
                         <DialogTitle>Feedback & Support</DialogTitle>
                         <DialogDescription>
