@@ -111,6 +111,11 @@ const InterviewQuestionsPanel: React.FC<{ sessionId: string }> = ({ sessionId })
 
 const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
+    // Why there is no analysis, when there is none. 'transcript_quality' means the
+    // transcript was not a usable record of speech; 'analysis_unavailable' means the
+    // analysis did not run. Neither is a statement about the candidate (#360).
+    const [analysisWithheld, setAnalysisWithheld] = useState<string | null>(null);
+    const [jobTitle, setJobTitle] = useState<string | null>(null);
     const [history, setHistory] = useState<{ time: string; score: number }[]>([]);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
@@ -241,6 +246,20 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
         };
     }, [sessionId]);
 
+    // The real role, so the model is not asked to judge fit against a placeholder.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const sess = await restClient.get(`/api/video-interview/sessions/${sessionId}`);
+                const d = sess.data?.data || sess.data?.session || {};
+                const t = d.job_title || d.title;
+                if (!cancelled && t) setJobTitle(String(t));
+            } catch { /* unknown role is handled server-side; never invent one */ }
+        })();
+        return () => { cancelled = true; };
+    }, [sessionId]);
+
     const analyzeTranscript = useCallback(async () => {
         const currentTranscript = transcriptRef.current.trim();
         if (!currentTranscript || currentTranscript.length < 10 || isAnalyzing) return;
@@ -253,12 +272,21 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                 `/api/video-interview/sessions/${sessionId}/analyze-transcript`,
                 {
                     transcript: currentTranscript,
-                    job_title: 'Interview Position',
+                    // Was the literal 'Interview Position' — the model was asked to
+                    // judge role fit for a role nobody had named (#360). Send the
+                    // real title, or nothing, and let the backend forbid role-fit
+                    // commentary when it is unknown.
+                    job_title: jobTitle || undefined,
                     elapsed_minutes: elapsedMinutes
                 }
             );
 
-            if (response.data.success && response.data.analysis) {
+            if (response.data.success && !response.data.analysis) {
+                // Backend withheld rather than fabricating (#360).
+                setAnalysisWithheld(response.data.withheld_reason || 'analysis_unavailable');
+                setAnalysis(null);
+            } else if (response.data.success && response.data.analysis) {
+                setAnalysisWithheld(null);
                 const a = response.data.analysis;
                 const newAnalysis: AnalysisData = {
                     speech_quality: a.speech_quality ?? 75,
@@ -287,7 +315,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
         } finally {
             setIsAnalyzing(false);
         }
-    }, [sessionId, isAnalyzing]);
+    }, [sessionId, isAnalyzing, jobTitle]);
 
     const getSentimentIcon = (sentiment: string) => {
         if (['Positive', 'Enthusiastic', 'Confident'].includes(sentiment)) return <Smile className="h-4 w-4 text-green-500" />;
@@ -331,6 +359,28 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 px-4 pb-4">
+                    {/* Say why there is no analysis, rather than leaving a blank panel
+                        or — as before — filling it with numbers derived from nothing (#360). */}
+                    {analysisWithheld && (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-xs font-semibold text-amber-900">
+                                {analysisWithheld === 'transcript_quality'
+                                    ? 'Not analysed — the transcript is not usable'
+                                    : 'Not analysed'}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+                                {analysisWithheld === 'transcript_quality'
+                                    ? 'The automatic transcript is not a reliable record of what was said, so no scores are shown. This says nothing about the candidate — check the microphone, connection or background noise.'
+                                    : 'The analysis did not run for this segment. No scores are shown rather than estimated ones.'}
+                            </p>
+                        </div>
+                    )}
+                    {analysis && (
+                        <p className="text-[11px] leading-relaxed text-slate-500">
+                            Scored from the automatic transcript below, not from video. Read it
+                            alongside these figures before drawing any conclusion.
+                        </p>
+                    )}
                     {analysis ? (
                         <>
                             {/* Speech Clarity */}
