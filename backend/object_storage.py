@@ -24,6 +24,8 @@ import io
 import os
 import hashlib
 import logging
+import ipaddress
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +38,45 @@ def configured():
                 and (os.getenv('S3_SECRET_KEY') or '').strip())
 
 
+def _is_internal(endpoint):
+    """True for a docker-network name or a private address.
+
+    APPQA's `~/.docker/config.json` has a `proxies.default` block, so Docker
+    injects HTTP_PROXY/NO_PROXY into every container it creates — and `minio`
+    is not in its noProxy list. boto3 honours those variables, so a call to
+    `http://minio:9000` gets sent to the corporate proxy, which cannot route to
+    a docker-network name and answers 503. The service is perfectly healthy;
+    the request never reaches it.
+
+    Editing the host's noProxy would fix it only for containers created
+    afterwards, and only on this host. Deciding here instead keeps the fix with
+    the code.
+    """
+    host = urlparse(endpoint).hostname or ''
+    if '.' not in host:          # bare docker-network name, e.g. "minio"
+        return True
+    try:
+        return ipaddress.ip_address(host).is_private
+    except ValueError:
+        return False             # a real external hostname — respect the proxy
+
+
 def _client():
     import boto3
     from botocore.config import Config
+    endpoint = os.getenv('S3_ENDPOINT', 'http://minio:9000')
+    cfg = {'s3': {'addressing_style': 'path'},   # MinIO needs path-style; virtual-host
+                                                 # style assumes DNS per bucket
+           'retries': {'max_attempts': 3, 'mode': 'standard'}}
+    if _is_internal(endpoint) and os.getenv('S3_USE_PROXY', '').lower() not in ('1', 'true'):
+        cfg['proxies'] = {}      # bypass any inherited HTTP_PROXY (see _is_internal)
     return boto3.client(
         's3',
-        endpoint_url=os.getenv('S3_ENDPOINT', 'http://minio:9000'),
+        endpoint_url=endpoint,
         aws_access_key_id=os.getenv('S3_ACCESS_KEY'),
         aws_secret_access_key=os.getenv('S3_SECRET_KEY'),
         region_name=os.getenv('S3_REGION', 'us-east-1'),
-        # MinIO needs path-style addressing; virtual-host style assumes DNS per
-        # bucket, which does not exist here.
-        config=Config(s3={'addressing_style': 'path'},
-                      retries={'max_attempts': 3, 'mode': 'standard'}),
+        config=Config(**cfg),
     )
 
 
