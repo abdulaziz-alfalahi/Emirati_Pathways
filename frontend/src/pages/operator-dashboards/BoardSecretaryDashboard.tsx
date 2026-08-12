@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { restClient } from '@/utils/api';
+import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
 import {
   CalendarDays, Video, Users, Gavel, Loader2, Archive, Plus, Clock, MapPin,
 } from 'lucide-react';
@@ -874,21 +875,10 @@ const BoardSecretaryDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Deliberately honest: document upload is NOT built yet because
-                    the object store that would hold official governance records
-                    has no confirmed backup (raised with Moro). Saying so beats
-                    shipping an upload button that could lose board minutes. */}
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-                  <p className="text-sm font-medium text-amber-900">
-                    {b('Uploading minutes documents is not available yet',
-                       'رفع مستندات المحاضر غير متاح بعد')}
-                  </p>
-                  <p className="text-sm text-amber-800 mt-1">
-                    {b('Board minutes are official governance records, so they will only be accepted once the storage holding them has a confirmed backup. That confirmation is pending with the infrastructure provider. The meeting record below is complete and can be relied on in the meantime.',
-                       'محاضر المجلس سجلات حوكمة رسمية، لذلك لن يتم قبولها إلا بعد تأكيد وجود نسخة احتياطية للتخزين الذي يحتفظ بها. هذا التأكيد قيد الانتظار من مزود البنية التحتية. سجل الاجتماعات أدناه مكتمل ويمكن الاعتماد عليه في هذه الأثناء.')}
-                  </p>
-                </div>
-
+                {/* The hold message that stood here — "uploading minutes is not
+                    available yet" — was correct until 2026-08-11, when the
+                    object store's backup was confirmed, including individual-
+                    file restore. Minutes now attach to each meeting below. */}
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">
                     {b(`Board meetings from ${BOARD_FIRST_YEAR} onwards.`, `اجتماعات المجلس من ${BOARD_FIRST_YEAR} فصاعداً.`)}
@@ -983,6 +973,7 @@ const BoardSecretaryDashboard: React.FC = () => {
                                   </span>
                                 )}
                               </div>
+                              <BoardMinutesPanel meetingId={m.id} compact />
                             </div>
                           ))}
                         </div>

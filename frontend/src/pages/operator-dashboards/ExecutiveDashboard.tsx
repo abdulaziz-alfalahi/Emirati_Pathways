@@ -26,6 +26,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { restClient } from '@/utils/api';
+import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
 import { useAuth } from '@/context/AuthContext';
 import {
   Target, Brain, FileText, CheckCircle, Clock,
@@ -259,6 +260,10 @@ const ExecutiveDashboard: React.FC = () => {
 
   // ── Board meetings (migration 050) ─────────────────────────────
   const [meetings, setMeetings] = useState<any[]>([]);
+  // null = not loaded yet / could not load, which the archive card distinguishes
+  // from an empty list. "No past meetings" and "we could not ask" are different
+  // statements to make to a board member.
+  const [pastMeetings, setPastMeetings] = useState<any[] | null>(null);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
@@ -300,7 +305,14 @@ const ExecutiveDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchMeetings(); fetchBoardSettings(); fetchRecommendations(); }, []);
+  const fetchPastMeetings = async () => {
+    try {
+      const res = await restClient.get('/api/board/meetings?scope=past');
+      setPastMeetings(res.data?.data || []);
+    } catch { setPastMeetings(null); }
+  };
+
+  useEffect(() => { fetchMeetings(); fetchPastMeetings(); fetchBoardSettings(); fetchRecommendations(); }, []);
 
   const joinMeeting = async (m: any) => {
     setJoiningId(m.id);
@@ -889,6 +901,49 @@ const ExecutiveDashboard: React.FC = () => {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Minutes are readable by members, the secretary and
+                  Administrators (owner ruling 2026-08-11), so a member needs a
+                  place to read them — not only the secretary's workspace.
+                  Drafts appear here too, deliberately: members see a document
+                  before it is marked approved. */}
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle>{b('Minutes', 'المحاضر')}</CardTitle>
+                  <CardDescription>
+                    {b('Minutes of past meetings. A corrected version never replaces the earlier one — every version stays in the archive.',
+                       'محاضر الاجتماعات السابقة. النسخة المصححة لا تحل محل السابقة — تبقى كل النسخ في الأرشيف.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pastMeetings === null ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      {b('Loading…', 'جارٍ التحميل…')}
+                    </p>
+                  ) : pastMeetings.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      {b('No past meetings recorded yet.', 'لا توجد اجتماعات سابقة مسجّلة بعد.')}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {pastMeetings.map((m: any) => (
+                        <div key={m.id} className="rounded-xl border p-4">
+                          <p className="font-semibold text-slate-900">
+                            {isRTL && m.title_ar ? m.title_ar : m.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {m.scheduled_at
+                              ? new Date(m.scheduled_at).toLocaleString(isRTL ? 'ar-AE' : 'en-GB',
+                                  { dateStyle: 'long', timeStyle: 'short' })
+                              : ''}
+                          </p>
+                          <BoardMinutesPanel meetingId={m.id} compact />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
