@@ -8,7 +8,7 @@ import logging
 import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import re
 
@@ -27,14 +27,40 @@ class MatchingCriteria(Enum):
     COMPANY_SIZE = "company_size"
     CAREER_LEVEL = "career_level"
 
+# Below this fraction of assessed weighting, no percentage is published — a score
+# resting on less than half the weighting is a guess wearing a number (owner
+# decision, 2026-08-12; see docs/scope_match_score_honesty.md).
+MIN_COVERAGE = 0.50
+
+# EMIRATIZATION and COMPANY_SIZE carry weight in criteria_weights but nothing ever
+# computes them, so 0.10 of the weighting was silently absent and never
+# renormalised — capping the achievable score at 90 while presenting it as a
+# percentage. Coverage and the weighted average are taken over the criteria this
+# engine actually evaluates.
+EVALUATED_CRITERIA = [
+    MatchingCriteria.SKILLS, MatchingCriteria.EXPERIENCE, MatchingCriteria.EDUCATION,
+    MatchingCriteria.LOCATION, MatchingCriteria.SALARY, MatchingCriteria.LANGUAGE,
+    MatchingCriteria.INDUSTRY, MatchingCriteria.CAREER_LEVEL,
+]
+
+
 @dataclass
 class MatchScore:
-    overall_score: float
+    # None when the score is WITHHELD — too little was known to publish a
+    # percentage (#352). Callers must handle None rather than coercing it to 0,
+    # which would read as "assessed and hopeless" instead of "not assessed".
+    overall_score: Optional[float]
     criteria_scores: Dict[str, float]
     confidence_level: float
     match_reasons: List[str]
     improvement_suggestions: List[str]
     emiratization_bonus: float = 0.0
+    # Fraction of the evaluated weighting that rested on real data (0.0–1.0).
+    coverage: float = 0.0
+    # Criteria that could not be scored because neither side stated anything.
+    unscored: List[str] = field(default_factory=list)
+    # 'no_skills' | 'insufficient_data' | None
+    withheld_reason: Optional[str] = None
 
 @dataclass
 class CandidateProfile:
@@ -129,79 +155,135 @@ class EnhancedMatchingEngine:
         """
         try:
             criteria_scores = {}
+            unscored = []
             match_reasons = []
             improvement_suggestions = []
             
             # 1. Skills matching (25% weight)
             skills_score, skills_reasons, skills_suggestions = self._calculate_skills_match(candidate, job)
-            criteria_scores[MatchingCriteria.SKILLS.value] = skills_score
+            if skills_score is None:
+                unscored.append(MatchingCriteria.SKILLS.value)
+            else:
+                criteria_scores[MatchingCriteria.SKILLS.value] = skills_score
             match_reasons.extend(skills_reasons)
             improvement_suggestions.extend(skills_suggestions)
             
             # 2. Experience matching (20% weight)
             exp_score, exp_reasons, exp_suggestions = self._calculate_experience_match(candidate, job)
-            criteria_scores[MatchingCriteria.EXPERIENCE.value] = exp_score
+            if exp_score is None:
+                unscored.append(MatchingCriteria.EXPERIENCE.value)
+            else:
+                criteria_scores[MatchingCriteria.EXPERIENCE.value] = exp_score
             match_reasons.extend(exp_reasons)
             improvement_suggestions.extend(exp_suggestions)
             
             # 3. Education matching (15% weight)
             edu_score, edu_reasons, edu_suggestions = self._calculate_education_match(candidate, job)
-            criteria_scores[MatchingCriteria.EDUCATION.value] = edu_score
+            if edu_score is None:
+                unscored.append(MatchingCriteria.EDUCATION.value)
+            else:
+                criteria_scores[MatchingCriteria.EDUCATION.value] = edu_score
             match_reasons.extend(edu_reasons)
             improvement_suggestions.extend(edu_suggestions)
             
             # 4. Location matching (10% weight)
             loc_score, loc_reasons, loc_suggestions = self._calculate_location_match(candidate, job)
-            criteria_scores[MatchingCriteria.LOCATION.value] = loc_score
+            if loc_score is None:
+                unscored.append(MatchingCriteria.LOCATION.value)
+            else:
+                criteria_scores[MatchingCriteria.LOCATION.value] = loc_score
             match_reasons.extend(loc_reasons)
             improvement_suggestions.extend(loc_suggestions)
             
             # 5. Salary matching (10% weight)
             sal_score, sal_reasons, sal_suggestions = self._calculate_salary_match(candidate, job)
-            criteria_scores[MatchingCriteria.SALARY.value] = sal_score
+            if sal_score is None:
+                unscored.append(MatchingCriteria.SALARY.value)
+            else:
+                criteria_scores[MatchingCriteria.SALARY.value] = sal_score
             match_reasons.extend(sal_reasons)
             improvement_suggestions.extend(sal_suggestions)
             
             # 6. Language matching (5% weight)
             lang_score, lang_reasons, lang_suggestions = self._calculate_language_match(candidate, job)
-            criteria_scores[MatchingCriteria.LANGUAGE.value] = lang_score
+            if lang_score is None:
+                unscored.append(MatchingCriteria.LANGUAGE.value)
+            else:
+                criteria_scores[MatchingCriteria.LANGUAGE.value] = lang_score
             match_reasons.extend(lang_reasons)
             improvement_suggestions.extend(lang_suggestions)
             
             # 7. Industry matching (4% weight)
             ind_score, ind_reasons, ind_suggestions = self._calculate_industry_match(candidate, job)
-            criteria_scores[MatchingCriteria.INDUSTRY.value] = ind_score
+            if ind_score is None:
+                unscored.append(MatchingCriteria.INDUSTRY.value)
+            else:
+                criteria_scores[MatchingCriteria.INDUSTRY.value] = ind_score
             match_reasons.extend(ind_reasons)
             improvement_suggestions.extend(ind_suggestions)
             
             # 8. Career level matching (1% weight)
             career_score, career_reasons, career_suggestions = self._calculate_career_level_match(candidate, job)
-            criteria_scores[MatchingCriteria.CAREER_LEVEL.value] = career_score
+            if career_score is None:
+                unscored.append(MatchingCriteria.CAREER_LEVEL.value)
+            else:
+                criteria_scores[MatchingCriteria.CAREER_LEVEL.value] = career_score
             match_reasons.extend(career_reasons)
             improvement_suggestions.extend(career_suggestions)
             
-            # Calculate weighted overall score
-            overall_score = sum([
-                criteria_scores[criteria.value] * self.criteria_weights[criteria]
-                for criteria in self.criteria_weights.keys()
-                if criteria.value in criteria_scores
-            ])
-            
+            # ── Weighted score over what was ACTUALLY assessed (#352) ──────────
+            #
+            # Previously this summed the weights of whichever criteria happened to
+            # be present, without renormalising, while every criterion returned a
+            # generous default (50 or 100) when its data was missing. The result
+            # was a score assembled from absent information: a candidate with an
+            # empty profile scored 45.2%, of which ZERO came from her skills.
+            #
+            # Now an unscoreable criterion is excluded from both the numerator and
+            # the denominator, so the result is a true percentage OF WHAT WAS
+            # ASSESSED — and `coverage` says how much that was.
+            assessed = [c for c in EVALUATED_CRITERIA if c.value in criteria_scores]
+            assessed_weight = sum(self.criteria_weights[c] for c in assessed)
+            total_weight = sum(self.criteria_weights[c] for c in EVALUATED_CRITERIA)
+            coverage = (assessed_weight / total_weight) if total_weight else 0.0
+
+            if assessed_weight > 0:
+                overall_score = sum(
+                    criteria_scores[c.value] * self.criteria_weights[c] for c in assessed
+                ) / assessed_weight
+            else:
+                overall_score = 0.0
+
             # Apply Emiratization bonus
             emiratization_bonus = 0.0
             if candidate.is_uae_national and job.emiratization_priority:
                 emiratization_bonus = overall_score * (self.emiratization_bonus_multiplier - 1)
                 overall_score *= self.emiratization_bonus_multiplier
                 match_reasons.append("🇦🇪 UAE National with Emiratization priority job")
-            
+
             # Ensure score doesn't exceed 100
             overall_score = min(overall_score, 100.0)
+
+            # ── Is this score fit to publish? (owner decisions, 2026-08-12) ────
+            withheld_reason = None
+            if MatchingCriteria.SKILLS.value not in criteria_scores:
+                # Skills carry the most weight here and are the only criterion
+                # derived purely from what the candidate has done. Without them
+                # there is no match to report, however many other boxes align.
+                withheld_reason = 'no_skills'
+            elif coverage < MIN_COVERAGE:
+                withheld_reason = 'insufficient_data'
+            if withheld_reason:
+                overall_score = None
             
             # Calculate confidence level based on data completeness
             confidence_level = self._calculate_confidence_level(candidate, job, criteria_scores)
             
             return MatchScore(
-                overall_score=round(overall_score, 2),
+                overall_score=(None if overall_score is None else round(overall_score, 2)),
+                coverage=round(coverage, 3),
+                unscored=unscored,
+                withheld_reason=withheld_reason,
                 criteria_scores=criteria_scores,
                 confidence_level=confidence_level,
                 match_reasons=match_reasons[:5],  # Top 5 reasons
@@ -212,7 +294,8 @@ class EnhancedMatchingEngine:
         except Exception as e:
             self.logger.error(f"Error calculating match score: {str(e)}")
             return MatchScore(
-                overall_score=0.0,
+                overall_score=None,
+                withheld_reason='error',
                 criteria_scores={},
                 confidence_level=0.0,
                 match_reasons=["Error in calculation"],
@@ -222,7 +305,8 @@ class EnhancedMatchingEngine:
     def _calculate_skills_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate skills matching score"""
         if not candidate.skills or not job.required_skills:
-            return 0.0, [], ["Add more skills to your profile"]
+            # UNSCOREABLE, not zero. "No skills recorded" is absence of evidence.
+            return None, [], ["Add your skills so jobs can be matched to them"]
         
         candidate_skills_lower = [skill.lower().strip() for skill in candidate.skills]
         required_skills_lower = [skill.lower().strip() for skill in job.required_skills]
@@ -275,8 +359,12 @@ class EnhancedMatchingEngine:
     
     def _calculate_experience_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate experience matching score"""
-        if candidate.experience_years is None or job.min_experience is None:
-            return 50.0, [], ["Add experience information"]
+        if (candidate.experience_years is None or job.min_experience is None
+                or not job.min_experience):
+            # A job whose requirement could not be parsed reads as min_experience=0,
+            # against which a candidate with no experience scored a PERFECT 100 —
+            # 20 of Dhabya's 45.2 points (#352). Unknown, not perfect.
+            return None, [], ["Add your work experience"]
         
         candidate_exp = candidate.experience_years
         min_exp = job.min_experience
@@ -308,7 +396,7 @@ class EnhancedMatchingEngine:
     def _calculate_education_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate education matching score"""
         if not candidate.education_level or not job.education_requirements:
-            return 50.0, [], ["Add education information"]
+            return None, [], ["Add your education"]
         
         candidate_level = self.education_hierarchy.get(candidate.education_level.lower(), 0)
         
@@ -344,7 +432,7 @@ class EnhancedMatchingEngine:
     def _calculate_location_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate location matching score"""
         if not candidate.location or not job.location:
-            return 50.0, [], ["Add location information"]
+            return None, [], ["Add your location"]
         
         candidate_emirate = candidate.location.get('emirate', '').strip()
         job_emirate = job.location.get('emirate', '').strip()
@@ -370,7 +458,7 @@ class EnhancedMatchingEngine:
     def _calculate_salary_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate salary matching score"""
         if not candidate.salary_expectation or not job.salary_range:
-            return 50.0, [], ["Add salary information"]
+            return None, [], ["Add your salary expectation"]
         
         candidate_min = candidate.salary_expectation.get('min_salary', 0)
         candidate_max = candidate.salary_expectation.get('max_salary', candidate_min * 1.2)
@@ -412,10 +500,10 @@ class EnhancedMatchingEngine:
     def _calculate_language_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate language matching score"""
         if not job.languages:
-            return 100.0, [], []  # No language requirements
+            return None, [], []   # nothing stated to match against
         
         if not candidate.languages:
-            return 0.0, [], ["Add language skills to profile"]
+            return None, [], ["Add the languages you speak"]
         
         candidate_langs = [lang.lower().strip() for lang in candidate.languages]
         required_langs = [lang.lower().strip() for lang in job.languages]
@@ -438,10 +526,12 @@ class EnhancedMatchingEngine:
     def _calculate_industry_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate industry matching score"""
         if not job.industry:
-            return 100.0, [], []
+            # Was 100.0 — and every job built by intelligence_routes passes
+            # industry='', so this was a free 4 points on EVERY pairing (#352).
+            return None, [], []
         
         if not candidate.industry_experience:
-            return 30.0, [], ["Add industry experience"]
+            return None, [], ["Add your industry experience"]
         
         candidate_industries = [ind.lower().strip() for ind in candidate.industry_experience]
         job_industry = job.industry.lower().strip()
@@ -456,7 +546,7 @@ class EnhancedMatchingEngine:
     def _calculate_career_level_match(self, candidate: CandidateProfile, job: JobRequirements) -> Tuple[float, List[str], List[str]]:
         """Calculate career level matching score"""
         if not candidate.career_level or not job.career_level:
-            return 50.0, [], []
+            return None, [], []
         
         candidate_level = self.career_hierarchy.get(candidate.career_level.lower(), 0)
         job_level = self.career_hierarchy.get(job.career_level.lower(), 0)
@@ -563,7 +653,8 @@ class EnhancedMatchingEngine:
             matches.append((job, match_score))
         
         # Sort by overall score (descending)
-        matches.sort(key=lambda x: x[1].overall_score, reverse=True)
+        # Withheld scores sort last rather than crashing the comparison.
+        matches.sort(key=lambda x: (x[1].overall_score is not None, x[1].overall_score or 0), reverse=True)
         
         return matches[:limit]
     

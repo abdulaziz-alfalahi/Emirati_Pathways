@@ -696,7 +696,10 @@ def recommended_jobs():
                                 education_requirements=[],
                                 location={'emirate': job.get('location', '')},
                                 salary_range=sal_range,
-                                languages=['English'],
+                                # Was ['English'] — a requirement no posting actually
+                                # stated, which then scored 100 and handed every pairing
+                                # free points (#352). Empty = unscoreable.
+                                languages=[],
                                 industry='',
                                 company_size='',
                                 career_level=job.get('experience_level', 'Mid_Level'),
@@ -707,7 +710,9 @@ def recommended_jobs():
                         
                         if job_requirements_list:
                             matches = enhanced_matching_engine.find_best_matches(candidate_profile, job_requirements_list, limit=50)
-                            matches_dict = {job_req.id: score_obj.overall_score for job_req, score_obj in matches}
+                            # overall_score is None when the engine WITHHELD the score
+                            # (#352): too little was known to publish a percentage.
+                            matches_dict = {job_req.id: score_obj for job_req, score_obj in matches}
                 except Exception as match_eng_err:
                     logger.warning(f"Could not compute consistent match scores via EnhancedMatchingEngine: {match_eng_err}")
 
@@ -729,7 +734,10 @@ def recommended_jobs():
                     skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
                     
                     if job_id in matches_dict:
-                        match_score = int(matches_dict[job_id])
+                        _s = matches_dict[job_id]
+                        match_score = None if _s.overall_score is None else int(_s.overall_score)
+                        match_coverage = _s.coverage
+                        match_withheld = _s.withheld_reason
                     else:
                         # Heuristic fallback — used only when the validated matching engine
                         # didn't score this job. Tuned (#26): reward ACTUAL skill overlap
@@ -739,7 +747,14 @@ def recommended_jobs():
                         # count, penalising multi-skilled candidates who match all a job
                         # needs. Capped at 90 (keyword overlap is coarser than the engine);
                         # 0 when nothing overlaps.
-                        if skill_hits > 0:
+                        match_coverage = 0.0
+                        match_withheld = None
+                        if not user_skill_names:
+                            # No skills on file: the keyword heuristic has nothing to
+                            # work from, so it must not emit a number either (#352).
+                            match_score = None
+                            match_withheld = 'no_skills'
+                        elif skill_hits > 0:
                             match_score = min(90, int(round(90 * (1 - 0.6 ** skill_hits))))
                         else:
                             match_score = 0
@@ -754,14 +769,18 @@ def recommended_jobs():
                             "company": company,
                             "location": job.get('location', 'UAE'),
                             "salary": job.get('salary_range') or 'Competitive',
-                            "match_score": match_score,
+                            "match_score": match_score,          # None = withheld, not zero
+                            "match_coverage": round(match_coverage, 3),
+                            "match_withheld_reason": match_withheld,
                             "type": job.get('employment_type') or 'Full-time',
                             "skill_overlap": skill_hits,
                             "source": "live",
                             "hasApplied": job_id in applied_job_ids
                         })
 
-                matched_jobs.sort(key=lambda j: j['match_score'], reverse=True)
+                # Withheld scores sort last rather than crashing the comparison.
+                matched_jobs.sort(key=lambda j: (j['match_score'] is not None,
+                                                 j['match_score'] or 0), reverse=True)
                 matched_jobs = matched_jobs[:6]
             except Exception as e:
                 logger.warning(f"Job query error: {e}")

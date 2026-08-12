@@ -291,7 +291,11 @@ export interface RecommendedJob {
     company_ar?: string;
     location: string;
     salary: string;
-    match_score: number;
+    /** null when the score is WITHHELD — too little was known to publish a
+     *  percentage (#352). Must not be rendered as 0. */
+    match_score: number | null;
+    match_coverage?: number;
+    match_withheld_reason?: 'no_skills' | 'insufficient_data' | null;
     type: string;
     skill_overlap?: number;
     source: 'live' | 'curated';
