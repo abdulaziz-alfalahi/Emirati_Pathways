@@ -853,7 +853,14 @@ const LOCATION_OPTIONS = [
                       <p className="mt-3 text-[11px] text-slate-500">
                         {t('Not available to filter on: ', 'غير متاح للتصفية: ')}
                         {Object.entries(filterOptions.unavailable)
-                          .map(([k, why]) => `${(FACET_LABELS[k]?.[0] || k)} — ${why}`)
+                          .map(([k, why]) => {
+                            // Fields we cannot filter on have no entry in FACET_LABELS,
+                            // so title-case the raw column rather than showing
+                            // "marital_status" to an operator.
+                            const label = FACET_LABELS[k]?.[0]
+                              || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                            return `${label} — ${why}`;
+                          })
                           .join(' · ')}
                       </p>
                     )}
