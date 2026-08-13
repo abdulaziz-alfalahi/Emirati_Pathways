@@ -100,6 +100,14 @@ def register_all_blueprints(app: Flask):
         logger.warning(f"⚠️ Candidate Profile routes not available: {e}")
 
     try:
+        # Recruitment open days: events, poster QR, check-in, queue (migration 061).
+        from backend.routes.recruitment_events_routes import recruitment_events_bp
+        app.register_blueprint(recruitment_events_bp)
+        logger.info("✅ Recruitment events routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Recruitment events routes not available: {e}")
+
+    try:
         # Mobile push device registry (migration 059). Registry only — push
         # delivery is not configured yet; see backend/push_dispatch.py.
         from backend.routes.device_routes import device_bp
