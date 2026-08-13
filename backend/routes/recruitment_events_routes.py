@@ -267,10 +267,20 @@ def event_qr(event_id):
         return jsonify({'success': False,
                         'message': 'QR generation is unavailable on this server'}), 503
 
-    buf = io.StringIO()
-    # Error correction 'h' (~30%): a poster in a mall gets scuffed, taped over a
-    # corner, and photographed at an angle.
-    segno.make(url, error='h').save(buf, kind='svg', scale=8, border=2, dark='#0f3b4d')
+    # segno writes BYTES even for SVG, so this must be BytesIO — a StringIO here
+    # raises "string argument expected, got 'bytes'".
+    buf = io.BytesIO()
+    try:
+        # Error correction 'h' (~30%): a poster in a mall gets scuffed, taped over
+        # a corner, and photographed at an angle.
+        segno.make(url, error='h').save(buf, kind='svg', scale=8, border=2, dark='#0f3b4d')
+    except Exception as e:
+        # Say the QR could not be produced rather than returning a bare 500 with
+        # nothing an organiser could act on.
+        logger.error(f"QR render failed for event {event_id}: {e}")
+        return jsonify({'success': False,
+                        'message': 'The QR code could not be generated. '
+                                   'The event is unaffected; please try again.'}), 500
     return Response(buf.getvalue(), mimetype='image/svg+xml', headers={
         'Content-Disposition': f'inline; filename="event-{event_id}-qr.svg"',
         'X-Checkin-Url': url,
