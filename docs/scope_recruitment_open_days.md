@@ -185,7 +185,23 @@ A walk-in completing UAE Pass at the venue creates a real account bound to a rea
 
 Getting this wrong produces either orphaned attendance records or a roster full of accounts nobody called.
 
-### 9.4 Still open
+### 9.4 Final answers, 2026-08-13 — PHASE 1 STARTED
+
+| question | answer |
+|---|---|
+| Calendar visibility | **Platform users only**, not public. Social media announcements drive traffic *to the platform* so people register and complete their details before the event — which also means most attendees arrive already onboarded. |
+| Capacity cap | **None for now** — no `max_attendees`. |
+| Invitee queue priority | **Dropped.** One queue, first-come-first-served. |
+| Agent-read check-in code | **Dropped.** Identity at the door is UAE Pass or staff check-in. |
+
+Consequences carried into the build:
+- **Staff check-in is load-bearing**, not a fallback of convenience. With no code and no priority, a candidate whose phone or signal fails at the door has exactly one remaining path.
+- The invitation carries **no secret**, so nothing about it needs protecting in transit.
+- Because there is no priority and no cap, the queue is a single sequence — enforced by `UNIQUE (event_id, queue_token)` rather than by application code.
+
+**Migration 061 RAN on the live DB 2026-08-13**, verified with eight negative probes (bad status, inverted dates, duplicate token, double check-in, unknown method, unknown user, unknown stage, duplicate invitation — all refused, 0 rows left).
+
+### 9.5 Still open
 
 1. **Should the events calendar be fully public** (no login), so a social-media post can link straight to it? Recommend yes — it is what turns an announcement into a walk-in.
 2. **Do invited candidates get queue priority over walk-ins?** They were called and confirmed; a walk-in simply arrived. One queue per event (decision 1) does not by itself say how the two are ordered.
