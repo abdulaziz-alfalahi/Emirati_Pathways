@@ -896,6 +896,38 @@ def get_crm_last_import():
         return jsonify({'success': False, 'message': 'Failed to read the import history'}), 500
 
 
+# ── CRM filter facets (#364) ────────────────────────────────────────────────
+# Operators asked to combine filters — Gender + Education, Age + Gender, Working
+# Status + Gender — over a 5,300-record roster.
+#
+# ONLY fields the data can actually support are listed. Measured 2026-08-13:
+#   gender 3,664 · age_group 3,571 · education_level 2,334 · cv_status 2,360
+#   looking_status 2,863 · candidates_source 416 · preferred_sector 211
+#   assigned_to 4 · preferred_locations 579
+#
+# marital_status is DELIBERATELY ABSENT: 1 populated row out of 5,297. It was
+# explicitly requested ("Marital Status + Age"), but a filter that can only ever
+# return one record reads as broken software rather than as an empty dataset.
+# The options endpoint reports its emptiness instead, so the gap is visible.
+CRM_FACET_COLUMNS = {
+    'call_status': 'cp.call_status',
+    'work_status': 'cp.work_status',
+    'gender': 'cp.gender',
+    'age_group': 'cp.age_group',
+    'education_level': 'cp.education_level',
+    'cv_status': 'cp.cv_status',
+    'looking_status': 'cp.looking_status',
+    'preferred_sector': 'cp.preferred_sector',
+    'candidates_source': 'cp.candidates_source',
+    'assigned_to': 'cp.assigned_to',
+}
+
+# Reported to the UI so it can show a facet as unavailable rather than as empty.
+CRM_UNAVAILABLE_FACETS = {
+    'marital_status': 'Not collected for this roster yet',
+}
+
+
 @crm_profile_bp.route('/crm-candidates', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_candidates():
@@ -1004,11 +1036,32 @@ def get_crm_candidates():
                     params.append('%' + (stripped or digits) + '%')
                 where.append("(" + " OR ".join(clauses) + ")")
 
-            for _param, _col in (('call_status', 'cp.call_status'),
-                                 ('work_status', 'cp.work_status')):
+            # Equality facets. Extended for the multi-filter request (#364) so an
+            # operator can combine e.g. Gender + Education, which was the actual
+            # ask. Only fields the data can support are here — see CRM_FACETS.
+            for _param, _col in CRM_FACET_COLUMNS.items():
                 val = (request.args.get(_param) or '').strip()
                 if val and val.lower() != 'all':
                     where.append("COALESCE(" + _col + ", 'Unknown') = %s")
+                    params.append(val)
+
+            # preferred_locations is a jsonb ARRAY, so membership rather than equality.
+            pref_loc = (request.args.get('preferred_location') or '').strip()
+            if pref_loc and pref_loc.lower() != 'all':
+                where.append("cp.preferred_locations::jsonb ? %s")
+                params.append(pref_loc)
+
+            # Date range over the call date — requested for reporting/export.
+            # Bounds are inclusive and independent: either may be given alone.
+            for _param, _op in (('date_from', '>='), ('date_to', '<=')):
+                val = (request.args.get(_param) or '').strip()
+                if val:
+                    try:
+                        datetime.strptime(val, '%Y-%m-%d')
+                    except ValueError:
+                        return jsonify({'success': False,
+                                        'message': f'{_param} must be YYYY-MM-DD'}), 400
+                    where.append(f"cp.date_of_call {_op} %s")
                     params.append(val)
 
             segment = (request.args.get('segment') or '').strip()
@@ -1246,6 +1299,54 @@ def _blank_to_none(v):
         return None
     v = str(v).strip()
     return None if v == '' or v.lower() == 'none' else v
+
+
+@crm_profile_bp.route('/crm-filter-options', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def get_crm_filter_options():
+    """Distinct values per filter, WITH COUNTS, taken from the live roster.
+
+    The UI builds its dropdowns from this rather than from hardcoded lists, so it
+    can only ever offer values that exist. The counts matter as much as the
+    values: an operator who picks a filter and gets nothing back cannot tell a
+    working filter from a broken one, and this is what lets the interface say
+    "Marital status - not collected yet" instead of showing an empty menu.
+    """
+    try:
+        options = {}
+        for param, col in CRM_FACET_COLUMNS.items():
+            rows = execute_query(
+                f"""SELECT {col.split('.')[1]} AS value, COUNT(*) AS n
+                      FROM candidate_profiles cp
+                     WHERE {col} IS NOT NULL AND {col} <> ''
+                     GROUP BY 1 ORDER BY n DESC LIMIT 50""") or []
+            options[param] = [{'value': r['value'], 'count': r['n']} for r in rows]
+
+        locs = execute_query(
+            """SELECT loc AS value, COUNT(*) AS n
+                 FROM candidate_profiles cp,
+                      LATERAL jsonb_array_elements_text(cp.preferred_locations) AS loc
+                WHERE cp.preferred_locations IS NOT NULL
+                GROUP BY 1 ORDER BY n DESC LIMIT 50""") or []
+        options['preferred_location'] = [{'value': r['value'], 'count': r['n']} for r in locs]
+
+        rng = execute_query(
+            """SELECT MIN(date_of_call) AS min_d, MAX(date_of_call) AS max_d,
+                      COUNT(date_of_call) AS n
+                 FROM candidate_profiles""", fetch_one=True) or {}
+
+        return jsonify({'success': True, 'data': {
+            'options': options,
+            'unavailable': CRM_UNAVAILABLE_FACETS,
+            'date_of_call': {
+                'min': rng.get('min_d').isoformat() if rng.get('min_d') else None,
+                'max': rng.get('max_d').isoformat() if rng.get('max_d') else None,
+                'count': rng.get('n') or 0,
+            },
+        }})
+    except Exception as e:
+        logger.error(f"crm filter options failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load filter options'}), 500
 
 
 @crm_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
