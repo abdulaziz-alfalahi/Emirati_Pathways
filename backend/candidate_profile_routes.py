@@ -1395,7 +1395,9 @@ def export_crm_candidates():
 
     me = str(get_jwt_identity())
     roles = resolve_roles()
-    supervisor = bool(roles & (ADMIN_ROLES | {'career_services_operator'}))
+    # Must match the listing's set exactly (line ~1016) or the export would
+    # scope differently from the screen it was launched from.
+    supervisor = bool(roles & (ADMIN_ROLES | {'career_services_operator', 'operator'}))
 
     try:
         where, params = _build_crm_filters(me, supervisor)
@@ -1407,6 +1409,10 @@ def export_crm_candidates():
     if hide_uncontactable:
         where_sql += " AND " + UNCONTACTABLE_SQL
 
+    # execute_query CATCHES the DB error internally and returns None, so a broken
+    # query does not raise here — it produced a 200 with a header-only CSV, which
+    # an operator would read as "no matching records". A failed export must fail
+    # loudly; an empty one that looks successful is the worse outcome.
     try:
         rows = execute_query(f"""
             SELECT u.id            AS emirates_id,
@@ -1415,7 +1421,7 @@ def export_crm_candidates():
                    cp.call_status, cp.work_status, cp.cv_status, cp.looking_status,
                    cp.gender, cp.age_group, cp.education_level, cp.specialization,
                    cp.preferred_sector, cp.preferred_locations, cp.candidates_source,
-                   cp.date_of_call, cp.latest_remark,
+                   cp.date_of_call, cp.counseling_remarks,
                    COALESCE(au.full_name, au.email) AS assigned_to
               FROM users u
               LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
@@ -1423,15 +1429,21 @@ def export_crm_candidates():
              WHERE (u.role = 'candidate' OR u.user_type = 'candidate'){where_sql}
              ORDER BY u.full_name NULLS LAST
              LIMIT {CRM_EXPORT_MAX_ROWS}
-        """, tuple(params)) or []
+        """, tuple(params))
     except Exception as e:
         logger.error(f"crm export query failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to build the export'}), 500
 
+    if rows is None:
+        logger.error("CRM export query returned None (see the db_utils error above) "
+                     "for %s with filters %s", me, dict(request.args))
+        return jsonify({'success': False,
+                        'message': 'The export could not be built. Nothing was downloaded.'}), 500
+
     cols = ['emirates_id', 'full_name', 'phone', 'email', 'call_status', 'work_status',
             'cv_status', 'looking_status', 'gender', 'age_group', 'education_level',
             'specialization', 'preferred_sector', 'preferred_locations',
-            'candidates_source', 'date_of_call', 'assigned_to', 'latest_remark']
+            'candidates_source', 'date_of_call', 'assigned_to', 'counseling_remarks']
 
     buf = _io.StringIO()
     # utf-8-sig: Excel opens a plain UTF-8 CSV as mojibake, and these rows carry
