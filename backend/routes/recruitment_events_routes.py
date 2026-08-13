@@ -18,6 +18,8 @@ Decisions that shape this module:
 """
 import io
 import logging
+import os
+from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, request, Response
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -257,7 +259,33 @@ def event_qr(event_id):
     if not ev:
         return jsonify({'success': False, 'message': 'Event not found'}), 404
 
-    base = (request.args.get('base') or request.host_url).rstrip('/')
+    # THIS URL GETS PRINTED ON A POSTER AND HUNG IN A MALL. If it is wrong,
+    # every scan fails and nobody finds out until the event.
+    #
+    # request.host_url alone is NOT safe here: behind the WAF, Flask sees the
+    # proxy's target, so it produced http://127.0.0.1:5005/... — measured, not
+    # theorised. Prefer an explicit base, then the configured public URL, then
+    # the forwarded headers, and only then the request host.
+    fwd_host = request.headers.get('X-Forwarded-Host')
+    fwd_proto = request.headers.get('X-Forwarded-Proto', 'https')
+    base = (request.args.get('base')
+            or os.getenv('PUBLIC_BASE_URL')
+            or (f"{fwd_proto}://{fwd_host}" if fwd_host else None)
+            or request.host_url).rstrip('/')
+
+    host = (urlparse(base).hostname or '').lower()
+    if host in ('localhost', '127.0.0.1', '::1') or host.startswith('10.') or not host:
+        # Refuse rather than hand back a poster that cannot work. The organiser
+        # can override with ?base=, but the real fix is PUBLIC_BASE_URL.
+        logger.error("event QR would encode a non-public host (%s) — refusing", base)
+        return jsonify({
+            'success': False,
+            'message': 'This server does not know its public address, so the QR would '
+                       'point somewhere unreachable. Set PUBLIC_BASE_URL on the backend '
+                       '(or pass ?base=https://…) and try again.',
+            'resolved_base': base,
+        }), 500
+
     url = f"{base}/events/{event_id}/check-in"
 
     try:
