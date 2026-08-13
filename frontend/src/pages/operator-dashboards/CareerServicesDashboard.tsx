@@ -387,7 +387,11 @@ const LOCATION_OPTIONS = [
   const [bulkCallStatus, setBulkCallStatus] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const pageIds = paginatedCandidates.map((c: any) => String(c.eid || c.id));
+  /* The row's identity is `id` (the user's Emirates ID). NOT `eid`, which the
+     row mapper sets to the literal '-' whenever national_id is absent — using it
+     collapsed every such candidate onto one selection key (17 selected from 20
+     visible rows) and would have posted '-' to the bulk endpoint as a user_id. */
+  const pageIds = paginatedCandidates.map((c: any) => String(c.id));
   const allOnPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
   const toggleOne = (id: string) =>
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -1058,8 +1062,8 @@ const LOCATION_OPTIONS = [
                       <tr key={candidate.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors group">
                         <td className="px-3 py-4">
                           <input type="checkbox"
-                                 checked={selectedIds.includes(String(candidate.eid || candidate.id))}
-                                 onChange={() => toggleOne(String(candidate.eid || candidate.id))}
+                                 checked={selectedIds.includes(String(candidate.id))}
+                                 onChange={() => toggleOne(String(candidate.id))}
                                  className="h-4 w-4 rounded border-slate-300"
                                  aria-label={t('Select candidate', 'تحديد المرشح')} />
                         </td>
