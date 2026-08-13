@@ -1474,7 +1474,9 @@ def export_crm_candidates():
     stamp = datetime.now().strftime('%Y%m%d-%H%M')
     return Response(
         buf.getvalue(),
-        mimetype='text/csv; charset=utf-8',
+        # mimetype must not carry the charset: Flask appends its own, producing
+        # 'text/csv; charset=utf-8; charset=utf-8'.
+        mimetype='text/csv',
         headers={'Content-Disposition': f'attachment; filename="crm-candidates-{stamp}.csv"'})
 
 
