@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe } from 'lucide-react';
 import { navigationGroups, operationsNavGroup } from '@/components/navigation/navigationConfig';
+import { canOpenPath, rolesForPath } from '@/config/routeAccess';
 import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -216,7 +217,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
         items: group.items.filter(item => {
           // Hide if path is blocked for this role
           if (hiddenPaths.includes(item.href || '')) return false;
-          // If item has allowedRoles, show if ANY of the user's roles is listed
+          // The ROUTE is the authority on who may open a page (#353). The nav used
+          // to keep its own hand-maintained allowedRoles, and the two disagreed:
+          // /demographics was offered to career_services_operator, whom the route
+          // refuses, and /cv-builder declared nothing so it was offered to
+          // everyone. Offering a menu item the platform will then refuse is worse
+          // than not offering it.
+          if (rolesForPath(item.href || '') && !canOpenPath(item.href || '', userRoles)) return false;
+          // Fall back to any item-level roles for links with no gated route of
+          // their own (external or ungated destinations).
           if (item.allowedRoles && !item.allowedRoles.some(r => userRoles.includes(String(r).toLowerCase()))) return false;
           return true;
         }),
