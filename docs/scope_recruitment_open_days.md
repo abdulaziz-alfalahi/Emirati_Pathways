@@ -1,6 +1,6 @@
 # Scope: recruitment open days in the CRM
 
-**Status:** scope for review — not built. Needs the decisions in §7.
+**Status:** scope for review — not built. §7 ANSWERED by the owner 2026-08-13; see §9 for what those answers changed and what is still open.
 **Origin:** owner description of the current EHRDC process, 2026-08-13. Supersedes the "bulk broadcast" reading of `fb_1786359006_38c4a710`.
 
 ---
@@ -132,3 +132,63 @@ If the data model records each transition with a timestamp and an actor, that re
 Moderate, and mostly CRUD plus one careful public endpoint. The front half — filtering, selection, bulk actions — already exists as of #372–#375. The genuinely new pieces are the event entity, the check-in code and its public page, the queue display, and the outcome stages.
 
 The public check-in endpoint is the only part that needs real care: it is unauthenticated by necessity, so it must be rate-limited, must never return personal data, and must confirm nothing about anyone who is not standing in front of staff with a valid code.
+
+---
+
+## 9. Owner decisions, 2026-08-13 — and what they change
+
+| # | Decision |
+|---|---|
+| 1 | **One queue per event**, not per employer. |
+| 2 | **Walk-ins are expected.** Events are announced on social media. A walk-in scans the QR, **signs in via UAE Pass**, registers attendance, receives a token — **or becomes a new platform user in the process**. |
+| 3 | **Invited CRM candidates will have the app**, and will receive broadcasts and invitations through it. |
+| 4 | **Candidates confirm their interest** on receiving the invitation. |
+| 5 | **A calendar of events**, populated by CRM agents and visible to candidates, showing event details, participating companies and vacancies. |
+
+### 9.1 Two things I got wrong
+
+**"No login at check-in."** I argued this from the 0.2% figure. The owner's answer is better: at a mall the candidate is holding their phone and UAE Pass is the national identity, so the sign-in *is* the registration — and for a walk-in it is also the moment they join the platform. The 0.2% is not a ceiling, it is the thing this event is meant to change.
+
+**"I would not build a public event listing."** Decision 5 asks for exactly that, and it is right: an event announced on social media needs a public page to link to, and that page is what produces the walk-ins.
+
+### 9.2 The dependency that decides sequencing
+
+Decisions 3 and 4 route invitations and confirmations **through the app**. The app does not exist yet — `mobile/` has not been scaffolded and the v1 scope only merged today (#324). If open-day management waits for the app, it ships after the app ships.
+
+It does not need to. Proposed split:
+
+**Phase 1 — everything that does not need the app**
+- Events, with the CRM agent as author
+- **Public events calendar** (details, participating companies, their vacancies) — the link for social media
+- Invitation tracking inside the existing call workflow, using the filtering and bulk selection from #372–#375
+- **QR check-in via UAE Pass**, which serves walk-ins and any invited candidate who has onboarded
+- **Staff manual check-in** — required regardless, for anyone whose phone or signal fails at the door
+- Queue tokens, live queue view
+- Post-event outcomes
+
+**Phase 2 — once the app is live**
+- In-app invitation and broadcast to the invited list
+- In-app confirmation
+- The check-in code becomes a personal QR in the app
+
+Phase 1 is usable at the next open day. Phase 2 improves reach without redesigning anything.
+
+### 9.3 A walk-in signing in becomes a user — what kind?
+
+This is the most consequential detail in decision 2, and it needs an explicit answer before building.
+
+A walk-in completing UAE Pass at the venue creates a real account bound to a real Emirates ID. Today's onboarding gives a national the `candidate` role. Open questions:
+
+- Does that person also get a **`candidate_profiles` row and enter the CRM roster** (currently 5,298)? If yes, the roster grows from events, which is probably what EHRDC wants — but it changes who agents are calling.
+- Is their attendance record **linked to that new account**, so their outcome can be tracked afterwards?
+- What do they see immediately after signing in — the event's vacancies, or a profile-completion prompt?
+
+Getting this wrong produces either orphaned attendance records or a roster full of accounts nobody called.
+
+### 9.4 Still open
+
+1. **Should the events calendar be fully public** (no login), so a social-media post can link straight to it? Recommend yes — it is what turns an announcement into a walk-in.
+2. **Do invited candidates get queue priority over walk-ins?** They were called and confirmed; a walk-in simply arrived. One queue per event (decision 1) does not by itself say how the two are ordered.
+3. **Is there a capacity limit per event?** Malls have them, and confirmations may need to stop at a number.
+4. **§9.3 above** — what a walk-in's new account becomes.
+5. Do we still want the agent-read check-in code from §4.1 as the **fallback for invited candidates without the app**, or is UAE Pass plus staff lookup enough? The code costs little and covers the gap until Phase 2.
