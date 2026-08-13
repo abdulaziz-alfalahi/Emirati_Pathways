@@ -928,6 +928,71 @@ CRM_UNAVAILABLE_FACETS = {
 }
 
 
+def _build_crm_filters(me, supervisor):
+    """Translate the request query string into (where[], params[]) for the roster.
+
+    Shared by the listing and the CSV export (#364). They MUST agree: an export
+    that quietly applies different filters from the list an operator is looking
+    at is worse than no export, because the discrepancy is invisible in the file
+    that lands on someone's desk. One builder, two callers — the same lesson as
+    the route and navigation role lists that drifted apart in #353.
+
+    Raises ValueError for a malformed date so the caller can answer 400.
+    """
+    where, params = [], []
+    if not supervisor:
+        where.append("cp.assigned_to = %s")
+        params.append(me)
+
+    q = (request.args.get('q') or '').strip()
+    if q:
+        # Copied verbatim from the listing endpoint, including the digit handling:
+        # `re` is not imported in this module, and lstrip('0') then dropping a
+        # leading 971 is NOT equivalent to a ^(00)?971 regex. Search behaviour
+        # over phone numbers must be identical in the export.
+        digits = ''.join(ch for ch in q if ch.isdigit())
+        clauses = ["COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) ILIKE %s"]
+        params.append('%' + q + '%')
+        if digits:
+            clauses.append("CAST(u.id AS TEXT) LIKE %s")
+            params.append('%' + digits + '%')
+            clauses.append("COALESCE(u.emirates_id_enc, '') LIKE %s")
+            params.append('%' + digits + '%')
+            stripped = digits.lstrip('0')
+            stripped = stripped[3:] if stripped.startswith('971') else stripped
+            clauses.append("REGEXP_REPLACE(COALESCE(u.phone,''),'[^0-9]','','g') LIKE %s")
+            params.append('%' + (stripped or digits) + '%')
+        where.append("(" + " OR ".join(clauses) + ")")
+
+    for _param, _col in CRM_FACET_COLUMNS.items():
+        val = (request.args.get(_param) or '').strip()
+        if val and val.lower() != 'all':
+            where.append("COALESCE(" + _col + ", 'Unknown') = %s")
+            params.append(val)
+
+    pref_loc = (request.args.get('preferred_location') or '').strip()
+    if pref_loc and pref_loc.lower() != 'all':
+        where.append("cp.preferred_locations::jsonb ? %s")
+        params.append(pref_loc)
+
+    for _param, _op in (('date_from', '>='), ('date_to', '<=')):
+        val = (request.args.get(_param) or '').strip()
+        if val:
+            try:
+                datetime.strptime(val, '%Y-%m-%d')
+            except ValueError:
+                raise ValueError(f'{_param} must be YYYY-MM-DD')
+            where.append(f"cp.date_of_call {_op} %s")
+            params.append(val)
+
+    segment = (request.args.get('segment') or '').strip()
+    if segment and segment.lower() != 'all':
+        where.append("cp.crm_segments::jsonb ? %s")
+        params.append(segment)
+
+    return where, params
+
+
 @crm_profile_bp.route('/crm-candidates', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_candidates():
@@ -1299,6 +1364,106 @@ def _blank_to_none(v):
         return None
     v = str(v).strip()
     return None if v == '' or v.lower() == 'none' else v
+
+
+# Bulk PII leaves the platform here. Capped so a single click cannot stream the
+# entire national roster into a spreadsheet by accident; the cap is far above the
+# current 5,311 records, so it does not bite in normal use.
+CRM_EXPORT_MAX_ROWS = 25000
+
+
+@crm_profile_bp.route('/crm-candidates/export', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def export_crm_candidates():
+    """CSV of the roster under the CALLER'S CURRENT FILTERS (#364).
+
+    Requested for reporting: "extracts candidate lists based on specific criteria
+    (Call Status, Work Status, Date Range, Assigned Staff)". Those are exactly the
+    filters the list already applies, so this shares `_build_crm_filters` with it
+    rather than reimplementing them — an export that silently applied different
+    criteria from the screen it was launched from would be worse than none, since
+    nothing in the resulting file would reveal the discrepancy.
+
+    This is bulk personal data: names, Emirates IDs and phone numbers of real
+    nationals. Access is the CRM operator role set (who legitimately hold EID —
+    owner ruling on EID visibility), the row count is capped, and every export is
+    written to admin_audit_log with the filters used and the number of rows.
+    """
+    import csv
+    import io as _io
+    from flask import Response
+
+    me = str(get_jwt_identity())
+    roles = resolve_roles()
+    supervisor = bool(roles & (ADMIN_ROLES | {'career_services_operator'}))
+
+    try:
+        where, params = _build_crm_filters(me, supervisor)
+    except ValueError as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+    where_sql = (" AND " + " AND ".join(where)) if where else ""
+    hide_uncontactable = (request.args.get('hide_uncontactable') or '').lower() in ('1', 'true', 'yes')
+    if hide_uncontactable:
+        where_sql += " AND " + UNCONTACTABLE_SQL
+
+    try:
+        rows = execute_query(f"""
+            SELECT u.id            AS emirates_id,
+                   COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS full_name,
+                   u.phone, u.email,
+                   cp.call_status, cp.work_status, cp.cv_status, cp.looking_status,
+                   cp.gender, cp.age_group, cp.education_level, cp.specialization,
+                   cp.preferred_sector, cp.preferred_locations, cp.candidates_source,
+                   cp.date_of_call, cp.latest_remark,
+                   COALESCE(au.full_name, au.email) AS assigned_to
+              FROM users u
+              LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+              LEFT JOIN users au ON au.id = cp.assigned_to
+             WHERE (u.role = 'candidate' OR u.user_type = 'candidate'){where_sql}
+             ORDER BY u.full_name NULLS LAST
+             LIMIT {CRM_EXPORT_MAX_ROWS}
+        """, tuple(params)) or []
+    except Exception as e:
+        logger.error(f"crm export query failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to build the export'}), 500
+
+    cols = ['emirates_id', 'full_name', 'phone', 'email', 'call_status', 'work_status',
+            'cv_status', 'looking_status', 'gender', 'age_group', 'education_level',
+            'specialization', 'preferred_sector', 'preferred_locations',
+            'candidates_source', 'date_of_call', 'assigned_to', 'latest_remark']
+
+    buf = _io.StringIO()
+    # utf-8-sig: Excel opens a plain UTF-8 CSV as mojibake, and these rows carry
+    # Arabic names.
+    buf.write('\ufeff')
+    w = csv.writer(buf)
+    w.writerow(cols)
+    for r in rows:
+        w.writerow([
+            (', '.join(r[c]) if c == 'preferred_locations' and isinstance(r.get(c), list)
+             else ('' if r.get(c) is None else r.get(c)))
+            for c in cols
+        ])
+
+    applied = {k: v for k, v in request.args.items()
+               if k not in ('_cb', 'page', 'per_page') and v}
+    try:
+        execute_query(
+            """INSERT INTO admin_audit_log (user_id, action, resource_type, details)
+               VALUES (%s, 'crm_export', 'candidate_roster', %s)""",
+            (me, json.dumps({'rows': len(rows), 'filters': applied})), fetch_all=False)
+    except Exception as e:
+        # An export must not fail because the audit write did, but a silent
+        # unlogged export is exactly what an audit trail exists to prevent.
+        logger.error(f"CRM EXPORT NOT AUDITED for {me}: {e}")
+
+    logger.info("CRM export by %s: %d rows, filters=%s", me, len(rows), applied)
+    stamp = datetime.now().strftime('%Y%m%d-%H%M')
+    return Response(
+        buf.getvalue(),
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': f'attachment; filename="crm-candidates-{stamp}.csv"'})
 
 
 @crm_profile_bp.route('/crm-filter-options', methods=['GET'])
