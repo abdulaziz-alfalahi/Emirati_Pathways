@@ -1372,6 +1372,131 @@ def _blank_to_none(v):
 CRM_EXPORT_MAX_ROWS = 25000
 
 
+# A bulk action is a caseload-wide change made in one click, so it is capped.
+CRM_BULK_MAX = 500
+
+# Mirrors the values the UI offers. Free text here is how 'Tester' and
+# 'Unassigned' ended up in assigned_to, which no filter can group.
+CRM_CALL_STATUSES = {'Pending', 'Answered', 'No Answer', 'Invalid Number'}
+
+
+@crm_profile_bp.route('/crm-candidates/bulk', methods=['POST'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def bulk_update_crm_candidates():
+    """Assign, or set call status, for many candidates at once (#364).
+
+    Requested as: "Bulk Assign: distribute 50 or 100 selected candidates to a
+    specific operator in one click" and "Bulk Stage Update: update call status
+    for multiple candidates simultaneously".
+
+    Deliberately NOT a filter-wide update — the caller sends explicit user_ids.
+    An operator who bulk-edits "everything matching the current filter" cannot
+    see what they changed, and a filter that shifts under them (someone else
+    editing concurrently) silently changes the blast radius.
+
+    The caseload rule from the single-record PUT applies per row: a non
+    supervisor may only touch candidates assigned to them. Rows they may not
+    touch are reported back as skipped rather than silently ignored, so the count
+    an operator sees always matches what actually changed.
+    """
+    data = request.get_json(silent=True) or {}
+    ids = data.get('user_ids') or []
+    if not isinstance(ids, list) or not ids:
+        return jsonify({'success': False, 'message': 'Select at least one candidate'}), 400
+    ids = [str(i) for i in ids][:CRM_BULK_MAX + 1]
+    if len(ids) > CRM_BULK_MAX:
+        return jsonify({'success': False,
+                        'message': f'Select at most {CRM_BULK_MAX} candidates at a time'}), 400
+
+    assigned_to = data.get('assigned_to')
+    call_status = data.get('call_status')
+    if assigned_to is None and call_status is None:
+        return jsonify({'success': False, 'message': 'Nothing to change'}), 400
+
+    sets, vals = [], []
+
+    if call_status is not None:
+        if call_status not in CRM_CALL_STATUSES:
+            return jsonify({'success': False,
+                            'message': f'call_status must be one of: {", ".join(sorted(CRM_CALL_STATUSES))}'}), 400
+        sets.append('call_status = %s')
+        vals.append(call_status)
+
+    if assigned_to is not None:
+        if assigned_to == '':
+            # Explicit unassign. Writes NULL rather than the string 'Unassigned',
+            # which is already in the data and which no filter can group.
+            sets.append('assigned_to = NULL')
+        else:
+            target = execute_query(
+                "SELECT id, role, secondary_roles FROM users WHERE id::text = %s",
+                (str(assigned_to),), fetch_one=True)
+            if not target:
+                return jsonify({'success': False,
+                                'message': 'That operator account does not exist'}), 400
+            trole = {str(target.get('role') or '').lower()}
+            sec = target.get('secondary_roles') or []
+            if isinstance(sec, str):
+                try:
+                    sec = json.loads(sec)
+                except Exception:
+                    sec = [sec]
+            trole |= {str(r).lower() for r in (sec or [])}
+            if not (trole & (ADMIN_ROLES | {'career_services_operator', 'call_center_agent', 'operator'})):
+                return jsonify({'success': False,
+                                'message': 'Candidates can only be assigned to a CRM operator'}), 400
+            sets.append('assigned_to = %s')
+            vals.append(str(assigned_to))
+
+    me = str(get_jwt_identity())
+    supervisor = bool(resolve_roles() & (ADMIN_ROLES | {'career_services_operator', 'operator'}))
+
+    # Which of the requested rows may this caller actually change?
+    placeholders = ','.join(['%s'] * len(ids))
+    rows = execute_query(
+        f"SELECT user_id, assigned_to FROM candidate_profiles WHERE user_id::text IN ({placeholders})",
+        tuple(ids)) or []
+    allowed = [str(r['user_id']) for r in rows
+               if supervisor or str(r.get('assigned_to') or '') == me]
+    skipped_not_permitted = len(rows) - len(allowed)
+    not_found = len(ids) - len(rows)
+
+    if not allowed:
+        return jsonify({'success': False,
+                        'message': 'None of the selected candidates are on your caseload',
+                        'data': {'updated': 0, 'skipped': skipped_not_permitted,
+                                 'not_found': not_found}}), 403
+
+    ph = ','.join(['%s'] * len(allowed))
+    try:
+        execute_query(
+            f"UPDATE candidate_profiles SET {', '.join(sets)}, updated_at = NOW() "
+            f"WHERE user_id::text IN ({ph})",
+            tuple(vals + allowed), fetch_all=False)
+    except Exception as e:
+        logger.error(f"crm bulk update failed: {e}")
+        return jsonify({'success': False, 'message': 'The bulk update failed. Nothing was changed.'}), 500
+
+    change = {k: v for k, v in (('assigned_to', assigned_to), ('call_status', call_status))
+              if v is not None}
+    try:
+        execute_query(
+            """INSERT INTO admin_audit_log (user_id, action, resource_type, details)
+               VALUES (%s, 'crm_bulk_update', 'candidate_profiles', %s)""",
+            (me, json.dumps({'updated': len(allowed), 'change': change,
+                             'skipped': skipped_not_permitted})), fetch_all=False)
+    except Exception as e:
+        logger.error(f"CRM BULK UPDATE NOT AUDITED for {me}: {e}")
+
+    logger.info("CRM bulk update by %s: %d rows, change=%s, skipped=%d",
+                me, len(allowed), change, skipped_not_permitted)
+    return jsonify({'success': True, 'data': {
+        'updated': len(allowed),
+        'skipped': skipped_not_permitted,
+        'not_found': not_found,
+    }})
+
+
 @crm_profile_bp.route('/crm-candidates/export', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def export_crm_candidates():
