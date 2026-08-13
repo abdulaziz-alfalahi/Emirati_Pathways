@@ -330,6 +330,31 @@ export default function CareerServicesDashboard() {
     prev_employed_21_24: { en: 'Prev Employed 21-24', ar: 'عمل سابقاً 21-24' },
     never_employed_21_24: { en: 'Never Employed 21-24', ar: 'لم يعمل 21-24' },
   };
+  /**
+ * Controlled vocabularies for the Edit Details form (#364).
+ *
+ * These were free-text inputs. Two operators asked for dropdowns so entry is
+ * consistent and the values stay filterable.
+ *
+ * The strings below are the values ALREADY STORED in candidate_profiles, copied
+ * exactly — including the curly apostrophe (U+2019) in "Didn’t receive updated
+ * CV", which 483 records use. A straight apostrophe here would fail to match
+ * those rows and every one of them would render blank.
+ *
+ * Anything already in the data that is not in these lists is preserved and shown
+ * rather than silently dropped: an operator's entry is not ours to discard.
+ */
+const CV_STATUS_OPTIONS = [
+  'Received updated CV',
+  'Didn\u2019t receive updated CV',
+] as const;
+
+/** The seven emirates, plus Hatta which is already in use (19 records). */
+const LOCATION_OPTIONS = [
+  'Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman',
+  'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Hatta',
+] as const;
+
   const segmentLabel = (seg: string) =>
     SEGMENT_LABELS[seg] ? (isRTL ? SEGMENT_LABELS[seg].ar : SEGMENT_LABELS[seg].en) : seg;
 
@@ -1126,23 +1151,57 @@ export default function CareerServicesDashboard() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">{t('CV Status', 'حالة السيرة الذاتية')}</label>
-                    <Input
-                      value={editForm.cvStatus || ''}
-                      onChange={(e) => setEditForm({...editForm, cvStatus: e.target.value})}
-                      placeholder={t('e.g. Received updated CV', 'مثال: تم استلام سيرة محدثة')}
-                      className="bg-slate-50 border-slate-200 rounded-xl h-11"
-                    />
+                    <Select
+                      value={editForm.cvStatus || '__none__'}
+                      onValueChange={(val) => setEditForm({...editForm, cvStatus: val === '__none__' ? '' : val})}
+                    >
+                      <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11">
+                        <SelectValue placeholder={t('Not recorded', 'غير مسجّل')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">{t('Not recorded', 'غير مسجّل')}</SelectItem>
+                        {CV_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                        {/* An existing value we do not recognise stays selectable rather
+                            than being silently replaced when the form is saved. */}
+                        {editForm.cvStatus && !CV_STATUS_OPTIONS.includes(editForm.cvStatus as any) && (
+                          <SelectItem value={editForm.cvStatus}>{editForm.cvStatus}</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* New Counseling Fields */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">{t('Preferred Locations', 'مواقع العمل المفضلة')}</label>
-                    <Input 
-                      value={(editForm.preferredLocations || []).join(', ')} 
-                      onChange={(e) => setEditForm({...editForm, preferredLocations: e.target.value.split(',').map(s => s.trim())})} 
-                      placeholder="Dubai, Abu Dhabi"
-                      className="bg-slate-50 border-slate-200 rounded-xl h-11"
-                    />
+                    {/* Was a comma-separated text box that split on ',' — so a stray
+                        comma or a trailing space created values no filter could group.
+                        The field is a jsonb array, so a multi-select fits it directly. */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {[...LOCATION_OPTIONS,
+                        // keep anything already stored that is not in the canonical list
+                        ...(editForm.preferredLocations || []).filter(
+                          (l: string) => l && !LOCATION_OPTIONS.includes(l as any))
+                      ].map((loc: string) => {
+                        const on = (editForm.preferredLocations || []).includes(loc);
+                        return (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => setEditForm({
+                              ...editForm,
+                              preferredLocations: on
+                                ? (editForm.preferredLocations || []).filter((x: string) => x !== loc)
+                                : [...(editForm.preferredLocations || []), loc],
+                            })}
+                            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                              on ? 'border-ehrdc-teal bg-ehrdc-teal text-white'
+                                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                          >
+                            {loc}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700">{t('Preferred Sector', 'القطاع المفضل')}</label>
