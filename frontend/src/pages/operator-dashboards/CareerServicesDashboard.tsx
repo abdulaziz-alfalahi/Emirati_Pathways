@@ -37,6 +37,12 @@ export default function CareerServicesDashboard() {
   const [callStatusFilter, setCallStatusFilter] = useState('All');
   const [workStatusFilter, setWorkStatusFilter] = useState('All');
   const [segmentFilter, setSegmentFilter] = useState('All');
+  /* The additional facets (#364) live in ONE object rather than nine useState
+     hooks: the fetch effect then has a single dependency, and "clear all" and
+     the active-filter count are trivial instead of nine-way bookkeeping. */
+  const [extraFilters, setExtraFilters] = useState<Record<string, string>>({});
+  const [filterOptions, setFilterOptions] = useState<any>(null);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -74,7 +80,16 @@ export default function CareerServicesDashboard() {
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchTerm, callStatusFilter, workStatusFilter, segmentFilter,
-      hideUncontactable]);
+      hideUncontactable, JSON.stringify(extraFilters)]);
+
+  /* Dropdown values come from the roster itself, so the UI can only ever offer
+     values that exist — and can say a facet is unavailable rather than showing
+     an empty menu (marital_status has 1 row in 5,297). */
+  useEffect(() => {
+    restClient.get('/api/profile/crm-filter-options')
+      .then(r => setFilterOptions(r.data?.data || null))
+      .catch(() => setFilterOptions(null));
+  }, []);
 
   const fetchStats = async () => {
     setStatsLoading(true);
@@ -137,6 +152,7 @@ export default function CareerServicesDashboard() {
       if (workStatusFilter !== 'All') params.set('work_status', workStatusFilter);
       if (segmentFilter !== 'All') params.set('segment', segmentFilter);
       if (hideUncontactable) params.set('hide_uncontactable', 'true');
+      Object.entries(extraFilters).forEach(([k, v]) => { if (v) params.set(k, v); });
       const res = await restClient.get(`/api/profile/crm-candidates?${params.toString()}`);
       if (res.data?.success && res.data?.data) {
         setPageMeta(res.data.pagination || null);
@@ -354,6 +370,27 @@ const LOCATION_OPTIONS = [
   'Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman',
   'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah', 'Hatta',
 ] as const;
+
+  const FACET_LABELS: Record<string, [string, string]> = {
+    gender: ['Gender', 'الجنس'],
+    age_group: ['Age Group', 'الفئة العمرية'],
+    education_level: ['Education', 'المؤهل'],
+    cv_status: ['CV Status', 'حالة السيرة'],
+    looking_status: ['Looking Status', 'حالة البحث'],
+    preferred_location: ['Preferred Location', 'الموقع المفضل'],
+    preferred_sector: ['Preferred Sector', 'القطاع المفضل'],
+    candidates_source: ['Source', 'المصدر'],
+    assigned_to: ['Assigned To', 'مُسند إلى'],
+  };
+  const activeExtraCount = Object.values(extraFilters).filter(Boolean).length;
+  const setFacet = (key: string, val: string) => {
+    setExtraFilters(prev => {
+      const next = { ...prev };
+      if (!val || val === 'All') delete next[key]; else next[key] = val;
+      return next;
+    });
+    setCurrentPage(1);
+  };
 
   const segmentLabel = (seg: string) =>
     SEGMENT_LABELS[seg] ? (isRTL ? SEGMENT_LABELS[seg].ar : SEGMENT_LABELS[seg].en) : seg;
@@ -728,6 +765,106 @@ const LOCATION_OPTIONS = [
                   {t(`Hide records with no contact details (${uncontactableCount})`,
                      `إخفاء السجلات بدون بيانات اتصال (${uncontactableCount})`)}
                 </label>
+              </div>
+
+              {/* ── Additional filters (#364) ──────────────────────────────
+                  Operators asked to COMBINE filters over 5,311 records —
+                  Gender + Education, Age + Gender, Working Status + Gender.
+                  Values and counts come from the roster itself, so a facet can
+                  never offer something that does not exist, and an operator can
+                  see how many records a choice will return BEFORE applying it.
+                  That distinction matters: a filter that returns nothing is
+                  otherwise indistinguishable from a filter that is broken. */}
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMoreFilters(v => !v)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  {showMoreFilters ? '▾' : '▸'} {t('More filters', 'مزيد من عوامل التصفية')}
+                  {activeExtraCount > 0 && (
+                    <span className="rounded-full bg-ehrdc-teal px-2 py-0.5 text-[11px] font-semibold text-white">
+                      {activeExtraCount}
+                    </span>
+                  )}
+                </button>
+                {activeExtraCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setExtraFilters({}); setCurrentPage(1); }}
+                    className="ms-2 text-xs text-slate-500 underline hover:text-slate-700"
+                  >
+                    {t('Clear all', 'مسح الكل')}
+                  </button>
+                )}
+
+                {showMoreFilters && (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {Object.keys(FACET_LABELS).map(key => {
+                        const opts = filterOptions?.options?.[key] || [];
+                        if (!opts.length) return null;
+                        const [en, ar] = FACET_LABELS[key];
+                        return (
+                          <div key={key} className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">{t(en, ar)}</label>
+                            <Select value={extraFilters[key] || 'All'} onValueChange={(v) => setFacet(key, v)}>
+                              <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-10 text-sm">
+                                <SelectValue placeholder={t('Any', 'الكل')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="All">{t('Any', 'الكل')}</SelectItem>
+                                {opts.map((o: any) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {o.value} ({o.count})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-slate-600">
+                          {t('Call date from', 'تاريخ الاتصال من')}
+                        </label>
+                        <Input type="date" value={extraFilters.date_from || ''}
+                               min={filterOptions?.date_of_call?.min || undefined}
+                               max={filterOptions?.date_of_call?.max || undefined}
+                               onChange={(e) => setFacet('date_from', e.target.value)}
+                               className="bg-slate-50 border-slate-200 rounded-xl h-10 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-slate-600">
+                          {t('Call date to', 'تاريخ الاتصال إلى')}
+                        </label>
+                        <Input type="date" value={extraFilters.date_to || ''}
+                               min={filterOptions?.date_of_call?.min || undefined}
+                               max={filterOptions?.date_of_call?.max || undefined}
+                               onChange={(e) => setFacet('date_to', e.target.value)}
+                               className="bg-slate-50 border-slate-200 rounded-xl h-10 text-sm" />
+                      </div>
+                    </div>
+
+                    {/* Name what we cannot filter on, rather than leaving an empty
+                        menu that looks like a fault. */}
+                    {filterOptions?.unavailable && Object.keys(filterOptions.unavailable).length > 0 && (
+                      <p className="mt-3 text-[11px] text-slate-500">
+                        {t('Not available to filter on: ', 'غير متاح للتصفية: ')}
+                        {Object.entries(filterOptions.unavailable)
+                          .map(([k, why]) => `${(FACET_LABELS[k]?.[0] || k)} — ${why}`)
+                          .join(' · ')}
+                      </p>
+                    )}
+                    {filterOptions?.date_of_call?.min && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        {t(`Call dates on record run ${filterOptions.date_of_call.min} to ${filterOptions.date_of_call.max} across ${filterOptions.date_of_call.count} candidates.`,
+                           `تواريخ الاتصال المسجلة من ${filterOptions.date_of_call.min} إلى ${filterOptions.date_of_call.max} لـ ${filterOptions.date_of_call.count} مرشحاً.`)}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
