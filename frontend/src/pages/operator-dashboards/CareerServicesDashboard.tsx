@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle, BarChart3, TrendingUp, MessageCircle, MessageSquare, Mail, StickyNote } from 'lucide-react';
+import { Phone, Briefcase, FileText, UserPlus, Save, Loader2, RefreshCw, Search, ChevronLeft, ChevronRight, Users, CheckCircle2, AlertCircle, BarChart3, TrendingUp, MessageCircle, MessageSquare, Mail, StickyNote, Download } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip,
   Legend, CartesianGrid, PieChart, Pie, Cell, LineChart, Line,
@@ -382,6 +382,42 @@ const LOCATION_OPTIONS = [
     candidates_source: ['Source', 'المصدر'],
     assigned_to: ['Assigned To', 'مُسند إلى'],
   };
+  const [exporting, setExporting] = useState(false);
+  /* Downloads exactly what the operator is looking at: the same filters, sent to
+     an endpoint that shares the list's query builder. Streamed through the API
+     rather than assembled in the browser, so the file cannot silently differ
+     from the roster and every export is auditable server-side. */
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchTerm.trim()) params.set('q', searchTerm.trim());
+      if (callStatusFilter !== 'All') params.set('call_status', callStatusFilter);
+      if (workStatusFilter !== 'All') params.set('work_status', workStatusFilter);
+      if (segmentFilter !== 'All') params.set('segment', segmentFilter);
+      if (hideUncontactable) params.set('hide_uncontactable', 'true');
+      Object.entries(extraFilters).forEach(([k, v]) => { if (v) params.set(k, v); });
+
+      const res = await restClient.get(
+        `/api/profile/crm-candidates/export?${params.toString()}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `crm-candidates-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({
+        title: t('The export could not be produced', 'تعذّر إنشاء ملف التصدير'),
+        description: t('Nothing was downloaded. Please try again, and report it if it persists.',
+                       'لم يتم تنزيل أي ملف. يرجى المحاولة مرة أخرى والإبلاغ إذا استمرت المشكلة.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const activeExtraCount = Object.values(extraFilters).filter(Boolean).length;
   const setFacet = (key: string, val: string) => {
     setExtraFilters(prev => {
@@ -459,11 +495,22 @@ const LOCATION_OPTIONS = [
                  timestamp on a button that syncs nothing. It now says what it
                  does, and the real provenance of the roster is shown under it. */
               <div className="flex flex-col items-end gap-1">
-                <Button onClick={() => { fetchCandidates(); fetchLastImport(); }} variant="outline"
-                        className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
-                  {t('Refresh list', 'تحديث القائمة')}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => { fetchCandidates(); fetchLastImport(); }} variant="outline"
+                          className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
+                    {t('Refresh list', 'تحديث القائمة')}
+                  </Button>
+                  {/* Exports exactly what the current filters show — it reuses the
+                      same query the list does. Requested "next to Refresh List". */}
+                  <Button onClick={exportCsv} disabled={exporting} variant="outline"
+                          className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
+                    {exporting
+                      ? <RefreshCw className="h-4 w-4 animate-spin text-[#006E6D]" />
+                      : <Download className="h-4 w-4 text-slate-500" />}
+                    {t('Export CSV', 'تصدير CSV')}
+                  </Button>
+                </div>
                 <span className="text-[11px] text-slate-500">
                   {lastImport?.imported_at
                     ? t(`NAFIS data last imported ${new Date(lastImport.imported_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
