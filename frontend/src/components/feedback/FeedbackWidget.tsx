@@ -393,11 +393,38 @@ export const FeedbackWidget = () => {
         elementsToHide.forEach(el => {
             el.style.visibility = 'hidden';
         });
-        
+
         try {
             await new Promise(resolve => requestAnimationFrame(resolve));
             await new Promise(resolve => setTimeout(resolve, 100)); // small delay for transition
-            
+
+            // Re-resolve our own dialog HERE, immediately before the capture.
+            // The first pass above runs at the moment capture is requested, which
+            // can be before React has committed the dialog's portal — the query
+            // then finds nothing, nothing is hidden, and the widget ends up
+            // photographing ITSELF (observed 2026-08-13). By the time we reach
+            // this point the portal is definitely mounted, so this pass is the
+            // one that reliably catches it. Idempotent: already-hidden elements
+            // are skipped.
+            const late = document.querySelector('[data-feedback-ui]') as HTMLElement | null;
+            if (late && !elementsToHide.includes(late)) {
+                elementsToHide.push(late);
+                prevVisibility.push(late.style.visibility);
+                late.style.visibility = 'hidden';
+            }
+            if (late?.parentElement) {
+                late.parentElement.querySelectorAll('.fixed.inset-0').forEach(el => {
+                    const h = el as HTMLElement;
+                    if (h !== late && !elementsToHide.includes(h)) {
+                        elementsToHide.push(h);
+                        prevVisibility.push(h.style.visibility);
+                        h.style.visibility = 'hidden';
+                    }
+                });
+            }
+            // Let the second hide paint before capturing.
+            await new Promise(resolve => requestAnimationFrame(resolve));
+
             const canvas = await html2canvas(document.body, {
                 useCORS: true,
                 allowTaint: true,
