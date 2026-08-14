@@ -242,6 +242,48 @@ const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string;
     );
 };
 
+/**
+ * Is this canvas effectively blank?
+ *
+ * A failed html2canvas render produces a flat fill rather than an error, so the
+ * only way to know it failed is to look at the pixels. Samples a coarse grid
+ * (not every pixel — this runs on a full-viewport canvas on a phone) and reports
+ * whether essentially everything is one colour.
+ *
+ * The threshold is deliberately strict: a real screenshot of this platform is
+ * mostly white chrome, so "almost all one colour" has to mean ALMOST ALL, or a
+ * sparse page would be thrown away. A legitimate page still carries text, a
+ * header and a nav bar, which comfortably exceeds 0.5% of sampled pixels.
+ */
+export const isNearUniform = (canvas: HTMLCanvasElement): boolean => {
+    try {
+        const ctx = canvas.getContext('2d');
+        if (!ctx || !canvas.width || !canvas.height) return true;
+
+        const step = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 64));
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        let first: number[] | null = null;
+        let differing = 0;
+        let sampled = 0;
+
+        for (let y = 0; y < canvas.height; y += step) {
+            for (let x = 0; x < canvas.width; x += step) {
+                const i = (y * canvas.width + x) * 4;
+                sampled++;
+                if (!first) { first = [data[i], data[i + 1], data[i + 2]]; continue; }
+                if (Math.abs(data[i] - first[0]) > 8 ||
+                    Math.abs(data[i + 1] - first[1]) > 8 ||
+                    Math.abs(data[i + 2] - first[2]) > 8) differing++;
+            }
+        }
+        return sampled > 0 && (differing / sampled) < 0.005;
+    } catch {
+        // A tainted canvas throws on getImageData. That is not evidence the
+        // capture is blank, so keep it.
+        return false;
+    }
+};
+
 export const FeedbackWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState('');
@@ -258,6 +300,9 @@ export const FeedbackWidget = () => {
     const [includeScreenshot, setIncludeScreenshot] = useState(true);
     const [screenshot, setScreenshot] = useState<string | null>(null);
     const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
+    // Set when a capture failed or came out blank, so the reporter is told
+    // rather than left believing a useless image is attached (#361).
+    const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
     // Deep linking support
     const [searchParams] = useSearchParams();
@@ -361,6 +406,9 @@ export const FeedbackWidget = () => {
     const capturePageScreenshot = async () => {
         setIsCapturingScreenshot(true);
         setScreenshot(null);
+        // Clear last attempt's message, or a retake that succeeds still shows
+        // the previous failure.
+        setScreenshotError(null);
         
         // Hide the feedback UI so the shot shows only the page underneath — but
         // ONLY OUR OWN dialog. The previous selectors were '[role="dialog"]' and
@@ -373,13 +421,27 @@ export const FeedbackWidget = () => {
         // Our dialog is tagged with data-feedback-ui. Radix renders the overlay as
         // a SIBLING of the content inside the same portal, so scoping the overlay
         // search to that parent leaves other dialogs' overlays alone.
+        /* Our overlay is the element Radix renders IMMEDIATELY BEFORE our
+         * dialog, not "every full-screen overlay under our parent".
+         *
+         * The previous version scoped the search to ownDialog.parentElement —
+         * but Radix portals to document.body, so that parent IS the whole
+         * document and the query hid every other dialog's overlay too. The
+         * visible symptom was subtle and easy to miss: a screenshot taken from
+         * inside a modal showed the modal correctly but with the page behind it
+         * undimmed, which is not what the reporter was looking at. */
         const elementsToHide: HTMLElement[] = [];
+        const ownOverlayOf = (dialog: HTMLElement): HTMLElement | null => {
+            const prev = dialog.previousElementSibling as HTMLElement | null;
+            return prev && prev.classList.contains('fixed') && prev.classList.contains('inset-0')
+                ? prev
+                : null;
+        };
         const ownDialog = document.querySelector('[data-feedback-ui]') as HTMLElement | null;
         if (ownDialog) {
             elementsToHide.push(ownDialog);
-            ownDialog.parentElement?.querySelectorAll('.fixed.inset-0').forEach(el => {
-                if (el !== ownDialog) elementsToHide.push(el as HTMLElement);
-            });
+            const ownOverlay = ownOverlayOf(ownDialog);
+            if (ownOverlay) elementsToHide.push(ownOverlay);
         }
         [
             '.feedback-trigger-btn',
@@ -412,8 +474,11 @@ export const FeedbackWidget = () => {
                 prevVisibility.push(late.style.visibility);
                 late.style.visibility = 'hidden';
             }
-            if (late?.parentElement) {
-                late.parentElement.querySelectorAll('.fixed.inset-0').forEach(el => {
+            if (late) {
+                // Same scoping as above — hiding "every .fixed.inset-0 under our
+                // parent" here would re-introduce the bug the first pass fixes,
+                // because this pass runs later and wins.
+                [ownOverlayOf(late)].filter(Boolean).forEach(el => {
                     const h = el as HTMLElement;
                     if (h !== late && !elementsToHide.includes(h)) {
                         elementsToHide.push(h);
@@ -425,18 +490,69 @@ export const FeedbackWidget = () => {
             // Let the second hide paint before capturing.
             await new Promise(resolve => requestAnimationFrame(resolve));
 
-            const canvas = await html2canvas(document.body, {
+            /* Capture the VIEWPORT, not the whole document (#361).
+             *
+             * The previous call rendered all of document.body — 1080x2073 on
+             * the CRM page — and a `position: fixed` dialog inside a Radix
+             * portal simply does not appear in a full-document render. That is
+             * why every screenshot taken from inside a modal came back showing
+             * only the page underneath. Measured on staging before this change:
+             * mean luminance 248.4 with the Edit Details dialog open versus
+             * 249.0 with it closed, on 0-255. The dialog dims the entire page
+             * behind it, so had it been captured that number would have fallen
+             * to roughly 50. It moved by 0.6 — the modal layer was absent.
+             *
+             * #367 chased the wrong cause. It scoped the pre-capture hide to
+             * our own dialog, which was a real bug and is genuinely fixed — the
+             * application's dialog now stays open and `visible` throughout. The
+             * screenshot was still missing it, because we were never rendering
+             * that layer in the first place.
+             *
+             * Cropping to the viewport also just makes it the right screenshot:
+             * a bug report should show what the reporter was looking at, not a
+             * full-page render they never saw.
+             */
+            const canvas = await html2canvas(document.documentElement, {
                 useCORS: true,
                 allowTaint: true,
                 scale: 0.75,
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                // Crop origin, in document coordinates: the top-left of what is
+                // currently on screen.
+                x: window.scrollX,
+                y: window.scrollY,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                // Tell html2canvas the clone is unscrolled, so fixed elements
+                // land at their on-screen position rather than being offset by
+                // how far down the page the user happens to be.
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
             });
-            
+
             const base64Image = canvas.toDataURL('image/jpeg', 0.6);
-            setScreenshot(base64Image);
+
+            /* Refuse a blank capture rather than attaching one.
+             *
+             * A near-uniform image means the render failed — and the reporter
+             * cannot tell, because the widget said it attached a screenshot.
+             * That silence is what let #361 survive two rounds of verification.
+             * Say it failed instead, so the next such failure is visible on the
+             * first report rather than the third. */
+            if (isNearUniform(canvas)) {
+                console.warn('Feedback: discarding a near-uniform screenshot — the capture failed');
+                setScreenshot(null);
+                setScreenshotError('The screenshot came out blank, so it was not attached. Please describe what is on screen.');
+            } else {
+                setScreenshot(base64Image);
+                setScreenshotError(null);
+            }
         } catch (err) {
             console.error('Failed to capture page screenshot', err);
+            setScreenshotError('The screenshot could not be captured. Please describe what is on screen.');
         } finally {
             elementsToHide.forEach((el, i) => {
                 el.style.visibility = prevVisibility[i] || '';
@@ -783,7 +899,12 @@ export const FeedbackWidget = () => {
                                                     </>
                                                 ) : (
                                                     <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1 p-2 text-center">
-                                                        <span className="text-[10px] text-amber-600">Failed to capture canvas.</span>
+                                                        {/* Say WHY, and say what to do instead. A blank capture that
+                                                            silently attaches nothing is how #361 survived two rounds
+                                                            of verification. */}
+                                                        <span className="text-[10px] text-amber-600">
+                                                            {screenshotError || 'Failed to capture canvas.'}
+                                                        </span>
                                                         <Button 
                                                             type="button" 
                                                             size="sm" 
