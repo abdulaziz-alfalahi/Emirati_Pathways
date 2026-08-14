@@ -283,10 +283,19 @@ const AppContent: React.FC = () => {
               />
               {/* Old protected /assessments route removed — replaced by new route below */}
 
+              {/* Your OWN profile — no role list (#404 follow-up).
+                  It was gated to candidate/recruiter/employer_admin, which
+                  excluded every operator role, so a career services operator
+                  clicking "Update Personal Information" in Profile Management
+                  was refused from editing their own details
+                  (fb_1786429083_513f8863). The Studio reads the signed-in
+                  identity from the JWT and shows nobody else's record, so the
+                  role list was gating the wrong thing: managing your own
+                  profile is not a privilege any role should have to hold. */}
               <Route
                 path="/candidate/profile/*"
                 element={
-                  <ProtectedRoute allowedRoles={['candidate', 'candidate', 'candidate', 'recruiter', 'employer_admin', 'recruiter', 'employer_admin']}>
+                  <ProtectedRoute>
                     <ProfileStudioPage />
                   </ProtectedRoute>
                 }

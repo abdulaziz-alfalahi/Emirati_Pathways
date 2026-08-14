@@ -13,9 +13,9 @@ import json
 from backend.db import get_db_connection
 
 try:
-    from backend.auth.access_control import require_roles, HR_ROLES
+    from backend.auth.access_control import require_roles, HR_ROLES, CAREER_SERVICES_ROLES
 except ImportError:
-    from auth.access_control import require_roles, HR_ROLES
+    from auth.access_control import require_roles, HR_ROLES, CAREER_SERVICES_ROLES
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,8 +26,18 @@ hr_candidate_bp = Blueprint('hr_candidate', __name__, url_prefix='/api/hr/candid
 # REMOVED: hr_dashboard_api.search_candidates (registered first via blueprint).
 
 
+# Career-services staff are admitted alongside HR (fb_1786420709_7d087bfd).
+# Counselling a candidate is their job, and they already see this candidate's
+# name, Emirates ID and phone in the CRM roster — /api/profile/crm-candidates is
+# gated to exactly CAREER_SERVICES_ROLES. So this is the same PII they are
+# already trusted with, not an escalation.
+#
+# The frontend route /candidate-profile/:candidateId was widened for these roles
+# some time ago, with a comment in App.tsx explaining why. This endpoint was not,
+# so the page loaded and then showed "Profile Not Found" on a 403. Fixing the
+# route and leaving the API gated is how you build a door into a locked room.
 @hr_candidate_bp.route('/<candidate_id>', methods=['GET'])
-@require_roles(*HR_ROLES)
+@require_roles(*(HR_ROLES | CAREER_SERVICES_ROLES))
 def get_candidate_profile_hr(candidate_id):
     """
     Get full candidate profile for HR view
