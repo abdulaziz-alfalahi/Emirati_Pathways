@@ -211,6 +211,49 @@ def update_directive_status(directive_id):
         logger.error(f"Error updating directive status: {str(e)}")
         return jsonify({'error': 'Failed to update directive status'}), 500
 
+# A recommendation still open this long after the board made it needs chasing,
+# whether or not anyone set a due date (owner request, fb_1786703303_83d9dd68:
+# "any recommendation that remains uncompleted for more than six months is
+# automatically highlighted in red").
+DIRECTIVE_STALE_DAYS = 183  # six months
+
+
+def _directive_overdue(row, status):
+    """Is this recommendation overdue, and on which of the two grounds?
+
+    Two independent triggers, because the board asked for the second and only
+    the first existed:
+      • a due date that has passed
+      • six months open with no completion, due date or not — which is the one
+        that actually fires here, since no directive in the live data has ever
+        had a due date set
+
+    'cancelled' is excluded: a recommendation that was called off is not
+    outstanding work. 'deferred' is NOT excluded — a deliberate postponement is
+    still an open commitment the board is waiting on, and hiding it is how
+    something quietly stops being tracked.
+    """
+    if status in ('completed', 'cancelled'):
+        return {'overdue': False, 'overdue_reason': None, 'days_open': None}
+
+    today = datetime.now().date()
+    created = row.get('created_at')
+    created_date = created.date() if hasattr(created, 'date') else created
+    days_open = (today - created_date).days if created_date else None
+
+    past_due = bool(row.get('due_date') and row['due_date'] < today)
+    stale = bool(days_open is not None and days_open >= DIRECTIVE_STALE_DAYS)
+
+    reason = None
+    if past_due and stale:
+        reason = 'past_due_and_stale'
+    elif past_due:
+        reason = 'past_due'
+    elif stale:
+        reason = 'open_six_months'
+    return {'overdue': past_due or stale, 'overdue_reason': reason, 'days_open': days_open}
+
+
 @board_portal_bp.route('/recommendations/summary', methods=['GET'])
 @optional_auth
 def recommendations_summary():
@@ -230,6 +273,7 @@ def recommendations_summary():
     try:
         rows = execute_query("""
             SELECT d.id, d.title, d.category, d.priority, d.status, d.owner_id, d.due_date,
+                   d.owner_entity, d.created_at,
                    d.completion_percent, d.completion_note, d.completion_updated_at,
                    COALESCE(u.full_name, u.email) AS owner_name
             FROM board_directives d
@@ -276,8 +320,9 @@ def recommendations_summary():
                 'completion_note': r.get('completion_note'),
                 'completion_updated_at': r['completion_updated_at'].isoformat()
                                           if r.get('completion_updated_at') else None,
-                'overdue': bool(r.get('due_date') and st not in ('completed', 'cancelled')
-                                and r['due_date'] < datetime.now().date()),
+                'owner_entity': r.get('owner_entity'),
+                'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
+                **_directive_overdue(r, st),
             })
 
         tracked = counts['completed'] + counts['in_progress'] + counts['outstanding']
@@ -335,6 +380,12 @@ def update_directive_tracking(directive_id):
             sets.append('status = %s'); params.append(status)
         if 'owner_id' in data:
             sets.append('owner_id = %s'); params.append((data.get('owner_id') or None) and str(data['owner_id'])[:15])
+        if 'owner_entity' in data:
+            # Free text: the bodies a board holds accountable have no canonical
+            # list, and a dropdown that cannot express "Ministry of Education"
+            # would be worse than a box that can. Empty clears it.
+            sets.append('owner_entity = %s')
+            params.append(((data.get('owner_entity') or '').strip() or None))
         if 'due_date' in data:
             sets.append('due_date = %s'); params.append(data.get('due_date') or None)
         if pct != 'unset':

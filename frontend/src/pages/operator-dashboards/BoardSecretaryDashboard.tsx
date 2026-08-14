@@ -863,13 +863,30 @@ const BoardSecretaryDashboard: React.FC = () => {
                     </p>
                     <div className="space-y-2">
                       {(recSummary.items || []).map((it: any) => (
-                        <div key={it.id} className="rounded-lg border p-3">
+                        /* Overdue is decided by the server (six months open, or a
+                           due date gone by) so the rule lives in one place. */
+                        <div key={it.id}
+                             className={`rounded-lg border p-3 ${
+                               it.overdue ? 'border-red-300 bg-red-50/60' : ''}`}>
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900">{it.title}</p>
+                              <p dir="auto" className="text-sm font-medium text-gray-900">{it.title}</p>
                               <p className="text-xs text-gray-500">
-                                {it.owner_name || b('No owner assigned', 'لم يتم تعيين مالك')}
+                                {/* A person, an entity, both, or an honest neither. */}
+                                {[it.owner_name, it.owner_entity].filter(Boolean).join(' · ')
+                                  || b('No owner assigned', 'لم يتم تعيين مالك')}
                               </p>
+                              {it.overdue && (
+                                <p className="mt-1 text-xs font-medium text-red-700">
+                                  {it.overdue_reason === 'past_due'
+                                    ? b('Past its due date', 'تجاوزت تاريخ الاستحقاق')
+                                    : it.overdue_reason === 'past_due_and_stale'
+                                      ? b(`Past its due date, and open ${Math.floor((it.days_open || 0) / 30)} months`,
+                                          `تجاوزت تاريخ الاستحقاق ومفتوحة منذ ${Math.floor((it.days_open || 0) / 30)} شهراً`)
+                                      : b(`Open ${Math.floor((it.days_open || 0) / 30)} months without completion`,
+                                          `مفتوحة منذ ${Math.floor((it.days_open || 0) / 30)} شهراً دون إنجاز`)}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <select
@@ -897,6 +914,50 @@ const BoardSecretaryDashboard: React.FC = () => {
                               />
                             </div>
                           </div>
+                          {/* Assigning responsibility was impossible from here:
+                              the tracking endpoint already accepted owner_id,
+                              but nothing in the product ever sent it, so every
+                              row read "No owner assigned" for good (#397).
+                              A person AND an entity, because accountability for
+                              a board recommendation often sits with a
+                              department rather than an individual. */}
+                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <div>
+                              <label className="text-[11px] text-gray-500"
+                                     htmlFor={`own-${it.id}`}>
+                                {b('Responsible member', 'العضو المسؤول')}
+                              </label>
+                              <select
+                                id={`own-${it.id}`}
+                                className="mt-0.5 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                                value={it.owner_id || ''}
+                                onChange={(e) => updateTracking(it.id, { owner_id: e.target.value })}
+                              >
+                                <option value="">{b('Not assigned', 'غير محدد')}</option>
+                                {offices.map((m: any) => (
+                                  <option key={m.user_id} value={m.user_id}>{m.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[11px] text-gray-500"
+                                     htmlFor={`ent-${it.id}`}>
+                                {b('Responsible entity', 'الجهة المسؤولة')}
+                              </label>
+                              <Input
+                                id={`ent-${it.id}`}
+                                defaultValue={it.owner_entity || ''}
+                                placeholder={b('e.g. DGHR Policy', 'مثال: سياسات الموارد البشرية')}
+                                className="mt-0.5 h-8 text-xs"
+                                onBlur={(e) => {
+                                  const v = e.target.value.trim();
+                                  if (v === (it.owner_entity || '')) return;
+                                  updateTracking(it.id, { owner_entity: v });
+                                }}
+                              />
+                            </div>
+                          </div>
+
                           <p className="text-xs text-gray-500 mt-2">
                             {it.completion_percent == null
                               ? b('Progress not yet recorded', 'لم يتم تسجيل التقدم بعد')
