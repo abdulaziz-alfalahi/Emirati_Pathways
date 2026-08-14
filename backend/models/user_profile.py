@@ -240,9 +240,21 @@ class UserProfile:
         self.certifications: List[Certification] = []
         self.preferences: Preferences = Preferences()
         
-        # Metadata
-        self.created_at: datetime = datetime.utcnow()
-        self.updated_at: datetime = datetime.utcnow()
+        # Metadata.
+        #
+        # NOT stamped with "now". A UserProfile is built to READ an existing
+        # profile at least as often as to create one — /api/auth/profile
+        # constructs a fresh instance on every GET — so defaulting these to
+        # utcnow() meant the API reported every account as created at the moment
+        # it was asked about. It also made the payload differ on every call,
+        # which defeated the frontend's "only update if the user changed" guard
+        # and left two open tabs waking each other indefinitely (PR #388).
+        #
+        # None means "not known here", which is the truth: the real values live
+        # in the users table, and the caller fills them in. The sibling models
+        # (company.py, job.py, application.py) all guard the same way.
+        self.created_at: Optional[datetime] = None
+        self.updated_at: Optional[datetime] = None
         self.profile_completion: float = 0.0
         self.verification_status: Dict[str, bool] = {
             'email': False,
@@ -434,7 +446,11 @@ class UserProfile:
             score += min(len(self.certifications) * 1, 2)
         
         self.profile_completion = min(score, 100.0)
-        self.updated_at = datetime.utcnow()
+        # Deliberately does NOT touch updated_at. Scoring an existing profile is
+        # a read, not an edit — and this runs on every GET, so stamping here
+        # made updated_at mean "when we last ran the calculator" rather than
+        # "when the profile last changed", which is the second half of how the
+        # payload came to differ on every request.
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert profile to dictionary for JSON serialization"""
@@ -449,8 +465,8 @@ class UserProfile:
             'languages': [lang.to_dict() for lang in self.languages],
             'certifications': [cert.to_dict() for cert in self.certifications],
             'preferences': self.preferences.to_dict(),
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'profile_completion': self.profile_completion,
             'verification_status': self.verification_status
         }
