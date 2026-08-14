@@ -40,6 +40,11 @@ recruitment_events_bp = Blueprint('recruitment_events', __name__, url_prefix='/a
 # Who may create and run an event: the CRM team.
 EVENT_ORGANISER_ROLES = CAREER_SERVICES_ROLES
 
+# Generous box around the UAE, used to reject a transposed lat/lng pair — see
+# _venue_point. Deliberately loose: it exists to catch a swap or a typo, not to
+# police which emirate an event is in.
+UAE_BOUNDS = {'lat': (22.0, 26.6), 'lng': (51.0, 56.6)}
+
 PUBLISHED_VACANCY_STATUSES = ('published', 'active', 'open', 'Active', 'Open', 'Published')
 
 
@@ -54,6 +59,9 @@ def _event_row(r):
         'title_ar': r.get('title_ar'),
         'venue': r.get('venue'),
         'venue_ar': r.get('venue_ar'),
+        # numeric() comes back as Decimal, which json cannot serialise.
+        'venue_lat': float(r['venue_lat']) if r.get('venue_lat') is not None else None,
+        'venue_lng': float(r['venue_lng']) if r.get('venue_lng') is not None else None,
         'description': r.get('description'),
         'description_ar': r.get('description_ar'),
         'starts_at': _iso(r.get('starts_at')),
@@ -64,6 +72,39 @@ def _event_row(r):
         'invited_count': r.get('invited_count'),
         'attended_count': r.get('attended_count'),
     }
+
+
+def _venue_point(d):
+    """Validate an optional venue pin. Returns (lat, lng) or raises ValueError.
+
+    Both or neither: half a pin is not a location, and a lone latitude would put
+    the venue in the Gulf of Guinea. The DB enforces this too — this exists so
+    the organiser gets a sentence rather than a constraint violation.
+    """
+    lat, lng = d.get('venue_lat'), d.get('venue_lng')
+    if lat is None and lng is None:
+        return None, None
+    if lat is None or lng is None:
+        raise ValueError('Pin the venue on the map, or leave it unpinned — '
+                         'a latitude without a longitude is not a location')
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        raise ValueError('The venue coordinates are not numbers')
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        raise ValueError('Those coordinates are not on Earth.')
+    # A RANGE CHECK DOES NOT CATCH TRANSPOSITION, which is the realistic mistake
+    # here: Dubai is roughly (25.2, 55.3), and the swapped pair (55.2, 25.1) is a
+    # perfectly valid latitude and longitude — in Kazakhstan. Accepting it would
+    # send attendees directions to the wrong continent, so the venue is bounded
+    # to the UAE instead. EHRDC open days are held at UAE community malls; if
+    # that ever stops being true this is the line to revisit.
+    if not (UAE_BOUNDS['lat'][0] <= lat <= UAE_BOUNDS['lat'][1]
+            and UAE_BOUNDS['lng'][0] <= lng <= UAE_BOUNDS['lng'][1]):
+        raise ValueError('That pin is outside the UAE. Dubai is around latitude 25, '
+                         'longitude 55 — if you entered them by hand, they may be '
+                         'the wrong way round.')
+    return lat, lng
 
 
 def _is_organiser():
@@ -163,14 +204,18 @@ def create_event():
     if not starts_at:
         return jsonify({'success': False, 'message': 'A start date and time are required'}), 400
     try:
+        lat, lng = _venue_point(d)
+    except ValueError as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+    try:
         row = execute_query("""
             INSERT INTO recruitment_events
                 (title, title_ar, venue, venue_ar, description, description_ar,
-                 starts_at, ends_at, created_by)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *
+                 starts_at, ends_at, venue_lat, venue_lng, created_by)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *
         """, (title, d.get('title_ar'), d.get('venue'), d.get('venue_ar'),
               d.get('description'), d.get('description_ar'), starts_at,
-              d.get('ends_at') or None, str(get_jwt_identity())), fetch_one=True)
+              d.get('ends_at') or None, lat, lng, str(get_jwt_identity())), fetch_one=True)
         logger.info("recruitment event created: %s by %s", row['id'], get_jwt_identity())
         return jsonify({'success': True, 'data': _event_row(row)}), 201
     except Exception as e:
@@ -183,6 +228,14 @@ def create_event():
 def update_event(event_id):
     d = request.get_json(silent=True) or {}
     fields, vals = [], []
+    if 'venue_lat' in d or 'venue_lng' in d:
+        try:
+            lat, lng = _venue_point(d)
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        fields += ['venue_lat = %s', 'venue_lng = %s']
+        vals += [lat, lng]
+
     for k in ('title', 'title_ar', 'venue', 'venue_ar', 'description',
               'description_ar', 'starts_at', 'ends_at', 'status'):
         if k in d:

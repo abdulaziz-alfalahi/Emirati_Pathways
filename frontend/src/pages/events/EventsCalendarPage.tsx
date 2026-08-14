@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import LocationPicker from '@/components/common/LocationPicker';
 import { CalendarDays, MapPin, Building2, Briefcase, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 
 /**
@@ -165,6 +166,21 @@ export const EventDetailPage: React.FC = () => {
           <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-700">
             {isRTL && ev.description_ar ? ev.description_ar : ev.description}
           </p>
+        )}
+
+        {/* Read-only map, plus a hand-off to a real maps app — this page is read
+            on the way to the venue, and nobody navigates from a static image. */}
+        {ev.venue_lat != null && ev.venue_lng != null && (
+          <div className="mt-5">
+            <LocationPicker lat={ev.venue_lat} lng={ev.venue_lng} readOnly
+                            onLocationSelect={() => {}}
+                            label={b('Where it is', 'أين يقع')} height="240px" />
+            <a className="mt-2 inline-block text-sm font-medium text-ehrdc-teal underline"
+               href={`https://www.google.com/maps/dir/?api=1&destination=${ev.venue_lat},${ev.venue_lng}`}
+               target="_blank" rel="noopener noreferrer">
+              {b('Get directions', 'الحصول على الاتجاهات')}
+            </a>
+          </div>
         )}
 
         <Card className="mt-8 border-slate-200">
