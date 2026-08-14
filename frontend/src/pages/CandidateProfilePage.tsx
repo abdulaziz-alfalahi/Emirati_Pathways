@@ -611,6 +611,55 @@ const CandidateProfilePage: React.FC = () => {
             </Card>
           )}
 
+          {/* The applications this candidate has submitted (fb_1786420709_7d087bfd).
+              recent_applications was already fetched into state and then never
+              rendered — the data arrived and was dropped on the floor. That is
+              why "View Application" had no home: the destination existed, the
+              request was made, and nothing was drawn.
+              Rendered unconditionally so an empty list SAYS it is empty rather
+              than the section vanishing, which reads as a missing feature. */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-ehrdc-teal" />
+                Applications
+                {applications.length > 0 && (
+                  <span className="text-sm font-normal text-gray-500">
+                    · {applications.length} shown
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {applications.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  This candidate has not applied to any vacancy yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {applications.map((app) => (
+                    <div key={app.id}
+                         className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900">{app.job_title}</p>
+                        <p className="text-xs text-gray-500">
+                          {app.company_name || 'No company on the posting'}
+                          {app.submitted_at
+                            ? ` · applied ${new Date(app.submitted_at).toLocaleDateString('en-GB')}`
+                            : ''}
+                        </p>
+                      </div>
+                      {app.status && (
+                        <Badge variant="outline" className="shrink-0 capitalize">
+                          {String(app.status).replace(/_/g, ' ')}
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         </div>
       </div>
