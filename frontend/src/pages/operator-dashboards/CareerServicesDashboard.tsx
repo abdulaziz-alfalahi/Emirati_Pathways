@@ -381,7 +381,14 @@ const LOCATION_OPTIONS = [
     preferred_sector: ['Preferred Sector', 'القطاع المفضل'],
     candidates_source: ['Source', 'المصدر'],
     assigned_to: ['Assigned To', 'مُسند إلى'],
+    marital_status: ['Marital Status', 'الحالة الاجتماعية'],
   };
+  /* Every facet the backend can filter on needs a label here: the dropdowns are
+     rendered by iterating THIS map, so a facet missing from it stays invisible
+     however much data arrives. marital_status is listed even though the roster
+     is currently too sparse to offer it — the backend decides that per request
+     from live counts, and this is what lets the menu appear on its own when the
+     data lands rather than waiting for someone to notice. */
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAssignee, setBulkAssignee] = useState('');
   const [bulkCallStatus, setBulkCallStatus] = useState('');
@@ -978,19 +985,26 @@ const LOCATION_OPTIONS = [
                       </div>
                     </div>
 
-                    {/* Name what we cannot filter on, rather than leaving an empty
-                        menu that looks like a fault. */}
+                    {/* Name what there is not yet enough data to filter on, rather
+                        than leaving an empty menu that looks like a fault.
+
+                        The backend sends counts, not a sentence: it reports how
+                        many records carry the field, and the phrasing (and its
+                        Arabic) is decided here. That way the note states a
+                        measurement — "recorded for 1 of 5,298" — instead of
+                        asserting the field is never collected, which is a claim
+                        that would quietly go stale as the roster fills. */}
                     {filterOptions?.unavailable && Object.keys(filterOptions.unavailable).length > 0 && (
                       <p className="mt-3 text-[11px] text-slate-500">
-                        {t('Not available to filter on: ', 'غير متاح للتصفية: ')}
+                        {t('Not enough data to filter on yet: ', 'لا توجد بيانات كافية للتصفية بعد: ')}
                         {Object.entries(filterOptions.unavailable)
-                          .map(([k, why]) => {
-                            // Fields we cannot filter on have no entry in FACET_LABELS,
-                            // so title-case the raw column rather than showing
-                            // "marital_status" to an operator.
-                            const label = FACET_LABELS[k]?.[0]
-                              || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                            return `${label} — ${why}`;
+                          .map(([k, info]: [string, any]) => {
+                            const lbl = FACET_LABELS[k];
+                            const label = lbl ? t(lbl[0], lbl[1])
+                              : k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                            const n = (info?.populated ?? 0).toLocaleString(isRTL ? 'ar-AE' : 'en-GB');
+                            const total = (filterOptions?.roster_total ?? 0).toLocaleString(isRTL ? 'ar-AE' : 'en-GB');
+                            return `${label} — ${t(`recorded for ${n} of ${total}`, `مُسجّل لـ ${n} من ${total}`)}`;
                           })
                           .join(' · ')}
                       </p>
