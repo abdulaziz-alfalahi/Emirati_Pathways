@@ -22,6 +22,25 @@ services:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     environment:
       - "LIVEKIT_KEYS=${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+      # The address LiveKit ADVERTISES to participants' browsers for media.
+      #
+      # Moro is allocating a dedicated public IP (213.42.53.198 -> 10.228.145.5)
+      # and GIN is opening TCP 7881 / UDP 7882 to it. When that lands, this must
+      # become the PUBLIC ip: a browser on the internet cannot route to
+      # 10.228.145.5, so the firewall rule alone will not make video work — the
+      # candidate address handed to the browser has to be reachable.
+      #
+      # Driven by an env var rather than editing livekit.yaml because deploys run
+      # `git reset --hard origin/main` on APPQA: a committed public IP would land
+      # on disk and be picked up by the next LiveKit restart, BEFORE the firewall
+      # rule is live, breaking video that currently works internally.
+      #
+      # The default is the current internal IP, identical to livekit.yaml, so
+      # this line changes nothing until someone sets LIVEKIT_NODE_IP.
+      #
+      # Cutover (see docs/livekit_public_ip_cutover.md):
+      #   echo 'LIVEKIT_NODE_IP=213.42.53.198' >> .env  &&  restart livekit-server
+      - "NODE_IP=${LIVEKIT_NODE_IP:-10.228.145.5}"
     restart: unless-stopped
     # LiveKit had no healthcheck, so a crash loop was invisible: a bad config
     # makes it exit 0 during startup, and `unless-stopped` then restarts it
