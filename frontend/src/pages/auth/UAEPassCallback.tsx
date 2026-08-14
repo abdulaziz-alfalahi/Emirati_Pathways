@@ -18,6 +18,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
+import { readPendingRedirect, clearPendingRedirect } from '@/utils/pendingRedirect';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 const UAEPassCallback: React.FC = () => {
@@ -134,9 +135,31 @@ const UAEPassCallback: React.FC = () => {
       // Clean the URL (remove hash fragment with tokens)
       window.history.replaceState(null, '', '/auth/uaepass/callback');
 
+      /* Where the user was headed before being sent to sign in.
+       *
+       * The venue QR is the case this exists for: someone scans the poster,
+       * is bounced to UAE Pass, and must come back to /events/<id>/check-in to
+       * be issued a queue number. EventCheckInPage writes this key; until now
+       * nothing read it, so they signed in successfully and landed on a
+       * dashboard with no token and nothing telling them what had gone wrong.
+       *
+       * Only ever an internal path — '//host' and 'http://host' are rejected,
+       * so a crafted link cannot turn our sign-in into an open redirect.
+       */
+      const pending = readPendingRedirect();
+
       // Redirect based on user status
       timeoutRef.current = setTimeout(async () => {
-        if (invitationAccepted) {
+        if (pending && !invitationAccepted) {
+          /* Ahead of the is_new_user branch on purpose. A walk-in at the venue
+           * IS a new user — that is the whole point of the QR — so sending new
+           * users to /welcome first would divert exactly the people the flow
+           * was built for, leaving them in a queue with no number. Nationals
+           * default to the Candidate role without /welcome, and the check-in
+           * page prompts them to complete their profile while they wait. */
+          clearPendingRedirect();
+          navigate(pending, { replace: true });
+        } else if (invitationAccepted) {
           // Invited company staff go straight to their working dashboard —
           // /welcome's role selection does not apply (the operator already
           // fixed the role on the invitation, #89).

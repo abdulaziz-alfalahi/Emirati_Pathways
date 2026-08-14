@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import { setPendingRedirect } from '@/utils/pendingRedirect';
 import { CheckCircle2, Loader2, AlertTriangle, UserCircle2 } from 'lucide-react';
 
 /**
@@ -35,8 +36,10 @@ const EventCheckInPage: React.FC = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
-      // Come back here after signing in — the QR is the only thing they have.
-      sessionStorage.setItem('post_login_redirect', `/events/${eventId}/check-in`);
+      // Come back here after signing in — the QR is the only thing they have,
+      // and without this they finish UAE Pass on a dashboard with no queue
+      // number and nothing explaining why.
+      setPendingRedirect(`/events/${eventId}/check-in`);
       navigate('/auth', { replace: true });
       return;
     }
