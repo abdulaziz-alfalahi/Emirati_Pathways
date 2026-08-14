@@ -37,6 +37,9 @@ const EventManagePage: React.FC = () => {
   const [companies, setCompanies] = useState<any[]>([]);
   const [addingCompany, setAddingCompany] = useState('');
   const [staffEid, setStaffEid] = useState('');
+  const [invites, setInvites] = useState<any[]>([]);
+  const [funnel, setFunnel] = useState<any | null>(null);
+  const [inviteEid, setInviteEid] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -61,6 +64,50 @@ const EventManagePage: React.FC = () => {
     const res = await restClient.get(`/api/events/${ev.id}`).catch(() => null);
     setSelected(res?.data?.data || ev);
     loadQueue(ev.id);
+    loadInvites(ev.id);
+    loadFunnel(ev.id);
+  };
+
+  const loadInvites = (id: string) =>
+    restClient.get(`/api/events/${id}/invitations`)
+      .then(r => setInvites(r.data?.data || [])).catch(() => setInvites([]));
+
+  const loadFunnel = (id: string) =>
+    restClient.get(`/api/events/${id}/funnel`)
+      .then(r => setFunnel(r.data?.data || null)).catch(() => setFunnel(null));
+
+  const addInvite = async () => {
+    if (!inviteEid.trim() || !selected) return;
+    try {
+      const res = await restClient.post(`/api/events/${selected.id}/invitations`,
+        { candidate_ids: [inviteEid.trim()] });
+      const d = res.data?.data || {};
+      toast({
+        title: d.invited
+          ? b('Added to the call list', 'تمت الإضافة إلى قائمة الاتصال')
+          : d.already_invited
+            ? b('Already on the call list', 'موجود بالفعل في قائمة الاتصال')
+            : b('Not found', 'غير موجود'),
+      });
+      setInviteEid('');
+      loadInvites(selected.id); loadFunnel(selected.id);
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not add them', 'تعذّرت الإضافة'),
+              variant: 'destructive' });
+    }
+  };
+
+  /* What the candidate said on the call. Recorded here because the invitation
+     IS the call — there is no message to wait for a reply to. */
+  const setResponse = async (candidateId: string, response: string) => {
+    if (!selected) return;
+    try {
+      await restClient.patch(`/api/events/${selected.id}/invitations/${candidateId}`, { response });
+      loadInvites(selected.id); loadFunnel(selected.id);
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not record that', 'تعذّر التسجيل'),
+              variant: 'destructive' });
+    }
   };
 
   const loadQueue = (id: string) => {
@@ -324,6 +371,91 @@ const EventManagePage: React.FC = () => {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              {funnel && (
+                <Card className="border-slate-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{b('Funnel', 'المسار')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {[
+                        [b('Invited', 'مدعو'), funnel.invited?.total ?? 0],
+                        [b('Confirmed', 'مؤكد'), funnel.invited?.confirmed ?? 0],
+                        [b('Attended', 'حضر'), funnel.attended?.total ?? 0],
+                        [b('Placed', 'تم توظيفه'), funnel.outcomes?.placed ?? 0],
+                      ].map(([label, n]: any) => (
+                        <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center">
+                          <p className="text-2xl font-bold tabular-nums text-ehrdc-teal">{n}</p>
+                          <p className="text-[11px] text-slate-600">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Walk-ins are shown apart from invited attendance: they did
+                        not come from a call, and folding them in would overstate
+                        how well the calling worked. */}
+                    <p className="mt-3 text-xs text-slate-500">
+                      {b(`Of ${funnel.attended?.total ?? 0} who attended, ${funnel.attended?.from_invitations ?? 0} were invited and ${funnel.attended?.walk_ins ?? 0} walked in.`,
+                         `من ${funnel.attended?.total ?? 0} حضروا، ${funnel.attended?.from_invitations ?? 0} مدعوون و${funnel.attended?.walk_ins ?? 0} حضروا دون دعوة.`)}
+                    </p>
+                    {funnel.rates?.confirmed_of_invited && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {b(`Confirmed ${funnel.rates.confirmed_of_invited} · attended ${funnel.rates.attended_of_confirmed ?? '—'} of those`,
+                           `أكد ${funnel.rates.confirmed_of_invited} · حضر ${funnel.rates.attended_of_confirmed ?? '—'} منهم`)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="border-slate-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">
+                    {b(`Call list — ${invites.length}`, `قائمة الاتصال — ${invites.length}`)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-3 flex gap-2">
+                    <Input value={inviteEid} onChange={e => setInviteEid(e.target.value)}
+                           placeholder={b('Emirates ID — add to the call list', 'الهوية الإماراتية — إضافة إلى قائمة الاتصال')}
+                           className="h-9 text-sm" />
+                    <Button size="sm" onClick={addInvite} disabled={!inviteEid.trim()}>
+                      {b('Add', 'إضافة')}
+                    </Button>
+                  </div>
+                  {invites.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-slate-500">
+                      {b('Nobody has been invited yet.', 'لم تتم دعوة أحد بعد.')}
+                    </p>
+                  ) : (
+                    <div className="max-h-[320px] space-y-1 overflow-y-auto">
+                      {invites.map(iv => (
+                        <div key={iv.candidate_id}
+                             className="flex items-center gap-2 rounded-md border border-slate-100 px-3 py-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-900">{iv.full_name}</p>
+                            <p className="text-xs text-slate-500">{iv.phone}</p>
+                          </div>
+                          {iv.attended && (
+                            <Badge className="border-green-200 bg-green-50 text-[10px] text-green-800">
+                              {b(`attended · ${iv.queue_token}`, `حضر · ${iv.queue_token}`)}
+                            </Badge>
+                          )}
+                          <Select value={iv.response} onValueChange={v => setResponse(iv.candidate_id, v)}>
+                            <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="invited">{b('Awaiting reply', 'بانتظار الرد')}</SelectItem>
+                              <SelectItem value="confirmed">{b('Confirmed', 'مؤكد')}</SelectItem>
+                              <SelectItem value="declined">{b('Declined', 'اعتذر')}</SelectItem>
+                              <SelectItem value="no_answer">{b('No answer', 'لا رد')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
