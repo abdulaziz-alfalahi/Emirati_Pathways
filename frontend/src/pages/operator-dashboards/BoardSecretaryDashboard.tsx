@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { canOpenPath } from '@/config/routeAccess';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { restClient } from '@/utils/api';
 import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
@@ -36,6 +37,14 @@ const BoardSecretaryDashboard: React.FC = () => {
   const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const b = (en: string, ar: string) => (isRTL ? ar : en);
+
+  /* Every role the user holds, primary AND secondary. Reading only `role`
+     misjudges multi-role users — the recurring guard bug in this codebase, and
+     this reporter is exactly that shape: candidate primary, board_operator
+     secondary. */
+  const myRoles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
+    .filter(Boolean)
+    .map((r: string) => String(r).toLowerCase());
 
   const [tab, setTab] = useState('meetings');
 
@@ -229,6 +238,10 @@ const BoardSecretaryDashboard: React.FC = () => {
   const [offices, setOffices] = useState<any[]>([]);
   const [officeQueue, setOfficeQueue] = useState<any[]>([]);
   const [officeForm, setOfficeForm] = useState({ user_id: '', office_name: '', email: '', phone: '' });
+  // Non-null while editing an existing office row, which switches the form from
+  // "record an office" (POST upsert) to "change this one" (PUT by id).
+  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
+  const officeFormRef = useRef<HTMLDivElement>(null);
   const [savingOffice, setSavingOffice] = useState(false);
 
   const fetchOffices = async () => {
@@ -245,6 +258,26 @@ const BoardSecretaryDashboard: React.FC = () => {
     }
   };
 
+  /* Editing an EXISTING office goes through PUT, not the upsert (#393).
+     POST keys on (member, email), so changing an office's email would insert a
+     second row and leave the old address active and still due to be notified —
+     with nothing in the list to say which one is current. */
+  const startEditOffice = (memberId: string, o: any) => {
+    setEditingOfficeId(o.id);
+    setOfficeForm({
+      user_id: memberId,
+      office_name: o.office_name || '',
+      email: o.email || '',
+      phone: o.phone || '',
+    });
+    officeFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const cancelEditOffice = () => {
+    setEditingOfficeId(null);
+    setOfficeForm({ user_id: '', office_name: '', email: '', phone: '' });
+  };
+
   const addOffice = async () => {
     if (!officeForm.user_id || !officeForm.email.trim()) {
       toast({ title: b('Choose a board member and enter an email address', 'اختر عضو المجلس وأدخل بريداً إلكترونياً'), variant: 'destructive' });
@@ -252,12 +285,17 @@ const BoardSecretaryDashboard: React.FC = () => {
     }
     setSavingOffice(true);
     try {
-      const res = await restClient.post('/api/board/meetings/offices', officeForm);
+      const res = editingOfficeId
+        ? await restClient.put(`/api/board/meetings/offices/${editingOfficeId}`, officeForm)
+        : await restClient.post('/api/board/meetings/offices', officeForm);
       if (!res.data?.success) {
         toast({ title: res.data?.message || b('Could not save', 'تعذّر الحفظ'), variant: 'destructive' });
         return;
       }
-      toast({ title: b('Office contact saved', 'تم حفظ جهة اتصال المكتب') });
+      toast({ title: editingOfficeId
+        ? b('Office contact updated', 'تم تحديث جهة اتصال المكتب')
+        : b('Office contact saved', 'تم حفظ جهة اتصال المكتب') });
+      setEditingOfficeId(null);
       setOfficeForm({ user_id: '', office_name: '', email: '', phone: '' });
       fetchOffices();
     } catch (e: any) {
@@ -425,9 +463,19 @@ const BoardSecretaryDashboard: React.FC = () => {
                  'جدولة اجتماعات المجلس وحفظ سجل الحضور ومتابعة تنفيذ توصيات المجلس.')}
             </p>
           </div>
-          <Button onClick={() => navigate('/executive')} variant="outline" size="sm">
-            {b('Open board dashboard', 'فتح لوحة المجلس')}
-          </Button>
+          {/* Only offer this to someone who can actually open it (#393).
+              /executive is the board MEMBER dashboard and does not admit
+              board_operator — by design, since a member attends and reads while
+              the secretary runs the cycle from this page. Showing the button
+              regardless sent the Board Secretary to "This page is not available
+              to your role" and was reported as missing access. Gated through
+              canOpenPath so it tracks the router rather than a second copy of
+              the role list (the #353 lesson). */}
+          {canOpenPath('/executive', myRoles) && (
+            <Button onClick={() => navigate('/executive')} variant="outline" size="sm">
+              {b('Open board dashboard', 'فتح لوحة المجلس')}
+            </Button>
+          )}
         </div>
 
         <Tabs value={tab} onValueChange={setTab} className="space-y-6">
@@ -1010,14 +1058,25 @@ const BoardSecretaryDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-lg border bg-white p-4 space-y-4">
+                <div ref={officeFormRef}
+                     className={`rounded-lg border bg-white p-4 space-y-4 ${
+                       editingOfficeId ? 'border-ehrdc-teal ring-1 ring-ehrdc-teal/30' : ''}`}>
+                  {editingOfficeId && (
+                    <p className="text-sm font-medium text-ehrdc-teal">
+                      {b('Editing an existing office — saving changes this contact rather than adding another.',
+                         'تعديل مكتب قائم — الحفظ يغيّر جهة الاتصال هذه ولا يضيف أخرى.')}
+                    </p>
+                  )}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <Label htmlFor="o-member">{b('Board member', 'عضو المجلس')}</Label>
                       <select
                         id="o-member"
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm disabled:bg-gray-100 disabled:text-gray-500"
                         value={officeForm.user_id}
+                        /* Moving a contact to a different member is not an edit;
+                           it is a removal and a new entry. */
+                        disabled={!!editingOfficeId}
                         onChange={(e) => setOfficeForm({ ...officeForm, user_id: e.target.value })}
                       >
                         <option value="">{b('Select…', 'اختر…')}</option>
@@ -1042,10 +1101,19 @@ const BoardSecretaryDashboard: React.FC = () => {
                              onChange={(e) => setOfficeForm({ ...officeForm, phone: e.target.value })} />
                     </div>
                   </div>
-                  <Button onClick={addOffice} disabled={savingOffice} className="gap-2">
-                    {savingOffice && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {b('Save office contact', 'حفظ جهة اتصال المكتب')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={addOffice} disabled={savingOffice} className="gap-2">
+                      {savingOffice && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {editingOfficeId
+                        ? b('Save changes', 'حفظ التغييرات')
+                        : b('Save office contact', 'حفظ جهة اتصال المكتب')}
+                    </Button>
+                    {editingOfficeId && (
+                      <Button variant="ghost" onClick={cancelEditOffice} disabled={savingOffice}>
+                        {b('Cancel', 'إلغاء')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -1065,11 +1133,21 @@ const BoardSecretaryDashboard: React.FC = () => {
                                 {o.office_name ? `${o.office_name} — ` : ''}{o.email}
                                 {o.phone ? ` · ${o.phone}` : ''}
                               </span>
-                              <Button size="sm" variant="ghost"
-                                      className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={() => removeOffice(o.id)}>
-                                {b('Remove', 'إزالة')}
-                              </Button>
+                              <span className="flex shrink-0 items-center gap-1">
+                                {/* Remove was the ONLY action here, so correcting
+                                    a typo in an address meant deleting the office
+                                    and re-entering it (#393). */}
+                                <Button size="sm" variant="ghost"
+                                        className="h-7 px-2 text-xs text-ehrdc-teal hover:bg-teal-50"
+                                        onClick={() => startEditOffice(m.user_id, o)}>
+                                  {b('Edit', 'تعديل')}
+                                </Button>
+                                <Button size="sm" variant="ghost"
+                                        className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => removeOffice(o.id)}>
+                                  {b('Remove', 'إزالة')}
+                                </Button>
+                              </span>
                             </li>
                           ))}
                         </ul>
