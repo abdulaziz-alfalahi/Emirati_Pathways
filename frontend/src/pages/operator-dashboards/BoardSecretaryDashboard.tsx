@@ -14,6 +14,7 @@ import { canOpenPath } from '@/config/routeAccess';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { restClient } from '@/utils/api';
 import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
+import AgendaList from '@/components/board/AgendaList';
 import {
   CalendarDays, Video, Users, Gavel, Loader2, Archive, Plus, Clock, MapPin,
 } from 'lucide-react';
@@ -619,7 +620,7 @@ const BoardSecretaryDashboard: React.FC = () => {
                               <MapPin className="h-3.5 w-3.5" />{m.location}
                             </p>
                           )}
-                          {m.agenda && <p className="text-sm text-gray-500 mt-2">{m.agenda}</p>}
+                          {m.agenda && <AgendaList agenda={m.agenda} className="mt-2" />}
                           <p className="text-xs text-gray-500 mt-2">
                             {b(`${m.attendee_count ?? 0} invited`, `${m.attendee_count ?? 0} مدعو`)}
                             {m.quorum_required != null && (
@@ -1011,7 +1012,7 @@ const BoardSecretaryDashboard: React.FC = () => {
                                     {isRTL && m.title_ar ? m.title_ar : m.title}
                                   </p>
                                   <p className="text-xs text-gray-600">{fmt(m.scheduled_at)}</p>
-                                  {m.agenda && <p className="text-xs text-gray-500 mt-1">{m.agenda}</p>}
+                                  {m.agenda && <AgendaList agenda={m.agenda} className="mt-1" compact />}
                                 </div>
                                 {m.is_historical && (
                                   <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-gray-600 bg-gray-50"
