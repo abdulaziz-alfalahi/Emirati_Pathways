@@ -5,6 +5,7 @@ import {
   Users,
   BookOpen,
   Award,
+  Gavel,
   Calendar,
   Building2,
   Lightbulb,
@@ -306,6 +307,18 @@ export const operationsNavGroup: NavGroup = {
       description: 'High-level KPI tracking for Board Members',
       icon: Award,
       allowedRoles: ['admin', 'platform_operator', 'board_member', 'government_entity']
+    },
+    {
+      // The Board Secretary had NO route to their own workspace: /board-secretary
+      // existed and admitted board_operator, but nothing in the navigation
+      // pointed at it, so the only way in was a link someone sent them. Every
+      // other dropdown was visible, which is what "other features are still
+      // visible" in the report was really describing (#393).
+      name: 'Board Secretariat',
+      href: '/board-secretary',
+      description: 'Schedule board meetings, attendance, minutes and recommendations',
+      icon: Gavel,
+      allowedRoles: ['admin', 'platform_operator', 'board_operator']
     },
     {
       name: 'Service Catalog',

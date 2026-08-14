@@ -309,6 +309,57 @@ def add_office():
         return jsonify({'success': False, 'message': 'Failed to save the office contact'}), 500
 
 
+@board_meetings_bp.route('/offices/<office_id>', methods=['PUT'])
+@require_roles(*ORGANISER_ROLES)
+def update_office(office_id):
+    """Change an office contact in place (#393).
+
+    Distinct from POST, which upserts on (user_id, lower(email)). That is right
+    for "record this office", but it cannot express "this office's address has
+    changed": a new email is a different conflict key, so POST would insert a
+    SECOND row and leave the old address behind, still active and still due to
+    be notified. The secretary would have no way to tell from the list which of
+    the two is current.
+
+    Updating by row id says what was meant. The member the office belongs to is
+    deliberately NOT changeable — moving a contact between board members is two
+    operations, not an edit.
+    """
+    data = request.get_json() or {}
+    email = (data.get('email') or '').strip()
+    if not email:
+        return jsonify({'success': False, 'message': 'An email address is required'}), 400
+    if '@' not in email or '.' not in email.split('@')[-1]:
+        return jsonify({'success': False, 'message': 'That does not look like an email address'}), 400
+
+    existing = execute_query(
+        "SELECT id, user_id FROM board_member_offices WHERE id = %s", (office_id,), fetch_one=True)
+    if not existing:
+        return jsonify({'success': False, 'message': 'Office contact not found'}), 404
+
+    # The unique index is (user_id, lower(email)); a collision means this member
+    # already has that address recorded, which is a merge, not an edit.
+    clash = execute_query(
+        """SELECT id FROM board_member_offices
+            WHERE user_id = %s AND lower(email) = lower(%s) AND id <> %s""",
+        (existing['user_id'], email, office_id), fetch_one=True)
+    if clash:
+        return jsonify({'success': False,
+                        'message': 'That email is already recorded for this board member'}), 409
+
+    try:
+        execute_query("""
+            UPDATE board_member_offices
+               SET office_name = %s, email = %s, phone = %s, updated_at = now()
+             WHERE id = %s
+        """, (data.get('office_name'), email, data.get('phone'), office_id), fetch_all=False)
+        logger.info("board office %s updated by %s", office_id, str(get_jwt_identity()))
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"update board office failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update the office contact'}), 500
+
+
 @board_meetings_bp.route('/offices/<office_id>', methods=['DELETE'])
 @require_roles(*ORGANISER_ROLES)
 def remove_office(office_id):
