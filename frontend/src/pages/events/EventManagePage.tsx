@@ -35,8 +35,9 @@ const EventManagePage: React.FC = () => {
   const [selected, setSelected] = useState<any | null>(null);
   const [queue, setQueue] = useState<any[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [addingCompany, setAddingCompany] = useState('');
+  const [companyQuery, setCompanyQuery] = useState('');
+  const [companyResults, setCompanyResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   const [staffEid, setStaffEid] = useState('');
   const [invites, setInvites] = useState<any[]>([]);
   const [funnel, setFunnel] = useState<any | null>(null);
@@ -51,15 +52,19 @@ const EventManagePage: React.FC = () => {
   };
   useEffect(load, []);
 
+  /* Search rather than a 188-entry dropdown, which is unusable now and gets
+     worse with every company onboarded. Debounced so typing a name does not
+     fire a query per keystroke. */
   useEffect(() => {
-    /* /api/growth/companies, NOT /api/companies — the latter does not exist and
-       404s, which would leave this dropdown silently empty and make it look as
-       though no companies are registered. (Same mistake as the map page's
-       /api/jobs/map-data, fixed in #363.) */
-    restClient.get('/api/growth/companies?limit=500')
-      .then(r => setCompanies(r.data?.companies || r.data?.data || []))
-      .catch(() => setCompanies([]));
-  }, []);
+    const id = setTimeout(() => {
+      setSearching(true);
+      restClient.get(`/api/events/employer-search?q=${encodeURIComponent(companyQuery)}`)
+        .then(r => setCompanyResults(r.data?.data || []))
+        .catch(() => setCompanyResults([]))
+        .finally(() => setSearching(false));
+    }, companyQuery ? 300 : 0);
+    return () => clearTimeout(id);
+  }, [companyQuery]);
 
   const openEvent = async (ev: any) => {
     const res = await restClient.get(`/api/events/${ev.id}`).catch(() => null);
@@ -152,13 +157,26 @@ const EventManagePage: React.FC = () => {
     }
   };
 
-  const addCompany = async () => {
-    if (!addingCompany || !selected) return;
+  const addCompany = async (companyId: string) => {
+    if (!companyId || !selected) return;
     try {
-      await restClient.post(`/api/events/${selected.id}/employers`, { company_id: addingCompany });
-      setAddingCompany('');
+      const res = await restClient.post(`/api/events/${selected.id}/employers`, { company_id: companyId });
+      const d = res.data?.data || {};
+      setCompanyQuery('');
       openEvent(selected);
-      toast({ title: b('Employer added', 'تمت إضافة جهة التوظيف') });
+      toast({
+        title: d.already_added
+          ? b('Already on this event', 'مضافة بالفعل إلى هذه الفعالية')
+          : b('Employer added', 'تمت إضافة جهة التوظيف'),
+        // Say plainly whether anyone was actually told. Most companies have no
+        // accepted team members yet, so silence here would be misleading.
+        description: d.already_added ? undefined
+          : d.notified
+            ? b(`${d.notified} contact${d.notified === 1 ? '' : 's'} at the company notified.`,
+                `تم إشعار ${d.notified} من جهات الاتصال في الشركة.`)
+            : b('Nobody at that company has a platform account yet, so no notification was sent.',
+                'لا يوجد لدى الشركة حساب على المنصة، لذلك لم يتم إرسال إشعار.'),
+      });
     } catch (e: any) {
       toast({ title: e?.response?.data?.message || b('Could not add the employer', 'تعذّرت الإضافة'),
               variant: 'destructive' });
@@ -356,36 +374,75 @@ const EventManagePage: React.FC = () => {
 
                   <div>
                     <Label className="text-xs">{b('Add an employer', 'إضافة جهة توظيف')}</Label>
-                    <div className="mt-1 flex gap-2">
-                      <Select value={addingCompany} onValueChange={setAddingCompany}>
-                        <SelectTrigger className="h-9 flex-1 text-sm">
-                          <SelectValue placeholder={b('Select a company', 'اختر شركة')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies.length === 0 && (
-                            <div className="px-2 py-3 text-xs text-slate-500">
-                              {b('No companies could be loaded.', 'تعذّر تحميل الشركات.')}
+                    <Input value={companyQuery} onChange={e => setCompanyQuery(e.target.value)}
+                           placeholder={b('Search by company name or trade licence', 'ابحث باسم الشركة أو الرخصة التجارية')}
+                           className="mt-1 h-9 text-sm" />
+                    <div className="mt-1 max-h-52 overflow-y-auto rounded-lg border border-slate-100">
+                      {searching ? (
+                        <p className="px-3 py-3 text-xs text-slate-500">{b('Searching…', 'جارٍ البحث…')}</p>
+                      ) : companyResults.length === 0 ? (
+                        <p className="px-3 py-3 text-xs text-slate-500">
+                          {companyQuery
+                            ? b('No companies match that.', 'لا توجد شركات مطابقة.')
+                            : b('Type to search the register.', 'اكتب للبحث في السجل.')}
+                        </p>
+                      ) : companyResults.map((c: any) => {
+                        const already = (selected.employers || []).some((e: any) => e.company_id === c.id);
+                        return (
+                          <div key={c.id}
+                               className="flex items-center gap-2 border-b border-slate-50 px-3 py-2 last:border-0">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm text-slate-900">{c.company_name}</p>
+                              <p className="text-[11px] text-slate-500">
+                                {/* The vacancy count decides whether inviting them is
+                                    worth it, so it is shown BEFORE adding, not after. */}
+                                {c.vacancy_count
+                                  ? b(`${c.vacancy_count} published vacanc${c.vacancy_count === 1 ? 'y' : 'ies'}`,
+                                      `${c.vacancy_count} شاغر منشور`)
+                                  : b('no published vacancies', 'لا شواغر منشورة')}
+                                {!c.is_verified && b(' · unverified', ' · غير موثقة')}
+                              </p>
                             </div>
-                          )}
-                          {companies.map((c: any) => (
-                            <SelectItem key={c.id} value={String(c.id)}>
-                              {c.company_name || c.name || c.id}
-                              {c.is_verified === false && ' · unverified'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm" onClick={addCompany} disabled={!addingCompany}>
-                        {b('Add', 'إضافة')}
-                      </Button>
+                            <Button size="sm" variant={already ? 'ghost' : 'outline'} className="h-7 text-xs"
+                                    disabled={already} onClick={() => addCompany(c.id)}>
+                              {already ? b('Added', 'مضافة') : b('Add', 'إضافة')}
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
+
+                    {/* Employers already on the event, WITH the vacancies candidates
+                        will see — the organiser should not have to open the public
+                        page to find out what was actually advertised. */}
                     {(selected.employers || []).length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
+                      <div className="mt-3 space-y-2">
                         {selected.employers.map((c: any) => (
-                          <Badge key={c.company_id} variant="secondary" className="text-xs">
-                            {c.company_name}
-                            {c.vacancies?.length ? ` · ${c.vacancies.length}` : ''}
-                          </Badge>
+                          <div key={c.company_id} className="rounded-lg border border-slate-100 p-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium text-slate-900">{c.company_name}</p>
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] text-red-600"
+                                      onClick={async () => {
+                                        await restClient.delete(`/api/events/${selected.id}/employers/${c.company_id}`)
+                                          .catch(() => {});
+                                        openEvent(selected);
+                                      }}>
+                                {b('Remove', 'إزالة')}
+                              </Button>
+                            </div>
+                            {c.vacancies?.length ? (
+                              <ul className="mt-1 space-y-0.5">
+                                {c.vacancies.map((v: any) => (
+                                  <li key={v.id} className="text-xs text-slate-600">• {v.title}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="mt-1 text-xs text-amber-700">
+                                {b('No published vacancies — candidates will see this employer with nothing to apply for.',
+                                   'لا توجد شواغر منشورة — سيرى المرشحون هذه الجهة دون وظائف للتقديم عليها.')}
+                              </p>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}

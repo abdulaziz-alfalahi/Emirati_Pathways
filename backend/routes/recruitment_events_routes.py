@@ -258,6 +258,106 @@ def update_event(event_id):
         return jsonify({'success': False, 'message': 'Failed to update the event'}), 500
 
 
+def _notify_company_team(event_id, company_id):
+    """Notify a company's accepted team members that they are on an event.
+
+    Membership comes from company_team_members with invitation_status='accepted'
+    — the ACL's only source of truth (CLAUDE.md). hr_profiles is legacy display
+    data and notifying from it would reach people who are not actually on the
+    team.
+
+    Never raises: an employer who is not told is a problem worth logging, but
+    failing the whole addition because a notification did not insert would be a
+    worse one.
+    """
+    try:
+        try:
+            from backend.notification_helper import create_notification
+        except ImportError:  # pragma: no cover
+            from notification_helper import create_notification
+
+        ev = execute_query(
+            "SELECT title, venue, starts_at FROM recruitment_events WHERE id = %s",
+            (event_id,), fetch_one=True) or {}
+        members = execute_query("""
+            SELECT user_id FROM company_team_members
+             WHERE company_id = %s AND invitation_status = 'accepted'
+        """, (company_id,)) or []
+
+        if not members:
+            # Common today: only 4 accepted memberships exist platform-wide, so
+            # most companies have nobody to tell. Log it rather than pretending.
+            logger.info("event %s: company %s has no accepted team members to notify",
+                        event_id, company_id)
+            return 0
+
+        when = ev.get('starts_at')
+        when_s = when.strftime('%d %B %Y') if when else ''
+        sent = 0
+        for m in members:
+            nid = create_notification(
+                user_id=str(m['user_id']).strip(),
+                notification_type='event_employer_added',
+                title=f"You are taking part in {ev.get('title') or 'a recruitment open day'}",
+                message=(f"EHRDC has added your company to {ev.get('title') or 'an open day'}"
+                         + (f" at {ev['venue']}" if ev.get('venue') else '')
+                         + (f" on {when_s}" if when_s else '')
+                         + ". Your published vacancies will be shown to candidates "
+                           "attending, so please make sure they are up to date."),
+                metadata={'event_id': str(event_id), 'company_id': str(company_id)},
+            )
+            if nid:
+                sent += 1
+        logger.info("event %s: notified %d of %d team members at company %s",
+                    event_id, sent, len(members), company_id)
+        return sent
+    except Exception as e:
+        logger.error(f"could not notify company {company_id} for event {event_id}: {e}")
+        return 0
+
+
+@recruitment_events_bp.route('/employer-search', methods=['GET'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def employer_search():
+    """Search companies by name or trade licence, with their vacancy count.
+
+    A 188-entry dropdown is unusable and gets worse with every company onboarded;
+    an organiser knows the name they are looking for. The vacancy count is
+    returned with each hit because it is the thing that decides whether inviting
+    that employer to an open day is worth it — only 7 vacancies are published
+    platform-wide today, so an employer with none is the common case and the
+    organiser should see that before adding them, not after.
+    """
+    q = (request.args.get('q') or '').strip()
+    try:
+        params = []
+        where = ""
+        if q:
+            where = ("WHERE (c.company_name ILIKE %s OR COALESCE(c.trade_license_no,'') ILIKE %s)")
+            params = ['%' + q + '%', '%' + q + '%']
+        rows = execute_query(f"""
+            SELECT c.id, c.company_name, c.industry, c.is_verified,
+                   (SELECT COUNT(*) FROM job_postings j
+                     WHERE j.company_id = c.id
+                       AND j.status IN ({','.join(['%s'] * len(PUBLISHED_VACANCY_STATUSES))})
+                   ) AS vacancy_count
+              FROM companies c
+              {where}
+             ORDER BY vacancy_count DESC, c.company_name
+             LIMIT 30
+        """, tuple(PUBLISHED_VACANCY_STATUSES) + tuple(params)) or []
+        return jsonify({'success': True, 'data': [{
+            'id': str(r['id']),
+            'company_name': r.get('company_name'),
+            'industry': r.get('industry'),
+            'is_verified': bool(r.get('is_verified')),
+            'vacancy_count': r.get('vacancy_count') or 0,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"employer search failed: {e}")
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
+
+
 @recruitment_events_bp.route('/<event_id>/employers', methods=['POST'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def add_employer(event_id):
@@ -268,12 +368,24 @@ def add_employer(event_id):
     try:
         if not execute_query("SELECT id FROM companies WHERE id = %s", (company_id,), fetch_one=True):
             return jsonify({'success': False, 'message': 'That company does not exist'}), 400
+        existing = execute_query(
+            "SELECT id FROM event_employers WHERE event_id = %s AND company_id = %s",
+            (event_id, company_id), fetch_one=True)
+
         execute_query("""
             INSERT INTO event_employers (event_id, company_id, note, added_by)
             VALUES (%s,%s,%s,%s)
             ON CONFLICT (event_id, company_id) DO UPDATE SET note = EXCLUDED.note
         """, (event_id, company_id, d.get('note'), str(get_jwt_identity())), fetch_all=False)
-        return jsonify({'success': True})
+
+        # Tell the employer they are on the bill — but only the first time, or
+        # editing the note would notify them again for nothing.
+        notified = 0
+        if not existing:
+            notified = _notify_company_team(event_id, company_id)
+
+        return jsonify({'success': True, 'data': {'notified': notified,
+                                                  'already_added': bool(existing)}})
     except Exception as e:
         logger.error(f"add employer failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to add the employer'}), 500
