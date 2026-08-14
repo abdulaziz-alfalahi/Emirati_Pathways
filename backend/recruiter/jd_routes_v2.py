@@ -158,6 +158,109 @@ print("!!! DEBUG: LOADING RECRUITER/JD_ROUTES_V2.PY !!!", flush=True)
 # Create Blueprint
 jd_bp = Blueprint('jd_routes_v2', __name__, url_prefix='/api/recruiter/jd')
 
+# The two ways publishing can be blocked, worded once (#362).
+#
+# These are shown at the ENTRANCE to the recruiter workspace as well as on the
+# publish 403. HUDA filled in seven wizard steps — title, department, industry,
+# job level, city, emirate, map location, closing date — before being told her
+# account had never been linked to a company. The message was accurate and
+# arrived far too late to be useful.
+#
+# Kept as constants because the same sentence now appears in two places: a
+# banner that says one thing and a 403 that says another is how a user ends up
+# not believing either.
+NO_COMPANY_LINKED_MESSAGE = (
+    'Your account is not linked to a company yet, so this posting cannot be '
+    'published. It is saved as a draft. Ask platform operations to link your '
+    'account to your company — publishing unlocks once that company is verified.'
+)
+COMPANY_NOT_VERIFIED_MESSAGE = (
+    'Your company has not been approved to publish jobs yet. Save the posting '
+    'as a draft — it will be publishable as soon as operations approves the company.'
+)
+
+
+def _resolve_recruiter_company(cur, user_id):
+    """The company this recruiter posts for, or None.
+
+    Deliberately the SAME resolution the publish path uses, in the same order:
+    hr_profiles first, then the accepted company_team_members row. If the two
+    ever disagree, the entrance and the publish gate must at least disagree
+    IDENTICALLY — a banner promising publication and a 403 refusing it is worse
+    than either alone.
+    """
+    cur.execute("""
+        SELECT hp.company_id AS hr_company_id,
+               ctm.company_id AS team_company_id
+          FROM users u
+          LEFT JOIN hr_profiles hp ON hp.user_id = u.id
+          LEFT JOIN LATERAL (
+              SELECT m.company_id
+                FROM company_team_members m
+               WHERE m.user_id = u.id AND m.invitation_status = 'accepted'
+               ORDER BY m.joined_at DESC NULLS LAST, m.created_at DESC
+               LIMIT 1
+          ) ctm ON TRUE
+         WHERE u.id = %s
+    """, (user_id,))
+    row = cur.fetchone() or {}
+    return row.get('hr_company_id') or row.get('team_company_id')
+
+
+@jd_bp.route('/workspace-status', methods=['GET'])
+@jwt_required()
+def workspace_status():
+    """Can this recruiter actually publish? Asked on ENTRY, not after step 7.
+
+    Returns the blocker and its message up front so the workspace can say so
+    before any work is done. Never fails the request: if the lookup breaks, the
+    caller is told nothing is known rather than being wrongly reassured or
+    wrongly blocked — the publish gate remains the thing that decides.
+    """
+    user_id = str(get_jwt_identity())
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            company_id = _resolve_recruiter_company(cur, user_id)
+            company_name, verified = None, False
+            if company_id:
+                cur.execute(
+                    "SELECT COALESCE(company_name, name) AS nm, is_verified "
+                    "FROM companies WHERE id::text = %s", (str(company_id),))
+                crow = cur.fetchone() or {}
+                company_name = crow.get('nm')
+                verified = bool(crow.get('is_verified'))
+
+        if not company_id:
+            blocker, message = 'no_company_linked', NO_COMPANY_LINKED_MESSAGE
+        elif not verified:
+            blocker, message = 'company_not_verified', COMPANY_NOT_VERIFIED_MESSAGE
+        else:
+            blocker, message = None, None
+
+        return jsonify({'success': True, 'data': {
+            'has_company': bool(company_id),
+            'company_id': str(company_id) if company_id else None,
+            'company_name': company_name,
+            'is_verified': verified,
+            'can_publish': blocker is None,
+            'blocker': blocker,
+            'message': message,
+        }})
+    except Exception as e:
+        logger.error(f"workspace status failed for {user_id}: {e}")
+        # 'unknown' — the UI shows no banner rather than a wrong one.
+        return jsonify({'success': True, 'data': {
+            'can_publish': None, 'blocker': 'unknown', 'message': None,
+        }})
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
 # Initialize components
 jd_engine = get_jd_builder_engine()
 ai_matching = get_ai_matching_engine()
@@ -1683,10 +1786,7 @@ def save_jd(jd_id):
                     return jsonify({
                         'success': False,
                         'error_code': 'no_company_linked',
-                        'message': 'Your account is not linked to a company yet, so this '
-                                   'posting cannot be published. It is saved as a draft. '
-                                   'Ask platform operations to link your account to your '
-                                   'company — publishing unlocks once that company is verified.',
+                        'message': NO_COMPANY_LINKED_MESSAGE,
                     }), 403
                 return jsonify({
                     'success': False,
