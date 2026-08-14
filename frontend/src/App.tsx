@@ -82,6 +82,10 @@ const ProfileStudioPage = lazy(() => import('@/pages/candidate/profile-studio/Pr
 // const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
 // const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
+const EventsCalendarPage = lazy(() => import('@/pages/events/EventsCalendarPage'));
+const EventDetailPage = lazy(() => import('@/pages/events/EventsCalendarPage').then(m => ({ default: m.EventDetailPage })));
+const EventCheckInPage = lazy(() => import('@/pages/events/EventCheckInPage'));
+const EventManagePage = lazy(() => import('@/pages/events/EventManagePage'));
 const PublicCVViewer = lazy(() => import('@/pages/cv-builder/PublicCVViewer'));
 
 // Home Page (lazy loaded to reduce initial bundle — was 650 lines)
@@ -638,6 +642,42 @@ const AppContent: React.FC = () => {
               <Route
                 path="/government"
                 element={<GovernmentRedirect />}
+              />
+
+              {/* Recruitment open days (#376). The check-in route is what the
+                  venue QR points at; it needs a signed-in user (UAE Pass) but no
+                  particular role, because a walk-in has just created an account. */}
+              <Route
+                path="/events"
+                element={
+                  <ProtectedRoute>
+                    <EventsCalendarPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/manage"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin', 'platform_administrator', 'career_services_operator', 'call_center_agent', 'operator']}>
+                    <EventManagePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:eventId/check-in"
+                element={
+                  <ProtectedRoute>
+                    <EventCheckInPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events/:eventId"
+                element={
+                  <ProtectedRoute>
+                    <EventDetailPage />
+                  </ProtectedRoute>
+                }
               />
 
               {/* Resume Builder Routes */}

@@ -42,6 +42,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/demographics': ['admin', 'board_member', 'compliance_auditor', 'platform_operator'],
   '/education-operator-dashboard': ['admin', 'education_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/educator-dashboard': ['training_provider'],
+  '/events/manage': ['admin', 'call_center_agent', 'career_services_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/executive': ['admin', 'board_member', 'compliance_auditor', 'platform_operator'],
   '/government-dashboard': ['admin', 'compliance_auditor', 'platform_operator'],
   '/growth-operator-dashboard': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],
