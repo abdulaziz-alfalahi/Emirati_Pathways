@@ -35,8 +35,11 @@ ALTER TABLE recruitment_events
     ADD CONSTRAINT recruitment_events_venue_point_check
     CHECK ((venue_lat IS NULL) = (venue_lng IS NULL));
 
--- Refuse impossible coordinates. A transposed lat/lng pair for Dubai
--- (55.2, 25.2) would otherwise be stored happily and put the venue in Kazakhstan.
+-- Refuse impossible coordinates. NOTE: this does NOT catch a transposed pair —
+-- Dubai swapped is (55.2, 25.2), which is a valid latitude and longitude, just
+-- one in Kazakhstan. That case is rejected in the API against a UAE bounding box
+-- (_venue_point), because "which country is plausible" is policy and does not
+-- belong in a CHECK constraint that would outlive it.
 ALTER TABLE recruitment_events
     DROP CONSTRAINT IF EXISTS recruitment_events_venue_range_check;
 ALTER TABLE recruitment_events

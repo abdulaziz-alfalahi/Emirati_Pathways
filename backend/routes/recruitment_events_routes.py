@@ -40,6 +40,11 @@ recruitment_events_bp = Blueprint('recruitment_events', __name__, url_prefix='/a
 # Who may create and run an event: the CRM team.
 EVENT_ORGANISER_ROLES = CAREER_SERVICES_ROLES
 
+# Generous box around the UAE, used to reject a transposed lat/lng pair — see
+# _venue_point. Deliberately loose: it exists to catch a swap or a typo, not to
+# police which emirate an event is in.
+UAE_BOUNDS = {'lat': (22.0, 26.6), 'lng': (51.0, 56.6)}
+
 PUBLISHED_VACANCY_STATUSES = ('published', 'active', 'open', 'Active', 'Open', 'Published')
 
 
@@ -87,9 +92,18 @@ def _venue_point(d):
     except (TypeError, ValueError):
         raise ValueError('The venue coordinates are not numbers')
     if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
-        raise ValueError('Those coordinates are not on Earth. If the venue is in '
-                         'Dubai, latitude is around 25 and longitude around 55 — '
-                         'they may be the wrong way round.')
+        raise ValueError('Those coordinates are not on Earth.')
+    # A RANGE CHECK DOES NOT CATCH TRANSPOSITION, which is the realistic mistake
+    # here: Dubai is roughly (25.2, 55.3), and the swapped pair (55.2, 25.1) is a
+    # perfectly valid latitude and longitude — in Kazakhstan. Accepting it would
+    # send attendees directions to the wrong continent, so the venue is bounded
+    # to the UAE instead. EHRDC open days are held at UAE community malls; if
+    # that ever stops being true this is the line to revisit.
+    if not (UAE_BOUNDS['lat'][0] <= lat <= UAE_BOUNDS['lat'][1]
+            and UAE_BOUNDS['lng'][0] <= lng <= UAE_BOUNDS['lng'][1]):
+        raise ValueError('That pin is outside the UAE. Dubai is around latitude 25, '
+                         'longitude 55 — if you entered them by hand, they may be '
+                         'the wrong way round.')
     return lat, lng
 
 
