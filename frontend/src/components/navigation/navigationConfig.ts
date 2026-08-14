@@ -107,7 +107,11 @@ export const navigationGroups: NavGroup[] = [
         href: '/cv-builder',
         description: 'Create professional CVs tailored for the Dubai job market',
         icon: FileText,
-        featureFlagKey: 'page_cv_builder'
+        featureFlagKey: 'page_cv_builder',
+        // The route admits candidates only. Without this the item showed to
+        // everyone and every operator who clicked it was refused — reported as
+        // "CV Builder redirects me to the Home Page" (fb_1786427655_d66a6702).
+        allowedRoles: ['candidate']
       },
       {
         name: 'Portfolio',
@@ -261,7 +265,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/nafis-talent-dashboard',
       description: 'Import, audit and onboard NAFIS job seekers',
       icon: Briefcase,
-      allowedRoles: ['talent_operator', 'admin', 'platform_operator', 'growth_operator']
+      allowedRoles: ['talent_operator', 'admin', 'growth_operator']
     },
     {
       name: 'Open Day Management',
@@ -271,14 +275,14 @@ export const operationsNavGroup: NavGroup = {
       // Kept in step with the route's own allowedRoles — routeAccess.ts is the
       // authority and the nav now defers to it (#369), but declaring it here
       // too keeps the two visibly aligned.
-      allowedRoles: ['career_services_operator', 'call_center_agent', 'admin', 'platform_operator']
+      allowedRoles: ['career_services_operator', 'call_center_agent', 'admin', 'operator']
     },
     {
       name: 'Career Services',
       href: '/career-services-dashboard',
       description: 'Candidate counselling pipeline: caseloads, call outcomes & notes',
       icon: DollarSign,
-      allowedRoles: ['career_services_operator', 'admin', 'platform_operator']
+      allowedRoles: ['career_services_operator', 'admin']
     },
     {
       name: 'Growth Dashboard',
@@ -292,7 +296,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/demographics',
       description: 'Deep-dive analysis of the talent pool',
       icon: Users,
-      allowedRoles: ['admin', 'platform_operator', 'compliance_auditor', 'career_services_operator', 'board_member', 'government_entity']
+      allowedRoles: ['admin', 'platform_operator', 'compliance_auditor', 'board_member']
     },
     {
       name: 'Operations Monitoring',
@@ -306,7 +310,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/executive',
       description: 'High-level KPI tracking for Board Members',
       icon: Award,
-      allowedRoles: ['admin', 'platform_operator', 'board_member', 'government_entity']
+      allowedRoles: ['admin', 'platform_operator', 'board_member']
     },
     {
       // The Board Secretary had NO route to their own workspace: /board-secretary
