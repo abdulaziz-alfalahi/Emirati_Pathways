@@ -423,7 +423,26 @@ def get_profile():
         profile.professional_info = _safe_init(ProfessionalInfo, **prof_kwargs)
 
         profile_data = profile.to_dict()
-        
+
+        # UserProfile stamps created_at/updated_at with utcnow() in its
+        # constructor (models/user_profile.py), and a fresh one is built per
+        # request — so to_dict() reported "now" every single call. Two harms:
+        # the values were simply untrue (a profile page would say the account
+        # was created today, forever), and because the payload differed on every
+        # call, AuthContext's "only update if the user actually changed" guard
+        # never held. It rewrote localStorage['user'] on each refresh, which
+        # fires a storage event in every OTHER tab, which re-initialised auth
+        # there, which wrote again — two tabs flashed at each other indefinitely
+        # (the venue QR returns in a second tab via the UAE Pass app).
+        # The real values are already in user_data; use them, and if they are
+        # unknown say nothing rather than inventing a timestamp.
+        for _ts in ('created_at', 'updated_at'):
+            _v = user_data.get(_ts)
+            if _v is None:
+                profile_data.pop(_ts, None)
+            else:
+                profile_data[_ts] = _v.isoformat() if hasattr(_v, 'isoformat') else _v
+
         # Inject raw data for fields not in UserProfile strict schema but needed by frontend
         profile_data['professional_summary'] = db_profile_data.get('professional_summary')
         profile_data['education'] = db_profile_data.get('education') or [] 
