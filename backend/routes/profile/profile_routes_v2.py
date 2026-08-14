@@ -19,6 +19,48 @@ def get_normalized_user_id(identity):
         identity = identity.get('id')
     return str(identity).strip()
 
+def _empty_profile_payload(user_id):
+    """The shape the Studio renders when there is nothing stored yet.
+
+    Shared by the two callers below so an unsaved profile and a failed-create
+    profile cannot drift into looking different to the frontend.
+    """
+    return {
+        'user_id': user_id,
+        'headline': '',
+        'bio': '',
+        'contact': {'email': '', 'phone': '', 'location': ''},
+        'media': {'avatar': None, 'video_intro': None},
+        'career_compass': {'target_roles': [], 'salary': None},
+    }
+
+
+def _holds_candidate_role(user_id):
+    """Is this user actually a candidate (primary, legacy mirror, or secondary)?
+
+    Decides whether opening the Profile Studio should CREATE a candidate_profiles
+    row. It should not for staff: that table is the CRM roster, and a row for a
+    career services operator is a record of a jobseeker who does not exist.
+
+    Fails CLOSED — on a lookup error we do NOT create. A missing row renders an
+    empty Studio and is recreated the moment a real candidate saves anything; a
+    wrongly created one quietly pollutes the roster and nobody notices.
+    """
+    try:
+        row = db.session.execute(
+            db.text("""SELECT 1 FROM users
+                        WHERE id::text = :uid
+                          AND (role = 'candidate'
+                               OR user_type = 'candidate'
+                               OR COALESCE(secondary_roles, '[]'::jsonb) ? 'candidate')
+                        LIMIT 1"""),
+            {'uid': str(user_id)}).first()
+        return bool(row)
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"candidate-role check failed for {user_id}: {e}")
+        return False
+
+
 @profile_v2_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_my_profile():
@@ -35,6 +77,22 @@ def get_my_profile():
         
         # 2. If not found, create (Handle Race Conditions)
         if not profile:
+            # ...but only for actual candidates (#405 follow-up).
+            #
+            # This auto-create is an onboarding simplifier, and it fired for
+            # ANYONE who opened the Studio. That was invisible while the route
+            # was candidate-gated; widening it so staff can edit their own
+            # profile made every operator who visits mint a candidate_profiles
+            # row — i.e. a CRM roster record for a jobseeker who does not exist.
+            # Observed on a real account: opening the page as a career services
+            # operator created one, with default nationality/English level.
+            #
+            # The roster listing filters on role, so those rows never showed as
+            # candidates; they just accumulated. Not creating them is cheaper
+            # than explaining them later.
+            if not _holds_candidate_role(user_id):
+                logger.info(f"Profile V2: not auto-creating for non-candidate {user_id}")
+                return jsonify({'success': True, 'data': _empty_profile_payload(user_id)}), 200
             try:
                 # Auto-create empty profile if it doesn't exist (Onboarding simplifier)
                 new_profile = CandidateProfile(user_id=user_id)
@@ -50,17 +108,7 @@ def get_my_profile():
                     # If still not found and creation failed, it's a real error (e.g. FK violation)
                     logger.error(f"Failed to auto-create profile for {user_id}: {e}")
                     # Return 200 with empty data structure to allow frontend to render empty state instead of crashing
-                    return jsonify({
-                        'success': True,
-                        'data': {
-                            'user_id': user_id,
-                            'headline': '',
-                            'bio': '',
-                            'contact': {'email': '', 'phone': '', 'location': ''},
-                            'media': {'avatar': None, 'video_intro': None},
-                            'career_compass': {'target_roles': [], 'salary': None}
-                        }
-                    }), 200
+                    return jsonify({'success': True, 'data': _empty_profile_payload(user_id)}), 200
 
         # 3. Return Data
         return jsonify({
