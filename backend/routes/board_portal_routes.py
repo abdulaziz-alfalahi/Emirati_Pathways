@@ -241,8 +241,22 @@ def _directive_overdue(row, status):
     created_date = created.date() if hasattr(created, 'date') else created
     days_open = (today - created_date).days if created_date else None
 
-    past_due = bool(row.get('due_date') and row['due_date'] < today)
-    stale = bool(days_open is not None and days_open >= DIRECTIVE_STALE_DAYS)
+    due = row.get('due_date')
+    past_due = bool(due and due < today)
+
+    # The secretary's lever (owner ruling 2026-08-14: deferred stays overdue,
+    # "but can be adjusted by the secretary").
+    #
+    # A due date in the FUTURE is an explicit re-baseline — someone has looked
+    # at this and committed to a date — so it suppresses the age rule until
+    # that date arrives. The six-month trigger is a default for recommendations
+    # nobody has spoken for, not a verdict that overrides a human decision.
+    # Deferring alone does NOT clear the flag: a deferral with no new date is
+    # exactly the case the board asked to keep seeing.
+    rebaselined = bool(due and due >= today)
+    stale = bool(days_open is not None
+                 and days_open >= DIRECTIVE_STALE_DAYS
+                 and not rebaselined)
 
     reason = None
     if past_due and stale:

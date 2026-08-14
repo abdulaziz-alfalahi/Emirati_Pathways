@@ -958,6 +958,32 @@ const BoardSecretaryDashboard: React.FC = () => {
                             </div>
                           </div>
 
+                          {/* The secretary's lever over the red flag. Setting a
+                              future date says "this has been looked at and is
+                              expected by then", which holds the six-month rule
+                              off until the date arrives. Deferring on its own
+                              does not clear it — a deferral with no new date is
+                              the case the board asked to keep seeing. */}
+                          <div className="mt-2">
+                            <label className="text-[11px] text-gray-500" htmlFor={`due-${it.id}`}>
+                              {b('Expected by', 'متوقّع بحلول')}
+                            </label>
+                            <Input
+                              id={`due-${it.id}`}
+                              type="date"
+                              defaultValue={it.due_date || ''}
+                              className="mt-0.5 h-8 w-44 text-xs"
+                              onChange={(e) => {
+                                if ((e.target.value || '') === (it.due_date || '')) return;
+                                updateTracking(it.id, { due_date: e.target.value || null });
+                              }}
+                            />
+                            <p className="mt-1 text-[11px] text-gray-500">
+                              {b('A future date pauses the six-month overdue flag until it passes.',
+                                 'التاريخ المستقبلي يوقف مؤشر التأخر لستة أشهر حتى يحين موعده.')}
+                            </p>
+                          </div>
+
                           <p className="text-xs text-gray-500 mt-2">
                             {it.completion_percent == null
                               ? b('Progress not yet recorded', 'لم يتم تسجيل التقدم بعد')
