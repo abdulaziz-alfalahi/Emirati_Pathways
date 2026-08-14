@@ -50,6 +50,75 @@ RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator
 # NOT self-requestable and cannot be granted to a user with no membership.
 COMPANY_BOUND_ROLES = {'recruiter', 'employer_admin', 'hr', 'hr_manager'}
 
+# ── Roles that are meaningless without a binding ────────────────────────────
+#
+# COMPANY_BOUND_ROLES generalised (#401). Three other families have exactly the
+# same shape: the role scopes a workspace to a container, and without the
+# binding row the workspace opens, shows nothing, and never says why — the #362
+# dead end.
+#
+# This is NOT reasoning by symmetry. Each was walked end to end on 2026-08-14:
+# an operator created the container, bound a user, and the user could then do
+# the job — a bound advisor sees their enrolled student, an unbound one has no
+# institution to scope to and sees nothing, permanently.
+#
+# The dedicated operator flows below already write the role AND the binding in
+# the same call, so they are unaffected by this. What this closes is the GENERIC
+# admin role grant, which bypassed the binding for every family except company.
+#
+# Each entry: role -> (predicate, the flow that does it properly).
+BOUND_ROLE_REQUIREMENTS = {
+    'recruiter':           ('company',     'the company onboarding chain — an operator issues the company magic link, the representative joins, then invites their team'),
+    'employer_admin':      ('company',     'the company onboarding chain — an operator issues the company magic link, the representative joins, then invites their team'),
+    'hr':                  ('company',     'the company onboarding chain — an operator issues the company magic link, the representative joins, then invites their team'),
+    'hr_manager':          ('company',     'the company onboarding chain — an operator issues the company magic link, the representative joins, then invites their team'),
+    'advisor':             ('institution', 'binding them to an institution (Students → Institutions → add staff), which grants the role automatically'),
+    'training_provider':   ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
+    'training_center_rep': ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
+    'assessor':            ('assessor',    'certifying them at an assessment centre (Assessment Centres → add assessor), which grants the role automatically'),
+}
+
+
+def _has_binding(user_id, kind):
+    """Does this user hold the binding row `kind` requires?
+
+    Never raises and never blocks on a lookup failure: returning True on error
+    means a broken query cannot lock an operator out of granting a role. The
+    dead end this prevents is bad; a platform where roles cannot be granted at
+    all is worse.
+    """
+    queries = {
+        'company':     ("SELECT 1 FROM company_team_members "
+                        "WHERE user_id::text = %s AND invitation_status = 'accepted' LIMIT 1"),
+        'institution': "SELECT 1 FROM institution_staff WHERE user_id::text = %s LIMIT 1",
+        'centre':      "SELECT 1 FROM training_center_staff WHERE user_id::text = %s LIMIT 1",
+        'assessor':    "SELECT 1 FROM assessor_profiles WHERE user_id::text = %s LIMIT 1",
+    }
+    sql = queries.get(kind)
+    if not sql or not user_id:
+        return True
+    try:
+        return bool(execute_query(sql, (str(user_id),), fetch_one=True))
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"{kind} binding lookup failed for {user_id}: {e}")
+        return True
+
+
+def missing_role_binding(user_id, role):
+    """None if the role may be granted, else a sentence saying how to do it properly.
+
+    The message names the flow rather than only refusing, because the refusal
+    is useless on its own: the operator's next question is always "then how?"
+    """
+    req = BOUND_ROLE_REQUIREMENTS.get(str(role or '').strip().lower())
+    if not req:
+        return None
+    kind, how = req
+    if _has_binding(user_id, kind):
+        return None
+    return (f"'{role}' cannot be granted on its own — it only means something once "
+            f"the person is bound to the thing it scopes to. Grant it by {how}.")
+
 
 def has_company_membership(user_id):
     """True if the user is an accepted member of any company.

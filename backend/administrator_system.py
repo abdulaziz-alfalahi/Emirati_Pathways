@@ -639,9 +639,9 @@ class AdministratorSystem:
             # onboarding chain: operator magic link -> company representative
             # joins under that company -> representative invites their team.
             try:
-                from backend.auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+                from backend.auth.access_control import missing_role_binding
             except ImportError:  # pragma: no cover
-                from auth.access_control import COMPANY_BOUND_ROLES, has_company_membership
+                from auth.access_control import missing_role_binding
             # Only roles being ADDED are checked. Roles the user already holds are
             # pre-existing data, and refusing the whole update because of them made
             # every such account uneditable: an admin could not grant an unrelated
@@ -665,12 +665,22 @@ class AdministratorSystem:
                 str(r).strip().lower() for r in _cur_secondary if r and str(r).strip()
             }
 
-            _newly_bound = (set(roles) & COMPANY_BOUND_ROLES) - _existing_roles
-            if _newly_bound and not has_company_membership(user_id):
-                raise ValueError(
-                    f"Cannot grant {', '.join(sorted(_newly_bound))} to a user who "
-                    "belongs to no company. Invite them to their company's team first "
-                    "(or onboard the company itself), then the role follows automatically.")
+            # Extended beyond company roles (#401): advisor, training_provider,
+            # training_center_rep and assessor scope a workspace to a container
+            # the same way, and granting one without its binding produces the
+            # same dead end — a workspace that opens, shows nothing, and never
+            # says why. Walked end to end 2026-08-14: a bound advisor sees their
+            # enrolled student, an unbound one has no institution to scope to.
+            #
+            # The dedicated operator flows (institution staff, centre staff,
+            # assessor certification) write the role AND the binding in the same
+            # call, so they are unaffected. This closes the GENERIC grant only.
+            _newly_added = {str(r).strip().lower() for r in roles if r} - _existing_roles
+            _problems = [msg for msg in
+                         (missing_role_binding(user_id, r) for r in sorted(_newly_added))
+                         if msg]
+            if _problems:
+                raise ValueError(' '.join(_problems))
 
             # Preserve the user's original/current role so they can switch back
             original_role = current_user.get('role')
