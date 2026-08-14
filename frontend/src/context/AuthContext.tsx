@@ -75,10 +75,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Listen for storage events to sync auth state across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user' || e.key === 'access_token') {
-        // Re-initialize auth when storage changes
-        initializeAuth();
+      if (e.key !== 'user' && e.key !== 'access_token') return;
+
+      /* Adopt the other tab's value directly. This deliberately does NOT call
+       * initializeAuth().
+       *
+       * initializeAuth flips isLoading, and ProtectedRoute renders a
+       * full-screen spinner whenever isLoading is true — so a routine
+       * cross-tab sync blanked whatever the user was looking at. Worse, it
+       * also re-fetched the profile and wrote localStorage['user'] again,
+       * which fired a storage event back in the tab that started it. With two
+       * tabs open the two woke each other forever, and the venue check-in page
+       * flashed between the spinner and the queue number. Two tabs is the
+       * normal case here, not an edge one: UAE Pass hands off to its mobile
+       * app and returns in a new tab.
+       *
+       * A storage event already carries the new state. Reading it costs
+       * nothing, cannot fail, and — critically — writes nothing back. */
+      if (!authService.isAuthenticated()) {
+        setUserState(null);
+        return;
       }
+      const stored = authService.getUser() || null;
+      setUserState(prev =>
+        JSON.stringify(prev) === JSON.stringify(stored) ? prev : stored);
     };
 
     window.addEventListener('storage', handleStorageChange);
