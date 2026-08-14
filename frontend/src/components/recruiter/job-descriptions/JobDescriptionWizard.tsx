@@ -285,7 +285,22 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  /* Whether this recruiter can actually publish, asked once on entry (#362).
+     null while unknown — including when the check itself fails — so the banner
+     stays hidden rather than warning wrongly. The publish gate remains the
+     thing that decides; this only tells the user earlier. */
+  const [workspaceStatus, setWorkspaceStatus] = useState<any>(null);
   const [completionScore, setCompletionScore] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    restClient.get('/api/recruiter/jd/workspace-status')
+      .then(r => { if (!cancelled) setWorkspaceStatus(r.data?.data || null); })
+      // Silent: a failed check must not block or alarm someone whose account
+      // is perfectly fine.
+      .catch(() => { if (!cancelled) setWorkspaceStatus(null); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Helper to normalize generic list data into objects
   const normalizeList = (data: any, defaultCategory: string = 'core') => {
@@ -1688,6 +1703,33 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
+        {/* Said at the ENTRANCE, not at step 7 (#362).
+            A recruiter whose account was never linked to a company used to fill
+            in title, department, industry, job level, city, emirate, map
+            location and closing date before being told. The message was
+            accurate and arrived far too late to act on. Same wording as the
+            publish 403, from the same server-side constant, so the warning and
+            the refusal cannot say different things. Drafting still works — this
+            informs, it does not lock the wizard. */}
+        {workspaceStatus && workspaceStatus.can_publish === false && (
+          <div className={`rounded-lg border p-4 ${
+            workspaceStatus.blocker === 'no_company_linked'
+              ? 'border-amber-300 bg-amber-50'
+              : 'border-blue-200 bg-blue-50'}`}>
+            <p className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+              {workspaceStatus.blocker === 'no_company_linked'
+                ? 'This account is not linked to a company yet'
+                : 'Your company is not approved to publish yet'}
+            </p>
+            <p className="mt-1 text-sm text-gray-700">{workspaceStatus.message}</p>
+            <p className="mt-1 text-xs text-gray-500">
+              You can still write this job description — it will be saved as a draft
+              and can be published once that is resolved.
+            </p>
+          </div>
+        )}
+
         {/* Progress Bar */}
         <Card>
           <CardContent className="pt-6">
