@@ -460,3 +460,244 @@ def event_queue(event_id):
     except Exception as e:
         logger.error(f"event queue failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to load the queue'}), 500
+
+
+# ── Invitations ────────────────────────────────────────────────────────────
+
+# An invitation is recorded during a phone call, so a batch is one agent's call
+# list for a session — not the whole roster. Capped for the same reason the bulk
+# CRM actions are: a number an operator cannot review is a number they cannot
+# check afterwards.
+INVITE_MAX = 500
+
+INVITE_RESPONSES = {'invited', 'confirmed', 'declined', 'no_answer'}
+
+
+@recruitment_events_bp.route('/<event_id>/invitations', methods=['POST'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def invite_candidates(event_id):
+    """Add candidates to an event's call list.
+
+    Takes explicit candidate ids, which is what the CRM's filter-and-select
+    produces: filter the roster, select, invite. Re-inviting someone already on
+    the list is a no-op rather than an error — an agent working through a list
+    should never be punished for overlapping selections.
+    """
+    d = request.get_json(silent=True) or {}
+    ids = d.get('candidate_ids') or []
+    if not isinstance(ids, list) or not ids:
+        return jsonify({'success': False, 'message': 'Select at least one candidate'}), 400
+    ids = [str(i).strip() for i in ids if str(i).strip()]
+    if len(ids) > INVITE_MAX:
+        return jsonify({'success': False,
+                        'message': f'Invite at most {INVITE_MAX} candidates at a time'}), 400
+
+    ev = execute_query("SELECT id, status FROM recruitment_events WHERE id = %s",
+                       (event_id,), fetch_one=True)
+    if not ev:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    me = str(get_jwt_identity())
+    ph = ','.join(['%s'] * len(ids))
+    known = execute_query(
+        f"SELECT id FROM users WHERE id IN ({ph})", tuple(ids)) or []
+    known_ids = [str(r['id']).strip() for r in known]
+    unknown = len(ids) - len(known_ids)
+    if not known_ids:
+        return jsonify({'success': False, 'message': 'None of those candidates exist',
+                        'data': {'invited': 0, 'unknown': unknown}}), 400
+
+    before = execute_query(
+        f"SELECT candidate_id FROM event_invitations WHERE event_id = %s "
+        f"AND candidate_id IN ({','.join(['%s'] * len(known_ids))})",
+        (event_id,) + tuple(known_ids)) or []
+    already = len(before)
+
+    try:
+        for cid in known_ids:
+            execute_query("""
+                INSERT INTO event_invitations (event_id, candidate_id, invited_by)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (event_id, candidate_id) DO NOTHING
+            """, (event_id, cid, me), fetch_all=False)
+    except Exception as e:
+        logger.error(f"invite failed for event {event_id}: {e}")
+        return jsonify({'success': False, 'message': 'The invitations could not be saved'}), 500
+
+    added = len(known_ids) - already
+    logger.info("event %s: %d invited by %s (%d already on the list, %d unknown)",
+                event_id, added, me, already, unknown)
+    return jsonify({'success': True, 'data': {
+        'invited': added, 'already_invited': already, 'unknown': unknown,
+    }}), 201
+
+
+@recruitment_events_bp.route('/<event_id>/invitations', methods=['GET'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def list_invitations(event_id):
+    """The call list, with each candidate's response and whether they turned up."""
+    try:
+        rows = execute_query("""
+            SELECT i.candidate_id, i.response, i.invited_at, i.responded_at, i.note,
+                   COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS full_name,
+                   u.phone,
+                   (a.id IS NOT NULL) AS attended,
+                   a.queue_token
+              FROM event_invitations i
+              JOIN users u ON u.id = i.candidate_id
+              LEFT JOIN event_attendance a
+                     ON a.event_id = i.event_id AND a.user_id = i.candidate_id
+             WHERE i.event_id = %s
+             ORDER BY i.invited_at DESC
+        """, (event_id,)) or []
+        return jsonify({'success': True, 'data': [{
+            'candidate_id': str(r['candidate_id']).strip(),
+            'full_name': r.get('full_name'),
+            'phone': r.get('phone'),
+            'response': r.get('response'),
+            'invited_at': _iso(r.get('invited_at')),
+            'responded_at': _iso(r.get('responded_at')),
+            'attended': bool(r.get('attended')),
+            'queue_token': r.get('queue_token'),
+            'note': r.get('note'),
+        } for r in rows], 'total': len(rows)})
+    except Exception as e:
+        logger.error(f"list invitations failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load the call list'}), 500
+
+
+@recruitment_events_bp.route('/<event_id>/invitations/<candidate_id>', methods=['PATCH'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def update_invitation(event_id, candidate_id):
+    """Record what the candidate said on the call."""
+    d = request.get_json(silent=True) or {}
+    response = (d.get('response') or '').strip()
+    if response not in INVITE_RESPONSES:
+        return jsonify({'success': False,
+                        'message': f'response must be one of: {", ".join(sorted(INVITE_RESPONSES))}'}), 400
+    row = execute_query("""
+        UPDATE event_invitations
+           SET response = %s,
+               responded_at = CASE WHEN %s = 'invited' THEN NULL ELSE now() END,
+               note = COALESCE(%s, note)
+         WHERE event_id = %s AND candidate_id = %s
+        RETURNING candidate_id, response
+    """, (response, response, d.get('note'), event_id, candidate_id), fetch_one=True)
+    if not row:
+        return jsonify({'success': False, 'message': 'That candidate is not on this call list'}), 404
+    return jsonify({'success': True, 'data': {'response': row['response']}})
+
+
+# ── Outcomes ───────────────────────────────────────────────────────────────
+
+OUTCOME_STAGES = {'interviewed', 'shortlisted', 'offered', 'placed', 'rejected'}
+
+
+@recruitment_events_bp.route('/<event_id>/outcomes', methods=['POST'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def record_outcome(event_id):
+    """What an employer decided about a candidate at this event.
+
+    Recorded by EHRDC staff from what the employer reports (owner decision), so
+    it needs no employer onboarding to be useful. The stage vocabulary is shared
+    with the pipeline request so the two do not diverge.
+    """
+    d = request.get_json(silent=True) or {}
+    candidate_id = (d.get('candidate_id') or '').strip()
+    company_id = (d.get('company_id') or '').strip()
+    stage = (d.get('stage') or '').strip()
+    if not candidate_id or not company_id:
+        return jsonify({'success': False, 'message': 'candidate_id and company_id are required'}), 400
+    if stage not in OUTCOME_STAGES:
+        return jsonify({'success': False,
+                        'message': f'stage must be one of: {", ".join(sorted(OUTCOME_STAGES))}'}), 400
+    try:
+        execute_query("""
+            INSERT INTO event_outcomes (event_id, candidate_id, company_id, stage, reason, recorded_by)
+            VALUES (%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (event_id, candidate_id, company_id)
+            DO UPDATE SET stage = EXCLUDED.stage, reason = EXCLUDED.reason,
+                          recorded_by = EXCLUDED.recorded_by, recorded_at = now()
+        """, (event_id, candidate_id, company_id, stage, d.get('reason'),
+              str(get_jwt_identity())), fetch_all=False)
+        return jsonify({'success': True}), 201
+    except Exception as e:
+        logger.error(f"record outcome failed: {e}")
+        return jsonify({'success': False, 'message': 'The outcome could not be saved'}), 500
+
+
+# ── The funnel ─────────────────────────────────────────────────────────────
+
+@recruitment_events_bp.route('/<event_id>/funnel', methods=['GET'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def event_funnel(event_id):
+    """Called → confirmed → attended → interviewed → offered → hired.
+
+    This is the number EHRDC gets asked for: "of the 400 we called for Al Barsha,
+    how many turned up and how many were hired?" Every stage is COUNTED from the
+    recorded rows, never estimated — a funnel with an invented step in it is
+    worse than no funnel, because it will be quoted.
+
+    Walk-ins are reported separately rather than folded into the invited count.
+    They did not come from a call, and mixing them would overstate how well the
+    calling worked.
+    """
+    ev = execute_query("SELECT id, title, starts_at FROM recruitment_events WHERE id = %s",
+                       (event_id,), fetch_one=True)
+    if not ev:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+    try:
+        inv = execute_query("""
+            SELECT response, COUNT(*) AS n FROM event_invitations
+             WHERE event_id = %s GROUP BY response
+        """, (event_id,)) or []
+        by_response = {r['response']: r['n'] for r in inv}
+        invited_total = sum(by_response.values())
+
+        att = execute_query("""
+            SELECT COUNT(*) AS total,
+                   COUNT(*) FILTER (WHERE i.id IS NOT NULL) AS invited_attended,
+                   COUNT(*) FILTER (WHERE i.id IS NULL)     AS walk_ins
+              FROM event_attendance a
+              LEFT JOIN event_invitations i
+                     ON i.event_id = a.event_id AND i.candidate_id = a.user_id
+             WHERE a.event_id = %s
+        """, (event_id,), fetch_one=True) or {}
+
+        out = execute_query("""
+            SELECT stage, COUNT(DISTINCT candidate_id) AS n
+              FROM event_outcomes WHERE event_id = %s GROUP BY stage
+        """, (event_id,)) or []
+        by_stage = {r['stage']: r['n'] for r in out}
+
+        confirmed = by_response.get('confirmed', 0)
+        attended_invited = att.get('invited_attended') or 0
+
+        return jsonify({'success': True, 'data': {
+            'event': {'id': str(ev['id']), 'title': ev['title'], 'starts_at': _iso(ev['starts_at'])},
+            'invited': {
+                'total': invited_total,
+                'confirmed': confirmed,
+                'declined': by_response.get('declined', 0),
+                'no_answer': by_response.get('no_answer', 0),
+                'awaiting_reply': by_response.get('invited', 0),
+            },
+            'attended': {
+                'total': att.get('total') or 0,
+                'from_invitations': attended_invited,
+                'walk_ins': att.get('walk_ins') or 0,
+            },
+            'outcomes': {s: by_stage.get(s, 0) for s in sorted(OUTCOME_STAGES)},
+            # Stated as a fraction with its denominator, not a bare percentage:
+            # "12 of 47 confirmed" cannot be quoted out of context the way "26%"
+            # can, and the denominators here are small enough to matter.
+            'rates': {
+                'confirmed_of_invited': f"{confirmed} of {invited_total}" if invited_total else None,
+                'attended_of_confirmed': f"{attended_invited} of {confirmed}" if confirmed else None,
+                'placed_of_attended': (f"{by_stage.get('placed', 0)} of {att.get('total') or 0}"
+                                       if (att.get('total') or 0) else None),
+            },
+        }})
+    except Exception as e:
+        logger.error(f"funnel failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to build the funnel'}), 500
