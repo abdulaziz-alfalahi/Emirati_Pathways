@@ -402,6 +402,40 @@ const LOCATION_OPTIONS = [
       ? prev.filter(id => !pageIds.includes(id))
       : [...new Set([...prev, ...pageIds])]);
 
+  /* Inviting to an open day is the same motion as any other bulk action here:
+     filter the roster, select, act (#376). The invitation is RECORDED here and
+     DELIVERED on the call the agent then makes — there is no message to send. */
+  const [openDayEvents, setOpenDayEvents] = useState<any[]>([]);
+  const [inviteEventId, setInviteEventId] = useState('');
+  useEffect(() => {
+    restClient.get('/api/events')
+      .then(r => setOpenDayEvents((r.data?.data || []).filter((e: any) => e.status === 'published')))
+      .catch(() => setOpenDayEvents([]));
+  }, []);
+
+  const inviteToEvent = async () => {
+    if (!inviteEventId || !selectedIds.length) return;
+    setBulkBusy(true);
+    try {
+      const res = await restClient.post(`/api/events/${inviteEventId}/invitations`,
+        { candidate_ids: selectedIds });
+      const d = res.data?.data || {};
+      toast({
+        title: t(`${d.invited} added to the call list`, `تمت إضافة ${d.invited} إلى قائمة الاتصال`),
+        // Report what did NOT change as well as what did — the same rule as the
+        // other bulk actions. Re-inviting is a no-op server-side, not an error.
+        description: (d.already_invited || d.unknown)
+          ? t(`${d.already_invited} were already on it, ${d.unknown} not found.`,
+              `${d.already_invited} موجودون بالفعل، ${d.unknown} غير موجودين.`)
+          : undefined,
+      });
+      setSelectedIds([]); setInviteEventId('');
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || t('Could not add them', 'تعذّرت الإضافة'),
+              variant: 'destructive' });
+    } finally { setBulkBusy(false); }
+  };
+
   const applyBulk = async () => {
     if (!selectedIds.length || (!bulkAssignee && !bulkCallStatus)) return;
     setBulkBusy(true);
@@ -1015,6 +1049,28 @@ const LOCATION_OPTIONS = [
                       <SelectItem value="Invalid Number">Invalid Number</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Only shown when there is a published event to invite to,
+                      so the control cannot offer an action that goes nowhere. */}
+                  {openDayEvents.length > 0 && (
+                    <>
+                      <div className="mx-1 h-5 w-px bg-teal-200" />
+                      <Select value={inviteEventId} onValueChange={setInviteEventId}>
+                        <SelectTrigger className="h-9 w-full sm:w-[200px] bg-white border-slate-200 rounded-lg text-sm">
+                          <SelectValue placeholder={t('Invite to open day…', 'دعوة إلى يوم مفتوح…')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {openDayEvents.map((e: any) => (
+                            <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" variant="outline" className="h-9"
+                              onClick={inviteToEvent} disabled={bulkBusy || !inviteEventId}>
+                        {t(`Invite ${selectedIds.length}`, `دعوة ${selectedIds.length}`)}
+                      </Button>
+                    </>
+                  )}
 
                   <Button size="sm" onClick={applyBulk}
                           disabled={bulkBusy || (!bulkAssignee && !bulkCallStatus)}
