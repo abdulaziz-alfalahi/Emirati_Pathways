@@ -149,6 +149,14 @@ export const navigationGroups: NavGroup[] = [
         description: 'Launch your startup with Dubai government programs and funding',
         icon: Lightbulb,
         featureFlagKey: 'page_startup_launchpad'
+      },
+      {
+        // Recruitment open days (#376). Signed-in users only, by design — the
+        // announcement on social media drives people to register first.
+        name: 'Recruitment Open Days',
+        href: '/events',
+        description: 'Meet employers in person and interview on the day',
+        icon: Calendar
       }
     ]
   },
@@ -253,6 +261,16 @@ export const operationsNavGroup: NavGroup = {
       description: 'Import, audit and onboard NAFIS job seekers',
       icon: Briefcase,
       allowedRoles: ['talent_operator', 'admin', 'platform_operator', 'growth_operator']
+    },
+    {
+      name: 'Open Day Management',
+      href: '/events/manage',
+      description: 'Create open days, add employers, print the venue QR and run the desk',
+      icon: Calendar,
+      // Kept in step with the route's own allowedRoles — routeAccess.ts is the
+      // authority and the nav now defers to it (#369), but declaring it here
+      // too keeps the two visibly aligned.
+      allowedRoles: ['career_services_operator', 'call_center_agent', 'admin', 'platform_operator']
     },
     {
       name: 'Career Services',
