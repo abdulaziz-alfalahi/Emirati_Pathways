@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import LocationPicker from '@/components/common/LocationPicker';
-import { CalendarDays, MapPin, Building2, Briefcase, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CalendarDays, MapPin, Building2, Briefcase, Loader2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
 
 /**
  * The recruitment open day calendar, for signed-in platform users.
@@ -40,32 +40,51 @@ export const EventsCalendarPage: React.FC = () => {
   const upcoming = (events || []).filter(e => !e.ends_at || new Date(e.ends_at) >= new Date());
   const past = (events || []).filter(e => e.ends_at && new Date(e.ends_at) < new Date());
 
-  const card = (e: any) => (
-    <Card key={e.id} className="cursor-pointer border-slate-200 transition-shadow hover:shadow-md"
-          onClick={() => navigate(`/events/${e.id}`)}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-slate-900">{isRTL && e.title_ar ? e.title_ar : e.title}</h3>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
-              <CalendarDays className="h-3.5 w-3.5" /> {fmtDate(e.starts_at, isRTL)}
-            </p>
-            {(e.venue || e.venue_ar) && (
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
-                <MapPin className="h-3.5 w-3.5" /> {isRTL && e.venue_ar ? e.venue_ar : e.venue}
+  /* A cancelled event stays listed rather than disappearing — people were
+     phoned and invited, and a silent vanishing sends them to the mall anyway.
+     That only helps if the card says so loudly, so the title is struck through,
+     the reason is carried on the card itself, and the employer count (a reason
+     to attend) gives way to the cancellation. */
+  const card = (e: any) => {
+    const cancelled = e.status === 'cancelled';
+    return (
+      <Card key={e.id}
+            className={`cursor-pointer transition-shadow hover:shadow-md ${
+              cancelled ? 'border-red-200 bg-red-50/40' : 'border-slate-200'}`}
+            onClick={() => navigate(`/events/${e.id}`)}>
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className={`font-semibold ${cancelled ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                {isRTL && e.title_ar ? e.title_ar : e.title}
+              </h3>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+                <CalendarDays className="h-3.5 w-3.5" /> {fmtDate(e.starts_at, isRTL)}
               </p>
-            )}
+              {(e.venue || e.venue_ar) && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-600">
+                  <MapPin className="h-3.5 w-3.5" /> {isRTL && e.venue_ar ? e.venue_ar : e.venue}
+                </p>
+              )}
+              {cancelled && e.cancellation_reason && (
+                <p className="mt-2 text-sm text-red-800">{e.cancellation_reason}</p>
+              )}
+            </div>
+            {cancelled ? (
+              <Badge className="shrink-0 border-red-200 bg-red-100 text-red-800">
+                {b('Cancelled', 'ملغاة')}
+              </Badge>
+            ) : e.employer_count > 0 ? (
+              <Badge className="shrink-0 border-teal-200 bg-teal-50 text-teal-800">
+                {b(`${e.employer_count} employer${e.employer_count === 1 ? '' : 's'}`,
+                   `${e.employer_count} جهة توظيف`)}
+              </Badge>
+            ) : null}
           </div>
-          {e.employer_count > 0 && (
-            <Badge className="shrink-0 border-teal-200 bg-teal-50 text-teal-800">
-              {b(`${e.employer_count} employer${e.employer_count === 1 ? '' : 's'}`,
-                 `${e.employer_count} جهة توظيف`)}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <>
@@ -153,7 +172,29 @@ export const EventDetailPage: React.FC = () => {
           {b('All events', 'كل الفعاليات')}
         </Button>
 
-        <h1 className="text-2xl font-bold text-slate-900">{isRTL && ev.title_ar ? ev.title_ar : ev.title}</h1>
+        <h1 className={`text-2xl font-bold ${ev.status === 'cancelled' ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+          {isRTL && ev.title_ar ? ev.title_ar : ev.title}
+        </h1>
+
+        {/* Placed above everything else: someone opening this page on the day
+            needs the cancellation before the venue and the directions, not
+            after them. */}
+        {ev.status === 'cancelled' && (
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="flex items-center gap-2 font-semibold text-red-900">
+              <AlertTriangle className="h-4 w-4" />
+              {b('This open day has been cancelled', 'تم إلغاء هذا اليوم المفتوح')}
+            </p>
+            {ev.cancellation_reason && (
+              <p className="mt-1.5 text-sm text-red-800">{ev.cancellation_reason}</p>
+            )}
+            <p className="mt-2 text-xs text-red-700">
+              {b('Please do not travel to the venue. Other open days appear on the events page.',
+                 'يرجى عدم التوجه إلى المكان. تظهر الأيام المفتوحة الأخرى في صفحة الفعاليات.')}
+            </p>
+          </div>
+        )}
+
         <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-700">
           <CalendarDays className="h-4 w-4" /> {fmtDate(ev.starts_at, isRTL)}
         </p>
@@ -169,8 +210,10 @@ export const EventDetailPage: React.FC = () => {
         )}
 
         {/* Read-only map, plus a hand-off to a real maps app — this page is read
-            on the way to the venue, and nobody navigates from a static image. */}
-        {ev.venue_lat != null && ev.venue_lng != null && (
+            on the way to the venue, and nobody navigates from a static image.
+            Withheld once cancelled: "Get directions" is an invitation to travel
+            somewhere there is no longer anything to attend. */}
+        {ev.status !== 'cancelled' && ev.venue_lat != null && ev.venue_lng != null && (
           <div className="mt-5">
             <LocationPicker lat={ev.venue_lat} lng={ev.venue_lng} readOnly
                             onLocationSelect={() => {}}
@@ -231,10 +274,12 @@ export const EventDetailPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <p className="mt-6 text-xs leading-relaxed text-slate-500">
-          {b('On the day, scan the QR code at the venue to register your attendance and receive your queue number.',
-             'في يوم الفعالية، امسح رمز الاستجابة السريعة في المكان لتسجيل حضورك والحصول على رقمك في الطابور.')}
-        </p>
+        {ev.status !== 'cancelled' && (
+          <p className="mt-6 text-xs leading-relaxed text-slate-500">
+            {b('On the day, scan the QR code at the venue to register your attendance and receive your queue number.',
+               'في يوم الفعالية، امسح رمز الاستجابة السريعة في المكان لتسجيل حضورك والحصول على رقمك في الطابور.')}
+          </p>
+        )}
       </div>
     </>
   );

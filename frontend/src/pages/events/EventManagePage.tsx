@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import LocationPicker from '@/components/common/LocationPicker';
-import { CalendarDays, QrCode, Users, Plus, Loader2, RefreshCw, Download } from 'lucide-react';
+import { CalendarDays, QrCode, Users, Plus, Loader2, RefreshCw, Download, Pencil, Ban } from 'lucide-react';
 
 /**
  * The CRM team's side of a recruitment open day: create it, add the employers,
@@ -30,7 +30,12 @@ const EventManagePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  /* null = the form is creating; an id = it is editing that event. One form for
+     both, so an edit cannot drift from what creation accepts. */
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<any>({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '', venue_lat: null, venue_lng: null });
+  const [cancelTarget, setCancelTarget] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const [selected, setSelected] = useState<any | null>(null);
   const [queue, setQueue] = useState<any[]>([]);
@@ -124,20 +129,99 @@ const EventManagePage: React.FC = () => {
       .finally(() => setQueueLoading(false));
   };
 
-  const create = async () => {
+  const blankForm = { title: '', title_ar: '', venue: '', starts_at: '', ends_at: '',
+                      description: '', venue_lat: null, venue_lng: null };
+
+  /* <input type="datetime-local"> wants YYYY-MM-DDTHH:mm in LOCAL time, and the
+     API returns an ISO string with an offset. Slicing the ISO would silently
+     shift a 12:30 event to 08:30 whenever the two disagree, so go through Date
+     and read the local parts back out. */
+  const toLocalInput = (iso?: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
+  const startEdit = (ev: any) => {
+    setEditingId(ev.id);
+    setForm({
+      title: ev.title || '', title_ar: ev.title_ar || '', venue: ev.venue || '',
+      starts_at: toLocalInput(ev.starts_at), ends_at: toLocalInput(ev.ends_at),
+      description: ev.description || '',
+      venue_lat: ev.venue_lat ?? null, venue_lng: ev.venue_lng ?? null,
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const startCreate = () => {
+    setEditingId(null);
+    setForm(blankForm);
+    setShowForm(v => !v);
+  };
+
+  const save = async () => {
     if (!form.title.trim() || !form.starts_at) {
       toast({ title: b('A title and start time are required', 'العنوان ووقت البدء مطلوبان'), variant: 'destructive' });
       return;
     }
     setSaving(true);
     try {
-      await restClient.post('/api/events', form);
-      toast({ title: b('Event created as a draft', 'تم إنشاء الفعالية كمسودة') });
+      if (editingId) {
+        const res = await restClient.put(`/api/events/${editingId}`, form);
+        toast({ title: b('Event updated', 'تم تحديث الفعالية') });
+        // Keep the open detail panel in step, including anything the server
+        // normalised — otherwise the panel shows the pre-edit event.
+        if (selected?.id === editingId) {
+          setSelected({ ...selected, ...(res.data?.data || {}) });
+        }
+      } else {
+        await restClient.post('/api/events', form);
+        toast({ title: b('Event created as a draft', 'تم إنشاء الفعالية كمسودة') });
+      }
       setShowForm(false);
-      setForm({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '', venue_lat: null, venue_lng: null });
+      setEditingId(null);
+      setForm(blankForm);
       load();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.message || b('Could not create the event', 'تعذّر إنشاء الفعالية'),
+      toast({ title: e?.response?.data?.message
+                || (editingId ? b('Could not update the event', 'تعذّر تحديث الفعالية')
+                              : b('Could not create the event', 'تعذّر إنشاء الفعالية')),
+              variant: 'destructive' });
+    } finally { setSaving(false); }
+  };
+
+  /* Cancelling is not just a status flip: candidates were phoned and asked to
+     attend, so the reason is required and is shown to them on the calendar. */
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    const reason = cancelReason.trim();
+    if (!reason) {
+      toast({ title: b('Give a reason — invited candidates will see it',
+                       'اذكر السبب — سيظهر للمرشحين المدعوين'), variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await restClient.put(`/api/events/${cancelTarget.id}`,
+                                       { status: 'cancelled', cancellation_reason: reason });
+      const n = res.data?.data?.notified ?? 0;
+      toast({
+        title: b('Event cancelled', 'تم إلغاء الفعالية'),
+        description: n > 0
+          ? b(`${n} ${n === 1 ? 'person was' : 'people were'} notified — invited candidates and participating employers.`,
+              `تم إشعار ${n} من المدعوين وجهات التوظيف المشاركة.`)
+          // Say so plainly rather than implying an announcement went out.
+          : b('Nobody had been invited yet, so no notifications were sent.',
+              'لم تتم دعوة أحد بعد، لذلك لم تُرسل إشعارات.'),
+      });
+      setCancelTarget(null); setCancelReason('');
+      if (selected?.id === cancelTarget.id) setSelected({ ...selected, ...(res.data?.data || {}) });
+      load();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not cancel', 'تعذّر الإلغاء'),
               variant: 'destructive' });
     } finally { setSaving(false); }
   };
@@ -240,13 +324,24 @@ const EventManagePage: React.FC = () => {
                  'أنشئ فعالية، أضف جهات التوظيف المشاركة، اطبع رمز المكان، وأدر مكتب التسجيل في يوم الفعالية.')}
             </p>
           </div>
-          <Button className="gap-2" onClick={() => setShowForm(v => !v)}>
+          <Button className="gap-2" onClick={startCreate}>
             <Plus className="h-4 w-4" /> {b('New event', 'فعالية جديدة')}
           </Button>
         </div>
 
         {showForm && (
           <Card className="mt-5 border-slate-200">
+            {editingId && (
+              <CardHeader className="pb-0">
+                <CardTitle className="text-base">
+                  {b('Editing this event', 'تعديل هذه الفعالية')}
+                </CardTitle>
+                <p className="text-xs text-slate-500">
+                  {b('Changes are visible to candidates as soon as you save.',
+                     'تظهر التغييرات للمرشحين فور الحفظ.')}
+                </p>
+              </CardHeader>
+            )}
             <CardContent className="grid gap-4 p-5 md:grid-cols-2">
               <div>
                 <Label>{b('Title', 'العنوان')}</Label>
@@ -297,11 +392,14 @@ const EventManagePage: React.FC = () => {
                 </p>
               </div>
               <div className="md:col-span-2 flex gap-2">
-                <Button onClick={create} disabled={saving} className="gap-2">
+                <Button onClick={save} disabled={saving} className="gap-2">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {b('Create as draft', 'إنشاء كمسودة')}
+                  {editingId ? b('Save changes', 'حفظ التغييرات') : b('Create as draft', 'إنشاء كمسودة')}
                 </Button>
-                <Button variant="ghost" onClick={() => setShowForm(false)}>{b('Cancel', 'إلغاء')}</Button>
+                <Button variant="ghost"
+                        onClick={() => { setShowForm(false); setEditingId(null); setForm(blankForm); }}>
+                  {b('Discard', 'تجاهل')}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -355,6 +453,23 @@ const EventManagePage: React.FC = () => {
                   <CardTitle className="text-base">{selected.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* A cancelled event stays on the candidates' calendar rather
+                      than vanishing, so the organiser needs to see exactly what
+                      those candidates are being told. */}
+                  {selected.status === 'cancelled' && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                      <p className="text-sm font-semibold text-red-900">
+                        {b('This event is cancelled', 'هذه الفعالية ملغاة')}
+                      </p>
+                      <p className="mt-1 text-xs text-red-800">
+                        {selected.cancellation_reason
+                          ? b(`Candidates see: "${selected.cancellation_reason}"`,
+                              `يرى المرشحون: "${selected.cancellation_reason}"`)
+                          : b('No reason was recorded.', 'لم يتم تسجيل سبب.')}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2">
                     {selected.status === 'draft' && (
                       <Button size="sm" onClick={() => setStatus(selected, 'published')}>
@@ -366,11 +481,63 @@ const EventManagePage: React.FC = () => {
                         {b('Mark completed', 'وضع علامة مكتملة')}
                       </Button>
                     )}
+                    {/* Editing stays available after publishing: venues move and
+                        times shift, and without it the only way to correct an
+                        announced event is to cancel and re-create it — stranding
+                        its invitations, employers and attendance. */}
+                    {selected.status !== 'cancelled' && (
+                      <Button size="sm" variant="outline" className="gap-2"
+                              onClick={() => startEdit(selected)}>
+                        <Pencil className="h-3.5 w-3.5" /> {b('Edit details', 'تعديل التفاصيل')}
+                      </Button>
+                    )}
+                    {selected.status === 'cancelled' && (
+                      <Button size="sm" variant="outline"
+                              onClick={() => setStatus(selected, 'published')}>
+                        {b('Reinstate and publish', 'إعادة النشر')}
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" className="gap-2" onClick={() => downloadQr(selected)}>
                       <QrCode className="h-4 w-4" /> {b('Venue QR', 'رمز المكان')}
                       <Download className="h-3.5 w-3.5" />
                     </Button>
+                    {(selected.status === 'draft' || selected.status === 'published') && (
+                      <Button size="sm" variant="outline"
+                              className="gap-2 border-red-200 text-red-700 hover:bg-red-50"
+                              onClick={() => { setCancelTarget(selected); setCancelReason(''); }}>
+                        <Ban className="h-3.5 w-3.5" /> {b('Cancel event', 'إلغاء الفعالية')}
+                      </Button>
+                    )}
                   </div>
+
+                  {cancelTarget?.id === selected.id && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm font-semibold text-red-900">
+                        {b('Cancel this event?', 'إلغاء هذه الفعالية؟')}
+                      </p>
+                      <p className="mt-1 text-xs text-red-800">
+                        {b('It stays on the calendar marked as cancelled, so candidates who were invited find out rather than travelling to the venue. Everyone invited, anyone already checked in, and the participating employers are notified.',
+                           'ستبقى في التقويم مع بيان الإلغاء، ليعلم المرشحون المدعوون بدلاً من التوجه إلى المكان. سيتم إشعار جميع المدعوين ومن سجّل حضوره وجهات التوظيف المشاركة.')}
+                      </p>
+                      <Label className="mt-3 block text-xs text-red-900">
+                        {b('Reason (shown to candidates)', 'السبب (يظهر للمرشحين)')}
+                      </Label>
+                      <Input value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+                             placeholder={b('e.g. The venue is unavailable — a new date will be announced',
+                                            'مثال: المكان غير متاح — سيُعلن عن موعد جديد')}
+                             className="mt-1 h-9 bg-white text-sm" />
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" variant="destructive" disabled={saving} onClick={confirmCancel}>
+                          {saving && <Loader2 className="me-2 h-3.5 w-3.5 animate-spin" />}
+                          {b('Cancel the event', 'تأكيد الإلغاء')}
+                        </Button>
+                        <Button size="sm" variant="ghost"
+                                onClick={() => { setCancelTarget(null); setCancelReason(''); }}>
+                          {b('Keep it', 'الإبقاء عليها')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <Label className="text-xs">{b('Add an employer', 'إضافة جهة توظيف')}</Label>
