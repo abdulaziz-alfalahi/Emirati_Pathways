@@ -382,6 +382,56 @@ const LOCATION_OPTIONS = [
     candidates_source: ['Source', 'المصدر'],
     assigned_to: ['Assigned To', 'مُسند إلى'],
   };
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAssignee, setBulkAssignee] = useState('');
+  const [bulkCallStatus, setBulkCallStatus] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  /* The row's identity is `id` (the user's Emirates ID). NOT `eid`, which the
+     row mapper sets to the literal '-' whenever national_id is absent — using it
+     collapsed every such candidate onto one selection key (17 selected from 20
+     visible rows) and would have posted '-' to the bulk endpoint as a user_id. */
+  const pageIds = paginatedCandidates.map((c: any) => String(c.id));
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+  const toggleOne = (id: string) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  /* Selects THIS PAGE only, and says so. "Select all" across 5,311 records
+     would let one click change a set the operator has never seen. */
+  const togglePage = () =>
+    setSelectedIds(prev => allOnPageSelected
+      ? prev.filter(id => !pageIds.includes(id))
+      : [...new Set([...prev, ...pageIds])]);
+
+  const applyBulk = async () => {
+    if (!selectedIds.length || (!bulkAssignee && !bulkCallStatus)) return;
+    setBulkBusy(true);
+    try {
+      const body: any = { user_ids: selectedIds };
+      if (bulkCallStatus) body.call_status = bulkCallStatus;
+      if (bulkAssignee) body.assigned_to = bulkAssignee === '__unassign__' ? '' : bulkAssignee;
+      const res = await restClient.post('/api/profile/crm-candidates/bulk', body);
+      const d = res.data?.data || {};
+      toast({
+        title: t(`${d.updated} candidate${d.updated === 1 ? '' : 's'} updated`,
+                 `تم تحديث ${d.updated} مرشح`),
+        // Report what did NOT change too — an operator who selected 50 and
+        // changed 30 must be told, not left to assume.
+        description: (d.skipped || d.not_found)
+          ? t(`${d.skipped} not on your caseload, ${d.not_found} not found.`,
+              `${d.skipped} خارج قائمتك، ${d.not_found} غير موجود.`)
+          : undefined,
+      });
+      setSelectedIds([]); setBulkAssignee(''); setBulkCallStatus('');
+      fetchCandidates();
+    } catch (e: any) {
+      toast({
+        title: e?.response?.data?.message || t('The bulk update failed', 'تعذّر التحديث الجماعي'),
+        description: t('Nothing was changed.', 'لم يتم تغيير أي شيء.'),
+        variant: 'destructive',
+      });
+    } finally { setBulkBusy(false); }
+  };
+
   const [exporting, setExporting] = useState(false);
   /* Downloads exactly what the operator is looking at: the same filters, sent to
      an endpoint that shares the list's query builder. Streamed through the API
@@ -924,6 +974,56 @@ const LOCATION_OPTIONS = [
           </div>
 
           <CardContent className="p-0">
+              {/* Bulk action bar (#364). Appears only with a selection, and states
+                  exactly how many records the next click will change — a bulk
+                  action whose blast radius is not on screen is how 100 people get
+                  reassigned by accident. */}
+              {selectedIds.length > 0 && (
+                <div className="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-ehrdc-teal/30 bg-teal-50/90 px-4 py-3 backdrop-blur">
+                  <span className="text-sm font-semibold text-slate-800">
+                    {t(`${selectedIds.length} selected`, `${selectedIds.length} محدد`)}
+                  </span>
+                  <button type="button" onClick={() => setSelectedIds([])}
+                          className="text-xs text-slate-600 underline hover:text-slate-800">
+                    {t('Clear', 'إلغاء التحديد')}
+                  </button>
+
+                  <div className="mx-2 h-5 w-px bg-teal-200" />
+
+                  <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
+                    <SelectTrigger className="h-9 w-full sm:w-[210px] bg-white border-slate-200 rounded-lg text-sm">
+                      <SelectValue placeholder={t('Assign to…', 'إسناد إلى…')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__unassign__">{t('Unassign', 'إلغاء الإسناد')}</SelectItem>
+                      {operators.map((o: any) => (
+                        <SelectItem key={o.id} value={String(o.id)}>
+                          {o.full_name || o.name || o.email || o.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={bulkCallStatus} onValueChange={setBulkCallStatus}>
+                    <SelectTrigger className="h-9 w-full sm:w-[180px] bg-white border-slate-200 rounded-lg text-sm">
+                      <SelectValue placeholder={t('Set call status…', 'تعيين حالة الاتصال…')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Answered">Answered</SelectItem>
+                      <SelectItem value="No Answer">No Answer</SelectItem>
+                      <SelectItem value="Invalid Number">Invalid Number</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button size="sm" onClick={applyBulk}
+                          disabled={bulkBusy || (!bulkAssignee && !bulkCallStatus)}
+                          className="h-9 gap-2">
+                    {bulkBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {t(`Apply to ${selectedIds.length}`, `تطبيق على ${selectedIds.length}`)}
+                  </Button>
+                </div>
+              )}
             {loading ? (
               <div className="flex flex-col justify-center items-center py-20 bg-white">
                 <Loader2 className="h-10 w-10 animate-spin text-[#006E6D] mb-4" />
@@ -938,10 +1038,16 @@ const LOCATION_OPTIONS = [
                 <p className="text-slate-500">{t('Try adjusting your search or filters.', 'حاول تعديل خيارات البحث أو التصفية.')}</p>
               </div>
             ) : (
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-start whitespace-nowrap">
                   <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-100">
                     <tr>
+                      <th className="px-3 py-4 w-10">
+                        <input type="checkbox" checked={allOnPageSelected} onChange={togglePage}
+                               className="h-4 w-4 rounded border-slate-300"
+                               aria-label={t('Select all on this page', 'تحديد كل ما في هذه الصفحة')} />
+                      </th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Candidate', 'المرشح')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Phone', 'الهاتف')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Type', 'النوع')}</th>
@@ -954,6 +1060,13 @@ const LOCATION_OPTIONS = [
                   <tbody>
                     {paginatedCandidates.map((candidate) => (
                       <tr key={candidate.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors group">
+                        <td className="px-3 py-4">
+                          <input type="checkbox"
+                                 checked={selectedIds.includes(String(candidate.id))}
+                                 onChange={() => toggleOne(String(candidate.id))}
+                                 className="h-4 w-4 rounded border-slate-300"
+                                 aria-label={t('Select candidate', 'تحديد المرشح')} />
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
