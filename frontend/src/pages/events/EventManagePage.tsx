@@ -48,8 +48,12 @@ const EventManagePage: React.FC = () => {
   useEffect(load, []);
 
   useEffect(() => {
-    restClient.get('/api/companies?limit=200')
-      .then(r => setCompanies(r.data?.data || r.data?.companies || []))
+    /* /api/growth/companies, NOT /api/companies — the latter does not exist and
+       404s, which would leave this dropdown silently empty and make it look as
+       though no companies are registered. (Same mistake as the map page's
+       /api/jobs/map-data, fixed in #363.) */
+    restClient.get('/api/growth/companies?limit=500')
+      .then(r => setCompanies(r.data?.companies || r.data?.data || []))
       .catch(() => setCompanies([]));
   }, []);
 
@@ -292,9 +296,15 @@ const EventManagePage: React.FC = () => {
                           <SelectValue placeholder={b('Select a company', 'اختر شركة')} />
                         </SelectTrigger>
                         <SelectContent>
+                          {companies.length === 0 && (
+                            <div className="px-2 py-3 text-xs text-slate-500">
+                              {b('No companies could be loaded.', 'تعذّر تحميل الشركات.')}
+                            </div>
+                          )}
                           {companies.map((c: any) => (
                             <SelectItem key={c.id} value={String(c.id)}>
                               {c.company_name || c.name || c.id}
+                              {c.is_verified === false && ' · unverified'}
                             </SelectItem>
                           ))}
                         </SelectContent>
