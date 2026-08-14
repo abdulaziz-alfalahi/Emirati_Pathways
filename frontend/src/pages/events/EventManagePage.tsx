@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import LocationPicker from '@/components/common/LocationPicker';
 import { CalendarDays, QrCode, Users, Plus, Loader2, RefreshCw, Download } from 'lucide-react';
 
 /**
@@ -29,7 +30,7 @@ const EventManagePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '' });
+  const [form, setForm] = useState<any>({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '', venue_lat: null, venue_lng: null });
 
   const [selected, setSelected] = useState<any | null>(null);
   const [queue, setQueue] = useState<any[]>([]);
@@ -128,7 +129,7 @@ const EventManagePage: React.FC = () => {
       await restClient.post('/api/events', form);
       toast({ title: b('Event created as a draft', 'تم إنشاء الفعالية كمسودة') });
       setShowForm(false);
-      setForm({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '' });
+      setForm({ title: '', title_ar: '', venue: '', starts_at: '', ends_at: '', description: '', venue_lat: null, venue_lng: null });
       load();
     } catch (e: any) {
       toast({ title: e?.response?.data?.message || b('Could not create the event', 'تعذّر إنشاء الفعالية'),
@@ -258,6 +259,24 @@ const EventManagePage: React.FC = () => {
                 <Label>{b('Description', 'الوصف')}</Label>
                 <Textarea rows={2} value={form.description}
                           onChange={e => setForm({ ...form, description: e.target.value })} />
+              </div>
+              {/* The venue keeps its NAME (above) and gains a PIN. A mall name
+                  alone does not get an attendee to the right entrance, and the
+                  whole point of the event is that people turn up. Reuses the
+                  picker the JD wizard already writes job locations with. */}
+              <div className="md:col-span-2">
+                <Label>{b('Pin the venue on the map', 'حدد موقع المكان على الخريطة')}</Label>
+                <LocationPicker
+                  lat={form.venue_lat ?? undefined}
+                  lng={form.venue_lng ?? undefined}
+                  onLocationSelect={(lat, lng) => setForm({ ...form, venue_lat: lat, venue_lng: lng })}
+                  label={b('Click the map to place the entrance', 'انقر على الخريطة لتحديد المدخل')}
+                  height="240px"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  {b('Optional, but attendees are far more likely to find a pinned entrance than a mall name.',
+                     'اختياري، لكن العثور على مدخل محدد على الخريطة أسهل بكثير من اسم المركز فقط.')}
+                </p>
               </div>
               <div className="md:col-span-2 flex gap-2">
                 <Button onClick={create} disabled={saving} className="gap-2">
