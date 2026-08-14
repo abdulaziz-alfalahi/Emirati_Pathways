@@ -31,6 +31,11 @@ interface Minute {
   sha256: string;
   version: number;
   status: 'draft' | 'approved' | 'superseded';
+  // Decided server-side per version — see the Remove button below.
+  can_delete?: boolean;
+  delete_blocked_reason?: string | null;
+  // When the Secretariat's one-hour window closes, if one is running.
+  delete_window_expires_at?: string | null;
   uploaded_at: string | null;
   approved_at: string | null;
 }
@@ -45,7 +50,10 @@ const BoardMinutesPanel: React.FC<{ meetingId: string; compact?: boolean }> = ({
   const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
     .filter(Boolean).map((r: string) => String(r).toLowerCase());
   const canUpload = roles.some((r) => ORGANISER_ROLES.includes(r));
-  const canDelete = roles.some((r) => ADMIN_ROLES.includes(r));
+  // No canDelete here on purpose: removability is per version and time-boxed
+  // (#391), so the server decides it and sends can_delete on each row. A local
+  // role check would be a second copy of the rule, free to drift from the one
+  // the endpoint enforces. ADMIN_ROLES is still used to build ORGANISER_ROLES.
 
   const [items, setItems] = useState<Minute[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -175,6 +183,18 @@ const BoardMinutesPanel: React.FC<{ meetingId: string; compact?: boolean }> = ({
     } finally { setBusyId(null); }
   };
 
+  /* A time-boxed permission that says nothing about its deadline is a trap: the
+     button is there, then one refresh later it is gone with no explanation. Say
+     how long is left while the window is open. */
+  const removeTitle = (m: Minute) => {
+    if (!m.delete_window_expires_at) return b('Remove', 'إزالة');
+    const msLeft = new Date(m.delete_window_expires_at).getTime() - Date.now();
+    if (msLeft <= 0) return b('Remove', 'إزالة');
+    const mins = Math.max(1, Math.round(msLeft / 60000));
+    return b(`Remove — approved minutes can be removed for another ${mins} min, then an Administrator is needed`,
+             `إزالة — يمكن إزالة المحضر المعتمد خلال ${mins} دقيقة، بعدها يلزم المسؤول`);
+  };
+
   const statusChip = (s: Minute['status']) => {
     const map = {
       approved:   ['bg-green-50 text-green-800 border-green-200', b('Approved', 'معتمد')],
@@ -249,12 +269,26 @@ const BoardMinutesPanel: React.FC<{ meetingId: string; compact?: boolean }> = ({
                   <Check className="h-3.5 w-3.5" />
                 </Button>
               )}
-              {canDelete && (
+              {/* Removability comes from the SERVER, per version (#391), not
+                  from the caller's role alone. The Secretariat may remove a
+                  draft, or an approved version within an hour of approving it;
+                  after that it is an Administrator's call. Deciding here from
+                  role + status would duplicate that rule in a second place and
+                  let the button disagree with the endpoint. */}
+              {m.can_delete && (
                 <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600"
-                        title={b('Delete (Administrator only)', 'حذف (للمسؤول فقط)')}
+                        title={removeTitle(m)}
                         disabled={busyId === m.id} onClick={() => remove(m)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
+              )}
+              {/* When it cannot be removed, say who can — an absent button with
+                  no explanation is what prompted the report in the first place. */}
+              {!m.can_delete && canUpload && m.delete_blocked_reason && (
+                <span className="shrink-0 text-[10px] text-gray-400 max-w-[8.5rem] leading-tight"
+                      title={m.delete_blocked_reason}>
+                  {b('Administrator only', 'للمسؤول فقط')}
+                </span>
               )}
             </div>
           ))}

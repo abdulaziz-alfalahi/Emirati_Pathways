@@ -1043,16 +1043,37 @@ def list_minutes(meeting_id):
                 WHERE meeting_id = %s AND deleted_at IS NULL
                 ORDER BY version DESC""",
             (meeting_id,)) or []
-        return jsonify({'success': True, 'data': [{
-            'id': str(r['id']),
-            'filename': r['filename'],
-            'size_bytes': r['size_bytes'],
-            'sha256': r['sha256'],
-            'version': r['version'],
-            'status': r['status'],
-            'uploaded_at': r['uploaded_at'].isoformat() if r.get('uploaded_at') else None,
-            'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None,
-        } for r in rows]})
+
+        # Decide removability HERE rather than letting the UI infer it from
+        # status and a client clock (#391). The same helper the DELETE handler
+        # uses, so the button and the endpoint cannot disagree — a Remove button
+        # that 403s is worse than no button at all.
+        roles = resolve_roles()
+        out = []
+        for r in rows:
+            can_delete, why_not = _may_delete_minutes(r, roles)
+            expires = None
+            if (r.get('status') == 'approved' and r.get('approved_at')
+                    and not (roles & ADMIN_ROLES) and can_delete):
+                expires = (r['approved_at'] + MINUTES_SELF_DELETE_GRACE).isoformat()
+            out.append({
+                'id': str(r['id']),
+                'filename': r['filename'],
+                'size_bytes': r['size_bytes'],
+                'sha256': r['sha256'],
+                'version': r['version'],
+                'status': r['status'],
+                'uploaded_at': r['uploaded_at'].isoformat() if r.get('uploaded_at') else None,
+                'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None,
+                'can_delete': can_delete,
+                # Why not, in a sentence naming who can — shown as a tooltip
+                # rather than leaving the absence of a button unexplained.
+                'delete_blocked_reason': why_not,
+                # When the self-service window closes, so the UI can say
+                # "removable for another 42 minutes" instead of implying forever.
+                'delete_window_expires_at': expires,
+            })
+        return jsonify({'success': True, 'data': out})
     except Exception as e:
         logger.error(f"list minutes failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to load minutes'}), 500
@@ -1208,29 +1229,86 @@ def approve_minutes(minute_id):
     return jsonify({'success': True})
 
 
-@board_meetings_bp.route('/minutes/<minute_id>', methods=['DELETE'])
-@require_roles(*ADMIN_ROLES)
-def delete_minutes(minute_id):
-    """SOFT delete. Administrator only (owner decision).
+# How long after approval the Secretariat may still remove minutes themselves
+# (#391, owner ruling 2026-08-14). Long enough to undo a mistake noticed shortly
+# after approving; short enough that a settled governance record cannot be
+# removed by the person who filed it.
+MINUTES_SELF_DELETE_GRACE = timedelta(hours=1)
 
-    The row is retained as a tombstone recording who removed it and when —
-    "retained indefinitely" and a hard delete that erases the evidence cannot
-    both be true. The object is left in the bucket, so a mistaken deletion is
-    recoverable without going to backup. A true purge is deliberately not
-    implemented.
+
+def _may_delete_minutes(row, roles):
+    """Who may remove this version, and why not.
+
+    Returns (allowed: bool, reason: str|None). Administrators may always remove.
+    The Secretariat may remove a draft, or an approved version within the grace
+    window — computed here from approved_at, NEVER from a clock the caller
+    controls.
+
+    A superseded version stays Administrator-only whatever its age: it is a link
+    in the version chain that a later correction points back to, so removing it
+    is an edit to the audit trail rather than a tidy-up.
+    """
+    if roles & ADMIN_ROLES:
+        return True, None
+    if not (roles & ORGANISER_ROLES):
+        return False, 'Only the Board Secretariat can remove minutes'
+
+    status = row.get('status')
+    if status == 'draft':
+        return True, None
+    if status == 'superseded':
+        return False, ('This version has been superseded and is part of the '
+                       'record. An Administrator can remove it.')
+    if status == 'approved':
+        approved_at = row.get('approved_at')
+        if not approved_at:
+            # Approved with no timestamp should not happen; treat the window as
+            # closed rather than open — the safe direction for a record that is
+            # already approved.
+            return False, ('This has been approved. An Administrator can '
+                           'remove it.')
+        if datetime.now(approved_at.tzinfo) - approved_at <= MINUTES_SELF_DELETE_GRACE:
+            return True, None
+        return False, ('These minutes were approved more than an hour ago. '
+                       'An Administrator can remove them.')
+    return False, 'These minutes cannot be removed'
+
+
+@board_meetings_bp.route('/minutes/<minute_id>', methods=['DELETE'])
+@require_roles(*ORGANISER_ROLES)
+def delete_minutes(minute_id):
+    """SOFT delete, with a one-hour self-service window (#391).
+
+    Administrators may always remove. The Secretariat may remove a draft, or an
+    approved version within an hour of approval — the case the Board Secretary
+    reported, having approved a file and then needing it gone.
+
+    Deletion stays SOFT in every case. The row is retained as a tombstone
+    recording who removed it and when — "retained indefinitely" and a hard
+    delete that erases the evidence cannot both be true. The object is left in
+    the bucket, so a mistaken deletion is recoverable without going to backup. A
+    true purge is deliberately not implemented.
     """
     user_id = str(get_jwt_identity())
     reason = ((request.get_json(silent=True) or {}).get('reason') or '').strip()[:2000]
-    row = execute_query("SELECT id, deleted_at FROM board_minutes WHERE id = %s",
-                        (minute_id,), fetch_one=True)
+    row = execute_query(
+        "SELECT id, deleted_at, status, approved_at FROM board_minutes WHERE id = %s",
+        (minute_id,), fetch_one=True)
     if not row:
         return jsonify({'success': False, 'message': 'Not found'}), 404
     if row.get('deleted_at'):
         return jsonify({'success': True, 'already_deleted': True})
+
+    roles = resolve_roles()
+    allowed, why_not = _may_delete_minutes(row, roles)
+    if not allowed:
+        # Say who CAN do it, not just that this caller cannot.
+        return jsonify({'success': False, 'message': why_not}), 403
     execute_query(
         """UPDATE board_minutes
               SET deleted_at = now(), deleted_by = %s, delete_reason = NULLIF(%s, '')
             WHERE id = %s""", (user_id, reason, minute_id), fetch_all=False)
-    logger.warning("board minutes %s soft-deleted by administrator %s (reason: %s)",
-                   minute_id, user_id, reason or 'none given')
+    logger.warning("board minutes %s (%s) soft-deleted by %s [admin=%s] (reason: %s)",
+                   minute_id, row.get('status'), user_id,
+                   bool(roles & ADMIN_ROLES), reason or 'none given')
     return jsonify({'success': True})
