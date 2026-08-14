@@ -27,6 +27,7 @@ import {
 } from 'recharts';
 import { restClient } from '@/utils/api';
 import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
+import AgendaList from '@/components/board/AgendaList';
 import { useAuth } from '@/context/AuthContext';
 import {
   Target, Brain, FileText, CheckCircle, Clock,
@@ -870,7 +871,7 @@ const ExecutiveDashboard: React.FC = () => {
                                 <p className="text-xs text-slate-500 mt-1">{b('In person:', 'حضورياً:')} {m.location}</p>
                               )}
                               {(isRTL ? m.agenda_ar : m.agenda) && (
-                                <p className="text-xs text-slate-600 mt-1 line-clamp-2">{isRTL ? m.agenda_ar : m.agenda}</p>
+                                <AgendaList agenda={isRTL ? m.agenda_ar : m.agenda} className="mt-1" compact />
                               )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
