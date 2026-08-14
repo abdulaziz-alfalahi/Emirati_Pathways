@@ -900,15 +900,17 @@ def get_crm_last_import():
 # Operators asked to combine filters — Gender + Education, Age + Gender, Working
 # Status + Gender — over a 5,300-record roster.
 #
-# ONLY fields the data can actually support are listed. Measured 2026-08-13:
-#   gender 3,664 · age_group 3,571 · education_level 2,334 · cv_status 2,360
-#   looking_status 2,863 · candidates_source 416 · preferred_sector 211
-#   assigned_to 4 · preferred_locations 579
+# Every field an operator asked to filter on is listed here and is filterable.
+# Whether a facet is OFFERED in the UI is decided at request time from the live
+# data by /crm-filter-options — never hardcoded here.
 #
-# marital_status is DELIBERATELY ABSENT: 1 populated row out of 5,297. It was
-# explicitly requested ("Marital Status + Age"), but a filter that can only ever
-# return one record reads as broken software rather than as an empty dataset.
-# The options endpoint reports its emptiness instead, so the gap is visible.
+# That distinction was learned the hard way. marital_status was originally left
+# out of this map because it had 1 populated row of 5,297, and the UI was told so
+# in a constant. But that measured a PRE-LAUNCH roster, not a property of the
+# field: the platform is being built before its candidates and companies join, so
+# today's emptiness is a moment in time. A hardcoded exclusion would have gone on
+# telling operators the field "is not collected" long after it filled up, and it
+# would have stayed unfilterable until somebody edited this file.
 CRM_FACET_COLUMNS = {
     'call_status': 'cp.call_status',
     'work_status': 'cp.work_status',
@@ -920,12 +922,17 @@ CRM_FACET_COLUMNS = {
     'preferred_sector': 'cp.preferred_sector',
     'candidates_source': 'cp.candidates_source',
     'assigned_to': 'cp.assigned_to',
+    'marital_status': 'cp.marital_status',
 }
 
-# Reported to the UI so it can show a facet as unavailable rather than as empty.
-CRM_UNAVAILABLE_FACETS = {
-    'marital_status': 'Not collected for this roster yet',
-}
+# A facet is offered once it has at least this many DISTINCT values.
+#
+# Deliberately a count of distinct values, not of populated rows. A row threshold
+# would have hidden assigned_to (4 rows, but 4 different owners — it is the "show
+# me my candidates" filter and is working exactly as intended) while a dropdown
+# with a single option is useless however many rows carry it: there is nothing to
+# choose between, and picking the only value just means "is populated".
+MIN_FACET_VALUES = 2
 
 
 def _build_crm_filters(me, supervisor):
@@ -1608,23 +1615,39 @@ def export_crm_candidates():
 @crm_profile_bp.route('/crm-filter-options', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def get_crm_filter_options():
-    """Distinct values per filter, WITH COUNTS, taken from the live roster.
+    """Distinct values per filter, WITH COUNTS, measured from the live roster.
 
     The UI builds its dropdowns from this rather than from hardcoded lists, so it
     can only ever offer values that exist. The counts matter as much as the
     values: an operator who picks a filter and gets nothing back cannot tell a
-    working filter from a broken one, and this is what lets the interface say
-    "Marital status - not collected yet" instead of showing an empty menu.
+    working filter from a broken one.
+
+    Which facets are usable is DERIVED here, every request. A facet carrying
+    fewer than MIN_FACET_VALUES distinct values is reported under `unavailable`
+    with the numbers behind that verdict, so the UI can say how sparse it is
+    rather than assert something about the field. The moment real data arrives
+    the facet starts being offered on its own — nothing to remember to change.
     """
     try:
-        options = {}
+        options, unavailable = {}, {}
+
+        def _classify(param, values):
+            """Offer a facet, or report why it is not being offered."""
+            if len(values) < MIN_FACET_VALUES:
+                unavailable[param] = {
+                    'populated': sum(v['count'] for v in values),
+                    'distinct': len(values),
+                }
+            else:
+                options[param] = values
+
         for param, col in CRM_FACET_COLUMNS.items():
             rows = execute_query(
                 f"""SELECT {col.split('.')[1]} AS value, COUNT(*) AS n
                       FROM candidate_profiles cp
                      WHERE {col} IS NOT NULL AND {col} <> ''
                      GROUP BY 1 ORDER BY n DESC LIMIT 50""") or []
-            options[param] = [{'value': r['value'], 'count': r['n']} for r in rows]
+            _classify(param, [{'value': r['value'], 'count': r['n']} for r in rows])
 
         locs = execute_query(
             """SELECT loc AS value, COUNT(*) AS n
@@ -1632,16 +1655,20 @@ def get_crm_filter_options():
                       LATERAL jsonb_array_elements_text(cp.preferred_locations) AS loc
                 WHERE cp.preferred_locations IS NOT NULL
                 GROUP BY 1 ORDER BY n DESC LIMIT 50""") or []
-        options['preferred_location'] = [{'value': r['value'], 'count': r['n']} for r in locs]
+        _classify('preferred_location', [{'value': r['value'], 'count': r['n']} for r in locs])
 
         rng = execute_query(
             """SELECT MIN(date_of_call) AS min_d, MAX(date_of_call) AS max_d,
-                      COUNT(date_of_call) AS n
+                      COUNT(date_of_call) AS n, COUNT(*) AS total
                  FROM candidate_profiles""", fetch_one=True) or {}
 
         return jsonify({'success': True, 'data': {
             'options': options,
-            'unavailable': CRM_UNAVAILABLE_FACETS,
+            # {facet: {populated, distinct}} — facts, not a phrase. The wording
+            # (and its Arabic) belongs to the UI, which is where every other
+            # operator-facing sentence is translated.
+            'unavailable': unavailable,
+            'roster_total': rng.get('total') or 0,
             'date_of_call': {
                 'min': rng.get('min_d').isoformat() if rng.get('min_d') else None,
                 'max': rng.get('max_d').isoformat() if rng.get('max_d') else None,
