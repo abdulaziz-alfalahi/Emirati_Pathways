@@ -67,6 +67,8 @@ def _event_row(r):
         'starts_at': _iso(r.get('starts_at')),
         'ends_at': _iso(r.get('ends_at')),
         'status': r.get('status'),
+        'cancellation_reason': r.get('cancellation_reason'),
+        'cancelled_at': _iso(r.get('cancelled_at')),
         'created_at': _iso(r.get('created_at')),
         'employer_count': r.get('employer_count'),
         'invited_count': r.get('invited_count'),
@@ -119,13 +121,20 @@ def list_events():
     """Events visible to the caller.
 
     Organisers see everything including drafts; every other signed-in user sees
-    published events only. The calendar is deliberately NOT public (owner
-    decision): social media announcements drive people to register on the
+    published events AND cancelled ones. The calendar is deliberately NOT public
+    (owner decision): social media announcements drive people to register on the
     platform first, so by the time they attend they are already onboarded.
+
+    Cancelled events deliberately KEEP their place here. Filtering them out
+    reads as tidier and is worse: candidates are phoned by a CRM agent and asked
+    to attend, so an event that silently disappears from the calendar is
+    indistinguishable from one they misremembered — and nothing then stops them
+    travelling to the mall on the day. A cancelled row states the cancellation.
+    Drafts stay hidden because they were never announced to anybody.
     """
     try:
         organiser = _is_organiser()
-        where = "" if organiser else " WHERE e.status = 'published'"
+        where = "" if organiser else " WHERE e.status IN ('published', 'cancelled')"
         rows = execute_query(f"""
             SELECT e.*,
                    (SELECT COUNT(*) FROM event_employers   x WHERE x.event_id = e.id) AS employer_count,
@@ -155,7 +164,10 @@ def get_event(event_id):
         organiser = _is_organiser()
         ev = execute_query("SELECT * FROM recruitment_events WHERE id = %s",
                            (event_id,), fetch_one=True)
-        if not ev or (ev['status'] != 'published' and not organiser):
+        # Same reasoning as the calendar: a cancelled event stays readable to the
+        # people who were invited to it. 404 here would turn a link they were
+        # sent into a broken one, which tells them nothing about what happened.
+        if not ev or (ev['status'] not in ('published', 'cancelled') and not organiser):
             return jsonify({'success': False, 'message': 'Event not found'}), 404
 
         employers = execute_query("""
@@ -226,6 +238,17 @@ def create_event():
 @recruitment_events_bp.route('/<event_id>', methods=['PUT'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def update_event(event_id):
+    """Edit an event, or move it between statuses.
+
+    Editing stays available after publishing on purpose: venues move, times
+    shift, and an event that cannot be corrected once announced forces the
+    organiser to cancel and re-create it — which would strand the invitations,
+    the employers and any attendance already recorded against the old row.
+
+    Cancelling is a status change with obligations attached, so it is handled
+    here rather than left as a bare UPDATE: it requires a reason, stamps the
+    time, and tells the people who were asked to come.
+    """
     d = request.get_json(silent=True) or {}
     fields, vals = [], []
     if 'venue_lat' in d or 'venue_lng' in d:
@@ -235,6 +258,29 @@ def update_event(event_id):
             return jsonify({'success': False, 'message': str(e)}), 400
         fields += ['venue_lat = %s', 'venue_lng = %s']
         vals += [lat, lng]
+
+    prev = execute_query("SELECT status FROM recruitment_events WHERE id = %s",
+                         (event_id,), fetch_one=True)
+    if not prev:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    new_status = d.get('status')
+    cancelling = new_status == 'cancelled' and prev['status'] != 'cancelled'
+    if cancelling:
+        reason = (d.get('cancellation_reason') or '').strip()
+        if not reason:
+            # The reason is shown to candidates who were phoned and asked to
+            # attend. Cancelling without one leaves the calendar saying an event
+            # is off with no indication of whether it will be rearranged.
+            return jsonify({'success': False,
+                            'message': 'Give a reason for the cancellation — '
+                                       'candidates who were invited will see it'}), 400
+        fields += ['cancellation_reason = %s', 'cancelled_at = now()']
+        vals.append(reason)
+    elif new_status and new_status != 'cancelled' and prev['status'] == 'cancelled':
+        # Reinstating: the old reason would otherwise sit on a live event and be
+        # shown to candidates as though it were still off.
+        fields += ['cancellation_reason = NULL', 'cancelled_at = NULL']
 
     for k in ('title', 'title_ar', 'venue', 'venue_ar', 'description',
               'description_ar', 'starts_at', 'ends_at', 'status'):
@@ -252,10 +298,90 @@ def update_event(event_id):
             f"WHERE id = %s RETURNING *", tuple(vals) + (event_id,), fetch_one=True)
         if not row:
             return jsonify({'success': False, 'message': 'Event not found'}), 404
-        return jsonify({'success': True, 'data': _event_row(row)})
+
+        notified = _notify_event_cancelled(event_id) if cancelling else None
+        if cancelling:
+            # `reason`, not vals[0] — a cancellation sent together with a moved
+            # venue pin puts the latitude first in the parameter list.
+            logger.info("event %s cancelled by %s: %s", event_id, get_jwt_identity(), reason)
+        out = _event_row(row)
+        if notified is not None:
+            out['notified'] = notified
+        return jsonify({'success': True, 'data': out})
     except Exception as e:
         logger.error(f"update event failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to update the event'}), 500
+
+
+def _notify_event_cancelled(event_id):
+    """Tell everyone with a stake in a cancelled event that it is off.
+
+    Two audiences, both of whom acted on the event existing: candidates a CRM
+    agent phoned (every invitation, whatever they answered — someone recorded as
+    'no_answer' may still have heard the message and be planning to come), and
+    the accepted team members of participating employers, who blocked out staff
+    for the day.
+
+    Anyone who already checked in is included too: an event can be called off
+    part-way through, and they are standing in the queue.
+
+    Never raises. A cancellation that is recorded but not announced is bad; a
+    cancellation that fails to save because a notification insert did is worse.
+    """
+    try:
+        try:
+            from backend.notification_helper import create_notification
+        except ImportError:  # pragma: no cover
+            from notification_helper import create_notification
+
+        ev = execute_query(
+            "SELECT title, venue, starts_at, cancellation_reason "
+            "FROM recruitment_events WHERE id = %s", (event_id,), fetch_one=True) or {}
+        when = ev.get('starts_at')
+        when_s = when.strftime('%d %B %Y') if when else ''
+        title = ev.get('title') or 'a recruitment open day'
+        reason = ev.get('cancellation_reason') or ''
+
+        people = execute_query("""
+            SELECT candidate_id AS uid FROM event_invitations WHERE event_id = %s
+            UNION
+            SELECT user_id      AS uid FROM event_attendance  WHERE event_id = %s
+            UNION
+            SELECT ctm.user_id  AS uid
+              FROM event_employers ee
+              JOIN company_team_members ctm ON ctm.company_id = ee.company_id
+             WHERE ee.event_id = %s AND ctm.invitation_status = 'accepted'
+        """, (event_id, event_id, event_id)) or []
+
+        if not people:
+            logger.info("event %s cancelled: nobody to notify", event_id)
+            return 0
+
+        # Built in one place because `x + y if cond else z` binds the conditional
+        # looser than the concatenation, which would silently reduce the whole
+        # message to " has been cancelled." for a row with no reason recorded.
+        body = (title
+                + (f" at {ev['venue']}" if ev.get('venue') else '')
+                + (f" on {when_s}" if when_s else '')
+                + " has been cancelled."
+                + (f" Reason: {reason}" if reason else ''))
+
+        sent = 0
+        for p in people:
+            nid = create_notification(
+                user_id=str(p['uid']).strip(),
+                notification_type='event_cancelled',
+                title=f"Cancelled: {title}",
+                message=body,
+                metadata={'event_id': str(event_id)},
+            )
+            if nid:
+                sent += 1
+        logger.info("event %s cancelled: notified %d of %d", event_id, sent, len(people))
+        return sent
+    except Exception as e:
+        logger.error(f"could not announce cancellation of event {event_id}: {e}")
+        return 0
 
 
 def _notify_company_team(event_id, company_id):
