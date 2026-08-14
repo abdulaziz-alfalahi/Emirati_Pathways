@@ -6,7 +6,14 @@ port: 7880
 rtc:
   tcp_port: 7881
   udp_port: 7882
+  # Overridden at runtime by the NODE_IP env var (docker-compose.livekit.yml),
+  # which defaults to this same value. Leave this as the INTERNAL address: the
+  # switch to the public IP is made by setting LIVEKIT_NODE_IP, not by editing
+  # this file, so that a deploy cannot apply it before the firewall rule exists.
   node_ip: 10.228.145.5
+  # Stays false deliberately. `true` auto-detects the external address over STUN,
+  # which is the wrong answer behind this NAT — it would discover the shared
+  # egress address, not the dedicated inbound one Moro is allocating.
   use_external_ip: false
 
 # Keys are injected via LIVEKIT_KEYS env var in docker-compose.livekit.yml
