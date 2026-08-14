@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function CareerServicesDashboard() {
+  const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -1240,13 +1242,37 @@ const LOCATION_OPTIONS = [
                               );
                             })()}
                           </div>
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleEditClick(candidate)} 
-                            className="bg-white text-[#006E6D] border border-[#006E6D]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg transition-opacity"
-                          >
-                            {t('Edit Details', 'تعديل التفاصيل')}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Restored (fb_1786420709_7d087bfd). The reporter
+                                said this "was previously available" and had been
+                                removed. The ROUTE was widened months ago to admit
+                                career_services_operator and call_center_agent
+                                precisely so it would work — see the comment on
+                                /candidate-profile/:candidateId in App.tsx — but
+                                the control itself was never put back. The
+                                destination was fixed and the door left off.
+                                It also answers "View Application": that page
+                                carries the candidate's recent applications, so
+                                one link serves both. There is deliberately no
+                                separate application link — /applications is the
+                                candidate's own page and there is no operator
+                                view to point at. */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => navigate(`/candidate-profile/${candidate.id}`)}
+                              className="text-slate-600 hover:text-[#006E6D] hover:bg-[#F0F7F7] rounded-lg"
+                            >
+                              {t('View full profile', 'عرض الملف الكامل')}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleEditClick(candidate)} 
+                              className="bg-white text-[#006E6D] border border-[#006E6D]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg transition-opacity"
+                            >
+                              {t('Edit Details', 'تعديل التفاصيل')}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

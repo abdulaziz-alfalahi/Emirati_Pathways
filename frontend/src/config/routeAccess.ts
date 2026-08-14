@@ -33,7 +33,8 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/call-center-dashboard': ['admin', 'call_center_agent'],
   '/candidate-dashboard': ['candidate'],
   '/candidate-profile/:candidateId': ['admin', 'call_center_agent', 'career_services_operator', 'employer_admin', 'operator', 'recruiter'],
-  '/candidate/profile/*': ['candidate', 'employer_admin', 'recruiter'],
+  // '/candidate/profile/*' is deliberately absent: it is the user's OWN
+  // profile and is open to any signed-in user (see App.tsx).
   '/career-services-crm': ['admin', 'career_services_operator', 'operator'],
   '/career-services-dashboard': ['admin', 'career_services_operator', 'operator'],
   '/coach-dashboard': ['admin', 'coach'],
