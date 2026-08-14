@@ -19,6 +19,7 @@ Decisions that shape this module:
 import io
 import logging
 import os
+from datetime import datetime
 from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, request, Response
@@ -73,6 +74,11 @@ def _event_row(r):
         'employer_count': r.get('employer_count'),
         'invited_count': r.get('invited_count'),
         'attended_count': r.get('attended_count'),
+        # The caller's own place on the list. `my_source` decides whether the UI
+        # may offer to withdraw: an agent's phone call is not the candidate's to
+        # delete from the app.
+        'my_response': r.get('my_response'),
+        'my_source': r.get('my_source'),
     }
 
 
@@ -134,16 +140,23 @@ def list_events():
     """
     try:
         organiser = _is_organiser()
+        me = str(get_jwt_identity())
         where = "" if organiser else " WHERE e.status IN ('published', 'cancelled')"
         rows = execute_query(f"""
             SELECT e.*,
                    (SELECT COUNT(*) FROM event_employers   x WHERE x.event_id = e.id) AS employer_count,
                    (SELECT COUNT(*) FROM event_invitations i WHERE i.event_id = e.id) AS invited_count,
-                   (SELECT COUNT(*) FROM event_attendance  a WHERE a.event_id = e.id) AS attended_count
+                   (SELECT COUNT(*) FROM event_attendance  a WHERE a.event_id = e.id) AS attended_count,
+                   -- Whether the CALLER is on the list, so the calendar can mark
+                   -- the days they have already said yes to.
+                   (SELECT i2.response FROM event_invitations i2
+                     WHERE i2.event_id = e.id AND i2.candidate_id = %s) AS my_response,
+                   (SELECT i2.source   FROM event_invitations i2
+                     WHERE i2.event_id = e.id AND i2.candidate_id = %s) AS my_source
               FROM recruitment_events e{where}
              ORDER BY e.starts_at DESC
              LIMIT 200
-        """) or []
+        """, (me, me)) or []
         return jsonify({'success': True, 'data': [_event_row(r) for r in rows],
                         'can_manage': organiser})
     except Exception as e:
@@ -197,8 +210,15 @@ def get_event(event_id):
                                'employment_type': v.get('employment_type')} for v in vacancies],
             })
 
+        mine = execute_query(
+            "SELECT response, source FROM event_invitations "
+            " WHERE event_id = %s AND candidate_id = %s",
+            (event_id, str(get_jwt_identity())), fetch_one=True) or {}
+
         data = _event_row(ev)
         data['employers'] = out
+        data['my_response'] = mine.get('response')
+        data['my_source'] = mine.get('source')
         return jsonify({'success': True, 'data': data, 'can_manage': organiser})
     except Exception as e:
         logger.error(f"get event failed: {e}")
@@ -823,6 +843,87 @@ def invite_candidates(event_id):
     }}), 201
 
 
+@recruitment_events_bp.route('/<event_id>/interest', methods=['POST', 'DELETE'])
+@jwt_required()
+def register_interest(event_id):
+    """A candidate registering — or withdrawing — their own interest from the calendar.
+
+    Recorded in event_invitations with source='self' and no invited_by: it is
+    the same fact an agent records after a call ("this person intends to come"),
+    and a separate table would mean two places to look before printing a door
+    list. `source` is what stops it being counted as a call that worked.
+
+    Deliberately NOT an attendance row. Interest is a statement made in advance
+    from a phone at home; attendance is a queue token issued at the venue. The
+    door still allocates the token on the day.
+    """
+    me = str(get_jwt_identity())
+    ev = execute_query(
+        "SELECT id, status, title, starts_at, ends_at FROM recruitment_events WHERE id = %s",
+        (event_id,), fetch_one=True)
+    if not ev:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    if request.method == 'DELETE':
+        # Only ever removes a self-registration: an agent recorded a phone call,
+        # and a candidate changing their mind in the app must not erase that
+        # record. Their withdrawal is a fact the agent needs, not an undo.
+        row = execute_query("""
+            DELETE FROM event_invitations
+             WHERE event_id = %s AND candidate_id = %s AND source = 'self'
+            RETURNING id
+        """, (event_id, me), fetch_one=True)
+        if row:
+            return jsonify({'success': True, 'data': {'interested': False}})
+        existing = execute_query(
+            "SELECT source FROM event_invitations WHERE event_id = %s AND candidate_id = %s",
+            (event_id, me), fetch_one=True)
+        if existing:
+            return jsonify({'success': False,
+                            'message': 'You were invited by phone. Please tell the '
+                                       'EHRDC team if you can no longer attend.'}), 409
+        return jsonify({'success': True, 'data': {'interested': False}})
+
+    if ev['status'] != 'published':
+        return jsonify({'success': False,
+                        'message': 'This event is not open for registration'}), 409
+    # An event that has already finished cannot be attended, and letting someone
+    # register for it would put a name on a door list for a day that has passed.
+    ended = ev.get('ends_at') or ev.get('starts_at')
+    if ended and ended < datetime.now(ended.tzinfo):
+        return jsonify({'success': False, 'message': 'This event has already taken place'}), 409
+
+    try:
+        # DO UPDATE, not DO NOTHING: a candidate an agent already phoned uses
+        # this same button to confirm they are coming, which is the flow the
+        # owner described. Only the response moves — source and invited_by are
+        # left alone, so the row keeps saying which agent made the call.
+        # A recorded 'declined' may be overwritten: the candidate saying today
+        # that they will attend is newer than what they said on the phone.
+        execute_query("""
+            INSERT INTO event_invitations (event_id, candidate_id, invited_by, source,
+                                           response, responded_at)
+            VALUES (%s, %s, NULL, 'self', 'confirmed', now())
+            ON CONFLICT (event_id, candidate_id) DO UPDATE
+               SET response = 'confirmed', responded_at = now()
+             WHERE event_invitations.response <> 'confirmed'
+        """, (event_id, me), fetch_all=False)
+    except Exception as e:
+        logger.error(f"register interest failed for {me} at {event_id}: {e}")
+        return jsonify({'success': False, 'message': 'Could not register your interest'}), 500
+
+    row = execute_query(
+        "SELECT response, source FROM event_invitations WHERE event_id = %s AND candidate_id = %s",
+        (event_id, me), fetch_one=True) or {}
+    logger.info("event %s: %s registered interest (source=%s)", event_id, me, row.get('source'))
+    return jsonify({'success': True, 'data': {
+        'interested': True,
+        'response': row.get('response'),
+        # The UI must not offer "withdraw" for a row an agent owns.
+        'source': row.get('source'),
+    }}), 201
+
+
 @recruitment_events_bp.route('/<event_id>/invitations', methods=['GET'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def list_invitations(event_id):
@@ -830,6 +931,7 @@ def list_invitations(event_id):
     try:
         rows = execute_query("""
             SELECT i.candidate_id, i.response, i.invited_at, i.responded_at, i.note,
+                   i.source,
                    COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS full_name,
                    u.phone,
                    (a.id IS NOT NULL) AS attended,
@@ -846,6 +948,10 @@ def list_invitations(event_id):
             'full_name': r.get('full_name'),
             'phone': r.get('phone'),
             'response': r.get('response'),
+            # Agents need to see who they actually called: a self-registration
+            # has no call behind it, so chasing it as a "no answer" would be
+            # chasing a call that never happened.
+            'source': r.get('source') or 'agent',
             'invited_at': _iso(r.get('invited_at')),
             'responded_at': _iso(r.get('responded_at')),
             'attended': bool(r.get('attended')),
@@ -938,17 +1044,28 @@ def event_funnel(event_id):
     if not ev:
         return jsonify({'success': False, 'message': 'Event not found'}), 404
     try:
+        # Split by source. A self-registration from the calendar is NOT a call
+        # that worked, and folding the two together would overstate how well the
+        # calling converted — the same reason walk-ins are already kept out of
+        # the invited attendance count.
         inv = execute_query("""
-            SELECT response, COUNT(*) AS n FROM event_invitations
-             WHERE event_id = %s GROUP BY response
+            SELECT response, source, COUNT(*) AS n FROM event_invitations
+             WHERE event_id = %s GROUP BY response, source
         """, (event_id,)) or []
-        by_response = {r['response']: r['n'] for r in inv}
+        by_response = {}
+        self_registered = 0
+        for r in inv:
+            if r['source'] == 'self':
+                self_registered += r['n']
+            else:
+                by_response[r['response']] = by_response.get(r['response'], 0) + r['n']
         invited_total = sum(by_response.values())
 
         att = execute_query("""
             SELECT COUNT(*) AS total,
-                   COUNT(*) FILTER (WHERE i.id IS NOT NULL) AS invited_attended,
-                   COUNT(*) FILTER (WHERE i.id IS NULL)     AS walk_ins
+                   COUNT(*) FILTER (WHERE i.source = 'agent') AS invited_attended,
+                   COUNT(*) FILTER (WHERE i.source = 'self')  AS self_attended,
+                   COUNT(*) FILTER (WHERE i.id IS NULL)       AS walk_ins
               FROM event_attendance a
               LEFT JOIN event_invitations i
                      ON i.event_id = a.event_id AND i.candidate_id = a.user_id
@@ -973,9 +1090,17 @@ def event_funnel(event_id):
                 'no_answer': by_response.get('no_answer', 0),
                 'awaiting_reply': by_response.get('invited', 0),
             },
+            # People who found the event on the calendar and said they were
+            # coming. Reported in its own right: it is the measure of whether
+            # publishing the calendar is worth anything.
+            'self_registered': {
+                'total': self_registered,
+                'attended': att.get('self_attended') or 0,
+            },
             'attended': {
                 'total': att.get('total') or 0,
                 'from_invitations': attended_invited,
+                'from_self_registered': att.get('self_attended') or 0,
                 'walk_ins': att.get('walk_ins') or 0,
             },
             'outcomes': {s: by_stage.get(s, 0) for s in sorted(OUTCOME_STAGES)},

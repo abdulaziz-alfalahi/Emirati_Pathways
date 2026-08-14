@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import LocationPicker from '@/components/common/LocationPicker';
-import { CalendarDays, MapPin, Building2, Briefcase, Loader2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { CalendarDays, MapPin, Building2, Briefcase, Loader2, ArrowLeft, ArrowRight, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 /**
  * The recruitment open day calendar, for signed-in platform users.
@@ -23,12 +24,24 @@ const fmtDate = (iso?: string | null, ar = false) => {
     { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 };
 
+/* Local calendar-day key. Built from the local date parts rather than
+   toISOString(), which converts to UTC first and files a 01:00 event in the UAE
+   under the previous day. */
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export const EventsCalendarPage: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const isRTL = language === 'ar';
   const b = (en: string, ar: string) => (isRTL ? ar : en);
   const [events, setEvents] = useState<any[] | null>(null);
+  /* The month on screen. Starts on the month containing today, not on the month
+     of the first event — someone opening the page wants to know what is on now. */
+  const [cursor, setCursor] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
 
   useEffect(() => {
     restClient.get('/api/events')
@@ -39,6 +52,34 @@ export const EventsCalendarPage: React.FC = () => {
 
   const upcoming = (events || []).filter(e => !e.ends_at || new Date(e.ends_at) >= new Date());
   const past = (events || []).filter(e => e.ends_at && new Date(e.ends_at) < new Date());
+
+  /* ── The month grid ──────────────────────────────────────────────────────
+     Open days are single-day events, so each is filed under its start date.
+     The week starts on Sunday, which is how a Gulf wall calendar reads.
+     In RTL the grid mirrors on its own — CSS grid follows the container's
+     direction — so the weekday order below is correct both ways. */
+  const byDay = new Map<string, any[]>();
+  for (const e of events || []) {
+    if (!e.starts_at) continue;
+    const k = dayKey(new Date(e.starts_at));
+    byDay.set(k, [...(byDay.get(k) || []), e]);
+  }
+
+  const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+  const cells: (Date | null)[] = [
+    // Blanks so the 1st lands under its real weekday.
+    ...Array.from({ length: monthStart.getDay() }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => new Date(cursor.getFullYear(), cursor.getMonth(), i + 1)),
+  ];
+  const todayKey = dayKey(new Date());
+  const weekdays = isRTL
+    ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
+    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthLabel = cursor.toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB',
+    { month: 'long', year: 'numeric' });
+  const shiftMonth = (n: number) =>
+    setCursor(c => new Date(c.getFullYear(), c.getMonth() + n, 1));
 
   /* A cancelled event stays listed rather than disappearing — people were
      phoned and invited, and a silent vanishing sends them to the mall anyway.
@@ -98,6 +139,68 @@ export const EventsCalendarPage: React.FC = () => {
              'قابل أصحاب العمل شخصياً وأجرِ المقابلة في نفس اليوم.')}
         </p>
 
+        {events !== null && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => shiftMonth(-1)}
+                      aria-label={b('Previous month', 'الشهر السابق')}>
+                {isRTL ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+              </Button>
+              <p className="text-sm font-semibold text-slate-900">{monthLabel}</p>
+              <Button variant="ghost" size="sm" onClick={() => shiftMonth(1)}
+                      aria-label={b('Next month', 'الشهر التالي')}>
+                {isRTL ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-7 gap-1 text-center">
+              {weekdays.map(w => (
+                <div key={w} className="pb-1 text-[11px] font-medium text-slate-500">{w}</div>
+              ))}
+              {cells.map((d, i) => {
+                if (!d) return <div key={`b${i}`} />;
+                const k = dayKey(d);
+                const dayEvents = byDay.get(k) || [];
+                const isToday = k === todayKey;
+                return (
+                  <div key={k}
+                       className={`min-h-[62px] rounded-lg border p-1 text-start align-top ${
+                         isToday ? 'border-ehrdc-teal bg-teal-50/40' : 'border-slate-100'}`}>
+                    <div className={`text-[11px] ${isToday ? 'font-bold text-ehrdc-teal' : 'text-slate-400'}`}>
+                      {d.getDate()}
+                    </div>
+                    {dayEvents.map(e => {
+                      const cancelled = e.status === 'cancelled';
+                      // A candidate who has already said they are coming should
+                      // see that on the day itself, not only inside the event.
+                      const going = !cancelled && !!e.my_response && e.my_response !== 'declined';
+                      return (
+                        <button key={e.id} onClick={() => navigate(`/events/${e.id}`)}
+                                title={isRTL && e.title_ar ? e.title_ar : e.title}
+                                className={`mt-1 block w-full truncate rounded px-1 py-0.5 text-start text-[10px] leading-tight ${
+                                  cancelled ? 'bg-red-100 text-red-800 line-through'
+                                  : going ? 'bg-ehrdc-teal text-white'
+                                  : 'bg-teal-50 text-teal-900 hover:bg-teal-100'}`}>
+                          {isRTL && e.title_ar ? e.title_ar : e.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Without this, a month with nothing in it is indistinguishable
+                from a month that failed to load. */}
+            {![...byDay.keys()].some(k => k.startsWith(
+              `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`)) && (
+              <p className="mt-3 text-center text-xs text-slate-500">
+                {b('Nothing scheduled this month.', 'لا توجد فعاليات هذا الشهر.')}
+              </p>
+            )}
+          </div>
+        )}
+
         {events === null ? (
           <p className="mt-10 text-center text-sm text-slate-500">
             {b('The events could not be loaded just now.', 'تعذّر تحميل الفعاليات في الوقت الحالي.')}
@@ -133,6 +236,7 @@ export const EventDetailPage: React.FC = () => {
   const b = (en: string, ar: string) => (isRTL ? ar : en);
   const [ev, setEv] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     restClient.get(`/api/events/${eventId}`)
@@ -140,6 +244,31 @@ export const EventDetailPage: React.FC = () => {
       .catch(() => setEv(null))
       .finally(() => setLoading(false));
   }, [eventId]);
+
+  const setInterest = async (on: boolean) => {
+    setBusy(true);
+    try {
+      const res = on
+        ? await restClient.post(`/api/events/${eventId}/interest`, {})
+        : await restClient.delete(`/api/events/${eventId}/interest`);
+      setEv((prev: any) => ({
+        ...prev,
+        my_response: on ? (res.data?.data?.response || 'confirmed') : null,
+        my_source: on ? (res.data?.data?.source || 'self') : null,
+      }));
+      toast({
+        title: on ? b("You're registered", 'تم تسجيل اهتمامك')
+                  : b('Registration withdrawn', 'تم سحب التسجيل'),
+        description: on
+          ? b('Bring your Emirates ID. On the day, scan the QR at the venue for your queue number.',
+              'أحضر هويتك الإماراتية. في يوم الفعالية، امسح رمز الاستجابة السريعة للحصول على رقمك.')
+          : undefined,
+      });
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message
+                || b('That did not go through', 'لم تتم العملية'), variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
 
   if (loading) {
     return (
@@ -162,6 +291,12 @@ export const EventDetailPage: React.FC = () => {
   }
 
   const totalVacancies = (ev.employers || []).reduce((n: number, e: any) => n + (e.vacancies?.length || 0), 0);
+  // 'declined' counts as not registered: the button is how they change their mind.
+  const registered = !!ev.my_response && ev.my_response !== 'declined';
+  // Phoned by an agent but not yet confirmed — this is where they confirm.
+  const invitedAwaiting = ev.my_response === 'invited';
+  const hasPassed = !!(ev.ends_at || ev.starts_at)
+    && new Date(ev.ends_at || ev.starts_at) < new Date();
 
   return (
     <>
@@ -224,6 +359,67 @@ export const EventDetailPage: React.FC = () => {
               {b('Get directions', 'الحصول على الاتجاهات')}
             </a>
           </div>
+        )}
+
+        {/* Registering interest is only meaningful for an event that is still
+            going to happen — offering it on a cancelled or finished day would
+            take a commitment nobody can act on. */}
+        {ev.status === 'published' && !hasPassed && (
+          <Card className="mt-6 border-ehrdc-teal/30 bg-teal-50/40">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+              {registered ? (
+                <>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-ehrdc-teal" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {b("You're registered for this open day", 'أنت مسجّل في هذا اليوم المفتوح')}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        {b('Bring your Emirates ID. Scan the QR code at the venue on the day for your queue number.',
+                           'أحضر هويتك الإماراتية. امسح رمز الاستجابة السريعة في المكان يوم الفعالية للحصول على رقمك.')}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Only a self-registration is the candidate's to withdraw.
+                      An agent's phone call is a record of a conversation, and
+                      deleting it here would erase the fact that it happened —
+                      so that case is a message to the team, not a button. */}
+                  {ev.my_source === 'self' ? (
+                    <Button variant="outline" size="sm" disabled={busy}
+                            onClick={() => setInterest(false)}>
+                      {busy && <Loader2 className="me-2 h-3.5 w-3.5 animate-spin" />}
+                      {b("I can't make it", 'لا أستطيع الحضور')}
+                    </Button>
+                  ) : (
+                    <p className="max-w-[16rem] text-xs text-slate-500">
+                      {b('The EHRDC team registered you by phone. Please call them if you can no longer attend.',
+                         'قام فريق المجلس بتسجيلك عبر الهاتف. يرجى الاتصال بهم إذا تعذّر عليك الحضور.')}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {invitedAwaiting
+                        ? b('EHRDC invited you to this open day', 'دعاك المجلس إلى هذا اليوم المفتوح')
+                        : b('Planning to come?', 'هل تنوي الحضور؟')}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {b('Let us know so the employers can expect you.',
+                         'أخبرنا لتتمكن جهات التوظيف من توقّع حضورك.')}
+                    </p>
+                  </div>
+                  <Button disabled={busy} onClick={() => setInterest(true)}>
+                    {busy && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                    {invitedAwaiting ? b("Yes, I'll be there", 'نعم، سأحضر')
+                                     : b('Register my interest', 'تسجيل اهتمامي')}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         <Card className="mt-8 border-slate-200">
