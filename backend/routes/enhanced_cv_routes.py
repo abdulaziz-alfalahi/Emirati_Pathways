@@ -94,7 +94,13 @@ def _is_admin(uid):
 enhanced_cv_bp = Blueprint('enhanced_cv', __name__, url_prefix='/api/cv')
 
 # Configuration
-ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'txt'}
+#
+# Images are accepted because a photographed or scanned CV is a real submission
+# — pdf_extractor routes them to Vision OCR. Before this they were refused
+# here, so the OCR path could never be reached no matter what the extractor
+# supported.
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'txt',
+                      'jpg', 'jpeg', 'png', 'webp', 'bmp', 'tif', 'tiff'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 def allowed_file(filename):
@@ -103,12 +109,24 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# Magic byte signatures for content-type validation
+# Magic byte signatures for content-type validation.
+# A value may be a tuple — bytes.startswith accepts one — for formats with more
+# than one valid header, such as TIFF's two byte orders.
 _FILE_SIGNATURES = {
     'pdf':  b'%PDF',
     'docx': b'PK\x03\x04',          # DOCX is a ZIP archive
     'doc':  b'\xd0\xcf\x11\xe0',     # OLE2 compound document
     'txt':  None,                     # No specific signature for plain text
+    'jpg':  b'\xff\xd8\xff',
+    'jpeg': b'\xff\xd8\xff',
+    'png':  b'\x89PNG\r\n\x1a\n',
+    'bmp':  b'BM',
+    'tif':  (b'II*\x00', b'MM\x00*'),   # little- and big-endian TIFF
+    'tiff': (b'II*\x00', b'MM\x00*'),
+    # WEBP is 'RIFF' at offset 0 and 'WEBP' at offset 8. Only the first is a
+    # prefix, so that is what is checked — this validates the declared
+    # extension against the content, it is not a security boundary.
+    'webp': b'RIFF',
 }
 
 def validate_file_content(file_obj, filename):
