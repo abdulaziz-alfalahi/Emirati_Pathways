@@ -23,7 +23,7 @@ def log_debug_cv(msg):
 
 # --- Qwen Resume Parser (primary) ---
 try:
-    from backend.services.resume_parser import parse_resume, parse_resume_from_stream
+    from backend.services.resume_parser import parse_resume
     from backend.services.qwen_client import QwenParsingError, QwenClientError
     QWEN_AVAILABLE = True
     logger_init_msg = "✅ Qwen resume parser loaded"
