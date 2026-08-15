@@ -11,6 +11,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useOperationsData } from '@/hooks/useOperationsData';
+import AIUsagePanel from '@/components/admin/AIUsagePanel';
 
 /**
  * OPERATIONS CENTER — AT-DESK SURFACE (/operations-center)
@@ -349,6 +350,13 @@ const OperationsMonitoringCenter: React.FC = () => {
                                 })()}
                             </Card>
                         </div>
+
+                        {/* ── AI usage and spend ───────────────────────────────
+                            Compact here: on this page it is one signal among
+                            many. The full breakdown by task and model lives on
+                            the Admin Dashboard, which is where the decision
+                            about where inference runs actually gets made. */}
+                        <AIUsagePanel compact defaultDays={7} />
 
                         {/* ── Emiratization + live feed ────────────────────── */}
                         <div className="grid gap-6 lg:grid-cols-2">
