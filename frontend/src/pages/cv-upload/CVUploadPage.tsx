@@ -19,6 +19,33 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// Kept beside the `accept` attribute below and mirrored by ALLOWED_EXTENSIONS
+// in backend/routes/enhanced_cv_routes.py. A file the picker offers but the
+// API refuses is the drift worth avoiding here.
+const ACCEPTED_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+];
+
+const ACCEPT_ATTRIBUTE = '.pdf,.docx,.doc,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff';
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB — matches MAX_FILE_SIZE server-side
+
+// Previously "PDF or Word Document", which labelled a photographed CV as a
+// Word document.
+const describeFileType = (mimeType: string): string => {
+  if (mimeType.includes('pdf')) return 'PDF';
+  if (mimeType.startsWith('image/')) return 'Image (read by OCR)';
+  if (mimeType.includes('word') || mimeType.includes('msword')) return 'Word Document';
+  return 'Document';
+};
+
 interface CVFile {
   file: File;
   id: string;
@@ -76,6 +103,7 @@ const SECTION_UNAVAILABLE =
 const CVUploadPage: React.FC = () => {
   const { t } = useTranslation();
   const [uploadedFiles, setUploadedFiles] = useState<CVFile[]>([]);
+  const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,13 +131,26 @@ const CVUploadPage: React.FC = () => {
   }, []);
 
   const handleFiles = async (files: File[]) => {
+    const rejections: string[] = [];
+
     const validFiles = files.filter(file => {
-      const isValidType = file.type === 'application/pdf' || 
-                         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                         file.type === 'application/msword';
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      // Images are accepted: a photographed or scanned CV is a real
+      // submission, and the backend routes those to Vision OCR.
+      const isValidType = ACCEPTED_MIME_TYPES.includes(file.type) ||
+                          file.type.startsWith('image/');
+      const isValidSize = file.size <= MAX_UPLOAD_BYTES;
+
+      // Say why. A silently dropped file leaves the user staring at a page
+      // that did nothing, with no way to tell that anything was wrong.
+      if (!isValidType) {
+        rejections.push(`${file.name} — unsupported file type. Use PDF, Word, or a photo (JPG/PNG).`);
+      } else if (!isValidSize) {
+        rejections.push(`${file.name} — larger than ${formatFileSize(MAX_UPLOAD_BYTES)}.`);
+      }
       return isValidType && isValidSize;
     });
+
+    setRejectedFiles(rejections);
 
     for (const file of validFiles) {
       const cvFile: CVFile = {
@@ -300,6 +341,9 @@ const CVUploadPage: React.FC = () => {
                 <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
                   📋 DOC
                 </span>
+                <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm">
+                  📷 Photo / Scan
+                </span>
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -311,13 +355,29 @@ const CVUploadPage: React.FC = () => {
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept=".pdf,.docx,.doc"
+                accept={ACCEPT_ATTRIBUTE}
                 onChange={handleFileSelect}
                 className="hidden"
               />
               <p className="text-sm text-gray-500 mt-3">
                 Maximum file size: 10MB per file
               </p>
+
+              {rejectedFiles.length > 0 && (
+                <div className="mt-4 text-start bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center mb-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 me-2 shrink-0" />
+                    <span className="text-sm font-dubai-medium text-amber-900">
+                      {rejectedFiles.length === 1 ? 'A file was not uploaded' : 'Some files were not uploaded'}
+                    </span>
+                  </div>
+                  <ul className="text-sm text-amber-800 space-y-1">
+                    {rejectedFiles.map((reason, i) => (
+                      <li key={i}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
@@ -333,7 +393,7 @@ const CVUploadPage: React.FC = () => {
                       <div>
                         <h3 className="font-dubai-medium text-gray-900">{file.name}</h3>
                         <p className="text-sm text-gray-500">
-                          {formatFileSize(file.size)} • {file.type.includes('pdf') ? 'PDF' : 'Word Document'}
+                          {formatFileSize(file.size)} • {describeFileType(file.type)}
                         </p>
                       </div>
                     </div>
