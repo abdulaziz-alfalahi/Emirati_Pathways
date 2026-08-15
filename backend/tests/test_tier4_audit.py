@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import json
 import glob
+import warnings
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 load_dotenv('backend/.env')
@@ -212,16 +213,31 @@ def test_retention_purge_e2e(monkeypatch):
         conn.commit()
         
     finally:
-        # Clean up seeded row and dummy user safely
+        # Clean up seeded row and dummy user safely.
+        #
+        # candidate_profiles is included defensively: this test inserts the user
+        # directly rather than through /api/auth/register, so nothing provisions
+        # a profile today — but that is exactly the row that made the identical
+        # cleanup in test_tier4_dsr fail silently and strand users in the LIVE
+        # database from 2026-08-03 onward.
         try:
             cur.execute("ALTER TABLE admin_audit_log DISABLE TRIGGER trg_admin_audit_log_no_delete;")
             cur.execute("DELETE FROM admin_audit_log WHERE user_id = %s;", (user_id,))
             cur.execute("ALTER TABLE admin_audit_log ENABLE TRIGGER trg_admin_audit_log_no_delete;")
+            cur.execute("DELETE FROM candidate_profiles WHERE user_id = %s;", (user_id,))
             cur.execute("DELETE FROM users WHERE id = %s;", (user_id,))
             conn.commit()
-        except Exception:
+        except Exception as cleanup_err:
+            # Swallowing keeps a cleanup problem from masking a real test
+            # failure, but swallowing SILENTLY is how residue accumulates
+            # unnoticed. Say so loudly instead.
             conn.rollback()
-            
+            warnings.warn(
+                f"test_retention_purge_e2e left user {user_id} in the database: {cleanup_err}",
+                stacklevel=1,
+            )
+
+
         conn.close()
         
         # Clean up created files
