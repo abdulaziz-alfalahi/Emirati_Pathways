@@ -40,7 +40,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/coach-dashboard': ['admin', 'coach'],
   '/community-operator-dashboard': ['admin', 'community_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/cv-builder': ['candidate'],
-  '/demographics': ['admin', 'board_member', 'compliance_auditor', 'platform_operator'],
+  '/demographics': ['admin', 'board_member', 'career_services_operator', 'compliance_auditor', 'platform_operator'],
   '/education-operator-dashboard': ['admin', 'education_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/educator-dashboard': ['training_provider'],
   '/events/manage': ['admin', 'call_center_agent', 'career_services_operator', 'operator', 'platform_administrator', 'super_admin'],

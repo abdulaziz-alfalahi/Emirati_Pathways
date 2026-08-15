@@ -55,8 +55,17 @@ def get_db_counts():
     except Exception:
         return None, None, None
 
+# The demographics page calls THIS endpoint — /api/metrics/demographics — not
+# the similarly named ones in demographics_routes.py (/api/analytics/...), which
+# nothing in the product calls. Widening those instead would have opened two
+# endpoints nobody uses and left this one refusing.
+#
+# career_services_operator added with the route (owner decision 2026-08-15).
+# Aggregate counts only, and these operators already see every candidate's name,
+# Emirates ID and phone in the CRM roster — so this is strictly less than they
+# are trusted with, not more.
 @strategic_metrics_bp.route('/demographics', methods=['GET'])
-@require_roles(*GOVERNANCE_ROLES)
+@require_roles(*(GOVERNANCE_ROLES | {'career_services_operator'}))
 def get_demographics_metrics():
     """
     Serves structured demographic data (age distribution, education levels, geographic spread) 

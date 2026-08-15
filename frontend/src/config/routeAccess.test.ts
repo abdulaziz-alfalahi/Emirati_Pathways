@@ -41,9 +41,15 @@ describe('routeAccess is the single source of truth', () => {
   });
 
   it('refuses a role the route does not allow', () => {
-    // Samir's actual case: a career services operator sent to /demographics.
-    expect(canOpenPath('/demographics', ['career_services_operator', 'call_center_agent'])).toBe(false);
+    /* /demographics ADMITS career services operators as of 2026-08-15 (owner
+       decision). This assertion previously expected false — that was Samir's
+       reported case, and the resolution was that the page was right and the
+       route was wrong, not the other way round. Updated deliberately rather
+       than deleted, so the reversal is visible in the history. */
+    expect(canOpenPath('/demographics', ['career_services_operator', 'call_center_agent'])).toBe(true);
     expect(canOpenPath('/demographics', ['compliance_auditor'])).toBe(true);
+    // Still gated: a plain candidate has no business in talent-pool analytics.
+    expect(canOpenPath('/demographics', ['candidate'])).toBe(false);
     expect(canOpenPath('/cv-builder', ['career_services_operator'])).toBe(false);
     expect(canOpenPath('/cv-builder', ['candidate'])).toBe(true);
   });
