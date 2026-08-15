@@ -1043,6 +1043,16 @@ def get_crm_candidates():
                     cp.education_level,
                     cp.age_group,
                     cp.emirate_of_residence,
+                    -- NAFIS-sourced demographics (fb_1786426324_770d7191). The
+                    -- roster already holds these from the import; they were
+                    -- simply never sent to the client, so counsellors had to
+                    -- look them up in another system.
+                    cp.gender,
+                    cp.marital_status,
+                    cp.is_person_of_determination,
+                    cp.determination_type,
+                    cp.nationality,
+                    u.created_at AS added_at,
                     cp.preferred_locations,
                     cp.preferred_sector,
                     cp.preferred_work_setup,
@@ -1226,6 +1236,16 @@ def get_crm_candidates():
                         'education_level': c['education_level'],
                         'age_group': c['age_group'],
                         'emirate_of_residence': c['emirate_of_residence'],
+                        'gender': c['gender'],
+                        'marital_status': c['marital_status'],
+                        'is_person_of_determination': c['is_person_of_determination'],
+                        'determination_type': c['determination_type'],
+                        'nationality': c['nationality'],
+                        # When the record entered THIS platform — not their NAFIS
+                        # registration date, which the import does not carry. The
+                        # label says so, because presenting an import timestamp as
+                        # a registration date would be a plausible-looking lie.
+                        'added_at': str(c['added_at']) if c.get('added_at') else None,
                         # Display name for id-valued assignments; null for legacy
                         # name-valued rows (the raw value is then already a name).
                         'assigned_to_name': c['assigned_to_name'],
