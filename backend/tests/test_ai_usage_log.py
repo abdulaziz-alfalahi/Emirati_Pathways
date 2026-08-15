@@ -268,33 +268,50 @@ def test_telemetry_failure_does_not_break_the_ai_call(monkeypatch):
 
 # ── Round trip against the real table ────────────────────────────────────────
 
-@pytest.mark.parametrize('outcome', [ai_usage_log.OUTCOME_OK,
-                                     ai_usage_log.OUTCOME_INVALID_JSON,
-                                     ai_usage_log.OUTCOME_ERROR])
-def test_every_outcome_the_code_emits_is_accepted_by_the_db_check(outcome, recording_on):
-    """Guards the drift that a CHECK constraint invites: code emitting a value
-    the database refuses, silently losing rows."""
-    conn = None
+@pytest.fixture
+def ai_usage_table():
+    """A database with the ai_usage_log schema present.
+
+    CI runs against a fresh Postgres and there is no migration runner, so "the
+    database is reachable" does NOT imply "the schema is there" — which is
+    exactly how these tests first failed in CI while passing locally against
+    the migrated live DB.
+
+    Applying the real migration file rather than duplicating its DDL means CI
+    also proves migration 069 parses and runs. It is idempotent, so this is
+    safe against an already-migrated database.
+    """
     try:
         conn = ai_usage_log._connect()
     except Exception:
-        pytest.skip('live database not reachable')
+        pytest.skip('database not reachable')
 
     try:
-        assert ai_usage_log.record(TEST_MODEL, 'zz-test', 1, 1, outcome=outcome) is True
-    finally:
+        migration = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'migrations', '069_ai_usage_log.sql')
+        conn.autocommit = True          # the file carries its own BEGIN/COMMIT
         with conn.cursor() as cur:
-            cur.execute('DELETE FROM ai_usage_log WHERE model = %s', (TEST_MODEL,))
-        conn.commit()
+            cur.execute(open(migration).read())
+        yield conn
+    finally:
         conn.close()
 
 
-def test_summary_shape_is_stable_against_the_real_table():
+@pytest.mark.parametrize('outcome', [ai_usage_log.OUTCOME_OK,
+                                     ai_usage_log.OUTCOME_INVALID_JSON,
+                                     ai_usage_log.OUTCOME_ERROR])
+def test_every_outcome_the_code_emits_is_accepted_by_the_db_check(outcome, recording_on, ai_usage_table):
+    """Guards the drift that a CHECK constraint invites: code emitting a value
+    the database refuses, silently losing rows."""
     try:
-        ai_usage_log._connect().close()
-    except Exception:
-        pytest.skip('live database not reachable')
+        assert ai_usage_log.record(TEST_MODEL, 'zz-test', 1, 1, outcome=outcome) is True
+    finally:
+        with ai_usage_table.cursor() as cur:
+            cur.execute('DELETE FROM ai_usage_log WHERE model = %s', (TEST_MODEL,))
 
+
+def test_summary_shape_is_stable_against_the_real_table(ai_usage_table):
     out = ai_usage_log.summary(days=1)
     assert out['available'] is True
     assert set(out) == {'days', 'totals', 'by_task', 'by_model', 'available'}
