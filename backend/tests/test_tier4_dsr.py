@@ -22,13 +22,36 @@ def app():
 def client(app):
     return app.test_client()
 
+
+def _purge_test_user(cur, *, email=None, user_id=None):
+    """Remove a test user and everything that references it.
+
+    candidate_profiles must go first. Registration provisions a profile row, so
+    without deleting it the users DELETE fails on fk_candidate_profiles_user —
+    stranding the user in the LIVE database and breaking the test on every run
+    thereafter. The same defect stranded 784000000000570 in test_tier4_consents
+    from 2026-08-12 until it was cleared by hand.
+
+    Takes an email or a user id: the erase flow anonymises the address, so
+    after it runs the id is the only handle left on the row.
+    """
+    if email is not None:
+        sel = "(SELECT id FROM users WHERE email = %s)"
+        args = (email,)
+        for tbl in ("consents", "candidate_profiles"):
+            cur.execute(f"DELETE FROM {tbl} WHERE user_id IN {sel}", args)
+        cur.execute("DELETE FROM users WHERE email = %s", args)
+    if user_id is not None:
+        for tbl in ("consents", "candidate_profiles"):
+            cur.execute(f"DELETE FROM {tbl} WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
 def test_dsr_export_and_erase(client):
     """Test the DSR export and erasure flow for a candidate."""
     # 1. Create a dummy user
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM consents WHERE user_id IN (SELECT id FROM users WHERE email = 'dsr_test@emirati.gov.ae');")
-    cur.execute("DELETE FROM users WHERE email = 'dsr_test@emirati.gov.ae';")
+    _purge_test_user(cur, email='dsr_test@emirati.gov.ae')
     conn.commit()
     
     reg_payload = {
@@ -90,7 +113,7 @@ def test_dsr_export_and_erase(client):
     assert cur.fetchone()[0] >= 1
     
     # Clean up the anonymized user only (do NOT delete from admin_audit_log as it is append-only)
-    cur.execute("DELETE FROM users WHERE id = %s;", (anonymized_user_id,))
+    _purge_test_user(cur, user_id=anonymized_user_id)
     conn.commit()
     conn.close()
 
@@ -99,8 +122,7 @@ def test_dsr_erase_atomicity(client):
     # 1. Create a dummy user
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM consents WHERE user_id IN (SELECT id FROM users WHERE email = 'dsr_atom_test@emirati.gov.ae');")
-    cur.execute("DELETE FROM users WHERE email = 'dsr_atom_test@emirati.gov.ae';")
+    _purge_test_user(cur, email='dsr_atom_test@emirati.gov.ae')
     conn.commit()
     
     reg_payload = {
@@ -196,7 +218,6 @@ def test_dsr_erase_atomicity(client):
     assert cur.fetchone()[0] == 3
     
     # Clean up
-    cur.execute("DELETE FROM consents WHERE user_id = %s;", (user_id,))
-    cur.execute("DELETE FROM users WHERE id = %s;", (user_id,))
+    _purge_test_user(cur, user_id=user_id)
     conn.commit()
     conn.close()

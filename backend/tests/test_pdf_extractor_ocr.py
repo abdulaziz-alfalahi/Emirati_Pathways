@@ -10,9 +10,11 @@ an empty string with no OCR attempted:
 
   2. `_extract_pdf_stream` ran two of the three strategies its file-path twin
      ran. A scanned PDF through the stream entry point returned "" silently.
-     `parse_resume_from_stream` is the function that reaches it — imported in
-     enhanced_cv_routes.py but not yet called, so the gap was latent rather
-     than live.
+     `parse_resume_from_stream` is the function that reaches it. It was
+     imported into enhanced_cv_routes.py but never called, so the gap was
+     latent rather than live; that unused import has since been removed. The
+     function itself remains a working part of resume_parser's public API,
+     which is why these tests still cover the stream path.
 
 Both are about a caller's choice of entry point deciding whether OCR happens
 at all, which is exactly the kind of drift nothing else notices. These tests
