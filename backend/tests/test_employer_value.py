@@ -227,11 +227,30 @@ def test_queries_run_against_the_live_schema():
     import db_utils
     importlib.reload(db_utils)          # pick up the freshly loaded DB_* vars
 
+    import psycopg2
     try:
-        import psycopg2
-        psycopg2.connect(**db_utils.DATABASE_CONFIG, connect_timeout=5).close()
+        conn = psycopg2.connect(**db_utils.DATABASE_CONFIG, connect_timeout=5)
     except Exception as e:
         pytest.skip(f'database not reachable: {e}')
+
+    # The point of this test is the PLATFORM schema, which CI's fresh Postgres
+    # does not have — there is no migration runner and these are core tables,
+    # not something a single migration file creates. Skipping there is correct;
+    # failing would be a false signal about the SQL. It runs wherever the real
+    # schema exists, which is where it protects anything.
+    required = ('job_applications', 'job_postings', 'application_status_history')
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT table_name FROM information_schema.tables
+                            WHERE table_schema = 'public' AND table_name = ANY(%s)""",
+                        (list(required),))
+            present = {r[0] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+    missing = set(required) - present
+    if missing:
+        pytest.skip(f'platform schema not present here (missing: {sorted(missing)})')
 
     DATABASE_CONFIG = db_utils.DATABASE_CONFIG
 
