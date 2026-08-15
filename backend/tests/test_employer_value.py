@@ -260,6 +260,41 @@ def test_queries_run_against_the_live_schema():
     if missing:
         pytest.skip(f'platform schema not present here (missing: {sorted(missing)})')
 
+    # Presence is not enough — the SHAPES must match too. CI provisions from
+    # DATABASE_SCHEMA.md via migrate.py, which the workflow itself calls "the
+    # PRE-EID schema", and it disagrees with production on the join keys:
+    #
+    #   application_status_history.application_id   live: text   CI: uuid
+    #   job_postings.company_id                     live: uuid   CI: varchar
+    #
+    # So in CI this join is uuid-to-text and cannot work at all. That is a real
+    # divergence worth knowing about (it bears on the planned production reset),
+    # but it is not something this SQL can or should paper over — the module
+    # targets the production schema. Skip where the shape differs, and name the
+    # difference so the skip is informative rather than a shrug.
+    conn = psycopg2.connect(**db_utils.DATABASE_CONFIG, connect_timeout=5)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT table_name, column_name, data_type
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public'
+                   AND (table_name, column_name) IN
+                       (('job_applications','id'), ('application_status_history','application_id'))
+            """)
+            types = {(r[0], r[1]): r[2] for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+    app_id = types.get(('job_applications', 'id'))
+    hist_fk = types.get(('application_status_history', 'application_id'))
+    if app_id != hist_fk:
+        pytest.skip(
+            f'schema shape differs from production: job_applications.id is '
+            f'{app_id!r} but application_status_history.application_id is '
+            f'{hist_fk!r} — this join is only valid against the production schema'
+        )
+
     DATABASE_CONFIG = db_utils.DATABASE_CONFIG
 
     import psycopg2.extras
