@@ -296,7 +296,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/demographics',
       description: 'Deep-dive analysis of the talent pool',
       icon: Users,
-      allowedRoles: ['admin', 'platform_operator', 'compliance_auditor', 'board_member']
+      allowedRoles: ['admin', 'platform_operator', 'compliance_auditor', 'board_member', 'career_services_operator']
     },
     {
       name: 'Operations Monitoring',

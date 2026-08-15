@@ -1012,10 +1012,21 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              {/* career_services_operator added by owner decision 2026-08-15.
+                  The navigation had always offered this page to that role while
+                  the route refused it, so it bounced to the home page
+                  (fb_1786427865_96351906). #404 narrowed the menu to stop the
+                  lie; the owner's call is that the page was right and the ROUTE
+                  was wrong — counselling operators need the talent-pool picture,
+                  and they already see far more identifying data in the CRM
+                  roster than these aggregates contain.
+                  NB the comment sits ABOVE <Route: inside the element it pushes
+                  allowedRoles out of the window routeAccess.test.ts parses, and
+                  the path reads as undeclared. */}
               <Route
                 path="demographics"
                 element={
-                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'admin', 'platform_operator', 'compliance_auditor', 'platform_operator']}>
+                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'platform_operator', 'compliance_auditor', 'career_services_operator']}>
                     <DemographicsAnalytics />
                   </ProtectedRoute>
                 }
