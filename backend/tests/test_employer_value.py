@@ -87,13 +87,21 @@ def test_full_coverage_is_marked_complete(q):
 # ── The settled decisions ───────────────────────────────────────────────────
 
 def test_only_the_authoritative_timestamp_is_read(q):
-    """job_applications carries applied_at AND submitted_at, populated
-    identically today. Reading both is how two dashboards start disagreeing."""
+    """job_applications carries submitted_at AND applied_at, populated
+    identically today. Reading both is how two dashboards start disagreeing.
+
+    submitted_at is the one chosen, on evidence: all THREE DDLs that create this
+    table produce it, and none produces applied_at, which exists in the live
+    database alone. An environment rebuilt from the repo DDL — as the planned
+    production reset will be — would have no applied_at at all.
+    """
     ev.employer_value(COMPANY, days=30)
 
     all_sql = ' '.join(c['sql'] for c in q.calls)
-    assert 'applied_at' in all_sql
-    assert 'submitted_at' not in all_sql
+    assert 'submitted_at' in all_sql
+    assert 'applied_at' not in all_sql, (
+        'applied_at does not survive a rebuild from the repo DDL'
+    )
 
 
 def test_placements_are_counted_at_the_transition_not_the_current_status(q):

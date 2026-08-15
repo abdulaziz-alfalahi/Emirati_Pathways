@@ -14,10 +14,23 @@ DECISIONS SETTLED HERE, deliberately and in one place:
    adjudicating whether the employer already knew the candidate, which is an
    argument we could not win.
 
-2. AUTHORITATIVE TIMESTAMP — `job_applications.applied_at`. The table also
-   carries `submitted_at`, and both are populated identically in all rows today
-   (verified 2026-08-16), but duplicated columns drift and then two dashboards
-   disagree. One is named here; nothing else in this module reads the other.
+2. AUTHORITATIVE TIMESTAMP — `job_applications.submitted_at`. The table also
+   carries `applied_at`, populated identically in all rows today (verified
+   2026-08-16), but duplicated columns drift and then two dashboards disagree.
+   One is named here; nothing else in this module reads the other.
+
+   `submitted_at` is chosen on evidence, not taste. THREE separate DDLs create
+   this table — migrations/20241001_job_application.sql,
+   create_job_application_tables.sql, and the runtime CREATE TABLE in
+   routes/inline_routes.py that actually runs in a fresh environment — and ALL
+   THREE create `submitted_at`. NONE creates `applied_at`, which exists in the
+   live database alone, by accident of history.
+
+   That matters for the planned production reset: an environment rebuilt from
+   the repo's DDL would have no `applied_at`, and anything depending on it would
+   break on day one. CI caught exactly this — `column a.applied_at does not
+   exist` — which is the repo-vs-live DDL drift CLAUDE.md warns about, arriving
+   as a test failure instead of an outage.
 
 3. WHEN A PLACEMENT COUNTS — the period in which the placement happened, not
    the period the application arrived. Value is delivered at the hire.
@@ -64,8 +77,8 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 logger = logging.getLogger(__name__)
 
-# Decision 2. Nothing in this module reads `submitted_at`.
-APPLIED_AT = 'applied_at'
+# Decision 2. Nothing in this module reads `applied_at`.
+SUBMITTED_AT = 'submitted_at'
 
 # THE JOIN NEEDS A CAST, AND THAT IS A SYMPTOM (verified live 2026-08-16).
 #
@@ -139,7 +152,7 @@ def _median_days_to(company_id: str, target_status: str, days: Optional[int]) ->
     sql = f"""
         WITH first_arrival AS (
             SELECT a.id,
-                   a.{APPLIED_AT} AS applied_at,
+                   a.{SUBMITTED_AT} AS submitted_at,
                    min(h.changed_at) AS reached_at
               FROM job_applications a
               JOIN job_postings p ON p.id::text = a.job_id
@@ -147,15 +160,15 @@ def _median_days_to(company_id: str, target_status: str, days: Optional[int]) ->
              WHERE p.company_id = %s
                AND h.new_status = %s
                {_window_clause('h.changed_at', days)}
-             GROUP BY a.id, a.{APPLIED_AT}
+             GROUP BY a.id, a.{SUBMITTED_AT}
         )
         SELECT count(*) AS measured,
                percentile_cont(0.5) WITHIN GROUP (
-                   ORDER BY EXTRACT(EPOCH FROM (reached_at - applied_at)) / 86400.0
+                   ORDER BY EXTRACT(EPOCH FROM (reached_at - submitted_at)) / 86400.0
                ) AS median_days
           FROM first_arrival
-         WHERE applied_at IS NOT NULL
-           AND reached_at >= applied_at
+         WHERE submitted_at IS NOT NULL
+           AND reached_at >= submitted_at
     """
     params = (company_id, target_status, days) if days else (company_id, target_status)
     row = _query(sql, params, one=True)
@@ -211,7 +224,7 @@ def stage_counts(company_id: str, days: Optional[int] = None) -> Dict[str, int]:
           FROM job_applications a
           JOIN job_postings p ON p.id::text = a.job_id
          WHERE p.company_id = %s
-           {_window_clause('a.' + APPLIED_AT, days)}
+           {_window_clause('a.' + SUBMITTED_AT, days)}
          GROUP BY a.status
     """
     params = (company_id, days) if days else (company_id,)
