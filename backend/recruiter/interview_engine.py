@@ -410,7 +410,7 @@ class InterviewSchedulingEngine:
                 self.logger.warning(f"history record failed: {hist_err}")
             cur.execute("""
                 UPDATE job_applications
-                SET status = 'interview'
+                SET status = 'interview_scheduled'
                 WHERE candidate_id::text = %s
                   AND job_id::text IN (SELECT id::text FROM job_postings WHERE jd_id::text = %s)
                   AND status NOT IN ('withdrawn', 'rejected', 'interview')

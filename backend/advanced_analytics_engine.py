@@ -279,8 +279,8 @@ class AdvancedAnalyticsEngine:
                 SELECT 
                     sector,
                     COUNT(*) as total_applications,
-                    SUM(CASE WHEN status = 'accepted' THEN 1 ELSE 0 END) as successful_applications,
-                    SUM(CASE WHEN is_emirati = 1 AND status = 'accepted' THEN 1 ELSE 0 END) as emirati_successful,
+                    SUM(CASE WHEN status = 'placed' THEN 1 ELSE 0 END) as successful_applications,
+                    SUM(CASE WHEN is_emirati = 1 AND status = 'placed' THEN 1 ELSE 0 END) as emirati_successful,
                     AVG(experience_years) as avg_experience
                 FROM job_applications 
                 WHERE application_date >= date('now', '-{} days')
@@ -384,7 +384,7 @@ class AdvancedAnalyticsEngine:
                 SELECT 
                     ja.sector,
                     COUNT(*) as total_emirati_applications,
-                    SUM(CASE WHEN ja.status = 'accepted' THEN 1 ELSE 0 END) as successful_placements,
+                    SUM(CASE WHEN ja.status = 'placed' THEN 1 ELSE 0 END) as successful_placements,
                     AVG(ja.experience_years) as avg_experience
                 FROM job_applications ja
                 WHERE ja.is_emirati = 1

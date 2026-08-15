@@ -1854,7 +1854,7 @@ def respond_to_offer(offer_id):
                         for (acc_app_id,) in metamorphosis_cur.fetchall():
                             record_status_change(acc_app_id, 'accepted', notify_candidate=False)
                         metamorphosis_cur.execute("""
-                            UPDATE job_applications SET status = 'accepted', updated_at = NOW()
+                            UPDATE job_applications SET status = 'placed', updated_at = NOW()
                             WHERE candidate_id::text = %s AND job_id::text = %s AND status != 'accepted'
                         """, (str(candidate_id_for_link), str(jd_id)))
                     except Exception:

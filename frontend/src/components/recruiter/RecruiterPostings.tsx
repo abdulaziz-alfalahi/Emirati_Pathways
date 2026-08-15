@@ -524,17 +524,17 @@ const RecruiterPostings: React.FC = () => {
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <Badge className={`text-[10px] font-dubai-medium ${
-                                                                        app.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                        app.status === 'placed' ? 'bg-green-50 text-green-700 border-green-200' :
                                                                         app.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200' :
                                                                         app.status === 'shortlisted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                                         'bg-amber-50 text-amber-700 border-amber-200'
                                                                     }`}>
-                                                                        {app.status === 'accepted' ? b('Accepted', 'مقبول') :
+                                                                        {app.status === 'placed' ? b('Placed', 'تم التوظيف') :
                                                                          app.status === 'rejected' ? b('Rejected', 'مرفوض') :
                                                                          app.status === 'shortlisted' ? b('Shortlisted', 'مدرج') :
                                                                          b('Pending', 'قيد الانتظار')}
                                                                     </Badge>
-                                                                    {app.status === 'pending' && (
+                                                                    {app.status === 'submitted' && (
                                                                         <div className="flex gap-1">
                                                                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 font-dubai-medium"
                                                                                 onClick={() => updateApplicationStatus(app.application_id, 'shortlisted', `${p.posting_type}-${p.id}`)}

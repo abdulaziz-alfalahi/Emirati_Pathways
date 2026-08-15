@@ -86,8 +86,16 @@ except ImportError:  # pragma: no cover
 
 # Statuses a candidate may see; transitions the candidate may set themselves.
 _CANDIDATE_SETTABLE = {'withdrawn'}
-_VALID_STATUSES = {'submitted', 'under_review', 'shortlisted', 'interview',
-                   'offer', 'hired', 'rejected', 'withdrawn'}
+# The canonical ladder, from the one module that defines it (#410). This set
+# previously omitted three values its OWN code wrote — 'accepted',
+# 'interview_scheduled' and 'offered' — so a status could be written that this
+# very endpoint would have refused.
+try:
+    from backend.application_stages import ALL_APPLICATION_STATUSES, normalise_status
+except ImportError:  # pragma: no cover
+    from application_stages import ALL_APPLICATION_STATUSES, normalise_status
+
+_VALID_STATUSES = set(ALL_APPLICATION_STATUSES)
 
 _BASE_SELECT = """
     SELECT ja.id, ja.job_id, ja.candidate_id, ja.status, ja.cover_letter,
