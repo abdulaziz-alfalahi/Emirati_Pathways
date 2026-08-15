@@ -26,6 +26,11 @@ from flask import Blueprint, jsonify, request, Response
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 try:
+    from backend.rejection_reasons import validate_rejection, reason_options
+except ImportError:  # pragma: no cover
+    from rejection_reasons import validate_rejection, reason_options
+
+try:
     from backend.auth.access_control import require_roles, resolve_roles, \
         CAREER_SERVICES_ROLES, ADMIN_ROLES
     from backend.db_utils import execute_query
@@ -990,6 +995,19 @@ def update_invitation(event_id, candidate_id):
 OUTCOME_STAGES = {'interviewed', 'shortlisted', 'offered', 'placed', 'rejected'}
 
 
+@recruitment_events_bp.route('/rejection-reasons', methods=['GET'])
+@jwt_required()
+def list_rejection_reasons():
+    """The standardised rejection reasons, for the dropdown.
+
+    Served rather than hardcoded in the client so the list cannot drift from
+    what the endpoint will actually accept — the same failure that had four
+    copies of the stage vocabulary disagreeing (#410).
+    """
+    arabic = (request.args.get('lang') or '').lower().startswith('ar')
+    return jsonify({'success': True, 'data': reason_options(arabic=arabic)})
+
+
 @recruitment_events_bp.route('/<event_id>/outcomes', methods=['POST'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def record_outcome(event_id):
@@ -1008,6 +1026,18 @@ def record_outcome(event_id):
     if stage not in OUTCOME_STAGES:
         return jsonify({'success': False,
                         'message': f'stage must be one of: {", ".join(sorted(OUTCOME_STAGES))}'}), 400
+
+    # A rejection must say WHY, from the standardised list (owner decision
+    # 2026-08-15). Free text cannot be counted, cannot be compared between
+    # employers, and cannot be shown to a candidate without reading it first —
+    # which is the difference between "why are candidates not converting here"
+    # being a question and being a reading exercise.
+    if stage == 'rejected':
+        problem = validate_rejection(d.get('reason'), d.get('note'))
+        if problem:
+            return jsonify({'success': False, 'error_code': 'rejection_reason_required',
+                            'message': problem,
+                            'reasons': reason_options()}), 400
     try:
         execute_query("""
             INSERT INTO event_outcomes (event_id, candidate_id, company_id, stage, reason, recorded_by)
