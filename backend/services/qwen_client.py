@@ -26,6 +26,11 @@ from backend.config.qwen_config import (
     get_model_for_task,
 )
 
+try:
+    from backend.services import ai_usage_log
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from services import ai_usage_log
+
 logger = logging.getLogger(__name__)
 
 
@@ -122,8 +127,35 @@ def _get_client() -> OpenAI:
     return _client
 
 
+def _record_usage(model: str, task_type: str, prompt_tokens: int, completion_tokens: int,
+                  latency_seconds: float, attempt: int, outcome: str) -> None:
+    """Persist one API response to ai_usage_log (migration 069).
+
+    Wrapped so that a telemetry problem can never fail an AI call. ai_usage_log
+    already swallows its own errors; this is the second belt, covering an import
+    or attribute problem in this module rather than a database one.
+    """
+    try:
+        ai_usage_log.record(
+            model=model,
+            task_type=task_type,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=int(latency_seconds * 1000) if latency_seconds is not None else None,
+            attempt=attempt,
+            outcome=outcome,
+        )
+    except Exception as e:  # pragma: no cover — defensive
+        logger.debug(f"[Qwen] usage not recorded: {e}")
+
+
 def get_usage_summary() -> Dict[str, Any]:
-    """Return cumulative token usage and cost estimates."""
+    """Cumulative token usage and cost estimates for THIS PROCESS only.
+
+    Kept for callers that want since-restart figures. For the real question —
+    what the platform spends over time — use ai_usage_log.summary(), which
+    survives restarts. This one is reset by every deploy.
+    """
     return _usage_tracker.summary()
 
 
@@ -213,25 +245,35 @@ def chat_completion(
 
             # Track usage
             usage = response.usage
+            prompt_tok = getattr(usage, 'prompt_tokens', 0) if usage else 0
+            comp_tok = getattr(usage, 'completion_tokens', 0) if usage else 0
             if usage:
-                _usage_tracker.record(model, usage.prompt_tokens, usage.completion_tokens)
+                _usage_tracker.record(model, prompt_tok, comp_tok)
                 logger.info(
                     f"[Qwen] model={model} task={task_type} attempt={attempt} "
-                    f"latency={latency}s prompt_tok={usage.prompt_tokens} "
-                    f"comp_tok={usage.completion_tokens}"
+                    f"latency={latency}s prompt_tok={prompt_tok} "
+                    f"comp_tok={comp_tok}"
                 )
 
             # Parse JSON
             parsed = _extract_json(raw_text)
             if parsed is not None:
                 logger.info(f"[Qwen] ✅ Valid JSON returned (task={task_type}, model={model})")
+                _record_usage(model, task_type, prompt_tok, comp_tok, latency, attempt,
+                              ai_usage_log.OUTCOME_OK)
                 return parsed
 
-            # JSON invalid — retry
+            # JSON invalid — retry.
+            #
+            # Recorded as its own outcome rather than lumped in with errors:
+            # the API answered and billed us, and delivered nothing usable. That
+            # is a distinct and more interesting kind of waste than a failure.
             logger.warning(
                 f"[Qwen] ⚠️ Invalid JSON on attempt {attempt}/{max_retries} "
                 f"(task={task_type}, model={model}). Will retry."
             )
+            _record_usage(model, task_type, prompt_tok, comp_tok, latency, attempt,
+                          ai_usage_log.OUTCOME_INVALID_JSON)
             last_error = QwenParsingError(
                 f"Malformed JSON on attempt {attempt}", raw_response=raw_text, model=model
             )
@@ -243,11 +285,14 @@ def chat_completion(
                 f"[Qwen] ⚠️ Transient error on attempt {attempt}/{max_retries}: {e}. "
                 f"Backing off {backoff}s."
             )
+            _record_usage(model, task_type, 0, 0, latency, attempt, ai_usage_log.OUTCOME_ERROR)
             last_error = e
             time.sleep(backoff)
 
         except APIError as e:
             logger.error(f"[Qwen] ❌ API error (attempt {attempt}): {e}")
+            _record_usage(model, task_type, 0, 0, round(time.time() - start, 3), attempt,
+                          ai_usage_log.OUTCOME_ERROR)
             last_error = e
             # A 4xx (bad request / auth / invalid param) is deterministic —
             # retrying just burns time and wedged the match path (#127).

@@ -740,6 +740,7 @@ _additional_blueprints = [
     ('backend.routes.board_meetings_routes', 'board_meetings_bp', None, 'Board Meetings'),
     ('backend.routes.maintenance_routes', 'maintenance_bp', None, 'Maintenance Status'),
     ('backend.routes.maintenance_routes', 'maintenance_admin_bp', None, 'Maintenance Admin'),
+    ('backend.routes.ai_usage_routes', 'ai_usage_bp', None, 'AI Usage (admin)'),
     ('backend.routes.staff_invitation_routes', 'staff_invitation_bp', None, 'Staff Invitations'),
     ('backend.routes.staff_invitation_routes', 'staff_invitation_public_bp', None, 'Staff Invitations (public)'),
     ('backend.routes.nafis_talent_routes', 'nafis_talent_bp', None, 'NAFIS Talent'),
