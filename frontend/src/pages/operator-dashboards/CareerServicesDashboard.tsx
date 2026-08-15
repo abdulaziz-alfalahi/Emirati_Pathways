@@ -184,6 +184,24 @@ export default function CareerServicesDashboard() {
             // value so legacy name-rows still display their name, never an EID.
             assignedToName: profile.assigned_to_name || profile.assigned_to || 'Unassigned',
             dateOfCall: profile.date_of_call || null,
+            // NAFIS-sourced record, read-only (fb_1786426324_770d7191).
+            nafis: {
+              gender: profile.gender,
+              ageGroup: profile.age_group,
+              jobSeekerType: profile.job_seeker_type,
+              emirateOfResidence: profile.emirate_of_residence,
+              educationLevel: profile.education_level,
+              specialization: profile.specialization,
+              subSpecialization: profile.sub_specialization,
+              gpa: profile.gpa,
+              isStudent: profile.is_student,
+              militaryStatus: profile.military_status,
+              maritalStatus: profile.marital_status,
+              personOfDetermination: profile.is_person_of_determination,
+              determinationType: profile.determination_type,
+              nationality: profile.nationality,
+              addedAt: profile.added_at,
+            },
             educationLevel: profile.education_level || '',
             isStudent: profile.is_student,
             specialization: profile.specialization || '',
@@ -1397,6 +1415,77 @@ const LOCATION_OPTIONS = [
                     <p className="text-sm font-mono text-teal-800">{editingCandidate.eid}</p>
                   </div>
                 </div>
+
+                {/* NAFIS record — read-only (fb_1786426324_770d7191).
+                    "reduce the need to access multiple systems": the roster has
+                    carried these since the import and simply never showed them.
+
+                    Read-only on purpose. These come from NAFIS; editing them
+                    here would create a second, quietly diverging copy of data
+                    the platform does not own. The counselling record below is
+                    the part this team fills in.
+
+                    Fields with no value say so rather than being hidden — for a
+                    counsellor "we don't hold this" is information, and hiding
+                    empties would make the panel look complete when it is not. */}
+                {editingCandidate.nafis && (() => {
+                  const n = editingCandidate.nafis;
+                  const fields: [string, string, any][] = [
+                    ['Gender', 'الجنس', n.gender],
+                    ['Age range', 'الفئة العمرية', n.ageGroup],
+                    ['Job seeker type', 'نوع الباحث عن عمل', n.jobSeekerType],
+                    ['Emirate of residence', 'إمارة الإقامة', n.emirateOfResidence],
+                    ['Nationality', 'الجنسية', n.nationality],
+                    ['Education', 'المؤهل', n.educationLevel],
+                    ['Specialisation', 'التخصص', n.specialization],
+                    ['Sub-specialisation', 'التخصص الفرعي', n.subSpecialization],
+                    ['GPA', 'المعدل', n.gpa],
+                    ['Currently studying', 'يدرس حالياً', n.isStudent],
+                    ['Military status', 'الحالة العسكرية', n.militaryStatus],
+                    ['Marital status', 'الحالة الاجتماعية', n.maritalStatus],
+                    ['Person of determination', 'من أصحاب الهمم', n.personOfDetermination],
+                    ['Determination type', 'نوع الإعاقة', n.determinationType],
+                  ];
+                  const shown = (v: any) =>
+                    v === true ? t('Yes', 'نعم')
+                      : v === false ? t('No', 'لا')
+                      : (v === null || v === undefined || v === '') ? null : String(v);
+                  const known = fields.filter(([, , v]) => shown(v) !== null).length;
+                  return (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-slate-800">
+                          {t('NAFIS record', 'بيانات نافس')}
+                        </h4>
+                        <span className="text-xs text-slate-500">
+                          {t(`${known} of ${fields.length} fields recorded · read-only`,
+                             `${known} من ${fields.length} حقلاً مسجّلة · للقراءة فقط`)}
+                        </span>
+                      </div>
+                      <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {fields.map(([en, ar, v]) => (
+                          <div key={en} className="min-w-0">
+                            <p className="text-[11px] text-slate-500">{t(en, ar)}</p>
+                            <p className={`truncate text-sm ${shown(v) ? 'text-slate-900' : 'text-slate-400'}`}>
+                              {shown(v) ?? t('Not recorded', 'غير مسجّل')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      {n.addedAt && (
+                        /* Deliberately NOT called a registration date: the import
+                           does not carry when they registered with NAFIS, and
+                           labelling an import timestamp as one would be a
+                           plausible-looking lie. */
+                        <p className="text-[11px] text-slate-500">
+                          {t('Added to this platform on ', 'أُضيف إلى المنصة في ')}
+                          {new Date(n.addedAt).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB',
+                            { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Counselling record — the fields the team fills in on a
                     call (fb_1786009859). Two columns because the panel is now
