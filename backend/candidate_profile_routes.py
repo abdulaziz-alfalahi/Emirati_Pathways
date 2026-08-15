@@ -1700,6 +1700,155 @@ def get_crm_filter_options():
         return jsonify({'success': False, 'message': 'Failed to load filter options'}), 500
 
 
+# Fields whose changes are worth a history row (#fb_1786356071_38fe48a4).
+# Deliberately the ones a counsellor ASKS about — status, ownership, remarks —
+# not every column on the record. A timeline that logs forty fields per save is
+# a diff, not a history, and nobody reads it.
+# The day field-level counselling history began being recorded (migration 067).
+# Shown in the timeline so a short history reads as "we started keeping this
+# then", not as "this candidate has no past".
+CRM_HISTORY_SINCE = '2026-08-15'
+
+
+def _iso_dt(v):
+    """Timestamps arrive as datetime or str depending on the driver path."""
+    if v is None:
+        return None
+    return v.isoformat() if hasattr(v, 'isoformat') else str(v)
+
+
+CRM_TRACKED_FIELDS = (
+    'call_status', 'work_status', 'cv_status', 'looking_status',
+    'counseling_remarks', 'assigned_to', 'job_seeker_type',
+)
+
+
+def _record_crm_changes(cursor, candidate_id, changed_by, before, after, source='edit'):
+    """Write one history row per field that actually changed.
+
+    Never raises. Losing a history row is bad; failing the counsellor's save
+    because the history insert failed would be worse — they would retype the
+    call notes and we would still have no history.
+
+    Comparison is on the STRING form, because a form posts '' where the column
+    holds NULL and the two mean the same thing here. Without that, every save
+    would log a spurious NULL -> '' change on each untouched field.
+    """
+    def norm(v):
+        if v is None:
+            return None
+        v = str(v).strip()
+        return v or None
+
+    try:
+        for field in CRM_TRACKED_FIELDS:
+            if field not in after:          # not part of this save
+                continue
+            old, new = norm(before.get(field)), norm(after.get(field))
+            if old == new:
+                continue
+            cursor.execute("""
+                INSERT INTO candidate_crm_history
+                    (candidate_id, changed_by, field, old_value, new_value, source)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (candidate_id, changed_by, field, old, new, source))
+    except Exception as e:
+        logger.warning(f"crm history not recorded for {candidate_id}: {e}")
+
+
+@crm_profile_bp.route('/crm-candidates/<user_id>/history', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def crm_candidate_history(user_id):
+    """One candidate's interaction history, newest first (fb_1786356071_38fe48a4).
+
+    Merges what is already recorded across the platform with the counselling
+    changes that migration 067 started capturing:
+
+      counselling  candidate_crm_history  — status, ownership, remarks
+      applied      job_applications       — what they applied to, and where it got to
+      interviewed  interview_schedules    — "how many times they have been interviewed"
+      nominated    event_invitations      — "how many times nominated and to which"
+      attended     event_attendance       — turned up on the day
+
+    Gated to career-services roles: it carries counselling remarks, so it is as
+    sensitive as the roster itself.
+
+    Each source is read independently and a failure in one does NOT empty the
+    timeline — a missing interview table should cost the interviews, not the
+    entire history. The response says which sources answered, so a short
+    timeline can be told apart from a broken one.
+    """
+    events, degraded = [], []
+
+    def collect(label, sql, params, build):
+        try:
+            for r in (execute_query(sql, params) or []):
+                events.append(build(r))
+        except Exception as e:
+            logger.warning(f"history source {label} failed for {user_id}: {e}")
+            degraded.append(label)
+
+    collect('counselling', """
+        SELECT h.changed_at, h.field, h.old_value, h.new_value, h.source,
+               COALESCE(u.full_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS actor
+          FROM candidate_crm_history h
+          LEFT JOIN users u ON u.id = h.changed_by
+         WHERE h.candidate_id = %s
+         ORDER BY h.changed_at DESC LIMIT 200
+    """, (user_id,), lambda r: {
+        'kind': 'counselling', 'at': _iso_dt(r['changed_at']), 'actor': r.get('actor'),
+        'field': r['field'], 'from': r['old_value'], 'to': r['new_value'],
+        'via': r.get('source'),
+    })
+
+    collect('applied', """
+        SELECT a.applied_at, a.status, j.title, c.company_name
+          FROM job_applications a
+          LEFT JOIN job_postings j ON j.id::text = a.job_id::text
+          LEFT JOIN companies c ON c.id = j.company_id
+         WHERE a.candidate_id = %s
+         ORDER BY a.applied_at DESC LIMIT 100
+    """, (user_id,), lambda r: {
+        'kind': 'applied', 'at': _iso_dt(r['applied_at']),
+        'title': r.get('title'), 'company': r.get('company_name'), 'status': r.get('status'),
+    })
+
+    collect('nominated', """
+        SELECT i.invited_at, i.response, i.source, e.title, e.starts_at
+          FROM event_invitations i
+          JOIN recruitment_events e ON e.id = i.event_id
+         WHERE i.candidate_id = %s
+         ORDER BY i.invited_at DESC LIMIT 100
+    """, (user_id,), lambda r: {
+        'kind': 'nominated', 'at': _iso_dt(r['invited_at']),
+        'title': r.get('title'), 'response': r.get('response'), 'via': r.get('source'),
+    })
+
+    collect('attended', """
+        SELECT a.checked_in_at, a.queue_token, a.method, e.title
+          FROM event_attendance a
+          JOIN recruitment_events e ON e.id = a.event_id
+         WHERE a.user_id = %s
+         ORDER BY a.checked_in_at DESC LIMIT 100
+    """, (user_id,), lambda r: {
+        'kind': 'attended', 'at': _iso_dt(r['checked_in_at']),
+        'title': r.get('title'), 'token': r.get('queue_token'), 'via': r.get('method'),
+    })
+
+    events = [e for e in events if e.get('at')]
+    events.sort(key=lambda e: e['at'], reverse=True)
+
+    return jsonify({'success': True, 'data': {
+        'events': events[:300],
+        'counts': {k: sum(1 for e in events if e['kind'] == k)
+                   for k in ('counselling', 'applied', 'nominated', 'attended')},
+        # Named so the UI can say "history begins here" rather than implying the
+        # candidate has no past. Counselling changes before this date were
+        # overwritten in place and cannot be recovered.
+        'counselling_history_since': CRM_HISTORY_SINCE,
+        'degraded_sources': degraded,
+    }})
+
 @crm_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def update_crm_candidate(user_id):
@@ -1716,8 +1865,13 @@ def update_crm_candidate(user_id):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
-            cursor.execute("SELECT id, assigned_to FROM candidate_profiles WHERE user_id = %s", (user_id,))
+            cursor.execute("""SELECT id, assigned_to, call_status, work_status, cv_status,
+                                     looking_status, counseling_remarks, job_seeker_type
+                                FROM candidate_profiles WHERE user_id = %s""", (user_id,))
             exists = cursor.fetchone()
+            # Snapshot before the UPDATE — afterwards the previous values
+            # are gone, which is the whole reason this history exists.
+            _before = dict(exists) if exists else {}
             # Caseload scoping (BOLA fix): a front-line agent may only edit a
             # candidate assigned to them; supervisors/admin may edit any.
             me = str(get_jwt_identity())
@@ -1828,7 +1982,22 @@ def update_crm_candidate(user_id):
                     data.get('unavailabilityReason'),
                     data.get('rolePreferences')
                 ))
-                
+
+            # Record what actually changed, BEFORE the commit, so the history and
+            # the record it describes land together or not at all. An edit that
+            # committed without its history would be exactly the silent
+            # overwrite this feature exists to end.
+            if exists:
+                _record_crm_changes(cursor, user_id, me, _before, {
+                    'call_status': data.get('callStatus'),
+                    'work_status': data.get('workStatus'),
+                    'cv_status': data.get('cvStatus'),
+                    'looking_status': data.get('lookingStatus'),
+                    'counseling_remarks': data.get('remarks'),
+                    'assigned_to': assigned_to_val,
+                    'job_seeker_type': data.get('jobSeekerType'),
+                })
+
             conn.commit()
 
             # New assignee gets told their caseload grew (C4 gap: assignment

@@ -51,6 +51,9 @@ export default function CareerServicesDashboard() {
   // Editing Sheet
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState<any>(null);
+  // Interaction history for the candidate in the sheet (fb_1786356071_38fe48a4).
+  const [history, setHistory] = useState<any>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   // When the roster genuinely last came from NAFIS. The refresh button below
   // re-reads this database and contacts NAFIS not at all, so its own timestamp
@@ -260,7 +263,20 @@ export default function CareerServicesDashboard() {
     }
   };
 
+  const loadHistory = async (candidateId: string) => {
+    setHistory(null); setHistoryLoading(true);
+    try {
+      const r = await restClient.get(`/api/profile/crm-candidates/${candidateId}/history`);
+      setHistory(r.data?.data || null);
+    } catch {
+      // null = could not load, which the panel states as such rather than
+      // showing an empty timeline that reads as "nothing ever happened".
+      setHistory(null);
+    } finally { setHistoryLoading(false); }
+  };
+
   const handleEditClick = (candidate: any) => {
+    loadHistory(candidate.id);
     setEditingCandidate(candidate);
     setEditForm({
       callStatus: candidate.callStatus,
@@ -1414,6 +1430,106 @@ const LOCATION_OPTIONS = [
                     <h4 className="font-bold text-slate-900">{editingCandidate.name}</h4>
                     <p className="text-sm font-mono text-teal-800">{editingCandidate.eid}</p>
                   </div>
+                </div>
+
+                {/* Interaction history (fb_1786356071_38fe48a4).
+                    "Clicking a candidate record opens a timeline view showing
+                    the complete history of interaction."
+
+                    Merges counselling changes (recorded from 15 Aug 2026) with
+                    applications, open-day nominations and attendance, which the
+                    platform already recorded. The counselling half necessarily
+                    starts at that date: before it, candidate_profiles was
+                    updated in place and the previous values are gone. The panel
+                    says so, because a short history presented as a complete one
+                    would mislead exactly the person relying on it. */}
+                <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {t('Interaction history', 'سجل التفاعلات')}
+                    </h4>
+                    {history?.counts && (
+                      <span className="text-xs text-slate-500">
+                        {[
+                          history.counts.counselling && t(`${history.counts.counselling} counselling`, `${history.counts.counselling} توجيه`),
+                          history.counts.applied && t(`${history.counts.applied} applications`, `${history.counts.applied} طلبات`),
+                          history.counts.nominated && t(`${history.counts.nominated} nominations`, `${history.counts.nominated} ترشيحات`),
+                          history.counts.attended && t(`${history.counts.attended} attended`, `${history.counts.attended} حضور`),
+                        ].filter(Boolean).join(' · ') || t('nothing recorded yet', 'لا يوجد سجل بعد')}
+                      </span>
+                    )}
+                  </div>
+
+                  {historyLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin" /> {t('Loading history…', 'جارٍ تحميل السجل…')}
+                    </div>
+                  ) : !history ? (
+                    <p className="text-sm text-slate-500">
+                      {t('The history could not be loaded just now.', 'تعذّر تحميل السجل حالياً.')}
+                    </p>
+                  ) : (history.events || []).length === 0 ? (
+                    <p className="text-sm text-slate-500">
+                      {t('Nothing recorded for this candidate yet.', 'لا يوجد سجل لهذا المرشح بعد.')}
+                    </p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {history.events.slice(0, 40).map((e: any, i: number) => {
+                        const when = e.at
+                          ? new Date(e.at).toLocaleString(isRTL ? 'ar-AE' : 'en-GB',
+                              { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : '';
+                        const label = (f: string) => ({
+                          call_status: t('Call status', 'حالة الاتصال'),
+                          work_status: t('Work status', 'حالة العمل'),
+                          cv_status: t('CV status', 'حالة السيرة'),
+                          looking_status: t('Looking status', 'حالة البحث'),
+                          counseling_remarks: t('Remark', 'ملاحظة'),
+                          assigned_to: t('Assigned to', 'مُسند إلى'),
+                          job_seeker_type: t('Job seeker type', 'نوع الباحث'),
+                        } as Record<string, string>)[f] || f;
+                        const dot = { counselling: 'bg-ehrdc-teal', applied: 'bg-blue-500',
+                                      nominated: 'bg-amber-500', attended: 'bg-green-600' }[e.kind as string] || 'bg-slate-400';
+                        return (
+                          <li key={i} className="flex gap-2.5">
+                            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-slate-800">
+                                {e.kind === 'counselling' && (
+                                  <>
+                                    <span className="font-medium">{label(e.field)}</span>
+                                    {' '}
+                                    {e.from
+                                      ? t(`changed from “${e.from}” to “${e.to}”`, `تغيّر من "${e.from}" إلى "${e.to}"`)
+                                      : t(`set to “${e.to}”`, `تم تعيينه إلى "${e.to}"`)}
+                                  </>
+                                )}
+                                {e.kind === 'applied' && t(
+                                  `Applied for ${e.title || 'a vacancy'}${e.company ? ` at ${e.company}` : ''}${e.status ? ` — ${e.status}` : ''}`,
+                                  `تقدّم لوظيفة ${e.title || ''}${e.company ? ` لدى ${e.company}` : ''}`)}
+                                {e.kind === 'nominated' && t(
+                                  `Nominated for ${e.title || 'an open day'}${e.response ? ` — ${e.response}` : ''}`,
+                                  `رُشِّح لـ ${e.title || 'يوم مفتوح'}`)}
+                                {e.kind === 'attended' && t(
+                                  `Attended ${e.title || 'an open day'}${e.token ? ` (queue ${e.token})` : ''}`,
+                                  `حضر ${e.title || 'يوماً مفتوحاً'}`)}
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                {when}{e.actor ? ` · ${e.actor}` : ''}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+
+                  {history?.counselling_history_since && (
+                    <p className="text-[11px] text-slate-500">
+                      {t(`Counselling changes have been recorded since ${history.counselling_history_since}. Earlier edits overwrote the record and cannot be recovered.`,
+                         `تُسجَّل تغييرات التوجيه منذ ${history.counselling_history_since}. التعديلات الأقدم استبدلت السجل ولا يمكن استرجاعها.`)}
+                    </p>
+                  )}
                 </div>
 
                 {/* NAFIS record — read-only (fb_1786426324_770d7191).
