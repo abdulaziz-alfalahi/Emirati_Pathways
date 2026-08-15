@@ -209,7 +209,7 @@ class HRDashboardEngine:
                         SELECT 
                             j.id, j.title, j.department,
                             COUNT(ja.id) as applications_count,
-                            COUNT(CASE WHEN ja.status = 'accepted' THEN 1 END) as hires_count
+                            COUNT(CASE WHEN ja.status = 'placed' THEN 1 END) as hires_count
                         FROM job_postings j
                         LEFT JOIN job_applications ja ON j.jd_id = ja.job_id
                         WHERE (j.status = 'active' OR j.status = 'published') {company_filter}

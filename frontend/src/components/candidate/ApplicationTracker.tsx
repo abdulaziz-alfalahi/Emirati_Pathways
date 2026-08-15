@@ -40,7 +40,11 @@ interface Application {
   company: string;
   location: string;
   appliedDate: string;
-  status: 'pending' | 'reviewed' | 'interview' | 'offer' | 'rejected' | 'withdrawn' | 'accepted' | 'shortlisted';
+  /* The canonical ladder (#410). Mirrors backend/application_stages.py and the
+     CHECK in migration 068 — this was a FOURTH copy of the vocabulary, and the
+     one the type checker caught when the other three were aligned. */
+  status: 'submitted' | 'under_review' | 'shortlisted' | 'interview_scheduled'
+        | 'interviewed' | 'offered' | 'placed' | 'rejected' | 'withdrawn';
   lastUpdate: string;
   notes?: string;
   interviewDate?: string;
@@ -276,7 +280,7 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
 
   const canWithdraw = (status: string) => {
     // Can only withdraw if application is still active (not rejected, withdrawn, or offer accepted)
-    return ['pending', 'submitted', 'under_review', 'reviewed', 'shortlisted', 'interview'].includes(status);
+    return ['submitted', 'under_review', 'shortlisted', 'interview_scheduled', 'interviewed', 'offered'].includes(status);
   };
 
   const filterApplications = (status?: string) => {
@@ -406,13 +410,13 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
         )}
 
         <div className="flex flex-wrap gap-2">
-          {application.status === 'interview' && (
+          {application.status === 'interview_scheduled' && (
             <Button size="sm" onClick={() => navigate('/candidate-dashboard?tab=interviews')}>
               <Calendar className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
               {t('View Interview Details', 'عرض تفاصيل المقابلة')}
             </Button>
           )}
-          {application.status === 'offer' && (
+          {application.status === 'offered' && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => { setDetailsApplication(application); setDetailsDialogOpen(true); }}>
               <CheckCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
               {(application.applicationType === 'internship' || application.applicationType === 'gig')

@@ -133,7 +133,7 @@ export const CandidateOffers: React.FC = () => {
       let csAccepted: any[] = [];
       if (csRes.status === 'fulfilled' && csRes.value.data?.success) {
         csAccepted = (csRes.value.data.data.applications || []).filter(
-          (a: any) => a.status === 'offer' || a.status === 'accepted'
+          (a: any) => a.status === 'offered' || a.status === 'placed'
         );
         setCsOffers(csAccepted);
       }
