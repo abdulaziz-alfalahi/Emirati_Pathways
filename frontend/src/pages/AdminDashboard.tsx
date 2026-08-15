@@ -9,6 +9,7 @@ import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AuditLogTab from '@/components/admin/AuditLogTab';
 import StaffInvitationsTab from '@/components/admin/StaffInvitationsTab';
 import AdminInterviews from '@/components/admin/AdminInterviews';
+import AIUsagePanel from '@/components/admin/AIUsagePanel';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
 import NationalPriorityWeightsTab from '@/components/admin/NationalPriorityWeightsTab';
 import PriorityFairnessPanel from '@/components/admin/PriorityFairnessPanel';
@@ -481,7 +482,7 @@ const AdminDashboard = () => {
 
           <div className="container mx-auto px-4 py-8">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-10 gap-1 h-auto p-1 bg-muted/50 rounded-xl">
+              <TabsList className="grid w-full grid-cols-8 gap-1 h-auto p-1 bg-muted/50 rounded-xl">
                 <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Overview', 'نظرة عامة')}</TabsTrigger>
                 <TabsTrigger value="users" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Users', 'المستخدمون')}</TabsTrigger>
                 <TabsTrigger value="operators" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
@@ -517,6 +518,7 @@ const AdminDashboard = () => {
                   {b('Audit Log', 'سجل التدقيق')}
                 </TabsTrigger>
                 <TabsTrigger value="priority-weights" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Priority Weights', 'أوزان الأولوية')}</TabsTrigger>
+                <TabsTrigger value="ai-usage" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('AI Usage', 'استخدام الذكاء')}</TabsTrigger>
                 <TabsTrigger value="system" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('System', 'النظام')}</TabsTrigger>
                 <TabsTrigger value="security" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Security', 'الأمان')}</TabsTrigger>
               </TabsList>
@@ -1691,6 +1693,11 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
               {/* Feature Flags Tab */}
               <TabsContent value="feature-flags" className="space-y-6">
                 <FeatureFlagsTab />
+              </TabsContent>
+
+              {/* What the platform spends on AI, by task type and model. */}
+              <TabsContent value="ai-usage" className="space-y-6">
+                <AIUsagePanel />
               </TabsContent>
             </Tabs>
           </div>
