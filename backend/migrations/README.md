@@ -2,16 +2,46 @@
 
 ## How It Works
 
-The **single source of truth** for the database schema is:
+> [!WARNING]
+> **`DATABASE_SCHEMA.md` is NOT the source of truth, despite what this file used
+> to say.** The live `information_schema` is the only authority (see CLAUDE.md).
+> The document was generated from a *localhost development* database — `migrate.py`'s
+> own docstring says so — and it has drifted badly. Measured 2026-08-16:
+>
+> | | |
+> |---|---|
+> | tables documented / live | **130 / 295** |
+> | type mismatches | **162** |
+> | …on `id` / `*_id` columns | **83** |
+> | columns `migrate.py` would add to live | 14 |
+>
+> Check it yourself before trusting it:
+> ```bash
+> python backend/scripts/schema_drift.py --joins-only
+> ```
 
-```
-backend/DATABASE_SCHEMA.md
-```
+`backend/migrate.py` reads `DATABASE_SCHEMA.md`, compares it against the target
+database, and issues `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN IF NOT
+EXISTS`. There is **no Alembic** or numbered-migration framework — it is declarative
+and idempotent.
 
-The migration runner `backend/migrate.py` reads that file, compares it against the
-live database, and issues `CREATE TABLE IF NOT EXISTS` / `ALTER TABLE ADD COLUMN IF NOT EXISTS`
-statements to converge the database to the expected state. There is **no Alembic** or
-numbered-migration framework — `migrate.py` is declarative and idempotent.
+**What that means in practice, and it is not symmetrical:**
+
+- **Against a POPULATED database it is safe.** It only ever adds; it never alters a
+  column type. The worst it does today is add the 14 columns above.
+- **Against a FRESH database it produces the WRONG schema.** You get the pre-EID
+  shape, in which `application_status_history.application_id` is `uuid` while
+  `job_applications.id` is `text` — **the two cannot be joined**, so application
+  history becomes unreachable from applications. `users.id` comes out `integer`
+  rather than the `character(15)` Emirates ID.
+
+**So do not provision a clean production from this document.** CI gets away with it
+only because `migrations/ci_provision.sql` converges the EID/PK/FK shape afterwards.
+See issue #418. To bring the document back to truth:
+
+```bash
+python backend/scripts/schema_drift.py --regenerate   # then review the diff and run CI
+```
 
 ```bash
 # Dry-run (preview changes)
