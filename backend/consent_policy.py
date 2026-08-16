@@ -49,11 +49,15 @@ RECORDING = 'recording'
 # literal in the purge script: it is a records-retention decision, not a
 # technical one, and whoever changes it should see this comment.
 #
-# 2555 days (7 years) mirrors AUDIT_RETENTION_DAYS, which is the platform's
-# existing answer to "how long do we keep something an authority may ask for".
-# IT IS A PLACEHOLDER UNTIL THE OWNER CONFIRMS A RETENTION SCHEDULE — a
-# transcript of a coaching conversation and an audit log entry are not obviously
-# the same class of record.
+# 2555 days (7 years), CONFIRMED BY THE OWNER 2026-08-16. It matches
+# AUDIT_RETENTION_DAYS, which is the platform's existing answer to "how long do
+# we keep something an authority may ask for" — but it is a separate constant on
+# purpose, because a transcript of a coaching conversation and an audit log entry
+# are not the same class of record and one may need to change without the other.
+#
+# Shortening this later does not un-record anything already captured: the purge
+# deletes by age, so a reduction takes effect on the next run and is not
+# retroactive to what a user was told at the time they consented.
 TRANSCRIPT_RETENTION_DAYS = 2555
 
 
