@@ -1,179 +1,91 @@
-# Whisper (ASR) — put it under systemd on the GPU node
+# Whisper (ASR) on the GPU node — how it is actually run
 
-**Status: not applied.** Commands to run on `10.228.145.195` as `ubuntu`.
+**Status: nothing to do.** Verified end to end on 2026-08-16. This file previously
+told you to install a systemd unit; that was wrong, and the correction is below.
 
-## The problem
+## The setup
 
-Interview transcription depends on `faster-whisper-server`, and on 2026-08-16 it
-was found running like this:
-
-```
-PID     PPID    USER  ELAPSED       COMMAND
-235144  235120  root  3-23:09:55    uv run uvicorn --factory faster_whisper_server.main:create_app
-235389  235144  root  3-23:09:54    /root/faster-whisper-server/.venv/bin/python .../uvicorn --factory ...
-```
-
-Started **by hand** around 12 August, running as **root** out of
-`/root/faster-whisper-server`, with **no systemd unit** — `systemctl
-list-units | grep -i whisper` returns nothing, and `/etc/systemd/system/`
-contains no unit file for it.
-
-So: **a reboot of that node silently ends transcription.** Nothing restarts it,
-nothing alerts, and the failure is invisible until someone runs an interview and
-gets no transcript. The service also answers `/health` whether or not the model
-is loaded, so a health check alone would not have caught it either.
-
-This is worth fixing on its own merits, and it must be fixed before a second
-inference service is added beside it — otherwise we would have two unmanaged
-processes instead of one.
-
-## What we know about the node
-
-Verified 2026-08-16:
+Interview transcription is served by a **Docker container** on `10.228.145.195`:
 
 | | |
 |---|---|
-| Host | `dghraz1gpuvm2`, Ubuntu, 2× NVIDIA L40S 46 GB |
-| Disk | 495 G, 472 G free |
-| RAM | 153 G, 135 G free |
-| Access | `ssh ubuntu@10.228.145.195` — `ubuntu` is in `sudo` |
-| GPU tooling | `nvidia-ctk`, `nvidia-container-runtime`, `dcgm-exporter.service` all present |
-| Whisper | GPU **0**, ~434 MiB — a bare CUDA context, model **not resident** (it loads on demand) |
-| Listens | `:8001`, reachable from APPQA (firewall rule already granted) |
+| Container | `stt-whisper` (`f159f21c4583`) |
+| Image | `fedirz/faster-whisper-server:latest-cuda` |
+| Ports | `0.0.0.0:8001->8000/tcp` — published **8001**, binds **8000** inside |
+| Restart policy | **`unless-stopped`** |
+| `docker.service` | **`enabled`** at boot |
+| Model | `WHISPER__MODEL=Systran/faster-whisper-large-v3` |
+| Device | `WHISPER__INFERENCE_DEVICE=cuda` — GPU **0**, ~434 MiB (a CUDA context; the model loads on demand) |
+| Proxy | `HTTP(S)_PROXY=http://10.61.192.2:8080`, `NO_PROXY=localhost,127.0.0.1,10.228.145.0/24` |
 
-## Before you start
+**It survives a reboot.** The machine boots, Docker starts because the unit is
+enabled, the container restarts because of `unless-stopped`, transcription
+resumes. No human involved and no systemd unit of our own required — Docker is
+the supervisor.
 
-Confirm the working directory and the exact command, rather than trusting this
-document:
+Reachable from APPQA on `10.228.145.195:8001` (firewall rule already granted);
+`/health` returns 200.
 
-```
-ssh ubuntu@10.228.145.195 'sudo ls -la /root/faster-whisper-server'
-```
+## The correction, and the mistake worth not repeating
 
-```
-ssh ubuntu@10.228.145.195 'sudo cat /proc/235144/cmdline | tr "\0" " "; echo'
-```
+This document previously asserted that Whisper was *"a hand-started root process
+with no systemd unit"* and that *"a reboot of that node silently ends
+transcription."* **Both were wrong.**
 
-```
-ssh ubuntu@10.228.145.195 'sudo cat /proc/235144/environ | tr "\0" "\n" | grep -iE "whisper|model|host|port|proxy"'
-```
+The reasoning that produced it:
 
-The third matters most: **the running process may carry environment variables
-that are not written down anywhere** (model name, bind address, proxy). If it
-does, they must go into the unit file or the service will come back configured
-differently from the one that has been working for four days.
+1. `pgrep -af uvicorn` showed `uv run uvicorn …` running as root, up 4 days.
+2. `systemctl list-units | grep -i whisper` returned nothing, and no unit file
+   existed in `/etc/systemd/system/`.
+3. An earlier `docker ps` had failed with *"permission denied while trying to
+   connect to the docker API"* — because `ubuntu` is not in the `docker` group.
 
-> RDP paste mangles anything with `%`, nested quotes, or multiple lines. Run one
-> short single-quoted command at a time.
+Step 3 is the error: **a permission failure was treated as evidence of absence.**
+The container was there all along; the command simply could not see it. Root
+shares the host PID view, so `pgrep` showed the containerised process and it
+looked like a bare host process. `systemctl` correctly had no unit because Docker
+manages it.
 
-## The unit
+The tell that was available and missed: `HOSTNAME=f159f21c4583` in the process
+environment. Container IDs look exactly like that.
 
-Written to run as **root** from the existing directory, because that is what is
-running today and this change should alter *only* who supervises it. Moving it
-to a service account is a separate, later change — worth doing, but not while
-also introducing systemd.
+**The general lesson:** when a diagnostic command fails for an unrelated reason,
+re-run it properly before concluding anything from its silence. `sudo docker ps`
+would have settled this in one step.
 
-Create `/etc/systemd/system/faster-whisper.service`:
+## What this means for vLLM
 
-```ini
-[Unit]
-Description=faster-whisper-server (ASR for interview transcription)
-After=network-online.target
-Wants=network-online.target
+If inference is self-hosted on this node, **follow this pattern rather than
+inventing another**: a container with `--restart unless-stopped`, published on a
+host port, with the proxy variables set so the model can be pulled.
 
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/root/faster-whisper-server
-# Match the environment captured from /proc/<pid>/environ above.
-# Environment="WHISPER__MODEL=Systran/faster-whisper-large-v3"
-# Environment="UVICORN_HOST=0.0.0.0"
-# Environment="UVICORN_PORT=8001"
-ExecStart=/root/.local/bin/uv run uvicorn --factory faster_whisper_server.main:create_app --host 0.0.0.0 --port 8001
-Restart=always
-RestartSec=5
-# The model loads on demand and can take a while on a cold start; do not let
-# systemd give up on a slow first request.
-TimeoutStartSec=300
-StandardOutput=journal
-StandardError=journal
+Do not write a systemd unit for it. Docker is already the supervisor on this
+host, it is already enabled at boot, and a second supervision mechanism beside it
+is how you end up with two copies of a service competing for the same GPU.
 
-[Install]
-WantedBy=multi-user.target
-```
+Note the port: Whisper publishes **8001** and binds 8000 internally. vLLM's
+default is 8000 — publish it on a different host port, and remember
+`APPQA → .195:<port>` is a firewall rule that must be requested (see the pending
+Moro request).
 
-`ExecStart` must be an **absolute path** — systemd does not use a login shell,
-so a bare `uv` will fail with status 203/EXEC. Confirm the real path first:
+## Useful commands
 
-```
-ssh ubuntu@10.228.145.195 'sudo which uv || sudo ls /root/.local/bin/uv'
+```bash
+ssh ubuntu@10.228.145.195 'sudo docker ps'
+ssh ubuntu@10.228.145.195 'sudo docker inspect -f {{.HostConfig.RestartPolicy.Name}} stt-whisper'
+ssh ubuntu@10.228.145.195 'sudo docker logs --tail 50 stt-whisper'
+ssh ubuntu@10.228.145.195 'nvidia-smi'
 ```
 
-## Cutover
+`ubuntu` has **passwordless sudo** on this host. RDP paste mangles multi-line
+commands, `%`, and nested quotes — keep each command to one line in single
+quotes.
 
-There will be a short gap between stopping the manual process and systemd
-starting its own. Do this when no interview is in progress.
+## Still genuinely open on this node
 
-```
-ssh ubuntu@10.228.145.195 'sudo systemctl daemon-reload'
-```
-
-Stop the hand-started process — the parent, so the child goes with it:
-
-```
-ssh ubuntu@10.228.145.195 'sudo kill 235144'
-```
-
-```
-ssh ubuntu@10.228.145.195 'sudo systemctl enable --now faster-whisper'
-```
-
-## Verify — all four
-
-```
-ssh ubuntu@10.228.145.195 'systemctl is-enabled faster-whisper; systemctl is-active faster-whisper'
-```
-
-```
-ssh ubuntu@10.228.145.195 'curl -sS -m 10 -o /dev/null -w "health %{http_code}\n" http://127.0.0.1:8001/health'
-```
-
-From **APPQA**, which is what actually calls it:
-
-```
-ssh appqa 'curl -sS --noproxy "*" -m 10 -o /dev/null -w "from appqa: %{http_code}\n" http://10.228.145.195:8001/health'
-```
-
-And the point of the whole exercise — that it comes back on its own:
-
-```
-ssh ubuntu@10.228.145.195 'sudo systemctl kill -s KILL faster-whisper; sleep 8; systemctl is-active faster-whisper'
-```
-
-Expect `enabled`, `active`, `200`, `200`, and `active` again after the kill. If
-the last one reports `failed`, read `journalctl -u faster-whisper -n 50` before
-retrying — a 203/EXEC there means the `ExecStart` path is wrong.
-
-## Rollback
-
-The old process is gone once killed, so rollback is to restart it the way it was:
-
-```
-ssh ubuntu@10.228.145.195 'sudo systemctl disable --now faster-whisper'
-```
-
-```
-ssh ubuntu@10.228.145.195 'cd /root/faster-whisper-server && sudo nohup /root/.local/bin/uv run uvicorn --factory faster_whisper_server.main:create_app --host 0.0.0.0 --port 8001 > /tmp/whisper.log 2>&1 &'
-```
-
-## Afterwards
-
-- **A transcript is the real check.** `/health` answers whether or not the model
-  is loaded, so it proves the process is up and nothing more. Run one interview
-  transcription end to end.
-- **Do the same for vLLM** if inference is self-hosted later — a unit file from
-  day one, not a second hand-started process.
-- **Two follow-ups deliberately left out of this change**, so that it does only
-  one thing: running as a service account rather than root, and an alert when
-  the unit is down. `dcgm-exporter.service` is already on the node, so metrics
-  plumbing exists to hang that off.
+- **Running as root inside the container** — worth reviewing, unrelated to
+  supervision.
+- **No alerting if the container stops** for a reason Docker will not retry.
+  `dcgm-exporter.service` is already installed, so metrics plumbing exists.
+- `/health` answers whether or not the model is loaded, so it proves the process
+  is up and nothing more. A real check is one transcription end to end.
