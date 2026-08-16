@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { Users, Calendar, FileText, Clock, Plus, Brain, Loader2, Target, BarChart2, X, MessageSquare } from 'lucide-react';
+import { Users, Calendar, FileText, Clock, Plus, Brain, Loader2, Target, BarChart2, X, MessageSquare, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { restClient } from '@/utils/api';
 import Messages from '@/components/recruiter/Messages';
+import { VideoRoom } from '@/components/common/VideoRoom';
 
 const brand = {
   primary: '#0D9488', primarySurface: '#F0FDFA', border: '#E5E7EB',
@@ -55,6 +56,13 @@ const CoachDashboard: React.FC = () => {
   const [sessType, setSessType] = useState('one_on_one');
   const [sessDuration, setSessDuration] = useState('60');
   const [sessNotes, setSessNotes] = useState('');
+  // A session is only schedulable if it has a time; before this the modal said
+  // "Book" while writing a row stamped now(), i.e. it logged rather than booked.
+  const [sessWhen, setSessWhen] = useState('');
+  const [sessVirtual, setSessVirtual] = useState(true);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [joining, setJoining] = useState<number | null>(null);
+  const [call, setCall] = useState<any>(null);
   // Development-plan form
   const [planTitle, setPlanTitle] = useState('');
   const [planDesc, setPlanDesc] = useState('');
@@ -75,16 +83,18 @@ const CoachDashboard: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [cRes, anRes, pRes] = await Promise.allSettled([
+      const [cRes, anRes, pRes, sRes] = await Promise.allSettled([
         restClient.get('/api/coach/clients'),
         restClient.get('/api/coach/analytics'),
         restClient.get('/api/coach/requests'),
+        restClient.get('/api/coach/my-sessions'),
       ]);
       if (cRes.status === 'fulfilled') setClients((cRes.value as any).data.clients || []);
       // null means the call failed. Kept distinct from zero so the stats strip
       // can say "no reading" instead of asserting a measurement it never got.
       setAnalytics(anRes.status === 'fulfilled' ? (anRes.value as any).data : null);
       if (pRes.status === 'fulfilled') setPending((pRes.value as any).data.requests || []);
+      if (sRes.status === 'fulfilled') setSessions((sRes.value as any).data.sessions || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);
@@ -107,6 +117,7 @@ const CoachDashboard: React.FC = () => {
 
   const openModal = (kind: ModalKind, client: any) => {
     setSessType('one_on_one'); setSessDuration('60'); setSessNotes('');
+    setSessWhen(''); setSessVirtual(true);
     setPlanTitle(''); setPlanDesc(''); setPlanMilestones('');
     setGaps(null);
     setModal({ kind, client });
@@ -158,6 +169,19 @@ const CoachDashboard: React.FC = () => {
     } finally { setReviewing(null); }
   };
 
+  const joinSession = async (sess: any) => {
+    setJoining(sess.id);
+    try {
+      const res = await restClient.post(`/api/coach/sessions/${sess.id}/join`, {});
+      const d = (res as any).data.data;
+      setCall({ ...d, session: sess });
+    } catch (e: any) {
+      // The server distinguishes too_early / closed / not_virtual, and its
+      // message names the opening time. Showing it beats a generic failure.
+      toast.error(e?.response?.data?.message || t('Could not join the session.', 'تعذّر الانضمام إلى الجلسة.'));
+    } finally { setJoining(null); }
+  };
+
   const submitSession = async () => {
     if (!modal) return;
     setSubmitting(true);
@@ -167,6 +191,8 @@ const CoachDashboard: React.FC = () => {
         session_type: sessType,
         notes: sessNotes,
         duration_minutes: parseInt(sessDuration, 10) || 60,
+        session_date: sessWhen || null,
+        is_virtual: sessVirtual,
       });
       toast.success(t('Session booked.', 'تم حجز الجلسة.'));
       setModal(null);
@@ -294,6 +320,18 @@ const CoachDashboard: React.FC = () => {
                   <label style={label}>{t('Duration (minutes)', 'المدة (دقائق)')}</label>
                   <input type="number" min={15} step={15} value={sessDuration} onChange={e => setSessDuration(e.target.value)} style={field} />
                 </div>
+                <div>
+                  <label style={label}>{t('Date and time', 'التاريخ والوقت')}</label>
+                  <input type="datetime-local" value={sessWhen} onChange={e => setSessWhen(e.target.value)} style={field} />
+                  <div style={{ fontSize: 11, color: brand.textSecondary, marginTop: 4 }}>
+                    {t('Leave empty to log a session that already happened.',
+                       'اتركه فارغاً لتسجيل جلسة تمت بالفعل.')}
+                  </div>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: brand.textPrimary, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={sessVirtual} onChange={e => setSessVirtual(e.target.checked)} />
+                  {t('Hold this session online', 'عقد الجلسة عبر الإنترنت')}
+                </label>
                 <div>
                   <label style={label}>{t('Notes', 'ملاحظات')}</label>
                   <textarea value={sessNotes} onChange={e => setSessNotes(e.target.value)} rows={3} style={{ ...field, resize: 'vertical' }} placeholder={t('What will this session cover?', 'ماذا ستغطي هذه الجلسة؟')} />
@@ -450,6 +488,55 @@ const CoachDashboard: React.FC = () => {
   // asserting zero sessions to a coach who may have run dozens.
   const metric = (v: any) => (analytics ? `${v ?? 0}` : '—');
 
+
+  const sessionsTab = (
+    <div>
+      <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+        {t('Sessions', 'الجلسات')}
+      </h2>
+      <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
+        {t('Scheduled and past coaching sessions. Online sessions open 15 minutes before the start time.',
+           'الجلسات المجدولة والسابقة. تُفتح الجلسات عبر الإنترنت قبل 15 دقيقة من موعد البدء.')}
+      </p>
+      {sessions.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>
+          <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p>{t('No sessions yet.', 'لا توجد جلسات بعد.')}</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {sessions.map((sess: any) => {
+            const when = sess.session_date ? new Date(sess.session_date) : null;
+            const other = sess.your_role === 'coach' ? sess.client_name : sess.coach_name;
+            return (
+              <div key={sess.id} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>
+                    {other || t('Session', 'جلسة')}
+                  </h4>
+                  <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                    {when ? when.toLocaleString(isRTL ? 'ar-AE' : 'en-GB') : '—'}
+                    {' · '}{count(sess.duration_minutes || 0, 'minute', 'minutes', 'دقيقة', 'دقائق')}
+                  </div>
+                </div>
+                {sess.is_virtual ? (
+                  <button disabled={joining === sess.id} onClick={() => joinSession(sess)}
+                    style={{ background: brand.primary, color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: joining === sess.id ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: joining === sess.id ? 0.6 : 1 }}>
+                    <Video size={13} /> {joining === sess.id ? t('Joining…', 'جارٍ الانضمام…') : t('Join', 'انضمام')}
+                  </button>
+                ) : (
+                  // No room, and saying so is better than a button that explains
+                  // itself only after being pressed.
+                  <span style={{ fontSize: 11, color: brand.textSecondary }}>{t('In person', 'حضورياً')}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   const stats = [
     // Clients is the exception: the client list comes from its own endpoint, so
     // its length is a real reading even when analytics is unavailable.
@@ -465,8 +552,29 @@ const CoachDashboard: React.FC = () => {
     { id: 'clients', label: t('Clients', 'العملاء'), icon: <Users className="h-4 w-4" />, content: clientsTab },
     // stopPropagation: EducationPathwayLayout's click delegation would otherwise
     // pop a false "coming soon" toast on the real buttons inside Messages.
+    { id: 'sessions', label: t('Sessions', 'الجلسات'), icon: <Calendar className="h-4 w-4" />, content: <div onClick={e => e.stopPropagation()}>{sessionsTab}</div> },
     { id: 'messages', label: t('Messages', 'الرسائل'), icon: <MessageSquare className="h-4 w-4" />, content: <div onClick={e => e.stopPropagation()}><Messages senderRole="coach" showNewConversation /></div> },
   ];
+
+  // While a call is live it owns the screen: the dashboard chrome behind a
+  // video call is a distraction, and leaving it mounted keeps the room alive
+  // if the coach navigates away.
+  if (call) {
+    return (
+      <VideoRoom
+        sessionId={String(call.session.id)}
+        userId={call.session.your_role === 'coach' ? call.session.coach_id : call.session.client_id}
+        userName={call.session.your_role === 'coach' ? (call.session.coach_name || '') : (call.session.client_name || '')}
+        livekitUrl={call.livekit_url}
+        token={call.token}
+        remoteLabel={{
+          name: (call.session.your_role === 'coach' ? call.session.client_name : call.session.coach_name) || '',
+          role: call.session.your_role === 'coach' ? t('Client', 'العميل') : t('Coach', 'المدرب'),
+        }}
+        onEndCall={() => { setCall(null); loadData(); }}
+      />
+    );
+  }
 
   return (
     <EducationPathwayLayout

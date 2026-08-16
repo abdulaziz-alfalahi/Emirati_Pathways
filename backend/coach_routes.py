@@ -13,6 +13,8 @@ import psycopg2.extras
 import os
 import json
 import logging
+import uuid
+from datetime import datetime, timedelta
 try:
     from backend.auth.access_control import resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
@@ -295,16 +297,37 @@ def log_session():
     if not _coach_owns_client(conn, coach_id, client_id):
         conn.close(); return jsonify({"error": "Forbidden - not your client"}), 403
     try:
+        # A room is minted only for a session that is actually being scheduled.
+        # One logged after the fact -- a conversation that already happened in
+        # person -- gets no room, and room_name NULL says exactly that.
+        room_name = None
+        if data.get('is_virtual'):
+            room_name = f"coach-{uuid.uuid4().hex[:12]}".lower()
+
+        # session_date IS the session time. A future value schedules it; the
+        # column default (now()) covers one logged retrospectively. Deliberately
+        # not a second `scheduled_at` column -- see migration 071.
+        scheduled_at = (data.get('session_date') or '').strip() or None
+
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO coaching_sessions (client_id, coach_id, session_type, notes, action_items, duration_minutes)
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+            INSERT INTO coaching_sessions
+                (client_id, coach_id, session_type, notes, action_items,
+                 duration_minutes, room_name, session_date)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, COALESCE(%s::timestamp, now()))
+            RETURNING id, session_date
         """, (client_id, coach_id, data.get('session_type', 'one_on_one'),
               data.get('notes', ''), json.dumps(data.get('action_items', [])),
-              data.get('duration_minutes', 60)))
-        session_id = cur.fetchone()[0]
+              data.get('duration_minutes', 60), room_name, scheduled_at))
+        row = cur.fetchone()
+        session_id, session_date = row[0], row[1]
         conn.commit(); cur.close(); conn.close()
-        return jsonify({"session_id": session_id, "status": "created"}), 201
+        if room_name:
+            _safe_notify(client_id, 'coaching_session_scheduled', 'Coaching session scheduled',
+                         'Your coach scheduled an online session with you.')
+        return jsonify({"session_id": session_id, "status": "created",
+                        "room_name": room_name,
+                        "session_date": session_date.isoformat() if session_date else None}), 201
     except Exception as e:
         conn.rollback(); conn.close()
         return jsonify({"error": str(e)}), 500
@@ -600,3 +623,135 @@ def review_skill_gap(client_id):
         return jsonify({"success": True, "data": skill_gap.compare(client_id, key)}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ─── ONLINE COACHING SESSION ─────────────────────────────────────────────────
+#
+# A room minted at booking, joined by the two people in the conversation. Reuses
+# the LiveKit token path that video interviews and board meetings already use --
+# a second video implementation is how they drift apart.
+#
+# NOT LIKE BOARD MEETINGS IN ONE RESPECT: an admin cannot join. A board meeting
+# admits an admin as a recorded observer because it is a governance forum. A
+# coaching session is a private conversation the client did not agree to open to
+# anyone else, so membership is exactly two people and there is no observer role.
+#
+# NO TRANSCRIPTION. The interview pipeline joins an agent that transcribes to
+# interview_transcripts. No agent joins a coaching room: the client has not
+# consented to being recorded, and adding it is a consent decision before it is
+# a technical one.
+
+# A room should not stand open indefinitely.
+_COACH_JOIN_BEFORE = timedelta(minutes=15)
+_COACH_JOIN_GRACE = timedelta(minutes=30)
+
+
+@coach_bp.route('/sessions/<int:session_id>/join', methods=['POST'])
+@jwt_required()
+def join_coaching_session(session_id):
+    """Mint a LiveKit token for a coaching session.
+
+    Open to the session's coach AND its client — deliberately not behind
+    _require_coach_role, because the client is half the conversation and holds
+    no coach role.
+    """
+    me = str(get_jwt_identity())
+    conn = get_db()
+    if not conn:
+        return jsonify({"success": False, "message": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""SELECT id, coach_id, client_id, room_name, session_date, duration_minutes
+                         FROM coaching_sessions WHERE id = %s""", (session_id,))
+        sess = cur.fetchone()
+        cur.close()
+    finally:
+        conn.close()
+
+    if not sess:
+        return jsonify({"success": False, "message": "Session not found"}), 404
+    if str(sess['coach_id']) != me and str(sess['client_id']) != me:
+        return jsonify({"success": False, "message": "This is not your session"}), 403
+    if not sess['room_name']:
+        return jsonify({"success": False, "error_code": "not_virtual",
+                        "message": "This session has no online room"}), 400
+
+    start = sess['session_date']
+    if start:
+        end = start + timedelta(minutes=int(sess.get('duration_minutes') or 60))
+        now = datetime.now(start.tzinfo) if start.tzinfo else datetime.now()
+        if now < start - _COACH_JOIN_BEFORE:
+            return jsonify({"success": False, "error_code": "too_early",
+                            "message": f"This session opens at "
+                                       f"{(start - _COACH_JOIN_BEFORE).strftime('%H:%M')}."}), 409
+        if now > end + _COACH_JOIN_GRACE:
+            return jsonify({"success": False, "error_code": "closed",
+                            "message": "This session has ended."}), 409
+
+    try:
+        from backend.video_interview_system import video_interview_engine
+    except ImportError:  # pragma: no cover — the app runs under both roots
+        from video_interview_system import video_interview_engine
+
+    display = me
+    conn = get_db()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("SELECT full_name, email FROM users WHERE id = %s", (me,))
+            u = cur.fetchone() or {}
+            display = u.get('full_name') or u.get('email') or me
+            cur.close()
+        finally:
+            conn.close()
+    token = video_interview_engine.generate_livekit_token(sess['room_name'], me, display)
+
+    return jsonify({"success": True, "data": {
+        "room_name": sess['room_name'],
+        "token": token,
+        "livekit_url": os.getenv('LIVEKIT_URL', ''),
+        "role": 'coach' if str(sess['coach_id']) == me else 'client',
+    }}), 200
+
+
+@coach_bp.route('/my-sessions', methods=['GET'])
+@jwt_required()
+def my_sessions():
+    """Sessions the caller is part of, either side of the relationship.
+
+    The client had no way to see a session booked for them, which made an online
+    room unreachable for half the people entitled to join it.
+    """
+    me = str(get_jwt_identity())
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT s.id, s.coach_id, s.client_id, s.session_type, s.duration_minutes,
+                   s.session_date, s.room_name,
+                   cu.full_name AS coach_name, cl.full_name AS client_name
+              FROM coaching_sessions s
+              LEFT JOIN users cu ON cu.id = s.coach_id
+              LEFT JOIN users cl ON cl.id = s.client_id
+             WHERE s.coach_id = %s OR s.client_id = %s
+             ORDER BY s.session_date DESC LIMIT 50
+        """, (me, me))
+        rows = cur.fetchall()
+        cur.close()
+    finally:
+        conn.close()
+
+    sessions = []
+    for r in rows:
+        d = dict(r)
+        if d.get('session_date'):
+            d['session_date'] = d['session_date'].isoformat()
+        d['is_virtual'] = bool(d.get('room_name'))
+        d['your_role'] = 'coach' if str(d['coach_id']) == me else 'client'
+        # The room name is not a secret, but it is not needed by the client
+        # either — /join is the only way in, and it re-checks membership.
+        d.pop('room_name', None)
+        sessions.append(d)
+    return jsonify({"sessions": sessions, "total": len(sessions)}), 200
