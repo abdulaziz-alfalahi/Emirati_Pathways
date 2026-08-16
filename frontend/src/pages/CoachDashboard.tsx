@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { Users, Calendar, FileText, Clock, Plus, Brain, Loader2, Target, BarChart2, X, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import Messages from '@/components/recruiter/Messages';
 
@@ -26,19 +25,28 @@ const label: React.CSSProperties = {
 const clientName = (c: any): string =>
   c?.display_name || c?.full_name || c?.email || 'Client';
 
+// Where a skill came from, e.g. `self_reported`. Rendered raw it read
+// "Self_reported" to the coach — an internal enum leaking into the interface.
+const formatSource = (s?: string): string =>
+  s ? s.replace(/_/g, '-').replace(/^./, c => c.toUpperCase()) : '';
+
 type ModalKind = 'session' | 'plan' | 'gaps';
 
 const CoachDashboard: React.FC = () => {
   const { i18n } = useTranslation();
-  const { user } = useAuth();
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
+
+  /** "1 session" not "1 sessions". Arabic takes the singular at one and the
+   *  plural otherwise — enough for the counts shown here, and honest about not
+   *  attempting the dual and the 11+ forms, which never appear in this view. */
+  const count = (n: number, enOne: string, enMany: string, arOne: string, arMany: string) =>
+    isRTL ? `${n} ${n === 1 ? arOne : arMany}` : `${n} ${n === 1 ? enOne : enMany}`;
   const [clients, setClients] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [deciding, setDeciding] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const coachId = user?.id || 1;
 
   // Modal state
   const [modal, setModal] = useState<{ kind: ModalKind; client: any } | null>(null);
@@ -51,24 +59,29 @@ const CoachDashboard: React.FC = () => {
   const [planTitle, setPlanTitle] = useState('');
   const [planDesc, setPlanDesc] = useState('');
   const [planMilestones, setPlanMilestones] = useState('');
-  // Skill-gaps data
+  // Client skills (endpoint is still /skill-gaps; the UI no longer claims gap analysis)
   const [gaps, setGaps] = useState<any>(null);
   const [gapsLoading, setGapsLoading] = useState(false);
 
+  // No coach_id is sent: every one of these endpoints derives the coach from the
+  // JWT identity and ignores a query parameter. Passing one implied the server
+  // trusted it — it does not, and a reader should not have to check.
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [cRes, anRes, pRes] = await Promise.allSettled([
-        restClient.get(`/api/coach/clients?coach_id=${coachId}`),
-        restClient.get(`/api/coach/analytics?coach_id=${coachId}`),
+        restClient.get('/api/coach/clients'),
+        restClient.get('/api/coach/analytics'),
         restClient.get('/api/coach/requests'),
       ]);
       if (cRes.status === 'fulfilled') setClients((cRes.value as any).data.clients || []);
-      if (anRes.status === 'fulfilled') setAnalytics((anRes.value as any).data);
+      // null means the call failed. Kept distinct from zero so the stats strip
+      // can say "no reading" instead of asserting a measurement it never got.
+      setAnalytics(anRes.status === 'fulfilled' ? (anRes.value as any).data : null);
       if (pRes.status === 'fulfilled') setPending((pRes.value as any).data.requests || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  }, [coachId]);
+  }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -101,7 +114,7 @@ const CoachDashboard: React.FC = () => {
       const res = await restClient.get(`/api/coach/clients/${client.client_id}/skill-gaps`);
       setGaps((res as any).data);
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || t('Failed to load skill gaps.', 'تعذّر تحميل فجوات المهارات.'));
+      toast.error(e?.response?.data?.error || t('Failed to load skills.', 'تعذّر تحميل المهارات.'));
       setGaps({ current_skills: [], total_skills: 0 });
     } finally { setGapsLoading(false); }
   };
@@ -194,7 +207,11 @@ const CoachDashboard: React.FC = () => {
               </div>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{clientName(c)}</h4>
-                <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.total_sessions || 0} {t('sessions', 'جلسات')} · {c.active_plans || 0} {t('active plans', 'خطط نشطة')}</div>
+                <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                  {count(c.total_sessions || 0, 'session', 'sessions', 'جلسة', 'جلسات')}
+                  {' · '}
+                  {count(c.active_plans || 0, 'active plan', 'active plans', 'خطة نشطة', 'خطط نشطة')}
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button onClick={() => openModal('session', c)} style={{ background: brand.primary, color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -204,7 +221,7 @@ const CoachDashboard: React.FC = () => {
                   <Target size={12} /> {t('Dev Plan', 'خطة تطوير')}
                 </button>
                 <button onClick={() => openModal('gaps', c)} style={{ background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <BarChart2 size={12} /> {t('Skill Gaps', 'فجوات المهارات')}
+                  <BarChart2 size={12} /> {t('Skills', 'المهارات')}
                 </button>
               </div>
             </div>
@@ -218,7 +235,7 @@ const CoachDashboard: React.FC = () => {
               <h3 style={{ fontSize: 17, fontWeight: 700, color: brand.textPrimary, margin: 0 }}>
                 {modal.kind === 'session' && t('Book a Session', 'حجز جلسة')}
                 {modal.kind === 'plan' && t('New Development Plan', 'خطة تطوير جديدة')}
-                {modal.kind === 'gaps' && t('Skill Gaps', 'فجوات المهارات')}
+                {modal.kind === 'gaps' && t('Skills', 'المهارات')}
               </h3>
               <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: brand.textSecondary }}><X size={18} /></button>
             </div>
@@ -291,7 +308,10 @@ const CoachDashboard: React.FC = () => {
                       {(gaps.current_skills || []).map((s: any, idx: number) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1px solid ${brand.border}`, borderRadius: 8, padding: '8px 12px' }}>
                           <span style={{ fontSize: 13, color: brand.textPrimary }}>{s.name}</span>
-                          <span style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'capitalize' }}>{s.proficiency_level || '—'}{s.source ? ` · ${s.source}` : ''}</span>
+                          <span style={{ fontSize: 11, color: brand.textSecondary }}>
+                            <span style={{ textTransform: 'capitalize' }}>{s.proficiency_level || '—'}</span>
+                            {s.source ? ` · ${formatSource(s.source)}` : ''}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -305,11 +325,20 @@ const CoachDashboard: React.FC = () => {
     </div>
   );
 
+  // "0" and "we could not read it" are different statements. When the analytics
+  // call fails, `analytics` is null and these show an em dash rather than
+  // asserting zero sessions to a coach who may have run dozens.
+  const metric = (v: any) => (analytics ? `${v ?? 0}` : '—');
+
   const stats = [
-    { value: `${analytics?.total_clients || clients.length}`, label: t('Clients', 'عملاء'), icon: Users },
-    { value: `${analytics?.total_sessions || 0}`, label: t('Sessions', 'جلسات'), icon: Calendar },
-    { value: `${analytics?.total_coaching_hours || 0}h`, label: t('Coaching Hours', 'ساعات'), icon: Clock },
-    { value: `${analytics?.plan_stats?.active || 0}`, label: t('Active Plans', 'خطط نشطة'), icon: FileText },
+    // Clients is the exception: the client list comes from its own endpoint, so
+    // its length is a real reading even when analytics is unavailable.
+    { value: `${analytics?.total_clients ?? clients.length}`, label: t('Clients', 'عملاء'), icon: Users },
+    { value: metric(analytics?.total_sessions), label: t('Sessions', 'جلسات'), icon: Calendar },
+    // The unit lives in the label, not the number — a hardcoded "h" rendered as
+    // "0h ساعات" in Arabic.
+    { value: metric(analytics?.total_coaching_hours), label: t('Coaching Hours', 'ساعات'), icon: Clock },
+    { value: metric(analytics?.plan_stats?.active), label: t('Active Plans', 'خطط نشطة'), icon: FileText },
   ];
 
   const tabs = [
@@ -322,7 +351,7 @@ const CoachDashboard: React.FC = () => {
   return (
     <EducationPathwayLayout
       title={t('Career Coach', 'المدرب المهني')}
-      description={t('Manage development plans, coaching sessions, and skill gap analysis for your clients', 'إدارة خطط التطوير وجلسات التدريب وتحليل فجوات المهارات')}
+      description={t('Manage development plans, coaching sessions, and client skills', 'إدارة خطط التطوير وجلسات التدريب ومهارات العملاء')}
       icon={<Brain className="h-6 w-6" />}
       stats={stats}
       tabs={tabs}
