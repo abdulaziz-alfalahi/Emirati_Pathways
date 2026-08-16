@@ -1,6 +1,8 @@
 import os
 import json
 import pytest
+import warnings
+
 import psycopg2
 from unittest.mock import patch
 from dotenv import load_dotenv
@@ -54,6 +56,38 @@ def _purge_test_user(cur, *, email=None, user_id=None):
         for tbl in ("consents", "candidate_profiles"):
             cur.execute(f"DELETE FROM {tbl} WHERE user_id = %s", (user_id,))
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
+# Both tests below clean up as their LAST statement, which means any assertion
+# that fires above it strands a real row. That is not hypothetical: on
+# 2026-08-16 `assert 4 == 3` two lines above the purge left user
+# 784000000000570 and four consent rows in the live database.
+#
+# conftest.py's guard now stops the suite reaching dghr_prod at all, so this is
+# the second line of defence — it is what keeps a mid-test failure from leaving
+# residue when someone runs with ALLOW_LIVE_DB_TESTS=1, which is the only way
+# these tests touch the live DB any more.
+#
+# Teardown, not trailing statements: it runs whether the test passed, failed or
+# raised.
+TEST_EMAILS = ('dsr_test@emirati.gov.ae', 'dsr_atom_test@emirati.gov.ae')
+
+
+@pytest.fixture(autouse=True)
+def _purge_after_every_test():
+    yield
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        for email in TEST_EMAILS:
+            _purge_test_user(cur, email=email)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        # Swallowed so a cleanup problem cannot mask the real test result, but
+        # never silently: the original bug hid inside a bare
+        # `except Exception: conn.rollback()` for twelve days.
+        warnings.warn(f"DSR test cleanup failed, residue may remain: {e}")
+
 
 def test_dsr_export_and_erase(client):
     """Test the DSR export and erasure flow for a candidate."""
