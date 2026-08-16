@@ -32,6 +32,20 @@ load_dotenv('backend/.env')
 
 AUDIT_RETENTION_DAYS = 2555
 
+# Video-session transcripts are retained on their own schedule. Kept separate
+# from AUDIT_RETENTION_DAYS on purpose: a transcript of a coaching conversation
+# and an audit log entry are not obviously the same class of record, and tying
+# them together would mean one cannot be changed without the other. The number
+# lives in consent_policy.py because it is a records decision, not a technical
+# one, and the terms users accept refer to it.
+try:
+    from backend.consent_policy import TRANSCRIPT_RETENTION_DAYS
+except ImportError:  # pragma: no cover — the script runs under both roots
+    try:
+        from consent_policy import TRANSCRIPT_RETENTION_DAYS
+    except ImportError:
+        TRANSCRIPT_RETENTION_DAYS = AUDIT_RETENTION_DAYS
+
 # ==============================================================================
 # H2 SECURITY NOTE & OPERATIONAL REQUIREMENT:
 # This script uses the DELETE path to remove expired rows from the append-only
@@ -121,6 +135,26 @@ def run_purge(dry_run=False):
                     conn.rollback()
                     logger.warning(f"Error checking/purging {table}: {e}")
             
+            # 1b. Video-session transcripts, on their own cutoff.
+            transcript_cutoff = datetime.utcnow() - timedelta(days=TRANSCRIPT_RETENTION_DAYS)
+            try:
+                cur.execute("SELECT COUNT(*) as count FROM interview_transcripts WHERE created_at < %s;",
+                            (transcript_cutoff,))
+                row = cur.fetchone()
+                count = row['count'] if row else 0
+                if dry_run:
+                    logger.info(f"[DRY-RUN] interview_transcripts: {count} expired rows would be deleted "
+                                f"(retention {TRANSCRIPT_RETENTION_DAYS} days).")
+                elif count > 0:
+                    cur.execute("DELETE FROM interview_transcripts WHERE created_at < %s;", (transcript_cutoff,))
+                    logger.info(f"Purged {count} rows from interview_transcripts "
+                                f"(retention {TRANSCRIPT_RETENTION_DAYS} days)")
+                else:
+                    logger.info(f"No expired transcripts (retention {TRANSCRIPT_RETENTION_DAYS} days)")
+            except Exception as e:
+                conn.rollback()
+                logger.warning(f"Error checking/purging interview_transcripts: {e}")
+
             # 2. Count expired admin_audit_log rows
             cur.execute("SELECT COUNT(*) as count FROM admin_audit_log WHERE created_at < %s;", (cutoff_date,))
             audit_row = cur.fetchone()

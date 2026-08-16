@@ -561,6 +561,19 @@ const CoachDashboard: React.FC = () => {
   // if the coach navigates away.
   if (call) {
     return (
+      <div style={{ position: 'relative', height: '100%' }}>
+        {/* Told in the room, not only in a document accepted months ago. The
+            session IS recorded regardless of what the consent check returned,
+            so the banner never depends on that answer. */}
+        <div style={{
+          position: 'fixed', top: 0, insetInlineStart: 0, insetInlineEnd: 0, zIndex: 2000,
+          background: '#7F1D1D', color: '#fff', padding: '7px 14px',
+          fontSize: 12, display: 'flex', alignItems: 'center', gap: 8,
+        }} role="status">
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: '#FCA5A5' }} />
+          {t('This session is being transcribed and retained in line with the platform terms.',
+             'يتم تدوين هذه الجلسة والاحتفاظ بها وفقاً لشروط المنصة.')}
+        </div>
       <VideoRoom
         sessionId={String(call.session.id)}
         userId={call.session.your_role === 'coach' ? call.session.coach_id : call.session.client_id}
@@ -573,6 +586,7 @@ const CoachDashboard: React.FC = () => {
         }}
         onEndCall={() => { setCall(null); loadData(); }}
       />
+      </div>
     );
   }
 

@@ -69,7 +69,14 @@ def register():
         
         # Validate required consents (PDPL T4.2)
         consents = data.get('consents', {})
-        required_consents = ['terms', 'privacy', 'data_processing']
+        # Defined once in consent_policy so adding a consent does not mean
+        # finding every INSERT site. 'recording' covers transcription of video
+        # sessions (owner decision 2026-08-16).
+        try:
+            from backend.consent_policy import REQUIRED_CONSENTS, POLICY_VERSION
+        except ImportError:  # pragma: no cover — the app runs under both roots
+            from consent_policy import REQUIRED_CONSENTS, POLICY_VERSION
+        required_consents = list(REQUIRED_CONSENTS)
         for rc in required_consents:
             if not consents.get(rc):
                 return jsonify({
@@ -103,10 +110,11 @@ def register():
                         for consent_type in required_consents:
                             cur.execute("""
                                 INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
-                                VALUES (%s, %s, True, '1.0', 'registration', %s, %s);
+                                VALUES (%s, %s, True, %s, 'registration', %s, %s);
                             """, (
                                 user_id,
                                 consent_type,
+                                POLICY_VERSION,
                                 request.remote_addr,
                                 request.headers.get('User-Agent', 'unknown')
                             ))

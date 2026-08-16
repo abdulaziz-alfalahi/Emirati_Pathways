@@ -185,11 +185,23 @@ def test_the_token_is_scoped_to_this_room_and_this_person(app_ctx):
     assert minted['identity'] == CLIENT
 
 
-def test_no_transcription_agent_is_dispatched(app_ctx):
-    """The interview pipeline joins an agent that transcribes. A coaching room
-    must not: the client has not consented to being recorded, and that is a
-    consent decision before it is a technical one."""
-    source = open(coach_routes.__file__).read()
-    join_fn = source.split('def join_coaching_session')[1].split('\n@coach_bp.route')[0]
-    for marker in ('agent', 'transcri', 'egress', 'record'):
-        assert marker not in join_fn.lower(), f'coaching join must not touch {marker}'
+def test_the_session_is_transcribed(app_ctx):
+    """REVERSED 2026-08-16. This test previously asserted the opposite — that no
+    agent joins a coaching room, because the client had not consented to being
+    recorded.
+
+    The owner's decision changed the premise rather than overruling it: every
+    video session is now transcribed and retained, and that is disclosed in the
+    terms all users accept (consent_policy.py). A government entity asked for a
+    record of a session should not have to answer that it does not keep one.
+
+    So the consent objection was answered by obtaining consent, which is the
+    right way to answer it. See test_consent_policy.py for the evidence half.
+    """
+    app_ctx.state['identity'] = COACH
+    status, body = _join(app_ctx)
+    assert status == 200
+    # The participant is told in the room, regardless of what the consent
+    # lookup returned — the session is recorded either way.
+    assert body['data']['is_recorded'] is True
+    assert 'policy_version' in body['data']

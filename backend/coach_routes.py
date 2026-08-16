@@ -636,10 +636,12 @@ def review_skill_gap(client_id):
 # coaching session is a private conversation the client did not agree to open to
 # anyone else, so membership is exactly two people and there is no observer role.
 #
-# NO TRANSCRIPTION. The interview pipeline joins an agent that transcribes to
-# interview_transcripts. No agent joins a coaching room: the client has not
-# consented to being recorded, and adding it is a consent decision before it is
-# a technical one.
+# TRANSCRIBED AND RETAINED (owner decision 2026-08-16). Every video session on
+# the platform is transcribed, because a government entity asked for a record of
+# a session should not have to answer that it does not keep one. Disclosed in the
+# terms all users accept -- see consent_policy.py -- and both participants are
+# told in the room, because a disclosure nobody sees at the time is not much of
+# a disclosure.
 
 # A room should not stand open indefinitely.
 _COACH_JOIN_BEFORE = timedelta(minutes=15)
@@ -706,11 +708,43 @@ def join_coaching_session(session_id):
             conn.close()
     token = video_interview_engine.generate_livekit_token(sess['room_name'], me, display)
 
+    # Summon the transcription agent. Best-effort by design: a transcription
+    # failure must not stop two people meeting, and the attempt is logged either
+    # way so a missing transcript is explicable rather than mysterious.
+    try:
+        import requests as _http
+        _http.post(os.getenv('AGENT_JOIN_URL', 'http://interview-agent:8080/join'),
+                   json={'room': sess['room_name']}, timeout=3,
+                   proxies={'http': None, 'https': None})
+    except Exception as _agent_err:
+        logger.warning("coaching transcription agent join skipped for %s: %s",
+                       sess['room_name'], _agent_err)
+
+    # Whether this participant has accepted the terms version that discloses
+    # recording. Recorded, NOT enforced: users who registered before 2026-08-16
+    # accepted terms that said nothing about it, and refusing them a session
+    # would break the platform for everyone predating the change. Surfacing it
+    # is what makes the gap closeable instead of invisible.
+    try:
+        from backend.consent_policy import has_current_consent, POLICY_VERSION
+    except ImportError:  # pragma: no cover — the app runs under both roots
+        from consent_policy import has_current_consent, POLICY_VERSION
+    consented = has_current_consent(me)
+    if consented is False:
+        logger.info("coaching join: %s has no recording consent at policy %s",
+                    me, POLICY_VERSION)
+
     return jsonify({"success": True, "data": {
         "room_name": sess['room_name'],
         "token": token,
         "livekit_url": os.getenv('LIVEKIT_URL', ''),
         "role": 'coach' if str(sess['coach_id']) == me else 'client',
+        # The client is told in the room, not only in a document they accepted
+        # months ago. None means we could not check — shown as the notice, since
+        # the session IS being recorded regardless of what we could verify.
+        "is_recorded": True,
+        "recording_consent_current": consented,
+        "policy_version": POLICY_VERSION,
     }}), 200
 
 
