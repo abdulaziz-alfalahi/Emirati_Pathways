@@ -23,6 +23,11 @@ except ImportError:  # pragma: no cover
     from user_helpers import user_display_name
 
 logger = logging.getLogger(__name__)
+try:
+    from backend.services import skill_gap
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from services import skill_gap
+
 coach_bp = Blueprint('coach', __name__, url_prefix='/api/coach')
 
 def get_db():
@@ -505,3 +510,93 @@ def decide_coach_request(assignment_id):
     except Exception as e:
         conn.rollback(); conn.close()
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─── SKILL-GAP COMPARISON (Phase 1 — docs/skill_gap_comparison_scope.md) ─────
+#
+# The dashboard could show what a client HAS but not what they are MISSING for a
+# target role, because the two vocabularies barely intersect (6-13% overlap with
+# the taxonomy, measured live). These endpoints compare against a role the coach
+# CHOOSES, assert only what an exact match proves, and record what the coach
+# decides — which is both the answer here and the training data a real resolver
+# will need. See services/skill_gap.py for why nothing is inferred as missing.
+
+@coach_bp.route('/target-roles', methods=['GET'])
+@jwt_required()
+def target_roles():
+    """Roles a client can be aimed at, from career_paths. Coaches only."""
+    guard = _require_coach_role()
+    if guard: return guard
+    try:
+        roles = skill_gap.list_target_roles()
+        return jsonify({"roles": roles, "total": len(roles)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@coach_bp.route('/clients/<client_id>/skill-gap', methods=['GET'])
+@jwt_required()
+def client_skill_gap(client_id):
+    """Required vs held for one client against one target role.
+
+    404 on an unresolvable role_key rather than an empty comparison: showing no
+    requirements would read as "this client meets everything".
+    """
+    guard = _require_coach_role()
+    if guard: return guard
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        if not _coach_owns_client(conn, get_jwt_identity(), client_id):
+            return jsonify({"error": "Forbidden - not your client"}), 403
+    finally:
+        conn.close()
+
+    key = (request.args.get('role_key') or '').strip()
+    if not key:
+        return jsonify({"error": "role_key is required"}), 400
+    try:
+        result = skill_gap.compare(client_id, key)
+        if result is None:
+            return jsonify({"error": "Unknown target role"}), 404
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@coach_bp.route('/clients/<client_id>/skill-gap/review', methods=['POST'])
+@jwt_required()
+def review_skill_gap(client_id):
+    """Record the coach's judgement on one required skill.
+
+    'unclear' is rejected: it is the absence of a review, not a verdict, and
+    storing it would blur "not looked at" with "looked at and could not tell".
+    """
+    guard = _require_coach_role()
+    if guard: return guard
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        if not _coach_owns_client(conn, get_jwt_identity(), client_id):
+            return jsonify({"error": "Forbidden - not your client"}), 403
+    finally:
+        conn.close()
+
+    body = request.get_json(silent=True) or {}
+    key = (body.get('role_key') or '').strip()
+    skill_name = (body.get('skill_name') or '').strip()
+    status = (body.get('status') or '').strip().lower()
+    matched = (body.get('matched_skill') or '').strip() or None
+
+    if not key or not skill_name:
+        return jsonify({"error": "role_key and skill_name are required"}), 400
+    if status not in skill_gap.REVIEWABLE:
+        return jsonify({"error": "status must be 'held' or 'missing'"}), 400
+
+    try:
+        if not skill_gap.record_review(client_id, str(get_jwt_identity()), key,
+                                       skill_name, status, matched):
+            return jsonify({"error": "Could not record the review"}), 500
+        return jsonify({"success": True, "data": skill_gap.compare(client_id, key)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

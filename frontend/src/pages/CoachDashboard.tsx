@@ -62,6 +62,12 @@ const CoachDashboard: React.FC = () => {
   // Client skills (endpoint is still /skill-gaps; the UI no longer claims gap analysis)
   const [gaps, setGaps] = useState<any>(null);
   const [gapsLoading, setGapsLoading] = useState(false);
+  // Skill-gap comparison against a chosen target role (Phase 1)
+  const [targetRoles, setTargetRoles] = useState<any[]>([]);
+  const [roleKey, setRoleKey] = useState('');
+  const [gapData, setGapData] = useState<any>(null);
+  const [gapBusy, setGapBusy] = useState(false);
+  const [reviewing, setReviewing] = useState<string | null>(null);
 
   // No coach_id is sent: every one of these endpoints derives the coach from the
   // JWT identity and ignores a query parameter. Passing one implied the server
@@ -110,13 +116,46 @@ const CoachDashboard: React.FC = () => {
 
   const loadGaps = async (client: any) => {
     setGapsLoading(true);
+    setRoleKey(''); setGapData(null);
     try {
-      const res = await restClient.get(`/api/coach/clients/${client.client_id}/skill-gaps`);
-      setGaps((res as any).data);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.error || t('Failed to load skills.', 'تعذّر تحميل المهارات.'));
-      setGaps({ current_skills: [], total_skills: 0 });
+      const [skills, roles] = await Promise.allSettled([
+        restClient.get(`/api/coach/clients/${client.client_id}/skill-gaps`),
+        restClient.get('/api/coach/target-roles'),
+      ]);
+      if (skills.status === 'fulfilled') setGaps((skills.value as any).data);
+      else { toast.error(t('Failed to load skills.', 'تعذّر تحميل المهارات.')); setGaps({ current_skills: [], total_skills: 0 }); }
+      // The picker missing is not fatal — the skills list is still usable.
+      setTargetRoles(roles.status === 'fulfilled' ? ((roles.value as any).data.roles || []) : []);
     } finally { setGapsLoading(false); }
+  };
+
+  const loadGap = async (client: any, key: string) => {
+    setRoleKey(key);
+    if (!key) { setGapData(null); return; }
+    setGapBusy(true);
+    try {
+      const res = await restClient.get(
+        `/api/coach/clients/${client.client_id}/skill-gap?role_key=${encodeURIComponent(key)}`);
+      setGapData((res as any).data);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || t('Could not load the comparison.', 'تعذّر تحميل المقارنة.'));
+      setGapData(null);
+    } finally { setGapBusy(false); }
+  };
+
+  // The coach's judgement replaces whatever the platform guessed. `matched` is
+  // the held skill they resolved it to — the labelled pair a real resolver will
+  // eventually be trained on.
+  const review = async (client: any, skillName: string, status: 'held' | 'missing', matched?: string) => {
+    setReviewing(skillName);
+    try {
+      const res = await restClient.post(`/api/coach/clients/${client.client_id}/skill-gap/review`, {
+        role_key: roleKey, skill_name: skillName, status, matched_skill: matched || null,
+      });
+      setGapData((res as any).data.data);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || t('Could not save.', 'تعذّر الحفظ.'));
+    } finally { setReviewing(null); }
   };
 
   const submitSession = async () => {
@@ -287,6 +326,87 @@ const CoachDashboard: React.FC = () => {
 
             {modal.kind === 'gaps' && (
               <div>
+                {/* ── Compare against a target role ────────────────────────
+                    A skill is not missing in the abstract; it is missing FOR
+                    something. The coach chooses the target — guessing it would
+                    compound an already weak match. */}
+                {targetRoles.length > 0 && (
+                  <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${brand.border}` }}>
+                    <label style={label}>{t('Compare against a target role', 'المقارنة مع دور مستهدف')}</label>
+                    <select value={roleKey} onChange={e => loadGap(modal.client, e.target.value)} style={field}>
+                      <option value="">{t('— none —', '— بدون —')}</option>
+                      {targetRoles.map((r: any) => (
+                        <option key={r.role_key} value={r.role_key}>
+                          {(isRTL && r.role_ar) || r.role} · {(isRTL && r.path_title_ar) || r.path_title}
+                        </option>
+                      ))}
+                    </select>
+
+                    {gapBusy && (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
+                        <Loader2 className="animate-spin" size={20} style={{ color: brand.primary }} />
+                      </div>
+                    )}
+
+                    {!gapBusy && gapData && (
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                          {([['held', gapData.summary.held, brand.greenText, brand.green],
+                             ['missing', gapData.summary.missing, '#991B1B', '#FEE2E2'],
+                             ['unclear', gapData.summary.unclear, brand.textSecondary, '#F3F4F6']] as const)
+                            .map(([k, n, fg, bg]) => (
+                              <div key={k} style={{ flex: 1, background: bg, borderRadius: 8, padding: '8px 6px', textAlign: 'center' }}>
+                                <div style={{ fontSize: 17, fontWeight: 700, color: fg }}>{n}</div>
+                                <div style={{ fontSize: 11, color: brand.textSecondary }}>
+                                  {k === 'held' ? t('Held', 'متوفرة') : k === 'missing' ? t('Missing', 'ناقصة') : t('Unclear', 'غير محددة')}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                        {/* Said plainly, because an unclear count read as a gap
+                            count is the single way this feature misleads. */}
+                        <p style={{ fontSize: 11, color: brand.textSecondary, margin: '0 0 12px', lineHeight: 1.5 }}>
+                          {t('Unclear means not yet reviewed — not a gap. Only you can mark a skill missing.',
+                             'غير محددة تعني لم تُراجع بعد — وليست نقصاً. أنت وحدك من يحدد المهارة كناقصة.')}
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {gapData.skills.map((s: any) => (
+                            <div key={s.required} style={{ border: `1px solid ${brand.border}`, borderRadius: 8, padding: '8px 10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: 13, color: brand.textPrimary, flex: 1, minWidth: 120 }}>{s.required}</span>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 600, borderRadius: 999, padding: '2px 8px',
+                                  background: s.state === 'held' ? brand.green : s.state === 'missing' ? '#FEE2E2' : '#F3F4F6',
+                                  color: s.state === 'held' ? brand.greenText : s.state === 'missing' ? '#991B1B' : brand.textSecondary,
+                                }}>
+                                  {s.state === 'held' ? t('Held', 'متوفرة') : s.state === 'missing' ? t('Missing', 'ناقصة') : t('Unclear', 'غير محددة')}
+                                </span>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button disabled={reviewing === s.required} onClick={() => review(modal.client, s.required, 'held')}
+                                    style={{ background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', color: brand.greenText }}>
+                                    {t('Held', 'متوفرة')}
+                                  </button>
+                                  <button disabled={reviewing === s.required} onClick={() => review(modal.client, s.required, 'missing')}
+                                    style={{ background: '#fff', border: `1px solid ${brand.border}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', color: '#991B1B' }}>
+                                    {t('Missing', 'ناقصة')}
+                                  </button>
+                                </div>
+                              </div>
+                              {s.matched_skill && (
+                                <div style={{ fontSize: 11, color: brand.textSecondary, marginTop: 3 }}>
+                                  {t('matched to', 'مطابقة لـ')} “{s.matched_skill}”
+                                  {s.decided_by === 'coach' ? ` · ${t('your decision', 'قرارك')}` : ''}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {gapsLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 className="animate-spin" size={24} style={{ color: brand.primary }} /></div>
                 ) : !gaps || (gaps.total_skills || 0) === 0 ? (
