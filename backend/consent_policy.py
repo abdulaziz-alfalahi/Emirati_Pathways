@@ -24,9 +24,22 @@ showing agreement to a document that did not mention it.
 
 So `has_current_consent()` compares the version, and the join path records when
 a participant lacks a current one. That is deliberately a RECORDED GAP rather
-than a refusal — blocking sessions for users who have simply not seen the new
-terms yet would break the platform for everyone who registered before today.
-Closing the gap is a re-acceptance flow, and it is a product decision.
+than a refusal — a lookup returning False must not take a session away from
+someone, because being wrong in that direction is a broken platform.
+
+NO RE-ACCEPTANCE FLOW IS NEEDED, and this is settled (owner, 2026-08-16). The
+users sitting on policy 1.0 are pre-launch: imported CRM records that have
+never logged in, plus EHRDC staff testing. There is no real user whose
+expectations were set by the 1.0 terms, so there is nobody to re-ask.
+
+The gap therefore closes by itself rather than by a migration or a prompt: UAE
+Pass registration writes REQUIRED_CONSENTS at POLICY_VERSION, so every user who
+arrives after the 2026-08-16 deploy is on 1.1 with `recording` from their first
+login. Do not read the 1.0 row count as a compliance finding — it is a
+pre-launch artefact, and it stops growing on its own.
+
+What WOULD need a re-acceptance flow is bumping POLICY_VERSION again after real
+users exist. That is the point at which this paragraph stops applying.
 """
 
 import logging
