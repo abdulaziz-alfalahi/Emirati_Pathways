@@ -1,12 +1,31 @@
 # Database Schema Documentation
 
+> [!CAUTION]
+> **THIS DOCUMENT IS STALE. Do not provision a database from it.** (Issue #418.)
+>
+> It was generated from a *localhost development* database, not from production.
+> The live `information_schema` is the only authority — see CLAUDE.md. Measured
+> against the live database on 2026-08-16: **130 tables documented against 295
+> live**, **162 type mismatches**, **83 of them on `id`/`*_id` columns**.
+>
+> A database provisioned from this file has
+> `application_status_history.application_id` as `uuid` while
+> `job_applications.id` is `text` — **they cannot be joined**, so application
+> history is unreachable from applications. `users.id` comes out `integer`
+> rather than the `character(15)` Emirates ID.
+>
+> ```bash
+> python backend/scripts/schema_drift.py              # what has drifted
+> python backend/scripts/schema_drift.py --regenerate # rebuild this file from live
+> ```
+
 > [!IMPORTANT]
 > **`users.id` is character(15) (Emirates ID)** in the live production database.
 > Some SQL files (e.g., `database/setup_database.sql`, `create_job_application_tables.sql`) reference
 > `users.id` as UUID or INTEGER — these are STALE and do NOT match production.
 > The authoritative type is `character(15)`.
 
-**Total Tables:** 130
+**Total Tables:** 130 *(documented; the live database has 295 — see the caution above)*
 
 ## Table of Contents
 - [admin_audit_log](#admin_audit_log)
