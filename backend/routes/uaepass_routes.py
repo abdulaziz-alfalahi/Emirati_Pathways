@@ -1061,13 +1061,22 @@ def _find_or_create_user(profile: dict) -> tuple:
         req_ip = request.remote_addr if has_request_context() else '127.0.0.1'
         req_ua = request.headers.get('User-Agent', 'unknown') if has_request_context() else 'unknown'
         
-        for consent_type in ['terms', 'privacy', 'data_processing']:
+        # The shared list and version, NOT literals. This is the path real users
+        # take — UAE Pass is the intended sole login — so a consent added in
+        # consent_policy.py but missed here would be recorded for nobody.
+        try:
+            from backend.consent_policy import REQUIRED_CONSENTS, POLICY_VERSION
+        except ImportError:
+            from consent_policy import REQUIRED_CONSENTS, POLICY_VERSION
+
+        for consent_type in REQUIRED_CONSENTS:
             cursor.execute("""
                 INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
-                VALUES (%s, %s, True, '1.0', 'uaepass', %s, %s);
+                VALUES (%s, %s, True, %s, 'uaepass', %s, %s);
             """, (
                 new_user['id'],
                 consent_type,
+                POLICY_VERSION,
                 req_ip,
                 req_ua
             ))

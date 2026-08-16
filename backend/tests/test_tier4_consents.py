@@ -7,6 +7,15 @@ load_dotenv('backend/.env')
 from backend.db import get_db_connection
 from app import create_app
 
+# Built from the shared list rather than a literal: when a consent is added,
+# this payload must follow, and a test that hardcoded three would instead fail
+# in a way that looks like a registration bug.
+try:
+    from backend.consent_policy import REQUIRED_CONSENTS
+except ImportError:
+    from consent_policy import REQUIRED_CONSENTS
+
+
 @pytest.fixture(scope="module")
 def app():
     os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
@@ -71,11 +80,7 @@ def test_registration_records_consents(client):
         "phone": "971507654321",
         "emirate": "Abu Dhabi",
         "password": "StrongPassword123!",
-        "consents": {
-            "terms": True,
-            "privacy": True,
-            "data_processing": True
-        }
+        "consents": {c: True for c in REQUIRED_CONSENTS}
     }
     
     try:
@@ -90,7 +95,7 @@ def test_registration_records_consents(client):
 
         cur.execute("SELECT consent_type, granted, withdrawn_at FROM consents WHERE user_id = %s;", (user_id,))
         consent_rows = cur.fetchall()
-        assert len(consent_rows) == 3
+        assert len(consent_rows) == len(REQUIRED_CONSENTS)
         for ct, granted, withdrawn_at in consent_rows:
             assert granted is True
             assert withdrawn_at is None

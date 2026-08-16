@@ -23,6 +23,14 @@
 -- has not agreed to be recorded, so no agent joins a coaching room. Adding it
 -- later is a consent decision first and a technical one second.
 --
+-- SUPERSEDED 2026-08-16 — the paragraph above is left standing because this
+-- migration has already run and its reasoning should not be rewritten after
+-- the fact. Owner decision: all video sessions ARE transcribed and retained,
+-- and the consent objection was answered by obtaining the consent rather than
+-- by dropping the requirement — `recording` is now a required consent at
+-- policy version 1.1 (backend/consent_policy.py). No schema change was needed
+-- for that, which is why there is no 072 alongside it.
+--
 -- PRECONDITION (verified live 2026-08-16): coaching_sessions has 9 columns and
 -- 0 rows; no room_name column exists. board_meetings.room_name is the pattern
 -- being followed.
