@@ -15,6 +15,7 @@ import {
 import { restClient } from '@/utils/api';
 import { toast } from '@/components/ui/use-toast';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { useAuth } from '@/context/AuthContext';
 import Messages from '@/components/recruiter/Messages';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +30,19 @@ export default function CareerServicesDashboard() {
 
   const [view, setView] = useState<'candidates' | 'analytics' | 'messages'>('candidates');
   const [candidates, setCandidates] = useState<any[]>([]);
+  const { hasRole } = useAuth();
+  // Owner decision 2026-08-17: career-services operators allocate coaches;
+  // call-centre agents read this CRM but do not. The backend enforces it
+  // (caseload_states.COACH_ASSIGN_ROLES) — this only avoids showing an agent a
+  // control that would 403.
+  const mayAssignCoach = ['career_services_operator', 'admin', 'administrator',
+    'super_user', 'super_admin', 'platform_administrator'].some(r => hasRole(r));
   const [operators, setOperators] = useState<any[]>([]);
+  // Career-coach allocation for the candidate open in the sheet.
+  const [coaches, setCoaches] = useState<any[]>([]);
+  const [coachAssignment, setCoachAssignment] = useState<any | null>(null);
+  const [coachBusy, setCoachBusy] = useState(false);
+  const [coachError, setCoachError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -73,6 +86,7 @@ export default function CareerServicesDashboard() {
 
   useEffect(() => {
     fetchOperators();
+    fetchCoaches();
     fetchLastImport();
     fetchStats();
   }, []);
@@ -263,6 +277,55 @@ export default function CareerServicesDashboard() {
     }
   };
 
+  const fetchCoaches = async () => {
+    try {
+      const res: any = await restClient.get('/api/caseload/operators?role=coach');
+      setCoaches(res?.data?.operators || res?.operators || []);
+    } catch { setCoaches([]); }
+  };
+
+  const loadCoachAssignment = async (candidateId: string) => {
+    setCoachAssignment(null); setCoachError(null);
+    try {
+      // ?member_id= asks "who is this person assigned to" directly. Fetching
+      // every active assignment and filtering here would scale with the whole
+      // caseload, not with the one candidate on screen.
+      const res: any = await restClient.get(`/api/caseload/coach?member_id=${encodeURIComponent(candidateId)}`);
+      const rows = res?.data?.assignments || res?.assignments || [];
+      setCoachAssignment(rows[0] || null);
+    } catch {
+      // null means "not loaded", which the panel says rather than showing
+      // "no coach" — those are different claims.
+      setCoachError(t('Could not load the coaching assignment.', 'تعذّر تحميل بيانات التدريب.'));
+    }
+  };
+
+  const assignCoach = async (coachId: string) => {
+    if (!editingCandidate) return;
+    setCoachBusy(true); setCoachError(null);
+    try {
+      await restClient.post('/api/caseload/coach/assign',
+        { staff_id: coachId, member_id: editingCandidate.id });
+      await loadCoachAssignment(editingCandidate.id);
+    } catch (e: any) {
+      setCoachError(e?.response?.data?.error
+        || t('Could not assign this coach.', 'تعذّر إسناد هذا المدرب.'));
+    } finally { setCoachBusy(false); }
+  };
+
+  const unassignCoach = async () => {
+    if (!editingCandidate || !coachAssignment) return;
+    setCoachBusy(true); setCoachError(null);
+    try {
+      await restClient.post('/api/caseload/coach/unassign',
+        { staff_id: coachAssignment.staff_id, member_id: editingCandidate.id });
+      await loadCoachAssignment(editingCandidate.id);
+    } catch (e: any) {
+      setCoachError(e?.response?.data?.error
+        || t('Could not remove this assignment.', 'تعذّر إزالة الإسناد.'));
+    } finally { setCoachBusy(false); }
+  };
+
   const loadHistory = async (candidateId: string) => {
     setHistory(null); setHistoryLoading(true);
     try {
@@ -277,6 +340,7 @@ export default function CareerServicesDashboard() {
 
   const handleEditClick = (candidate: any) => {
     loadHistory(candidate.id);
+    loadCoachAssignment(candidate.id);
     setEditingCandidate(candidate);
     setEditForm({
       callStatus: candidate.callStatus,
@@ -1430,6 +1494,94 @@ const LOCATION_OPTIONS = [
                     <h4 className="font-bold text-slate-900">{editingCandidate.name}</h4>
                     <p className="text-sm font-mono text-teal-800">{editingCandidate.eid}</p>
                   </div>
+                </div>
+
+                {/* Career coach allocation (owner decision 2026-08-17).
+                    Coaching was previously reachable only if a candidate found
+                    Professional Growth -> Mentorship -> Coaching and picked a
+                    coach themselves — a pull model, in an operation that works
+                    a prioritised queue. This is the push half. */}
+                <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {t('Career coach', 'المدرب المهني')}
+                    </h4>
+                    {coachAssignment && (
+                      <span className="text-xs text-slate-500">
+                        {coachAssignment.origin === 'requested'
+                          ? t('chosen by the candidate', 'اختاره المرشح')
+                          : t('allocated by an operator', 'أسنده مشغّل')}
+                      </span>
+                    )}
+                  </div>
+
+                  {coachError && (
+                    <p className="text-sm text-amber-700">{coachError}</p>
+                  )}
+
+                  {coachAssignment ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-sm text-slate-700">
+                        <span className="font-medium">
+                          {coachAssignment.staff_name || coachAssignment.staff_id}
+                        </span>
+                        {coachAssignment.assigned_at && (
+                          <span className="text-slate-500">
+                            {' · '}
+                            {new Date(coachAssignment.assigned_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {mayAssignCoach && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); unassignCoach(); }}
+                          disabled={coachBusy}
+                          className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+                        >
+                          {coachBusy
+                            ? t('Working…', 'جارٍ…')
+                            : t('Remove assignment', 'إزالة الإسناد')}
+                        </button>
+                      )}
+                    </div>
+                  ) : !mayAssignCoach ? (
+                    <p className="text-sm text-slate-500">
+                      {t('No career coach assigned.', 'لا يوجد مدرب مهني معيّن.')}
+                    </p>
+                  ) : coaches.length === 0 ? (
+                    /* Say why the picker is empty rather than showing a control
+                       that cannot do anything. */
+                    <p className="text-sm text-slate-500">
+                      {t('No one holds the coach role yet, so there is nobody to assign.',
+                         'لا يوجد أحد يحمل دور المدرب حالياً.')}
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        defaultValue=""
+                        disabled={coachBusy}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => { const v = e.target.value; if (v) assignCoach(v); }}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
+                      >
+                        <option value="">
+                          {coachBusy
+                            ? t('Assigning…', 'جارٍ الإسناد…')
+                            : t('Assign a career coach…', 'إسناد مدرب مهني…')}
+                        </option>
+                        {coaches.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name || c.email || c.id}</option>
+                        ))}
+                      </select>
+                      {/* The candidate is told, so the operator should know that
+                          before clicking rather than discover it afterwards. */}
+                      <span className="text-xs text-slate-500">
+                        {t('The candidate and the coach are both notified.',
+                           'يتم إشعار المرشح والمدرب.')}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Interaction history (fb_1786356071_38fe48a4).
