@@ -16,6 +16,14 @@ from werkzeug.utils import secure_filename
 from typing import Dict, List, Any, Optional
 
 from backend.db import get_db_connection
+
+# Read auditing for staff access to other people's PII (see pii_access_log.py).
+try:
+    from backend.pii_access_log import (log_pii_read, CRM_ROSTER_READ,
+                                        CRM_CANDIDATE_HISTORY_READ)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from pii_access_log import (log_pii_read, CRM_ROSTER_READ,
+                                CRM_CANDIDATE_HISTORY_READ)
 try:
     from backend.db_utils import execute_query
 except ImportError:  # pragma: no cover
@@ -1272,6 +1280,13 @@ def get_crm_candidates():
                     }
                 })
                 
+            # One row per access event, carrying the page size and the filters
+            # used — the filter is the question the reader was asking.
+            log_pii_read(CRM_ROSTER_READ, 'candidate_roster',
+                         actor_id=get_jwt_identity(),
+                         subject_count=len(formatted),
+                         extra={'page': page, 'matching_total': total})
+
             return jsonify({
                 'success': True,
                 'data': formatted,
@@ -1837,6 +1852,12 @@ def crm_candidate_history(user_id):
 
     events = [e for e in events if e.get('at')]
     events.sort(key=lambda e: e['at'], reverse=True)
+
+    # A single-subject read of counselling remarks — as sensitive as the roster,
+    # so recorded with the subject's id rather than only a count.
+    log_pii_read(CRM_CANDIDATE_HISTORY_READ, 'candidate_history',
+                 actor_id=get_jwt_identity(), resource_id=user_id,
+                 subject_count=1, extra={'events': len(events)})
 
     return jsonify({'success': True, 'data': {
         'events': events[:300],
