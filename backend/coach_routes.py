@@ -15,6 +15,15 @@ import json
 import logging
 import uuid
 from datetime import datetime, timedelta
+
+# Read auditing for coach access to a client's data (see pii_access_log.py).
+try:
+    from backend.pii_access_log import (log_pii_read, COACH_CLIENT_LIST_READ,
+                                        COACH_SKILL_GAP_READ)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from pii_access_log import (log_pii_read, COACH_CLIENT_LIST_READ,
+                                COACH_SKILL_GAP_READ)
+
 try:
     from backend.auth.access_control import resolve_roles, ADMIN_ROLES
 except ImportError:  # pragma: no cover
@@ -163,6 +172,8 @@ def list_clients():
             d = dict(r)
             if d.get('assigned_at'): d['assigned_at'] = d['assigned_at'].isoformat()
             clients.append(d)
+        log_pii_read(COACH_CLIENT_LIST_READ, 'coach_clients',
+                     actor_id=coach_id, subject_count=len(clients))
         return jsonify({"clients": clients, "total": len(clients)}), 200
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
@@ -582,6 +593,9 @@ def client_skill_gap(client_id):
         result = skill_gap.compare(client_id, key)
         if result is None:
             return jsonify({"error": "Unknown target role"}), 404
+        log_pii_read(COACH_SKILL_GAP_READ, 'candidate_skill_gap',
+                     actor_id=get_jwt_identity(), resource_id=client_id,
+                     subject_count=1, extra={'role_key': key})
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
