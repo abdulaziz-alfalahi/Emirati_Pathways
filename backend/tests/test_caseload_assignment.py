@@ -86,7 +86,13 @@ def test_assign_inserts_into_the_right_table(app, client):
     sql, params = cur.execute.call_args[0]
     assert 'INSERT INTO advisor_student_assignments' in sql
     assert 'ON CONFLICT' in sql  # idempotent reactivation
-    assert params == ('784adv', '784stu')
+    # The staff and member ids lead; the rest of the tuple is status, origin and
+    # assigned_by (migration 072). Asserted by membership rather than as an exact
+    # tuple — this previously pinned ('784adv','784stu') and broke the moment the
+    # statement gained a column, which says nothing about whether it is correct.
+    assert params[:2] == ('784adv', '784stu')
+    assert 'active' in params, 'an operator allocation lands active'
+    assert 'assigned' in params, 'and is recorded as operator-originated'
 
 
 def test_assign_coach_uses_coach_table(app, client):

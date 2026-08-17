@@ -16,6 +16,15 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 
+# The assignment lifecycle — states, origins and legal transitions — lives in one
+# place because TWO subsystems write coach_client_assignments (this file for
+# candidate self-requests, caseload_assignment_routes for operator allocation).
+try:
+    from backend import caseload_states as cs
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import caseload_states as cs
+
+
 # Read auditing for coach access to a client's data (see pii_access_log.py).
 try:
     from backend.pii_access_log import (log_pii_read, COACH_CLIENT_LIST_READ,
@@ -157,7 +166,7 @@ def list_clients():
         # UI shows a name, not a raw 15-digit Emirates ID when full_name is null.
         cur.execute(f"""
             SELECT cca.client_id, u.full_name, {user_display_name('display_name', 'u')},
-                   u.email, u.phone, cca.assigned_at,
+                   u.email, u.phone, cca.assigned_at, cca.origin, cca.assigned_by,
                    (SELECT COUNT(*) FROM development_plans dp WHERE dp.client_id = cca.client_id AND dp.status = 'active') as active_plans,
                    (SELECT COUNT(*) FROM coaching_sessions cs WHERE cs.client_id = cca.client_id) as total_sessions
             FROM coach_client_assignments cca
@@ -453,12 +462,17 @@ def request_coach():
                                 "message": "You have already requested this coach — awaiting their acceptance",
                                 "data": {"id": existing['id'], "status": "pending"}}), 200
             # a previously declined request may be re-sent → back to pending
-            cur.execute("UPDATE coach_client_assignments SET status='pending', assigned_at=NOW() WHERE id=%s",
-                        (existing['id'],))
+            cur.execute("""UPDATE coach_client_assignments
+                              SET status=%s, assigned_at=NOW(), origin=%s WHERE id=%s""",
+                        (cs.PENDING, cs.ORIGIN_REQUESTED, existing['id']))
             new_id = existing['id']
         else:
-            cur.execute("""INSERT INTO coach_client_assignments (coach_id, client_id, status, assigned_at)
-                           VALUES (%s, %s, 'pending', NOW()) RETURNING id""", (coach_id, me))
+            # origin marks this as the candidate's own choice, which is what
+            # makes it NOT hand-backable: the coach accepted this one.
+            cur.execute("""INSERT INTO coach_client_assignments
+                               (coach_id, client_id, status, assigned_at, origin)
+                           VALUES (%s, %s, %s, NOW(), %s) RETURNING id""",
+                        (coach_id, me, cs.PENDING, cs.ORIGIN_REQUESTED))
             new_id = cur.fetchone()['id']
         conn.commit(); cur.close(); conn.close()
         _safe_notify(coach_id, 'coaching_requested', 'New coaching request',
@@ -760,6 +774,83 @@ def join_coaching_session(session_id):
         "recording_consent_current": consented,
         "policy_version": POLICY_VERSION,
     }}), 200
+
+
+@coach_bp.route('/clients/<client_id>/hand-back', methods=['POST'])
+@jwt_required()
+def hand_back_client(client_id):
+    """Return an operator-allocated client to the career-services team.
+
+    WHY THIS EXISTS. An operator allocation lands ACTIVE without waiting for the
+    coach to accept (owner, 2026-08-17) — in a call-centre-driven operation a
+    coach's veto would leave an agent's promise to a candidate unfulfilled. That
+    is a defensible trade only if the coach has a way out afterwards, and this
+    is it. Without it the decision is simply "coaches take what they are given".
+
+    ONLY ALLOCATED WORK. A candidate who chose this coach cannot be handed back:
+    the coach already accepted that request, and withdrawing from it is a
+    different act with a different conversation attached. can_hand_back()
+    enforces the distinction rather than each caller remembering it.
+
+    The reason is REQUIRED. A hand-back with no reason gives the operator nothing
+    to act on and turns reallocation into guesswork — capacity, conflict of
+    interest and wrong-fit need different responses.
+    """
+    guard = _require_coach_role()
+    if guard:
+        return guard
+    coach_id = str(get_jwt_identity())
+    reason = ((request.get_json(silent=True) or {}).get('reason') or '').strip()
+    if not reason:
+        return jsonify({"success": False, "message": "A reason is required"}), 400
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""SELECT id, status, origin, assigned_by
+                         FROM coach_client_assignments
+                        WHERE coach_id = %s AND client_id = %s""",
+                    (coach_id, client_id))
+        row = cur.fetchone()
+        if not row:
+            cur.close(); conn.close()
+            return jsonify({"success": False, "message": "Not your client"}), 404
+
+        if not cs.can_hand_back(row['status'], row['origin']):
+            cur.close(); conn.close()
+            # Distinguish the two refusals: "you chose to take this on" is a very
+            # different message from "this is not active".
+            if row['origin'] != cs.ORIGIN_ASSIGNED:
+                msg = ("This client requested you and you accepted. Only clients "
+                       "allocated by an operator can be handed back.")
+            else:
+                msg = f"Cannot hand back an assignment in state '{row['status']}'"
+            return jsonify({"success": False, "message": msg}), 409
+
+        cur.execute("UPDATE coach_client_assignments SET status=%s WHERE id=%s",
+                    (cs.HANDED_BACK, row['id']))
+        conn.commit()
+        assigned_by = row['assigned_by']
+        cur.close(); conn.close()
+
+        # Back to the operator who allocated them. If nobody is recorded (a row
+        # predating migration 072) the hand-back still succeeds — losing the
+        # notification is better than refusing the coach a way out.
+        if assigned_by:
+            _safe_notify(assigned_by, 'caseload_handed_back',
+                         'A coach has handed back a client',
+                         f'Reason: {reason}')
+        else:
+            logger.warning("hand-back of %s by %s has no assigned_by to notify",
+                           client_id, coach_id)
+
+        return jsonify({"success": True, "status": cs.HANDED_BACK,
+                        "message": "Client returned to career services"}), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @coach_bp.route('/my-sessions', methods=['GET'])

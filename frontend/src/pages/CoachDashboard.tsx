@@ -31,7 +31,7 @@ const clientName = (c: any): string =>
 const formatSource = (s?: string): string =>
   s ? s.replace(/_/g, '-').replace(/^./, c => c.toUpperCase()) : '';
 
-type ModalKind = 'session' | 'plan' | 'gaps';
+type ModalKind = 'session' | 'plan' | 'gaps' | 'handback';
 
 const CoachDashboard: React.FC = () => {
   const { i18n } = useTranslation();
@@ -51,6 +51,7 @@ const CoachDashboard: React.FC = () => {
 
   // Modal state
   const [modal, setModal] = useState<{ kind: ModalKind; client: any } | null>(null);
+  const [handBackReason, setHandBackReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   // Session form
   const [sessType, setSessType] = useState('one_on_one');
@@ -120,10 +121,28 @@ const CoachDashboard: React.FC = () => {
     setSessWhen(''); setSessVirtual(true);
     setPlanTitle(''); setPlanDesc(''); setPlanMilestones('');
     setGaps(null);
+    setHandBackReason('');
     setModal({ kind, client });
     if (kind === 'gaps') loadGaps(client);
   };
   const closeModal = () => { if (!submitting) setModal(null); };
+
+  const openHandBack = (client: any) => openModal('handback', client);
+
+  const submitHandBack = async () => {
+    if (!modal?.client || !handBackReason.trim()) return;
+    setSubmitting(true);
+    try {
+      await restClient.post(`/api/coach/clients/${modal.client.client_id}/hand-back`,
+        { reason: handBackReason.trim() });
+      toast.success(t('Returned to career services.', 'تمت الإعادة إلى الخدمات المهنية.'));
+      setModal(null);
+      loadData();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message
+        || t('Could not hand this client back.', 'تعذّرت إعادة هذا العميل.'));
+    } finally { setSubmitting(false); }
+  };
 
   const loadGaps = async (client: any) => {
     setGapsLoading(true);
@@ -276,6 +295,14 @@ const CoachDashboard: React.FC = () => {
                   {count(c.total_sessions || 0, 'session', 'sessions', 'جلسة', 'جلسات')}
                   {' · '}
                   {count(c.active_plans || 0, 'active plan', 'active plans', 'خطة نشطة', 'خطط نشطة')}
+                  {/* How this person got here. A client who chose you and one
+                      allocated to you are different relationships, and the
+                      dashboard used to present them identically. */}
+                  {c.origin === 'assigned' && (
+                    <>{' · '}<span style={{ color: brand.primary }}>
+                      {t('allocated by career services', 'أسندته الخدمات المهنية')}
+                    </span></>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -288,6 +315,14 @@ const CoachDashboard: React.FC = () => {
                 <button onClick={() => openModal('gaps', c)} style={{ background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <BarChart2 size={12} /> {t('Skills', 'المهارات')}
                 </button>
+                {/* Only for allocated clients. Someone who chose you was
+                    accepted by you, and stepping away from that is a different
+                    act — the backend refuses it either way. */}
+                {c.origin === 'assigned' && (
+                  <button onClick={() => openHandBack(c)} style={{ background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    {t('Hand back', 'إعادة')}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -301,6 +336,7 @@ const CoachDashboard: React.FC = () => {
                 {modal.kind === 'session' && t('Book a Session', 'حجز جلسة')}
                 {modal.kind === 'plan' && t('New Development Plan', 'خطة تطوير جديدة')}
                 {modal.kind === 'gaps' && t('Skills', 'المهارات')}
+                {modal.kind === 'handback' && t('Hand back to career services', 'إعادة إلى الخدمات المهنية')}
               </h3>
               <button onClick={closeModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: brand.textSecondary }}><X size={18} /></button>
             </div>
@@ -358,6 +394,34 @@ const CoachDashboard: React.FC = () => {
                 </div>
                 <button onClick={submitPlan} disabled={submitting} style={{ background: brand.primary, color: '#fff', border: 'none', padding: '10px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
                   {submitting ? t('Creating…', 'جارٍ الإنشاء…') : t('Create plan', 'إنشاء الخطة')}
+                </button>
+              </div>
+            )}
+
+            {modal.kind === 'handback' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: 13, color: brand.textSecondary, margin: 0 }}>
+                  {t('This client was allocated to you by career services. Returning them notifies the operator who assigned them.',
+                     'تم إسناد هذا العميل إليك من قبل الخدمات المهنية. ستُشعر الإعادة المشغّل الذي أسنده.')}
+                </p>
+                {/* Required: a hand-back with no reason gives the operator
+                    nothing to act on, and capacity, conflict of interest and
+                    wrong-fit each need a different response. */}
+                <label style={label}>{t('Reason', 'السبب')}</label>
+                <textarea
+                  value={handBackReason}
+                  onChange={e => setHandBackReason(e.target.value)}
+                  rows={3}
+                  placeholder={t('e.g. at capacity, or not my specialism',
+                                 'مثال: اكتمل العدد، أو ليس تخصصي')}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, fontFamily: 'inherit' }}
+                />
+                <button
+                  onClick={submitHandBack}
+                  disabled={submitting || !handBackReason.trim()}
+                  style={{ background: brand.primary, color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: (submitting || !handBackReason.trim()) ? 'default' : 'pointer', opacity: (submitting || !handBackReason.trim()) ? 0.6 : 1 }}
+                >
+                  {submitting ? t('Returning…', 'جارٍ…') : t('Hand back', 'إعادة')}
                 </button>
               </div>
             )}
