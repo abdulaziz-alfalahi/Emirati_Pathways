@@ -74,13 +74,14 @@ interface DashboardData {
     completionPercentage: number;
     cvUploaded: boolean;
     profile_photo_url?: string;
-    ats_score?: number;
+    ats_score?: number | null;
   };
   stats: {
-    profileViews: number;
-    jobMatches: number;
-    applications: number;
-    interviews: number;
+    // Nullable on purpose: the API sends null when a count could not be
+    // determined, and the UI renders that as "—".
+    applications: number | null;
+    interviews: number | null;
+    openVacancies?: number | null;
   };
   recentActivity: Array<{
     id: string;
@@ -131,10 +132,8 @@ const CandidateDashboard: React.FC = () => {
       ats_score: 0
     },
     stats: {
-      profileViews: 0,
-      jobMatches: 0,
-      applications: 0,
-      interviews: 0
+      applications: null,
+      interviews: null
     },
     recentActivity: []
   });
@@ -143,6 +142,9 @@ const CandidateDashboard: React.FC = () => {
 
   // Intelligence data
   const [recommendedJobs, setRecommendedJobs] = useState<RecommendedJob[]>([]);
+  // null until the intelligence call answers — so the card shows "—" rather
+  // than a confident 0 while it is still loading or if it failed.
+  const [matchCount, setMatchCount] = useState<number | null>(null);
   const [aiInsight, setAiInsight] = useState<{ en: string; ar: string } | null>(null);
   const [topGaps, setTopGaps] = useState<any[]>([]);
   const [quickWins, setQuickWins] = useState<any[]>([]);
@@ -234,7 +236,11 @@ const CandidateDashboard: React.FC = () => {
         }
 
         if (jobsResult.status === 'fulfilled') {
-          setRecommendedJobs(jobsResult.value.jobs || []);
+          const jobs = jobsResult.value.jobs || [];
+          setRecommendedJobs(jobs);
+          // Only jobs the scorer actually scored count as matches. A job it
+          // could not score is not a match of 0 — it is not a match at all.
+          setMatchCount(jobs.filter(j => j.match_score !== null && j.match_score !== undefined).length);
         }
       } catch (err) {
         console.error('Intelligence fetch error (non-critical):', err);
@@ -285,11 +291,25 @@ const CandidateDashboard: React.FC = () => {
   const recentActivity = dashboardData.recentActivity;
 
   // Stat card config
+  // A count we cannot produce shows an em-dash, not a zero. "We don't know" and
+  // "you have none" are different statements, and only one of them is a lie
+  // when it is wrong.
+  const shown = (n: number | null | undefined) =>
+    (n === null || n === undefined) ? '—' : n;
+
   const statCards = [
-    { label: t('Profile Views', 'مشاهدات الملف'), value: dashboardData.stats.profileViews, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-primary', bg: 'bg-accent', border: 'border-teal-100' },
-    { label: t('Applications', 'الطلبات'), value: dashboardData.stats.applications, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
-    { label: t('Interviews', 'المقابلات'), value: dashboardData.stats.interviews, icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
+    // Profile Views is GONE, not zeroed. It was the literal 12 with the comment
+    // "Mock for now" — every candidate on the platform saw twelve. No
+    // profile-views ledger exists in the schema, so there is nothing honest to
+    // put here; the card returns when the feature does.
+    //
+    // Job Matches now counts REAL matches from the canonical scorer
+    // (/api/intelligence/recommended-jobs, already fetched below). It used to
+    // show every published vacancy on the platform — the same number for
+    // everyone, and not a match.
+    { label: t('Job Matches', 'الوظائف المطابقة'), value: shown(matchCount), icon: Target, color: 'text-primary', bg: 'bg-accent', border: 'border-teal-100' },
+    { label: t('Applications', 'الطلبات'), value: shown(dashboardData.stats.applications), icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+    { label: t('Interviews', 'المقابلات'), value: shown(dashboardData.stats.interviews), icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
   ];
 
   return (
@@ -450,14 +470,23 @@ const CandidateDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-5 flex flex-col items-center">
+                      {/* TWO MEASURES, LABELLED. The donut is profile
+                          COMPLETENESS; the badge is ATS compatibility. They are
+                          different numbers (83% and 79% in the owner's review),
+                          and stacking them unlabelled under one heading made
+                          them read as one figure contradicting itself. */}
                       <CircularProgress value={dashboardData.profile.completionPercentage} />
-                      <div className="mt-3 flex items-center gap-2">
+                      <span className="mt-1 text-[11px] text-muted-foreground">
+                        {t('Profile completeness', 'اكتمال الملف')}
+                      </span>
+                      <div className="mt-3 flex items-center gap-2 pt-3 border-t border-slate-100 w-full justify-center">
                         <span className="text-xs text-muted-foreground">{t('ATS Compatibility', 'توافق ATS')}</span>
-                        {/* Show the actual score, not a bucket: an unscored
-                            profile (0) was labelled "Medium" here while the
-                            Profile & CV tab showed its own computed number —
-                            the mismatch in feedback fb_1785810051. */}
-                        {dashboardData.profile.ats_score ? (
+                        {/* Now sent by the API from the stored score, so this
+                            agrees with the Profile & CV tab by construction
+                            rather than by coincidence. `!= null` and not a
+                            truthiness check: a genuine score of 0 is a score,
+                            and must not read as "not scored yet". */}
+                        {dashboardData.profile.ats_score != null ? (
                           <Badge className={`text-[10px] ${dashboardData.profile.ats_score >= 80
                             ? 'bg-green-50 text-green-700 border-green-200'
                             : dashboardData.profile.ats_score >= 50
