@@ -898,16 +898,38 @@ def get_dashboard_stats():
             cv_data = get_candidate_cv(raw_user_id or user_id)
             cv_uploaded = bool(cv_data)
 
+            # COMPUTED from the stored CV, not read from user_cvs.ats_score.
+            #
+            # That column is DEFAULT 0 and every one of the 26 existing rows
+            # holds 0 — so a stored value cannot distinguish "never scored" from
+            # "genuinely scored zero". Trusting it published a confident
+            # "ATS Compatibility: 0%" to every candidate, which is a worse claim
+            # than the "Not scored yet" it replaced.
+            #
+            # Scoring here is pure Python over JSON already in memory, and it
+            # makes the column a cache rather than the truth: no backfill is
+            # needed, legacy zeros are simply ignored, and this can never
+            # disagree with /api/cv/ats-score because both call the same scorer.
             try:
                 cur.execute(
-                    """SELECT ats_score FROM user_cvs
-                        WHERE user_id = %s AND ats_score IS NOT NULL
+                    """SELECT parsed_data FROM user_cvs
+                        WHERE user_id = %s
                         ORDER BY is_visible DESC, updated_at DESC NULLS LAST
                         LIMIT 1""",
                     (str(raw_user_id or user_id),))
                 row = cur.fetchone()
-                if row and row.get('ats_score') is not None:
-                    ats_score = int(row['ats_score'])
+                if row and row.get('parsed_data'):
+                    try:
+                        from backend.ats_scoring import score_cv
+                    except ImportError:
+                        from ats_scoring import score_cv
+                    cv_fields = row['parsed_data']
+                    if isinstance(cv_fields, str):
+                        cv_fields = json.loads(cv_fields or '{}')
+                    scored = score_cv(cv_fields)
+                    # None stays None: no CV content means no score, and the
+                    # badge correctly says "Not scored yet".
+                    ats_score = scored['overall'] if scored else None
             except Exception as e:
                 logger.warning(f"ATS score lookup failed for {user_id}: {e}")
                 if conn:
