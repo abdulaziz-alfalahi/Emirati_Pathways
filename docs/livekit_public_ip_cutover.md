@@ -1,7 +1,24 @@
 # Switching LiveKit to the dedicated public IP
 
-**Status: prepared, NOT applied.** Do not run this until GIN confirms the firewall
-rule is live. Applying it early breaks video that currently works internally.
+**Status: APPLIED 2026-08-18.** GIN enabled the rule (CRC0005629) and the switch
+below was executed the same day. Kept for the rollback and for the corrections —
+the mechanism this document originally described did not work.
+
+## Corrections from the actual cutover (2026-08-18)
+
+1. **The `.env` + `docker restart` mechanism was never real.** The container is
+   plain `docker run`, so its environment is fixed at creation — a restart reads
+   nothing new. Worse, this livekit build takes the config-file `rtc.node_ip`
+   over BOTH the `NODE_IP` env var and the `--node-ip` CLI flag (both tried,
+   both ignored; the server kept logging `nodeIP: 10.228.145.5`). The switch
+   that works is editing `livekit.yaml` itself and restarting the container.
+2. **The NAT does not hairpin.** From inside the datacenter (APPQA itself and
+   the dev box), TCP to 213.42.53.198:7881 times out — the rule admits internet
+   sources only. External browsers are fine; the datacenter-internal
+   transcription agent now depends on ICE peer-reflexive discovery of the
+   server's real address. Verify transcription after any change here.
+3. Verify with the log line `starting LiveKit server ... "nodeIP": "..."` — it
+   states the advertised address explicitly, no browser needed for that half.
 
 ## What Moro is providing
 

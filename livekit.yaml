@@ -6,11 +6,23 @@ port: 7880
 rtc:
   tcp_port: 7881
   udp_port: 7882
-  # Overridden at runtime by the NODE_IP env var (docker-compose.livekit.yml),
-  # which defaults to this same value. Leave this as the INTERNAL address: the
-  # switch to the public IP is made by setting LIVEKIT_NODE_IP, not by editing
-  # this file, so that a deploy cannot apply it before the firewall rule exists.
-  node_ip: 10.228.145.5
+  # THE address every participant's browser is told to send media to. GIN
+  # enabled INTERNET -> 213.42.53.198 -> 10.228.145.5 (TCP 7881 / UDP 7882,
+  # CRC0005629) on 2026-08-18, so this now carries the dedicated public IP.
+  #
+  # Set HERE, in the file, because nothing else wins: this livekit build takes
+  # the config-file value over both the NODE_IP env var and the --node-ip CLI
+  # flag — both were tried on 2026-08-18 and the server kept advertising the
+  # yaml value. The old comment promised an env-var switch; that mechanism was
+  # never real for a docker-run container.
+  #
+  # KNOWN CONSTRAINT (verified 2026-08-18): the NAT does NOT hairpin — from
+  # inside the datacenter 213.42.53.198 is unreachable (tested from APPQA and
+  # the dev box; TCP to 7881 times out). External browsers reach this address;
+  # datacenter-internal clients (the transcription agent, dev-box tests) cannot,
+  # and now depend on ICE peer-reflexive discovery of the server's real address.
+  # If the agent stops transcribing after this change, that is where to look.
+  node_ip: 213.42.53.198
   # Stays false deliberately. `true` auto-detects the external address over STUN,
   # which is the wrong answer behind this NAT — it would discover the shared
   # egress address, not the dedicated inbound one Moro is allocating.
