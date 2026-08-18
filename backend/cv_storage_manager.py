@@ -64,9 +64,33 @@ class CVStorageManager:
             # Prepare data for storage
             # Postgres JSONB accepts string dump or dict (if using adapter).
             # We'll dump to string to be safe and consistent with previous behavior.
-            parsed_data = json.dumps(cv_data.get('data', {}))
+            cv_fields = cv_data.get('data', {}) or {}
+            parsed_data = json.dumps(cv_fields)
             analysis_results = json.dumps(cv_data.get('analysis', {}))
             file_info = cv_data.get('file_info', {})
+
+            # ATS score, computed HERE from the CV we are about to store rather
+            # than accepted from the caller. The frontend used to compute it and
+            # PUT it back; this handler dropped the field silently (200 OK, no
+            # column written), so 0 of 26 rows ever had a score and every other
+            # surface showed "Not scored yet" next to a profile the CV page was
+            # scoring at 79%. Deriving it from the stored data means the score
+            # cannot disagree with the CV it describes, and cannot be spoofed.
+            #
+            # None when there is nothing to score — see ats_scoring.score_cv.
+            # Never let a scoring failure lose a CV: storing the document is the
+            # job, the score is a derived convenience.
+            ats_score = None
+            try:
+                try:
+                    from backend.ats_scoring import score_cv
+                except ImportError:
+                    from ats_scoring import score_cv
+                scored = score_cv(cv_fields)
+                ats_score = scored['overall'] if scored else None
+            except Exception as _ats_err:
+                logger.warning("ATS scoring failed for cv %s, storing without a score: %s",
+                               cv_id, _ats_err)
             
             # Derive a title for the CV (required: NOT NULL column)
             # Priority: explicit title > filename without extension > personal info name > default
@@ -104,9 +128,10 @@ class CVStorageManager:
                         UPDATE user_cvs 
                         SET parsed_data = %s, 
                             analysis_results = %s, 
+                            ats_score = COALESCE(%s, ats_score),
                             updated_at = CURRENT_TIMESTAMP
                         WHERE id = %s
-                    ''', (parsed_data, analysis_results, cv_id))
+                    ''', (parsed_data, analysis_results, ats_score, cv_id))
                     
                     # Create new version
                     version_number = self._get_next_version_number(conn, cv_id)
@@ -130,9 +155,9 @@ class CVStorageManager:
                     cur.execute('''
                         INSERT INTO user_cvs 
                         (id, user_id, title, filename, file_size, file_type, mime_type, 
-                         upload_timestamp, parsed_data, analysis_results, last_accessed_at,
-                         status, is_visible, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 
+                         upload_timestamp, parsed_data, analysis_results, ats_score,
+                         last_accessed_at, status, is_visible, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 
                                 'active', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                     ''', (
                         cv_id, user_id, title,
@@ -141,7 +166,7 @@ class CVStorageManager:
                         file_info.get('file_type'),
                         file_info.get('mime_type'),
                         file_info.get('upload_timestamp', datetime.utcnow().isoformat()),
-                        parsed_data, analysis_results
+                        parsed_data, analysis_results, ats_score
                     ))
                 
                 # Log analytics event

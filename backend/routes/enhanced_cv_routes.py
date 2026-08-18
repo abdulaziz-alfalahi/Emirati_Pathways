@@ -13,6 +13,13 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import uuid
 
+import psycopg2.extras
+
+try:
+    from backend.db import get_db_connection
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from db import get_db_connection
+
 # DEBUG HELPER
 def log_debug_cv(msg):
     try:
@@ -791,6 +798,55 @@ def get_cv(cv_id):
             'success': False,
             'message': f'Failed to retrieve CV: {str(e)}'
         }), 500
+
+@enhanced_cv_bp.route('/ats-score', methods=['GET'])
+def get_ats_score():
+    """The caller's ATS compatibility score, breakdown and recommendations.
+
+    THE POINT OF THIS ENDPOINT is that there is now exactly one implementation of
+    the score. It used to be computed in CVProfile.tsx and nowhere else, so it
+    existed only while that tab was open — which is why the dashboard said "Not
+    scored yet" beside a CV the other tab was scoring at 79%.
+
+    Registered BEFORE /<cv_id> so the literal path wins: Flask matches routes by
+    specificity, but a converter-free rule and a string converter can both claim
+    "ats-score", and the ordering makes the intent explicit to a reader.
+    """
+    user_id = get_user_id_from_token()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Authentication required'}), 401
+
+    try:
+        from backend.ats_scoring import score_cv
+    except ImportError:
+        from ats_scoring import score_cv
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""SELECT parsed_data FROM user_cvs
+                        WHERE user_id = %s
+                        ORDER BY is_visible DESC, updated_at DESC NULLS LAST
+                        LIMIT 1""", (str(user_id),))
+        row = cur.fetchone()
+        cur.close()
+
+        cv_fields = row['parsed_data'] if row else None
+        if isinstance(cv_fields, str):
+            cv_fields = json.loads(cv_fields or '{}')
+
+        scored = score_cv(cv_fields)
+        # None, not a zeroed breakdown: a candidate with no CV has no score, and
+        # showing them 0% would be a judgement rather than an absence.
+        return jsonify({'success': True, 'data': scored}), 200
+    except Exception as e:
+        logger.error(f"ATS score failed for {user_id}: {e}")
+        return jsonify({'success': False, 'message': 'Could not compute the score'}), 500
+    finally:
+        if conn:
+            conn.close()
+
 
 @enhanced_cv_bp.route('/<cv_id>', methods=['PUT'])
 def update_cv(cv_id):

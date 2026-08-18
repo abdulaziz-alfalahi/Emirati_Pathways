@@ -859,22 +859,15 @@ def get_dashboard_stats():
         
         conn = get_db_connection()
         if not conn:
+            # An unreachable database used to return success:True with invented
+            # numbers — including a hardcoded 8 "job matches" — so an outage
+            # rendered as a working dashboard showing figures about a candidate
+            # nobody had read. Say it failed; the UI shows em-dashes.
+            logger.error("Dashboard stats: database unavailable")
             return jsonify({
-                'success': True,
-                'data': {
-                    'stats': {
-                        'profileViews': 0,
-                        'jobMatches': 8,  # Fallback job count
-                        'applications': 0,
-                        'interviews': 0
-                    },
-                    'profile': {
-                        'name': 'Candidate',
-                        'completionPercentage': 30,
-                        'cvUploaded': False
-                    }
-                }
-            }), 200
+                'success': False,
+                'error': 'Database unavailable'
+            }), 503
             
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
@@ -896,9 +889,29 @@ def get_dashboard_stats():
         # Check if CV exists and get candidate level
         cv_uploaded = False
         candidate_level = 'trainee'
+        # None = no CV has been scored. Distinct from 0, which would be a real
+        # score for a real but empty CV — the Overview badge reads this to decide
+        # between showing a percentage and saying "Not scored yet", and it was
+        # saying the latter for every candidate because this was never sent.
+        ats_score = None
         if user_id:
             cv_data = get_candidate_cv(raw_user_id or user_id)
             cv_uploaded = bool(cv_data)
+
+            try:
+                cur.execute(
+                    """SELECT ats_score FROM user_cvs
+                        WHERE user_id = %s AND ats_score IS NOT NULL
+                        ORDER BY is_visible DESC, updated_at DESC NULLS LAST
+                        LIMIT 1""",
+                    (str(raw_user_id or user_id),))
+                row = cur.fetchone()
+                if row and row.get('ats_score') is not None:
+                    ats_score = int(row['ats_score'])
+            except Exception as e:
+                logger.warning(f"ATS score lookup failed for {user_id}: {e}")
+                if conn:
+                    conn.rollback()
             
             # 1. Try Profile V2 for Level (Most Accurate)
             if ENHANCED_MATCHING_AVAILABLE:
@@ -1046,21 +1059,56 @@ def get_dashboard_stats():
                 logger.error(f"Error fetching recent activity for stats: {e}")
                 if conn: conn.rollback()
 
+        # ── Real counts, replacing three fabricated ones (owner review 2026-08-18)
+        #
+        # profileViews was the literal 12 with the comment "Mock for now"; every
+        # candidate on the platform saw twelve. There is no profile-views table
+        # anywhere in this schema, so it is now honest-null: the dashboard omits
+        # the card rather than inventing a figure. Making it real needs a view
+        # ledger, which is a feature, not a bug fix.
+        #
+        # interviews was the literal 0 — while this same response's
+        # recentActivity block reads interview_schedules and listed a completed
+        # interview. The screen contradicted itself in one viewport.
+        interview_count = None
+        try:
+            cur.execute(
+                "SELECT COUNT(*) AS count FROM interview_schedules WHERE candidate_id = %s",
+                (search_id,))
+            interview_count = cur.fetchone()['count']
+        except Exception as e:
+            # None, not 0: "we could not count" and "you have none" are
+            # different claims, and the second is the one that misleads.
+            logger.warning(f"Interview count failed for {search_id}: {e}")
+            if conn:
+                conn.rollback()
+
+        # jobMatches was job_count — every published vacancy on the platform,
+        # identical for every candidate and not a match at all. A real match
+        # count comes from the canonical scorer via /api/intelligence/
+        # recommended-jobs, which the dashboard already calls separately, so
+        # this key is dropped rather than restated wrongly here. The frontend
+        # derives the figure from that call.
+        stats = {
+            'applications': app_count,
+            'interviews': interview_count,
+            'openVacancies': job_count,   # honestly named: it is what it counts
+        }
+
         return jsonify({
             'success': True,
             'data': {
-                'stats': {
-                    'profileViews': 12,  # Mock for now
-                    'jobMatches': job_count,
-                    'applications': app_count,
-                    'interviews': 0
-                },
+                'stats': stats,
                 'profile': {
                     'name': profile_name,
                     'completionPercentage': 85 if cv_uploaded else 30,
                     'cvUploaded': cv_uploaded,
                     'experienceLevel': candidate_level,
-                    'profile_photo_url': profile_photo_url
+                    'profile_photo_url': profile_photo_url,
+                    # The stored score, so the Overview and the Profile & CV tab
+                    # cannot disagree. None when no CV has been scored — the
+                    # badge says "Not scored yet" only when that is TRUE.
+                    'ats_score': ats_score
                 },
                 'recentActivity': recent_activity
             }

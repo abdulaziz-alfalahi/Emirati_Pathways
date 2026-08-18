@@ -128,6 +128,10 @@ interface ATSScore {
     skills: number;
     keywords: number;
   };
+  // Sent by the server alongside the score, so the denominators shown here
+  // cannot drift from the weights that produced the numerators. Optional for
+  // resilience against an older API response.
+  maximums?: Record<string, number>;
   recommendations: string[];
 }
 
@@ -344,118 +348,33 @@ const CVProfile: React.FC = () => {
   /**
    * Calculate ATS (Applicant Tracking System) score based on CV completeness and quality
    */
-  const calculateATSScore = (data: CVData) => {
-    const breakdown = {
-      personalInfo: 0,
-      experience: 0,
-      education: 0,
-      skills: 0,
-      keywords: 0
-    };
-    const recommendations: string[] = [];
-
-    // Personal Info Score (20 points max)
-    const personalInfo = data.personalInfo || {};
-    const fullName = personalInfo.fullName || `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim();
-    if (fullName) breakdown.personalInfo += 4;
-    else recommendations.push('Add your full name to your profile');
-
-    if (personalInfo.email) breakdown.personalInfo += 4;
-    else recommendations.push('Add your email address for recruiter contact');
-
-    if (personalInfo.phone) breakdown.personalInfo += 3;
-    else recommendations.push('Add your phone number');
-
-    if (personalInfo.location) breakdown.personalInfo += 3;
-    else recommendations.push('Add your location to improve local job matches');
-
-    if (personalInfo.summary && personalInfo.summary.length > 50) breakdown.personalInfo += 4;
-    else recommendations.push('Add a professional summary (at least 50 characters) to stand out');
-
-    if (personalInfo.linkedIn) breakdown.personalInfo += 2;
-    else recommendations.push('Add your LinkedIn profile URL');
-
-    // Experience Score (30 points max)
-    const experience = data.experience || [];
-    if (experience.length > 0) {
-      breakdown.experience += 10;
-
-      // Check for detailed descriptions
-      const hasDescriptions = experience.some(exp => exp.description && exp.description.length > 100);
-      if (hasDescriptions) breakdown.experience += 10;
-      else recommendations.push('Add detailed descriptions to your work experience (100+ characters)');
-
-      // Check for achievements
-      const hasAchievements = experience.some(exp => exp.achievements && exp.achievements.length > 0);
-      if (hasAchievements) breakdown.experience += 10;
-      else recommendations.push('Add quantifiable achievements to your experience (e.g., "Increased sales by 25%")');
-    } else {
-      recommendations.push('Add your work experience to significantly improve your ATS score');
-    }
-
-    // Education Score (15 points max)
-    const education = data.education || [];
-    if (education.length > 0) {
-      breakdown.education += 10;
-
-      const hasDetails = education.some(edu => edu.fieldOfStudy || edu.gpa);
-      if (hasDetails) breakdown.education += 5;
-      else recommendations.push('Add field of study and GPA to your education');
-    } else {
-      recommendations.push('Add your educational background');
-    }
-
-    // Skills Score (20 points max)
-    const skills = data.skills || [];
-    const skillCount = Array.isArray(skills) ? skills.length : 0;
-
-    if (skillCount >= 10) breakdown.skills = 20;
-    else if (skillCount >= 5) breakdown.skills = 15;
-    else if (skillCount >= 3) breakdown.skills = 10;
-    else if (skillCount > 0) breakdown.skills = 5;
-
-    if (skillCount < 5) {
-      recommendations.push('Add more skills (aim for at least 10) to match more job requirements');
-    }
-
-    // Keywords Score (15 points max) - Check for D33/Talent33 aligned skills
-    let keywordMatches = 0;
-    const allD33Skills = Object.values(D33_SECTORS).flatMap(sector => sector.skills);
-    const allTalent33Skills = Object.values(TALENT33_SKILLS).flat();
-    const prioritySkills = [...new Set([...allD33Skills, ...allTalent33Skills])];
-
-    const userSkillNames = skills.map((s: any) =>
-      typeof s === 'string' ? s.toLowerCase() : (s.name || '').toLowerCase()
-    );
-
-    prioritySkills.forEach(skill => {
-      if (userSkillNames.some(us => us.includes(skill.toLowerCase()) || skill.toLowerCase().includes(us))) {
-        keywordMatches++;
-      }
-    });
-
-    if (keywordMatches >= 5) breakdown.keywords = 15;
-    else if (keywordMatches >= 3) breakdown.keywords = 10;
-    else if (keywordMatches >= 1) breakdown.keywords = 5;
-
-    if (keywordMatches < 3) {
-      recommendations.push('Add skills aligned with D33 priority sectors (Technology, Sustainability, Finance)');
-    }
-
-    const overall = breakdown.personalInfo + breakdown.experience + breakdown.education + breakdown.skills + breakdown.keywords;
-
-    setAtsScore({ overall, breakdown, recommendations });
-
-    // Persist it so every other surface shows the SAME number. The dashboard
-    // Overview reads the stored ats_score; while only this component computed
-    // it, the two tabs disagreed (feedback fb_1785810051).
-    // Only for a real CV row (uuid) — a legacy numeric id is not a user_cvs
-    // record and produced a 500 on the update endpoint.
-    const isUuid = typeof data?.id === 'string'
-      && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id);
-    if (isUuid && Number.isFinite(overall)) {
-      restClient.put(`/api/cv/${data.id}`, { atsScore: Math.round(overall) })
-        .catch(() => { /* display is already correct; persistence is best-effort */ });
+  /**
+   * Fetch the ATS score from the server.
+   *
+   * This used to compute the score here, in the browser, and it was the ONLY
+   * place that computed it. Three things followed: the number existed only
+   * while this tab was open, the dashboard showed "Not scored yet" beside a
+   * profile this component was scoring at 79% (feedback fb_1785810051, whose
+   * fix corrected the label and not the cause), and nothing else on the
+   * platform could act on it.
+   *
+   * The scoring now lives in backend/ats_scoring.py — a faithful port of the
+   * weights that were here, so the number does not move — and this component
+   * displays what the server says. That is what makes the two tabs agree by
+   * construction instead of by coincidence.
+   *
+   * `data` is still taken so the caller reads naturally, and because a future
+   * unsaved-draft preview would need it; the server scores the STORED CV.
+   */
+  const calculateATSScore = async (_data: CVData) => {
+    try {
+      const res: any = await restClient.get('/api/cv/ats-score');
+      const scored = res?.data?.data ?? res?.data;
+      // null is a real answer: no CV has been scored. Leaving atsScore null
+      // hides the panel rather than rendering a confident 0%.
+      setAtsScore(scored || null);
+    } catch {
+      setAtsScore(null);
     }
   };
 
@@ -664,7 +583,12 @@ const CVProfile: React.FC = () => {
               {/* Score Breakdown */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
                 {Object.entries(atsScore.breakdown).map(([key, value]) => {
-                  const maxScores: Record<string, number> = {
+                  // Server-supplied; the literals are a fallback only. They
+                  // were a third copy of the scoring weights — after the
+                  // computation moved to the backend, a hardcoded denominator
+                  // here would silently misreport the fraction the moment the
+                  // weights changed.
+                  const maxScores: Record<string, number> = atsScore.maximums ?? {
                     personalInfo: 20,
                     experience: 30,
                     education: 15,
