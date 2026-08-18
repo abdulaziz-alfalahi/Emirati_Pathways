@@ -187,10 +187,29 @@ def test_the_frontend_no_longer_computes_the_score():
     assert 'breakdown.personalInfo +=' not in fn, 'must not score locally'
 
 
-def test_the_dashboard_endpoint_sends_the_stored_score():
+def test_the_dashboard_endpoint_COMPUTES_the_score():
+    """It must NOT read user_cvs.ats_score.
+
+    That column is DEFAULT 0 and all 26 live rows hold 0, so a stored value
+    cannot tell "never scored" apart from "scored zero". Reading it published a
+    confident "ATS Compatibility: 0%" to every candidate — a worse claim than
+    the "Not scored yet" it replaced. Computing makes the column a cache and
+    guarantees this endpoint agrees with /api/cv/ats-score, because both call
+    the same scorer.
+    """
     src = _src('candidate_job_routes.py')
     assert "'ats_score': ats_score" in src
-    assert 'FROM user_cvs' in src
+    block = src.split('cv_uploaded = bool(cv_data)')[1][:1800]
+    assert 'score_cv(' in block, 'must compute'
+    assert 'SELECT ats_score FROM user_cvs' not in block, \
+        'must not trust the DEFAULT 0 column'
+
+
+def test_the_legacy_default_of_zero_is_not_mistaken_for_a_score():
+    """The distinction the column cannot express, asserted at the scorer: an
+    absent CV is None, and only a real but empty CV is 0."""
+    assert ats.score_cv(None) is None
+    assert ats.score_cv({'personalInfo': {}})['overall'] == 0
 
 
 def test_storing_a_cv_persists_its_score():
