@@ -58,21 +58,39 @@ export default defineConfig({
       'stg-emirati.ehrdc.gov.ae',
       'emirati.ehrdc.gov.ae'
     ],
+    // xfwd adds X-Forwarded-For / -Proto / -Host on the way through.
+    //
+    // WHY: staging does not serve through the nginx container (which sets these
+    // correctly) — it runs this dev server, which forwarded nothing. So the
+    // backend saw the Docker bridge address for every request, and the PII read
+    // audit trail recorded `172.18.0.1` as the actor's IP on every row: a trail
+    // that identifies nobody. Caught on 2026-08-18 because pii_access_log
+    // records WHICH header the value came from, and every row said remote_addr.
+    //
+    // http-proxy APPENDS to any existing X-Forwarded-For rather than replacing
+    // it, so when the WAF sets the header the chain arrives as
+    // `<client>, <waf>` and the leftmost entry is the real client — which is
+    // what client_ip() reads. Where the WAF does not set it we get the WAF's
+    // own address, still far better than a bridge IP, and ip_source makes the
+    // difference visible rather than a guess.
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5005',
         changeOrigin: true,
+        xfwd: true,
         secure: false,
         rewrite: (path) => path
       },
       '/health': {
         target: 'http://127.0.0.1:5005',
         changeOrigin: true,
+        xfwd: true,
         secure: false,
       },
       '/socket.io': {
         target: 'http://127.0.0.1:5005',
         changeOrigin: true,
+        xfwd: true,
         secure: false,
         ws: true,
       },
@@ -90,6 +108,7 @@ export default defineConfig({
       '/uploads': {
         target: 'http://127.0.0.1:5005',
         changeOrigin: true,
+        xfwd: true,
         secure: false,
       }
     },
