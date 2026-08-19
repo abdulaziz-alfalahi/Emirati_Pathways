@@ -1,14 +1,19 @@
-"""dev-login must not be reachable from the internet.
+"""dev-login: who can reach it, and who it may sign in as.
 
-It mints a session for ANY existing Emirates ID with no credential. Today that
-is contained — the database holds test users and staff, and keeping it enabled
-is a deliberate owner decision for the mobile app work. Once the NAFIS roster is
-loaded it becomes a way for anyone on the internet to read any Emirati
-jobseeker's file, with an audit trail indistinguishable from a real login.
+Two independent constraints, and both matter:
 
-The tests below are about the boundary, not the feature. They are deliberately
-written so that the DANGEROUS direction is the one that fails loudly.
+  REACHABILITY — not from the internet (PR #434).
+  SCOPE        — only accounts flagged is_test_account (migration 073).
+
+The second is the one that makes the audit trail honest. Host-binding stops
+strangers; the flag stops a credential-free session being minted for a real
+person, which is what made the audit row I left on 2026-08-19 a false record of
+the platform owner reading candidate files.
+
+These tests are deliberately written so the DANGEROUS direction is the one that
+fails loudly.
 """
+
 import os
 import sys
 
@@ -119,6 +124,65 @@ def test_the_user_listing_endpoint_is_gated_too():
     assert "and os.getenv('FLASK_ENV', 'production') != 'production'):" not in \
         handlers.split('def dev_login', 1)[1], \
         'no handler may re-implement the old guard inline'
+
+
+# ── Scope: which accounts may be signed into ────────────────────────────────
+
+def test_a_non_test_account_is_refused():
+    """The constraint that makes this safe. Without it the endpoint mints a
+    credential-free session for any of 5,336 users."""
+    src = open(os.path.join(BACKEND, 'routes', 'uaepass_routes.py'),
+               encoding='utf-8').read()
+    body = src.split('def dev_login')[1].split('\n@uaepass_bp.route')[0]
+    assert "if not user.get('is_test_account'):" in body
+    assert '403' in body.split("is_test_account'):")[1][:400]
+
+
+def test_the_flag_is_actually_selected():
+    """A guard on a column the query never fetched would read as None and
+    refuse everything — or, with a looser check, admit everything."""
+    src = open(os.path.join(BACKEND, 'routes', 'uaepass_routes.py'),
+               encoding='utf-8').read()
+    body = src.split('def dev_login')[1].split('\n@uaepass_bp.route')[0]
+    select = body.split('SELECT')[1].split('FROM users')[0]
+    assert 'is_test_account' in select
+
+
+def test_the_refusal_comes_before_any_token_is_minted():
+    """Order matters: a refused caller must not receive a usable session."""
+    src = open(os.path.join(BACKEND, 'routes', 'uaepass_routes.py'),
+               encoding='utf-8').read()
+    body = src.split('def dev_login')[1].split('\n@uaepass_bp.route')[0]
+    assert body.index("is_test_account'):") < body.index('create_access_token')
+
+
+def test_the_listing_only_advertises_test_accounts():
+    """Listing the whole roster would hand an attacker 5,312 real names while
+    every one of them would be refused at the point of use."""
+    src = open(os.path.join(BACKEND, 'routes', 'uaepass_routes.py'),
+               encoding='utf-8').read()
+    body = src.split('def dev_login_users')[1] if 'def dev_login_users' in src \
+        else src.split('DEV-ONLY: List all test users')[1]
+    assert 'is_test_account IS TRUE' in body
+
+
+def test_the_marking_is_not_an_eid_pattern():
+    """Every national's EID is synthetic today (the 784000000000… range) until
+    UAE Pass supplies real ones, so an EID-pattern rule would eventually match
+    real citizens as the roster grows."""
+    sql = open(os.path.join(BACKEND, 'migrations',
+                            '073_users_is_test_account.sql'), encoding='utf-8').read()
+    update = sql.split('UPDATE users')[1].split(';')[0]
+    assert "id LIKE" not in update
+    assert "@test.ehrdc.ae" in update
+    assert 'uaepass_uuid IS NULL' in update, \
+        'an account that has really logged in must not qualify'
+
+
+def test_new_accounts_default_to_not_being_test_accounts():
+    sql = open(os.path.join(BACKEND, 'migrations',
+                            '073_users_is_test_account.sql'), encoding='utf-8').read()
+    assert 'DEFAULT FALSE' in sql
 
 
 def test_it_returns_404_not_403():

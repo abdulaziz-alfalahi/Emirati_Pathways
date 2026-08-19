@@ -1178,7 +1178,8 @@ def dev_login():
         conn = _get_db()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
-            SELECT id, email, first_name, last_name, role, phone, is_active
+            SELECT id, email, first_name, last_name, role, phone, is_active,
+                   is_test_account
             FROM users WHERE id = %s
         """, (user_id,))
         user = cur.fetchone()
@@ -1186,6 +1187,25 @@ def dev_login():
         if not user:
             conn.close()
             return jsonify({'success': False, 'message': f'User {user_id} not found'}), 404
+
+        # THE CONSTRAINT THAT MAKES THIS SAFE (migration 073). Without it this
+        # endpoint mints a credential-free session for any of 5,336 users, and
+        # the resulting audit row is indistinguishable from that person's own
+        # login — which is how a verification call on 2026-08-19 left a
+        # permanent row showing the platform owner reading candidate records.
+        #
+        # Restricted to accounts that exist purely for testing, the audit stays
+        # TRUE: nobody is misrepresented, because nobody is behind them. This is
+        # also why no impersonation feature was built — removing the capability
+        # was sufficient, and adding one would have been a new risk to govern.
+        if not user.get('is_test_account'):
+            conn.close()
+            logger.warning("dev-login REFUSED for non-test account %s", user_id)
+            return jsonify({
+                'success': False,
+                'message': ('This account is not a test account. dev-login can only '
+                            'sign in as accounts marked is_test_account.')
+            }), 403
 
         if not user['is_active']:
             conn.close()
@@ -1259,6 +1279,11 @@ def dev_login_users():
                 (SELECT COUNT(*) FROM candidate_education_entries WHERE user_id = u.id) AS edu_count
             FROM users u
             WHERE u.is_active = true
+              -- Only accounts dev-login can actually use. Listing the whole
+              -- roster would advertise 5,312 real people as sign-in targets and
+              -- hand an attacker the list, while every one of them would be
+              -- refused at the point of use.
+              AND u.is_test_account IS TRUE
             ORDER BY u.role, u.first_name
         """)
         users = []
