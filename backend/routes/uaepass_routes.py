@@ -1113,6 +1113,44 @@ def _cleanup_stale_states():
 # DEV-ONLY: Test login bypass (NOT available in production)
 # ────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# DEV-LOGIN REACHABILITY
+#
+# dev_login mints a session for ANY existing Emirates ID with no credential. On
+# a database of test users and staff that is a contained risk and a deliberate
+# owner decision (2026-08-13, kept for mobile app work). Once the NAFIS roster is
+# loaded it becomes something else entirely: a way for anyone on the internet to
+# read any Emirati jobseeker's file, leaving an audit trail indistinguishable
+# from a real login.
+#
+# So the endpoint is now reachable only from the host itself — `ssh appqa` then
+# curl 127.0.0.1:5005, or an SSH tunnel for browser work. It is no longer part
+# of the public surface.
+#
+# WHY THE HEADER AND NOT remote_addr: verified 2026-08-19 that BOTH the public
+# path and a direct localhost call reach the backend as 172.18.0.1, the Docker
+# bridge — the container never sees a loopback source, so remote_addr cannot
+# tell them apart. What does differ is that public traffic has traversed the GIN
+# WAF, which stamps X-Forwarded-For (observed carrying 10.62.132.52). A request
+# arriving with no forwarding header of any kind did not come through the edge.
+#
+# FAILS CLOSED: any forwarding header present -> refuse. A new header added by a
+# future proxy makes this stricter, never looser. Host port 5005 binds 0.0.0.0
+# but is not routed through the WAF (confirmed: connection to :5005 from the
+# internet does not complete), so the header is the boundary that matters.
+_FORWARDING_HEADERS = ('X-Forwarded-For', 'X-Real-IP', 'X-Forwarded-Host',
+                       'X-Forwarded-Proto', 'Forwarded')
+
+
+def _dev_login_available():
+    """True only when dev-login is enabled AND the caller is on the host."""
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
+            and os.getenv('FLASK_ENV', 'production') != 'production'):
+        return False
+    # Any sign of a proxy hop means this arrived from outside the host.
+    return not any(request.headers.get(h) for h in _FORWARDING_HEADERS)
+
+
 @uaepass_bp.route('/dev-login', methods=['POST'])
 def dev_login():
     """
@@ -1124,13 +1162,10 @@ def dev_login():
 
     ⚠️ MUST be removed or disabled before production deployment.
     """
-    # FLASK_ENV must default to 'production' here, exactly as app.py does.
-    # Without the default an UNSET FLASK_ENV read as None != 'production',
-    # so this auth bypass went LIVE on any box where the variable simply
-    # wasn't set — while the rest of the app treated that same box as
-    # production. A guard whose failure mode is 'allow' is issue #96.
-    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
-            and os.getenv('FLASK_ENV', 'production') != 'production'):
+    # Enabled, non-production, AND reached from the host — see
+    # _dev_login_available. 404 rather than 403: a caller from the internet
+    # should not learn that the endpoint exists at all.
+    if not _dev_login_available():
         return jsonify({'error': 'Not available'}), 404
 
     data = request.get_json() or {}
@@ -1206,13 +1241,10 @@ def dev_login_users():
     DEV-ONLY: List all test users available for dev login.
     GET /api/auth/uaepass/dev-login/users
     """
-    # FLASK_ENV must default to 'production' here, exactly as app.py does.
-    # Without the default an UNSET FLASK_ENV read as None != 'production',
-    # so this auth bypass went LIVE on any box where the variable simply
-    # wasn't set — while the rest of the app treated that same box as
-    # production. A guard whose failure mode is 'allow' is issue #96.
-    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
-            and os.getenv('FLASK_ENV', 'production') != 'production'):
+    # Enabled, non-production, AND reached from the host — see
+    # _dev_login_available. 404 rather than 403: a caller from the internet
+    # should not learn that the endpoint exists at all.
+    if not _dev_login_available():
         return jsonify({'error': 'Not available'}), 404
 
     try:
