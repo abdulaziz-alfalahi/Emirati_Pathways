@@ -47,7 +47,19 @@ docker run -d --name "$NAME" \
     -p "$PORT":5432 "$IMAGE" >/dev/null
 
 echo "==> Waiting for readiness"
-until docker exec "$NAME" pg_isready -U test >/dev/null 2>&1; do sleep 1; done
+# From the HOST on the published port, with a real query — NOT `docker exec
+# pg_isready`, which returns true against the temporary socket-only server the
+# postgres entrypoint runs during initdb. That race silently produced an
+# unprovisioned database twice on 2026-08-19, and a test run against it reported
+# 19-20 failures that looked like real regressions.
+for _ in $(seq 1 60); do
+    python3 - <<'WAITEOF' 2>/dev/null && break
+import psycopg2
+psycopg2.connect(host='127.0.0.1', port=55432, dbname='test', user='test',
+                 password='test', connect_timeout=2).close()
+WAITEOF
+    sleep 1
+done
 
 export DB_HOST=127.0.0.1 DB_PORT="$PORT" DB_NAME=test DB_USER=test DB_PASSWORD=test
 
