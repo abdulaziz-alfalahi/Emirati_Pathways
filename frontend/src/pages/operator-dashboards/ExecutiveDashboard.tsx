@@ -296,6 +296,60 @@ const ExecutiveDashboard: React.FC = () => {
     return roles.some(r => ['admin', 'administrator', 'platform_operator', 'board_operator'].includes(r));
   })();
 
+  /* Editing a scheduled meeting — agenda especially.
+     
+     Requested as "There is currently no option to edit the meeting agenda after
+     clicking Submit ... new topics may need to be added" (fb_1787145612). The
+     API already supported it: PUT /api/board/meetings/<id> changes only the
+     fields present in the body, and refuses a completed or cancelled meeting
+     because governance history is not rewritten. Only the UI was missing. */
+  const [editingMeeting, setEditingMeeting] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<{ title: string; agenda: string; location: string }>(
+    { title: '', agenda: '', location: '' });
+  const [savingMeeting, setSavingMeeting] = useState(false);
+
+  const openEditMeeting = (m: any) => {
+    setEditForm({
+      title: m.title || '',
+      agenda: m.agenda || '',
+      location: m.location || '',
+    });
+    setEditingMeeting(m);
+  };
+
+  const saveMeeting = async () => {
+    if (!editingMeeting) return;
+    if (!editForm.title.trim()) {
+      toast({ title: b('Title required', 'العنوان مطلوب'),
+              description: b('A meeting needs a title.', 'يجب أن يكون للاجتماع عنوان.'),
+              variant: 'destructive' });
+      return;
+    }
+    setSavingMeeting(true);
+    try {
+      /* Only what the form owns. Sending the whole meeting back would restate
+         scheduled_at, and a reschedule notifies every member — an agenda tweak
+         must not tell the board the time changed. */
+      await restClient.put(`/api/board/meetings/${editingMeeting.id}`, {
+        title: editForm.title.trim(),
+        agenda: editForm.agenda,
+        location: editForm.location,
+      });
+      toast({ title: b('Meeting updated', 'تم تحديث الاجتماع'),
+              description: b('The agenda and details have been saved.',
+                             'تم حفظ جدول الأعمال والتفاصيل.') });
+      setEditingMeeting(null);
+      fetchMeetings();
+    } catch (e: any) {
+      toast({ title: b('Could not update the meeting', 'تعذّر تحديث الاجتماع'),
+              // The API's own message when it refuses — e.g. a closed meeting —
+              // is more useful than a generic failure.
+              description: e?.response?.data?.message
+                || b('Please try again.', 'يرجى المحاولة مرة أخرى.'),
+              variant: 'destructive' });
+    } finally { setSavingMeeting(false); }
+  };
+
   const fetchBoardSettings = async () => {
     try {
       const res = await restClient.get('/api/board/meetings/settings');
@@ -885,6 +939,15 @@ const ExecutiveDashboard: React.FC = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
+                              {/* Organisers only, and only while the meeting is
+                                  still open to change — the API refuses a
+                                  completed or cancelled one, so offering the
+                                  button there would be a control that fails. */}
+                              {canManageBoard && m.status !== 'completed' && m.status !== 'cancelled' && (
+                                <Button size="sm" variant="ghost" onClick={() => openEditMeeting(m)}>
+                                  {b('Edit', 'تعديل')}
+                                </Button>
+                              )}
                               {m.my_invite_status === 'invited' && (
                                 <>
                                   <Button size="sm" variant="outline" onClick={() => rsvp(m, 'accepted')}>
@@ -1490,6 +1553,51 @@ const ExecutiveDashboard: React.FC = () => {
               )}
             </DialogContent>
           </Dialog>
+
+      {/* Edit a scheduled meeting (fb_1787145612). Agenda is the field that
+          prompted this — topics arrive after the invitation goes out. */}
+      <Dialog open={!!editingMeeting} onOpenChange={(o) => !o && setEditingMeeting(null)}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>{b('Edit meeting', 'تعديل الاجتماع')}</DialogTitle>
+            <DialogDescription>
+              {b('Members are not notified of these changes. Rescheduling is separate.',
+                 'لن يتم إشعار الأعضاء بهذه التغييرات. إعادة الجدولة منفصلة.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700">{b('Title', 'العنوان')}</label>
+              <Input value={editForm.title}
+                     onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))}
+                     className="mt-1" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">{b('Agenda', 'جدول الأعمال')}</label>
+              <Textarea value={editForm.agenda} rows={6}
+                        onChange={(e) => setEditForm(f => ({ ...f, agenda: e.target.value }))}
+                        placeholder={b('One topic per line', 'موضوع واحد في كل سطر')}
+                        className="mt-1" />
+            </div>
+            {editingMeeting && !editingMeeting.is_virtual && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">{b('Location', 'المكان')}</label>
+                <Input value={editForm.location}
+                       onChange={(e) => setEditForm(f => ({ ...f, location: e.target.value }))}
+                       className="mt-1" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMeeting(null)} disabled={savingMeeting}>
+              {b('Cancel', 'إلغاء')}
+            </Button>
+            <Button onClick={saveMeeting} disabled={savingMeeting || !editForm.title.trim()}>
+              {savingMeeting ? b('Saving…', 'جارٍ الحفظ…') : b('Save changes', 'حفظ التغييرات')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
         </div>
       </div>
     </div>
