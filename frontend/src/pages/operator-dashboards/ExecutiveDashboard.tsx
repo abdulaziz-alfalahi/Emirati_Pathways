@@ -40,6 +40,16 @@ import {
 const CHART_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#14B8A6', '#EF4444'];
 
 const ExecutiveDashboard: React.FC = () => {
+  /* The CURRENT year, not a literal. These cards read "2025 Target" into 2026
+     (feedback fb_1787130094). The figures themselves are honestly marked "not
+     yet connected to live data" — but a stale year in the label undermines that
+     honesty, because it looks like a real number from last year.
+
+     When the target IS connected, the year must come from the data rather than
+     the clock: a target is set for a specific year by policy, and reading it
+     off today's date would be a different wrong answer. */
+  const targetYear = new Date().getFullYear();
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -640,7 +650,7 @@ const ExecutiveDashboard: React.FC = () => {
                       <Landmark className="h-5 w-5 text-emerald-700" />
                     </div>
                     <div>
-                      <p className="text-sm font-dubai-bold text-emerald-800">{b('National Emiratisation Target 2025', 'الهدف الوطني للتوطين 2025')}</p>
+                      <p className="text-sm font-dubai-bold text-emerald-800">{b(`National Emiratisation Target ${targetYear}`, `الهدف الوطني للتوطين ${targetYear}`)}</p>
                       <p className="text-xs text-emerald-600 font-dubai-medium mt-0.5">
                         {b('Overall private sector goal', 'الهدف الشامل للقطاع الخاص')}
                       </p>
@@ -1138,7 +1148,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <div className="p-6 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
                       <Target className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
                       <p className="text-3xl font-dubai-bold text-emerald-700">—</p>
-                      <p className="text-sm text-emerald-600 font-dubai-medium mt-1">{b('2025 Target', 'هدف 2025')}</p>
+                      <p className="text-sm text-emerald-600 font-dubai-medium mt-1">{b(`${targetYear} Target`, `هدف ${targetYear}`)}</p>
                       <Progress value={kpis.emiratization_target_progress || 0} className="h-2 mt-3" />
                       <p className="text-xs text-emerald-500 mt-1 font-dubai">{kpis.emiratization_target_progress != null ? `${kpis.emiratization_target_progress}% ${b('toward target', 'نحو الهدف')}` : b('Target not yet connected', 'الهدف غير متصل بعد')}</p>
                     </div>

@@ -153,6 +153,23 @@ export default function CareerServicesDashboard() {
     }
   };
 
+  /* The filter half of the roster query, in ONE place.
+
+     Both the page fetch and "select all matching" send these. Building them
+     twice is how the ids an operator acts on drift from the rows they were
+     shown — the same reason the backend derives ids from the page query rather
+     than a second one. */
+  const filterParams = (base: Record<string, string> = {}) => {
+    const p = new URLSearchParams(base);
+    if (searchTerm.trim()) p.set('q', searchTerm.trim());
+    if (callStatusFilter !== 'All') p.set('call_status', callStatusFilter);
+    if (workStatusFilter !== 'All') p.set('work_status', workStatusFilter);
+    if (segmentFilter !== 'All') p.set('segment', segmentFilter);
+    if (hideUncontactable) p.set('hide_uncontactable', 'true');
+    Object.entries(extraFilters).forEach(([k, v]) => { if (v) p.set(k, v); });
+    return p;
+  };
+
   const fetchCandidates = async () => {
     setLoading(true);
     try {
@@ -161,17 +178,11 @@ export default function CareerServicesDashboard() {
       // at 5,310 candidates, and every candidate's Emirates ID, phone and
       // counselling notes shipped to the client in order to show twenty rows.
       // The platform targets every Dubai national aged 15 and over.
-      const params = new URLSearchParams({
+      const params = filterParams({
         page: String(currentPage),
         per_page: String(itemsPerPage),
         _cb: String(Date.now()),
       });
-      if (searchTerm.trim()) params.set('q', searchTerm.trim());
-      if (callStatusFilter !== 'All') params.set('call_status', callStatusFilter);
-      if (workStatusFilter !== 'All') params.set('work_status', workStatusFilter);
-      if (segmentFilter !== 'All') params.set('segment', segmentFilter);
-      if (hideUncontactable) params.set('hide_uncontactable', 'true');
-      Object.entries(extraFilters).forEach(([k, v]) => { if (v) params.set(k, v); });
       const res = await restClient.get(`/api/profile/crm-candidates?${params.toString()}`);
       if (res.data?.success && res.data?.data) {
         setPageMeta(res.data.pagination || null);
@@ -508,6 +519,33 @@ const LOCATION_OPTIONS = [
     setSelectedIds(prev => allOnPageSelected
       ? prev.filter(id => !pageIds.includes(id))
       : [...new Set([...prev, ...pageIds])]);
+
+  /* Selecting the whole FILTERED set — explicitly, and never as a side effect
+     of the header checkbox.
+
+     The page-only rule above stands: a checkbox that silently means "everything"
+     is the thing worth preventing. But inviting a filtered cohort to an open day
+     twenty at a time is not a workflow (feedback fb_1787130514, on a filter
+     matching 3,662 people), so this is a separate control that states the count
+     before it acts. The operator opts in to a number they can see.
+
+     It fetches the concrete ids rather than switching the bulk call to a
+     filter-wide update: the bulk endpoint documents why it takes explicit
+     user_ids — a filter shifting under the operator would otherwise change the
+     blast radius after they clicked. Both properties survive. */
+  const [selectingAll, setSelectingAll] = useState(false);
+  const selectAllMatching = async () => {
+    setSelectingAll(true);
+    try {
+      const qs = filterParams({ ids_only: '1' }).toString();
+      const res: any = await restClient.get(`/api/profile/crm-candidates?${qs}`);
+      const ids: string[] = res?.data?.data?.ids || res?.data?.ids || [];
+      setSelectedIds(ids.map(String));
+    } catch {
+      // Leave the existing selection alone rather than half-selecting: a
+      // partial set the operator believes is complete is worse than none.
+    } finally { setSelectingAll(false); }
+  };
 
   /* Inviting to an open day is the same motion as any other bulk action here:
      filter the roster, select, act (#376). The invitation is RECORDED here and
@@ -1135,6 +1173,21 @@ const LOCATION_OPTIONS = [
                           className="text-xs text-slate-600 underline hover:text-slate-800">
                     {t('Clear', 'إلغاء التحديد')}
                   </button>
+
+                  {/* Offered only when the filter matches more than the page can
+                      show, and it NAMES the number before acting. The header
+                      checkbox stays page-only: the risk worth preventing is a
+                      click that silently means "everything", not the operator
+                      deliberately choosing a set whose size they can see. */}
+                  {pageMeta && pageMeta.total > selectedIds.length && (
+                    <button type="button" onClick={selectAllMatching} disabled={selectingAll}
+                            className="text-xs font-medium text-ehrdc-teal underline hover:text-teal-800 disabled:opacity-50">
+                      {selectingAll
+                        ? t('Selecting…', 'جارٍ التحديد…')
+                        : t(`Select all ${pageMeta.total} matching this filter`,
+                            `تحديد كل ${pageMeta.total} المطابقين لهذا الفلتر`)}
+                    </button>
+                  )}
 
                   <div className="mx-2 h-5 w-px bg-teal-200" />
 
