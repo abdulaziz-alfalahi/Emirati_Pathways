@@ -976,6 +976,74 @@ def list_participants(meeting_id):
     return jsonify({'success': True, 'data': out})
 
 
+@board_meetings_bp.route('/<meeting_id>/quorum', methods=['GET'])
+@require_roles(*BOARD_ROLES)
+def meeting_quorum(meeting_id):
+    """Is this meeting quorate RIGHT NOW.
+
+    Requested as "Pop-up to show quorum met for the chairman to begin the
+    meeting" (fb_1787129509). Until now quorum was only computed when a meeting
+    ENDED, which is the one moment the chair does not need it.
+
+    PRESENT MEANS IN THE ROOM NOW, not "has joined at some point". invite_status
+    flips to 'attended' on first join and never reverts, so counting that would
+    keep a member in the tally after they left — and the chair would open a
+    meeting that had quietly lost quorum. Live state comes from LiveKit, which
+    is the only thing that knows who is actually connected.
+
+    OBSERVERS ARE EXCLUDED, and so is anyone not on the attendee list. The
+    secretary attends as rapporteur to record the meeting, not to be counted in
+    it (owner, 2026-08-20) — the same rule end_meeting already applies.
+
+    COUNTS ONLY — no names, no per-person state. Quorum is a fact about the
+    meeting rather than about individuals, so this is readable by any board
+    member, whereas /participants stays organiser-only because it exposes who is
+    muted and who is sharing.
+    """
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+
+    required = meeting.get('quorum_required')
+
+    try:
+        data = _livekit_call('ListParticipants', meeting['room_name'],
+                             {'room': meeting['room_name']})
+        live = data.get('participants') or []
+    except urllib.error.HTTPError as e:
+        # An empty room does not exist yet as far as LiveKit is concerned.
+        if e.code in (404, 500):
+            live = []
+        else:
+            logger.error(f"quorum: livekit read failed: {e}")
+            return jsonify({'success': False, 'message': 'Could not read the room'}), 502
+    except Exception as e:
+        logger.error(f"quorum: livekit read failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not read the room'}), 502
+
+    counting = {str(r['user_id']) for r in (execute_query(
+        """SELECT user_id FROM board_meeting_attendees
+            WHERE meeting_id::text = %s AND COALESCE(invite_status,'') <> 'observer'""",
+        (str(meeting_id),)) or [])}
+
+    present_ids = {str(p.get('identity') or '') for p in live}
+    present = len(present_ids & counting)
+    in_room_not_counted = len(present_ids) - present
+
+    return jsonify({'success': True, 'data': {
+        'required': required,
+        'present': present,
+        # None, never False, when no quorum is configured: "we do not know" and
+        # "not enough people" are different answers, and a chair told False
+        # would wait for a threshold nobody set.
+        'met': (present >= required) if required else None,
+        # So the chair can see why the room count and the quorum count differ
+        # without being shown who is who.
+        'in_room_not_counted': in_room_not_counted,
+    }})
+
+
 @board_meetings_bp.route('/<meeting_id>/participants/remove', methods=['POST'])
 @require_roles(*ORGANISER_ROLES)
 def remove_participant(meeting_id):

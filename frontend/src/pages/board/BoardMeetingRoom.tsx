@@ -60,6 +60,50 @@ const BoardMeetingRoom: React.FC = () => {
     return () => clearInterval(t);
   }, [canControl, showPanel, meetingId]);
 
+  /* ── Quorum, live ────────────────────────────────────────────────
+     "Pop-up to show quorum met for the chairman to begin the meeting"
+     (fb_1787129509). Quorum used to be computed only when a meeting ENDED,
+     which is the one moment the chair does not need it.
+
+     Polled by EVERY board member, not just organisers: the chair is a member,
+     and the endpoint returns counts only — no names, no mic or screen state —
+     so it discloses nothing /participants would have had to. */
+  const [quorum, setQuorum] = useState<{ required: number | null; present: number;
+                                         met: boolean | null; in_room_not_counted: number } | null>(null);
+  const [quorumAnnounced, setQuorumAnnounced] = useState(false);
+
+  useEffect(() => {
+    if (!meetingId) return;
+    let cancelled = false;
+    const read = async () => {
+      try {
+        const res: any = await restClient.get(`/api/board/meetings/${meetingId}/quorum`);
+        if (!cancelled) setQuorum(res?.data?.data ?? null);
+      } catch {
+        /* null means "unknown", which the banner renders as such. A failed read
+           must not look like "quorum not met" — that would hold up a meeting
+           that was perfectly quorate. */
+        if (!cancelled) setQuorum(null);
+      }
+    };
+    read();
+    const t = setInterval(read, 10000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [meetingId]);
+
+  /* Announce ONCE, on the transition to quorate. Re-announcing on every poll
+     would nag; announcing on every render would fire while the chair is
+     speaking. */
+  useEffect(() => {
+    if (quorum?.met && !quorumAnnounced) {
+      setQuorumAnnounced(true);
+      toast({
+        title: 'Quorum met',
+        description: `${quorum.present} of ${quorum.required} required members are present. The meeting can begin.`,
+      });
+    }
+  }, [quorum?.met, quorumAnnounced]);
+
   const muteParticipant = async (p: any) => {
     setBusyId(p.identity);
     try {
@@ -163,6 +207,30 @@ const BoardMeetingRoom: React.FC = () => {
           <ArrowLeft className="h-4 w-4 me-2" /> Leave
         </Button>
         <h1 className="text-sm font-semibold text-slate-900 truncate">{title}</h1>
+
+        {/* Quorum, always visible while the meeting runs — the chair should not
+            have to open a panel to learn whether they may begin. */}
+        {quorum && quorum.required != null && (
+          <span
+            className={`ms-3 shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+              quorum.met
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'bg-amber-50 text-amber-800 border border-amber-200'}`}
+            title={quorum.in_room_not_counted > 0
+              ? `${quorum.in_room_not_counted} other participant(s) are in the room but do not count toward quorum (observers or guests).`
+              : undefined}
+          >
+            {quorum.met ? 'Quorum met' : 'Quorum not met'} · {quorum.present}/{quorum.required}
+          </span>
+        )}
+        {quorum && quorum.required == null && (
+          /* No threshold configured. Saying "not met" would invent one, and the
+             chair would wait for a number nobody set. */
+          <span className="ms-3 shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+            {`${quorum.present} present · no quorum configured`}
+          </span>
+        )}
+
         {canControl && (
           <Button
             variant="outline"
