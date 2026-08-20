@@ -16,6 +16,15 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 
+# What time it is here — see backend/platform_time.py. A naive timestamp in this
+# database is Gulf wall-clock time; comparing it against datetime.now() (UTC in
+# the container) refused sessions that had already started.
+try:
+    from backend import platform_time
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import platform_time
+
+
 # The assignment lifecycle — states, origins and legal transitions — lives in one
 # place because TWO subsystems write coach_client_assignments (this file for
 # candidate self-requests, caseload_assignment_routes for operator allocation).
@@ -709,7 +718,9 @@ def join_coaching_session(session_id):
     start = sess['session_date']
     if start:
         end = start + timedelta(minutes=int(sess.get('duration_minutes') or 60))
-        now = datetime.now(start.tzinfo) if start.tzinfo else datetime.now()
+        start = platform_time.aware(start)
+        end = platform_time.aware(end)
+        now = platform_time.now()
         if now < start - _COACH_JOIN_BEFORE:
             return jsonify({"success": False, "error_code": "too_early",
                             "message": f"This session opens at "
