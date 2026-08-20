@@ -124,7 +124,11 @@ def test_the_organiser_is_added_as_an_attendee():
     """The board secretary scheduled meetings they could not then enter: joining
     requires a row in board_meeting_attendees and creation added none."""
     src = _src('routes', 'board_meetings_routes.py')
-    body = src.split('def create_meeting')[1].split('\n@board_bp.route')[0]
+    # @board_meetings_bp, not @board_bp — the wrong marker never matched, so
+    # "create_meeting's body" ran to the end of the file. It passed only because
+    # the organiser INSERT happened to be the last one; adding another endpoint
+    # with the same INSERT exposed it.
+    body = src.split('def create_meeting')[1].split('\n@board_meetings_bp.route')[0]
     assert 'INSERT INTO board_meeting_attendees' in body
     assert 'organiser' in body
 
@@ -136,7 +140,11 @@ def test_the_organiser_is_an_observer_not_an_attendee():
     whether the board could lawfully sit.
     """
     src = _src('routes', 'board_meetings_routes.py')
-    body = src.split('def create_meeting')[1].split('\n@board_bp.route')[0]
+    # @board_meetings_bp, not @board_bp — the wrong marker never matched, so
+    # "create_meeting's body" ran to the end of the file. It passed only because
+    # the organiser INSERT happened to be the last one; adding another endpoint
+    # with the same INSERT exposed it.
+    body = src.split('def create_meeting')[1].split('\n@board_meetings_bp.route')[0]
     insert = body.split('INSERT INTO board_meeting_attendees')[-1][:300]
     assert "'observer'" in insert
     assert "'attended'" not in insert
@@ -152,6 +160,10 @@ def test_an_existing_invitation_is_not_downgraded():
     """A secretary who is also a board member keeps their real invitation —
     ON CONFLICT DO NOTHING, not DO UPDATE."""
     src = _src('routes', 'board_meetings_routes.py')
-    body = src.split('def create_meeting')[1].split('\n@board_bp.route')[0]
+    # @board_meetings_bp, not @board_bp — the wrong marker never matched, so
+    # "create_meeting's body" ran to the end of the file. It passed only because
+    # the organiser INSERT happened to be the last one; adding another endpoint
+    # with the same INSERT exposed it.
+    body = src.split('def create_meeting')[1].split('\n@board_meetings_bp.route')[0]
     insert = body.split('INSERT INTO board_meeting_attendees')[-1][:300]
     assert 'DO NOTHING' in insert

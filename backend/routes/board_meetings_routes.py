@@ -704,6 +704,70 @@ def update_meeting(meeting_id):
         return jsonify({'success': False, 'message': 'Failed to update meeting'}), 500
 
 
+@board_meetings_bp.route('/<meeting_id>/attendees', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def add_attendees(meeting_id):
+    """Invite additional people to a meeting that already exists.
+
+    "I can't invite additional attendees" (fb_1787129152). attendee_ids was
+    honoured only at creation; update_meeting had no attendee handling at all,
+    so a subject expert needed for one agenda item could not be added without
+    recreating the meeting.
+
+    Body: {"user_ids": [...], "counts_toward_quorum": false}
+
+    COUNTS TOWARD QUORUM IS EXPLICIT AND DEFAULTS TO FALSE. Someone brought in
+    to speak to one item is a guest, not a member — adding them as a counted
+    attendee would change the number that decides whether the board could
+    lawfully sit. The caller must ask for that deliberately.
+
+    A completed or cancelled meeting is refused, as everywhere else.
+    """
+    data = request.get_json() or {}
+    user_ids = [str(u)[:15] for u in (data.get('user_ids') or []) if u]
+    if not user_ids:
+        return jsonify({'success': False, 'message': 'user_ids is required'}), 400
+
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if meeting.get('status') in ('completed', 'cancelled'):
+        return jsonify({'success': False,
+                        'message': 'This meeting is closed and can no longer be edited.'}), 409
+
+    counts = bool(data.get('counts_toward_quorum'))
+    status = 'invited' if counts else 'observer'
+
+    added = []
+    for uid in user_ids:
+        try:
+            # DO NOTHING, never DO UPDATE: re-adding an existing member must not
+            # silently demote a counted attendee to an observer.
+            row = execute_query("""
+                INSERT INTO board_meeting_attendees (meeting_id, user_id, invite_status)
+                VALUES (%s::uuid, %s, %s)
+                ON CONFLICT (meeting_id, user_id) DO NOTHING
+                RETURNING user_id
+            """, (str(meeting_id), uid, status), fetch_one=True)
+            if row:
+                added.append(uid)
+        except Exception as e:
+            logger.warning(f"add attendee {uid} to {meeting_id} failed: {e}")
+
+    if added:
+        _notify_invitees(meeting_id, meeting.get('title') or 'Board meeting',
+                         meeting.get('scheduled_at'), added)
+
+    # Reports what actually happened: ids already on the list are not "added",
+    # and saying they were would overstate the change.
+    return jsonify({'success': True, 'data': {
+        'added': added,
+        'already_invited': [u for u in user_ids if u not in added],
+        'counts_toward_quorum': counts,
+    }})
+
+
 @board_meetings_bp.route('/<meeting_id>/cancel', methods=['POST'])
 @require_roles(*ORGANISER_ROLES)
 def cancel_meeting(meeting_id):
