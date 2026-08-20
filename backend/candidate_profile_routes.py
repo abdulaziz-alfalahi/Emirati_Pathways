@@ -1199,6 +1199,30 @@ def get_crm_candidates():
             cursor.execute("SELECT COUNT(*) AS n " + scope_sql, tuple(params))
             total = int((cursor.fetchone() or {}).get('n') or 0)
 
+            # ?ids_only=1 — every id matching the CURRENT filter, nothing else.
+            #
+            # WHY: the roster pages at 20, and the select-all checkbox can only
+            # tick what is on screen, so inviting a filtered cohort to an open
+            # day meant doing it twenty at a time (feedback fb_1787130514, on a
+            # filter matching 3,662 people).
+            #
+            # This deliberately does NOT make the bulk endpoint filter-wide.
+            # That endpoint documents why it takes explicit user_ids: an
+            # operator who edits "everything matching the filter" cannot see
+            # what they changed, and a filter shifting under them silently
+            # changes the blast radius. Both stay true here — the client selects
+            # a concrete list of ids and the bulk call still sends them.
+            #
+            # It reuses scope_sql, so the ids are produced by the SAME query
+            # that produced the page. A second filter implementation would
+            # eventually disagree with the first, and the operator would be
+            # acting on a set they were never shown.
+            if request.args.get('ids_only') in ('1', 'true', 'yes'):
+                cursor.execute("SELECT u.id " + scope_sql, tuple(params))
+                ids = [r['id'] for r in cursor.fetchall()]
+                cursor.close(); conn.close()
+                return jsonify({'success': True, 'data': {'ids': ids, 'total': total}})
+
             # Summary for the cards, computed over the SAME filter set as the
             # page -- so the headline figures always describe what the agent is
             # looking at, not a different population.
