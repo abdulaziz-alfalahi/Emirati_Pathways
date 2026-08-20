@@ -41,11 +41,27 @@ class _Conn:
     def close(self): pass
 
 
+
+def _now():
+    """Wall-clock "now" in PLATFORM terms, as the column actually stores it.
+
+    NOT datetime.now(). The dev box runs Gulf time and CI runs UTC, so a naive
+    now() means different things in the two places — these tests passed locally
+    and failed in CI for exactly that reason once the join window started
+    interpreting naive values as Gulf wall-clock (#438).
+    """
+    try:
+        from backend import platform_time
+    except ImportError:
+        import platform_time
+    return platform_time.now().replace(tzinfo=None)
+
+
 def a_session(**over):
     base = {
         'id': 1, 'coach_id': COACH, 'client_id': CLIENT,
         'room_name': 'coach-abc123def456',
-        'session_date': datetime.now(), 'duration_minutes': 60,
+        'session_date': _now(), 'duration_minutes': 60,
     }
     base.update(over)
     return base
@@ -128,7 +144,7 @@ def test_an_admin_is_not_an_exception(app_ctx):
 # ── When ────────────────────────────────────────────────────────────────────
 
 def test_too_early_is_refused_with_the_opening_time(app_ctx):
-    app_ctx.state['row'] = a_session(session_date=datetime.now() + timedelta(hours=3))
+    app_ctx.state['row'] = a_session(session_date=_now() + timedelta(hours=3))
     status, body = _join(app_ctx)
     assert status == 409
     assert body['error_code'] == 'too_early'
@@ -137,7 +153,7 @@ def test_too_early_is_refused_with_the_opening_time(app_ctx):
 
 def test_a_finished_session_is_closed(app_ctx):
     app_ctx.state['row'] = a_session(
-        session_date=datetime.now() - timedelta(hours=4), duration_minutes=60)
+        session_date=_now() - timedelta(hours=4), duration_minutes=60)
     status, body = _join(app_ctx)
     assert status == 409
     assert body['error_code'] == 'closed'
@@ -145,7 +161,7 @@ def test_a_finished_session_is_closed(app_ctx):
 
 def test_the_room_opens_shortly_before_the_start(app_ctx):
     """A participant arriving a few minutes early should not be turned away."""
-    app_ctx.state['row'] = a_session(session_date=datetime.now() + timedelta(minutes=5))
+    app_ctx.state['row'] = a_session(session_date=_now() + timedelta(minutes=5))
     status, _ = _join(app_ctx)
     assert status == 200
 
@@ -153,7 +169,7 @@ def test_the_room_opens_shortly_before_the_start(app_ctx):
 def test_a_grace_period_follows_the_end(app_ctx):
     # Started an hour ago, ran 60 minutes: just ended, still joinable.
     app_ctx.state['row'] = a_session(
-        session_date=datetime.now() - timedelta(minutes=70), duration_minutes=60)
+        session_date=_now() - timedelta(minutes=70), duration_minutes=60)
     status, _ = _join(app_ctx)
     assert status == 200
 
