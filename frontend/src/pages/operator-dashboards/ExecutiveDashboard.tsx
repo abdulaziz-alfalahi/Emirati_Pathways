@@ -350,6 +350,42 @@ const ExecutiveDashboard: React.FC = () => {
     } finally { setSavingMeeting(false); }
   };
 
+  /* Who was present at a meeting — the factual record the minutes need.
+     
+     Requested as the attendance half of fb_1787140915. The PARTICIPATION half —
+     per-member rates across meetings, as a performance view — is deliberately
+     NOT built: the owner is taking that to the chairman first (2026-08-20),
+     because measuring named individuals over time is a governance decision.
+     
+     This shows one meeting at a time and states what happened in it. It ranks
+     nobody and compares nothing across meetings. */
+  const [attendanceFor, setAttendanceFor] = useState<any | null>(null);
+  const [attendance, setAttendance] = useState<any | null>(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  const openAttendance = async (m: any) => {
+    setAttendanceFor(m); setAttendance(null); setAttendanceLoading(true);
+    try {
+      const res: any = await restClient.get(`/api/board/meetings/${m.id}/attendance`);
+      setAttendance(res?.data?.data ?? res?.data ?? null);
+    } catch {
+      /* null means "could not load", which the panel says — as distinct from a
+         meeting nobody attended. */
+      setAttendance(null);
+    } finally { setAttendanceLoading(false); }
+  };
+
+  const presenceLabel = (a: any) => {
+    if (a.present_seconds > 0) {
+      const mins = Math.round(a.present_seconds / 60);
+      const pct = a.present_percent;
+      return `${mins} ${b('min', 'دقيقة')}${pct != null ? ` · ${pct}%` : ''}`;
+    }
+    /* Never "0 min" for someone who was invited and did not come — that reads
+       as a measurement of their presence rather than an absence of one. */
+    return b('Did not join', 'لم ينضم');
+  };
+
   const fetchBoardSettings = async () => {
     try {
       const res = await restClient.get('/api/board/meetings/settings');
@@ -1015,6 +1051,20 @@ const ExecutiveDashboard: React.FC = () => {
                                   { dateStyle: 'long', timeStyle: 'short' })
                               : ''}
                           </p>
+                          {/* The attendance record for THIS meeting — what the
+                              minutes have to state. Offered next to the minutes
+                              because that is when it is needed. */}
+                          <div className="mt-2 flex items-center gap-3">
+                            <button type="button" onClick={() => openAttendance(m)}
+                                    className="text-xs font-medium text-emerald-700 underline hover:text-emerald-900">
+                              {b('Attendance', 'سجل الحضور')}
+                            </button>
+                            {typeof m.attended_count === 'number' && (
+                              <span className="text-xs text-slate-500">
+                                {b(`${m.attended_count} attended`, `${m.attended_count} حضروا`)}
+                              </span>
+                            )}
+                          </div>
                           <BoardMinutesPanel meetingId={m.id} compact />
                         </div>
                       ))}
@@ -1594,6 +1644,75 @@ const ExecutiveDashboard: React.FC = () => {
             </Button>
             <Button onClick={saveMeeting} disabled={savingMeeting || !editForm.title.trim()}>
               {savingMeeting ? b('Saving…', 'جارٍ الحفظ…') : b('Save changes', 'حفظ التغييرات')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attendance for one meeting. Deliberately NOT a cross-meeting
+          performance view — see openAttendance. */}
+      <Dialog open={!!attendanceFor} onOpenChange={(o) => !o && setAttendanceFor(null)}>
+        <DialogContent className="sm:max-w-[620px]">
+          <DialogHeader>
+            <DialogTitle>{b('Attendance', 'سجل الحضور')}</DialogTitle>
+            <DialogDescription>
+              {attendanceFor ? (isRTL && attendanceFor.title_ar ? attendanceFor.title_ar : attendanceFor.title) : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          {attendanceLoading ? (
+            <p className="text-sm text-muted-foreground">{b('Loading…', 'جارٍ التحميل…')}</p>
+          ) : !attendance ? (
+            /* "Could not load" is not "nobody came". */
+            <p className="text-sm text-amber-700">
+              {b('The attendance record could not be loaded.', 'تعذّر تحميل سجل الحضور.')}
+            </p>
+          ) : !attendance.attendees?.length ? (
+            <p className="text-sm text-muted-foreground">
+              {b('No attendance was recorded for this meeting.', 'لم يُسجَّل حضور لهذا الاجتماع.')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {!attendance.meeting_ran && (
+                /* Percentages are measured against the scheduled length when the
+                   meeting has no recorded start and end — say so rather than
+                   present them as observed. */
+                <p className="text-xs text-slate-500">
+                  {b('This meeting has no recorded start and end, so times are measured against its scheduled length.',
+                     'لا يوجد وقت بدء وانتهاء مسجل لهذا الاجتماع، لذا تُقاس الأوقات مقابل المدة المجدولة.')}
+                </p>
+              )}
+              <div className="max-h-[340px] overflow-y-auto rounded-lg border">
+                {attendance.attendees.map((a: any) => (
+                  <div key={a.user_id}
+                       className="flex items-center justify-between gap-3 border-b px-3 py-2 last:border-b-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{a.name || a.user_id}</p>
+                      <p className="text-xs text-slate-500">
+                        {a.invite_status === 'observer'
+                          ? b('Observer — not counted toward quorum', 'مراقب — لا يُحتسب في النصاب')
+                          : a.invite_status}
+                      </p>
+                    </div>
+                    <div className="text-end shrink-0">
+                      <p className="text-sm text-slate-800">{presenceLabel(a)}</p>
+                      {a.duration_is_upper_bound && (
+                        /* The interval was closed by the meeting ending rather
+                           than the member leaving, so the figure is a ceiling. */
+                        <p className="text-[11px] text-slate-400">
+                          {b('at most', 'كحد أقصى')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAttendanceFor(null)}>
+              {b('Close', 'إغلاق')}
             </Button>
           </DialogFooter>
         </DialogContent>
