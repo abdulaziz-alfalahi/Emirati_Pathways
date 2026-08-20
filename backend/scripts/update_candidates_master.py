@@ -162,6 +162,26 @@ def run_update():
         call_status = str(row.get('Call Status'))[:50] if pd.notnull(row.get('Call Status')) else None
         work_status = str(row.get('Work Status'))[:50] if pd.notnull(row.get('Work Status')) else None
         job_seeker_type = str(row.get('Job Seeker Type'))[:50] if pd.notnull(row.get('Job Seeker Type')) else None
+
+        # WHEN they registered as a jobseeker — the field the invitation queue is
+        # ordered by. It was being dropped: 5,034 profiles carried
+        # job_seeker_type and NONE carried the date, while the NAFIS staging
+        # table held it for all 3,969 rows spanning 2021-11-08 to 2026-08-18.
+        # Onboarding is invitation-driven and nobody has joined yet, so "who has
+        # waited longest" is the question the operator is actually answering.
+        # Migration 074 backfilled what was already imported; this stops the next
+        # import recreating the gap.
+        job_seeker_date = None
+        _jsd = row.get('Job Seeker Date') if 'Job Seeker Date' in row else None
+        if _jsd is None:
+            _jsd = row.get('Jobseeker Date') if 'Jobseeker Date' in row else None
+        if _jsd is not None and pd.notnull(_jsd):
+            try:
+                job_seeker_date = pd.to_datetime(_jsd)
+            except Exception:
+                # A bad date costs the ordering hint for one person; it must not
+                # cost the whole import.
+                job_seeker_date = None
         remarks = str(row.get('Remarks')) if pd.notnull(row.get('Remarks')) else None
         
         english = str(row.get('English Language Level'))[:50] if pd.notnull(row.get('English Language Level')) else None
@@ -210,6 +230,15 @@ def run_update():
             'expected_salary_range': salary
         }
         
+        # ONLY when the file actually supplies it. The UPDATE below assigns every
+        # key in base_cols directly — `SET col = %s`, not COALESCE — because for
+        # the remarks-derived fields a None deliberately CLEARS a stale value.
+        # job_seeker_date is not remarks-derived: it is authoritative NAFIS data,
+        # and including it as None would wipe the 2,904 dates migration 074
+        # backfilled every time a file arrived without that column.
+        if job_seeker_date is not None:
+            base_cols['job_seeker_date'] = job_seeker_date
+
         # Add structured fields from remarks
         for k, v in parsed_fields.items():
             if k == 'preferred_locations':

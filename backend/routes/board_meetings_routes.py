@@ -26,6 +26,15 @@ from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity
 
+# What time it is here — see backend/platform_time.py. A naive timestamp in this
+# database is Gulf wall-clock time; comparing it against datetime.now() (UTC in
+# the container) refused sessions that had already started.
+try:
+    from backend import platform_time
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import platform_time
+
+
 try:
     from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES
     from backend.db_utils import execute_query
@@ -122,7 +131,8 @@ def create_meeting():
     except ValueError:
         return jsonify({'success': False, 'message': 'scheduled_at must be an ISO datetime'}), 400
     # Same rule as interviews: do not let a meeting be booked in the past.
-    now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+    when = platform_time.aware(when)
+    now = platform_time.now()
     if when < now - timedelta(minutes=5):
         return jsonify({'success': False,
                         'message': 'That date and time have already passed. Choose a future slot.'}), 400
@@ -164,6 +174,29 @@ def create_meeting():
                 INSERT INTO board_meeting_attendees (meeting_id, user_id)
                 VALUES (%s, %s) ON CONFLICT (meeting_id, user_id) DO NOTHING
             """, (meeting_id, str(uid)[:15]), fetch_all=False)
+
+        # THE ORGANISER, as an observer.
+        #
+        # Joining requires a row in board_meeting_attendees (or an admin role),
+        # and creating a meeting did not add one — so the board secretary
+        # scheduled meetings they were then structurally unable to enter
+        # (feedback fb_1787129359, fb_1787135104: 403 "You are not on the
+        # attendee list for this meeting"). board_operator is not in
+        # ADMIN_ROLES, so nothing else let them in.
+        #
+        # 'observer' and NOT 'attended'/'invited', because the secretary is the
+        # RAPPORTEUR (owner, 2026-08-20): present to record the meeting, not to
+        # be counted in it. Quorum counts invite_status='attended' only
+        # (migration 053), so this admits them to the room without inflating
+        # the number that decides whether the board could lawfully sit.
+        #
+        # DO NOTHING on conflict: a secretary who is also a board member keeps
+        # their real invitation rather than being demoted to observer.
+        organiser = str(get_jwt_identity())[:15]
+        execute_query("""
+            INSERT INTO board_meeting_attendees (meeting_id, user_id, invite_status)
+            VALUES (%s, %s, 'observer') ON CONFLICT (meeting_id, user_id) DO NOTHING
+        """, (meeting_id, organiser), fetch_all=False)
 
         _notify_invitees(meeting_id, title, when, invitees)
         queued = _queue_office_notifications(row, 'scheduled', invitees)
@@ -433,7 +466,8 @@ def create_historical_meeting():
     except ValueError:
         return jsonify({'success': False, 'message': 'Date must be an ISO datetime'}), 400
 
-    now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+    when = platform_time.aware(when)
+    now = platform_time.now()
     if when > now:
         return jsonify({'success': False,
                         'message': 'That date is in the future. Use Schedule meeting for a meeting still to come.'}), 400
@@ -509,7 +543,9 @@ def join_meeting(meeting_id):
         # Join window.
         start = meeting['scheduled_at']
         end = start + timedelta(minutes=int(meeting.get('duration_minutes') or 60))
-        now = datetime.now(start.tzinfo) if start.tzinfo else datetime.now()
+        start = platform_time.aware(start)
+        end = platform_time.aware(end)
+        now = platform_time.now()
         if now < start - JOIN_WINDOW_BEFORE:
             return jsonify({'success': False, 'error_code': 'too_early',
                             'message': f"This meeting opens at {(start - JOIN_WINDOW_BEFORE).strftime('%H:%M')}."}), 409
@@ -630,11 +666,16 @@ def update_meeting(meeting_id):
             when = datetime.fromisoformat(str(data['scheduled_at']).replace('Z', '+00:00'))
         except ValueError:
             return jsonify({'success': False, 'message': 'scheduled_at must be an ISO datetime'}), 400
-        now = datetime.now(when.tzinfo) if when.tzinfo else datetime.now()
+        when = platform_time.aware(when)
+        now = platform_time.now()
         if when < now - timedelta(minutes=5):
             return jsonify({'success': False,
                             'message': 'That date and time have already passed. Choose a future slot.'}), 400
-        if meeting.get('scheduled_at') and when != meeting['scheduled_at']:
+        # BOTH sides made aware. `when` is now timezone-aware while the stored
+        # column is naive, and Python raises TypeError rather than guessing when
+        # those are compared — so converting one without the other turns a
+        # reschedule into a 500.
+        if meeting.get('scheduled_at') and when != platform_time.aware(meeting['scheduled_at']):
             rescheduled_to = when
         sets.append('scheduled_at = %s'); params.append(when)
 

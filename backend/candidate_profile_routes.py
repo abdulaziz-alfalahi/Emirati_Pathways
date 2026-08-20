@@ -1084,6 +1084,16 @@ def get_crm_candidates():
                     cp.military_status,
                     cp.field_preference,
                     cp.job_search_duration,
+                    -- WHEN they registered as a jobseeker. Onboarding is
+                    -- invitation-driven and nobody has joined yet, so the
+                    -- operational question is who to invite first — and this is
+                    -- the signal that answers it. The queue spans 2021 to 2026;
+                    -- 16 people have been waiting since 2021.
+                    --
+                    -- The DATE, not a duration string: job_search_duration is a
+                    -- varchar and a stored duration is wrong the day after it is
+                    -- written. The client computes elapsed time from this.
+                    cp.job_seeker_date,
                     COALESCE(au.full_name,
                              NULLIF(TRIM(CONCAT_WS(' ', au.first_name, au.last_name)), ''),
                              au.email) AS assigned_to_name
@@ -1276,7 +1286,9 @@ def get_crm_candidates():
                         'experience_duration': c['experience_duration'],
                         'military_status': c['military_status'],
                         'field_preference': c['field_preference'],
-                        'job_search_duration': c['job_search_duration']
+                        'job_search_duration': c['job_search_duration'],
+                        'job_seeker_date': c['job_seeker_date'].isoformat()
+                                           if c.get('job_seeker_date') else None
                     }
                 })
                 
