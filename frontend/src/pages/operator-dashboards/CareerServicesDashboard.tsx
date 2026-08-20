@@ -295,6 +295,29 @@ export default function CareerServicesDashboard() {
     } catch { setCoaches([]); }
   };
 
+  /* The candidate's NAFIS record, shown read-only in the sheet (fb_1786426324).
+     
+     Staff asked to see what NAFIS already knows — gender, age range,
+     registration date, jobseeker date, person of determination, marital status
+     — rather than only what the CRM sheet carried. NAFIS is the source, so
+     nothing here is editable: anything typed over it would be replaced by the
+     next import. */
+  const [nafis, setNafis] = useState<any | null>(null);
+  const [nafisState, setNafisState] = useState<'idle' | 'loading' | 'none' | 'error' | 'ok'>('idle');
+
+  const loadNafis = async (candidateId: string) => {
+    setNafis(null); setNafisState('loading');
+    try {
+      const res: any = await restClient.get(`/api/profile/crm-candidates/${candidateId}/nafis`);
+      const data = res?.data?.data ?? null;
+      /* Three different outcomes, three different messages. "No NAFIS record"
+         is a fact about the candidate; "could not load" is a fact about us. */
+      if (data) { setNafis(data); setNafisState('ok'); } else { setNafisState('none'); }
+    } catch {
+      setNafisState('error');
+    }
+  };
+
   const loadCoachAssignment = async (candidateId: string) => {
     setCoachAssignment(null); setCoachError(null);
     try {
@@ -352,6 +375,7 @@ export default function CareerServicesDashboard() {
   const handleEditClick = (candidate: any) => {
     loadHistory(candidate.id);
     loadCoachAssignment(candidate.id);
+    loadNafis(candidate.id);
     setEditingCandidate(candidate);
     setEditForm({
       callStatus: candidate.callStatus,
@@ -1547,6 +1571,66 @@ const LOCATION_OPTIONS = [
                     <h4 className="font-bold text-slate-900">{editingCandidate.name}</h4>
                     <p className="text-sm font-mono text-teal-800">{editingCandidate.eid}</p>
                   </div>
+                </div>
+
+                {/* NAFIS record — read-only (fb_1786426324). */}
+                <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-slate-800">
+                      {t('NAFIS record', 'سجل نافس')}
+                    </h4>
+                    <span className="text-xs text-slate-500">
+                      {t('From NAFIS — not editable here', 'من نافس — غير قابل للتعديل هنا')}
+                    </span>
+                  </div>
+
+                  {nafisState === 'loading' ? (
+                    <p className="text-sm text-slate-500">{t('Loading…', 'جارٍ التحميل…')}</p>
+                  ) : nafisState === 'error' ? (
+                    <p className="text-sm text-amber-700">
+                      {t('The NAFIS record could not be loaded.', 'تعذّر تحميل سجل نافس.')}
+                    </p>
+                  ) : nafisState === 'none' ? (
+                    <p className="text-sm text-slate-500">
+                      {t('No NAFIS record is linked to this candidate.',
+                         'لا يوجد سجل نافس مرتبط بهذا المرشح.')}
+                    </p>
+                  ) : nafis ? (
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                      {([
+                        ['Gender', 'الجنس', nafis.gender],
+                        ['Age range', 'الفئة العمرية', nafis.age_group],
+                        ['Marital status', 'الحالة الاجتماعية', nafis.marital_status],
+                        ['Registered on', 'تاريخ التسجيل', nafis.registered_on?.slice(0, 10)],
+                        ['Jobseeker since', 'باحث عن عمل منذ', nafis.job_seeker_date?.slice(0, 10)],
+                        ['Jobseeker type', 'نوع الباحث', nafis.job_seeker_type],
+                        ['Education', 'المؤهل', nafis.education_level],
+                        ['Specialisation', 'التخصص', nafis.specialization],
+                        ['Experience (years)', 'سنوات الخبرة', nafis.experience_years],
+                        ['Emirate of residence', 'إمارة الإقامة', nafis.emirate_of_residence],
+                        ['National service', 'الخدمة الوطنية', nafis.national_service],
+                        ['Person of determination', 'من أصحاب الهمم',
+                          nafis.is_person_of_determination == null ? null
+                            : (nafis.is_person_of_determination
+                                ? (nafis.determination_type || t('Yes', 'نعم'))
+                                : t('No', 'لا'))],
+                      ] as [string, string, any][]).map(([en, ar, value]) => (
+                        <div key={en}>
+                          <dt className="text-[11px] uppercase tracking-wide text-slate-400">
+                            {t(en, ar)}
+                          </dt>
+                          {/* An em-dash for a field NAFIS did not record. Blank
+                              would read as "we forgot to show it", and a zero or
+                              "No" would be an answer NAFIS never gave. */}
+                          <dd className="text-sm text-slate-800">
+                            {value === null || value === undefined || value === ''
+                              ? <span className="text-slate-400">—</span>
+                              : String(value)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
                 </div>
 
                 {/* Career coach allocation (owner decision 2026-08-17).

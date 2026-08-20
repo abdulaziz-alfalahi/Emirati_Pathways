@@ -20,10 +20,12 @@ from backend.db import get_db_connection
 # Read auditing for staff access to other people's PII (see pii_access_log.py).
 try:
     from backend.pii_access_log import (log_pii_read, CRM_ROSTER_READ,
-                                        CRM_CANDIDATE_HISTORY_READ)
+                                        CRM_CANDIDATE_HISTORY_READ,
+                                        CRM_CANDIDATE_NAFIS_READ)
 except ImportError:  # pragma: no cover — the app runs under both roots
     from pii_access_log import (log_pii_read, CRM_ROSTER_READ,
-                                CRM_CANDIDATE_HISTORY_READ)
+                                CRM_CANDIDATE_HISTORY_READ,
+                                CRM_CANDIDATE_NAFIS_READ)
 try:
     from backend.db_utils import execute_query
 except ImportError:  # pragma: no cover
@@ -1805,6 +1807,63 @@ def _record_crm_changes(cursor, candidate_id, changed_by, before, after, source=
             """, (candidate_id, changed_by, field, old, new, source))
     except Exception as e:
         logger.warning(f"crm history not recorded for {candidate_id}: {e}")
+
+
+@crm_profile_bp.route('/crm-candidates/<user_id>/nafis', methods=['GET'])
+@require_roles(*CAREER_SERVICES_ROLES)
+def crm_candidate_nafis(user_id):
+    """The candidate's NAFIS record, as NAFIS supplies it (fb_1786426324).
+
+    Requested so staff opening Edit Details can see what NAFIS already knows —
+    gender, age range, registration date, jobseeker date, person of
+    determination, marital status — instead of only what the CRM sheet carried.
+
+    READ-ONLY, and the UI says so. NAFIS is the source: anything typed over this
+    would be replaced by the next import, so offering an edit here would be
+    offering to lose the operator's work.
+
+    Joined on Emirates ID. This only became possible on 2026-08-20 — migration
+    074 set nafis_job_seekers.user_id for 2,904 candidates who had a platform
+    record and no link back to their NAFIS row.
+
+    Audited: it returns a named person's demographic detail, which is exactly
+    what the read trail exists for (#428).
+    """
+    try:
+        row = execute_query("""
+            SELECT gender, age_group, date_of_birth, marital_status,
+                   education_level, gpa, is_student, specialization,
+                   sub_specialization, experience_years, job_seeker_type,
+                   job_seeker_date, preferred_work_mode, national_service,
+                   emirate_of_origin, emirate_of_residence, city_name,
+                   is_person_of_determination, determination_type,
+                   registered_on, status, batch_id
+              FROM nafis_job_seekers
+             WHERE emirates_id = %s
+             ORDER BY updated_at DESC NULLS LAST
+             LIMIT 1
+        """, (str(user_id),), fetch_one=True)
+
+        if not row:
+            # Distinct from "a record with nothing in it": 1,066 seekers are in
+            # NAFIS with no platform account, and some platform candidates came
+            # from the CRM sheet and are in no NAFIS batch at all.
+            return jsonify({'success': True, 'data': None,
+                            'message': 'No NAFIS record is linked to this candidate.'})
+
+        out = {}
+        for k, v in dict(row).items():
+            out[k] = v.isoformat() if hasattr(v, 'isoformat') else v
+
+        log_pii_read(CRM_CANDIDATE_NAFIS_READ, 'candidate_nafis_record',
+                     actor_id=get_jwt_identity(), resource_id=user_id,
+                     subject_count=1)
+
+        return jsonify({'success': True, 'data': out})
+    except Exception as e:
+        logger.error(f"NAFIS record lookup failed for {user_id}: {e}")
+        return jsonify({'success': False,
+                        'message': 'Could not load the NAFIS record'}), 500
 
 
 @crm_profile_bp.route('/crm-candidates/<user_id>/history', methods=['GET'])

@@ -67,12 +67,14 @@ _CONNECT_TIMEOUT = 5
 # investigator asks about separately.
 CRM_ROSTER_READ = 'crm_roster_read'
 CRM_CANDIDATE_HISTORY_READ = 'crm_candidate_history_read'
+CRM_CANDIDATE_NAFIS_READ = 'crm_candidate_nafis_read'
 COACH_CLIENT_LIST_READ = 'coach_client_list_read'
 COACH_SKILL_GAP_READ = 'coach_skill_gap_read'
 
 READ_ACTIONS = (
     CRM_ROSTER_READ,
     CRM_CANDIDATE_HISTORY_READ,
+    CRM_CANDIDATE_NAFIS_READ,
     COACH_CLIENT_LIST_READ,
     COACH_SKILL_GAP_READ,
 )
