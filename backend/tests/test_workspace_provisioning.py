@@ -55,8 +55,13 @@ class TestCompaniesPickerEndpoint:
 
     def test_operator_gets_slim_list(self, app, client):
         cur = MagicMock()
+        # Six columns since fb_1786479039 added industry and vacancy_count so
+        # operators can concentrate on the employers with the most to offer.
+        # The picker itself calls this with no filters and is unaffected — which
+        # is what this test guards.
         cur.fetchall.return_value = [
-            ('11111111-2222-3333-4444-555555555555', 'Acme LLC', True, False),
+            ('11111111-2222-3333-4444-555555555555', 'Acme LLC', True, False,
+             'Construction', 3),
         ]
         conn = MagicMock()
         conn.cursor.return_value.__enter__.return_value = cur
@@ -70,6 +75,8 @@ class TestCompaniesPickerEndpoint:
             'company_name': 'Acme LLC',
             'is_verified': True,
             'workspace_enabled': False,
+            'industry': 'Construction',
+            'vacancy_count': 3,
         }]
         conn.close.assert_called_once()
 
