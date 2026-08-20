@@ -473,6 +473,35 @@ const ExecutiveDashboard: React.FC = () => {
       icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100',
       sub: b('Private Sector Verified', 'القطاع الخاص — معتمدون')
     },
+    // Requested by the board (fb_1787129939): "the total number of active JS,
+    // the total number of employees from Dubai, and the total number of active
+    // vacancies". Two are real counts. The third is not available and is not
+    // invented — see the third card.
+    {
+      label: b('Active Jobseekers', 'الباحثون النشطون'),
+      value: kpis.active_jobseekers != null ? Number(kpis.active_jobseekers).toLocaleString() : '—',
+      icon: Users, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100',
+      sub: b('On the NAFIS roster', 'ضمن سجل نافس')
+    },
+    {
+      label: b('Active Vacancies', 'الشواغر النشطة'),
+      value: kpis.active_vacancies != null ? Number(kpis.active_vacancies).toLocaleString() : '—',
+      icon: Briefcase, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100',
+      // PUBLISHED only. Counting drafts and pending-verification postings would
+      // report roughly forty times the number anyone can actually apply to.
+      sub: b('Published and open to applications', 'منشورة ومتاحة للتقديم')
+    },
+    {
+      // The board asked for "employees from Dubai". That is a MOHRE-wide figure
+      // the platform does not hold, so this card reports what it DOES know —
+      // candidates on this roster recorded as working — and says so in the
+      // label rather than letting a roster number stand in for the emirate's.
+      label: b('Employed on Roster', 'موظفون ضمن السجل'),
+      value: kpis.employed_on_roster != null ? Number(kpis.employed_on_roster).toLocaleString() : '—',
+      icon: Building2, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200',
+      sub: b('Not the Dubai-wide total — MOHRE data is not connected',
+             'ليس الإجمالي على مستوى دبي — بيانات وزارة الموارد البشرية غير مرتبطة')
+    },
     // NOTE: the "Growth Projection +18% · AI Forecast" card was removed
     // (data-honesty audit) — it was a hardcoded fabrication with no model behind it.
   ];

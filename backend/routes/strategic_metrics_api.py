@@ -125,6 +125,54 @@ def get_executive_impact_metrics():
         roster_exits = None
         strategic_impact = []
 
+    # Board-requested headline counts (fb_1787129939): "the board members should
+    # see the total number of active JS, the total number of employees from
+    # Dubai, and the total number of active vacancies".
+    #
+    # Two of the three are real counts. The third is NOT, and is deliberately
+    # not faked:
+    #
+    #   active_jobseekers   — candidate_profiles carrying an ActiveJobseeker
+    #                         type from NAFIS. A real count of this platform's
+    #                         roster.
+    #   active_vacancies    — PUBLISHED postings only. 'pending_verification'
+    #                         and 'draft' are not vacancies anyone can apply to,
+    #                         and counting them would inflate the figure roughly
+    #                         fortyfold today.
+    #   employed_on_roster  — candidates the CRM records as Working. This is NOT
+    #                         "total employees from Dubai": that is a
+    #                         MOHRE-wide figure the platform does not hold. It
+    #                         is named for what it actually counts, and
+    #                         dubai_employees_total stays None so nobody reads
+    #                         the roster number as the emirate's.
+    active_jobseekers = active_vacancies = employed_on_roster = None
+    # get_db_connection, matching the rest of this module — it does not import
+    # db_utils, and reaching for execute_query here would have been an
+    # ImportError at request time rather than a visible one at boot.
+    if get_db_connection:
+        _conn = None
+        try:
+            _conn = get_db_connection()
+            with _conn.cursor() as _cur:
+                _cur.execute("""SELECT COUNT(*) FROM candidate_profiles
+                                 WHERE job_seeker_type ILIKE '%%ActiveJobseeker%%'""")
+                active_jobseekers = int(_cur.fetchone()[0])
+                _cur.execute("SELECT COUNT(*) FROM job_postings WHERE status = 'published'")
+                active_vacancies = int(_cur.fetchone()[0])
+                _cur.execute("""SELECT COUNT(*) FROM candidate_profiles
+                                 WHERE work_status = 'Working'""")
+                employed_on_roster = int(_cur.fetchone()[0])
+        except Exception as _e:
+            # None, not 0. A failed read must not tell the board there are no
+            # jobseekers and no vacancies.
+            logger.warning(f"board headline counts failed: {_e}")
+        finally:
+            if _conn:
+                try:
+                    _conn.close()
+                except Exception:
+                    pass
+
     # emiratization % and economic value have NO real aggregation behind them —
     # return null rather than the old fabricated 82.5% / "2.4B". sector_distribution
     # likewise has no real source, so it is empty, not the invented 35/25/20/10/10.
@@ -134,6 +182,13 @@ def get_executive_impact_metrics():
             # Left the active job-seeker roster — NOT placements.
             'roster_exits': roster_exits,
             'active_partners': db_companies,
+            'active_jobseekers': active_jobseekers,
+            'active_vacancies': active_vacancies,
+            'employed_on_roster': employed_on_roster,
+            # The emirate-wide employed figure would come from MOHRE, which the
+            # platform does not hold. Explicitly null so employed_on_roster is
+            # never read as standing in for it.
+            'dubai_employees_total': None,
             'emiratization_target_progress': None,
             'economic_value_aed': None,
             'source': 'partial',
@@ -141,7 +196,11 @@ def get_executive_impact_metrics():
                         'offers; partners is a real count. Roster exits are people no '
                         'longer on the active job-seeker roster, which is NOT the same '
                         'as being placed. Emiratization % and economic value are not '
-                        'yet connected to a real source.')
+                        'yet connected to a real source. Active vacancies counts '
+                        'PUBLISHED postings only. Employed on roster counts '
+                        'candidates this platform records as working — it is NOT '
+                        'the total number of employees in Dubai, which would come '
+                        'from MOHRE and is not available.')
         },
         'strategic_impact': strategic_impact,   # from the master file when present, else empty
         'sector_distribution': [],
