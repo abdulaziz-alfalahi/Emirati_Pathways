@@ -44,7 +44,13 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/education-operator-dashboard': ['admin', 'education_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/educator-dashboard': ['training_provider'],
   '/events/manage': ['admin', 'call_center_agent', 'career_services_operator', 'operator', 'platform_administrator', 'super_admin'],
-  '/executive': ['admin', 'board_member', 'compliance_auditor', 'platform_operator'],
+  // board_operator is the board SECRETARY. They were admitted to
+  // /board-secretary but not here, so the person who prepares the board pack,
+  // schedules the meetings and writes the minutes could not see the dashboard
+  // the members read (fb_1787129641). ExecutiveDashboard's own canManageBoard
+  // already listed board_operator — the page always expected them; the route
+  // was the only thing keeping them out.
+  '/executive': ['admin', 'board_member', 'board_operator', 'compliance_auditor', 'platform_operator'],
   '/government-dashboard': ['admin', 'compliance_auditor', 'platform_operator'],
   '/growth-operator-dashboard': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],
   '/growth-operator-dashboard/:domain': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],

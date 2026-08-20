@@ -64,3 +64,33 @@ describe('routeAccess is the single source of truth', () => {
     expect(rolesForPath('/board-meeting/abc-123')).toEqual(ROUTE_ROLES['/board-meeting/:meetingId']);
   });
 });
+
+/**
+ * The board secretary needs BOTH dashboards (fb_1787129641).
+ *
+ * "The board secretary should have access to both the Board member dashboard
+ * and the board secretary dashboard."
+ *
+ * board_operator was admitted to /board-secretary but not /executive, so the
+ * person who prepares the board pack, schedules the meetings and writes the
+ * minutes could not see what the members read.
+ */
+describe('board secretary access', () => {
+  it('reaches the board member dashboard', () => {
+    expect(ROUTE_ROLES['/executive']).toContain('board_operator');
+  });
+
+  it('still reaches their own secretariat workspace', () => {
+    expect(ROUTE_ROLES['/board-secretary']).toContain('board_operator');
+  });
+
+  it('did not accidentally widen the secretariat to board members', () => {
+    // The secretary needs both. A member does not need the secretariat, and
+    // fixing one direction must not open the other.
+    expect(ROUTE_ROLES['/board-secretary']).not.toContain('board_member');
+  });
+
+  it('can still join a meeting room', () => {
+    expect(ROUTE_ROLES['/board-meeting/:meetingId']).toContain('board_operator');
+  });
+});

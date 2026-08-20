@@ -1034,7 +1034,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="executive"
                 element={
-                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'admin', 'platform_operator', 'compliance_auditor', 'platform_operator']}>
+                  <ProtectedRoute allowedRoles={['board_member', 'board_operator', 'admin', 'platform_operator', 'compliance_auditor']}>
                     <ExecutiveDashboard />
                   </ProtectedRoute>
                 }

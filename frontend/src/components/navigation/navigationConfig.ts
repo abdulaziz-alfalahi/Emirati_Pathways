@@ -310,7 +310,10 @@ export const operationsNavGroup: NavGroup = {
       href: '/executive',
       description: 'High-level KPI tracking for Board Members',
       icon: Award,
-      allowedRoles: ['admin', 'platform_operator', 'board_member']
+      // Includes board_operator (the secretary): they need both this and the
+      // secretariat workspace, and a route they cannot navigate to is one they
+      // do not have (fb_1787129641).
+      allowedRoles: ['admin', 'platform_operator', 'board_member', 'board_operator']
     },
     {
       // The Board Secretary had NO route to their own workspace: /board-secretary
