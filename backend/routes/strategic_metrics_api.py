@@ -561,6 +561,38 @@ def employer_targets():
             'onboarded': bool(r[5]),
         } for r in cur.fetchall()]
 
+        # Companies currently hiring, cross-referenced against how many Emiratis
+        # they already employ.
+        #
+        # This is the pairing worth showing: 17 of the top 20 hiring companies
+        # already have Emirati staff, so they are warm relationships rather than
+        # cold outreach — and unlike the headcount ranking, every one of these
+        # HAS A NAME, because a vacancy only exists on the platform if a company
+        # record was created for it.
+        cur.execute("""
+            SELECT co.company_name, co.company_code,
+                   COUNT(jp.id) AS vacancies,
+                   (SELECT COUNT(*) FROM private_sector_employment p
+                     WHERE p.company_code = co.company_code) AS emiratis
+              FROM job_postings jp
+              JOIN companies co ON co.id = jp.company_id
+             GROUP BY co.company_name, co.company_code
+             ORDER BY vacancies DESC, emiratis DESC
+             LIMIT %s
+        """, (limit,))
+        top_hiring = [{
+            'company_name': r[0],
+            'company_code': r[1],
+            'vacancies': r[2],
+            'emiratis': r[3],
+            'already_employs_emiratis': bool(r[3]),
+        } for r in cur.fetchall()]
+
+        cur.execute("SELECT COUNT(DISTINCT company_id) FROM job_postings WHERE company_id IS NOT NULL")
+        hiring_companies = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM job_postings")
+        total_vacancies = cur.fetchone()[0]
+
         cur.execute("""
             SELECT COUNT(DISTINCT company_code),
                    COUNT(DISTINCT company_code) FILTER (
@@ -585,8 +617,18 @@ def employer_targets():
         covered, top100, singles = cur.fetchone()
         cur.close(); conn.close()
 
+        warm = sum(1 for h in top_hiring if h['already_employs_emiratis'])
         return jsonify({'success': True, 'data': {
             'targets': targets,
+            'top_hiring': top_hiring,
+            'hiring_companies': hiring_companies,
+            'total_vacancies': total_vacancies,
+            'hiring_basis': (
+                f'{total_vacancies:,} vacancies across {hiring_companies:,} companies. '
+                f'{warm} of the top {len(top_hiring)} already employ Emiratis, so they '
+                f'are existing relationships rather than cold outreach. Every company '
+                f'here has a name — a vacancy only exists on the platform once a '
+                f'company record was created for it.'),
             'total_employers': total_employers,
             'named_employers': named,
             'unnamed_employers': total_employers - named,
