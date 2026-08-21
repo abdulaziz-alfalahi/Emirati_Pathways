@@ -662,6 +662,53 @@ const BoardSecretaryDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Meetings that have been held.
+                Closing a meeting moves it out of "Upcoming", and this tab used
+                to show nothing else — so to the secretary who had just ended
+                one, it had DISAPPEARED (fb_1787141548). It was never lost: it
+                was still reachable under Attendance and Minutes, and the board
+                members' own portal listed it. But those are different tabs, and
+                the meetings list is where you look for a meeting.
+                `past` is already fetched for those tabs; this only shows it. */}
+            {past.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Clock className="h-5 w-5 text-ehrdc-teal" />
+                    {b('Recently held', 'اجتماعات سابقة')}
+                  </CardTitle>
+                  <CardDescription>
+                    {b('Meetings that have been closed. Attendance and minutes for each are on their own tabs.',
+                       'الاجتماعات المنتهية. الحضور والمحاضر لكل اجتماع في علامات التبويب الخاصة بها.')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {past.slice(0, 5).map((m) => (
+                      <div key={m.id} className="rounded-lg border p-4 flex flex-wrap items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900">{isRTL && m.title_ar ? m.title_ar : m.title}</p>
+                          <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {fmt(m.scheduled_at)}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {b(`${m.attended_count ?? 0} of ${m.attendee_count ?? 0} attended`,
+                               `حضر ${m.attended_count ?? 0} من ${m.attendee_count ?? 0}`)}
+                          </p>
+                        </div>
+                        <Badge className={m.status === 'cancelled'
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'bg-slate-100 text-slate-700'}>
+                          {m.status === 'cancelled' ? b('Cancelled', 'ملغى') : b('Held', 'منعقد')}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
