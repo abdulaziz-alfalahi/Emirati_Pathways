@@ -6,6 +6,8 @@ import {
   RoomAudioRenderer,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
+// AFTER the vendor stylesheet, so the focus-layout height override wins.
+import '@/styles/livekit-overrides.css';
 import { 
   Mic, 
   MicOff, 

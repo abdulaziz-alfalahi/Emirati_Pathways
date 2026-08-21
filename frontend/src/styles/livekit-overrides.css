@@ -1,0 +1,73 @@
+/**
+ * Overrides for @livekit/components-styles.
+ *
+ * Loaded AFTER the vendor stylesheet so these win. Keep this file tiny and
+ * keep every rule justified — the layout is otherwise stock LiveKit, which is
+ * deliberate.
+ *
+ * ── Cameras vanish while someone shares their screen (fb_1787146703) ────────
+ *
+ * "when one of the members starts screen sharing, the participants' video
+ *  feeds disappear, and each member can only see themselves on the screen"
+ *
+ * A screen share switches VideoConference from `.lk-grid-layout` to
+ * `.lk-focus-layout`: the share fills the stage and everyone else moves into
+ * `.lk-carousel` beside it. The two layouts are NOT sized the same way in the
+ * vendor stylesheet:
+ *
+ *     .lk-grid-layout  { ... height: 100%; ... }   <- fills the stage
+ *     .lk-focus-layout { ... max-height: 100%; }   <- no height at all
+ *
+ * `.lk-focus-layout` is a flex item in a COLUMN flex container
+ * (`.lk-video-conference-inner`). In a column container `align-items: stretch`
+ * stretches the cross axis — the width — not the height, and `flex-grow`
+ * defaults to 0. With a max but no height, the focus layout is therefore sized
+ * by its own content rather than by the stage.
+ *
+ * That matters because the carousel decides how many people to show from its
+ * OWN measured size, and clamps to a floor of one:
+ *
+ *     const visible = Math.max((height - gap) / tileHeight, MIN_VISIBLE_TILES)
+ *     // MIN_VISIBLE_TILES === 1
+ *
+ * So the measurement is circular: the carousel has no height until it renders
+ * tiles, it renders one tile because it measured no height, and one tile is
+ * then all the height it ever has. It latches at a single tile and stays
+ * there — which is exactly the report. The one tile that survives is the first
+ * in the track list, normally the viewer's own camera, hence "each member can
+ * only see themselves".
+ *
+ * Verified on APPQA 2026-08-21: `.lk-grid-layout` measures 746px — the full
+ * stage minus the control bar — - confirming that a layout WITH `height: 100%`
+ * fills correctly in this exact container chain, and that the focus layout's
+ * missing height is the difference.
+ *
+ * The fix is to size the focus layout the way its sibling is already sized.
+ * `height: 100%` against the 815px inner container, with the default
+ * `flex-shrink: 1`, settles at the same 746px the grid layout gets, leaving the
+ * control bar its 69px. `min-height: 0` lets it shrink below its content on
+ * small screens instead of pushing the controls off-screen.
+ *
+ * NOT YET CONFIRMED AGAINST A REAL MEETING. Reproducing this needs two or more
+ * cameras plus an active screen share, which cannot be staged headlessly — the
+ * diagnosis is from the vendor CSS, the carousel's own sizing code and a live
+ * measurement of the container chain, not from watching it happen. If cameras
+ * still disappear after this ships, the next thing to check is whether the
+ * remote tracks are still being RECEIVED during the share
+ * (chrome://webrtc-internals): if they are, the cause is layout and this file
+ * is the right place; if they stop, it is subscription and this fix is
+ * irrelevant.
+ */
+
+.lk-focus-layout {
+  height: 100%;
+  min-height: 0;
+}
+
+/* The carousel is a grid item inside the layout above. Without this it refuses
+   to shrink below its content, which reintroduces the overflow that the
+   miscounted tiles were hiding. */
+.lk-carousel {
+  min-height: 0;
+  min-width: 0;
+}
