@@ -439,14 +439,26 @@ def employment_timeline():
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # NAFIS support is counted alongside the hires, because the RATE is the
+        # more robust number here. Survivorship distorts the raw counts — only
+        # people still employed appear — but it distorts the numerator and
+        # denominator of a percentage together, so the proportion on support
+        # survives that bias far better than the totals do.
         cur.execute("""
-            SELECT date_part('year', job_start_date)::int AS yr, COUNT(*) AS n
+            SELECT date_part('year', job_start_date)::int AS yr,
+                   COUNT(*) AS n,
+                   COUNT(*) FILTER (WHERE salary_support) AS supported
               FROM private_sector_employment
              WHERE job_start_date IS NOT NULL
                AND job_start_date >= DATE '2010-01-01'
              GROUP BY 1 ORDER BY 1
         """)
-        by_year = [{'year': r[0], 'starts': r[1]} for r in cur.fetchall()]
+        by_year = [{
+            'year': r[0],
+            'starts': r[1],
+            'nafis_supported': r[2],
+            'nafis_support_pct': round(r[2] / r[1] * 100, 1) if r[1] else None,
+        } for r in cur.fetchall()]
 
         # Running total of people whose CURRENT job began on or before each year.
         running = 0
@@ -484,6 +496,13 @@ def employment_timeline():
                 'left is not in the source, so the upward trend is part real '
                 'hiring growth and part survivorship. Not a measure of total '
                 'hiring in any given year.'),
+            'nafis_basis': (
+                'Share of each hiring cohort currently receiving NAFIS salary '
+                'support (meaning confirmed 2026-08-21). The RATE is more '
+                'reliable than the counts above, because survivorship affects '
+                'its numerator and denominator together. The most recent year '
+                'reads low because support for very recent hires may not yet be '
+                'in payment, not because fewer of them qualify.'),
         }})
     except Exception as e:
         logger.error(f"employment timeline failed: {e}")

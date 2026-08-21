@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
+  PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line
 } from 'recharts';
 import { restClient } from '@/utils/api';
 import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
@@ -1419,16 +1419,36 @@ const ExecutiveDashboard: React.FC = () => {
                   <CardContent className="pt-4">
                     <div style={{ width: '100%', height: 260 }}>
                       <ResponsiveContainer>
-                        <BarChart data={empTimeline.by_year}>
+                        {/* Two axes on purpose. The bars are counts and carry
+                            survivorship bias; the line is a RATE, whose
+                            numerator and denominator are biased together, so it
+                            is the more trustworthy of the two series. Plotting
+                            the rate as another bar would invite reading them as
+                            the same kind of number. */}
+                        <ComposedChart data={empTimeline.by_year}>
                           <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
-                          <Tooltip formatter={(v: any) => (v as number).toLocaleString()} />
-                          <Bar dataKey="starts" fill="#047857" radius={[4, 4, 0, 0]}
+                          <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                          <YAxis yAxisId="right" orientation="right" domain={[0, 100]}
+                                 unit="%" tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v: any, n: any) =>
+                            (n === 'nafis_support_pct' || String(n).includes('%') || String(n).includes('نافس'))
+                              ? `${v}%` : (v as number).toLocaleString()} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Bar yAxisId="left" dataKey="starts" fill="#047857" radius={[4, 4, 0, 0]}
                                name={b('Job starts', 'بدء وظائف')} />
-                        </BarChart>
+                          <Line yAxisId="right" type="monotone" dataKey="nafis_support_pct"
+                                stroke="#b45309" strokeWidth={2} dot={{ r: 2 }}
+                                name={b('% on NAFIS support', '٪ على دعم نافس')} />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {empTimeline.nafis_basis && (
+                        <span className="block mb-2">
+                          {b(empTimeline.nafis_basis,
+                             'نسبة كل دفعة توظيف تتلقى حالياً دعم الرواتب من نافس. النسبة أكثر موثوقية من الأعداد أعلاه لأن التحيّز يؤثر على البسط والمقام معاً. السنة الأخيرة تبدو منخفضة لأن دعم الملتحقين حديثاً قد لا يكون قد بدأ صرفه بعد، لا لأن عدداً أقل منهم مؤهل.')}
+                        </span>
+                      )}
                       {b(empTimeline.basis,
                          'يُحتسب تاريخ بدء الوظيفة الحالية لمن هم على رأس العمل الآن. السنوات الأقدم منقوصة: من ترك عمله لا يظهر في المصدر، لذا فإن الاتجاه الصاعد يعكس نمو التوظيف وبقاء الوظائف الحديثة معاً، وليس إجمالي التوظيف في أي سنة.')}
                     </p>
