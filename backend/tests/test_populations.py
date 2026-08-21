@@ -178,3 +178,42 @@ def test_the_chart_renders_the_basis_next_to_the_bars():
     with open(path, encoding='utf-8') as fh:
         src = fh.read()
     assert 'empTimeline.basis' in src, 'the chart shows numbers without their basis'
+
+
+# ── NAFIS salary support (meaning confirmed 2026-08-21) ─────────────────────
+
+def test_the_support_rate_is_reported_not_just_the_count():
+    """The rate is the defensible number. Survivorship distorts the raw hiring
+    counts — only people still employed appear — but it distorts a percentage's
+    numerator and denominator together, so the proportion on support survives
+    the bias far better than the totals do."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employment_timeline')[1]
+    assert "'nafis_support_pct'" in body
+    assert 'FILTER (WHERE salary_support)' in body
+
+
+def test_the_support_figure_carries_its_own_caveat():
+    """Two caveats, because the two series fail differently and one shared
+    sentence would fit neither."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employment_timeline')[1]
+    assert "'nafis_basis'" in body
+    assert 'not yet be' in body, 'the recent-year dip must be explained, not left to read as a decline'
+
+
+def test_the_stored_meaning_is_no_longer_provisional():
+    """Migration 077 stored the flag with an explicit do-not-publish warning.
+    Leaving a stale caveat is worse than none: the next reader either re-opens a
+    settled question, or learns that warnings here can be ignored."""
+    sql = _src('migrations', '080_confirm_salary_support_meaning.sql')
+    assert 'CURRENTLY RECEIVING' in sql
+    assert 'confirmed by the platform owner' in sql.lower()
+
+
+def test_the_population_is_stated_with_the_figure():
+    """87.5% is true of Emiratis employed in Dubai's PRIVATE sector. Quoted
+    without that, it reads as a statement about Emiratis generally."""
+    sql = _src('migrations', '080_confirm_salary_support_meaning.sql')
+    assert 'PRIVATE' in sql
+    assert 'says nothing about government employment' in sql
