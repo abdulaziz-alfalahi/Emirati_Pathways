@@ -650,9 +650,27 @@ def join_meeting(meeting_id):
 
         # Record attendance + open the meeting on first join.
         if invite:
+            # AN OBSERVER WHO JOINS STAYS AN OBSERVER.
+            #
+            # Flipping every joiner to 'attended' silently promoted guests into
+            # the quorum count: quorum is COUNT(*) WHERE invite_status =
+            # 'attended' (twice — the live meeting list and the figure computed
+            # when a meeting ends), and migration 053 made observers not count
+            # precisely so that admitting a visitor could not change whether the
+            # board was quorate.
+            #
+            # Reachable since additional attendees shipped (PR #469), which is
+            # what put non-member guests on the invite list in the first place.
+            # Caught by admitting a real guest and reading the row back, not by
+            # reading the code.
+            #
+            # joined_at is still recorded, so attendance duration is measured
+            # for observers too — they are on the register, just not in the count.
             execute_query("""
                 UPDATE board_meeting_attendees
-                SET invite_status = 'attended', joined_at = COALESCE(joined_at, NOW())
+                SET invite_status = CASE WHEN invite_status = 'observer'
+                                         THEN 'observer' ELSE 'attended' END,
+                    joined_at = COALESCE(joined_at, NOW())
                 WHERE meeting_id::text = %s AND user_id = %s
             """, (str(meeting_id), me), fetch_all=False)
         else:
