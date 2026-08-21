@@ -1049,10 +1049,19 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              {/* Any authenticated user may OPEN the room; POST /join decides
+                  whether they get in, from the per-meeting attendee list.
+                  A role gate here refused the guest at the door — the subject
+                  expert invited for one agenda item is not a board member, so
+                  additional attendees (PR #469) and the waiting room (PR #471)
+                  were both unreachable by the people they exist for. The
+                  backend guard had the same flaw (PR #472); this is its twin,
+                  and it only showed up in a browser. Someone not on the list
+                  still gets "Unable to join" from the API. */}
               <Route
                 path="/board-meeting/:meetingId"
                 element={
-                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'platform_operator', 'board_operator']}>
+                  <ProtectedRoute>
                     <BoardMeetingRoom />
                   </ProtectedRoute>
                 }
