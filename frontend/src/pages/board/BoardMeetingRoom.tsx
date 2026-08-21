@@ -50,6 +50,39 @@ const BoardMeetingRoom: React.FC = () => {
   const [admitting, setAdmitting] = useState<string | null>(null);
   const [awaitingAdmission, setAwaitingAdmission] = useState(false);
 
+  // Declaring the meeting open is the CHAIR's act (owner ruling 2026-08-21).
+  // A meeting going 'in_progress' because someone opened a browser tab is not
+  // the board being declared open with quorum present, and the minutes should
+  // be able to say which happened.
+  const isChairman = (() => {
+    const rs = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
+      .filter(Boolean).map((r: string) => String(r).toLowerCase());
+    return rs.includes('board_chairman');
+  })();
+  const [opening, setOpening] = useState(false);
+  const [openedBy, setOpenedBy] = useState<string | null>(null);
+
+  const declareOpen = async () => {
+    setOpening(true);
+    try {
+      const res = await restClient.post(`/api/board/meetings/${meetingId}/open`, {});
+      const d = res.data?.data;
+      setOpenedBy('you');
+      toast({
+        title: 'Meeting declared open',
+        description: `Recorded with ${d?.quorum_present}/${d?.quorum_required} members present.`,
+      });
+    } catch (e: any) {
+      // The server refuses without quorum, and refuses when no rule is set.
+      // Surface its reason rather than a generic failure — "not quorate" and
+      // "no quorum rule" call for different actions from the chair.
+      toast({ title: e?.response?.data?.message || 'Could not declare the meeting open',
+              variant: 'destructive' });
+    } finally {
+      setOpening(false);
+    }
+  };
+
   const loadParticipants = async () => {
     if (!meetingId) return;
     try {
@@ -306,6 +339,19 @@ const BoardMeetingRoom: React.FC = () => {
               : undefined}
           >
             {quorum.met ? 'Quorum met' : 'Quorum not met'} · {quorum.present}/{quorum.required}
+          </span>
+        )}
+        {/* Offered only to the chair, only once quorum is actually met, and
+            only until it has been declared — the first declaration is the one
+            that happened, and the server refuses a second. */}
+        {isChairman && quorum?.met && !openedBy && (
+          <Button size="sm" className="ms-2 h-7 shrink-0" disabled={opening} onClick={declareOpen}>
+            {opening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Declare meeting open'}
+          </Button>
+        )}
+        {openedBy && (
+          <span className="ms-2 shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+            Declared open
           </span>
         )}
         {quorum && quorum.required == null && (
