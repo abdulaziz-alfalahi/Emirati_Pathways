@@ -134,7 +134,12 @@ def get_hr_dashboard():
             'data': {
                 'totalJobs': _count("SELECT COUNT(*) as count FROM job_postings"),
                 'activeJobs': _count("SELECT COUNT(*) as count FROM job_postings WHERE status = 'active'"),
-                'totalCandidates': _count("SELECT COUNT(*) as count FROM users WHERE role IN ('candidate','job_seeker')"),
+                # Members only. A recruiter told "37,000 candidates" when 37
+                # people have ever signed in would be given a false picture of
+                # the pool they can actually reach (owner ruling 2026-08-21).
+                'totalCandidates': _count(
+                    "SELECT COUNT(*) as count FROM users u WHERE u.role IN ('candidate','job_seeker') "
+                    "AND (u.last_login IS NOT NULL OR u.uaepass_uuid IS NOT NULL)"),
                 'shortlistedCandidates': _count("SELECT COUNT(*) as count FROM job_applications WHERE status = 'shortlisted'"),
                 'scheduledInterviews': None,
                 'pendingApprovals': _count("SELECT COUNT(*) as count FROM offer_approval_requests WHERE status = 'pending'"),
@@ -976,6 +981,10 @@ def search_candidates():
         query += """
             WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
+            -- Members only on the employer side (owner ruling 2026-08-21):
+            -- a recruiter must not be offered someone who has never used the
+            -- platform and cannot respond. See backend/populations.py.
+            AND (u.last_login IS NOT NULL OR u.uaepass_uuid IS NOT NULL)
         """
         
         # Text search
@@ -1048,6 +1057,10 @@ def search_candidates():
             LEFT JOIN cv_data cv ON u.id = cv.user_id
             WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
+            -- Members only on the employer side (owner ruling 2026-08-21):
+            -- a recruiter must not be offered someone who has never used the
+            -- platform and cannot respond. See backend/populations.py.
+            AND (u.last_login IS NOT NULL OR u.uaepass_uuid IS NOT NULL)
         """
         total_result = execute_query(count_query, fetch_one=True)
         total = total_result.get('total', 0) if total_result else 0

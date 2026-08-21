@@ -71,7 +71,21 @@ class CandidateSearchEngine:
             LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
         """
         
-        where_conditions = ["u.role IN ('candidate', 'job_seeker')"]
+        # MEMBERS ONLY on the employer side (owner ruling 2026-08-21).
+        #
+        # Most people in this table have never used the platform — 5,309
+        # candidate records, 37 of whom have ever signed in; the rest were
+        # loaded in bulk from NAFIS and employer data. Showing them to a
+        # recruiter offers a candidate who cannot answer, and the incoming
+        # 33,352 private-sector employees would make that the overwhelming
+        # majority of every search result.
+        #
+        # Derived from sign-in rather than a flag, so someone becomes findable
+        # the moment they actually join. See backend/populations.py.
+        where_conditions = [
+            "u.role IN ('candidate', 'job_seeker')",
+            "(u.last_login IS NOT NULL OR u.uaepass_uuid IS NOT NULL)",
+        ]
         params = []
         joins = []
         
@@ -702,6 +716,8 @@ def match_candidates_to_job(job_id):
                 FROM users u
                 LEFT JOIN job_applications ja ON u.id::text = ja.candidate_id::text
                 WHERE u.role IN ('candidate', 'job_seeker') AND u.is_active = true
+                  -- Members only: see the note on the search filter above.
+                  AND (u.last_login IS NOT NULL OR u.uaepass_uuid IS NOT NULL)
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST
                 LIMIT 100

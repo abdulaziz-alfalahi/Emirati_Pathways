@@ -303,3 +303,112 @@ def get_operations_live_metrics():
         }
     }
     return jsonify({'success': True, 'data': data})
+
+
+# ── The three population numbers, defined once (owner request 2026-08-21) ────
+#
+# "I need the number of employed Emiratis and their details. I need the number
+#  of Job seekers and their details. I also need the number of Emiratis who were
+#  onboarded and started using the platform. These numbers are for different
+#  viewers."
+#
+# One endpoint, one set of definitions (backend/populations.py), and the SAME
+# totals for every reader. What changes by audience is DETAIL, never the number:
+# a board paper and a CRM screen disagreeing about how many job seekers exist
+# would discredit both.
+#
+# RECORDED vs REGISTERED is returned for every population, because the gap is
+# currently enormous — 5,309 candidate records, 37 of whom have ever signed in —
+# and a single figure would be a false statement whichever one was chosen.
+
+@strategic_metrics_bp.route('/populations', methods=['GET'])
+@require_roles(*(GOVERNANCE_ROLES | {'career_services_operator', 'call_center_agent',
+                                     'recruiter', 'employer_admin', 'talent_operator'}))
+def population_summary():
+    """How many people are employed, seeking, and actually using the platform."""
+    try:
+        from flask import request as _rq
+        try:
+            from backend import populations as pop
+            from backend.auth.access_control import resolve_roles
+        except ImportError:  # pragma: no cover — the app runs under both roots
+            import populations as pop
+            from auth.access_control import resolve_roles
+
+        roles = resolve_roles() or set()
+        members_only = bool(roles & pop.AUDIENCE_MEMBERS_ONLY) and not (roles & GOVERNANCE_ROLES)
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        def count(where_sql, members=False):
+            sql = f"""
+                SELECT COUNT(*) FROM users u
+                LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
+                 WHERE u.role IN ('candidate','job_seeker')
+                   AND u.is_active IS TRUE
+                   AND ({where_sql})
+            """
+            if members:
+                sql += f" AND {pop.MEMBER_PREDICATE}"
+            cur.execute(sql)
+            return cur.fetchone()[0]
+
+        data = {}
+        for key, spec in pop.POPULATIONS.items():
+            recorded = count(spec['sql'])
+            registered = count(spec['sql'], members=True)
+            entry = {
+                'label_en': spec['label_en'],
+                'label_ar': spec['label_ar'],
+                'means': spec['means'],
+                # Registered is always present. Recorded is withheld from
+                # employer-side readers, who must not be given a headline that
+                # counts people they cannot contact.
+                'registered': registered,
+            }
+            if not members_only:
+                entry['recorded'] = recorded
+            data[key] = entry
+
+        # Onboarded: the third number asked for. Everyone who has signed in,
+        # whatever their employment status.
+        cur.execute(f"""
+            SELECT COUNT(*) FROM users u
+             WHERE u.role IN ('candidate','job_seeker') AND u.is_active IS TRUE
+               AND {pop.MEMBER_PREDICATE}
+        """)
+        onboarded = cur.fetchone()[0]
+        cur.execute("""
+            SELECT COUNT(*) FROM users u
+             WHERE u.role IN ('candidate','job_seeker') AND u.is_active IS TRUE
+               AND u.uaepass_uuid IS NOT NULL
+        """)
+        via_uaepass = cur.fetchone()[0]
+        cur.execute("""
+            SELECT COUNT(*) FROM users u
+             WHERE u.role IN ('candidate','job_seeker') AND u.is_active IS TRUE
+        """)
+        total_recorded = cur.fetchone()[0]
+        cur.close(); conn.close()
+
+        result = {
+            'populations': data,
+            'onboarded': {
+                'label_en': 'Onboarded and using the platform',
+                'label_ar': 'انضموا ويستخدمون المنصة',
+                'signed_in': onboarded,
+                'via_uaepass': via_uaepass,
+                'means': 'Has authenticated at least once. Derived from sign-in, '
+                         'not a flag, so it becomes true the moment someone joins.',
+            },
+            'scope_note': pop.scope_note('recruiter' if members_only else 'board'),
+            'members_only': members_only,
+        }
+        if not members_only:
+            result['onboarded']['recorded_total'] = total_recorded
+            result['onboarded']['not_yet_signed_in'] = total_recorded - onboarded
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logger.error(f"population summary failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load population figures'}), 500
