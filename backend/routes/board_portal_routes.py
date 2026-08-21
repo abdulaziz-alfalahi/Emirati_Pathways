@@ -289,9 +289,14 @@ def recommendations_summary():
             SELECT d.id, d.title, d.category, d.priority, d.status, d.owner_id, d.due_date,
                    d.owner_entity, d.created_at,
                    d.completion_percent, d.completion_note, d.completion_updated_at,
-                   COALESCE(u.full_name, u.email) AS owner_name
+                   d.completion_updated_by,
+                   COALESCE(u.full_name, u.email) AS owner_name,
+                   -- Who actually recorded the figure. Written on every change
+                   -- since this feature shipped, and never once read back.
+                   COALESCE(w.full_name, w.email) AS completion_updated_by_name
             FROM board_directives d
             LEFT JOIN users u ON u.id = d.owner_id
+            LEFT JOIN users w ON w.id = d.completion_updated_by
             ORDER BY d.created_at DESC
         """, fetch_all=True) or []
 
@@ -351,6 +356,30 @@ def recommendations_summary():
                 'completion_note': r.get('completion_note'),
                 'completion_updated_at': r['completion_updated_at'].isoformat()
                                           if r.get('completion_updated_at') else None,
+                # WHO recorded the percentage, and whether that was the owner.
+                #
+                # The secretary may record progress on a member's behalf (owner
+                # ruling 2026-08-21), which settles GH #460. That was already
+                # permitted and already happening — all four live
+                # recommendations were last written by the secretary — and
+                # completion_updated_by has been stored on every change since
+                # this feature shipped. It was simply never read back, so a
+                # figure typed by the secretariat was indistinguishable from
+                # one the owner had stated themselves.
+                #
+                # That was harmless while progress was housekeeping. It is not
+                # now: the chairman made action progress THE accountability
+                # measure (2026-08-21), so "60%" means something different
+                # depending on who said it. Permission to enter it on someone's
+                # behalf and visibility of having done so are the same
+                # decision — this is the second half.
+                'completion_updated_by': r.get('completion_updated_by'),
+                'completion_updated_by_name': r.get('completion_updated_by_name'),
+                'recorded_on_behalf': bool(
+                    r.get('completion_updated_by')
+                    and r.get('owner_id')
+                    and str(r['completion_updated_by']).strip() != str(r['owner_id']).strip()
+                ),
                 'owner_entity': r.get('owner_entity'),
                 'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
                 **_directive_overdue(r, st),

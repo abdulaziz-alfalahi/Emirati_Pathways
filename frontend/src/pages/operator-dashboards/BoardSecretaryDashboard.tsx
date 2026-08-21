@@ -1023,6 +1023,19 @@ const BoardSecretaryDashboard: React.FC = () => {
                                 {[it.owner_name, it.owner_entity].filter(Boolean).join(' · ')
                                   || b('No owner assigned', 'لم يتم تعيين مالك')}
                               </p>
+                              {/* Who recorded the figure.
+                                  The secretary may record progress on a member's
+                                  behalf (owner ruling 2026-08-21). Since that
+                                  figure is what the board is now held to, a
+                                  percentage entered by someone other than the
+                                  owner has to read as such rather than as the
+                                  owner's own statement. */}
+                              {it.recorded_on_behalf && it.completion_updated_by_name && (
+                                <p dir="auto" className="mt-1 text-xs text-gray-500">
+                                  {b(`Progress recorded by ${it.completion_updated_by_name}`,
+                                     `سجّل التقدّم ${it.completion_updated_by_name}`)}
+                                </p>
+                              )}
                               {it.overdue && (
                                 <p className="mt-1 text-xs font-medium text-red-700">
                                   {it.overdue_reason === 'past_due'
