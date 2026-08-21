@@ -1068,8 +1068,38 @@ const ExecutiveDashboard: React.FC = () => {
                       {b('No past meetings recorded yet.', 'لا توجد اجتماعات سابقة مسجّلة بعد.')}
                     </p>
                   ) : (
-                    <div className="space-y-3">
-                      {pastMeetings.map((m: any) => (
+                    <div className="space-y-5">
+                      {/* Archived by YEAR.
+                          "organizing them under yearly categories as a primary
+                          classification ... would make it easier for users to
+                          locate and access the required records"
+                          (fb_1787249724). A flat list is fine at five meetings
+                          and unusable at fifty — and this archive only grows,
+                          since minutes are kept indefinitely.
+                          Grouped here rather than in the API: the board portal
+                          already has the meetings, and the year is a property
+                          of the date it already renders. */}
+                      {Object.entries(
+                        (pastMeetings as any[]).reduce((acc: Record<string, any[]>, m: any) => {
+                          const y = m.scheduled_at
+                            ? new Date(m.scheduled_at).getFullYear().toString()
+                            : b('Undated', 'بدون تاريخ');
+                          (acc[y] = acc[y] || []).push(m);
+                          return acc;
+                        }, {})
+                      )
+                        .sort(([a], [b2]) => b2.localeCompare(a))
+                        .map(([year, meetings]: [string, any]) => (
+                      <div key={year}>
+                        <h4 className="mb-2 text-sm font-semibold text-slate-900">
+                          {year}
+                          <span className="ms-2 text-xs font-normal text-muted-foreground">
+                            {meetings.length} {meetings.length === 1
+                              ? b('meeting', 'اجتماع') : b('meetings', 'اجتماعات')}
+                          </span>
+                        </h4>
+                        <div className="space-y-3">
+                      {meetings.map((m: any) => (
                         <div key={m.id} className="rounded-xl border p-4">
                           <p className="font-semibold text-slate-900">
                             {isRTL && m.title_ar ? m.title_ar : m.title}
@@ -1097,6 +1127,9 @@ const ExecutiveDashboard: React.FC = () => {
                           <BoardMinutesPanel meetingId={m.id} compact />
                         </div>
                       ))}
+                        </div>
+                      </div>
+                        ))}
                     </div>
                   )}
                 </CardContent>
@@ -1180,8 +1213,35 @@ const ExecutiveDashboard: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Grouped under the meeting they came from (GH #459).
+                        "a main heading that reflects the meeting name,
+                         presented in a larger and bold font" (fb_1787251574).
+                        Unlinked recommendations are shown last under their own
+                        heading rather than hidden — today that is all of them,
+                        because the link was never written until now, and the
+                        secretariat attaches them from the Recommendations tab. */}
+                    <div className="space-y-5">
+                      {(recSummary.by_meeting || []).map((g: any, gi: number) => (
+                        <div key={g.meeting_id || `unlinked-${gi}`}>
+                          <h3 className="text-base font-dubai-bold text-slate-900">
+                            {g.meeting_id
+                              ? (isRTL && g.meeting_title_ar ? g.meeting_title_ar : g.meeting_title)
+                              : b('Not linked to a meeting', 'غير مرتبطة باجتماع')}
+                          </h3>
+                          {g.meeting_date && (
+                            <p className="mb-2 text-xs text-muted-foreground">
+                              {new Date(g.meeting_date).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB',
+                                { dateStyle: 'long' } as any)}
+                            </p>
+                          )}
+                          {!g.meeting_id && (
+                            <p className="mb-2 text-xs text-muted-foreground">
+                              {b('The Board Secretariat can attach these to the meeting they came from.',
+                                 'يمكن لأمانة المجلس ربط هذه التوصيات بالاجتماع الذي صدرت عنه.')}
+                            </p>
+                          )}
                     <div className="space-y-2">
-                      {(recSummary.items || []).map((it: any) => (
+                      {(g.items || []).map((it: any) => (
                         <div key={it.id} className="rounded-lg border p-3">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="min-w-0">
@@ -1232,6 +1292,9 @@ const ExecutiveDashboard: React.FC = () => {
                           {it.completion_percent == null && (
                             <p className="text-[11px] text-slate-400 mt-1">{b('Progress not yet recorded', 'لم تُسجَّل نسبة الإنجاز')}</p>
                           )}
+                        </div>
+                      ))}
+                    </div>
                         </div>
                       ))}
                     </div>

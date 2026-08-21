@@ -293,10 +293,16 @@ def recommendations_summary():
                    COALESCE(u.full_name, u.email) AS owner_name,
                    -- Who actually recorded the figure. Written on every change
                    -- since this feature shipped, and never once read back.
-                   COALESCE(w.full_name, w.email) AS completion_updated_by_name
+                   COALESCE(w.full_name, w.email) AS completion_updated_by_name,
+                   -- The meeting this recommendation came out of. The column has
+                   -- existed all along and nothing ever read or wrote it — the
+                   -- same shape as owner_id before #397.
+                   d.meeting_id, mt.title AS meeting_title, mt.title_ar AS meeting_title_ar,
+                   mt.scheduled_at AS meeting_date
             FROM board_directives d
             LEFT JOIN users u ON u.id = d.owner_id
             LEFT JOIN users w ON w.id = d.completion_updated_by
+            LEFT JOIN board_meetings mt ON mt.id = d.meeting_id
             ORDER BY d.created_at DESC
         """, fetch_all=True) or []
 
@@ -373,6 +379,10 @@ def recommendations_summary():
                 # depending on who said it. Permission to enter it on someone's
                 # behalf and visibility of having done so are the same
                 # decision — this is the second half.
+                'meeting_id': str(r['meeting_id']) if r.get('meeting_id') else None,
+                'meeting_title': r.get('meeting_title'),
+                'meeting_title_ar': r.get('meeting_title_ar'),
+                'meeting_date': r['meeting_date'].isoformat() if r.get('meeting_date') else None,
                 'completion_updated_by': r.get('completion_updated_by'),
                 'completion_updated_by_name': r.get('completion_updated_by_name'),
                 'recorded_on_behalf': bool(
@@ -428,6 +438,41 @@ def recommendations_summary():
                 g['overdue'] += 1
             g['actions'].append(it)
 
+        # ── Grouped under the meeting they came from (GH #459) ─────────────
+        #
+        # "display recommendations grouped under a main heading that reflects
+        #  the meeting name ... Under this heading, the corresponding list of
+        #  recommendations could be displayed directly" (fb_1787251574).
+        #
+        # Undated/unlinked LAST, and never silently dropped. Every recommendation
+        # on the platform today is unlinked — the column was never written — so
+        # that bucket is the whole list until the secretariat attaches them, and
+        # hiding it would empty the page.
+        by_meeting = {}
+        for it in items:
+            key = it.get('meeting_id') or ''
+            g = by_meeting.setdefault(key, {
+                'meeting_id': it.get('meeting_id'),
+                'meeting_title': it.get('meeting_title'),
+                'meeting_title_ar': it.get('meeting_title_ar'),
+                'meeting_date': it.get('meeting_date'),
+                'items': [],
+            })
+            g['items'].append(it)
+
+        # Most recent meeting first — a board reads the last sitting before the
+        # ones before it. Unlinked has no date, so it sorts to the end.
+        meetings_grouped = sorted(
+            by_meeting.values(),
+            key=lambda g: (g['meeting_date'] is None, g['meeting_date'] or ''),
+            reverse=False,
+        )
+        meetings_grouped = (
+            sorted([g for g in meetings_grouped if g['meeting_date']],
+                   key=lambda g: g['meeting_date'], reverse=True)
+            + [g for g in meetings_grouped if not g['meeting_date']]
+        )
+
         # Most late first, then most open work — the order a chairman reads in.
         owners = sorted(by_owner.values(),
                         key=lambda g: (-g['overdue'],
@@ -442,6 +487,7 @@ def recommendations_summary():
             # None — never 0 — when nothing has been assessed yet.
             'overall_completion_percent': overall,
             'by_owner': owners,
+            'by_meeting': meetings_grouped,
             'by_owner_basis': 'Actions grouped by the person or entity accountable for '
                               'them. No score is calculated for a person: the percentages '
                               'belong to the actions.',
@@ -486,6 +532,16 @@ def update_directive_tracking(directive_id):
             sets.append('status = %s'); params.append(status)
         if 'owner_id' in data:
             sets.append('owner_id = %s'); params.append((data.get('owner_id') or None) and str(data['owner_id'])[:15])
+        # Which meeting this recommendation came out of.
+        #
+        # The column existed and nothing ever wrote it, so every recommendation
+        # on the platform is unlinked and the meeting grouping (GH #459) has
+        # nothing to group by. Accepting it here is what makes that grouping
+        # mean something. Empty string clears the link rather than being stored
+        # as a blank id.
+        if 'meeting_id' in data:
+            sets.append('meeting_id = %s::uuid')
+            params.append((data.get('meeting_id') or None))
         if 'owner_entity' in data:
             # Free text: the bodies a board holds accountable have no canonical
             # list, and a dropdown that cannot express "Ministry of Education"

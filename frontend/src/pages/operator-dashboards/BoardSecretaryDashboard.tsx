@@ -1081,6 +1081,33 @@ const BoardSecretaryDashboard: React.FC = () => {
                               A person AND an entity, because accountability for
                               a board recommendation often sits with a
                               department rather than an individual. */}
+                          {/* Which meeting this recommendation came out of.
+                              The column existed and nothing ever wrote it, so
+                              every recommendation was unlinked and could not be
+                              grouped under its meeting (GH #459). Past meetings
+                              first — a recommendation is made AT a sitting, so
+                              the one being recorded is almost always recent. */}
+                          <div className="mt-2">
+                            <label className="text-[11px] text-gray-500"
+                                   htmlFor={`mtg-${it.id}`}>
+                              {b('From meeting', 'من اجتماع')}
+                            </label>
+                            <select
+                              id={`mtg-${it.id}`}
+                              className="mt-0.5 h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              value={it.meeting_id || ''}
+                              onChange={(e) => updateTracking(it.id, { meeting_id: e.target.value })}
+                            >
+                              <option value="">{b('Not linked to a meeting', 'غير مرتبطة باجتماع')}</option>
+                              {[...past, ...upcoming].map((m: any) => (
+                                <option key={m.id} value={m.id}>
+                                  {(isRTL && m.title_ar ? m.title_ar : m.title)}
+                                  {m.scheduled_at ? ` — ${fmt(m.scheduled_at)}` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
                           <div className="mt-2 grid gap-2 sm:grid-cols-2">
                             <div>
                               <label className="text-[11px] text-gray-500"
@@ -1259,7 +1286,14 @@ const BoardSecretaryDashboard: React.FC = () => {
                                     {isRTL && m.title_ar ? m.title_ar : m.title}
                                   </p>
                                   <p className="text-xs text-gray-600">{fmt(m.scheduled_at)}</p>
-                                  {m.agenda && <AgendaList agenda={m.agenda} className="mt-1" compact />}
+                                  {/* Title and date only.
+                                      "Additional details, such as the meeting agenda ... could be
+                                      excluded from the main archive view to keep the list concise
+                                      and easy to navigate" (fb_1787250696). The agenda belongs to
+                                      the meeting, not to its archive entry — it is still on the
+                                      meeting itself and in the minutes document. An archive is
+                                      scanned to FIND a record, and every extra line makes that
+                                      slower as the years accumulate. */}
                                 </div>
                                 {m.is_historical && (
                                   <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-gray-600 bg-gray-50"
