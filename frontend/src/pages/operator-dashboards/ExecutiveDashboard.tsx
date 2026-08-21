@@ -1137,6 +1137,49 @@ const ExecutiveDashboard: React.FC = () => {
                         : `${b('Completed counts as 100%, outstanding as 0%; in-progress uses the percentage its owner recorded.', 'المكتملة تُحتسب 100%، وغير المبدوءة 0%، وقيد التنفيذ حسب النسبة التي سجّلها مالكها.')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('have a percentage recorded.', 'منها سُجِّلت لها نسبة.')}`}
                     </p>
 
+                    {/* By action owner.
+                        Chairman's decision 2026-08-21: no board member engagement
+                        percentage; accountability is related to the OWNER OF THE
+                        ACTION. Shows who is accountable and what is late, and
+                        deliberately no score for the person — the percentages
+                        belong to the actions listed below. */}
+                    {(recSummary.by_owner || []).length > 0 && (
+                      <div className="rounded-lg border mb-3">
+                        <div className="border-b px-4 py-2">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {b('By action owner', 'حسب مالك الإجراء')}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {b('Who is accountable, and what is overdue. No score is calculated for a person.',
+                               'من المسؤول، وما هو المتأخر. لا تُحتسب أي درجة للأشخاص.')}
+                          </p>
+                        </div>
+                        <div className="divide-y">
+                          {(recSummary.by_owner || []).map((g: any, i: number) => (
+                            <div key={g.owner_id || `entity-${i}`}
+                                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+                              <div className="min-w-0">
+                                <p dir="auto" className="text-sm font-medium text-slate-900">
+                                  {[g.owner_name, g.owner_entity].filter(Boolean).join(' · ')
+                                    || b('No owner assigned', 'لم يُحدَّد مسؤول')}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {g.counts.completed} {b('completed', 'مكتملة')}
+                                  {' · '}{g.counts.in_progress} {b('in progress', 'قيد التنفيذ')}
+                                  {' · '}{g.counts.outstanding} {b('outstanding', 'لم تبدأ')}
+                                </p>
+                              </div>
+                              {g.overdue > 0 && (
+                                <span className="shrink-0 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                                  {g.overdue} {b('overdue', 'متأخرة')}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       {(recSummary.items || []).map((it: any) => (
                         <div key={it.id} className="rounded-lg border p-3">
@@ -1148,6 +1191,17 @@ const ExecutiveDashboard: React.FC = () => {
                                 {it.due_date ? ` · ${b('Due', 'الاستحقاق')} ${new Date(it.due_date).toLocaleDateString(isRTL ? 'ar-AE' : 'en-GB')}` : ''}
                                 {it.overdue ? ` · ${b('OVERDUE', 'متأخرة')}` : ''}
                               </p>
+                              {/* The secretary may record progress on a member's
+                                  behalf (owner ruling 2026-08-21). On the board's
+                                  own view especially, a figure entered by someone
+                                  other than the owner must not read as the owner's
+                                  own statement. */}
+                              {it.recorded_on_behalf && it.completion_updated_by_name && (
+                                <p dir="auto" className="text-xs text-muted-foreground">
+                                  {b(`Progress recorded by ${it.completion_updated_by_name}`,
+                                     `سجّل التقدّم ${it.completion_updated_by_name}`)}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="rounded-full border px-2.5 py-0.5 text-xs text-slate-700 bg-slate-50">
