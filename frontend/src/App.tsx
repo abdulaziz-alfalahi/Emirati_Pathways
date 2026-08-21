@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
 // import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
+import { useLanguage } from './context/EnhancedLanguageContext';
+import { DirectionProvider } from '@radix-ui/react-direction';
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as HotToaster } from 'react-hot-toast';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -1204,6 +1206,26 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Tells Radix which way the page reads.
+ *
+ * Radix primitives — Tabs, Select, DropdownMenu, Slider, Popover — do NOT read
+ * the DOM `dir` attribute. Each one takes its own `dir` prop and defaults to
+ * 'ltr' unless a DirectionProvider supplies it. So the Board Secretariat page
+ * set dir="rtl" on its root, the page flipped, and its tab strip stayed
+ * left-aligned (fb_1787248956).
+ *
+ * Mounted once here rather than passing dir= to every primitive: correctness by
+ * opt-in fails wherever someone forgets, and 52 of ~118 components were already
+ * hand-rolling their own dir attribute.
+ *
+ * Must sit INSIDE LanguageProvider — it reads the language from it.
+ */
+const RadixDirection: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { language } = useLanguage();
+  return <DirectionProvider dir={language === 'ar' ? 'rtl' : 'ltr'}>{children}</DirectionProvider>;
+};
+
 // Main App Component
 const App: React.FC = () => {
   return (
@@ -1211,6 +1233,7 @@ const App: React.FC = () => {
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <LanguageProvider>
+            <RadixDirection>
             <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
               <FeatureFlagsProvider>
                 <AppContent />
@@ -1219,6 +1242,7 @@ const App: React.FC = () => {
                 <HotToaster position="top-center" />
               </FeatureFlagsProvider>
             </ThemeProvider>
+            </RadixDirection>
           </LanguageProvider>
         </AuthProvider>
       </Router>
