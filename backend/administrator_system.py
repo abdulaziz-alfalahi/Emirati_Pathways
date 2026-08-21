@@ -621,7 +621,16 @@ class AdministratorSystem:
             raise
     
     def update_user_roles(self, user_id: int, roles: List[str], admin_user_id: int) -> bool:
-        """Update user roles — preserves the user's original role alongside new ones"""
+        """Set a user's roles to exactly what was submitted.
+
+        The submitted list is AUTHORITATIVE: a role left out is removed. It
+        used to be merged with the roles already stored, which meant ticking a
+        box worked and unticking one silently did nothing.
+
+        The user's primary role (users.role) is kept in the set — it is either
+        one the admin selected, or the floor applied when everything was
+        unticked, and it must always resolve for the user.
+        """
         try:
             # Normalize to canonical lowercase slugs: a Title-Case grant (e.g.
             # 'Recruiter') stored verbatim failed every role guard for that user
@@ -682,21 +691,7 @@ class AdministratorSystem:
             if _problems:
                 raise ValueError(' '.join(_problems))
 
-            # Preserve the user's original/current role so they can switch back
             original_role = current_user.get('role')
-            existing_secondary = current_user.get('secondary_roles') or []
-            # Flatten existing secondary_roles (may be JSONB list or None)
-            if isinstance(existing_secondary, str):
-                try:
-                    existing_secondary = json.loads(existing_secondary)
-                except Exception:
-                    existing_secondary = [existing_secondary]
-            
-            # Build merged role set: new roles + original role + existing secondary roles
-            all_roles = list(dict.fromkeys(
-                roles + ([original_role] if original_role else []) + 
-                [r for r in existing_secondary if r]
-            ))  # dict.fromkeys preserves order and deduplicates
             
             # Preserve the existing primary role when it is still selected.
             #
@@ -716,6 +711,35 @@ class AdministratorSystem:
                 primary_role = original_role
             else:
                 primary_role = roles[0] if roles else original_role or 'candidate'
+
+            # THE SUBMITTED LIST IS THE ROLE SET — including what it leaves out.
+            #
+            # This used to merge: roles + original_role + existing secondary
+            # roles. A tick was therefore honoured and an UNTICK was not — the
+            # role came straight back from the existing column on the next
+            # read, so unassigning a role had never worked through this dialog,
+            # however many times it was tried.
+            #
+            # The join table below already replaced its rows (DELETE, then
+            # INSERT from `roles`), so the two stores disagreed with each other:
+            # admin_user_roles honoured the removal and users.secondary_roles
+            # did not. One of them was always wrong.
+            #
+            # Safe to treat as authoritative because the dialog sends the
+            # COMPLETE ticked set — populated from user.roles, which includes
+            # the primary role — and refuses to submit an empty one.
+            #
+            # primary_role is added back deliberately: it is either a role the
+            # admin selected, or the floor below. users.role must always appear
+            # in the resolved set, or the user's own primary role stops
+            # resolving for them.
+            all_roles = list(dict.fromkeys(
+                roles + ([primary_role] if primary_role else [])
+            ))  # dict.fromkeys preserves order and deduplicates
+
+            # A user with NO role cannot use the platform and cannot repair
+            # themselves. If everything was unticked, the primary role stands as
+            # the floor rather than writing an unusable account.
             
             # Keep user_type in sync with role (P3/C5). user_type is the legacy
             # mirror of role (migration 006); leaving it stale here re-created
