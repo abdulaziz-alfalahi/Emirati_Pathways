@@ -66,6 +66,19 @@ const DropdownMenuContent = React.forwardRef<
       sideOffset={sideOffset}
       className={cn(
         "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white text-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        // A menu taller than the screen must SCROLL rather than run off it.
+        //
+        // `overflow-hidden` above (there for the rounded corners) with no
+        // height limit meant a long menu simply extended past the viewport and
+        // the wheel did nothing — the role switcher lists ~20 roles, so its
+        // last entries were unreachable. Radix publishes the space it actually
+        // has as --radix-dropdown-menu-content-available-height, which is the
+        // correct bound: it accounts for the trigger position and flips when
+        // the menu opens upward, unlike any fixed max-height we could pick.
+        //
+        // Only bites when the content would otherwise overflow, so short menus
+        // are unchanged and no scrollbar appears.
+        "max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
         "dark:bg-gray-800 dark:border-gray-700",
         className
       )}
