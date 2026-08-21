@@ -729,7 +729,7 @@ def list_invitable():
     like = f"%{q}%"
     try:
         rows = execute_query("""
-            SELECT id, full_name, first_name, last_name, email, role
+            SELECT id, full_name, first_name, last_name, email, role, secondary_roles
               FROM users
              WHERE is_active IS TRUE
                AND (role = ANY(%s) OR EXISTS (
@@ -742,13 +742,28 @@ def list_invitable():
              ORDER BY COALESCE(NULLIF(full_name, ''), email)
              LIMIT 20
         """, (invitable, invitable, like, like, like)) or []
+        # Show the role that makes them INVITABLE, not necessarily their
+        # primary one. The board secretary's own account is role='candidate'
+        # with board_operator in secondary_roles, so listing the primary role
+        # labelled them "candidate" in a board-meeting picker — accurate about
+        # the column, misleading about the person.
+        invitable_set = set(invitable)
+
+        def shown_role(r):
+            if r.get('role') in invitable_set:
+                return r['role']
+            for sr in (r.get('secondary_roles') or []):
+                if sr in invitable_set:
+                    return sr
+            return r.get('role')
+
         data = [{
             'id': r['id'],
             'name': (r.get('full_name')
                      or ' '.join(filter(None, [r.get('first_name'), r.get('last_name')])).strip()
                      or r.get('email')),
             'email': r.get('email'),
-            'role': r.get('role'),
+            'role': shown_role(r),
         } for r in rows]
         return jsonify({'success': True, 'data': data})
     except Exception as e:
