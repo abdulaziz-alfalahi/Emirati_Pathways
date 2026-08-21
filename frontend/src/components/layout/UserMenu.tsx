@@ -202,6 +202,25 @@ const UserMenu: React.FC = () => {
             uniqueRoles = uniqueRoles.filter(r => r !== 'growth_operator');
           }
 
+          // SORTED, with the current role pinned first.
+          //
+          // The list was rendered in the order the roles happen to sit in the
+          // database, which is the order they were granted. That is fine at
+          // three roles and unusable at twenty-seven: a newly granted role
+          // lands wherever it lands, so "Board Chairman" was assigned
+          // successfully and reported missing, because it sat at position 22
+          // of 27 with no reason for the eye to find it.
+          //
+          // Current first because it is the answer to "where am I now"; the
+          // rest alphabetically by the label actually on screen, so the menu
+          // can be scanned in either language.
+          const collator = new Intl.Collator(isRTL ? 'ar' : 'en');
+          uniqueRoles = [...uniqueRoles].sort((a, b) => {
+            if (a === currentRole) return -1;
+            if (b === currentRole) return 1;
+            return collator.compare(getRoleLabel(a as string), getRoleLabel(b as string));
+          });
+
           // Only show switch role section if there's more than one role
           // OR if the user has secondary_roles property (legacy compatibility)
           if (uniqueRoles.length <= 1 && (!user.secondary_roles || user.secondary_roles.length === 0)) {
