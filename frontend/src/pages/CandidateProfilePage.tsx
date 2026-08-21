@@ -219,13 +219,24 @@ const CandidateProfilePage: React.FC = () => {
       });
 
       if (conversationResponse.success && conversationResponse.data) {
-        navigate(getMessagingPath(user?.role || '', { conversationId: conversationResponse.data.id }));
+        // A role with no messaging surface must be TOLD so, not navigated
+        // somewhere it cannot open. The old fallback pointed at the candidate
+        // dashboard, so staff landed on "This page is not available to your
+        // role" instead of their conversation (fb_1787224622).
+        const path = getMessagingPath(user?.role || '', { conversationId: conversationResponse.data.id });
+        if (path) {
+          navigate(path);
+        } else {
+          toast.error('Messaging is not available for your role');
+        }
       } else {
         toast.error('Failed to start conversation');
       }
     } catch (err: any) {
       console.error('Error creating conversation:', err);
-      navigate(getMessagingPath(user?.role || ''));
+      const path = getMessagingPath(user?.role || '');
+      if (path) navigate(path);
+      else toast.error('Messaging is not available for your role');
     } finally {
       setCreatingConversation(false);
     }

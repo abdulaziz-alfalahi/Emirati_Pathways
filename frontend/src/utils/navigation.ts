@@ -5,14 +5,17 @@
 /** Dashboard messaging tab paths by role */
 const ROLE_MESSAGING_ROUTES: Record<string, string> = {
     administrator: '/admin-dashboard?tab=messaging',
+    admin: '/admin-dashboard?tab=messaging',
     recruiter: '/recruiter?tab=messages',
     hr_manager: '/hr-dashboard?tab=messages',
+    employer_admin: '/hr-dashboard?tab=messages',
     candidate: '/candidate-dashboard?tab=messages',
     job_seeker: '/candidate-dashboard?tab=messages',
     mentor: '/mentor-dashboard?tab=messages',
     educator: '/educator-dashboard?tab=messages',
     assessor: '/assessor-dashboard?tab=messages',
     growth_operator: '/growth-operator?tab=messages',
+    career_services_operator: '/career-services-dashboard?tab=messages',
 };
 
 /**
@@ -22,8 +25,20 @@ const ROLE_MESSAGING_ROUTES: Record<string, string> = {
  * @param params - Optional query params to append (e.g. { conversationId: '123' })
  * @returns      A URL string like `/recruiter?tab=messages&conversationId=123`
  */
-export function getMessagingPath(role: string, params?: Record<string, string>): string {
-    const base = ROLE_MESSAGING_ROUTES[role] || '/candidate-dashboard?tab=messages';
+export function getMessagingPath(role: string, params?: Record<string, string>): string | null {
+    // An UNKNOWN role must not fall back to a CANDIDATE route.
+    //
+    // That default sent every unmapped staff role to /candidate-dashboard,
+    // which the route guard then refuses — so "Send Message" on a candidate's
+    // profile answered "This page is not available to your role."
+    // (fb_1787224622, career_services_operator). The role was simply missing
+    // from the map above; the fallback turned that omission into a dead end.
+    //
+    // 'admin' and 'employer_admin' were missing for the same reason: the map
+    // was keyed on 'administrator' and 'hr_manager' only, and the lookup uses
+    // the raw users.role value.
+    const base = ROLE_MESSAGING_ROUTES[String(role || '').toLowerCase()];
+    if (!base) return null;
     if (!params || Object.keys(params).length === 0) return base;
 
     const extra = Object.entries(params)
