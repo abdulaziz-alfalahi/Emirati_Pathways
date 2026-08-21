@@ -19,6 +19,15 @@
  * agree with it.
  */
 
+// NOT LISTED: /board-meeting/:meetingId.
+//
+// Who may join a board meeting is decided per MEETING, from the attendee list,
+// by POST /api/board/meetings/<id>/join — not by role. A role gate here refused
+// invited guests at the door: the subject expert brought in for one agenda item
+// is not a board member, which made additional attendees (PR #469) and the
+// waiting room (PR #471) unreachable by the people they exist for (PRs #472,
+// #474). Opening the page is not the same as getting in; anyone not on the list
+// still gets "Unable to join" from the API.
 export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/admin-dashboard': ['admin'],
   '/admin/role-requests': ['admin'],
@@ -28,7 +37,6 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/applications': ['candidate'],
   '/assessment-operator-dashboard': ['admin', 'assessment_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
   '/assessor-dashboard': ['assessor'],
-  '/board-meeting/:meetingId': ['admin', 'board_member', 'board_operator', 'platform_operator'],
   '/board-secretary': ['admin', 'board_operator', 'platform_operator'],
   '/call-center-dashboard': ['admin', 'call_center_agent'],
   '/candidate-dashboard': ['candidate'],
@@ -77,7 +85,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
 /**
  * Roles permitted to open `path`, or null when the route is not gated.
  * Handles the wildcard and parameter forms used in App.tsx
- * (`/recruiter/*`, `/board-meeting/:meetingId`).
+ * (`/recruiter/*`, `/workspace/:companyId`).
  */
 export function rolesForPath(path: string): readonly string[] | null {
   if (!path) return null;

@@ -61,7 +61,7 @@ describe('routeAccess is the single source of truth', () => {
 
   it('resolves wildcard and parameter routes', () => {
     expect(rolesForPath('/recruiter/jd-builder')).toEqual(ROUTE_ROLES['/recruiter/*']);
-    expect(rolesForPath('/board-meeting/abc-123')).toEqual(ROUTE_ROLES['/board-meeting/:meetingId']);
+    expect(rolesForPath('/workspace/abc-123')).toEqual(ROUTE_ROLES['/workspace/:companyId']);
   });
 });
 
@@ -90,7 +90,18 @@ describe('board secretary access', () => {
     expect(ROUTE_ROLES['/board-secretary']).not.toContain('board_member');
   });
 
-  it('can still join a meeting room', () => {
-    expect(ROUTE_ROLES['/board-meeting/:meetingId']).toContain('board_operator');
+  it('leaves the meeting room ungated, because the attendee list decides', () => {
+    // Who may join a board meeting is a per-MEETING question, answered by
+    // POST /api/board/meetings/<id>/join from the attendee list — not a role
+    // question. The role gate that used to live here refused invited guests at
+    // the door: a subject expert brought in for one agenda item is not a board
+    // member, which made additional attendees (PR #469) and the waiting room
+    // (PR #471) unreachable by the people they exist for (PRs #472, #474).
+    //
+    // The secretary can still join — they are on the attendee list, which is a
+    // stronger test than holding a role, since the old gate also admitted a
+    // board member who had never been invited to THAT meeting.
+    expect(ROUTE_ROLES['/board-meeting/:meetingId']).toBeUndefined();
+    expect(rolesForPath('/board-meeting/abc-123')).toBeNull();
   });
 });
