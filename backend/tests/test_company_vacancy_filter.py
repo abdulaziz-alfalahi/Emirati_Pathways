@@ -27,7 +27,14 @@ def _fn():
 def test_it_counts_every_attached_posting_not_published_only():
     """Measured 2026-08-20: ALL 7 published postings have company_id NULL, while
     297 of 302 pending_verification postings carry one. Counting published only
-    would show zero for every employer — a filter that is always empty."""
+    would show zero for every employer — a filter that is always empty.
+
+    Those 7 are TEST-ERA data, not a defect (owner, 2026-08-21): they predate the
+    rule requiring a vacancy to be attached to an employer. This rule is
+    therefore provisional — once real companies post through the magic-link
+    onboarding, "published" becomes the meaningful filter and counting every
+    status would overstate what an operator can act on.
+    """
     fn = _fn()
     assert 'LEFT JOIN job_postings j ON j.company_id = c.id' in fn
     assert "j.status = 'published'" not in fn

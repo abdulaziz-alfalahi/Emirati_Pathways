@@ -144,7 +144,17 @@ def list_companies():
                 # postings carry a company_id, while ALL 7 published postings
                 # carry NONE. Counting published only would show zero for every
                 # employer — a filter that is always empty is worse than none.
-                # The unattached postings are a separate defect, filed.
+                #
+                # THOSE 7 ARE NOT A DEFECT (owner, 2026-08-21). They predate the
+                # rule that a vacancy must be attached to an employer, and were
+                # posted by test users and admins to exercise matching. They are
+                # to be removed before cutover, or superseded once real companies
+                # join by magic link and post their own.
+                #
+                # So this counting rule is a decision about TEST-ERA data, and it
+                # should be revisited once real employers are posting: at that
+                # point "published" becomes the meaningful filter and counting
+                # every status would overstate what an operator can act on.
                 #
                 # Both filters are optional, so the workspace provisioning
                 # picker (issue #92) calling this with no arguments is
