@@ -1147,8 +1147,50 @@ def _dev_login_available():
     if not (os.getenv('ENABLE_DEV_LOGIN') == 'true'
             and os.getenv('FLASK_ENV', 'production') != 'production'):
         return False
-    # Any sign of a proxy hop means this arrived from outside the host.
-    return not any(request.headers.get(h) for h in _FORWARDING_HEADERS)
+
+    # A PURELY LOOPBACK forwarding chain is an SSH tunnel, not the internet.
+    #
+    # `ssh -L 8089:127.0.0.1:8089 appqa` is how the platform is driven in a
+    # browser for verification: Vite proxies /api onward and stamps
+    # X-Forwarded-For: 127.0.0.1 (added in PR #430 so the audit trail could see
+    # real client addresses). Refusing on the mere PRESENCE of a forwarding
+    # header locked the tunnel out too, which is what left UI fixes
+    # unverifiable in a browser.
+    #
+    # Internet traffic cannot look like this: it crosses the GIN WAF, which
+    # stamps its own node address (observed 10.62.132.52).
+    #
+    # EVERY hop must be loopback, not just the first — that is what defeats a
+    # spoofed `X-Forwarded-For: 127.0.0.1`. nginx APPENDS the real peer to any
+    # client-supplied value ($proxy_add_x_forwarded_for), so a forged header
+    # arrives as "127.0.0.1, <client>, <waf>" and the real addresses refuse it.
+    loopback = {'127.0.0.1', '::1', 'localhost', ''}
+
+    def _host_only(hop):
+        hop = hop.strip().strip('"').rsplit(':', 1)[0] if hop.count(':') == 1 else hop.strip()
+        return hop.strip('[]').lower()
+
+    # Only ADDRESS-bearing headers describe where the request came from.
+    # X-Forwarded-Proto carries a scheme ("https") and X-Forwarded-Host a
+    # hostname; treating either as an address would refuse every tunnelled
+    # request, since "https" is not a loopback address.
+    for header in ('X-Forwarded-For', 'X-Real-IP'):
+        for hop in (request.headers.get(header) or '').split(','):
+            if _host_only(hop) not in loopback:
+                return False
+
+    # RFC 7239 `Forwarded: for=...;proto=...` — inspect only the for= tokens.
+    for element in (request.headers.get('Forwarded') or '').split(','):
+        for token in element.split(';'):
+            token = token.strip()
+            if token.lower().startswith('for=') and _host_only(token[4:]) not in loopback:
+                return False
+
+    # The browser's own origin must be local as well.
+    if _host_only(request.headers.get('X-Forwarded-Host') or '') not in loopback:
+        return False
+
+    return True
 
 
 @uaepass_bp.route('/dev-login', methods=['POST'])
@@ -1233,7 +1275,7 @@ def dev_login():
 
         logger.warning(f"⚠️  DEV LOGIN: user {user_id} ({user['email']}) signed in via dev bypass")
 
-        return jsonify({
+        resp = jsonify({
             'success': True,
             'message': f"Dev login successful for {user['first_name']} {user['last_name']}",
             'data': {
@@ -1248,7 +1290,19 @@ def dev_login():
                     'phone': user['phone'],
                 }
             }
-        }), 200
+        })
+
+        # Set the auth COOKIES too, not just the body tokens.
+        #
+        # The SPA authenticates by cookie. A body-only response therefore left
+        # the browser signed OUT after a "successful" login, so driving the UI
+        # meant hand-injecting a token on every page — and an HttpOnly cookie
+        # of the same name silently won, so it often did not take at all. That
+        # is the real reason UI fixes could not be verified in a browser.
+        # With cookies set, the session is simply live, as after UAE Pass.
+        set_access_cookies(resp, access_token)
+        set_refresh_cookies(resp, refresh_token)
+        return resp, 200
 
     except Exception as e:
         logger.error(f"Dev login error: {e}")
