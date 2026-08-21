@@ -199,3 +199,29 @@ def test_join_still_refuses_a_stranger():
     code = _strip_prose(_body(_src(*ROUTES), 'join_meeting'))
     assert 'not invite and not is_admin' in code
     assert '403' in code
+
+
+def test_an_observer_who_joins_stays_an_observer():
+    """The guarantee the whole waiting room rests on, at the point it was
+    actually broken.
+
+    /join flipped every joiner to 'attended'. Quorum is
+    COUNT(*) WHERE invite_status = 'attended' — computed both for the live
+    meeting list and for the figure recorded when a meeting ends — so admitting
+    a guest silently added them to the number that decides whether the board
+    could lawfully sit. Migration 053 made observers not count for exactly this
+    reason, and the join path undid it.
+
+    Reachable since additional attendees shipped (PR #469). Caught by admitting
+    a real guest and reading the row back.
+    """
+    code = _strip_prose(_body(_src(*ROUTES), 'join_meeting'))
+    assert "CASE WHEN invite_status = 'observer'" in code, \
+        'joining promotes an observer into the quorum count'
+    assert "THEN 'observer' ELSE 'attended' END" in code
+
+
+def test_an_observer_still_gets_an_attendance_time():
+    """Not counted is not the same as not recorded — they are on the register."""
+    code = _strip_prose(_body(_src(*ROUTES), 'join_meeting'))
+    assert 'joined_at = COALESCE(joined_at, NOW())' in code
