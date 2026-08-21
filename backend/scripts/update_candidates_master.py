@@ -146,7 +146,12 @@ def run_update():
             fullname_ar = str(fullname_ar).strip()
             
         if pd.isna(email) or not str(email).strip():
-            email = f"{eid}@example.com"
+            # NO FABRICATED ADDRESS. This used to compose f"{eid}@example.com",
+            # which is indistinguishable from a real address to every query,
+            # export and operator on the platform — a silent dead end that looks
+            # like data. 1,046 accounts carried one until migration 079 cleared
+            # them. Absent is a fact an operator can act on; invented is not.
+            email = None
         else:
             email = str(email).strip()
             

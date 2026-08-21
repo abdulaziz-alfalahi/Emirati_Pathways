@@ -1,10 +1,41 @@
+"""RETIRED — do not run. Superseded by import_crm_master_file.py.
+
+This script fabricated an email address for every account it created:
+
+    f"{eid}@example.com"
+
+1,046 live accounts carried one until migration 079 cleared them (72 were
+restored from the CRM roster, which held the real address all along; 974 were
+blanked). A made-up address is indistinguishable from a real one to every query,
+export and operator on the platform — a silent dead end that looks like data,
+which is worse than an empty field.
+
+It also reads a hardcoded /app/master_file.xlsx, alters the schema mid-import,
+and has no dry run or reconciliation.
+
+Use instead:
+    .venv/bin/python backend/scripts/import_crm_master_file.py FILE.xlsx
+
+Kept rather than deleted so that anyone tracing those 1,046 addresses can find
+the code that made them.
+"""
+import sys
+
 import pandas as pd
 import psycopg2
 import os
 import json
 import numpy as np
 
+
 def migrate_crm_data():
+    sys.exit(
+        "REFUSED: this importer is retired. It fabricates {eid}@example.com "
+        "addresses (see migration 079).\n"
+        "  Use: .venv/bin/python backend/scripts/import_crm_master_file.py FILE.xlsx")
+
+
+def _retired_original():
     master_file = '/app/master_file.xlsx'
     
     print(f"Reading {master_file}...")
