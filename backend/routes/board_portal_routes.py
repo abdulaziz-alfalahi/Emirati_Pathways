@@ -46,8 +46,23 @@ def execute_query(query: str, params: tuple = None, fetch_one: bool = False, fet
 @optional_auth
 def get_scorecards():
     try:
+        # RECORDED vs REGISTERED — the board must not be given one as the other.
+        #
+        # Most people in this table have never used the platform: bulk loads
+        # from NAFIS, the CRM master file and (from 2026-08-21) 33,352 private
+        # sector employees. Reporting the row count as "candidates" would have
+        # the figure jump sevenfold on an import day and mean nothing.
         total_candidates_query = "SELECT COUNT(*) as count FROM users WHERE role IN ('candidate', 'job_seeker')"
         total_candidates = execute_query(total_candidates_query, fetch_one=True)['count']
+        registered_candidates = execute_query(
+            """SELECT COUNT(*) as count FROM users
+                WHERE role IN ('candidate', 'job_seeker')
+                  AND (last_login IS NOT NULL OR uaepass_uuid IS NOT NULL)""",
+            fetch_one=True)['count']
+        seeking_candidates = execute_query(
+            """SELECT COUNT(*) as count FROM candidate_profiles
+                WHERE looking_status = 'Looking For Work'""",
+            fetch_one=True)['count']
 
         total_companies_query = "SELECT COUNT(*) as count FROM companies"
         total_companies = execute_query(total_companies_query, fetch_one=True)['count']
@@ -58,7 +73,11 @@ def get_scorecards():
         # Report REAL counts — no inflation baselines (was +120000/+24500/+1250) and
         # no fabricated trends. Values not derivable from platform data are null
         # ("not available"), never faked. Targets are retained as stated goals. (#26)
-        placement_rate = round(total_offers / total_candidates * 100, 1) if total_candidates else None
+        # Denominator is people who WANT a job, not every row in the table —
+        # see the note above. Importing an employed population must not move
+        # this number.
+        placement_rate = (round(total_offers / seeking_candidates * 100, 1)
+                          if seeking_candidates else None)
 
         scorecards = {
             'placement_rate': {
@@ -69,7 +88,15 @@ def get_scorecards():
                 'value': None, 'trend': None, 'target': '30 days', 'status': None
             },
             'pipeline_health': {
-                'value': total_candidates, 'trend': None, 'target': 1000, 'status': None
+                # The people actually available to place. The recorded and
+                # registered totals are reported beside it rather than through
+                # it, so no single figure has to carry three meanings.
+                'value': seeking_candidates, 'trend': None, 'target': 1000, 'status': None,
+                'recorded_total': total_candidates,
+                'registered_total': registered_candidates,
+                'basis': ('Actively seeking work. Recorded total counts every person '
+                          'on file including bulk-imported records; registered counts '
+                          'those who have signed in.'),
             },
             'emiratisation_progress': {
                 'value': None, 'trend': None, 'target': '5.0%', 'status': None
@@ -579,9 +606,19 @@ def get_briefing_pack():
         total_candidates = execute_query("SELECT COUNT(*) as count FROM users WHERE role IN ('candidate', 'job_seeker')", fetch_one=True)['count']
         total_companies = execute_query("SELECT COUNT(*) as count FROM companies", fetch_one=True)['count']
         total_offers = execute_query("SELECT COUNT(*) as count FROM job_offers", fetch_one=True)['count']
-        
+        # Placements are measured against people who WANT a job, not against
+        # every row in the table. With the recorded total as the denominator,
+        # importing 33,352 employed people would have divided the board's
+        # placement rate by seven overnight — a collapse caused by a data load
+        # rather than by performance.
+        seeking_candidates = execute_query(
+            """SELECT COUNT(*) as count FROM candidate_profiles
+                WHERE looking_status = 'Looking For Work'""",
+            fetch_one=True)['count']
+
         # Real counts, no inflation baselines. (#26)
-        placement_rate = f"{(total_offers / total_candidates * 100):.1f}%" if total_candidates else 'N/A'
+        placement_rate = (f"{(total_offers / seeking_candidates * 100):.1f}%"
+                          if seeking_candidates else 'N/A')
         
         # 2. Fetch directives
         directives = execute_query("SELECT title, body, category, priority, status, created_at FROM board_directives ORDER BY created_at DESC", fetch_all=True)
