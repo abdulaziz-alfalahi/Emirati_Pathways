@@ -36,10 +36,10 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 try:
-    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
+    from backend.auth.access_control import require_roles, require_auth, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
     from backend.db_utils import execute_query
 except ImportError:  # pragma: no cover — the app runs under both roots
-    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
+    from auth.access_control import require_roles, require_auth, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
     from db_utils import execute_query
 
 logger = logging.getLogger(__name__)
@@ -554,13 +554,28 @@ def create_historical_meeting():
 
 
 @board_meetings_bp.route('/<meeting_id>/join', methods=['POST'])
-@require_roles(*BOARD_ROLES)
+@require_auth
 def join_meeting(meeting_id):
     """Mint a LiveKit token for this meeting and record attendance.
 
     Refused when the caller is not an invitee, when the meeting is cancelled,
     or when it is outside the join window — a board room should not be open
     indefinitely.
+
+    THE ATTENDEE LIST IS THE AUTHORITY HERE, NOT A ROLE.
+
+    This was @require_roles(*BOARD_ROLES), which meant the additional attendees
+    feature (PR #469) could invite someone the platform then refused at the
+    door: the whole point of that feature is the subject expert brought in for
+    one agenda item, and a subject expert is not a board member. An operator
+    added as a guest hit "Forbidden - insufficient role" and had no way in.
+
+    The role check was also the WEAKER of the two tests. A board_member who was
+    never invited to THIS meeting passed it; the attendee-list check below is
+    what actually decides, and it is per-meeting. Being on the list for a
+    specific meeting is precisely the right authorisation to join that meeting.
+    Anyone not on it still gets 403 immediately, and only organisers can add
+    people to it.
     """
     try:
         me = str(get_jwt_identity())
