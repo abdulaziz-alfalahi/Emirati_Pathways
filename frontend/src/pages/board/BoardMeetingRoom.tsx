@@ -43,6 +43,13 @@ const BoardMeetingRoom: React.FC = () => {
   const [participants, setParticipants] = useState<any[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // Who is at the door (GH #466). Polled independently of the participants
+  // panel, and shown WITHOUT the organiser having to open anything: a guest
+  // waiting behind a panel nobody opened is the same as no waiting room.
+  const [waiting, setWaiting] = useState<any[]>([]);
+  const [admitting, setAdmitting] = useState<string | null>(null);
+  const [awaitingAdmission, setAwaitingAdmission] = useState(false);
+
   const loadParticipants = async () => {
     if (!meetingId) return;
     try {
@@ -59,6 +66,38 @@ const BoardMeetingRoom: React.FC = () => {
     const t = setInterval(loadParticipants, 5000);
     return () => clearInterval(t);
   }, [canControl, showPanel, meetingId]);
+
+  const loadWaiting = async () => {
+    if (!meetingId) return;
+    try {
+      const res = await restClient.get(`/api/board/meetings/${meetingId}/waiting`);
+      setWaiting(res.data?.data || []);
+    } catch {
+      setWaiting([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!canControl) return;
+    loadWaiting();
+    const t = setInterval(loadWaiting, 5000);
+    return () => clearInterval(t);
+  }, [canControl, meetingId]);
+
+  const admit = async (userId: string) => {
+    setAdmitting(userId);
+    try {
+      await restClient.post(`/api/board/meetings/${meetingId}/admit`, { user_ids: [userId] });
+      // Drop them from the list immediately; the poll would take up to five
+      // seconds and the organiser is standing there watching.
+      setWaiting(w => w.filter(x => x.user_id !== userId));
+      toast({ title: 'Admitted' });
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || 'Could not admit', variant: 'destructive' });
+    } finally {
+      setAdmitting(null);
+    }
+  };
 
   /* ── Quorum, live ────────────────────────────────────────────────
      "Pop-up to show quorum met for the chairman to begin the meeting"
@@ -143,21 +182,44 @@ const BoardMeetingRoom: React.FC = () => {
 
   useEffect(() => {
     if (token || !meetingId) return;
-    (async () => {
+    let cancelled = false;
+    let timer: any;
+
+    const attempt = async () => {
       try {
         const res = await restClient.post(`/api/board/meetings/${meetingId}/join`);
         const d = res.data?.data;
+        if (cancelled) return;
+
+        // Being held is not a failure. The server answers 202 with
+        // awaiting_admission, which axios delivers here rather than to catch;
+        // showing "Unable to join" would tell a guest who is doing exactly the
+        // right thing that something is broken, and dead-end them (GH #466).
+        if (res.data?.error_code === 'awaiting_admission') {
+          setAwaitingAdmission(true);
+          setLoading(false);
+          // Keep knocking, so admission lands on its own — the guest should not
+          // have to guess when to press a button.
+          timer = setTimeout(attempt, 5000);
+          return;
+        }
+
         if (!res.data?.success || !d?.token) {
           setError(res.data?.message || 'Could not join this meeting.');
         } else {
+          setAwaitingAdmission(false);
           setToken(d.token); setUrl(d.livekit_url); setTitle(d.meeting_title || title);
         }
       } catch (e: any) {
+        if (cancelled) return;
         setError(e?.response?.data?.message || 'Could not join this meeting.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
+    };
+
+    attempt();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [meetingId, token, title]);
 
   // /board-portal is a redirect to the board member dashboard, so it sent the
@@ -182,6 +244,29 @@ const BoardMeetingRoom: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
+
+  // Waiting to be admitted — checked BEFORE the error branch, because the
+  // guest has no token yet and would otherwise fall into "Unable to join".
+  if (awaitingAdmission && !token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="max-w-md text-center bg-white border rounded-2xl p-8 shadow-sm">
+          <Loader2 className="h-7 w-7 animate-spin text-emerald-600 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Waiting to be admitted</h1>
+          <p className="text-slate-600 text-sm">
+            The organiser has been told you are here. You have been invited for part
+            of this meeting, and you will join automatically when they admit you.
+          </p>
+          <p className="text-slate-500 text-xs mt-3">
+            Keep this page open — there is nothing else to do.
+          </p>
+          <Button variant="outline" className="mt-6" onClick={leave}>
+            <ArrowLeft className="h-4 w-4 me-2" /> Leave
+          </Button>
+        </div>
       </div>
     );
   }
@@ -243,6 +328,41 @@ const BoardMeetingRoom: React.FC = () => {
           </Button>
         )}
       </div>
+
+      {/* Who is at the door.
+          Deliberately NOT inside the participants panel: a guest waiting behind
+          a panel nobody opened is the same as having no waiting room at all.
+          This appears on its own, only when someone is actually waiting, and
+          disappears again when the queue empties (GH #466). */}
+      {canControl && waiting.length > 0 && (
+        <div className="mx-3 mb-1 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
+          <p className="text-sm font-semibold text-amber-900">
+            {waiting.length === 1
+              ? '1 person is waiting to be admitted'
+              : `${waiting.length} people are waiting to be admitted`}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {waiting.map((w) => (
+              <li key={w.user_id} className="flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-sm text-amber-900">{w.name}</span>
+                <Button
+                  size="sm"
+                  className="h-7 shrink-0"
+                  disabled={admitting === w.user_id}
+                  onClick={() => admit(w.user_id)}
+                >
+                  {admitting === w.user_id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    'Admit'
+                  )}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex-1 min-h-0 p-3 flex gap-3">
         {canControl && showPanel && (
           <aside className="w-72 shrink-0 rounded-xl bg-white border overflow-y-auto">

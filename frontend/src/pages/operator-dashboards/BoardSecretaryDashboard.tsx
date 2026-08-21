@@ -60,6 +60,7 @@ const BoardSecretaryDashboard: React.FC = () => {
   const [guestResults, setGuestResults] = useState<any[]>([]);
   const [guestPicked, setGuestPicked] = useState<any[]>([]);
   const [guestCounts, setGuestCounts] = useState(false);
+  const [guestWaits, setGuestWaits] = useState(true);
   const [guestSearching, setGuestSearching] = useState(false);
   const [guestSaving, setGuestSaving] = useState(false);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
@@ -138,6 +139,7 @@ const BoardSecretaryDashboard: React.FC = () => {
       const res = await restClient.post(`/api/board/meetings/${addingTo.id}/attendees`, {
         user_ids: guestPicked.map((g) => g.id),
         counts_toward_quorum: guestCounts,
+        requires_admission: guestWaits,
       });
       const added = res.data?.data?.added?.length ?? 0;
       const already = res.data?.data?.already_invited?.length ?? 0;
@@ -150,7 +152,7 @@ const BoardSecretaryDashboard: React.FC = () => {
           : b('Everyone selected was already invited', 'جميع المحددين مدعوون مسبقاً'),
       });
       setAddingTo(null);
-      setGuestPicked([]); setGuestQuery(''); setGuestResults([]); setGuestCounts(false);
+      setGuestPicked([]); setGuestQuery(''); setGuestResults([]); setGuestCounts(false); setGuestWaits(true);
       fetchMeetings();
     } catch (e: any) {
       toast({ title: e?.response?.data?.message || b('Could not add attendees', 'تعذّرت الإضافة'), variant: 'destructive' });
@@ -1477,6 +1479,22 @@ const BoardSecretaryDashboard: React.FC = () => {
                   <span className="block text-xs text-gray-500">
                     {b('Leave unticked for a guest attending one item. Ticking this changes whether the meeting is quorate.',
                        'اتركه غير محدد للضيف الحاضر لبند واحد. تحديده يؤثر على اكتمال النصاب.')}
+                  </span>
+                </span>
+              </label>
+
+              <label className="mt-3 flex items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={guestWaits}
+                  onChange={(e) => setGuestWaits(e.target.checked)}
+                />
+                <span>
+                  {b('Hold in the waiting room', 'الانتظار حتى الإذن بالدخول')}
+                  <span className="block text-xs text-gray-500">
+                    {b('They wait until you admit them, so a guest invited for one item is not in the room for the items before it. Untick for someone attending the whole meeting.',
+                       'ينتظرون حتى تأذن لهم بالدخول، فلا يحضر الضيف المدعو لبند واحد بقية البنود. ألغِ التحديد لمن يحضر الاجتماع كاملاً.')}
                   </span>
                 </span>
               </label>
