@@ -31,15 +31,27 @@ def _fn():
     test asserting 'attended' is never counted. A test that fails on its own
     explanation teaches people to delete the explanation.
     """
+    # The RULE lives in _compute_quorum, not in the handler.
+    #
+    # It was extracted so the chair's declaration of a meeting open computes
+    # quorum with exactly this code rather than a second copy — the number
+    # written into the governance record has to be the number the chair was
+    # shown. These assertions follow the rule to where it lives; not one of
+    # them changed, because the logic moved verbatim.
     src = _src('routes', 'board_meetings_routes.py')
-    fn = src.split('def meeting_quorum')[1].split('\n@board_meetings_bp.route')[0]
+    fn = src.split('def _compute_quorum')[1].split('\n@board_meetings_bp.route')[0]
     parts = fn.split('"""')
     return parts[0] + '"""'.join(parts[2:]) if len(parts) >= 3 else fn
 
 
 def _response():
-    """Just the jsonify payload — what the endpoint actually discloses."""
-    return _fn().split('return jsonify(')[1]
+    """Just the payload — what the endpoint actually discloses.
+
+    _compute_quorum returns a plain dict which the handler jsonifies verbatim,
+    so this is still exactly what goes over the wire; only the shape of the
+    literal changed when the rule was extracted.
+    """
+    return _fn().split('return {')[1]
 
 
 def _room():

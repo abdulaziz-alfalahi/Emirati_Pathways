@@ -58,7 +58,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   // the members read (fb_1787129641). ExecutiveDashboard's own canManageBoard
   // already listed board_operator — the page always expected them; the route
   // was the only thing keeping them out.
-  '/executive': ['admin', 'board_member', 'board_operator', 'compliance_auditor', 'platform_operator'],
+  '/executive': ['admin', 'board_chairman', 'board_member', 'board_operator', 'compliance_auditor', 'platform_operator'],
   '/government-dashboard': ['admin', 'compliance_auditor', 'platform_operator'],
   '/growth-operator-dashboard': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],
   '/growth-operator-dashboard/:domain': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],

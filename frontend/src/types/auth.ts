@@ -40,6 +40,11 @@ export type Permission =
   | 'manage_nafis_sync'
   | 'view_operations_center'
   | 'manage_board_meetings'
+  // The chair's two acts. Distinct from manage_board_meetings, which is the
+  // secretariat's administration of them: writing the record and adopting it
+  // are different hands (owner ruling 2026-08-21).
+  | 'adopt_board_minutes'
+  | 'declare_meeting_open'
   
   // Profile & Basic Access
   | 'view_dashboard'
@@ -87,6 +92,7 @@ export type UserRole =
   | 'compliance_auditor'
   | 'board_member'
   | 'board_operator'
+  | 'board_chairman'
   | 'professional_dev_operator'
   | 'career_services_operator'
   | 'advisor'
@@ -114,6 +120,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'compliance_auditor': 'Compliance Auditor',
   'board_member': 'EHDC Board Member',
   'board_operator': 'Board Secretary',
+  'board_chairman': 'Board Chairman',
   'professional_dev_operator': 'Professional Development Operator',
   'career_services_operator': 'Career Services Operator',
   'advisor': 'Academic Advisor',
@@ -142,6 +149,8 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'compliance_auditor': '/demographics',
   'board_member': '/executive',
   'board_operator': '/board-secretary',
+  // The chair reads the board's own dashboard, like any member.
+  'board_chairman': '/executive',
   'professional_dev_operator': '/professional-dev-dashboard',
   'career_services_operator': '/career-services-dashboard',
   'advisor': '/advisor-dashboard',
@@ -215,6 +224,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'compliance_auditor': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'board_member': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'board_operator': ['manage_board_meetings', 'view_dashboard', 'view_analytics'],
+  'board_chairman': ['adopt_board_minutes', 'declare_meeting_open', 'view_dashboard', 'view_analytics'],
   'professional_dev_operator': ['manage_training', 'manage_certifications', 'onboard_mentors', 'onboard_assessment', 'manage_mentorship_programs', 'manage_assessment_centers', 'view_analytics'],
   'career_services_operator': ['view_dashboard', 'manage_candidate_counselling', 'view_analytics'],
   'advisor': ['view_analytics', 'manage_profile'],
