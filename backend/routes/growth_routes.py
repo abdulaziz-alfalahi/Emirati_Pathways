@@ -135,15 +135,59 @@ def list_companies():
         conn = growth_sys._get_db_connection()
         try:
             with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT id, company_name, is_verified,
-                           COALESCE(workspace_enabled, FALSE) AS workspace_enabled
-                    FROM companies
-                    ORDER BY company_name ASC
-                """)
+                # Vacancy count and industry, so an operator can concentrate on
+                # the employers with the most to offer (fb_1786479039: "filter by
+                # number of vacancies, sector, or other attributes").
+                #
+                # COUNTS EVERY POSTING ATTACHED TO THE COMPANY, not published
+                # only. Measured 2026-08-20: 297 of 302 pending_verification
+                # postings carry a company_id, while ALL 7 published postings
+                # carry NONE. Counting published only would show zero for every
+                # employer — a filter that is always empty is worse than none.
+                # The unattached postings are a separate defect, filed.
+                #
+                # Both filters are optional, so the workspace provisioning
+                # picker (issue #92) calling this with no arguments is
+                # unaffected.
+                where, params = [], []
+                industry = (request.args.get('industry') or '').strip()
+                if industry:
+                    where.append("c.industry = %s")
+                    params.append(industry)
+                try:
+                    min_vacancies = int(request.args.get('min_vacancies') or 0)
+                except (TypeError, ValueError):
+                    min_vacancies = 0
+
+                sql = """
+                    SELECT c.id, c.company_name, c.is_verified,
+                           COALESCE(c.workspace_enabled, FALSE) AS workspace_enabled,
+                           c.industry,
+                           COUNT(j.id) AS vacancy_count
+                    FROM companies c
+                    LEFT JOIN job_postings j ON j.company_id = c.id
+                """
+                if where:
+                    sql += " WHERE " + " AND ".join(where)
+                sql += """
+                    GROUP BY c.id, c.company_name, c.is_verified,
+                             c.workspace_enabled, c.industry
+                """
+                if min_vacancies > 0:
+                    sql += " HAVING COUNT(j.id) >= %s"
+                    params.append(min_vacancies)
+                # Most vacancies first when filtering on them — that is the
+                # question being asked. Otherwise alphabetical, as before, so
+                # the picker keeps its existing order.
+                sql += (" ORDER BY vacancy_count DESC, c.company_name ASC"
+                        if min_vacancies > 0
+                        else " ORDER BY c.company_name ASC")
+
+                cur.execute(sql, tuple(params))
                 companies = [
                     {'id': str(r[0]), 'company_name': r[1],
-                     'is_verified': bool(r[2]), 'workspace_enabled': bool(r[3])}
+                     'is_verified': bool(r[2]), 'workspace_enabled': bool(r[3]),
+                     'industry': r[4], 'vacancy_count': int(r[5] or 0)}
                     for r in cur.fetchall()
                 ]
         finally:
