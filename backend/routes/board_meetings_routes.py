@@ -228,6 +228,48 @@ def _notify_invitees(meeting_id, title, when, invitees):
         logger.warning(f"board meeting notifications skipped: {e}")
 
 
+def _notify_organisers_of_waiting(meeting_id, meeting, waiter_id):
+    """Tell the organisers somebody is at the door. Best-effort.
+
+    Without this the waiting room is a trap: the guest sits on a polite screen
+    and nobody knows to let them in. The organiser's panel also polls, but the
+    notification is what reaches an organiser who is not looking at that panel.
+    """
+    try:
+        try:
+            from backend.notification_helper import create_notification
+        except ImportError:  # pragma: no cover
+            from notification_helper import create_notification
+
+        who = execute_query("SELECT full_name, email FROM users WHERE id = %s",
+                            (str(waiter_id),), fetch_one=True) or {}
+        name = who.get('full_name') or who.get('email') or str(waiter_id)
+
+        organisers = execute_query("""
+            SELECT DISTINCT a.user_id
+              FROM board_meeting_attendees a
+             WHERE a.meeting_id::text = %s
+               AND a.invite_status <> 'observer'
+               AND COALESCE(a.requires_admission, FALSE) IS FALSE
+        """, (str(meeting_id),)) or []
+        targets = {str(r['user_id']) for r in organisers}
+        if meeting.get('created_by'):
+            targets.add(str(meeting['created_by']))
+
+        for uid in targets:
+            try:
+                create_notification(
+                    user_id=uid, notification_type='board_meeting_waiting',
+                    title='Someone is waiting to be admitted',
+                    message=f"{name} is waiting to join {meeting.get('title') or 'the board meeting'}.",
+                    metadata={'meeting_id': str(meeting_id),
+                              'link': f"/board-meeting/{meeting_id}"})
+            except Exception as _e:
+                logger.warning(f"waiting-room notification failed for {uid}: {_e}")
+    except Exception as e:  # pragma: no cover
+        logger.warning(f"waiting-room notifications skipped: {e}")
+
+
 # ── Board members' offices ──────────────────────────────────────────────
 # The offices are EXTERNAL email addresses, not platform users, so they cannot
 # be reached by in-app notifications. Outbound SMTP is blocked at the firewall
@@ -553,6 +595,35 @@ def join_meeting(meeting_id):
             return jsonify({'success': False, 'error_code': 'closed',
                             'message': 'This meeting has ended.'}), 409
 
+        # THE WAITING ROOM (GH #466).
+        #
+        # A guest brought in for one agenda item should not be in the room for
+        # the items before theirs — a board discusses things the subject expert
+        # invited for item 4 has no business hearing during items 1 to 3.
+        #
+        # The hold happens HERE, before a token is minted, because the token IS
+        # the admission: anything that issues one and then hides the video has
+        # put the guest in the room. LiveKit has no notion of our board roles.
+        #
+        # Organisers are never held — they are the ones who admit.
+        is_organiser = bool(resolve_roles() & ORGANISER_ROLES)
+        if invite and invite.get('requires_admission') and not invite.get('admitted_at') \
+                and not is_organiser:
+            # Stamp the knock, so the organiser's list can show who is actually
+            # waiting rather than everyone who was ever marked as a guest.
+            execute_query("""
+                UPDATE board_meeting_attendees
+                SET waiting_since = COALESCE(waiting_since, NOW())
+                WHERE meeting_id::text = %s AND user_id = %s
+            """, (str(meeting_id), me), fetch_all=False)
+            _notify_organisers_of_waiting(meeting_id, meeting, me)
+            return jsonify({
+                'success': False,
+                'error_code': 'awaiting_admission',
+                'message': 'The organiser has been told you are here. '
+                           'You will join when they admit you.',
+            }), 202
+
         # Reuse the proven interview token path rather than a second implementation.
         try:
             from backend.video_interview_system import video_interview_engine
@@ -806,17 +877,30 @@ def add_attendees(meeting_id):
     counts = bool(data.get('counts_toward_quorum'))
     status = 'invited' if counts else 'observer'
 
+    # Guests wait by default; members do not.
+    #
+    # Someone added as a counted member is the board — making them queue for
+    # admission would be absurd. Someone added as a guest is, by definition,
+    # here for part of the meeting, which is exactly the case the waiting room
+    # exists for (GH #466). The caller can still say otherwise explicitly, for
+    # the guest who is meant to hear the whole session.
+    requires_admission = data.get('requires_admission')
+    if requires_admission is None:
+        requires_admission = not counts
+    requires_admission = bool(requires_admission)
+
     added = []
     for uid in user_ids:
         try:
             # DO NOTHING, never DO UPDATE: re-adding an existing member must not
             # silently demote a counted attendee to an observer.
             row = execute_query("""
-                INSERT INTO board_meeting_attendees (meeting_id, user_id, invite_status)
-                VALUES (%s::uuid, %s, %s)
+                INSERT INTO board_meeting_attendees
+                       (meeting_id, user_id, invite_status, requires_admission)
+                VALUES (%s::uuid, %s, %s, %s)
                 ON CONFLICT (meeting_id, user_id) DO NOTHING
                 RETURNING user_id
-            """, (str(meeting_id), uid, status), fetch_one=True)
+            """, (str(meeting_id), uid, status, requires_admission), fetch_one=True)
             if row:
                 added.append(uid)
         except Exception as e:
@@ -832,6 +916,110 @@ def add_attendees(meeting_id):
         'added': added,
         'already_invited': [u for u in user_ids if u not in added],
         'counts_toward_quorum': counts,
+        'requires_admission': requires_admission,
+    }})
+
+
+@board_meetings_bp.route('/<meeting_id>/waiting', methods=['GET'])
+@require_roles(*ORGANISER_ROLES)
+def list_waiting(meeting_id):
+    """Who is at the door, oldest knock first.
+
+    Only people who have actually TRIED to join (waiting_since is set) appear.
+    A guest marked requires_admission who has not turned up yet is not waiting,
+    and listing them would have the organiser admitting an empty chair.
+    """
+    try:
+        rows = execute_query(f"""
+            SELECT a.user_id, a.waiting_since, a.invite_status,
+                   COALESCE(NULLIF(u.full_name, ''),
+                            NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''),
+                            u.email) AS name
+              FROM board_meeting_attendees a
+              LEFT JOIN users u ON u.id = a.user_id
+             WHERE a.meeting_id::text = %s
+               AND a.requires_admission
+               AND a.admitted_at IS NULL
+               AND a.waiting_since IS NOT NULL
+             ORDER BY a.waiting_since ASC
+        """, (str(meeting_id),)) or []
+        return jsonify({'success': True, 'data': [{
+            'user_id': r['user_id'],
+            'name': r['name'],
+            'waiting_since': r['waiting_since'].isoformat() if r.get('waiting_since') else None,
+        } for r in rows]})
+    except Exception as e:
+        logger.error(f"list waiting failed for {meeting_id}: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load the waiting list'}), 500
+
+
+@board_meetings_bp.route('/<meeting_id>/admit', methods=['POST'])
+@require_roles(*ORGANISER_ROLES)
+def admit_attendees(meeting_id):
+    """Let one or more waiting guests in.
+
+    Body: {"user_ids": [...]}
+
+    Admission is granted ONCE, not per attempt: admitted_at stays set for the
+    rest of the meeting, so a guest whose connection drops can rejoin without
+    knocking again. Being dropped back to the door by a flaky network, midway
+    through the item you were invited to speak to, would be worse than the
+    problem this feature solves.
+
+    Recorded with WHO admitted them — letting someone into a board meeting is a
+    decision, and this subsystem records decisions.
+    """
+    data = request.get_json() or {}
+    user_ids = [str(u)[:15] for u in (data.get('user_ids') or []) if u]
+    if not user_ids:
+        return jsonify({'success': False, 'message': 'user_ids is required'}), 400
+
+    me = str(get_jwt_identity())
+    meeting = execute_query("SELECT id, status, title FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if meeting.get('status') in ('completed', 'cancelled'):
+        return jsonify({'success': False,
+                        'message': 'This meeting is closed.'}), 409
+
+    admitted = []
+    for uid in user_ids:
+        try:
+            # Only ever flips a row that is genuinely held and not yet admitted,
+            # so a replayed click cannot rewrite who admitted someone or when.
+            row = execute_query("""
+                UPDATE board_meeting_attendees
+                   SET admitted_at = NOW(), admitted_by = %s
+                 WHERE meeting_id::text = %s AND user_id = %s
+                   AND requires_admission AND admitted_at IS NULL
+             RETURNING user_id
+            """, (me, str(meeting_id), uid), fetch_one=True)
+            if row:
+                admitted.append(uid)
+        except Exception as e:
+            logger.warning(f"admit {uid} to {meeting_id} failed: {e}")
+
+    for uid in admitted:
+        try:
+            try:
+                from backend.notification_helper import create_notification
+            except ImportError:  # pragma: no cover
+                from notification_helper import create_notification
+            create_notification(
+                user_id=uid, notification_type='board_meeting_admitted',
+                title='You have been admitted',
+                message=f"You can now join {meeting.get('title') or 'the board meeting'}.",
+                metadata={'meeting_id': str(meeting_id),
+                          'link': f"/board-meeting/{meeting_id}"})
+        except Exception as e:
+            logger.warning(f"admission notification failed for {uid}: {e}")
+
+    return jsonify({'success': True, 'data': {
+        'admitted': admitted,
+        # Ids that were not held, or were already in. Saying they were "admitted"
+        # would overstate what happened.
+        'not_waiting': [u for u in user_ids if u not in admitted],
     }})
 
 
