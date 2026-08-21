@@ -301,6 +301,23 @@ def recommendations_summary():
             st = (st or 'open').lower()
             return 'completed' if st in ('resolved', 'completed') else st
 
+        def bucket(st):
+            """Which counter a status belongs to.
+
+            NOT the same as the status itself: 'open' is a real stored value
+            and belongs in 'outstanding'. Written once because the per-owner
+            grouping below needs exactly this mapping — keying that off the raw
+            status silently dropped every 'open' action from its owner's count
+            while the portfolio total still included it.
+            """
+            if st == 'completed':
+                return 'completed'
+            if st == 'in_progress':
+                return 'in_progress'
+            if st in ('deferred', 'cancelled'):
+                return st
+            return 'outstanding'
+
         counts = {'completed': 0, 'in_progress': 0, 'outstanding': 0, 'deferred': 0, 'cancelled': 0}
         contributing = []
         items = []
@@ -327,7 +344,7 @@ def recommendations_summary():
                 contributing.append(0 if pct is None else pct)
             items.append({
                 'id': str(r['id']), 'title': r.get('title'), 'category': r.get('category'),
-                'priority': r.get('priority'), 'status': st,
+                'priority': r.get('priority'), 'status': st, 'bucket': bucket(st),
                 'owner_id': r.get('owner_id'), 'owner_name': r.get('owner_name'),
                 'due_date': r['due_date'].isoformat() if r.get('due_date') else None,
                 'completion_percent': pct,
@@ -346,6 +363,48 @@ def recommendations_summary():
                        if r.get('completion_percent') is not None
                        and norm(r.get('status')) not in ('deferred', 'cancelled'))
         overall = round(sum(contributing) / len(contributing)) if contributing else None
+        # ── Accountability sits with the OWNER OF THE ACTION ────────────────
+        #
+        # Chairman's decision, 2026-08-21: the platform must NOT generate a
+        # board member engagement percentage; what is tracked is to be related
+        # to the owner of the action instead. That closes the participation-rate
+        # requests (fb_1787140915, fb_1786012027), which measured a member by
+        # how long they sat in a meeting.
+        #
+        # DELIBERATELY NO PER-PERSON PERCENTAGE HERE. Averaging someone's
+        # actions into a single figure would rebuild the very score he
+        # rejected, computed from actions rather than attendance, and it would
+        # be a worse number than the one it replaced: an owner of one hard
+        # action would rank below an owner of five easy ones. The percentages
+        # belong to the ACTIONS. This groups them by who owns them and counts
+        # what is late — facts about the work, attributed to a person, not a
+        # judgement about the person.
+        #
+        # Built from `items` above rather than a second query, so there is one
+        # set of rules for status and overdue, not two that can drift.
+        by_owner = {}
+        for it in items:
+            key = it.get('owner_id') or f"entity:{it.get('owner_entity') or 'unassigned'}"
+            g = by_owner.setdefault(key, {
+                'owner_id': it.get('owner_id'),
+                'owner_name': it.get('owner_name'),
+                'owner_entity': it.get('owner_entity'),
+                'counts': {'completed': 0, 'in_progress': 0, 'outstanding': 0,
+                           'deferred': 0, 'cancelled': 0},
+                'overdue': 0,
+                'actions': [],
+            })
+            g['counts'][it['bucket']] += 1
+            if it.get('overdue'):
+                g['overdue'] += 1
+            g['actions'].append(it)
+
+        # Most late first, then most open work — the order a chairman reads in.
+        owners = sorted(by_owner.values(),
+                        key=lambda g: (-g['overdue'],
+                                       -(g['counts']['outstanding'] + g['counts']['in_progress']),
+                                       (g.get('owner_name') or '')))
+
         return jsonify({'success': True, 'data': {
             'counts': counts,
             'total_tracked': tracked,
@@ -353,6 +412,10 @@ def recommendations_summary():
             'unassessed': max(0, tracked - explicit),
             # None — never 0 — when nothing has been assessed yet.
             'overall_completion_percent': overall,
+            'by_owner': owners,
+            'by_owner_basis': 'Actions grouped by the person or entity accountable for '
+                              'them. No score is calculated for a person: the percentages '
+                              'belong to the actions.',
             'basis': 'Average across tracked recommendations. Completed counts as 100%, '
                      'outstanding as 0%, and in-progress uses the percentage its owner '
                      'recorded (excluded if none has been recorded). Deferred and '
