@@ -280,9 +280,14 @@ const ExecutiveDashboard: React.FC = () => {
 
   // ── Recommendation implementation tracking (migration 052) ──────
   const [recSummary, setRecSummary] = useState<any>(null);
+  // Emirati private-sector employment over time (owner request 2026-08-21).
+  const [empTimeline, setEmpTimeline] = useState<any>(null);
 
   const fetchRecommendations = async () => {
     try {
+      restClient.get('/api/metrics/employment-timeline')
+        .then(r => setEmpTimeline(r.data?.data || null))
+        .catch(() => setEmpTimeline(null));
       const res = await restClient.get('/api/board/recommendations/summary');
       setRecSummary(res.data?.data || null);
     } catch { setRecSummary(null); }
@@ -1393,6 +1398,44 @@ const ExecutiveDashboard: React.FC = () => {
                               EMIRATISATION TAB
                ═══════════════════════════════════════════════════════ */}
             <TabsContent value="emiratisation" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Emiratis entering private-sector work, by year.
+                  The basis line is rendered WITH the chart, not tucked into a
+                  tooltip: this counts people employed today, so earlier years
+                  are undercounted by survivorship and the rise is part real
+                  hiring and part attrition. A board slide that lost that
+                  sentence would read as a fivefold hiring increase, which the
+                  data cannot support on its own. */}
+              {empTimeline?.by_year?.length > 0 && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="font-dubai-bold text-slate-900 text-base" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b('Emiratis entering private-sector employment', 'الإماراتيون الملتحقون بالقطاع الخاص')}
+                    </CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-500 text-xs" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b(`Year their current job began · ${(empTimeline.total_records || 0).toLocaleString()} records`,
+                         `سنة بدء وظيفتهم الحالية · ${(empTimeline.total_records || 0).toLocaleString()} سجل`)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div style={{ width: '100%', height: 260 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={empTimeline.by_year}>
+                          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v: any) => (v as number).toLocaleString()} />
+                          <Bar dataKey="starts" fill="#047857" radius={[4, 4, 0, 0]}
+                               name={b('Job starts', 'بدء وظائف')} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b(empTimeline.basis,
+                         'يُحتسب تاريخ بدء الوظيفة الحالية لمن هم على رأس العمل الآن. السنوات الأقدم منقوصة: من ترك عمله لا يظهر في المصدر، لذا فإن الاتجاه الصاعد يعكس نمو التوظيف وبقاء الوظائف الحديثة معاً، وليس إجمالي التوظيف في أي سنة.')}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="bg-white border border-slate-200/80">
                 <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
                   <CardTitle className="font-dubai-bold text-slate-900 text-base" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>

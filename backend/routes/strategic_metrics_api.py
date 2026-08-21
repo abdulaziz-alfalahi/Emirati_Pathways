@@ -412,3 +412,79 @@ def population_summary():
     except Exception as e:
         logger.error(f"population summary failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to load population figures'}), 500
+
+
+# ── Emirati private-sector employment over time (owner request 2026-08-21) ───
+
+@strategic_metrics_bp.route('/employment-timeline', methods=['GET'])
+@require_roles(*(GOVERNANCE_ROLES | {'career_services_operator', 'talent_operator'}))
+def employment_timeline():
+    """When Emiratis started their current private-sector jobs, by year.
+
+    THE CAVEAT IS PART OF THE ANSWER. This is built from people employed
+    RIGHT NOW, so it undercounts every earlier year: someone who started in 2016
+    and has since left is not in the file at all. The rise from 529 starts in
+    2021 to 10,470 in 2025 is therefore partly real hiring growth and partly
+    survivorship — recent jobs are simply more likely to still be running.
+
+    Presented without that sentence the chart would read as a fivefold increase
+    in Emirati private-sector hiring, which the data cannot support on its own.
+    The basis string travels with the numbers so the caveat cannot be lost
+    between here and a board slide.
+
+    Sector breakdown is included for the same period because "which sectors are
+    absorbing Emiratis" is the question that follows immediately.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT date_part('year', job_start_date)::int AS yr, COUNT(*) AS n
+              FROM private_sector_employment
+             WHERE job_start_date IS NOT NULL
+               AND job_start_date >= DATE '2010-01-01'
+             GROUP BY 1 ORDER BY 1
+        """)
+        by_year = [{'year': r[0], 'starts': r[1]} for r in cur.fetchall()]
+
+        # Running total of people whose CURRENT job began on or before each year.
+        running = 0
+        for row in by_year:
+            running += row['starts']
+            row['cumulative'] = running
+
+        cur.execute("""
+            SELECT date_part('year', job_start_date)::int AS yr,
+                   COALESCE(NULLIF(company_sector, ''), 'Unspecified') AS sector,
+                   COUNT(*) AS n
+              FROM private_sector_employment
+             WHERE job_start_date IS NOT NULL
+               AND job_start_date >= DATE '2021-01-01'
+             GROUP BY 1, 2 ORDER BY 1, 3 DESC
+        """)
+        by_sector = {}
+        for yr, sector, n in cur.fetchall():
+            by_sector.setdefault(str(yr), []).append({'sector': sector, 'starts': n})
+
+        cur.execute("SELECT COUNT(*) FROM private_sector_employment WHERE job_start_date IS NULL")
+        undated = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM private_sector_employment")
+        total = cur.fetchone()[0]
+        cur.close(); conn.close()
+
+        return jsonify({'success': True, 'data': {
+            'by_year': by_year,
+            'by_sector': by_sector,
+            'total_records': total,
+            'undated': undated,
+            'basis': (
+                'Counts when people in current private-sector employment started '
+                'that job. Earlier years are UNDERCOUNTED: anyone who has since '
+                'left is not in the source, so the upward trend is part real '
+                'hiring growth and part survivorship. Not a measure of total '
+                'hiring in any given year.'),
+        }})
+    except Exception as e:
+        logger.error(f"employment timeline failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load the employment timeline'}), 500
