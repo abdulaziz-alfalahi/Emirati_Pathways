@@ -62,6 +62,7 @@ const CoachDashboard: React.FC = () => {
   const [sessWhen, setSessWhen] = useState('');
   const [sessVirtual, setSessVirtual] = useState(true);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [pastClients, setPastClients] = useState<any[]>([]);
   const [joining, setJoining] = useState<number | null>(null);
   const [call, setCall] = useState<any>(null);
   // Development-plan form
@@ -84,11 +85,12 @@ const CoachDashboard: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [cRes, anRes, pRes, sRes] = await Promise.allSettled([
+      const [cRes, anRes, pRes, sRes, pcRes] = await Promise.allSettled([
         restClient.get('/api/coach/clients'),
         restClient.get('/api/coach/analytics'),
         restClient.get('/api/coach/requests'),
         restClient.get('/api/coach/my-sessions'),
+        restClient.get('/api/coach/clients/past'),
       ]);
       if (cRes.status === 'fulfilled') setClients((cRes.value as any).data.clients || []);
       // null means the call failed. Kept distinct from zero so the stats strip
@@ -96,6 +98,7 @@ const CoachDashboard: React.FC = () => {
       setAnalytics(anRes.status === 'fulfilled' ? (anRes.value as any).data : null);
       if (pRes.status === 'fulfilled') setPending((pRes.value as any).data.requests || []);
       if (sRes.status === 'fulfilled') setSessions((sRes.value as any).data.sessions || []);
+      if (pcRes.status === 'fulfilled') setPastClients((pcRes.value as any).data.clients || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);
@@ -328,6 +331,51 @@ const CoachDashboard: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Clients no longer on the caseload.
+          Handing a client back moves the assignment out of 'active', and the
+          list above shows only active — correctly, it is a caseload. But it was
+          the ONLY view, so a hand-back erased every trace the relationship had
+          existed: "Hand back eliminates all records from my dashboard"
+          (fb_1787134699). The sessions tab did not cover it either, because the
+          client in that report had no recorded sessions at all.
+          Names only — no phone or email. A coach who handed a client back keeps
+          their record of the work, not a way to keep contacting them. */}
+      {pastClients.length > 0 && (
+        <div style={{ marginTop: 26 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: brand.textPrimary, margin: '0 0 4px' }}>
+            {t('Past clients', 'عملاء سابقون')}
+          </h3>
+          <p style={{ fontSize: 12, color: brand.textSecondary, margin: '0 0 10px' }}>
+            {t('No longer on your caseload. Your record of the work stays here.',
+               'لم يعودوا ضمن حالاتك. يبقى سجل عملك معهم هنا.')}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {pastClients.map((c, i) => (
+              <div key={c.client_id || i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', opacity: 0.85 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: brand.textSecondary, fontWeight: 700, fontSize: 14 }}>
+                  {clientName(c)[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{clientName(c)}</h4>
+                  <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                    {count(c.my_sessions || 0, 'session', 'sessions', 'جلسة', 'جلسات')}
+                    {' · '}
+                    {c.status === 'handed_back'
+                      ? t('you handed this client back', 'أعدت هذا العميل')
+                      : c.status === 'removed'
+                        ? t('withdrawn by career services', 'سحبته الخدمات المهنية')
+                        : c.status === 'declined'
+                          ? t('you declined this request', 'رفضت هذا الطلب')
+                          : c.status}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {modal && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
           <div onClick={e => e.stopPropagation()} dir={isRTL ? 'rtl' : 'ltr'} style={{ background: '#fff', borderRadius: 14, padding: 22, width: '100%', maxWidth: 460, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}>
