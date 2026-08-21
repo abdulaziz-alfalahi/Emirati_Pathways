@@ -264,15 +264,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 // Only preserve the stored role if it's still valid per backend
                 const storedRoleStillValid = apiAllRoles.includes(storedRole);
 
+                // Only the ACTIVE role is preserved from storage. The role
+                // LIST is rebuilt from the API below — carrying it over is what
+                // kept a removed role alive in the switcher.
                 mergedData = {
                   ...profile.data,
                   role: storedRoleStillValid ? storedUser.role : profile.data.role,
                   user_type: storedRoleStillValid ? storedUser.user_type : profile.data.user_type,
-                  roles: storedRoleStillValid ? storedUser.roles : undefined,
                   secondary_roles: apiSecondaryRoles, // Always from API
                   user_metadata: {
                     ...profile.data.user_metadata,
-                    roles: storedRoleStillValid ? storedUser.roles : undefined,
                     user_type: storedRoleStillValid ? storedUser.user_type : profile.data.user_type,
                   }
                 };
@@ -291,6 +292,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 mergedData.company_name = storedUser.company_name;
               }
             } catch (_) { /* parse error — fall through to use API data */ }
+          }
+
+          // `roles` IS DERIVED, never carried over from storage.
+          //
+          // The API is authoritative for role/secondary_roles and always wins
+          // above — but `roles` was preserved from localStorage on the
+          // switched-role path, so a role an administrator had REMOVED lived on
+          // in the cached array. The role switcher unions user.roles, so the
+          // removed role kept being offered and kept being selectable, through
+          // any number of hard refreshes: nothing ever rewrote that key.
+          //
+          // ProtectedRoute reads user.roles too, so the same stale entry also
+          // admitted the client to pages the server had just stopped allowing.
+          // The server still refused the API calls behind them — resolve_roles
+          // reads the database — so this was a misleading UI rather than real
+          // access, but a guard reading cached authority is the exact pattern
+          // that has bitten this codebase before.
+          //
+          // Rebuilt from the two fields the API does send, so removal takes
+          // effect on the next refresh with nothing to clear by hand.
+          {
+            const _apiRole = normalizeRole(profile.data.role || profile.data.user_type || '');
+            const _apiSecondary = (profile.data.secondary_roles || [])
+              .map((r: string) => normalizeRole(r));
+            const _derived = Array.from(new Set([_apiRole, ..._apiSecondary].filter(Boolean)));
+            mergedData = {
+              ...mergedData,
+              roles: _derived,
+              // ProfileSummary falls back to user_metadata.roles, so a stale
+              // copy there would outlive the one above.
+              user_metadata: { ...(mergedData.user_metadata || {}), roles: _derived },
+            };
           }
 
           const newUserStr = JSON.stringify(mergedData);
