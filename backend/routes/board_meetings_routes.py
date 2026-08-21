@@ -36,10 +36,14 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 try:
-    from backend.auth.access_control import require_roles, require_auth, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
+    from backend.auth.access_control import (require_roles, require_auth, resolve_roles,
+                                              ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES,
+                                              CHAIRMAN_ROLES)
     from backend.db_utils import execute_query
 except ImportError:  # pragma: no cover — the app runs under both roots
-    from auth.access_control import require_roles, require_auth, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
+    from auth.access_control import (require_roles, require_auth, resolve_roles,
+                                     ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES,
+                                     CHAIRMAN_ROLES)
     from db_utils import execute_query
 
 logger = logging.getLogger(__name__)
@@ -1328,6 +1332,54 @@ def list_participants(meeting_id):
     return jsonify({'success': True, 'data': out})
 
 
+class _RoomUnreadable(Exception):
+    """LiveKit could not be asked who is in the room."""
+
+
+def _compute_quorum(meeting):
+    """Who counts, who is present, and whether that is quorate.
+
+    Extracted so the chair's declaration of a meeting open uses EXACTLY this
+    rule rather than a second copy of it — the number that gets written into
+    the record must be the number the chair was shown.
+    """
+    required = meeting.get('quorum_required')
+    try:
+        data = _livekit_call('ListParticipants', meeting['room_name'],
+                             {'room': meeting['room_name']})
+        live = data.get('participants') or []
+    except urllib.error.HTTPError as e:
+        # An empty room does not exist yet as far as LiveKit is concerned.
+        if e.code in (404, 500):
+            live = []
+        else:
+            logger.error(f"quorum: livekit read failed: {e}")
+            raise _RoomUnreadable() from e
+    except Exception as e:
+        logger.error(f"quorum: livekit read failed: {e}")
+        raise _RoomUnreadable() from e
+
+    counting = {str(r['user_id']) for r in (execute_query(
+        """SELECT user_id FROM board_meeting_attendees
+            WHERE meeting_id::text = %s AND COALESCE(invite_status,'') <> 'observer'""",
+        (str(meeting['id']),)) or [])}
+
+    present_ids = {str(p.get('identity') or '') for p in live}
+    present = len(present_ids & counting)
+
+    return {
+        'required': required,
+        'present': present,
+        # None, never False, when no quorum is configured: "we do not know" and
+        # "not enough people" are different answers, and a chair told False
+        # would wait for a threshold nobody set.
+        'met': (present >= required) if required else None,
+        # So the chair can see why the room count and the quorum count differ
+        # without being shown who is who.
+        'in_room_not_counted': len(present_ids) - present,
+    }
+
+
 @board_meetings_bp.route('/<meeting_id>/quorum', methods=['GET'])
 @require_roles(*BOARD_ROLES)
 def meeting_quorum(meeting_id):
@@ -1357,42 +1409,79 @@ def meeting_quorum(meeting_id):
     if not meeting:
         return jsonify({'success': False, 'message': 'Meeting not found'}), 404
 
-    required = meeting.get('quorum_required')
-
     try:
-        data = _livekit_call('ListParticipants', meeting['room_name'],
-                             {'room': meeting['room_name']})
-        live = data.get('participants') or []
-    except urllib.error.HTTPError as e:
-        # An empty room does not exist yet as far as LiveKit is concerned.
-        if e.code in (404, 500):
-            live = []
-        else:
-            logger.error(f"quorum: livekit read failed: {e}")
-            return jsonify({'success': False, 'message': 'Could not read the room'}), 502
-    except Exception as e:
-        logger.error(f"quorum: livekit read failed: {e}")
+        return jsonify({'success': True, 'data': _compute_quorum(meeting)})
+    except _RoomUnreadable:
         return jsonify({'success': False, 'message': 'Could not read the room'}), 502
 
-    counting = {str(r['user_id']) for r in (execute_query(
-        """SELECT user_id FROM board_meeting_attendees
-            WHERE meeting_id::text = %s AND COALESCE(invite_status,'') <> 'observer'""",
-        (str(meeting_id),)) or [])}
 
-    present_ids = {str(p.get('identity') or '') for p in live}
-    present = len(present_ids & counting)
-    in_room_not_counted = len(present_ids) - present
+@board_meetings_bp.route('/<meeting_id>/open', methods=['POST'])
+@require_roles(*CHAIRMAN_ROLES)
+def declare_meeting_open(meeting_id):
+    """The chair declares the meeting open, with quorum present.
 
+    A meeting becoming 'in_progress' because somebody opened a browser tab is
+    not the same event as the board being declared open, and the minutes should
+    be able to say which happened. This records the second (owner ruling
+    2026-08-21); the join path still handles the first and is untouched.
+
+    REFUSED WITHOUT QUORUM, and refused when no quorum rule is configured — a
+    chair cannot declare a board quorate against a threshold nobody set.
+
+    The count is SNAPSHOTTED. Quorum is computed live from who is in the room,
+    so it can be true at 10:05 and false at 10:25; without storing it, "was the
+    board quorate when it opened?" stops being answerable the moment someone
+    leaves. The rule in force is stored beside it so a later change to the
+    board-wide quorum cannot rewrite a past meeting.
+    """
+    me = str(get_jwt_identity())
+    meeting = execute_query("SELECT * FROM board_meetings WHERE id::text = %s",
+                            (str(meeting_id),), fetch_one=True)
+    if not meeting:
+        return jsonify({'success': False, 'message': 'Meeting not found'}), 404
+    if meeting.get('status') in ('completed', 'cancelled'):
+        return jsonify({'success': False,
+                        'message': 'This meeting is closed.'}), 409
+
+    if meeting.get('opened_at'):
+        # Not an error worth losing work over, but never overwritten: the first
+        # declaration is the one that happened.
+        who = execute_query("SELECT full_name, email FROM users WHERE id = %s",
+                            (meeting['opened_by'],), fetch_one=True) or {}
+        return jsonify({'success': False, 'error_code': 'already_open',
+                        'message': 'This meeting was already declared open by '
+                                   f"{who.get('full_name') or who.get('email') or 'the chair'}."}), 409
+
+    try:
+        q = _compute_quorum(meeting)
+    except _RoomUnreadable:
+        return jsonify({'success': False, 'message': 'Could not read the room'}), 502
+
+    if q['met'] is None:
+        return jsonify({'success': False, 'error_code': 'no_quorum_rule',
+                        'message': 'No quorum rule is set for this board, so the '
+                                   'meeting cannot be declared quorate.'}), 409
+    if not q['met']:
+        return jsonify({'success': False, 'error_code': 'not_quorate',
+                        'message': f"Quorum is not met: {q['present']} of "
+                                   f"{q['required']} required members are present.",
+                        'data': q}), 409
+
+    execute_query("""
+        UPDATE board_meetings
+           SET opened_at = NOW(), opened_by = %s,
+               opened_quorum_present = %s, opened_quorum_required = %s,
+               status = CASE WHEN status = 'scheduled' THEN 'in_progress' ELSE status END,
+               updated_at = NOW()
+         WHERE id::text = %s AND opened_at IS NULL
+    """, (me[:15], q['present'], q['required'], str(meeting_id)), fetch_all=False)
+
+    logger.info("board meeting %s declared open by chair %s (%s/%s present)",
+                meeting_id, me, q['present'], q['required'])
     return jsonify({'success': True, 'data': {
-        'required': required,
-        'present': present,
-        # None, never False, when no quorum is configured: "we do not know" and
-        # "not enough people" are different answers, and a chair told False
-        # would wait for a threshold nobody set.
-        'met': (present >= required) if required else None,
-        # So the chair can see why the room count and the quorum count differ
-        # without being shown who is who.
-        'in_room_not_counted': in_room_not_counted,
+        'opened_by': me,
+        'quorum_present': q['present'],
+        'quorum_required': q['required'],
     }})
 
 
@@ -1723,9 +1812,24 @@ def download_minutes(minute_id):
 
 
 @board_meetings_bp.route('/minutes/<minute_id>/approve', methods=['POST'])
-@require_roles(*ORGANISER_ROLES)
+@require_roles(*CHAIRMAN_ROLES)
 def approve_minutes(minute_id):
-    """Mark a draft approved. Secretary only."""
+    """Adopt the minutes. THE CHAIR, and nobody else.
+
+    This was ORGANISER_ROLES, which meant the secretary approved the minutes
+    they had written and uploaded themselves — one person authoring and
+    adopting the same governance record. The board adopts its own record and
+    the chair signs it (owner ruling 2026-08-21).
+
+    ADMIN IS DELIBERATELY EXCLUDED, unlike almost every other guard in this
+    file. Adopting minutes is a governance act, not an administrative one: an
+    administrator who could sign on the board's behalf would be precisely the
+    hole this closes. If no chair is assigned, the fix is for an admin to GRANT
+    the role — visible, attributable, and a different act from signing.
+
+    Uploading, superseding and deleting are unchanged and stay with the
+    Secretariat: writing the record and adopting it are now separate hands.
+    """
     user_id = str(get_jwt_identity())
     row = execute_query("SELECT status, deleted_at FROM board_minutes WHERE id = %s",
                         (minute_id,), fetch_one=True)

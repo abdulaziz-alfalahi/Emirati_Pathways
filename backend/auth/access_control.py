@@ -37,7 +37,23 @@ ADMIN_ROLES = {'admin', 'administrator', 'super_user', 'super_admin', 'platform_
 # board_operator = the board secretary: an EHRDC team member assigned this
 # role by an admin (owner ruling 2026-08-05 — no magic link; they are
 # already staff). Schedules meetings, keeps minutes, tracks recommendations.
-BOARD_ROLES = ADMIN_ROLES | {'board_member', 'board_operator'}
+BOARD_ROLES = ADMIN_ROLES | {'board_member', 'board_operator', 'board_chairman'}
+
+# board_chairman = the chair of the EHRDC Board. A board member with two powers
+# no other role has (owner ruling 2026-08-21):
+#
+#   * ADOPTING THE MINUTES. Approval used to sit with ORGANISER_ROLES, so the
+#     secretary approved the minutes they had written and uploaded themselves —
+#     the same person authoring and adopting the record. The board adopts its
+#     own record; the chair signs it.
+#   * DECLARING THE MEETING OPEN once quorum is met.
+#
+# DELIBERATELY EXCLUDES ADMIN, unlike every other set here. Adopting the
+# minutes is a governance act, not an administrative one: an admin who could
+# sign the record on the board's behalf would be exactly the hole this closes.
+# The recovery path if no chair is assigned is for an admin to GRANT the role —
+# visible, attributable, and a different act from signing.
+CHAIRMAN_ROLES = {'board_chairman'}
 HR_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'hr', 'hr_manager', 'talent_operator', 'employer_relations'}
 RECRUITER_ROLES = ADMIN_ROLES | {'recruiter', 'employer_admin', 'talent_operator', 'employer_relations'}
 # Roles that only mean something INSIDE a company. Owner ruling 2026-08-05:
