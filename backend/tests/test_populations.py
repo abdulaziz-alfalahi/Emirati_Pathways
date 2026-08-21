@@ -138,3 +138,43 @@ def test_the_crm_is_not_restricted():
     assert 'career_services_operator' not in pop.AUDIENCE_MEMBERS_ONLY
     assert 'call_center_agent' not in pop.AUDIENCE_MEMBERS_ONLY
     assert 'recruiter' in pop.AUDIENCE_MEMBERS_ONLY
+
+
+# ── Employment over time (owner request 2026-08-21) ─────────────────────────
+
+def test_the_timeline_carries_its_own_caveat():
+    """This counts people employed NOW, so every earlier year is undercounted —
+    anyone who has since left is absent from the source. Presented bare, the
+    rise from 529 starts in 2021 to 10,470 in 2025 reads as a fivefold increase
+    in hiring, which the data cannot support on its own.
+
+    The caveat travels in the payload so it cannot be lost between the API and
+    a board slide.
+    """
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employment_timeline')[1]
+    assert "'basis'" in body
+    assert 'UNDERCOUNTED' in body or 'undercount' in body.lower()
+    assert 'survivorship' in body.lower()
+
+
+def test_the_timeline_is_not_offered_to_employers():
+    """Employment history of the national workforce is governance and CRM
+    material, not something to hand an employer alongside a candidate list."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    head = src.split('def employment_timeline')[0]
+    decorators = head.split("@strategic_metrics_bp.route('/employment-timeline'")[-1]
+    assert 'GOVERNANCE_ROLES' in decorators
+    assert 'recruiter' not in decorators
+    assert 'employer_admin' not in decorators
+
+
+def test_the_chart_renders_the_basis_next_to_the_bars():
+    """A caveat only the API knows is a caveat nobody reads."""
+    path = os.path.join(BACKEND, '..', 'frontend', 'src', 'pages',
+                        'operator-dashboards', 'ExecutiveDashboard.tsx')
+    if not os.path.exists(path):
+        return
+    with open(path, encoding='utf-8') as fh:
+        src = fh.read()
+    assert 'empTimeline.basis' in src, 'the chart shows numbers without their basis'
