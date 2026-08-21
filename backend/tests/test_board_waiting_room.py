@@ -172,3 +172,30 @@ def test_the_migration_is_idempotent():
     assert sql.count('ADD COLUMN IF NOT EXISTS') == 4
     assert 'CREATE INDEX IF NOT EXISTS' in sql
     assert 'BEGIN;' in sql and 'COMMIT;' in sql
+
+
+# ── Who may knock ───────────────────────────────────────────────────────────
+
+def test_join_authorises_on_the_attendee_list_not_a_role():
+    """A subject expert invited for one agenda item is not a board member.
+
+    /join was @require_roles(*BOARD_ROLES), so the additional-attendees feature
+    (PR #469) could invite someone the platform then refused at the door — an
+    operator added as a guest got "Forbidden - insufficient role" and had no
+    way in. Found by joining as a real guest rather than by reading the code.
+
+    The role check was also the weaker test: a board member never invited to
+    THIS meeting passed it. The attendee-list check is per-meeting.
+    """
+    src = _src(*ROUTES)
+    head = src.split('def join_meeting')[0]
+    decorators = head.split("@board_meetings_bp.route('/<meeting_id>/join'")[-1]
+    assert '@require_auth' in decorators
+    assert 'BOARD_ROLES' not in decorators, 'a role gate would refuse guests at the door'
+
+
+def test_join_still_refuses_a_stranger():
+    """Loosening the decorator must not open the room to anyone authenticated."""
+    code = _strip_prose(_body(_src(*ROUTES), 'join_meeting'))
+    assert 'not invite and not is_admin' in code
+    assert '403' in code
