@@ -965,6 +965,49 @@ const BoardSecretaryDashboard: React.FC = () => {
                         ? b('No recommendation has a recorded percentage yet.', 'لم تُسجَّل نسبة لأي توصية بعد.')
                         : `${b('Completed counts as 100%, outstanding as 0%; in-progress uses the percentage its owner recorded.', 'المكتملة تُحتسب 100%، والمعلقة 0%، وقيد التنفيذ حسب النسبة التي سجّلها مالكها.')} ${recSummary.assessed}/${recSummary.total_tracked} ${b('have a percentage recorded.', 'منها سُجِّلت لها نسبة.')}`}
                     </p>
+                    {/* By action owner.
+                        Chairman's decision 2026-08-21: no board member engagement
+                        percentage; accountability is related to the OWNER OF THE
+                        ACTION. So this shows who is accountable and what is late,
+                        and deliberately shows no score for the person — the
+                        percentages belong to the actions listed below. */}
+                    {(recSummary.by_owner || []).length > 0 && (
+                      <div className="rounded-lg border">
+                        <div className="border-b px-4 py-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {b('By action owner', 'حسب مالك الإجراء')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {b('Who is accountable, and what is overdue. No score is calculated for a person.',
+                               'من المسؤول، وما هو المتأخر. لا تُحتسب أي درجة للأشخاص.')}
+                          </p>
+                        </div>
+                        <div className="divide-y">
+                          {(recSummary.by_owner || []).map((g: any, i: number) => (
+                            <div key={g.owner_id || `entity-${i}`}
+                                 className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+                              <div className="min-w-0">
+                                <p dir="auto" className="text-sm font-medium text-gray-900">
+                                  {[g.owner_name, g.owner_entity].filter(Boolean).join(' · ')
+                                    || b('No owner assigned', 'لم يتم تعيين مالك')}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {g.counts.completed} {b('completed', 'مكتملة')}
+                                  {' · '}{g.counts.in_progress} {b('in progress', 'قيد التنفيذ')}
+                                  {' · '}{g.counts.outstanding} {b('outstanding', 'معلقة')}
+                                </p>
+                              </div>
+                              {g.overdue > 0 && (
+                                <Badge className="bg-red-100 text-red-800">
+                                  {g.overdue} {b('overdue', 'متأخرة')}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       {(recSummary.items || []).map((it: any) => (
                         /* Overdue is decided by the server (six months open, or a
