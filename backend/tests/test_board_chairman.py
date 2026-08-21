@@ -157,3 +157,35 @@ def test_no_past_meeting_is_retroactively_declared_open():
     assert 'IF opened <> 0 THEN' in sql
     assert 'ADD COLUMN IF NOT EXISTS' in sql
     assert 'BEGIN;' in sql and 'COMMIT;' in sql
+
+
+# ── The controls have to reach the chair ────────────────────────────────────
+
+def _frontend(*parts):
+    path = os.path.join(BACKEND, '..', 'frontend', 'src', *parts)
+    if not os.path.exists(path):          # backend-only checkout
+        return None
+    with open(path, encoding='utf-8') as fh:
+        return fh.read()
+
+
+def test_the_adopt_control_is_offered_to_the_chair_not_the_secretary():
+    """Moving the server guard without moving the button showed it to exactly
+    the wrong person: the secretary saw a control the server would refuse, and
+    the chair saw none at all. A power with no way to invoke it is not shipped.
+    """
+    src = _frontend('components', 'board', 'BoardMinutesPanel.tsx')
+    if src is None:
+        return
+    assert 'canApprove' in src
+    assert "const CHAIRMAN_ROLES = ['board_chairman']" in src
+    assert '{canApprove && m.status' in src, 'the approve button still keys off upload rights'
+
+
+def test_declaring_a_meeting_open_is_reachable():
+    src = _frontend('pages', 'board', 'BoardMeetingRoom.tsx')
+    if src is None:
+        return
+    assert 'declareOpen' in src
+    assert "'board_chairman'" in src
+    assert 'quorum?.met' in src, 'the control must not be offered before quorum is met'

@@ -21,6 +21,11 @@ import { FileText, Upload, Download, Check, Trash2, Loader2, ShieldCheck } from 
 
 const ADMIN_ROLES = ['admin', 'administrator', 'super_user', 'super_admin', 'platform_administrator'];
 const ORGANISER_ROLES = [...ADMIN_ROLES, 'platform_operator', 'board_operator'];
+// Adopting the minutes is the CHAIR's act, and only the chair's — deliberately
+// not an administrator's either (owner ruling 2026-08-21). Kept separate from
+// ORGANISER_ROLES because that set FILES the minutes; adopting them is a
+// different hand.
+const CHAIRMAN_ROLES = ['board_chairman'];
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
@@ -50,6 +55,10 @@ const BoardMinutesPanel: React.FC<{ meetingId: string; compact?: boolean }> = ({
   const roles = [(user as any)?.role, ...(((user as any)?.secondary_roles) || [])]
     .filter(Boolean).map((r: string) => String(r).toLowerCase());
   const canUpload = roles.some((r) => ORGANISER_ROLES.includes(r));
+  // The approve control used to be gated on canUpload, so once the server moved
+  // adoption to the chair the button was shown to exactly the wrong person: the
+  // secretary saw one the server would refuse, and the chair saw none at all.
+  const canApprove = roles.some((r) => CHAIRMAN_ROLES.includes(r));
   // No canDelete here on purpose: removability is per version and time-boxed
   // (#391), so the server decides it and sends can_delete on each row. A local
   // role check would be a second copy of the rule, free to drift from the one
@@ -262,9 +271,9 @@ const BoardMinutesPanel: React.FC<{ meetingId: string; compact?: boolean }> = ({
                       disabled={busyId === m.id} onClick={() => download(m)}>
                 {busyId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
               </Button>
-              {canUpload && m.status === 'draft' && (
+              {canApprove && m.status === 'draft' && (
                 <Button size="sm" variant="ghost" className="h-7 px-2 text-green-700"
-                        title={b('Mark approved', 'اعتماد')}
+                        title={b('Adopt these minutes', 'اعتماد المحضر')}
                         disabled={busyId === m.id} onClick={() => approve(m)}>
                   <Check className="h-3.5 w-3.5" />
                 </Button>
