@@ -122,3 +122,41 @@ def test_the_overall_average_rules_are_unchanged():
     assert "contributing.append(100 if pct is None else pct)" in code
     assert "contributing.append(0 if pct is None else pct)" in code
     assert "overall = round(sum(contributing) / len(contributing)) if contributing else None" in code
+
+
+# ── Recorded by whom (GH #460) ──────────────────────────────────────────────
+
+def test_who_recorded_the_percentage_is_returned():
+    """Owner ruling 2026-08-21: the secretary MAY record progress on a board
+    member's behalf.
+
+    That was already permitted and already happening — every live
+    recommendation was last written by the secretary — and
+    completion_updated_by has been stored on each change since the feature
+    shipped. It was never read back, so a figure typed by the secretariat
+    looked exactly like one the owner had stated.
+
+    Harmless while progress was housekeeping; not now. The chairman made action
+    progress THE accountability measure the same day, so "60%" means something
+    different depending on who said it. Permission to enter it on someone's
+    behalf and visibility of having done so are one decision.
+    """
+    code = _strip_prose(_summary_body())
+    assert 'd.completion_updated_by' in code, 'the column is written but not selected'
+    assert 'completion_updated_by_name' in code, 'an id is not an attribution'
+
+
+def test_on_behalf_is_distinguished_from_the_owner_recording_it():
+    """A member updating their own action is the normal case and must not be
+    labelled as anything else."""
+    code = _strip_prose(_summary_body())
+    assert "'recorded_on_behalf'" in code
+    block = code.split("'recorded_on_behalf'")[1][:400]
+    assert 'owner_id' in block, 'on-behalf must be decided against the OWNER'
+
+
+def test_the_updater_is_resolved_by_a_separate_join():
+    """Reusing the owner join would name the owner as the person who recorded
+    it — which is precisely the confusion this fixes."""
+    code = _strip_prose(_summary_body())
+    assert 'LEFT JOIN users w ON w.id = d.completion_updated_by' in code
