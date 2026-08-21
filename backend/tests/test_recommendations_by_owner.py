@@ -160,3 +160,40 @@ def test_the_updater_is_resolved_by_a_separate_join():
     it — which is precisely the confusion this fixes."""
     code = _strip_prose(_summary_body())
     assert 'LEFT JOIN users w ON w.id = d.completion_updated_by' in code
+
+
+# ── Grouped under the meeting they came from (GH #459) ──────────────────────
+
+def test_the_meeting_is_returned_with_each_recommendation():
+    """board_directives.meeting_id existed and nothing ever read or wrote it —
+    the same shape as owner_id before #397. Grouping by a column the product
+    never populates would render one bucket labelled "not linked" and look
+    broken, so the link had to become real first."""
+    code = _strip_prose(_summary_body())
+    assert 'd.meeting_id' in code
+    assert 'LEFT JOIN board_meetings mt ON mt.id = d.meeting_id' in code
+    assert "'meeting_title'" in code
+
+
+def test_recommendations_are_grouped_by_meeting():
+    code = _strip_prose(_summary_body())
+    assert 'by_meeting = {}' in code
+    assert "'by_meeting': meetings_grouped" in code
+
+
+def test_unlinked_recommendations_are_kept_and_put_last():
+    """Every recommendation on the platform is unlinked today, so dropping that
+    bucket would empty the page rather than tidy it."""
+    code = _strip_prose(_summary_body())
+    tail = code.split('by_meeting = {}')[1]
+    assert "key = it.get('meeting_id') or ''" in tail, 'unlinked rows must still group'
+    assert "[g for g in meetings_grouped if not g['meeting_date']]" in tail, \
+        'undated groups must sort last, not vanish'
+
+
+def test_the_meeting_link_can_actually_be_written():
+    """A read-only grouping over a column nothing sets is decoration."""
+    src = _src('routes', 'board_portal_routes.py')
+    body = src.split('def update_directive_tracking')[1].split('\n@board_portal_bp.route')[0]
+    assert "if 'meeting_id' in data:" in body
+    assert 'meeting_id = %s::uuid' in body
