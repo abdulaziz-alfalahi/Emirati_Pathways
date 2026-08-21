@@ -52,6 +52,16 @@ const BoardSecretaryDashboard: React.FC = () => {
   // ── Meetings ────────────────────────────────────────────────────
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [past, setPast] = useState<any[]>([]);
+  // Add-attendee dialog. The endpoint has existed since the meeting-attendees
+  // work; nothing on this page ever called it, so "I can't invite additional
+  // attendees" (fb_1787129152) was a missing control, not a missing feature.
+  const [addingTo, setAddingTo] = useState<any>(null);
+  const [guestQuery, setGuestQuery] = useState('');
+  const [guestResults, setGuestResults] = useState<any[]>([]);
+  const [guestPicked, setGuestPicked] = useState<any[]>([]);
+  const [guestCounts, setGuestCounts] = useState(false);
+  const [guestSearching, setGuestSearching] = useState(false);
+  const [guestSaving, setGuestSaving] = useState(false);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -105,6 +115,48 @@ const BoardSecretaryDashboard: React.FC = () => {
   const resetForm = () => {
     setEditingId(null);
     setForm({ title: '', title_ar: '', agenda: '', scheduled_at: '', duration_minutes: 60, is_virtual: true, location: '' });
+  };
+
+  const searchGuests = async (q: string) => {
+    setGuestQuery(q);
+    if (q.trim().length < 2) { setGuestResults([]); return; }
+    setGuestSearching(true);
+    try {
+      const res = await restClient.get(`/api/board/meetings/invitable?q=${encodeURIComponent(q.trim())}`);
+      setGuestResults(res.data?.data || []);
+    } catch {
+      setGuestResults([]);
+    } finally {
+      setGuestSearching(false);
+    }
+  };
+
+  const addAttendees = async () => {
+    if (!addingTo || guestPicked.length === 0) return;
+    setGuestSaving(true);
+    try {
+      const res = await restClient.post(`/api/board/meetings/${addingTo.id}/attendees`, {
+        user_ids: guestPicked.map((g) => g.id),
+        counts_toward_quorum: guestCounts,
+      });
+      const added = res.data?.data?.added?.length ?? 0;
+      const already = res.data?.data?.already_invited?.length ?? 0;
+      // Report what actually happened — saying "3 added" when two were already
+      // on the list would overstate the change.
+      toast({
+        title: added
+          ? b(`${added} added${already ? `, ${already} already invited` : ''}`,
+              `تمت إضافة ${added}${already ? `، و${already} مدعو مسبقاً` : ''}`)
+          : b('Everyone selected was already invited', 'جميع المحددين مدعوون مسبقاً'),
+      });
+      setAddingTo(null);
+      setGuestPicked([]); setGuestQuery(''); setGuestResults([]); setGuestCounts(false);
+      fetchMeetings();
+    } catch (e: any) {
+      toast({ title: e?.response?.data?.message || b('Could not add attendees', 'تعذّرت الإضافة'), variant: 'destructive' });
+    } finally {
+      setGuestSaving(false);
+    }
   };
 
   const cancelMeeting = async (m: any) => {
@@ -643,6 +695,9 @@ const BoardSecretaryDashboard: React.FC = () => {
                               {b('Close meeting', 'إنهاء الاجتماع')}
                             </Button>
                           )}
+                          <Button size="sm" variant="ghost" onClick={() => setAddingTo(m)}>
+                            {b('Add attendees', 'إضافة حضور')}
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => startEdit(m)}>
                             {b('Edit', 'تعديل')}
                           </Button>
@@ -1335,6 +1390,110 @@ const BoardSecretaryDashboard: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Add attendees to an existing meeting.
+            Guests default to NOT counting toward quorum: someone brought in to
+            speak to one agenda item is not a member, and counting them would
+            change the number that decides whether the board could lawfully sit.
+            The backend defaults the same way; this only makes it visible. */}
+        {addingTo && (
+          <div
+            onClick={() => setAddingTo(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              dir={isRTL ? 'rtl' : 'ltr'}
+              className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl"
+            >
+              <h3 className="text-lg font-semibold text-gray-900">
+                {b('Add attendees', 'إضافة حضور')}
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                {isRTL && addingTo.title_ar ? addingTo.title_ar : addingTo.title}
+              </p>
+
+              <Input
+                autoFocus
+                className="mt-4"
+                value={guestQuery}
+                onChange={(e) => searchGuests(e.target.value)}
+                placeholder={b('Search staff and board members by name or email',
+                               'ابحث عن الموظفين وأعضاء المجلس بالاسم أو البريد')}
+              />
+
+              {guestPicked.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {guestPicked.map((g) => (
+                    <Badge
+                      key={g.id}
+                      className="cursor-pointer bg-ehrdc-teal/10 text-ehrdc-teal"
+                      onClick={() => setGuestPicked(guestPicked.filter((x) => x.id !== g.id))}
+                    >
+                      {g.name} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 max-h-56 overflow-y-auto">
+                {guestSearching ? (
+                  <p className="p-2 text-sm text-gray-500">{b('Searching…', 'جارٍ البحث…')}</p>
+                ) : guestQuery.trim().length < 2 ? (
+                  <p className="p-2 text-sm text-gray-500">
+                    {b('Type at least two characters.', 'اكتب حرفين على الأقل.')}
+                  </p>
+                ) : guestResults.length === 0 ? (
+                  <p className="p-2 text-sm text-gray-500">{b('No matches.', 'لا توجد نتائج.')}</p>
+                ) : (
+                  guestResults
+                    .filter((r) => !guestPicked.some((g) => g.id === r.id))
+                    .map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setGuestPicked([...guestPicked, r])}
+                        className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-start hover:bg-gray-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-gray-900">{r.name}</span>
+                          <span className="block truncate text-xs text-gray-500">{r.email}</span>
+                        </span>
+                        <span className="shrink-0 text-xs text-gray-500">{r.role}</span>
+                      </button>
+                    ))
+                )}
+              </div>
+
+              <label className="mt-4 flex items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={guestCounts}
+                  onChange={(e) => setGuestCounts(e.target.checked)}
+                />
+                <span>
+                  {b('Counts toward quorum', 'يُحتسب ضمن النصاب')}
+                  <span className="block text-xs text-gray-500">
+                    {b('Leave unticked for a guest attending one item. Ticking this changes whether the meeting is quorate.',
+                       'اتركه غير محدد للضيف الحاضر لبند واحد. تحديده يؤثر على اكتمال النصاب.')}
+                  </span>
+                </span>
+              </label>
+
+              <div className="mt-5 flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setAddingTo(null)}>
+                  {b('Cancel', 'إلغاء')}
+                </Button>
+                <Button onClick={addAttendees} disabled={guestPicked.length === 0 || guestSaving}>
+                  {guestSaving
+                    ? b('Adding…', 'جارٍ الإضافة…')
+                    : b(`Add ${guestPicked.length || ''}`.trim(), `إضافة ${guestPicked.length || ''}`.trim())}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

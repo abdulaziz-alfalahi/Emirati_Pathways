@@ -177,7 +177,12 @@ def list_clients():
             SELECT cca.client_id, u.full_name, {user_display_name('display_name', 'u')},
                    u.email, u.phone, cca.assigned_at, cca.origin, cca.assigned_by,
                    (SELECT COUNT(*) FROM development_plans dp WHERE dp.client_id = cca.client_id AND dp.status = 'active') as active_plans,
-                   (SELECT COUNT(*) FROM coaching_sessions cs WHERE cs.client_id = cca.client_id) as total_sessions
+                   -- Scoped to THIS coach. Unscoped, it counted sessions the
+                   -- client had with other coaches too, which both overstated
+                   -- the number and disclosed activity outside this
+                   -- relationship.
+                   (SELECT COUNT(*) FROM coaching_sessions cs
+                     WHERE cs.client_id = cca.client_id AND cs.coach_id = cca.coach_id) as total_sessions
             FROM coach_client_assignments cca
             LEFT JOIN users u ON u.id = cca.client_id
             WHERE cca.coach_id = %s AND cca.status = 'active'
@@ -198,6 +203,67 @@ def list_clients():
 
 
 # ─── MENTEE-FACING DISCOVERY (C3-MEE-3: the mentee had no way to see a coach) ──
+
+@coach_bp.route('/clients/past', methods=['GET'])
+@jwt_required()
+def list_past_clients():
+    """Clients this coach no longer holds, and why.
+
+    /clients filters on status='active', which is right for a caseload — but it
+    was the ONLY view, so handing a client back erased every trace that the
+    relationship had existed: "Hand back eliminates all records from my
+    dashboard" (fb_1787134699).
+
+    A session history alone would NOT have answered that report. The client in
+    question had no recorded sessions, so a sessions-only view would still have
+    shown the coach nothing. The assignment row is the record that the
+    relationship happened; this returns it.
+
+    Contact details are deliberately omitted — see list_my_sessions.
+    """
+    guard = _require_coach_role()
+    if guard: return guard
+    coach_id = get_jwt_identity()
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(f"""
+            SELECT cca.client_id, cca.status, cca.origin, cca.assigned_at,
+                   {user_display_name('display_name', 'u')},
+                   (SELECT COUNT(*) FROM coaching_sessions s
+                     WHERE s.client_id = cca.client_id
+                       AND s.coach_id = cca.coach_id) AS my_sessions,
+                   (SELECT MAX(COALESCE(s.session_date, s.created_at))
+                      FROM coaching_sessions s
+                     WHERE s.client_id = cca.client_id
+                       AND s.coach_id = cca.coach_id) AS last_session_at
+              FROM coach_client_assignments cca
+              LEFT JOIN users u ON u.id = cca.client_id
+             WHERE cca.coach_id = %s
+               AND cca.status <> %s
+             ORDER BY cca.assigned_at DESC NULLS LAST
+             LIMIT 200
+        """, (coach_id, cs.ACTIVE))
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+
+        clients = []
+        for r in rows:
+            d = dict(r)
+            for k in ('assigned_at', 'last_session_at'):
+                if d.get(k):
+                    d[k] = d[k].isoformat()
+            clients.append(d)
+
+        log_pii_read(COACH_CLIENT_LIST_READ, 'coach_past_clients',
+                     actor_id=coach_id, subject_count=len(clients))
+        return jsonify({"clients": clients, "total": len(clients)}), 200
+    except Exception as e:
+        conn.close()
+        logger.error(f"list past clients failed: {e}")
+        return jsonify({"error": "Failed to load past clients"}), 500
+
 
 @coach_bp.route('/directory', methods=['GET'])
 @jwt_required()

@@ -36,10 +36,10 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 try:
-    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES
+    from backend.auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
     from backend.db_utils import execute_query
 except ImportError:  # pragma: no cover — the app runs under both roots
-    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES
+    from auth.access_control import require_roles, resolve_roles, ADMIN_ROLES, BOARD_ROLES, OPERATOR_ROLES
     from db_utils import execute_query
 
 logger = logging.getLogger(__name__)
@@ -702,6 +702,58 @@ def update_meeting(meeting_id):
     except Exception as e:
         logger.error(f"update board meeting failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to update meeting'}), 500
+
+
+@board_meetings_bp.route('/invitable', methods=['GET'])
+@require_roles(*ORGANISER_ROLES)
+def list_invitable():
+    """People the organiser can add to a meeting, searched by name or email.
+
+    Additional attendees are usually NOT board members — they are the subject
+    expert brought in for one agenda item (fb_1787129152). So this cannot be a
+    board-member list; it has to be a search.
+
+    CANDIDATES ARE EXCLUDED. Searching the whole users table from the board
+    page would turn a meeting-admin screen into a directory of ~5,300 job
+    seekers, searchable by name, for a role that has no business reading it.
+    Staff and board roles only — everyone who could legitimately be asked to
+    attend a board meeting is one of them, and a candidate is not.
+
+    A query is REQUIRED: without one this would enumerate staff wholesale.
+    """
+    q = (request.args.get('q') or '').strip()
+    if len(q) < 2:
+        return jsonify({'success': True, 'data': []})
+
+    invitable = sorted(BOARD_ROLES | OPERATOR_ROLES)
+    like = f"%{q}%"
+    try:
+        rows = execute_query("""
+            SELECT id, full_name, first_name, last_name, email, role
+              FROM users
+             WHERE is_active IS TRUE
+               AND (role = ANY(%s) OR EXISTS (
+                     SELECT 1 FROM jsonb_array_elements_text(
+                         CASE WHEN jsonb_typeof(secondary_roles) = 'array'
+                              THEN secondary_roles ELSE '[]'::jsonb END) sr
+                      WHERE sr = ANY(%s)))
+               AND (full_name ILIKE %s OR email ILIKE %s
+                    OR (COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')) ILIKE %s)
+             ORDER BY COALESCE(NULLIF(full_name, ''), email)
+             LIMIT 20
+        """, (invitable, invitable, like, like, like)) or []
+        data = [{
+            'id': r['id'],
+            'name': (r.get('full_name')
+                     or ' '.join(filter(None, [r.get('first_name'), r.get('last_name')])).strip()
+                     or r.get('email')),
+            'email': r.get('email'),
+            'role': r.get('role'),
+        } for r in rows]
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        logger.error(f"list invitable failed: {e}")
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
 
 
 @board_meetings_bp.route('/<meeting_id>/attendees', methods=['POST'])
