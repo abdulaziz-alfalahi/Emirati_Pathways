@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,7 +28,15 @@ export default function CareerServicesDashboard() {
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
-  const [view, setView] = useState<'candidates' | 'analytics' | 'messages'>('candidates');
+  // Honour ?tab= so a link can land on a specific view. "Send Message" on a
+  // candidate's profile navigates here with tab=messages and the conversation
+  // it just created; without this the operator landed on the candidate list
+  // and had to find the conversation themselves (fb_1787224622).
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('tab') === 'messages' ? 'messages'
+    : searchParams.get('tab') === 'analytics' ? 'analytics'
+    : 'candidates';
+  const [view, setView] = useState<'candidates' | 'analytics' | 'messages'>(initialView);
   const [candidates, setCandidates] = useState<any[]>([]);
   const { hasRole } = useAuth();
   // Owner decision 2026-08-17: career-services operators allocate coaches;
@@ -775,6 +783,8 @@ const LOCATION_OPTIONS = [
           </div>
         </div>
 
+        {/* Messages reads ?conversationId from the URL itself, so the
+            conversation created on the candidate's profile opens directly. */}
         {view === 'messages' && (
           <Messages senderRole="career_services_operator" showNewConversation />
         )}
