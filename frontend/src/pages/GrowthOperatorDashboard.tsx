@@ -292,7 +292,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   // ─── Fetch live data ───
   const fetchEmployerTargets = async () => {
     try {
-      const res = await restClient.get('/api/metrics/employer-targets?limit=25');
+      const res = await restClient.get('/api/metrics/employer-targets?limit=20');
       setEmpTargets((res as any).data?.data || null);
     } catch {
       setEmpTargets(null);
@@ -1372,6 +1372,58 @@ const GrowthOperatorDashboard: React.FC = () => {
                         }}>
                           {r.onboarded ? t('On platform', 'على المنصة') : t('Not onboarded', 'غير مُلحقة')}
                         </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Companies currently hiring, cross-referenced against Emirati
+            headcount. Paired with the list above on purpose: one shows who
+            EMPLOYS Emiratis, the other who is LOOKING, and the overlap is the
+            warm list. Unlike the headcount ranking, every company here has a
+            name — a vacancy only exists once a company record was created. */}
+        {empTargets?.top_hiring?.length > 0 && (
+          <div style={{ marginBottom: 28, background: colors.card, borderRadius: 14,
+                        border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${colors.border}` }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text }}>
+                {t('Companies hiring now', 'شركات توظّف حالياً')}
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.textSecondary }}>
+                {empTargets.hiring_basis}
+              </p>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: colors.bg, textAlign: isRTL ? 'right' : 'left' }}>
+                    <th style={{ padding: '8px 14px' }}>{t('Company', 'الشركة')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('Vacancies', 'الشواغر')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('Emiratis employed', 'إماراتيون موظفون')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {empTargets.top_hiring.map((r: any) => (
+                    <tr key={r.company_code || r.company_name}
+                        style={{ borderTop: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: '8px 14px', fontWeight: 600, color: colors.text }}>
+                        {r.company_name}
+                      </td>
+                      <td style={{ padding: '8px 14px' }}>{r.vacancies}</td>
+                      <td style={{ padding: '8px 14px' }}>
+                        {r.already_employs_emiratis ? (
+                          <span style={{ color: '#065f46', fontWeight: 600 }}>
+                            {r.emiratis.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span style={{ color: colors.textSecondary }}>
+                            {t('none on file', 'لا يوجد')}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

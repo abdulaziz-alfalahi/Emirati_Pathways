@@ -260,3 +260,23 @@ def test_the_panel_shows_the_caveats_beside_the_table():
         src = fh.read()
     assert 'empTargets.strategy_note' in src, 'the long tail is not shown with the ranking'
     assert 'name not held' in src, 'unnamed employers must be labelled as such'
+
+
+def test_hiring_companies_are_cross_referenced_against_headcount():
+    """The pairing is the point: one list shows who EMPLOYS Emiratis, the other
+    who is LOOKING, and the overlap is the warm list. 17 of the top 20 hiring
+    companies already have Emirati staff — that is an existing relationship, not
+    cold outreach, and the ranking alone would not show it."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert "'top_hiring'" in body
+    assert 'already_employs_emiratis' in body
+    assert 'FROM private_sector_employment p' in body.split("'top_hiring'")[0], \
+        'the hiring list must join to the employment file, not stand alone'
+
+
+def test_vacancies_are_counted_per_company_not_per_posting_blindly():
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert 'JOIN companies co ON co.id = jp.company_id' in body, \
+        'unlinked postings must not be attributed to a company'
