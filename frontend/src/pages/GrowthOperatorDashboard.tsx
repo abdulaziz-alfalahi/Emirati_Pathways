@@ -247,6 +247,9 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({ lead: 0, invited: 0, link_opened: 0, signing_up: 0, active: 0, expired: 0 });
   const [kpis, setKpis] = useState<any>({});
+  // Employers of Emiratis, ranked — the onboarding target list built from the
+  // private-sector employment file (owner request 2026-08-21).
+  const [empTargets, setEmpTargets] = useState<any>(null);
   const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -287,6 +290,15 @@ const GrowthOperatorDashboard: React.FC = () => {
   };
 
   // ─── Fetch live data ───
+  const fetchEmployerTargets = async () => {
+    try {
+      const res = await restClient.get('/api/metrics/employer-targets?limit=25');
+      setEmpTargets((res as any).data?.data || null);
+    } catch {
+      setEmpTargets(null);
+    }
+  };
+
   const fetchDashboardStats = async () => {
     try {
       const res = await restClient.get('/api/growth/dashboard-stats');
@@ -339,6 +351,7 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchEmployerTargets();
     fetchPendingInvites();
   }, []);
 
@@ -1305,6 +1318,68 @@ const GrowthOperatorDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Employers of Emiratis, ranked.
+            The two caveats are shown WITH the table, not below the fold: we can
+            name 113 of 9,822 employers, and the top 100 cover only a fifth of
+            employed Emiratis. A ranked list without those reads as "onboard
+            these and you are done", which is the wrong conclusion. */}
+        {empTargets?.targets?.length > 0 && (
+          <div style={{ marginBottom: 28, background: colors.card, borderRadius: 14,
+                        border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${colors.border}` }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.text }}>
+                {t('Employers of Emiratis', 'الجهات الموظِّفة للإماراتيين')}
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.textSecondary }}>
+                {empTargets.basis}
+              </p>
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: '#b45309', fontWeight: 600 }}>
+                {empTargets.strategy_note}
+              </p>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: colors.bg, textAlign: isRTL ? 'right' : 'left' }}>
+                    <th style={{ padding: '8px 14px' }}>{t('Employer', 'جهة العمل')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('Emiratis', 'إماراتيون')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('On NAFIS', 'على نافس')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('Sector', 'القطاع')}</th>
+                    <th style={{ padding: '8px 14px' }}>{t('Status', 'الحالة')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {empTargets.targets.map((r: any) => (
+                    <tr key={r.company_code} style={{ borderTop: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: '8px 14px', fontWeight: 600, color: colors.text }}>
+                        {r.company_name || (
+                          <span style={{ color: colors.textSecondary, fontWeight: 400 }}>
+                            {t(`Code ${r.company_code} — name not held`, `رمز ${r.company_code} — الاسم غير متوفر`)}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '8px 14px' }}>{r.emiratis.toLocaleString()}</td>
+                      <td style={{ padding: '8px 14px' }}>{r.nafis_pct}%</td>
+                      <td style={{ padding: '8px 14px', color: colors.textSecondary }}>
+                        {(r.sector || '—').slice(0, 34)}
+                      </td>
+                      <td style={{ padding: '8px 14px' }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                          background: r.onboarded ? '#d1fae5' : '#fef3c7',
+                          color: r.onboarded ? '#065f46' : '#92400e',
+                        }}>
+                          {r.onboarded ? t('On platform', 'على المنصة') : t('Not onboarded', 'غير مُلحقة')}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div style={{

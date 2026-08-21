@@ -217,3 +217,46 @@ def test_the_population_is_stated_with_the_figure():
     sql = _src('migrations', '080_confirm_salary_support_meaning.sql')
     assert 'PRIVATE' in sql
     assert 'says nothing about government employment' in sql
+
+
+# ── Employer onboarding targets ─────────────────────────────────────────────
+
+def test_the_target_list_admits_it_cannot_name_most_employers():
+    """The source supplies a company CODE and nothing else, so of 9,822
+    employers the platform can name 113. An operator handed "163801, 401
+    Emiratis" cannot act on it. A ranked list that did not say so would look
+    like a work queue and be a dead end."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert "'unnamed_employers'" in body
+    assert "'named_employers'" in body
+
+
+def test_the_long_tail_is_reported_with_the_ranking():
+    """The top 100 employers cover 20% of employed Emiratis and 53% of
+    employers have exactly one. A "top targets" list read without that suggests
+    onboarding can cover this population company by company. It cannot."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert "'top100_share_pct'" in body
+    assert "'single_employee_employers'" in body
+    assert "'strategy_note'" in body
+
+
+def test_the_placeholder_employer_code_is_excluded():
+    """company_code '0' is a placeholder carrying 113 people, not an employer.
+    Ranked by headcount it would appear near the top of the target list."""
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert "company_code <> '0'" in body
+
+
+def test_the_panel_shows_the_caveats_beside_the_table():
+    path = os.path.join(BACKEND, '..', 'frontend', 'src', 'pages',
+                        'GrowthOperatorDashboard.tsx')
+    if not os.path.exists(path):
+        return
+    with open(path, encoding='utf-8') as fh:
+        src = fh.read()
+    assert 'empTargets.strategy_note' in src, 'the long tail is not shown with the ranking'
+    assert 'name not held' in src, 'unnamed employers must be labelled as such'

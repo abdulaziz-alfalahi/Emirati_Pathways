@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 try:
     from backend.auth.access_control import require_roles, GOVERNANCE_ROLES
@@ -507,3 +507,104 @@ def employment_timeline():
     except Exception as e:
         logger.error(f"employment timeline failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to load the employment timeline'}), 500
+
+
+# ── Employer onboarding targets (owner request 2026-08-21) ───────────────────
+
+@strategic_metrics_bp.route('/employer-targets', methods=['GET'])
+@require_roles(*(GOVERNANCE_ROLES | {'talent_operator', 'employer_relations',
+                                     'growth_operator', 'career_services_operator'}))
+def employer_targets():
+    """Employers of Emiratis, ranked by how many they employ.
+
+    TWO THINGS MAKE THIS LESS ACTIONABLE THAN IT LOOKS, and both are returned
+    rather than left for someone to discover:
+
+    1. WE HAVE NO NAME FOR MOST OF THEM. The source file carries a company CODE
+       and nothing else, so of 9,822 employers we can name 113 — the ones
+       already on the platform. An operator handed "163801, 401 Emiratis"
+       cannot act on it without resolving that code against a licensing source.
+       The ranking is still useful for deciding WHICH codes are worth resolving
+       first.
+
+    2. IT IS A LONG TAIL, NOT A SHORTLIST. The top 100 employers account for
+       20% of employed Emiratis; 53% of employers have exactly one. Onboarding
+       cannot cover this population one company at a time, and a "top targets"
+       list read without that context would suggest it can.
+    """
+    try:
+        limit = min(int(request.args.get('limit', 50)), 500)
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT p.company_code,
+                   COUNT(*) AS emiratis,
+                   COUNT(*) FILTER (WHERE p.salary_support) AS on_nafis,
+                   MODE() WITHIN GROUP (ORDER BY p.company_sector) AS sector,
+                   MAX(co.company_name) AS company_name,
+                   BOOL_OR(co.id IS NOT NULL) AS onboarded
+              FROM private_sector_employment p
+              LEFT JOIN companies co ON co.company_code = p.company_code
+             WHERE p.company_code IS NOT NULL AND p.company_code <> '0'
+             GROUP BY p.company_code
+             ORDER BY emiratis DESC
+             LIMIT %s
+        """, (limit,))
+        targets = [{
+            'company_code': r[0],
+            'emiratis': r[1],
+            'on_nafis': r[2],
+            'nafis_pct': round(r[2] / r[1] * 100) if r[1] else None,
+            'sector': r[3],
+            'company_name': r[4],
+            'onboarded': bool(r[5]),
+        } for r in cur.fetchall()]
+
+        cur.execute("""
+            SELECT COUNT(DISTINCT company_code),
+                   COUNT(DISTINCT company_code) FILTER (
+                       WHERE company_code IN (SELECT company_code FROM companies
+                                               WHERE company_code IS NOT NULL))
+              FROM private_sector_employment
+             WHERE company_code IS NOT NULL AND company_code <> '0'
+        """)
+        total_employers, named = cur.fetchone()
+
+        # Concentration, so the long tail is visible rather than inferred from a
+        # list that necessarily shows only the head of it.
+        cur.execute("""
+            WITH ranked AS (
+                SELECT COUNT(*) AS n FROM private_sector_employment
+                 WHERE company_code IS NOT NULL AND company_code <> '0'
+                 GROUP BY company_code ORDER BY n DESC)
+            SELECT (SELECT SUM(n) FROM ranked),
+                   (SELECT SUM(n) FROM (SELECT n FROM ranked LIMIT 100) x),
+                   (SELECT COUNT(*) FROM ranked WHERE n = 1)
+        """)
+        covered, top100, singles = cur.fetchone()
+        cur.close(); conn.close()
+
+        return jsonify({'success': True, 'data': {
+            'targets': targets,
+            'total_employers': total_employers,
+            'named_employers': named,
+            'unnamed_employers': total_employers - named,
+            'employees_covered': covered,
+            'top100_share_pct': round(top100 / covered * 100, 1) if covered else None,
+            'single_employee_employers': singles,
+            'basis': (
+                f'{total_employers:,} employers of Emiratis in Dubai. The platform '
+                f'can name {named:,} of them — the source supplies a company CODE '
+                f'only, so the rest need resolving against a licensing source '
+                f'before anyone can be contacted. Ranking by headcount says which '
+                f'codes are worth resolving first.'),
+            'strategy_note': (
+                f'The top 100 employers account for {round(top100 / covered * 100)}% '
+                f'of employed Emiratis and {singles:,} employers have exactly one. '
+                f'This is a long tail: onboarding cannot cover it one company at a '
+                f'time.'),
+        }})
+    except Exception as e:
+        logger.error(f"employer targets failed: {e}")
+        return jsonify({'success': False, 'message': 'Failed to load employer targets'}), 500
