@@ -84,11 +84,20 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                 currentLanguage={language}
                 onLanguageToggle={toggleLanguage}
             />
-            <div className="flex flex-1 pt-20">
+            <div className="flex flex-1">
                 {/* Sidebar Navigation */}
+                {/* STICKY, not fixed.
+                    `fixed top-20` assumed the nav was 80px tall. It is not:
+                    HybridGovernmentNavFixed renders a header (81px) AND a nav
+                    row beneath it (~137px total), so the panel was painted
+                    straight over the nav row and clipped it — "Education
+                    Pathway" rendered as "cation Pathway" (fb_1787134996).
+                    In flow it starts below whatever precedes it, whatever that
+                    height turns out to be, and sticks under the sticky header
+                    once scrolled. The main pane's compensating 16rem margin is
+                    gone with it, since the sidebar now occupies real width. */}
                 <div
-                    className={`w-64 bg-card border-e border-border h-[calc(100vh-5rem)] fixed top-20 overflow-y-auto px-4 pt-6`}
-                    style={isRTL ? { right: 0, left: 'auto' } : { left: 0, right: 'auto' }}
+                    className={`w-64 shrink-0 self-start sticky top-20 bg-card border-e border-border h-[calc(100vh-5rem)] overflow-y-auto px-4 pt-6`}
                 >
                     <div className="mb-8">
                         <h2 className="text-xl font-bold text-foreground px-2">{t('Profile Studio', 'استوديو الملف')}</h2>
@@ -200,7 +209,7 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 pt-20 px-8 pb-12" style={isRTL ? { marginRight: '16rem' } : { marginLeft: '16rem' }}>
+                <div className="flex-1 min-w-0 pt-8 px-8 pb-12">
                     <div className="max-w-5xl mx-auto">
                         {children}
                     </div>
