@@ -250,9 +250,13 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       name: 'nav_lifelong_engagement',
       desc: 'nav_lifelong_engagement_desc'
     },
+    // Keys, not literals. The other four groups name a translation key here;
+    // this one carried the English copy itself, so t() found no key and
+    // returned the string unchanged — leaving "Operations" in English in the
+    // Arabic menu beside five translated siblings.
     operations: {
-      name: 'Operations',
-      desc: 'Operator dashboards and management tools'
+      name: 'nav_operations',
+      desc: 'nav_operations_desc'
     }
   }), []);
 
@@ -277,6 +281,19 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
   const itemKeyByHref: Record<string, { name: string; desc: string }> = {
     '/school-programs': { name: 'nav_item_school_programs', desc: 'nav_item_school_programs_desc' },
+    // Operations group. These carried English literals in navigationConfig and
+    // had no entry here, so the WHOLE dropdown — group label and all ten items —
+    // stayed English in Arabic while its five siblings translated (#456).
+    '/nafis-talent-dashboard': { name: 'nav_item_nafis_talent', desc: 'nav_item_nafis_talent_desc' },
+    '/events/manage': { name: 'nav_item_open_day_management', desc: 'nav_item_open_day_management_desc' },
+    '/events': { name: 'nav_item_recruitment_open_days', desc: 'nav_item_recruitment_open_days_desc' },
+    '/career-services-dashboard': { name: 'nav_item_career_services', desc: 'nav_item_career_services_desc' },
+    '/growth-operator-dashboard': { name: 'nav_item_growth_dashboard', desc: 'nav_item_growth_dashboard_desc' },
+    '/demographics': { name: 'nav_item_demographics_analytics', desc: 'nav_item_demographics_analytics_desc' },
+    '/operations-center': { name: 'nav_item_operations_monitoring', desc: 'nav_item_operations_monitoring_desc' },
+    '/executive': { name: 'nav_item_executive_impact', desc: 'nav_item_executive_impact_desc' },
+    '/board-secretary': { name: 'nav_item_board_secretariat', desc: 'nav_item_board_secretariat_desc' },
+    '/service-catalog': { name: 'nav_item_service_catalog', desc: 'nav_item_service_catalog_desc' },
     '/knowledge-camps': { name: 'nav_item_summer_camps', desc: 'nav_item_summer_camps_desc' },
     '/scholarships': { name: 'nav_item_scholarships', desc: 'nav_item_scholarships_desc' },
     '/university-programs': { name: 'nav_item_university_programs', desc: 'nav_item_university_programs_desc' },
