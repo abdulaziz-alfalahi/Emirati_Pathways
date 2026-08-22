@@ -330,3 +330,29 @@ def test_the_panel_renders_the_state_not_a_boolean():
     assert 'verified_not_joined' in src and 'record_only' in src
     assert "t('On platform', 'على المنصة')" not in src, \
         'the misleading label is still rendered'
+
+
+def test_the_invitation_pipeline_treats_verified_as_still_to_invite():
+    """Active companies are EXCLUDED from the invitation pipeline, so whatever
+    marks a company active decides what an operator never sees.
+
+    It used to be `is_verified or published_jobs > 0`. Verifying a trade licence
+    therefore removed a company from the list of companies to invite, before
+    anyone from it had an account — 8 of 11 verified companies had nobody
+    joined. None had vacancies, so nothing actionable was hidden in practice,
+    but the next real employer verified ahead of onboarding would have vanished
+    from the one screen the work is done on.
+    """
+    src = _src('growth_system.py')
+    # Window has to clear the explanatory comment above the code; 900 chars
+    # stopped inside it and the assertion failed on prose, not on logic.
+    stage = src.split('# Determine funnel stage')[1][:2000]
+    assert "if c.get('has_joined_member')" in stage
+    assert "if c['is_verified'] or" not in stage, \
+        'verification is being treated as onboarding again'
+
+
+def test_the_joined_test_is_the_acl_rule():
+    src = _src('growth_system.py')
+    assert "invitation_status = 'accepted'" in src
+    assert 'has_joined_member' in src
