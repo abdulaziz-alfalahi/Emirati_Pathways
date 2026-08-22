@@ -1467,9 +1467,15 @@ const ExecutiveDashboard: React.FC = () => {
                         <BarChart data={empTimeline.sector_distribution} layout="vertical"
                                   margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
                           <XAxis type="number" tick={{ fontSize: 11 }} />
-                          <YAxis type="category" dataKey="sector" width={190}
+                          {/* NOT reversed in RTL. `reversed` on a category axis
+                              inverts the ORDER, which put the smallest sector at
+                              the top and made the Arabic chart rank backwards
+                              against the English one. Mirroring the layout is
+                              the axis orientation's job; the ranking is the same
+                              fact in both languages. */}
+                          <YAxis type="category" dataKey={isRTL ? 'sector_ar' : 'sector'} width={190}
                                  tick={{ fontSize: 11 }} interval={0}
-                                 reversed={isRTL} orientation={isRTL ? 'right' : 'left'} />
+                                 orientation={isRTL ? 'right' : 'left'} />
                           <Tooltip formatter={(v: any, _n: any, p: any) =>
                             `${(v as number).toLocaleString()} (${p?.payload?.pct}%)`} />
                           <Bar dataKey="headcount" fill="#047857" radius={[0, 3, 3, 0]}

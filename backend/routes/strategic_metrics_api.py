@@ -582,6 +582,37 @@ def employment_timeline():
               FROM private_sector_employment
              GROUP BY 1 ORDER BY 2 DESC
         """)
+        # ISIC section names in Arabic, keyed by the section LETTER rather than
+        # the English string — the letter is the stable identifier, the English
+        # wording is the source's own abbreviation and varies ("Administrative
+        # services activities" is not the official ISIC phrasing either).
+        #
+        # Without this the whole axis rendered in English on the Arabic board
+        # view: numbers localised, categories not. A board member reading Arabic
+        # got an English chart.
+        ISIC_AR = {
+            'A': 'الزراعة والحراجة وصيد الأسماك',
+            'B': 'التعدين واستغلال المحاجر',
+            'C': 'الصناعة التحويلية',
+            'D': 'إمدادات الكهرباء والغاز',
+            'E': 'إمدادات المياه والصرف الصحي وإدارة النفايات',
+            'F': 'التشييد والبناء',
+            'G': 'تجارة الجملة والتجزئة',
+            'H': 'النقل والتخزين',
+            'I': 'الإقامة وخدمات الطعام',
+            'J': 'المعلومات والاتصالات',
+            'K': 'الأنشطة المالية والتأمين',
+            'L': 'الأنشطة العقارية',
+            'M': 'الأنشطة المهنية والعلمية والتقنية',
+            'N': 'أنشطة الخدمات الإدارية والدعم',
+            'O': 'الإدارة العامة والدفاع',
+            'P': 'التعليم',
+            'Q': 'الصحة والعمل الاجتماعي',
+            'R': 'الفنون والترفيه والتسلية',
+            'S': 'أنشطة الخدمات الأخرى',
+        }
+        OTHER_AR = {'Not stated': 'غير مذكور', 'Other': 'أخرى'}
+
         rows = cur.fetchall()
         grand = sum(r[1] for r in rows) or 1
         sector_distribution = [{
@@ -591,6 +622,14 @@ def employment_timeline():
             'code': (r[0].split('-', 1)[0] if len(r[0]) > 1 and r[0][1:2] == '-' else None),
             'sector': (r[0].split('-', 1)[1].strip()
                        if len(r[0]) > 1 and r[0][1:2] == '-' else r[0]),
+            # Falls back to the English name rather than to a blank: an
+            # untranslated sector should read oddly, not vanish from the axis.
+            'sector_ar': (
+                ISIC_AR.get(r[0].split('-', 1)[0])
+                if len(r[0]) > 1 and r[0][1:2] == '-'
+                else OTHER_AR.get(r[0])
+            ) or (r[0].split('-', 1)[1].strip()
+                  if len(r[0]) > 1 and r[0][1:2] == '-' else r[0]),
             'headcount': r[1],
             'pct': round(r[1] / grand * 100, 1),
             'nafis_supported': r[2],
