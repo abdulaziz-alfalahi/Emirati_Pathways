@@ -1842,9 +1842,14 @@ const ExecutiveDashboard: React.FC = () => {
                     <CardContent className="pt-4">
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
+                          {/* width/left sized for the Arabic category labels — at 60
+                              the bars were drawn over "لا يعمل" and clipped it to a
+                              single glyph. Recharts does not mirror a vertical layout
+                              for RTL, so the category gutter has to fit the longest
+                              label in either language. */}
+                          <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                             <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[0, 6, 6, 0]} />
                           </BarChart>

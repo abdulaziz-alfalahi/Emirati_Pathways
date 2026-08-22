@@ -406,14 +406,12 @@ const DemographicsAnalytics: React.FC = () => {
                     {/* TAB: SYSTEM TRACKING */}
                     {activeTab === 'reachability' && rawMetrics && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            {/* Initiatives comparison — the totals block only exists when the
-                                initiatives sheet was present in the master file. */}
+                            {/* Cohort sizes are crm_segments memberships on
+                                candidate_profiles — the segments the CRM team
+                                maintains, not a sheet per cohort. */}
                             {rawMetrics.hatta && (
                             <ChartCard title={t('EHRDC Initiatives Active Counts', 'أعداد المستفيدين النشطين من مبادرات الهيئة')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    {/* Cohort sizes are crm_segments memberships on
-                                        candidate_profiles — the same segments the CRM
-                                        team maintains, not a sheet-per-cohort. */}
                                     <BarChart data={[
                                         { name: t('Hatta Cohort', 'أهالي حتا'), value: rawMetrics.hatta.total },
                                         { name: t('CDA Cohort', 'تنمية المجتمع'), value: rawMetrics.cda.total },
@@ -433,19 +431,16 @@ const DemographicsAnalytics: React.FC = () => {
                             )}
 
                             {/* No Answer Candidates */}
+                            {/* Read from call_status, and "not yet called" is its own
+                                slice. This used to plot registered.total minus the
+                                no-answer cohort as "Answered Call" — 37,501 of 38,297
+                                people shown as having answered, when the CRM records
+                                4,921 answered and has not called 32,058 at all.
+                                Subtracting one cohort from the roster does not make the
+                                remainder a call outcome. */}
                             {currentStats?.coverage?.call && (
                             <ChartCard title={t('Contact Center Reachability Status', 'حالة استجابة الاتصال مع الكوادر')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    {/* Read from call_status, and "not yet called" is its
-                                        own slice.
-
-                                        This used to plot registered.total minus the
-                                        no-answer cohort as "Answered Call" — 37,501 of
-                                        38,297 people shown as having answered a call,
-                                        when the CRM records only 4,921 answered and has
-                                        not called 32,058 of them at all. Subtracting one
-                                        cohort from the roster does not make the
-                                        remainder a call outcome. */}
                                     <PieChart>
                                         <Pie data={[
                                             ...series('call'),

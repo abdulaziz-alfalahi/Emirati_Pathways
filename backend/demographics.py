@@ -105,7 +105,10 @@ EDUCATION_LABELS_AR = {
     'High School': 'الثانوية العامة',
     'Diploma': 'دبلوم',
     'High Diploma': 'دبلوم عالي',
-    'University': 'تعليم جامعي (المستوى غير محدد)',
+    # Short enough to fit a rotated axis tick. The full sense — that the level
+    # is unspecified rather than a bachelor's — is carried by the parenthesis;
+    # spelling it out collided with the neighbouring ticks in Arabic.
+    'University': 'جامعي (غير محدد)',
     "Bachelor's Degree": 'بكالوريوس',
     "Master's Degree": 'ماجستير',
     'Doctorate': 'دكتوراه',
