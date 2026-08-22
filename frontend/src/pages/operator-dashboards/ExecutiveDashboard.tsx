@@ -1840,13 +1840,18 @@ const ExecutiveDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      <div style={{ height: 280 }}>
+                      {/* dir=ltr on the plot, deliberately.
+
+                          This is the only chart here with categories on the vertical
+                          axis. Under the page's RTL direction Recharts anchored those
+                          tick labels into the plot area, so the bars were drawn over
+                          them and "لا يعمل" was clipped to a single glyph. A chart's
+                          coordinate system is not text and does not mirror; the tick
+                          labels are still Arabic and still shape right-to-left inside
+                          their own run. The category gutter (width 110) is sized for
+                          the longest label in either language. */}
+                      <div style={{ height: 280 }} dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
-                          {/* width/left sized for the Arabic category labels — at 60
-                              the bars were drawn over "لا يعمل" and clipped it to a
-                              single glyph. Recharts does not mirror a vertical layout
-                              for RTL, so the category gutter has to fit the longest
-                              label in either language. */}
                           <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                             <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
