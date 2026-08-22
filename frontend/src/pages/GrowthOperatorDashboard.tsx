@@ -250,6 +250,11 @@ const GrowthOperatorDashboard: React.FC = () => {
   // Employers of Emiratis, ranked — the onboarding target list built from the
   // private-sector employment file (owner request 2026-08-21).
   const [empTargets, setEmpTargets] = useState<any>(null);
+  // Pipeline ordering. Vacancies first by default: the operator works this list
+  // top-down to invite, and the company with the most open roles is the one
+  // worth the call today. Alphabetical is kept because finding one named
+  // company among ~245 otherwise means scrolling.
+  const [pipelineSort, setPipelineSort] = useState<'vacancies' | 'name'>('vacancies');
   const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -567,10 +572,47 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   // ═══════ COMPANY ONBOARDING TAB ═══════
   const renderPipeline = () => {
-    const pipelineCompanies = companies.filter(c => ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status));
+    const pipelineCompanies = companies
+      .filter(c => ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status))
+      .slice()
+      .sort((a, b) => pipelineSort === 'vacancies'
+        // Most vacancies first; ties fall back to name so the order is stable
+        // rather than shuffling between renders.
+        ? (b.jobsPosted - a.jobsPosted) || a.name.localeCompare(b.name)
+        : a.name.localeCompare(b.name));
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: colors.textSecondary }}>
+            {t('Order by', 'الترتيب حسب')}
+          </span>
+          {([
+            { key: 'vacancies', label: t('Most vacancies', 'الأكثر شواغر') },
+            { key: 'name', label: t('Company name', 'اسم الشركة') },
+          ] as const).map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setPipelineSort(opt.key)}
+              style={{
+                fontSize: 13, fontWeight: 600, padding: '5px 12px', borderRadius: 8,
+                cursor: 'pointer',
+                border: `1px solid ${pipelineSort === opt.key ? colors.primary : colors.border}`,
+                background: pipelineSort === opt.key ? colors.primaryLight : colors.card,
+                color: pipelineSort === opt.key ? colors.primary : colors.textSecondary,
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {pipelineSort === 'vacancies' && (
+            <span style={{ fontSize: 12, color: colors.textSecondary }}>
+              {t('Companies with open vacancies are the ones worth inviting first.',
+                 'الشركات ذات الشواغر المفتوحة هي الأولى بالدعوة.')}
+            </span>
+          )}
+        </div>
+
         {/* Pipeline Stages */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
           {pipelineStages.filter(s => s.key !== 'active').map(stage => (
