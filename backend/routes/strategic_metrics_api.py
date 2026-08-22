@@ -506,6 +506,36 @@ def employment_timeline():
             running += row['starts']
             row['cumulative'] = running
 
+        # Monthly, because the yearly chart cannot show seasonality and the
+        # seasonality here is large and real: June and December each carry ~18%
+        # of all starts against ~5% for a typical month. That is NOT a defaulted
+        # date — checked live 2026-08-22, the spikes spread across their months
+        # (the busiest single day in June holds 8% of June, in line with the
+        # 1st-of-month effect everywhere else). Graduation and year-end hiring.
+        #
+        # Same survivorship caveat as by_year, and the same basis string carries
+        # it. From 2010 to match the yearly series; earlier months hold single
+        # figures and would be noise on a monthly axis.
+        cur.execute("""
+            SELECT to_char(date_trunc('month', job_start_date), 'YYYY-MM') AS ym,
+                   date_part('year',  job_start_date)::int AS yr,
+                   date_part('month', job_start_date)::int AS mon,
+                   COUNT(*) AS n,
+                   COUNT(*) FILTER (WHERE salary_support) AS supported
+              FROM private_sector_employment
+             WHERE job_start_date IS NOT NULL
+               AND job_start_date >= DATE '2010-01-01'
+             GROUP BY 1, 2, 3 ORDER BY 1
+        """)
+        by_month = [{
+            'ym': r[0],
+            'year': r[1],
+            'month': r[2],
+            'starts': r[3],
+            'nafis_supported': r[4],
+            'nafis_support_pct': round(r[4] / r[3] * 100, 1) if r[3] else None,
+        } for r in cur.fetchall()]
+
         cur.execute("""
             SELECT date_part('year', job_start_date)::int AS yr,
                    COALESCE(NULLIF(company_sector, ''), 'Unspecified') AS sector,
@@ -527,6 +557,7 @@ def employment_timeline():
 
         return jsonify({'success': True, 'data': {
             'by_year': by_year,
+            'by_month': by_month,
             'by_sector': by_sector,
             'total_records': total,
             'undated': undated,
@@ -543,6 +574,12 @@ def employment_timeline():
                 'its numerator and denominator together. The most recent year '
                 'reads low because support for very recent hires may not yet be '
                 'in payment, not because fewer of them qualify.'),
+            'month_basis': (
+                'Monthly starts for people currently employed. June and December '
+                'are genuine hiring peaks, not artefacts — the starts spread '
+                'across those months rather than falling on one default date. '
+                'The current month is partial, and 11 records carry a start date '
+                'still in the future (signed but not yet begun).'),
         }})
     except Exception as e:
         logger.error(f"employment timeline failed: {e}")

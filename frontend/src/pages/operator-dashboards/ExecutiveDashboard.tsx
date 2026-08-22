@@ -283,6 +283,21 @@ const ExecutiveDashboard: React.FC = () => {
   const [recSummary, setRecSummary] = useState<any>(null);
   // Emirati private-sector employment over time (owner request 2026-08-21).
   const [empTimeline, setEmpTimeline] = useState<any>(null);
+  /* How many years of monthly detail to plot. 0 = everything. Three years is
+     the default because 2022 is where the volume starts; the eleven years
+     before it are single- and double-digit months that would flatten the rest. */
+  const [monthSpan, setMonthSpan] = useState<number>(3);
+
+  /* Sliced from the full series rather than refetched — the whole payload is a
+     couple of hundred rows, and a round trip per click would make the control
+     feel broken. */
+  const monthlySeries = React.useMemo(() => {
+    const rows: any[] = empTimeline?.by_month || [];
+    if (!rows.length || !monthSpan) return rows;
+    const latest = rows[rows.length - 1]?.year;
+    if (!latest) return rows;
+    return rows.filter((r) => r.year > latest - monthSpan);
+  }, [empTimeline, monthSpan]);
 
   const fetchRecommendations = async () => {
     try {
@@ -1427,6 +1442,72 @@ const ExecutiveDashboard: React.FC = () => {
                   hiring and part attrition. A board slide that lost that
                   sentence would read as a fivefold hiring increase, which the
                   data cannot support on its own. */}
+              {/* MONTHLY view. The yearly chart above cannot show seasonality,
+                  and the seasonality is the largest feature in this data: June
+                  and December each hold ~18% of all starts against ~5% for a
+                  typical month — graduation and year-end hiring, verified not to
+                  be a defaulted date.
+
+                  Defaults to the last three years rather than all 200 months.
+                  Before 2022 the monthly counts are in single and double digits
+                  and would compress the recent years into an unreadable strip —
+                  the full range stays one click away rather than being the
+                  thing that makes the chart useless. */}
+              {empTimeline?.by_month?.length > 0 && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <CardTitle className="font-dubai-bold text-slate-900 text-base" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                          {b('Job starts by month', 'بدء الوظائف شهرياً')}
+                        </CardTitle>
+                        <CardDescription className="font-dubai-medium text-slate-500 text-xs" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                          {b('Month their current job began', 'الشهر الذي بدأت فيه وظيفتهم الحالية')}
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+                        {([3, 5, 0] as const).map((yrs) => (
+                          <button
+                            key={yrs}
+                            onClick={() => setMonthSpan(yrs)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                              monthSpan === yrs ? 'bg-white text-[#006E6D] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                          >
+                            {yrs === 0 ? b('All', 'الكل') : b(`Last ${yrs} years`, `آخر ${yrs} سنوات`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div style={{ width: '100%', height: 280 }}>
+                      <ResponsiveContainer>
+                        <ComposedChart data={monthlySeries}>
+                          <XAxis dataKey="ym" tick={{ fontSize: 10 }} interval="preserveStartEnd" minTickGap={24} />
+                          <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                          <YAxis yAxisId="right" orientation="right" domain={[0, 100]}
+                                 unit="%" tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v: any, n: any) =>
+                            (n === 'nafis_support_pct' || String(n).includes('%') || String(n).includes('نافس'))
+                              ? `${v}%` : (v as number).toLocaleString()} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Bar yAxisId="left" dataKey="starts" fill="#047857" radius={[3, 3, 0, 0]}
+                               name={b('Job starts', 'بدء وظائف')} />
+                          <Line yAxisId="right" type="monotone" dataKey="nafis_support_pct"
+                                stroke="#b45309" strokeWidth={1.5} dot={false}
+                                name={b('% on NAFIS support', '٪ على دعم نافس')} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b(empTimeline.month_basis || '',
+                         'بدء الوظائف شهرياً لمن هم على رأس العمل حالياً. يونيو وديسمبر ذروتا توظيف حقيقيتان وليستا خطأً في البيانات — إذ تتوزع تواريخ الالتحاق على أيام الشهر ولا تتركز في تاريخ افتراضي واحد. الشهر الحالي غير مكتمل، و١١ سجلاً تحمل تاريخ التحاق مستقبلياً (تم التوقيع ولم يبدأ العمل بعد).')}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {empTimeline?.by_year?.length > 0 && (
                 <Card className="bg-white border border-slate-200/80">
                   <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
