@@ -145,6 +145,16 @@ def get_executive_impact_metrics():
     #                         is named for what it actually counts, and
     #                         dubai_employees_total stays None so nobody reads
     #                         the roster number as the emirate's.
+    #
+    #                         NO LONGER RENDERED (2026-08-22). The board page now
+    #                         shows the employed figure from /populations, which
+    #                         additionally requires an active users row with a
+    #                         candidate role and so returns 33,510 where this
+    #                         returns 33,511. Two near-identical numbers on one
+    #                         board screen is worse than either alone. Kept in
+    #                         the payload for API compatibility; if you are about
+    #                         to put it back on a page, use /populations instead
+    #                         so there is one definition of "employed".
     active_jobseekers = active_vacancies = employed_on_roster = None
     # get_db_connection, matching the rest of this module — it does not import
     # db_utils, and reaching for execute_query here would have been an

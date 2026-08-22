@@ -56,15 +56,38 @@ def test_the_dubai_wide_total_is_explicitly_null():
     assert "'dubai_employees_total': None" in api
 
 
-def test_the_roster_figure_is_named_for_what_it_counts():
-    """"Employed on roster", not "employees from Dubai" — 1,054 candidates this
-    platform records as working is a different claim from the emirate's total,
-    and the label is the only thing standing between the two."""
+def test_the_employed_figure_still_disclaims_the_dubai_wide_total():
+    """The caveat outlived the card that carried it.
+
+    The "Employed on Roster" tile was removed on 2026-08-22: it counted
+    candidate_profiles.work_status = \'Working\' (33,511) directly beneath the
+    population strip reporting the same concept as 33,510, because the strip
+    also requires an active users row with a candidate role. Two near-identical
+    numbers side by side on a board screen destroy confidence in both.
+
+    What must NOT be lost is the disclaimer — "employees the platform has a
+    record for" is not "employees in Dubai", and only the wording stands between
+    those two claims. It now rides on the strip\'s disclosure line instead of a
+    tile of its own.
+    """
     api = _api()
-    assert "'employed_on_roster'" in api
+    assert "'employed_on_roster'" in api, (
+        'the API field was deleted, not just unrendered — check nothing else '
+        'depended on it before removing this assertion'
+    )
     fe = _fe()
-    assert 'Employed on Roster' in fe
-    assert 'Not the Dubai-wide total' in fe
+    # Match the LABEL CALL, not the words. The removal comment names the tile
+    # it removed, and a bare substring check fails on that comment — a test that
+    # cannot tell an explanation from a reinstatement.
+    assert "b('Employed on Roster'" not in fe, (
+        'the duplicate employed tile is back; it will disagree with the '
+        'population strip by one'
+    )
+    assert 'not the Dubai-wide total' in fe, (
+        'the MOHRE disclaimer was lost when the tile was removed — the board '
+        'can now read a platform record count as the emirate total'
+    )
+    assert 'MOHRE' in fe
 
 
 def test_the_message_says_what_is_and_is_not_connected():
@@ -90,8 +113,15 @@ def test_a_failed_read_leaves_the_counts_None():
 
 
 def test_the_cards_render_an_em_dash_when_null():
+    """A failed read shows a dash, never a zero.
+
+    employed_on_roster is no longer in this list because it is no longer
+    rendered — see test_the_employed_figure_still_disclaims_the_dubai_wide_total.
+    The strip that replaced it reports nothing at all on failure rather than a
+    row of zeros, which is the same rule by a different mechanism.
+    """
     fe = _fe()
-    for key in ('active_jobseekers', 'active_vacancies', 'employed_on_roster'):
+    for key in ('active_jobseekers', 'active_vacancies'):
         seg = fe.split(f'kpis.{key} != null')[1][:160]
         assert "'—'" in seg, key
 

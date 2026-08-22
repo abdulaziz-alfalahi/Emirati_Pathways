@@ -59,7 +59,15 @@ const ACCENT: Record<string, string> = {
   not_working: 'text-slate-700',
 };
 
-export const PopulationStrip: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const PopulationStrip: React.FC<{
+  className?: string;
+  /** An extra caveat this page needs alongside the shared disclosure — e.g. the
+   *  board's "this is not the Dubai-wide total". It renders with the scope note
+   *  rather than as a separate tile, so a page-specific warning cannot become a
+   *  page-specific NUMBER that disagrees with the shared one. */
+  extraNoteEn?: string;
+  extraNoteAr?: string;
+}> = ({ className = '', extraNoteEn, extraNoteAr }) => {
   const { language } = useLanguage();
   const isAr = language === 'ar';
   const t = (en: string, ar: string) => (isAr ? ar : en);
@@ -169,7 +177,12 @@ export const PopulationStrip: React.FC<{ className?: string }> = ({ className = 
           a screenshot — it sits under them, in the same component, always. */}
       <p className="flex items-start gap-1.5 text-xs text-slate-500 mt-3 leading-relaxed">
         <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-        <span>{(isAr && data.scope_note_ar) || data.scope_note}</span>
+        <span>
+          {(isAr && data.scope_note_ar) || data.scope_note}
+          {(isAr ? extraNoteAr : extraNoteEn) && (
+            <> {isAr ? extraNoteAr : extraNoteEn}</>
+          )}
+        </span>
       </p>
     </div>
   );

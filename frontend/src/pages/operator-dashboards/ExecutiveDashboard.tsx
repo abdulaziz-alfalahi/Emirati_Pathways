@@ -484,10 +484,17 @@ const ExecutiveDashboard: React.FC = () => {
     // vacancies". Two are real counts. The third is not available and is not
     // invented — see the third card.
     {
-      label: b('Active Jobseekers', 'الباحثون النشطون'),
+      // The label now names the MEASURE, not the concept. "Active Jobseekers"
+      // sat beside the strip's "Actively seeking work" reading as its synonym,
+      // while showing 6,004 against 2,489 — the 2.7x spread that populations.py
+      // documents. They count different things: NAFIS's classification of a
+      // person versus what the person said about looking for work. Both belong
+      // on a board page; neither may be labelled as if it were the other.
+      label: b('NAFIS Jobseeker Classification', 'تصنيف نافس للباحثين عن عمل'),
       value: kpis.active_jobseekers != null ? Number(kpis.active_jobseekers).toLocaleString() : '—',
       icon: Users, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100',
-      sub: b('On the NAFIS roster', 'ضمن سجل نافس')
+      sub: b('Typed ActiveJobseeker by NAFIS — not the same as stated intent above',
+             'مصنّفون كباحثين نشطين لدى نافس — يختلف عن نيّة البحث المعلنة أعلاه')
     },
     {
       label: b('Active Vacancies', 'الشواغر النشطة'),
@@ -497,17 +504,18 @@ const ExecutiveDashboard: React.FC = () => {
       // report roughly forty times the number anyone can actually apply to.
       sub: b('Published and open to applications', 'منشورة ومتاحة للتقديم')
     },
-    {
-      // The board asked for "employees from Dubai". That is a MOHRE-wide figure
-      // the platform does not hold, so this card reports what it DOES know —
-      // candidates on this roster recorded as working — and says so in the
-      // label rather than letting a roster number stand in for the emirate's.
-      label: b('Employed on Roster', 'موظفون ضمن السجل'),
-      value: kpis.employed_on_roster != null ? Number(kpis.employed_on_roster).toLocaleString() : '—',
-      icon: Building2, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200',
-      sub: b('Not the Dubai-wide total — MOHRE data is not connected',
-             'ليس الإجمالي على مستوى دبي — بيانات وزارة الموارد البشرية غير مرتبطة')
-    },
+    // REMOVED: the "Employed on Roster" card. It answered the board's request
+    // for "employees from Dubai" by counting candidate_profiles.work_status =
+    // 'Working' — 33,511 — while the population strip added directly above it
+    // reports the same concept as 33,510, because the strip additionally
+    // requires an active users row with a candidate role. Both queries are
+    // defensible; the two of them adjacent on one board screen, differing by
+    // one and labelled almost identically, is not. A board member who spots the
+    // discrepancy has no way to know which is right, and stops trusting both.
+    //
+    // The strip's Employed tile is now the single answer. Its MOHRE caveat was
+    // the genuinely valuable part of this card and has moved to the strip's
+    // disclosure line, so nothing is lost except the second number.
     // NOTE: the "Growth Projection +18% · AI Forecast" card was removed
     // (data-honesty audit) — it was a hardcoded fabrication with no model behind it.
   ];
@@ -685,7 +693,10 @@ const ExecutiveDashboard: React.FC = () => {
                   onboarding gap is the most important fact about the programme's
                   current state, and burying it under activity charts would be a
                   presentation choice that flatters us. */}
-              <PopulationStrip />
+              <PopulationStrip
+                extraNoteEn="Employed counts people this platform holds a record for; it is not the Dubai-wide total, which requires MOHRE data the platform is not connected to."
+                extraNoteAr="يُحتسب ضمن الموظفين الأشخاص الذين تحتفظ المنصة بسجل لهم، وهو ليس الإجمالي على مستوى دبي، إذ يتطلب ذلك بيانات وزارة الموارد البشرية والتوطين غير المرتبطة بالمنصة."
+              />
 
               {/* ─── KPI Stat Cards ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
