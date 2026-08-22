@@ -313,9 +313,14 @@ def main():
         if not d:
             print(f"  ! cycle '{label}' has no parseable date — not written to history")
             continue
+        # Normalise the label to the format already on the chart axis
+        # ("27 Jul 26"). The sheet tab says "17th Aug" — no year, different
+        # shape — and using it raw put "27 Jul 26 … 17th Aug" side by side on
+        # the same axis. The date is authoritative; the tab name is just how the
+        # CRM team happened to title a sheet that week.
         hist_weeks[d] = (len(added_cycles.get(label, ())),
                          len(removed_cycles.get(label, ())),
-                         label)
+                         d.strftime('%d %b %y'))
 
     for d, (a, rem, label) in sorted(hist_weeks.items()):
         cur.execute("""
