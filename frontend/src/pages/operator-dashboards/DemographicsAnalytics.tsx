@@ -348,7 +348,11 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Education Level Distribution', 'توزيع المستويات التعليمية')} footer={<Coverage field="education" />}>
+                            {/* Spans the row: the "Work Experience Years" card that
+                                used to sit beside it is gone (experience_duration is
+                                populated on 1 of 38,297 rows), and education has the
+                                most categories of any chart here anyway. */}
+                            <ChartCard title={t('Education Level Distribution', 'توزيع المستويات التعليمية')} footer={<Coverage field="education" />} style={{ gridColumn: '1 / -1' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={series('education')} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
