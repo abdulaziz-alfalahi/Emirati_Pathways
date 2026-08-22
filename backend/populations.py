@@ -118,11 +118,33 @@ AUDIENCE_MEMBERS_ONLY = {'recruiter', 'employer_admin', 'hr', 'hr_manager'}
 
 def scope_note(audience: str) -> str:
     """One line explaining what the caller is looking at, for the UI to show."""
+    return scope_note_bilingual(audience)['en']
+
+
+def scope_note_bilingual(audience: str) -> dict:
+    """The same note in both languages.
+
+    The disclosure is the load-bearing part of these figures — it is what turns
+    "33,510 employed" from a claim about the platform's reach into a statement
+    about a data file. An Arabic reader who gets the numbers localised and the
+    caveat in English has been given the claim without the qualification, which
+    is the exact failure the note exists to prevent.
+    """
     if audience in AUDIENCE_MEMBERS_ONLY:
-        return ('Showing people who have signed in to the platform. Records '
-                'imported from NAFIS and employer data are not included.')
-    return ('Showing all recorded people, including those who have not yet '
-            'signed in.')
+        return {
+            'en': ('Showing people who have signed in to the platform. Records '
+                   'imported from NAFIS and employer data are not included.'),
+            'ar': ('تُعرض بيانات الأشخاص الذين سجّلوا الدخول إلى المنصة. لا تشمل '
+                   'السجلات المستوردة من نافس وبيانات جهات العمل.'),
+        }
+    return {
+        'en': ('Showing all recorded people, including those who have not yet '
+               'signed in. "Recorded" means the platform holds a record from an '
+               'imported file; "registered" means the person has signed in.'),
+        'ar': ('تُعرض بيانات جميع الأشخاص المسجّلين في البيانات، بمن فيهم من لم '
+               'يسجّلوا الدخول بعد. "مُدرج في البيانات" يعني وجود سجل مستورد من '
+               'ملف، أما "مسجّل على المنصة" فيعني أن الشخص سجّل الدخول فعلياً.'),
+    }
 
 
 # ── Company onboarding ──────────────────────────────────────────────────────

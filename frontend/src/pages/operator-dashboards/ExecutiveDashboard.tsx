@@ -26,6 +26,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line
 } from 'recharts';
 import { restClient } from '@/utils/api';
+import PopulationStrip from '@/components/PopulationStrip';
 import BoardMinutesPanel from '@/components/board/BoardMinutesPanel';
 import AgendaList from '@/components/board/AgendaList';
 import { useAuth } from '@/context/AuthContext';
@@ -675,6 +676,16 @@ const ExecutiveDashboard: React.FC = () => {
                               OVERVIEW TAB
                ═══════════════════════════════════════════════════════ */}
             <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+              {/* ─── Population figures ───
+                  Employed / seeking / not working / onboarded, from the same
+                  endpoint the CRM reads. This is the board's answer to "how many
+                  Emiratis are employed and how many are we reaching", and it is
+                  deliberately the FIRST thing on the page: the 37-of-38,297
+                  onboarding gap is the most important fact about the programme's
+                  current state, and burying it under activity charts would be a
+                  presentation choice that flatters us. */}
+              <PopulationStrip />
 
               {/* ─── KPI Stat Cards ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

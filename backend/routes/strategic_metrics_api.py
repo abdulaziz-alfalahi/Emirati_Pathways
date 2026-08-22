@@ -322,8 +322,13 @@ def get_operations_live_metrics():
 # and a single figure would be a false statement whichever one was chosen.
 
 @strategic_metrics_bp.route('/populations', methods=['GET'])
+# 'operator' is here because it is in CAREER_SERVICES_ROLES and can therefore
+# open the CRM dashboard. Without it the population strip would 403 for that one
+# role and render "unavailable" — a per-role blank panel that looks like an
+# outage rather than a permission, and would be reported as a bug.
 @require_roles(*(GOVERNANCE_ROLES | {'career_services_operator', 'call_center_agent',
-                                     'recruiter', 'employer_admin', 'talent_operator'}))
+                                     'recruiter', 'employer_admin', 'talent_operator',
+                                     'operator'}))
 def population_summary():
     """How many people are employed, seeking, and actually using the platform."""
     try:
@@ -403,6 +408,8 @@ def population_summary():
                          'not a flag, so it becomes true the moment someone joins.',
             },
             'scope_note': pop.scope_note('recruiter' if members_only else 'board'),
+            'scope_note_ar': pop.scope_note_bilingual(
+                'recruiter' if members_only else 'board')['ar'],
             'members_only': members_only,
         }
         if not members_only:
