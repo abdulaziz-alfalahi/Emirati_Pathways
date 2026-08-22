@@ -1379,6 +1379,11 @@ const GrowthOperatorDashboard: React.FC = () => {
               <p style={{ margin: '6px 0 0', fontSize: 12, color: '#b45309', fontWeight: 600 }}>
                 {empTargets.strategy_note}
               </p>
+              {empTargets.onboarding_basis && (
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: colors.textSecondary }}>
+                  {empTargets.onboarding_basis}
+                </p>
+              )}
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -1407,13 +1412,28 @@ const GrowthOperatorDashboard: React.FC = () => {
                         {(r.sector || '—').slice(0, 34)}
                       </td>
                       <td style={{ padding: '8px 14px' }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                          background: r.onboarded ? '#d1fae5' : '#fef3c7',
-                          color: r.onboarded ? '#065f46' : '#92400e',
-                        }}>
-                          {r.onboarded ? t('On platform', 'على المنصة') : t('Not onboarded', 'غير مُلحقة')}
-                        </span>
+                        {/* THREE states, not two. "On platform" used to mean a
+                            row existed in `companies` — but rows are created by
+                            the vacancy import, so household names were shown as
+                            onboarded when nobody from them had ever joined.
+                            Onboarded now means an accepted team member exists,
+                            which is what the ACL itself requires. */}
+                        {(() => {
+                          const st = {
+                            onboarded:           { bg: '#d1fae5', fg: '#065f46', en: 'Onboarded', ar: 'مُلحقة' },
+                            verified_not_joined: { bg: '#dbeafe', fg: '#1e40af', en: 'Verified, not joined', ar: 'موثّقة، لم تنضم' },
+                            record_only:         { bg: '#fef3c7', fg: '#92400e', en: 'Record only', ar: 'سجل فقط' },
+                            not_on_file:         { bg: '#f1f5f9', fg: '#475569', en: 'Not on file', ar: 'غير مسجّلة' },
+                          }[r.state as string] || { bg: '#f1f5f9', fg: '#475569', en: '—', ar: '—' };
+                          return (
+                            <span style={{
+                              fontSize: 11, fontWeight: 600, padding: '2px 8px',
+                              borderRadius: 999, background: st.bg, color: st.fg,
+                            }}>
+                              {t(st.en, st.ar)}
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}

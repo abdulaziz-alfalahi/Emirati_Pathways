@@ -543,7 +543,16 @@ def employer_targets():
                    COUNT(*) FILTER (WHERE p.salary_support) AS on_nafis,
                    MODE() WITHIN GROUP (ORDER BY p.company_sector) AS sector,
                    MAX(co.company_name) AS company_name,
-                   BOOL_OR(co.id IS NOT NULL) AS onboarded
+                   -- A company ROW is not a relationship. Rows are created by
+                   -- the NAFIS vacancy import as leads, so `co.id IS NOT NULL`
+                   -- marked 257 companies as onboarded when 4 had anyone from
+                   -- the company actually join (owner, 2026-08-22). The ACL rule
+                   -- — an accepted team member — is the authority.
+                   BOOL_OR(EXISTS (SELECT 1 FROM company_team_members m
+                                    WHERE m.company_id = co.id
+                                      AND m.invitation_status = 'accepted')) AS onboarded,
+                   BOOL_OR(COALESCE(co.is_verified, FALSE)) AS verified,
+                   BOOL_OR(co.id IS NOT NULL) AS has_record
               FROM private_sector_employment p
               LEFT JOIN companies co ON co.company_code = p.company_code
              WHERE p.company_code IS NOT NULL AND p.company_code <> '0'
@@ -559,6 +568,9 @@ def employer_targets():
             'sector': r[3],
             'company_name': r[4],
             'onboarded': bool(r[5]),
+            'state': ('onboarded' if r[5] else
+                      'verified_not_joined' if r[6] else
+                      'record_only' if r[7] else 'not_on_file'),
         } for r in cur.fetchall()]
 
         # Companies currently hiring, cross-referenced against how many Emiratis
@@ -641,6 +653,10 @@ def employer_targets():
                 f'only, so the rest need resolving against a licensing source '
                 f'before anyone can be contacted. Ranking by headcount says which '
                 f'codes are worth resolving first.'),
+            'onboarding_basis': (
+                'Onboarded means someone from the company has joined and can act '
+                'for it. A company record on its own is not a relationship — most '
+                'records were created by the vacancy import.'),
             'strategy_note': (
                 f'The top 100 employers account for {round(top100 / covered * 100)}% '
                 f'of employed Emiratis and {singles:,} employers have exactly one. '

@@ -123,3 +123,52 @@ def scope_note(audience: str) -> str:
                 'imported from NAFIS and employer data are not included.')
     return ('Showing all recorded people, including those who have not yet '
             'signed in.')
+
+
+# ── Company onboarding ──────────────────────────────────────────────────────
+#
+# The same recorded-vs-registered trap as above, and it caught me: the employer
+# panel labelled a company "On platform" whenever a row existed in `companies`.
+# Rows are created by the NAFIS vacancy import as leads, so 257 companies had a
+# row and 4 had anyone from the company actually join. Five household names were
+# shown to an operator as onboarded when none of them were (owner, 2026-08-22).
+#
+# THE ACL IS THE AUTHORITY, not the presence of a row: company_team_members with
+# invitation_status = 'accepted' is what workspace_middleware.get_company_context
+# reads to decide whether someone may act for a company. If that query would let
+# nobody in, the company is not on the platform in any sense that matters.
+#
+# is_verified is NOT the test either. It records that an operator checked the
+# trade licence, which can happen before anyone from the company has joined —
+# 11 verified against 4 with an accepted member.
+COMPANY_ONBOARDED_SQL = """EXISTS (SELECT 1 FROM company_team_members m
+                                    WHERE m.company_id = {alias}.id
+                                      AND m.invitation_status = 'accepted')"""
+
+
+def company_onboarded_sql(alias: str = 'co') -> str:
+    return COMPANY_ONBOARDED_SQL.format(alias=alias)
+
+
+# Three states, because "not onboarded" covers two situations an operator needs
+# to tell apart: a company nobody has contacted, and one that was verified but
+# whose people never joined.
+COMPANY_STATES = {
+    'onboarded': {
+        'label_en': 'Onboarded',
+        'label_ar': 'مُلحقة',
+        'means': 'Someone from this company has joined and can act for it.',
+    },
+    'verified_not_joined': {
+        'label_en': 'Verified, not joined',
+        'label_ar': 'موثّقة، لم تنضم',
+        'means': 'Trade licence checked by an operator, but nobody from the '
+                 'company has an accepted account yet.',
+    },
+    'record_only': {
+        'label_en': 'Record only',
+        'label_ar': 'سجل فقط',
+        'means': 'A row exists because an import created one — usually from a '
+                 'NAFIS vacancy. No relationship with the company.',
+    },
+}
