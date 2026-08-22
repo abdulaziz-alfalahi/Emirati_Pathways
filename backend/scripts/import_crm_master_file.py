@@ -292,12 +292,79 @@ def main():
     """, (file_date, sorted(master_eids)))
     marked_removed += cur.rowcount
 
+    # ── Roster movement history ─────────────────────────────────────────────
+    #
+    # WHY THIS IS HERE: it was missing, and the omission was invisible for a
+    # week. This script replaced scripts/import_crm_master.py, which wrote
+    # crm_roster_history from the workbook's "Add & Remove Pivot" sheet. This
+    # one reads the per-cycle Added/Removed sheets instead — better source, same
+    # obligation — but never wrote the table. So the 17 Aug file imported
+    # correctly into the roster while the CRM dashboard went on reporting
+    # "as of 27 Jul 2026" and both movement charts stopped a month short. The
+    # data was right and the page was stale, which is harder to notice than a
+    # failed import.
+    #
+    # Weekly rows are the cycles themselves. Monthly rows are their rollup —
+    # recomputed from the cycles in that month rather than accumulated, so a
+    # re-run of the same file cannot double a month.
+    hist_weeks = {}
+    for label in set(added_cycles) | set(removed_cycles):
+        d = cycle_date(label)
+        if not d:
+            print(f"  ! cycle '{label}' has no parseable date — not written to history")
+            continue
+        hist_weeks[d] = (len(added_cycles.get(label, ())),
+                         len(removed_cycles.get(label, ())),
+                         label)
+
+    for d, (a, rem, label) in sorted(hist_weeks.items()):
+        cur.execute("""
+            INSERT INTO crm_roster_history
+                   (period_type, period_date, period_label, added, removed, total, source)
+            VALUES ('week', %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (period_type, period_date)
+            DO UPDATE SET added = EXCLUDED.added, removed = EXCLUDED.removed,
+                          total = EXCLUDED.total, source = EXCLUDED.source,
+                          period_label = EXCLUDED.period_label
+        """, (d, label, a, rem, a + rem, src_name))
+
+    # Monthly rows are recomputed from the WEEK rows now in the table, not from
+    # this file's cycles. A file carries only its own recent cycles: rolling up
+    # just those would rewrite August from the two cycles in next week's file and
+    # silently drop the three in this one. Summing the stored weeks is
+    # self-correcting and reproduces the existing months exactly — July's
+    # 1,113/749 from the retired importer's pivot sheet is the sum of its four
+    # week rows, and June's 1,089/1,323 the sum of its six.
+    touched_months = sorted({d.replace(day=1) for d in hist_weeks})
+    months = {}
+    for m in touched_months:
+        cur.execute("""
+            SELECT COALESCE(SUM(added),0) a, COALESCE(SUM(removed),0) r
+              FROM crm_roster_history
+             WHERE period_type = 'week'
+               AND period_date >= %s
+               AND period_date < (%s::date + INTERVAL '1 month')
+        """, (m, m))
+        row = cur.fetchone()
+        months[m] = (int(row['a']), int(row['r']))
+    for d, (a, rem) in sorted(months.items()):
+        cur.execute("""
+            INSERT INTO crm_roster_history
+                   (period_type, period_date, period_label, added, removed, total, source)
+            VALUES ('month', %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (period_type, period_date)
+            DO UPDATE SET added = EXCLUDED.added, removed = EXCLUDED.removed,
+                          total = EXCLUDED.total, source = EXCLUDED.source,
+                          period_label = EXCLUDED.period_label
+        """, (d, d.strftime("%b '%y"), a, rem, a + rem, src_name))
+
     conn.commit()
     print(f"  roster rows written  : {new_seekers:,}  (inserted or refreshed)")
     print(f"  users created        : {new_users:,}")
     print(f"  profiles created     : {new_profiles:,}")
     print(f"  profiles updated     : {upd_profiles:,}")
     print(f"  marked off-roster    : {marked_removed:,}")
+    print(f"  history rows written : {len(hist_weeks)} weekly + {len(months)} monthly")
 
     cur.execute("SELECT roster_status, COUNT(*) c FROM nafis_job_seekers GROUP BY 1")
     print("  roster now:", {r['roster_status']: r['c'] for r in cur.fetchall()})

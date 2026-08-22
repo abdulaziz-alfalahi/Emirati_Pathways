@@ -1428,8 +1428,15 @@ def get_crm_stats():
             """)
             months = [dict(r, period_date=str(r['period_date'])) for r in cursor.fetchall()]
 
-            # Roster vintage = the newest period in the movement history, which
-            # tracks the master-file drop date (auto-updates on every import).
+            # Roster vintage = the newest period in the movement history.
+            #
+            # This comment used to claim it "auto-updates on every import". It
+            # did not: the importer that replaced import_crm_master.py never
+            # wrote crm_roster_history, so the 17 August file loaded correctly
+            # while this date sat at 27 July for a week. The write is back in
+            # the importer and pinned by test_crm_roster_history.py — but the
+            # dependency is worth stating plainly, because a stale date here
+            # looks identical to a roster nobody has updated.
             cursor.execute("SELECT MAX(period_date) AS d FROM crm_roster_history")
             _as_of = cursor.fetchone()['d']
 
