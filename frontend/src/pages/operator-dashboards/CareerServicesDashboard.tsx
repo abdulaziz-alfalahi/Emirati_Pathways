@@ -950,7 +950,12 @@ const LOCATION_OPTIONS = [
               <Card className="border-none shadow-sm bg-white rounded-2xl">
                 <CardHeader>
                   <CardTitle className="text-lg">{t('Work & Call Status', 'حالة العمل والاتصال')}</CardTitle>
-                  <CardDescription>{t('Current roster breakdown', 'توزيع السجل الحالي')}</CardDescription>
+                  {/* Follows the scope for the same reason the KPI label does:
+                      "Current roster breakdown" over a 38,297-person chart is a
+                      wrong label on a right number. */}
+                  <CardDescription>{statsScope === 'platform'
+                    ? t('Breakdown across everyone on the platform', 'التوزيع بين جميع من على المنصة')
+                    : t('Current roster breakdown', 'توزيع السجل الحالي')}</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80" dir="ltr">
                   <div className="grid grid-cols-2 h-full">

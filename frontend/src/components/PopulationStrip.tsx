@@ -119,7 +119,12 @@ export const PopulationStrip: React.FC<{ className?: string }> = ({ className = 
           ? t('on the platform', 'على المنصة')
           : t(
               `${p.registered.toLocaleString()} registered on the platform`,
-              `${p.registered.toLocaleString('ar-AE')} منهم مسجّلون على المنصة`,
+              /* Label-then-number, not number-then-plural-noun. Arabic agreement
+                 changes with the count (1 / 2 / 3-10 / 11+), and these figures
+                 are currently 1 — "1 منهم مسجّلون" is wrong in the exact case
+                 the platform is in today. The colon form is correct for every
+                 count without special-casing four grammatical branches. */
+              `مسجّلون على المنصة: ${p.registered.toLocaleString('ar-AE')}`,
             ),
       means: p.means,
       accent: ACCENT[key] || 'text-slate-900',
