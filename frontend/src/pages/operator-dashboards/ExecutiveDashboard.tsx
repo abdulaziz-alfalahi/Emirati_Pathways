@@ -1494,15 +1494,20 @@ const ExecutiveDashboard: React.FC = () => {
                           <Legend wrapperStyle={{ fontSize: 11 }} />
                           <Bar yAxisId="left" dataKey="starts" fill="#047857" radius={[3, 3, 0, 0]}
                                name={b('Job starts', 'بدء وظائف')} />
+                          {/* connectNulls stays FALSE. Months below the
+                              reporting threshold return null, and bridging the
+                              gap would draw a confident line through exactly
+                              the months the backend declined to rate. */}
                           <Line yAxisId="right" type="monotone" dataKey="nafis_support_pct"
                                 stroke="#b45309" strokeWidth={1.5} dot={false}
+                                connectNulls={false}
                                 name={b('% on NAFIS support', '٪ على دعم نافس')} />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                       {b(empTimeline.month_basis || '',
-                         'بدء الوظائف شهرياً لمن هم على رأس العمل حالياً. يونيو وديسمبر ذروتا توظيف حقيقيتان وليستا خطأً في البيانات — إذ تتوزع تواريخ الالتحاق على أيام الشهر ولا تتركز في تاريخ افتراضي واحد. الشهر الحالي غير مكتمل، و١١ سجلاً تحمل تاريخ التحاق مستقبلياً (تم التوقيع ولم يبدأ العمل بعد).')}
+                         'بدء الوظائف شهرياً لمن هم على رأس العمل حالياً. يونيو وديسمبر ذروتا توظيف حقيقيتان وليستا خطأً في البيانات — إذ تتوزع تواريخ الالتحاق على أيام الشهر ولا تتركز في تاريخ افتراضي واحد. الشهر الحالي غير مكتمل، و١١ سجلاً تحمل تاريخ التحاق مستقبلياً (تم التوقيع ولم يبدأ العمل بعد). ولا تُرسم نسبة الدعم للأشهر التي تقل فيها حالات الالتحاق عن ٣٠ حالة، إذ تصبح النسبة عندها بلا دلالة؛ كما تبدو الأشهر الأحدث منخفضة لأن دعم الملتحقين حديثاً غالباً لم يبدأ صرفه بعد، لا لأن عدداً أقل منهم مؤهل.')}
                     </p>
                   </CardContent>
                 </Card>

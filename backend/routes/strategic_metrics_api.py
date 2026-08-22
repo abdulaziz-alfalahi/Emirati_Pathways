@@ -527,13 +527,24 @@ def employment_timeline():
                AND job_start_date >= DATE '2010-01-01'
              GROUP BY 1, 2, 3 ORDER BY 1
         """)
+        # A RATE ON A TINY DENOMINATOR IS NOT A RATE. September 2026 holds five
+        # starts, none yet on support, and plotted as 0% it drew the NAFIS line
+        # off a cliff at the right-hand edge of the chart — a board member sees
+        # support collapsing when what happened is that five people started.
+        #
+        # Below the threshold the percentage is null, so the line simply stops
+        # rather than lying. The BARS still show every month, so nothing is
+        # hidden: the count is reported, only the ratio is withheld, and the
+        # threshold is stated in month_basis rather than applied silently.
+        MIN_N_FOR_RATE = 30
         by_month = [{
             'ym': r[0],
             'year': r[1],
             'month': r[2],
             'starts': r[3],
             'nafis_supported': r[4],
-            'nafis_support_pct': round(r[4] / r[3] * 100, 1) if r[3] else None,
+            'nafis_support_pct': (round(r[4] / r[3] * 100, 1)
+                                  if r[3] >= MIN_N_FOR_RATE else None),
         } for r in cur.fetchall()]
 
         cur.execute("""
@@ -579,7 +590,11 @@ def employment_timeline():
                 'are genuine hiring peaks, not artefacts — the starts spread '
                 'across those months rather than falling on one default date. '
                 'The current month is partial, and 11 records carry a start date '
-                'still in the future (signed but not yet begun).'),
+                'still in the future (signed but not yet begun). The support rate '
+                'is not plotted for months with fewer than 30 starts, where a '
+                'percentage would be noise; the most recent months read low '
+                'because support for new hires is often not yet in payment, not '
+                'because fewer of them qualify.'),
         }})
     except Exception as e:
         logger.error(f"employment timeline failed: {e}")
