@@ -1442,6 +1442,49 @@ const ExecutiveDashboard: React.FC = () => {
                   hiring and part attrition. A board slide that lost that
                   sentence would read as a fivefold hiring increase, which the
                   data cannot support on its own. */}
+              {/* WHERE EMIRATIS WORK. Horizontal bars, not a pie: 21 sectors
+                  is far past the number of slices anyone can compare by angle,
+                  and the question here ("which sectors absorb Emiratis") is a
+                  ranking question, which length answers and angle does not.
+
+                  "Not stated" is plotted with the rest rather than filtered out.
+                  It is the fourth largest bar at 4,091 — hiding it would make
+                  the visible bars look like the whole population. */}
+              {empTimeline?.sector_distribution?.length > 0 && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="font-dubai-bold text-slate-900 text-base" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b('Where Emiratis work — by business sector', 'أين يعمل الإماراتيون — حسب القطاع')}
+                    </CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-500 text-xs" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b(`${(empTimeline.total_records || 0).toLocaleString()} people currently in private-sector employment`,
+                         `${(empTimeline.total_records || 0).toLocaleString()} شخصاً على رأس العمل في القطاع الخاص`)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div style={{ width: '100%', height: 560 }}>
+                      <ResponsiveContainer>
+                        <BarChart data={empTimeline.sector_distribution} layout="vertical"
+                                  margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
+                          <XAxis type="number" tick={{ fontSize: 11 }} />
+                          <YAxis type="category" dataKey="sector" width={190}
+                                 tick={{ fontSize: 11 }} interval={0}
+                                 reversed={isRTL} orientation={isRTL ? 'right' : 'left'} />
+                          <Tooltip formatter={(v: any, _n: any, p: any) =>
+                            `${(v as number).toLocaleString()} (${p?.payload?.pct}%)`} />
+                          <Bar dataKey="headcount" fill="#047857" radius={[0, 3, 3, 0]}
+                               name={b('Employees', 'موظفون')} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                      {b(empTimeline.sector_basis || '',
+                         'أين يعمل حالياً الـ٣٣٬٣٥٢ إماراتياً الواردون في هذا الملف، عبر جميع السنوات — وليس من يوظّف الآن. تظهر فئة "غير مذكور" ولم تُستبعد: يوفّر المصدر رمز المنشأة ويحمل القطاع لـ٨٧٫٧٪ من السجلات، واستبعاد الباقي كان سيضخّم حصة كل قطاع بنحو الثُمن.')}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* MONTHLY view. The yearly chart above cannot show seasonality,
                   and the seasonality is the largest feature in this data: June
                   and December each hold ~18% of all starts against ~5% for a

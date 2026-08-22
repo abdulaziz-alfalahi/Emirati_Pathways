@@ -560,6 +560,43 @@ def employment_timeline():
         for yr, sector, n in cur.fetchall():
             by_sector.setdefault(str(yr), []).append({'sector': sector, 'starts': n})
 
+        # WHERE EMIRATIS ACTUALLY WORK — the standing distribution, not the
+        # hiring flow. by_sector above is keyed by year and starts at 2021, so
+        # it answers "which sectors are recruiting"; it cannot answer "how are
+        # the 33,352 distributed", which is a different question and the one
+        # asked more often.
+        #
+        # NO DATE FILTER HERE, deliberately. Restricting to dated rows would
+        # drop 209 people from a headcount for a reason that has nothing to do
+        # with where they work.
+        #
+        # 'Not stated' IS A ROW, not an omission. 4,091 records (12.3%) carry no
+        # sector — the source file gives a company CODE and the sector is only
+        # present for some. Dropping them would make the percentages add to 100
+        # of a population that is not the one named, and quietly overstate every
+        # sector's share by about an eighth.
+        cur.execute("""
+            SELECT COALESCE(NULLIF(TRIM(company_sector), ''), 'Not stated') AS sector,
+                   COUNT(*) AS n,
+                   COUNT(*) FILTER (WHERE salary_support) AS supported
+              FROM private_sector_employment
+             GROUP BY 1 ORDER BY 2 DESC
+        """)
+        rows = cur.fetchall()
+        grand = sum(r[1] for r in rows) or 1
+        sector_distribution = [{
+            # Source values are ISIC sections prefixed with their letter
+            # ("F-Construction"). The letter is meaningful to a statistician and
+            # noise to a board member, so it is split out rather than deleted.
+            'code': (r[0].split('-', 1)[0] if len(r[0]) > 1 and r[0][1:2] == '-' else None),
+            'sector': (r[0].split('-', 1)[1].strip()
+                       if len(r[0]) > 1 and r[0][1:2] == '-' else r[0]),
+            'headcount': r[1],
+            'pct': round(r[1] / grand * 100, 1),
+            'nafis_supported': r[2],
+            'nafis_support_pct': round(r[2] / r[1] * 100, 1) if r[1] >= 30 else None,
+        } for r in rows]
+
         cur.execute("SELECT COUNT(*) FROM private_sector_employment WHERE job_start_date IS NULL")
         undated = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM private_sector_employment")
@@ -570,6 +607,7 @@ def employment_timeline():
             'by_year': by_year,
             'by_month': by_month,
             'by_sector': by_sector,
+            'sector_distribution': sector_distribution,
             'total_records': total,
             'undated': undated,
             'basis': (
@@ -585,6 +623,12 @@ def employment_timeline():
                 'its numerator and denominator together. The most recent year '
                 'reads low because support for very recent hires may not yet be '
                 'in payment, not because fewer of them qualify.'),
+            'sector_basis': (
+                'Where the 33,352 Emiratis in this file currently work, across '
+                'all years — not who is hiring now. "Not stated" is shown rather '
+                'than dropped: the source gives a company code and carries a '
+                'sector for 87.7% of records, so excluding the rest would '
+                'overstate every sector\'s share by about an eighth.'),
             'month_basis': (
                 'Monthly starts for people currently employed. June and December '
                 'are genuine hiring peaks, not artefacts — the starts spread '
