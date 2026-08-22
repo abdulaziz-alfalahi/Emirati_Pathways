@@ -1370,19 +1370,41 @@ def get_crm_stats():
     on the platform update these same rows.
     """
     try:
+        # SCOPE IS NOW EXPLICIT, because the boundary was invisible.
+        #
+        # Every figure here was filtered to crm_reference IS NOT NULL — the CRM
+        # roster. That was right when the roster was the platform. It stopped
+        # being right when 33,352 employed Emiratis were loaded: the work-status
+        # chart read "Working 690" while the platform held 33,510, and nothing on
+        # screen said the other 32,820 had been excluded.
+        #
+        # A silently narrowed denominator is worse than a narrow one. The roster
+        # remains the DEFAULT — it is what a career-services operator works — but
+        # the caller can ask for the whole platform, and both totals are returned
+        # either way so the page can state which it is showing.
+        scope = (request.args.get('scope') or 'roster').lower()
+        if scope not in ('roster', 'platform'):
+            scope = 'roster'
+        where = ("crm_reference IS NOT NULL" if scope == 'roster'
+                 else "TRUE")
+
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             def breakdown(col):
                 cursor.execute(f"""
                     SELECT COALESCE(NULLIF(TRIM({col}), ''), 'Unknown') AS label, COUNT(*) AS count
-                    FROM candidate_profiles WHERE crm_reference IS NOT NULL
+                    FROM candidate_profiles WHERE {where}
                     GROUP BY 1 ORDER BY 2 DESC
                 """)
                 return [dict(r) for r in cursor.fetchall()]
 
-            cursor.execute("SELECT COUNT(*) AS n FROM candidate_profiles WHERE crm_reference IS NOT NULL")
+            cursor.execute(f"SELECT COUNT(*) AS n FROM candidate_profiles WHERE {where}")
             total = cursor.fetchone()['n']
+            cursor.execute("SELECT COUNT(*) AS n FROM candidate_profiles WHERE crm_reference IS NOT NULL")
+            roster_total = cursor.fetchone()['n']
+            cursor.execute("SELECT COUNT(*) AS n FROM candidate_profiles")
+            platform_total = cursor.fetchone()['n']
 
             cursor.execute("""
                 SELECT seg AS label, COUNT(*) AS count
@@ -1413,6 +1435,12 @@ def get_crm_stats():
 
             return jsonify({'success': True, 'data': {
                 'total_roster': total,
+                # Both denominators travel with the figures, always — so the page
+                # can name which population it is drawing and how much of the
+                # platform sits outside it.
+                'scope': scope,
+                'roster_total': roster_total,
+                'platform_total': platform_total,
                 'roster_as_of': str(_as_of) if _as_of else None,
                 'segments': segments,
                 'call_status': breakdown('call_status'),

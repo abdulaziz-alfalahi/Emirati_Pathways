@@ -17,6 +17,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { useAuth } from '@/context/AuthContext';
 import Messages from '@/components/recruiter/Messages';
+import PopulationStrip from '@/components/PopulationStrip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,6 +55,10 @@ export default function CareerServicesDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  /* Which population the charts below are drawn from. Defaults to the CRM
+     roster — that is what this team works — but the boundary is now a control
+     the operator can see and move, instead of a WHERE clause they cannot. */
+  const [statsScope, setStatsScope] = useState<'roster' | 'platform'>('roster');
 
   // Filters and Pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,10 +123,10 @@ export default function CareerServicesDashboard() {
       .catch(() => setFilterOptions(null));
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (scope: 'roster' | 'platform' = statsScope) => {
     setStatsLoading(true);
     try {
-      const res = await restClient.get('/api/profile/crm-stats');
+      const res = await restClient.get(`/api/profile/crm-stats?scope=${scope}`);
       if (res.data?.success) setStats(res.data.data);
     } catch (e) {
       console.error('Failed to fetch CRM stats', e);
@@ -799,18 +804,72 @@ const LOCATION_OPTIONS = [
             <div className="flex flex-col justify-center items-center py-24 bg-white rounded-2xl shadow-sm text-center">
               <AlertCircle className="h-10 w-10 text-amber-500 mb-3" />
               <p className="text-slate-600 font-medium">{t('Analytics are unavailable right now.', 'التحليلات غير متاحة حالياً.')}</p>
-              <Button onClick={fetchStats} variant="outline" className="mt-4 rounded-xl">{t('Retry', 'إعادة المحاولة')}</Button>
+              <Button onClick={() => fetchStats()} variant="outline" className="mt-4 rounded-xl">{t('Retry', 'إعادة المحاولة')}</Button>
             </div>
           ) : (
           <div className="space-y-6">
+            {/* The three numbers the owner asked for, from the one definition
+                every audience reads. Placed above the roster charts because the
+                roster is a SUBSET — showing 3,662 first and 38,297 second would
+                repeat the framing that hid the employed population. */}
+            <PopulationStrip />
+
+            {/* Scope control. The employed import (33,352 people) has no
+                crm_reference, so every chart below was silently excluding it —
+                "Working 690" against a platform holding 33,510. The filter is
+                now named and switchable rather than implicit. */}
+            <div className="flex flex-wrap items-center gap-3 bg-white rounded-2xl shadow-sm p-4">
+              <span className="text-sm font-medium text-slate-600">
+                {t('Charts below are drawn from:', 'الرسوم أدناه مبنية على:')}
+              </span>
+              <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+                {([
+                  { id: 'roster', label: t('CRM roster', 'سجل المتابعة'), n: stats.roster_total },
+                  { id: 'platform', label: t('Everyone on the platform', 'جميع من على المنصة'), n: stats.platform_total },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => { setStatsScope(opt.id); fetchStats(opt.id); }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                      statsScope === opt.id
+                        ? 'bg-white text-[#006E6D] shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {opt.label}
+                    {typeof opt.n === 'number' && (
+                      <span className="ms-1.5 text-xs opacity-70">
+                        {Number(opt.n).toLocaleString(language === 'ar' ? 'ar-AE' : 'en-GB')}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {statsScope === 'roster' && typeof stats.platform_total === 'number' && typeof stats.roster_total === 'number' && (
+                <span className="text-xs text-slate-500">
+                  {t(
+                    `${(stats.platform_total - stats.roster_total).toLocaleString()} people on the platform are outside this view.`,
+                    `${(stats.platform_total - stats.roster_total).toLocaleString('ar-AE')} شخصاً على المنصة خارج نطاق هذا العرض.`,
+                  )}
+                </span>
+              )}
+            </div>
+
             {/* KPI row from live roster data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 {
-                  label: stats.roster_as_of
-                    ? t(`CRM Roster — as of ${new Date(stats.roster_as_of).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-                        `سجل المتابعة — بتاريخ ${new Date(stats.roster_as_of).toLocaleDateString('ar-AE', { day: 'numeric', month: 'short', year: 'numeric' })}`)
-                    : t('CRM Roster', 'سجل المتابعة'),
+                  /* The label must follow the scope. Left fixed, this tile
+                     would read "CRM Roster 38,297" — a wrong label on a right
+                     number, which is how the 690 got believed in the first
+                     place. The as-of date belongs only to the roster; the
+                     platform total has no single import date. */
+                  label: statsScope === 'platform'
+                    ? t('Everyone on the platform', 'جميع من على المنصة')
+                    : stats.roster_as_of
+                      ? t(`CRM Roster — as of ${new Date(stats.roster_as_of).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                          `سجل المتابعة — بتاريخ ${new Date(stats.roster_as_of).toLocaleDateString('ar-AE', { day: 'numeric', month: 'short', year: 'numeric' })}`)
+                      : t('CRM Roster', 'سجل المتابعة'),
                   value: stats.total_roster, color: 'text-slate-900',
                 },
                 { label: t('Active Job Seekers', 'الباحثون النشطون'), value: stats.segments?.find((s: any) => s.label === 'active')?.count ?? 0, color: 'text-[#09897A]' },
