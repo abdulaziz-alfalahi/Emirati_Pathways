@@ -872,7 +872,13 @@ const LOCATION_OPTIONS = [
                       : t('CRM Roster', 'سجل المتابعة'),
                   value: stats.total_roster, color: 'text-slate-900',
                 },
-                { label: t('Active Job Seekers', 'الباحثون النشطون'), value: stats.segments?.find((s: any) => s.label === 'active')?.count ?? 0, color: 'text-[#09897A]' },
+                /* Names the MEASURE, not the concept. "Active Job Seekers"
+                   sat directly beneath the strip's "Actively seeking work"
+                   reading as its synonym, while showing 1,740 against 2,489 —
+                   a CRM segment assigned by the team versus what the person
+                   said about looking for work. Third instance of this same
+                   defect today; see the board dashboard's NAFIS card. */
+                { label: t('CRM Segment — Active', 'شريحة السجل — نشط'), value: stats.segments?.find((s: any) => s.label === 'active')?.count ?? 0, color: 'text-[#09897A]' },
                 { label: t('1st Priority', 'الأولوية الأولى'), value: stats.segments?.find((s: any) => s.label === 'priority_1')?.count ?? 0, color: 'text-teal-700' },
                 { label: t('No Answer', 'لا يوجد رد'), value: stats.segments?.find((s: any) => s.label === 'no_answer')?.count ?? 0, color: 'text-rose-500' },
               ].map((kpi) => (
