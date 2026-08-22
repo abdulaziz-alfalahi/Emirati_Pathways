@@ -280,3 +280,53 @@ def test_vacancies_are_counted_per_company_not_per_posting_blindly():
     body = src.split('def employer_targets')[1]
     assert 'JOIN companies co ON co.id = jp.company_id' in body, \
         'unlinked postings must not be attributed to a company'
+
+
+# ── A company record is not a relationship (owner, 2026-08-22) ──────────────
+
+def test_onboarded_means_someone_joined_not_that_a_row_exists():
+    """The employer panel labelled a company "On platform" whenever a row
+    existed in `companies`. Rows are created by the NAFIS vacancy import as
+    leads, so 257 companies were marked onboarded when 4 had anyone from the
+    company actually join — Al Futtaim, Habib Bank, Deloitte and others were
+    shown to an operator as onboarded, all with zero accepted members.
+
+    This is the same recorded-vs-registered error this module exists to prevent,
+    made for companies a day after it was fixed for people.
+    """
+    src = _src('routes', 'strategic_metrics_api.py')
+    body = src.split('def employer_targets')[1]
+    assert "invitation_status = 'accepted'" in body, \
+        'onboarded is not tested against the ACL rule'
+    assert 'BOOL_OR(co.id IS NOT NULL) AS onboarded' not in body, \
+        'the presence of a row is being used as onboarding again'
+
+
+def test_is_verified_is_not_treated_as_onboarded():
+    """Verification records that an operator checked a trade licence, which can
+    happen before anyone joins — 11 verified against 4 with an accepted member."""
+    import populations as pop
+    assert 'is_verified' not in pop.COMPANY_ONBOARDED_SQL
+    assert 'verified_not_joined' in pop.COMPANY_STATES
+
+
+def test_not_onboarded_is_split_into_two_honest_states():
+    """"Not onboarded" covers a company nobody has contacted and one that was
+    verified but whose people never joined. An operator works those differently."""
+    import populations as pop
+    for k in ('onboarded', 'verified_not_joined', 'record_only'):
+        assert k in pop.COMPANY_STATES, k
+        assert pop.COMPANY_STATES[k]['means']
+        assert pop.COMPANY_STATES[k]['label_ar']
+
+
+def test_the_panel_renders_the_state_not_a_boolean():
+    path = os.path.join(BACKEND, '..', 'frontend', 'src', 'pages',
+                        'GrowthOperatorDashboard.tsx')
+    if not os.path.exists(path):
+        return
+    with open(path, encoding='utf-8') as fh:
+        src = fh.read()
+    assert 'verified_not_joined' in src and 'record_only' in src
+    assert "t('On platform', 'على المنصة')" not in src, \
+        'the misleading label is still rendered'
