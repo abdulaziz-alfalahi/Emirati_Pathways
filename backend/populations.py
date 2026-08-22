@@ -97,6 +97,23 @@ POPULATIONS = {
 }
 
 
+# ── The axes, and why the tiles must not be added ───────────────────────────
+#
+# work_status and looking_status are INDEPENDENT. "Not working" and "Actively
+# seeking" are not two slices of one pie — 2,335 people are in both, and 124 are
+# employed AND looking to move (measured live 2026-08-22).
+#
+# Every figure above is a correct count of unique Emirates IDs. The failure mode
+# is not the counts, it is the ARITHMETIC a reader performs on them: rendered as
+# a row of tiles they invite a sum, and 33,510 + 2,489 + 3,614 = 39,613 against
+# a platform holding 38,336 people. Only a disclosure stops that, so the API
+# reports the overlaps and the UI states them.
+OVERLAP_PAIRS = [
+    ('not_working', 'seeking'),
+    ('employed', 'seeking'),
+]
+
+
 # ── Who may see what ────────────────────────────────────────────────────────
 #
 # The same three numbers serve different readers, and the difference is about

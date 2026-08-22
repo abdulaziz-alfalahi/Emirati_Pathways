@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, Info, AlertTriangle } from 'lucide-react';
 
 /**
  * The three numbers the platform owner asked for — employed Emiratis, job
@@ -34,8 +34,15 @@ interface PopulationEntry {
   recorded?: number;
 }
 
+interface Overlap {
+  a: string; b: string; count: number;
+  a_label_en: string; b_label_en: string;
+  a_label_ar: string; b_label_ar: string;
+}
+
 interface PopulationsPayload {
   populations: Record<string, PopulationEntry>;
+  overlaps?: Overlap[];
   onboarded: {
     label_en: string;
     label_ar: string;
@@ -172,6 +179,33 @@ export const PopulationStrip: React.FC<{
           </Card>
         ))}
       </div>
+
+      {/* THE TILES ARE NOT ADDABLE and nothing else on the page says so.
+          work_status and looking_status are independent axes: 2,335 people are
+          both "Not working" and "Actively seeking". Each figure is a correct
+          count of unique Emirates IDs — it is the sum a reader performs that is
+          wrong, and 33,510 + 2,489 + 3,614 exceeds the number of people who
+          exist. Counts come from the API rather than this file so they cannot
+          go stale against the next import. */}
+      {!!data.overlaps?.length && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-700 mt-3 leading-relaxed">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            {t(
+              'These figures measure different things and must not be added: ',
+              'تقيس هذه الأرقام أموراً مختلفة ولا يصح جمعها: ',
+            )}
+            {data.overlaps
+              .map((o) =>
+                isAr
+                  ? `${o.count.toLocaleString('ar-AE')} شخصاً ضمن "${o.a_label_ar}" و"${o.b_label_ar}" معاً`
+                  : `${o.count.toLocaleString()} people are in both "${o.a_label_en}" and "${o.b_label_en}"`,
+              )
+              .join(t('; ', '؛ '))}
+            .
+          </span>
+        </p>
+      )}
 
       {/* The basis travels with the numbers. Not a footnote to be cropped out of
           a screenshot — it sits under them, in the same component, always. */}

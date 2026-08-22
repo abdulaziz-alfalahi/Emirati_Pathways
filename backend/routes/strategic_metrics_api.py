@@ -405,10 +405,33 @@ def population_summary():
              WHERE u.role IN ('candidate','job_seeker') AND u.is_active IS TRUE
         """)
         total_recorded = cur.fetchone()[0]
+
+        # Overlaps, so the page can say the tiles are not addable. Computed
+        # rather than hardcoded: these move with every import, and a stale
+        # "2,335" in a caption would be the same class of invented number the
+        # rest of this work removed.
+        overlaps = []
+        for a, b in pop.OVERLAP_PAIRS:
+            cur.execute(f"""
+                SELECT COUNT(DISTINCT u.id) FROM users u
+                  JOIN candidate_profiles cp ON cp.user_id = u.id
+                 WHERE u.role IN ('candidate','job_seeker') AND u.is_active IS TRUE
+                   AND ({pop.POPULATIONS[a]['sql']}) AND ({pop.POPULATIONS[b]['sql']})
+            """)
+            n = cur.fetchone()[0]
+            if n:
+                overlaps.append({
+                    'a': a, 'b': b, 'count': n,
+                    'a_label_en': pop.POPULATIONS[a]['label_en'],
+                    'b_label_en': pop.POPULATIONS[b]['label_en'],
+                    'a_label_ar': pop.POPULATIONS[a]['label_ar'],
+                    'b_label_ar': pop.POPULATIONS[b]['label_ar'],
+                })
         cur.close(); conn.close()
 
         result = {
             'populations': data,
+            'overlaps': overlaps,
             'onboarded': {
                 'label_en': 'Onboarded and using the platform',
                 'label_ar': 'انضموا ويستخدمون المنصة',

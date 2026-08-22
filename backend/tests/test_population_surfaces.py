@@ -120,3 +120,49 @@ def test_scope_note_is_bilingual_for_every_audience():
         assert re.search(r'[؀-ۿ]', note['ar']), (
             f'{audience} Arabic note contains no Arabic'
         )
+
+
+def test_the_tiles_disclose_that_they_are_not_addable():
+    """Correct counts, wrong arithmetic.
+
+    Every population is a verified count of unique Emirates IDs — checked live
+    on 2026-08-22, rows == distinct users.id for all four, with zero duplicate
+    candidate_profiles rows. But work_status and looking_status are independent
+    axes: 2,335 people are both "Not working" and "Actively seeking", and 124
+    are employed and looking to move.
+
+    Rendered as a row of tiles they invite a sum, and 33,510 + 2,489 + 3,614 =
+    39,613 against a platform holding 38,336 people. The figures cannot be made
+    disjoint without destroying what they mean, so the only fix is to say so.
+    """
+    src = _read(FRONTEND, 'components', 'PopulationStrip.tsx')
+    assert 'overlaps' in src, 'the strip does not render the overlap disclosure'
+    assert 'must not be added' in src
+
+    api = _read(BACKEND, 'routes', 'strategic_metrics_api.py')
+    assert "'overlaps'" in api, 'the endpoint does not report overlaps'
+    # Computed, not hardcoded: a literal would go stale at the next import and
+    # become exactly the kind of invented number this work removed.
+    assert 'OVERLAP_PAIRS' in api
+    assert 'o.count' in src, 'the overlap count is not read from the API payload'
+    # Check the RENDERED source, not the comments. The block above explains the
+    # arithmetic using the real figures, and a bare substring search cannot tell
+    # an explanation from a hardcoded value — the same false positive that fired
+    # on the "Employed on Roster" removal comment.
+    code = re.sub(r'/\*.*?\*/', '', src, flags=re.S)
+    code = re.sub(r'^\s*//.*$', '', code, flags=re.M)
+    assert '2,335' not in code, 'overlap counts are hardcoded in the UI'
+
+
+def test_the_overlap_query_runs_before_the_cursor_closes():
+    """A live-DB ordering bug this file exists to keep out.
+
+    The overlap loop was first inserted after `cur.close(); conn.close()`, which
+    would have raised on every board and CRM page load.
+    """
+    api = _read(BACKEND, 'routes', 'strategic_metrics_api.py')
+    handler = api[api.index('def population_summary'):]
+    handler = handler[:handler.index('\n@')] if '\n@' in handler else handler
+    assert handler.index('OVERLAP_PAIRS') < handler.index('cur.close()'), (
+        'the overlap queries run after the cursor is closed'
+    )
