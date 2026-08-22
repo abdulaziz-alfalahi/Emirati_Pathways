@@ -941,7 +941,14 @@ class GrowthSystem:
                         c.lead_source,
                         COALESCE(j.job_count, 0) AS jobs_posted,
                         COALESCE(j.total_hired, 0) AS total_hired,
-                        COALESCE(j.published_count, 0) AS published_jobs
+                        COALESCE(j.published_count, 0) AS published_jobs,
+                        -- Has anyone from this company actually joined? The ACL
+                        -- rule (accepted team member) is what decides whether
+                        -- someone may act for a company, so it is what decides
+                        -- whether the company is really on the platform.
+                        EXISTS (SELECT 1 FROM company_team_members m
+                                 WHERE m.company_id = c.id
+                                   AND m.invitation_status = 'accepted') AS has_joined_member
                     FROM companies c
                     LEFT JOIN (
                         SELECT
@@ -999,7 +1006,24 @@ class GrowthSystem:
                     inv = invitation_map.get(name)
 
                     # Determine funnel stage
-                    if c['is_verified'] or c.get('published_jobs', 0) > 0:
+                    #
+                    # ACTIVE MEANS SOMEONE FROM THE COMPANY HAS JOINED.
+                    #
+                    # This used to be `is_verified or published_jobs > 0`, and
+                    # active companies are EXCLUDED from the invitation pipeline —
+                    # so verifying a trade licence removed the company from the
+                    # list of companies to invite, before anyone from it had an
+                    # account. 8 of 11 verified companies had nobody joined
+                    # (owner, 2026-08-22). None had vacancies, so nothing
+                    # actionable was hidden in practice, but the next real
+                    # employer verified ahead of onboarding would vanish from the
+                    # one screen an operator works from.
+                    #
+                    # is_verified is a check on the trade licence, not evidence
+                    # of a relationship. Verified-but-not-joined now stays IN the
+                    # pipeline, which is exactly where a company that has been
+                    # checked but never onboarded belongs.
+                    if c.get('has_joined_member'):
                         stage = 'active'
                     elif inv and inv['status'] == 'accepted':
                         stage = 'signing_up'
