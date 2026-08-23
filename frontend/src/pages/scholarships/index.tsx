@@ -410,17 +410,16 @@ const ScholarshipsPage: React.FC = () => {
       icon: <Award className="h-4 w-4" />,
       content: availableContent(),
     },
-    {
-      id: 'my-applications', label: t('My Applications', 'طلباتي'),
-      icon: <BookOpen className="h-4 w-4" />,
-      content: (
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <BookOpen style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Application tracking coming soon', 'تتبع الطلبات قادم قريباً')}</h3>
-          <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Apply for scholarships to track your applications here.', 'قدّم على المنح الدراسية لتتبع طلباتك هنا.')}</p>
-        </div>
-      )
-    },
+    /* "My Applications" removed 2026-08-23. This platform does NOT take
+       scholarship applications: it is a curated directory of programmes run by
+       KHDA, MoHESR, universities and foundations, and every published entry
+       hands the candidate off to the provider's own application (owner
+       decision). So a tracking tab here could never fill — the applications are
+       made on someone else's site and their status lives there.
+
+       It had said "Application tracking coming soon" since it was built. A
+       promise that cannot be kept is worse than no tab: it tells a candidate
+       their application is being followed here when nobody is following it. */
     {
       id: 'resources', label: t('Resources & Tips', 'الموارد والنصائح'),
       icon: <Globe className="h-4 w-4" />,

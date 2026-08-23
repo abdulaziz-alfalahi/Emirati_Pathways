@@ -105,3 +105,59 @@ def test_applying_is_not_privileged():
         'apply_to_scholarship now requires a reviewer role, which locks '
         'candidates out of the one action the page exists to offer.'
     )
+
+
+# ── The curated directory ───────────────────────────────────────────────────
+#
+# Owner decision 2026-08-23: this platform does NOT award scholarships. It
+# curates a directory of programmes run elsewhere — KHDA's Hamdan bin Mohammed
+# programme, MoHESR, universities, foundations — and hands the candidate off to
+# whoever actually takes the application. Two rules follow from that, and both
+# are easy to undo by accident.
+
+DIRECTORY_ENDPOINTS = ['update_scholarship', 'remove_scholarship']
+
+
+def test_editing_and_removing_are_privileged_too():
+    """The directory is only useful if it is current, so editing is the feature.
+
+    It is also the most dangerous verb here: an unguarded edit lets anyone
+    repoint a government scholarship link at a site of their choosing.
+    """
+    deco = _decorators()
+    missing = [n for n in DIRECTORY_ENDPOINTS if 'require_roles' not in deco.get(n, '')]
+    assert not missing, f'Unguarded directory endpoints: {missing}'
+
+
+def test_a_published_entry_must_have_an_application_link():
+    """A directory entry a candidate cannot act on is a dead end.
+
+    The candidate page opens application_link when it exists and otherwise falls
+    back to an in-platform application that nobody reviews. Requiring the link
+    to publish is what keeps that fallback unreachable.
+    """
+    with open(ROUTES, encoding='utf-8') as fh:
+        src = fh.read()
+    assert src.count('A published entry needs an application link') == 2, (
+        'The publish rule must be enforced on BOTH create and update — '
+        'otherwise an entry can be published without a link by whichever path '
+        'is missing the check.'
+    )
+
+
+def test_removal_unpublishes_by_default():
+    """Most removals are a programme between cycles, not one that never existed.
+
+    HBMSP runs an annual cohort; deleting the entry every June and retyping it
+    is how a directory stops being maintained.
+    """
+    with open(ROUTES, encoding='utf-8') as fh:
+        src = fh.read()
+    body = src.split('def remove_scholarship')[1].split('\n@education_bp')[0]
+    assert "hard = request.args.get('hard'" in body, (
+        'remove_scholarship should unpublish unless a hard delete is asked for.'
+    )
+    assert 'is_active = FALSE' in body, 'The default path must unpublish, not delete.'
+    assert 'scholarship_applications' in body, (
+        'A hard delete must refuse once someone has applied through the entry.'
+    )
