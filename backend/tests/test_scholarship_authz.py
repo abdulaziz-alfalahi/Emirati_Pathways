@@ -115,7 +115,8 @@ def test_applying_is_not_privileged():
 # whoever actually takes the application. Two rules follow from that, and both
 # are easy to undo by accident.
 
-DIRECTORY_ENDPOINTS = ['update_scholarship', 'remove_scholarship']
+DIRECTORY_ENDPOINTS = ['update_scholarship', 'remove_scholarship',
+                       'list_scholarships_for_management']
 
 
 def test_editing_and_removing_are_privileged_too():
@@ -160,4 +161,23 @@ def test_removal_unpublishes_by_default():
     assert 'is_active = FALSE' in body, 'The default path must unpublish, not delete.'
     assert 'scholarship_applications' in body, (
         'A hard delete must refuse once someone has applied through the entry.'
+    )
+
+
+def test_the_management_list_is_a_separate_guarded_route():
+    """It cannot be a flag on the public list.
+
+    get_scholarships has no @jwt_required, so flask_jwt_extended never parses
+    the token and resolve_roles() returns an empty set — a role check there can
+    never see the caller. An ?include_inactive=true flag was written that way
+    first and silently did nothing; the browser test caught it, reading the code
+    did not. Mixing a privileged branch into a public handler is also how a read
+    guard gets missed.
+    """
+    with open(ROUTES, encoding='utf-8') as fh:
+        src = fh.read()
+    assert "'/scholarships/manage'" in src, 'No dedicated management list route.'
+    public = src.split('def get_scholarships')[1].split('\n@education_bp')[0]
+    assert 'include_inactive' not in public, (
+        'The public list is branching on a privileged flag it cannot evaluate.'
     )

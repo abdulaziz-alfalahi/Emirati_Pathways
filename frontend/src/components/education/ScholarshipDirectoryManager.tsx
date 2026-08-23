@@ -59,13 +59,15 @@ const ScholarshipDirectoryManager: React.FC = () => {
     const [busyId, setBusyId] = useState<number | null>(null);
     const [formError, setFormError] = useState('');
 
-    /* include_inactive: the management view must show what candidates cannot
-       see. Most hidden entries are dormant between cycles, not deleted. */
+    /* /manage, not the public list with a flag: the public route has no JWT
+       verification, so a role check there can never see the caller. It also
+       answers a different question — what we are maintaining, most of which is
+       not currently visible to candidates. */
     const load = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const res = await restClient.get('/api/education/scholarships?include_inactive=true');
+            const res = await restClient.get('/api/education/scholarships/manage');
             setItems(res.data?.scholarships || res.data?.data || []);
         } catch (e: any) {
             setError(e?.response?.data?.error || t('Could not load the directory.', 'تعذّر تحميل الدليل.'));

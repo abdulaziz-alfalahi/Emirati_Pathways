@@ -315,16 +315,12 @@ def get_scholarships():
     provider = request.args.get('provider', '') or request.args.get('provider_type', '')
     search = request.args.get('search', '')
 
-    # ?include_inactive=true is the MANAGEMENT view: a curated directory needs to
-    # show entries that are currently hidden from candidates, because most of
-    # them are dormant rather than dead. Dubai's Hamdan bin Mohammed programme
-    # runs an annual cohort with a June deadline — between cycles the entry is
-    # not gone, it is waiting. Restricted to reviewer roles: which programmes
-    # EHRDC is drafting is not public information.
-    include_inactive = (request.args.get('include_inactive', '').lower() == 'true'
-                        and bool(resolve_roles() & SCHOLARSHIP_REVIEWER_ROLES))
-    sql = ("SELECT * FROM scholarships WHERE TRUE" if include_inactive
-           else "SELECT * FROM scholarships WHERE is_active = TRUE")
+    # Candidates only ever see published entries. The management view is a
+    # SEPARATE, guarded endpoint (/scholarships/manage) rather than a flag here:
+    # this route has no @jwt_required, so resolve_roles() would find no verified
+    # token and return an empty set — the flag could never be true, and mixing a
+    # privileged branch into a public handler is how a read guard gets missed.
+    sql = "SELECT * FROM scholarships WHERE is_active = TRUE"
     params = []
     if academic_level:
         sql += " AND academic_level ILIKE %s"
@@ -380,6 +376,36 @@ def _clean_directory_payload(data):
             v = v.strip() or None
         out[f] = v
     return out, None
+
+
+@education_bp.route('/scholarships/manage', methods=['GET'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def list_scholarships_for_management():
+    """Every entry, published or not — the curator's view.
+
+    Separate from the public list because it needs a verified token to check the
+    caller's role, and the public route deliberately has none. It also answers a
+    different question: the public list is "what can I apply for", this is "what
+    are we maintaining", and most of what is maintained is not currently visible.
+    Dubai's Hamdan bin Mohammed programme runs an annual cohort — between cycles
+    its entry is dormant, not deleted.
+    """
+    rows = query_all("SELECT * FROM scholarships "
+                     "ORDER BY is_active DESC, deadline ASC NULLS LAST, created_at DESC")
+    for s in rows:
+        if isinstance(s.get('eligible_majors'), str):
+            try:
+                s['eligible_majors'] = json.loads(s['eligible_majors'])
+            except Exception:
+                s['eligible_majors'] = []
+        for k in ('deadline', 'created_at'):
+            if s.get(k):
+                s[k] = str(s[k])
+        if s.get('min_gpa') is not None:
+            s['min_gpa'] = float(s['min_gpa'])
+        if s.get('amount') is not None:
+            s['amount'] = float(s['amount'])
+    return jsonify({"scholarships": rows, "total": len(rows)})
 
 
 @education_bp.route('/scholarships/<int:scholarship_id>', methods=['PUT'])
