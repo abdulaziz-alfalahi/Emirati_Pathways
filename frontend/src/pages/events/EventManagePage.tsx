@@ -691,14 +691,20 @@ const EventManagePage: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="mb-3 flex gap-2">
-                    <Input value={inviteEid} onChange={e => setInviteEid(e.target.value)}
-                           placeholder={b('Emirates ID — add to the call list', 'الهوية الإماراتية — إضافة إلى قائمة الاتصال')}
-                           className="h-9 text-sm" />
-                    <Button size="sm" onClick={addInvite} disabled={!inviteEid.trim()}>
-                      {b('Add', 'إضافة')}
-                    </Button>
-                  </div>
+                  {/* Same rule as the employer controls: the API refuses an
+                      invitation to a closed event, so the box goes rather than
+                      failing on click. Nobody can be invited to a day that has
+                      already happened. */}
+                  {eventIsEditable && (
+                    <div className="mb-3 flex gap-2">
+                      <Input value={inviteEid} onChange={e => setInviteEid(e.target.value)}
+                             placeholder={b('Emirates ID — add to the call list', 'الهوية الإماراتية — إضافة إلى قائمة الاتصال')}
+                             className="h-9 text-sm" />
+                      <Button size="sm" onClick={addInvite} disabled={!inviteEid.trim()}>
+                        {b('Add', 'إضافة')}
+                      </Button>
+                    </div>
+                  )}
                   {invites.length === 0 ? (
                     <p className="py-4 text-center text-sm text-slate-500">
                       {b('Nobody has been invited yet.', 'لم تتم دعوة أحد بعد.')}
@@ -717,15 +723,29 @@ const EventManagePage: React.FC = () => {
                               {b(`attended · ${iv.queue_token}`, `حضر · ${iv.queue_token}`)}
                             </Badge>
                           )}
-                          <Select value={iv.response} onValueChange={v => setResponse(iv.candidate_id, v)}>
-                            <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="invited">{b('Awaiting reply', 'بانتظار الرد')}</SelectItem>
-                              <SelectItem value="confirmed">{b('Confirmed', 'مؤكد')}</SelectItem>
-                              <SelectItem value="declined">{b('Declined', 'اعتذر')}</SelectItem>
-                              <SelectItem value="no_answer">{b('No answer', 'لا رد')}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {/* A call happens BEFORE the day, so changing what
+                              someone said once the event is closed is rewriting
+                              history — and the funnel counts confirmations from
+                              this field. The reply stays readable, just not
+                              editable. */}
+                          {eventIsEditable ? (
+                            <Select value={iv.response} onValueChange={v => setResponse(iv.candidate_id, v)}>
+                              <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="invited">{b('Awaiting reply', 'بانتظار الرد')}</SelectItem>
+                                <SelectItem value="confirmed">{b('Confirmed', 'مؤكد')}</SelectItem>
+                                <SelectItem value="declined">{b('Declined', 'اعتذر')}</SelectItem>
+                                <SelectItem value="no_answer">{b('No answer', 'لا رد')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="w-[130px] text-xs text-slate-500">
+                              {{ invited: b('Awaiting reply', 'بانتظار الرد'),
+                                 confirmed: b('Confirmed', 'مؤكد'),
+                                 declined: b('Declined', 'اعتذر'),
+                                 no_answer: b('No answer', 'لا رد') }[iv.response as string] || iv.response}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -746,15 +766,21 @@ const EventManagePage: React.FC = () => {
                 <CardContent>
                   {/* Staff check-in is the only route when a phone or the mall's
                       signal fails, so it sits directly above the queue rather
-                      than behind a menu. */}
-                  <div className="mb-3 flex gap-2">
-                    <Input value={staffEid} onChange={e => setStaffEid(e.target.value)}
-                           placeholder={b('Emirates ID — check in at the desk', 'الهوية الإماراتية — تسجيل من المكتب')}
-                           className="h-9 text-sm" />
-                    <Button size="sm" onClick={checkInByStaff} disabled={!staffEid.trim()}>
-                      {b('Check in', 'تسجيل')}
-                    </Button>
-                  </div>
+                      than behind a menu — and it stays available for the whole
+                      of a published day. It goes only once the day is closed or
+                      cancelled, when nobody else can walk in. The queue below
+                      stays visible either way: the record of who attended is
+                      still worth reading after the event. */}
+                  {eventIsEditable && (
+                    <div className="mb-3 flex gap-2">
+                      <Input value={staffEid} onChange={e => setStaffEid(e.target.value)}
+                             placeholder={b('Emirates ID — check in at the desk', 'الهوية الإماراتية — تسجيل من المكتب')}
+                             className="h-9 text-sm" />
+                      <Button size="sm" onClick={checkInByStaff} disabled={!staffEid.trim()}>
+                        {b('Check in', 'تسجيل')}
+                      </Button>
+                    </div>
+                  )}
 
                   {queue.length === 0 ? (
                     <p className="py-6 text-center text-sm text-slate-500">
