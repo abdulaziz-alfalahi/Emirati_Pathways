@@ -124,6 +124,58 @@ def _is_organiser():
     return bool(resolve_roles() & EVENT_ORGANISER_ROLES)
 
 
+# ── Which statuses still accept a change ───────────────────────────────────
+#
+# The candidate-facing paths (self_check_in, register_interest) checked the
+# event's status from the start. The ORGANISER-facing ones did not, on the
+# unstated assumption that staff can be trusted with the state — so a day marked
+# completed still accepted employers being added and removed, candidates being
+# invited, and people being checked in (owner: fb_1787471185, 2026-08-23).
+#
+# Trust is not the issue. The funnel on the manage page — invited, confirmed,
+# attended, placed — is computed from exactly these tables, so a change after
+# the day closes rewrites a historical record the board reads, with nothing to
+# distinguish a correction from a slip. And add_employer notifies the company it
+# is on the bill, which for a finished event is a message about a day that has
+# already happened.
+MUTABLE_STATUSES = frozenset({'draft', 'published'})
+
+# THE ONE EXCEPTION, and it is not an oversight. An outcome is learned AFTER the
+# day: an employer confirms a placement days or weeks later, and that is the
+# single most valuable thing this feature records. Locking it on 'completed'
+# would push the CRM team to reopen finished events to enter real results, which
+# is worse than the bug this guard exists to fix (owner decision, 2026-08-23).
+# A CANCELLED event still accepts nothing — it did not happen, so there is no
+# outcome to record.
+OUTCOME_MUTABLE_STATUSES = frozenset({'draft', 'published', 'completed'})
+
+
+def _require_mutable(event_id, allowed=MUTABLE_STATUSES):
+    """(event_row, None) when the event accepts a change, else (row, response).
+
+    Returns the row either way so callers that want the title for a message do
+    not have to read it twice.
+    """
+    ev = execute_query(
+        "SELECT id, status, title FROM recruitment_events WHERE id = %s",
+        (event_id,), fetch_one=True)
+    if not ev:
+        return None, (jsonify({'success': False, 'message': 'Event not found'}), 404)
+    if ev['status'] in allowed:
+        return ev, None
+
+    if ev['status'] == 'cancelled':
+        msg = ('This event was cancelled, so it cannot be changed. '
+               'Reopen it first if it is going ahead after all.')
+    else:
+        msg = ('This event is marked completed, so its record is closed to '
+               'changes. Reopen it first if you need to correct something — '
+               'recording an outcome does not need it reopened.')
+    # 409, not 403: the caller is permitted, the event's state is what refuses.
+    return ev, (jsonify({'success': False, 'message': msg,
+                         'event_status': ev['status']}), 409)
+
+
 # ── Calendar and management ────────────────────────────────────────────────
 
 @recruitment_events_bp.route('', methods=['GET'])
@@ -512,6 +564,9 @@ def employer_search():
 @recruitment_events_bp.route('/<event_id>/employers', methods=['POST'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def add_employer(event_id):
+    _ev, err = _require_mutable(event_id)
+    if err:
+        return err
     d = request.get_json(silent=True) or {}
     company_id = (d.get('company_id') or '').strip()
     if not company_id:
@@ -545,6 +600,9 @@ def add_employer(event_id):
 @recruitment_events_bp.route('/<event_id>/employers/<company_id>', methods=['DELETE'])
 @require_roles(*EVENT_ORGANISER_ROLES)
 def remove_employer(event_id, company_id):
+    _ev, err = _require_mutable(event_id)
+    if err:
+        return err
     try:
         execute_query("DELETE FROM event_employers WHERE event_id = %s AND company_id = %s",
                       (event_id, company_id), fetch_all=False)
@@ -726,6 +784,11 @@ def staff_check_in(event_id):
     candidate's phone or the signal fails. It must keep working when the
     self-service route does not.
     """
+    # Still open on 'published', which is what the paragraph above protects —
+    # this only refuses once the day has been closed or cancelled.
+    _ev, err = _require_mutable(event_id)
+    if err:
+        return err
     d = request.get_json(silent=True) or {}
     user_id = (d.get('user_id') or '').strip()
     if not user_id:
@@ -799,6 +862,11 @@ def invite_candidates(event_id):
     the list is a no-op rather than an error — an agent working through a list
     should never be punished for overlapping selections.
     """
+    # _require_mutable already resolved the event and 404s when it is missing,
+    # so the old lookup here would have been a second read of the same row.
+    ev, err = _require_mutable(event_id)
+    if err:
+        return err
     d = request.get_json(silent=True) or {}
     ids = d.get('candidate_ids') or []
     if not isinstance(ids, list) or not ids:
@@ -807,11 +875,6 @@ def invite_candidates(event_id):
     if len(ids) > INVITE_MAX:
         return jsonify({'success': False,
                         'message': f'Invite at most {INVITE_MAX} candidates at a time'}), 400
-
-    ev = execute_query("SELECT id, status FROM recruitment_events WHERE id = %s",
-                       (event_id,), fetch_one=True)
-    if not ev:
-        return jsonify({'success': False, 'message': 'Event not found'}), 404
 
     me = str(get_jwt_identity())
     ph = ','.join(['%s'] * len(ids))
@@ -972,6 +1035,9 @@ def list_invitations(event_id):
 @require_roles(*EVENT_ORGANISER_ROLES)
 def update_invitation(event_id, candidate_id):
     """Record what the candidate said on the call."""
+    _ev, err = _require_mutable(event_id)
+    if err:
+        return err
     d = request.get_json(silent=True) or {}
     response = (d.get('response') or '').strip()
     if response not in INVITE_RESPONSES:
@@ -1017,6 +1083,9 @@ def record_outcome(event_id):
     it needs no employer onboarding to be useful. The stage vocabulary is shared
     with the pipeline request so the two do not diverge.
     """
+    _ev, err = _require_mutable(event_id, OUTCOME_MUTABLE_STATUSES)
+    if err:
+        return err
     d = request.get_json(silent=True) or {}
     candidate_id = (d.get('candidate_id') or '').strip()
     company_id = (d.get('company_id') or '').strip()
