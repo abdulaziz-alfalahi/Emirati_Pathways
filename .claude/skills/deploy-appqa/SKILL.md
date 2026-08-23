@@ -18,8 +18,16 @@ description: Deploy the backend or frontend to APPQA staging and verify it. Use 
    - **`--progress` does not exist** on this Docker CLI. Plain `docker build` already prints step-by-step.
    - The build **outlives the ssh session that started it** (the harness kills a foreground ssh at its timeout; the remote build keeps running). Launch it detached with its own log and poll that, rather than restarting a build that is already halfway done: `setsid nohup ~/build-backend.sh > ~/backend-build.log 2>&1 < /dev/null &`, then wait on `grep -qE "Successfully tagged|^Error|returned a non-zero" ~/backend-build.log`. Waiting on the success marker alone will hang forever on a failed build.
    - If `/var` is tight, `docker image prune -f` (dangling only) is safe and reclaimed ~660MB. It cannot remove an image a stopped container still references — remove the dead container first.
-3. Recreate with `./deployment/run-backend-appqa.sh [IMAGE_TAG]`. Never use docker-compose on APPQA (v1.29.2 is broken against that engine — recreate causes an outage). The script already handles:
-   - env backup + old container preserved as `backend_old` + backup dir `~/appqa-backups/backend-recreate-<date>/` (this is the rollback: `docker rm -f backend && docker rename backend_old backend && docker start backend`)
+3. Recreate with `./deployment/run-backend-appqa.sh [IMAGE_TAG]`. Never use docker-compose on APPQA (v1.29.2 is broken against that engine — recreate causes an outage).
+
+   **RUN IT ONCE. Check whether a deploy is already in flight first** (hit 2026-08-23): the script has no locking, and running it twice in quick succession makes `backend_old` a copy of the NEW build instead of the previous one. The printed rollback then restores the exact code you were trying to escape — a safety net that looks present and does nothing. Nothing warns you; both runs report `/health -> 200` and look successful.
+
+   It happened because a backgrounded deploy looked stalled and was re-run by hand. It was not stalled, only slow — the same trap as the build in step 2. Before starting one, check: `pgrep -f run-backend-appqa` on APPQA, and whether a background task of your own is still running.
+
+   To confirm the rollback is real rather than assume it: `docker inspect backend backend_old --format '{{.Image}}'` — **if the two image IDs match, you have no rollback.** Recover by tagging the genuine previous image (find it in `docker images -f dangling=true`, newest below the current one, and verify its contents before trusting the timestamp) — e.g. `docker tag <id> emirati_backend:rollback-<what-it-predates>`.
+
+   The script already handles:
+   - env backup + old container preserved as `backend_old` + backup dir `~/appqa-backups/backend-recreate-<date>/` (this is the rollback: `docker rm -f backend && docker rename backend_old backend && docker start backend` — **subject to the single-run caveat above**)
    - `--workers 1` (Socket.IO/gevent breaks with more — HTTP 400 "session unknown")
    - the `emirati_pathways_upload_data` volume (without it uploads are destroyed on recreate)
    - restarting edge nginx (it caches the upstream IP; skipping this 502s /api and /socket.io)
@@ -57,4 +65,5 @@ Restarting it:
 - `curl -fsS http://127.0.0.1:5005/health` on the host (script does it) AND the public URL through the WAF.
 - Socket.IO handshake returns a sid: `curl 'https://stg-emirati.ehrdc.gov.ae/socket.io/?EIO=4&transport=polling'`.
 - For changed endpoints: probe via an in-process Flask test client inside the container (`docker exec backend python -c ...`) — this has caught handler-signature 500s that unit tests missed (PR #108).
+- **Confirm the rollback is real**: `docker inspect backend backend_old --format '{{.Image}}'` — two DIFFERENT image IDs. Identical IDs mean the deploy ran twice and there is no rollback (see step 3). This is the one check that fails silently: everything else still reports healthy.
 - Record the new image hash and the backup dir name in the PR or memory.
