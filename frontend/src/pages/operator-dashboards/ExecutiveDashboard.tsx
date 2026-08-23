@@ -1506,7 +1506,10 @@ const ExecutiveDashboard: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <div style={{ width: '100%', height: 560 }}>
+                    {/* dir=ltr pins the tick anchoring; the RTL reading direction
+                        comes from the reversed number axis below. See the work-status
+                        chart on the Demographics tab for the full reasoning. */}
+                    <div style={{ width: '100%', height: 560 }} dir="ltr">
                       <ResponsiveContainer>
                         <BarChart data={empTimeline.sector_distribution} layout="vertical"
                                   margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
@@ -1710,7 +1713,7 @@ const ExecutiveDashboard: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <div style={{ height: 300 }}>
+                        <div style={{ height: 300 }} dir="ltr">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={executiveData?.sector_distribution || []} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
                               <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} reversed={isRTL} />
@@ -1848,18 +1851,31 @@ const ExecutiveDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      {/* Mirrored for RTL rather than forced to LTR.
-                          
-                          The first fix here pinned the plot to dir=ltr, which stopped
-                          the bars overdrawing the Arabic tick labels but left the
-                          chart reading left-to-right on an Arabic page — the owner
-                          asked for right-to-left (fb_1787451952, 2026-08-23), and
-                          they are right. Putting the category axis on the RIGHT and
-                          reversing the NUMBER axis solves both: the labels sit
-                          outside the plot on the side the reader starts from, and the
-                          bars grow away from them. `reversed` stays off the category
-                          axis so the ordering is identical in both languages. */}
-                      <div style={{ height: 280 }}>
+                      {/* TWO SEPARATE THINGS, and each needs its own fix.
+                      
+                          READING DIRECTION is the axis config's job: category axis on
+                          the right, NUMBER axis reversed, so an Arabic reader starts
+                          at the right edge beside the labels and reads leftward
+                          (owner: fb_1787451952, 2026-08-23). `reversed` stays OFF the
+                          category axis — that inverts the RANKING, the separate bug
+                          fixed in b04442e.
+
+                          TEXT ANCHORING is dir's job. Recharts anchors a right-hand
+                          category tick with textAnchor="start", expecting it to flow
+                          rightward from the axis line; under an inherited dir=rtl the
+                          bidi algorithm flips that and the labels grow back INTO the
+                          plot, so the bars overdraw them (measured on staging: axis
+                          line at x=553, tick text ending at 562). dir=ltr on the
+                          container pins the anchor without touching the Arabic, which
+                          still shapes right-to-left inside its own run — measured
+                          again after the fix, every tick starts at 561 and runs
+                          outward.
+
+                          Doing only one of these was wrong twice: dir alone fixed the
+                          clipping and left the chart reading LTR; mirroring alone
+                          fixed the reading and brought the clipping back from the
+                          other side. */}
+                      <div style={{ height: 280 }} dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                             <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} reversed={isRTL} />
