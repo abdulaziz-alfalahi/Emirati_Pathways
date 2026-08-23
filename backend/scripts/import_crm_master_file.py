@@ -46,6 +46,8 @@ import psycopg2  # noqa: E402
 import psycopg2.extras  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
+from demographics import normalise_education, normalise_emirate  # noqa: E402
+
 EID_RE = r'784\d{12}'
 CYCLE_RE = re.compile(r'^(Added|Removed)\s+(.+)$', re.I)
 
@@ -202,8 +204,10 @@ def main():
         """, (eid, eid if eid in have_user else None,
               txt(r.get('Full Name'), 200), txt(r.get('Full Name Arabic'), 200),
               txt(r.get('Gender'), 20), txt(r.get('Age Group'), 20),
-              txt(r.get('Education'), 60), txt(r.get('Emirate Of Origin'), 60),
-              txt(r.get('Emirate Of Residence'), 60), txt(r.get('City Name'), 60),
+              normalise_education(txt(r.get('Education'), 60)),
+              normalise_emirate(txt(r.get('Emirate Of Origin'), 60)),
+              normalise_emirate(txt(r.get('Emirate Of Residence'), 60)),
+              txt(r.get('City Name'), 60),
               txt(r.get('Specialization'), 120), txt(r.get('Ph No'), 32),
               txt(r.get('Email'), 160), txt(r.get('Marital Status'), 40),
               txt(r.get('Job Seeker Type'), 50), as_date(r.get('Job Seeker Date')),
@@ -220,7 +224,8 @@ def main():
                 VALUES (%s,%s,%s,%s,%s,'UAE','candidate','candidate',TRUE,TRUE,NOW())
                 ON CONFLICT (id) DO NOTHING
             """, (eid, txt(r.get('Full Name'), 200), txt(r.get('Ph No'), 32),
-                  txt(r.get('Email'), 160), txt(r.get('Emirate Of Residence'), 60)))
+                  txt(r.get('Email'), 160),
+                  normalise_emirate(txt(r.get('Emirate Of Residence'), 60))))
             new_users += cur.rowcount
 
         crm = (txt(r.get('Call Status'), 50), txt(r.get('Work Status'), 50),
@@ -239,8 +244,10 @@ def main():
                         military_status, salary_expectations, date_of_call, created_at)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
             """, (eid, txt(r.get('Full Name'), 200), txt(r.get('Gender'), 20),
-                  txt(r.get('Age Group'), 20), txt(r.get('Education'), 60),
-                  txt(r.get('Emirate Of Origin'), 60), txt(r.get('Marital Status'), 40),
+                  txt(r.get('Age Group'), 20),
+                  normalise_education(txt(r.get('Education'), 60)),
+                  normalise_emirate(txt(r.get('Emirate Of Origin'), 60)),
+                  txt(r.get('Marital Status'), 40),
                   txt(r.get('Ph No'), 32), *crm))
             new_profiles += 1
         else:

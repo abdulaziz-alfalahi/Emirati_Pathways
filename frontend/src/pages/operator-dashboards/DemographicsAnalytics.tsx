@@ -82,24 +82,74 @@ const DemographicsAnalytics: React.FC = () => {
         </button>
     );
 
-    const ChartCard = ({ title, children }: any) => (
-        <div style={{ background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+    // `style` was accepted at three call sites (style={{ gridColumn: '1 / -1' }})
+    // and silently dropped, so the cards meant to span the grid never did.
+    const ChartCard = ({ title, children, footer, style }: any) => (
+        <div style={{ background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}`, ...style }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: c.textPrimary, marginBottom: 16, letterSpacing: 0.5 }}>
                 {title}
             </div>
             <div style={{ height: 280, width: '100%' }}>
                 {children}
             </div>
+            {footer}
         </div>
     );
 
     // Get current data cut statistics
     const currentStats = rawMetrics ? rawMetrics[selectedCut] : null;
 
-    // The API returns { source: 'unavailable', ... } with none of the cohort
-    // cuts when the master file is not connected. Every render below must
-    // treat that as "no data", not crash on the missing keys.
+    // The endpoint reads candidate_profiles now, not the master spreadsheet, so
+    // "unavailable" means the query failed rather than a file being absent.
+    // Every render below must still treat it as "no data" rather than crash on
+    // the missing keys.
     const sourceUnavailable = !!rawMetrics && !rawMetrics.registered;
+
+    // Bucket names are database values ('Male', 'High School', 'Not Working'),
+    // translated at render so a language switch retranslates them.
+    const LABELS_AR: Record<string, string> = {
+        Male: 'ذكور', Female: 'إناث',
+        Single: 'أعزب', Married: 'متزوج', Divorced: 'مطلّق', Widowed: 'أرمل', Dead: 'متوفّى',
+        Working: 'يعمل', 'Not Working': 'لا يعمل', Retired: 'متقاعد', Unknown: 'غير معروف',
+        Completed: 'أنهى الخدمة', Exempted: 'معفى', 'In Service': 'في الخدمة',
+        'Not Yet Joined': 'لم يلتحق بعد', 'Not Required "Female"': 'غير مطلوبة (إناث)',
+        Dubai: 'دبي', 'Abu Dhabi': 'أبوظبي', Sharjah: 'الشارقة', Ajman: 'عجمان',
+        'Ras Al Khaimah': 'رأس الخيمة', Fujairah: 'الفجيرة', 'Umm Al Quwain': 'أم القيوين',
+        'Al Ain': 'العين', Hatta: 'حتا',
+        Answered: 'تم الرد', 'No Answer': 'لم يتم الرد', Pending: 'قيد الانتظار', new: 'جديد',
+    };
+    const label = (name: string) =>
+        !isRTL ? name
+               : (rawMetrics?.education_labels_ar?.[name] || LABELS_AR[name] || name);
+    const series = (field: string) =>
+        (currentStats?.[field] || []).map((x: any) => ({ ...x, name: label(x.name) }));
+
+    // Coverage travels with every chart. These columns are populated very
+    // unevenly — emirate_of_residence on 9% of records, military_status on 6% —
+    // and a bar chart drawn without saying so reports a share of the whole
+    // roster when it is a share of the tenth that answered the question.
+    const Coverage = ({ field }: { field: string }) => {
+        const cov = currentStats?.coverage?.[field];
+        if (!cov) return null;
+        return (
+            <div style={{
+                fontSize: 11, marginTop: 8, lineHeight: 1.6,
+                color: cov.pct < 50 ? c.yellow : c.textMuted,
+            }}>
+                {cov.pct < 50 ? '⚠ ' : ''}{isRTL ? cov.note.ar : cov.note.en}
+            </div>
+        );
+    };
+
+    // Ratios divide by the records that STATE a gender, not by the cohort. Of
+    // 38,297 recorded people 1,627 have no gender on file; dividing by the
+    // cohort total would report 64% female + 32% male and leave the reader to
+    // wonder where the missing 4% went.
+    const genderKnown = currentStats?.coverage?.gender?.known || 0;
+    const ratioOf = (name: string) => {
+        const hit = (currentStats?.gender || []).find((g: any) => g.name === name);
+        return hit && genderKnown ? `${Math.round((hit.value / genderKnown) * 100)}%` : '—';
+    };
 
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{
@@ -147,13 +197,21 @@ const DemographicsAnalytics: React.FC = () => {
                                 outline: 'none'
                             }}
                         >
-                            <option value="registered">{t('Registered Candidates (Master List)', 'المرشحون المسجلون (القائمة الرئيسية)')}</option>
-                            <option value="active">{t('Active Jobseekers (Total AJS)', 'الباحثون النشطون عن عمل (الإجمالي)')}</option>
-                            <option value="priority_1st">{t('1st Priority Candidates', 'المرشحون ذوو الأولوية الأولى')}</option>
-                            <option value="hatta">{t('Hatta Initiative Cohort', 'مبادرة أهالي حتا')}</option>
-                            <option value="cda">{t('CDA Initiative Cohort', 'مبادرة هيئة تنمية المجتمع')}</option>
-                            <option value="gdo">{t('GDO Initiative Cohort', 'مبادرة مكتب التطوير الحكومي')}</option>
-                            <option value="no_answer">{t('No Answer Candidates', 'المرشحون غير المجيبين')}</option>
+                            {/* Driven by the cuts the API actually serves, with each
+                                cohort's size in the option. The list used to be seven
+                                hardcoded options mirroring sheets in the master file;
+                                the cohorts are crm_segments now, so a segment the CRM
+                                team adds shows up here without a frontend change —
+                                and a cut with no members is visibly empty rather than
+                                an option that silently draws nothing. */}
+                            {Object.entries(rawMetrics.segments || {}).map(([key, seg]: any) => (
+                                <option key={key} value={key}>
+                                    {(isRTL ? seg.label_ar : seg.label_en)}
+                                    {rawMetrics[key]
+                                        ? ` (${rawMetrics[key].total.toLocaleString(isRTL ? 'ar-AE' : 'en-US')})`
+                                        : ''}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 )}
@@ -198,13 +256,26 @@ const DemographicsAnalytics: React.FC = () => {
                     </span>
                     <span style={{ fontSize: 13, maxWidth: 420, textAlign: 'center' }}>
                         {t(
-                            'The master data file is not available on this environment, so no figures are shown — nothing here is estimated or simulated.',
-                            'ملف البيانات الرئيسي غير متوفر في هذه البيئة، لذلك لا تُعرض أي أرقام — لا شيء هنا مُقدّر أو مُحاكى.'
+                            'The demographics query did not return, so no figures are shown — nothing here is estimated or simulated.',
+                            'لم تُرجع استعلامات التركيبة السكانية أي نتيجة، لذلك لا تُعرض أي أرقام — لا شيء هنا مُقدّر أو مُحاكى.'
                         )}
                     </span>
                 </div>
             ) : (
                 <div style={{ padding: 24 }}>
+
+                    {/* Scope. These are RECORDED people — imported from NAFIS and
+                        the CRM master file — not people who have signed in. Same
+                        disclosure the population strip carries, for the same reason. */}
+                    {currentStats && (
+                        <div style={{
+                            marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+                            background: c.cardBg, border: `1px solid ${c.cardBorder}`,
+                            fontSize: 12, color: c.textSecondary, lineHeight: 1.7,
+                        }}>
+                            {isRTL ? rawMetrics.scope_note_ar : rawMetrics.scope_note}
+                        </div>
+                    )}
 
                     {/* Cohort Stats Mini Header */}
                     {currentStats && (
@@ -227,10 +298,7 @@ const DemographicsAnalytics: React.FC = () => {
                                     {t('Female Ratio', 'نسبة الإناث')}
                                 </div>
                                 <div style={{ fontSize: 24, fontWeight: 700, color: c.pink, marginTop: 4 }}>
-                                    {currentStats.gender.find((g: any) => g.name === 'Female')?.value 
-                                        ? `${Math.round((currentStats.gender.find((g: any) => g.name === 'Female').value / currentStats.total) * 100)}%`
-                                        : '0%'
-                                    }
+                                    {ratioOf('Female')}
                                 </div>
                             </div>
                             <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
@@ -238,10 +306,7 @@ const DemographicsAnalytics: React.FC = () => {
                                     {t('Male Ratio', 'نسبة الذكور')}
                                 </div>
                                 <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, marginTop: 4 }}>
-                                    {currentStats.gender.find((g: any) => g.name === 'Male')?.value 
-                                        ? `${Math.round((currentStats.gender.find((g: any) => g.name === 'Male').value / currentStats.total) * 100)}%`
-                                        : '0%'
-                                    }
+                                    {ratioOf('Male')}
                                 </div>
                             </div>
                             <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
@@ -249,7 +314,7 @@ const DemographicsAnalytics: React.FC = () => {
                                     {t('Primary Location', 'الموقع الرئيسي')}
                                 </div>
                                 <div style={{ fontSize: 24, fontWeight: 700, color: c.green, marginTop: 4 }}>
-                                    {currentStats.location.length > 0 ? currentStats.location[0].name : '—'}
+                                    {currentStats.emirate.length > 0 ? label(currentStats.emirate[0].name) : '—'}
                                 </div>
                             </div>
                         </div>
@@ -258,11 +323,11 @@ const DemographicsAnalytics: React.FC = () => {
                     {/* TAB: MAIN OVERVIEW */}
                     {activeTab === 'main' && currentStats && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <ChartCard title={t('Gender Distribution', 'توزيع الجنس')}>
+                            <ChartCard title={t('Gender Distribution', 'توزيع الجنس')} footer={<Coverage field="gender" />}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={currentStats.gender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={5}>
-                                            {currentStats.gender.map((entry: any, index: number) => (
+                                        <Pie data={series('gender')} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={5}>
+                                            {series('gender').map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -272,9 +337,9 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Age Group Distribution', 'توزيع الفئات العمرية')}>
+                            <ChartCard title={t('Age Group Distribution', 'توزيع الفئات العمرية')} footer={<Coverage field="age" />}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={currentStats.age_group} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <BarChart data={series('age')} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
@@ -283,9 +348,13 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Education Level Distribution', 'توزيع المستويات التعليمية')}>
+                            {/* Spans the row: the "Work Experience Years" card that
+                                used to sit beside it is gone (experience_duration is
+                                populated on 1 of 38,297 rows), and education has the
+                                most categories of any chart here anyway. */}
+                            <ChartCard title={t('Education Level Distribution', 'توزيع المستويات التعليمية')} footer={<Coverage field="education" />} style={{ gridColumn: '1 / -1' }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={currentStats.education} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <BarChart data={series('education')} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
                                         <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
@@ -294,20 +363,10 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Work Experience Years', 'سنوات الخبرة العملية')}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={currentStats.experience} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
-                                        <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
-                                        <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
-                                        <Bar dataKey="value" fill={c.purple} radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </ChartCard>
 
-                            <ChartCard title={t('Emirate of Residence', 'إمارة الإقامة')} style={{ gridColumn: '1 / -1' }}>
+                            <ChartCard title={t('Emirate of Residence', 'إمارة الإقامة')} style={{ gridColumn: '1 / -1' }} footer={<Coverage field="emirate" />}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={currentStats.location} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <BarChart data={series('emirate')} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} angle={-20} textAnchor="end" height={50} />
                                         <YAxis stroke={c.textMuted} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
@@ -321,9 +380,9 @@ const DemographicsAnalytics: React.FC = () => {
                     {/* TAB: PRIORITY DETAILS */}
                     {activeTab === 'priority' && currentStats && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <ChartCard title={t('National Military Service Status', 'حالة الخدمة الوطنية')}>
+                            <ChartCard title={t('National Military Service Status', 'حالة الخدمة الوطنية')} footer={<Coverage field="military" />}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={currentStats.military} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <BarChart data={series('military')} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} angle={-15} textAnchor="end" height={50} />
                                         <YAxis stroke={c.textMuted} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
@@ -332,11 +391,11 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Marital Status', 'الحالة الاجتماعية')}>
+                            <ChartCard title={t('Marital Status', 'الحالة الاجتماعية')} footer={<Coverage field="marital" />}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={currentStats.marital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
-                                            {currentStats.marital.map((entry: any, index: number) => (
+                                        <Pie data={series('marital')} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
+                                            {series('marital').map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -351,15 +410,16 @@ const DemographicsAnalytics: React.FC = () => {
                     {/* TAB: SYSTEM TRACKING */}
                     {activeTab === 'reachability' && rawMetrics && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            {/* Initiatives comparison — the totals block only exists when the
-                                initiatives sheet was present in the master file. */}
-                            {rawMetrics.initiatives_totals && (
+                            {/* Cohort sizes are crm_segments memberships on
+                                candidate_profiles — the segments the CRM team
+                                maintains, not a sheet per cohort. */}
+                            {rawMetrics.hatta && (
                             <ChartCard title={t('EHRDC Initiatives Active Counts', 'أعداد المستفيدين النشطين من مبادرات الهيئة')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={[
-                                        { name: t('Hatta Cohort', 'أهالي حتا'), value: rawMetrics.initiatives_totals.hatta },
-                                        { name: t('CDA Cohort', 'تنمية المجتمع'), value: rawMetrics.initiatives_totals.cda },
-                                        { name: t('GDO Cohort', 'التطوير الحكومي'), value: rawMetrics.initiatives_totals.gdo }
+                                        { name: t('Hatta Cohort', 'أهالي حتا'), value: rawMetrics.hatta.total },
+                                        { name: t('CDA Cohort', 'تنمية المجتمع'), value: rawMetrics.cda.total },
+                                        { name: t('GDO Cohort', 'التطوير الحكومي'), value: rawMetrics.gdo.total }
                                     ]}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary }} />
                                         <YAxis stroke={c.textMuted} />
@@ -375,16 +435,26 @@ const DemographicsAnalytics: React.FC = () => {
                             )}
 
                             {/* No Answer Candidates */}
-                            {rawMetrics.no_answer && (
+                            {/* Read from call_status, and "not yet called" is its own
+                                slice. This used to plot registered.total minus the
+                                no-answer cohort as "Answered Call" — 37,501 of 38,297
+                                people shown as having answered, when the CRM records
+                                4,921 answered and has not called 32,058 at all.
+                                Subtracting one cohort from the roster does not make the
+                                remainder a call outcome. */}
+                            {currentStats?.coverage?.call && (
                             <ChartCard title={t('Contact Center Reachability Status', 'حالة استجابة الاتصال مع الكوادر')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie data={[
-                                            { name: t('Answered Call', 'أجابوا على الاتصال'), value: rawMetrics.registered.total - rawMetrics.no_answer.total },
-                                            { name: t('No Answer / Pending', 'لم يجيبوا / قيد الانتظار'), value: rawMetrics.no_answer.total }
-                                        ]} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
-                                            <Cell fill={c.green} />
-                                            <Cell fill={c.red} />
+                                            ...series('call'),
+                                            { name: t('Not yet called', 'لم يتم الاتصال بهم بعد'),
+                                              value: currentStats.coverage.call.total - currentStats.coverage.call.known },
+                                        ].filter((d: any) => d.value > 0)}
+                                             dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
+                                            {[...series('call'), { name: 'uncalled', value: 1 }].map((_: any, i: number) => (
+                                                <Cell key={`call-${i}`} fill={COLORS[i % COLORS.length]} />
+                                            ))}
                                         </Pie>
                                         <Tooltip contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
                                         <Legend />

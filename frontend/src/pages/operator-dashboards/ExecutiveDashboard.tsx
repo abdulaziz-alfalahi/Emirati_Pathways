@@ -69,11 +69,67 @@ const ExecutiveDashboard: React.FC = () => {
   const [insights, setInsights] = useState<any[]>([]);
   const [directives, setDirectives] = useState<any[]>([]);
   const [demographicsData, setDemographicsData] = useState<any>(null);
-  const [demographicsPriority, setDemographicsPriority] = useState<any>(null);
   const [demoSubTab, setDemoSubTab] = useState<'main' | 'priority'>('main');
   const [newDirective, setNewDirective] = useState({
     title: '', body: '', category: 'strategic_priority', priority: 'normal'
   });
+
+  // ── Demographics ──────────────────────────────────────────────────────────
+  //
+  // The API serves buckets keyed by the value stored in the database ('Male',
+  // 'High School', 'Not Working'). Those are DATA, not copy, so they are
+  // translated here on every render — doing it once at fetch time is what left
+  // the English board page showing ذكور / إناث.
+  const DEMO_LABELS_AR: Record<string, string> = {
+    Male: 'ذكور', Female: 'إناث',
+    Single: 'أعزب', Married: 'متزوج', Divorced: 'مطلّق', Widowed: 'أرمل', Dead: 'متوفّى',
+    Working: 'يعمل', 'Not Working': 'لا يعمل', Retired: 'متقاعد', Unknown: 'غير معروف',
+    Completed: 'أنهى الخدمة', Exempted: 'معفى', 'In Service': 'في الخدمة',
+    'Not Yet Joined': 'لم يلتحق بعد', 'Not Required "Female"': 'غير مطلوبة (إناث)',
+    Dubai: 'دبي', 'Abu Dhabi': 'أبوظبي', Sharjah: 'الشارقة', Ajman: 'عجمان',
+    'Ras Al Khaimah': 'رأس الخيمة', Fujairah: 'الفجيرة', 'Umm Al Quwain': 'أم القيوين',
+    'Al Ain': 'العين', Hatta: 'حتا',
+  };
+
+  // The board tab shows all recorded people. The cohort cuts the API also
+  // serves (active roster, priorities, Hatta, CDA…) belong to the operators'
+  // /demographics page, which offers a cut selector; a board member picking
+  // cohorts is not a thing anyone asked for.
+  const demoCut = demographicsData?.registered;
+
+  const demoLabel = (name: string) => {
+    if (!isRTL) return name;
+    return demographicsData?.education_labels_ar?.[name] || DEMO_LABELS_AR[name] || name;
+  };
+  const demoSeries = (field: string) =>
+    (demoCut?.[field] || []).map((x: any) => ({ ...x, name: demoLabel(x.name) }));
+
+  const demoGender = demoSeries('gender');
+  const demoAge = demoSeries('age');
+  const demoEducation = demoSeries('education');
+  const demoEmployment = demoSeries('employment');
+  const demoMilitary = demoSeries('military');
+  const demoMarital = demoSeries('marital');
+  const demoEmirate = demoSeries('emirate');
+
+  // Coverage is part of the answer, not a footnote. emirate_of_residence is
+  // populated on 9% of records and military_status on 6%; a bar chart drawn
+  // without saying so reports "3,202 of our people live in Dubai" when the
+  // honest statement is "of the 9% who state an emirate, most say Dubai".
+  const DemoCoverage = ({ field }: { field: string }) => {
+    const c = demoCut?.coverage?.[field];
+    if (!c) return null;
+    const low = c.pct < 50;
+    return (
+      <div
+        className={`mt-2 text-[11px] leading-relaxed ${low ? 'text-amber-700' : 'text-slate-500'}`}
+        style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+      >
+        {low && <AlertTriangle className="inline h-3 w-3 me-1 -mt-0.5" />}
+        {isRTL ? c.note.ar : c.note.en}
+      </div>
+    );
+  };
 
   const { toast } = useToast();
   const [briefModalOpen, setBriefModalOpen] = useState(false);
@@ -213,28 +269,16 @@ const ExecutiveDashboard: React.FC = () => {
         hasError = true;
       }
 
-      // Demographics data
+      // Demographics — store the payload as served and localise at RENDER time.
+      //
+      // This used to build the chart arrays here, calling b(...) to pick the
+      // label language and freezing the result into state. State outlives a
+      // language switch, so the board page rendered in English kept the labels
+      // chosen when the data arrived — the English Demographics tab showed
+      // ذكور / إناث on the gender chart (screenshot 2026-08-22). Nothing is
+      // translated in this block any more.
       if (demoRes.status === 'fulfilled' && demoRes.value?.data?.success) {
-        const metrics = demoRes.value.data.data;
-        setDemographicsData({
-          gender: [
-            { name: b('Male', 'ذكور'), value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.male, 0) },
-            { name: b('Female', 'إناث'), value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.female, 0) }
-          ],
-          age_group: metrics.age_distribution.map((item: any) => ({ name: item.group, value: item.male + item.female })),
-          education: metrics.education_levels.map((item: any) => ({ name: item.level, value: item.employed + item.seeking })),
-          employment: [
-            { name: b('Employed', 'موظف'), value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.employed, 0) },
-            { name: b('Seeking', 'باحث'), value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.seeking, 0) }
-          ]
-        });
-        setDemographicsPriority({
-          emirate: metrics.regional_spread.map((item: any) => ({ name: item.emirate, value: item.candidates })),
-          // Real aggregate counts from the master file (registered cohort).
-          // No fabricated fallbacks — empty if the source is not connected.
-          military: metrics.registered?.military || [],
-          marital: metrics.registered?.marital || []
-        });
+        setDemographicsData(demoRes.value.data.data);
       } else {
         hasError = true;
       }
@@ -1694,8 +1738,26 @@ const ExecutiveDashboard: React.FC = () => {
                 ))}
               </div>
 
+              {/* Scope. These charts cover RECORDED people — imported from NAFIS
+                  and the CRM master file — not people who have signed in. The
+                  same disclosure the population strip carries, for the same
+                  reason: the headcount alone is a claim the data does not make. */}
+              {demoCut && (
+                <div
+                  className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 leading-relaxed"
+                  style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+                >
+                  <span className="font-dubai-bold text-slate-800">
+                    {demoCut.total.toLocaleString(isRTL ? 'ar-AE' : 'en-US')}{' '}
+                    {b('recorded people', 'شخصاً مسجّلاً في البيانات')}
+                  </span>
+                  {' — '}
+                  {isRTL ? demographicsData?.scope_note_ar : demographicsData?.scope_note}
+                </div>
+              )}
+
               {/* MAIN OVERVIEW */}
-              {demoSubTab === 'main' && demographicsData && (
+              {demoSubTab === 'main' && demoCut && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Gender Distribution */}
                   <Card className="bg-white border border-slate-200/80">
@@ -1709,8 +1771,8 @@ const ExecutiveDashboard: React.FC = () => {
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={demographicsData.gender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4}>
-                              {demographicsData.gender.map((_: any, i: number) => (
+                            <Pie data={demoGender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4}>
+                              {demoGender.map((_: any, i: number) => (
                                 <Cell key={`g-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                               ))}
                             </Pie>
@@ -1719,6 +1781,7 @@ const ExecutiveDashboard: React.FC = () => {
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="gender" />
                     </CardContent>
                   </Card>
 
@@ -1733,7 +1796,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <CardContent className="pt-4">
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demographicsData.age_group} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                          <BarChart data={demoAge} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
@@ -1741,6 +1804,7 @@ const ExecutiveDashboard: React.FC = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="age" />
                     </CardContent>
                   </Card>
 
@@ -1755,7 +1819,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <CardContent className="pt-4">
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demographicsData.education} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+                          <BarChart data={demoEducation} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-20} textAnchor="end" />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
@@ -1763,6 +1827,7 @@ const ExecutiveDashboard: React.FC = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="education" />
                     </CardContent>
                   </Card>
 
@@ -1775,15 +1840,36 @@ const ExecutiveDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      <div style={{ height: 280 }}>
+                      {/* dir=ltr on the plot, deliberately.
+
+                          This is the only chart here with categories on the vertical
+                          axis. Under the page's RTL direction Recharts anchored those
+                          tick labels into the plot area, so the bars were drawn over
+                          them and "لا يعمل" was clipped to a single glyph. A chart's
+                          coordinate system is not text and does not mirror; the tick
+                          labels are still Arabic and still shape right-to-left inside
+                          their own run. The category gutter (width 110) is sized for
+                          the longest label in either language. */}
+                      <div style={{ height: 280 }} dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demographicsData.employment} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
+                          <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                             <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[0, 6, 6, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
+                      </div>
+                      <DemoCoverage field="employment" />
+                      {/* work_status and looking_status are INDEPENDENT axes
+                          (populations.py): "Not working" is not the same set as
+                          "actively seeking" — 363 people are neither, and 108
+                          are employed and looking to move. Saying so stops the
+                          bar being read as the job-seeker count. */}
+                      <div className="mt-1 text-[11px] text-slate-500 leading-relaxed"
+                           style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        {b('Work status only. Whether someone is actively seeking work is a separate question — some employed people are looking to move, and some who are not working are not seeking.',
+                           'حالة العمل فقط. أما البحث الفعلي عن عمل فهو سؤال منفصل — فبعض الموظفين يبحثون عن فرصة أخرى، وبعض غير العاملين لا يبحثون عن عمل.')}
                       </div>
                     </CardContent>
                   </Card>
@@ -1791,7 +1877,7 @@ const ExecutiveDashboard: React.FC = () => {
               )}
 
               {/* PRIORITY SEGMENTS */}
-              {demoSubTab === 'priority' && demographicsPriority && (
+              {demoSubTab === 'priority' && demoCut && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Military Service */}
                   <Card className="bg-white border border-slate-200/80">
@@ -1804,7 +1890,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <CardContent className="pt-4">
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demographicsPriority.military} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                          <BarChart data={demoMilitary} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
@@ -1812,6 +1898,7 @@ const ExecutiveDashboard: React.FC = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="military" />
                     </CardContent>
                   </Card>
 
@@ -1827,8 +1914,8 @@ const ExecutiveDashboard: React.FC = () => {
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={demographicsPriority.marital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={3}>
-                              {demographicsPriority.marital.map((_: any, i: number) => (
+                            <Pie data={demoMarital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={3}>
+                              {demoMarital.map((_: any, i: number) => (
                                 <Cell key={`m-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                               ))}
                             </Pie>
@@ -1837,6 +1924,7 @@ const ExecutiveDashboard: React.FC = () => {
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="marital" />
                     </CardContent>
                   </Card>
 
@@ -1851,7 +1939,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <CardContent className="pt-4">
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={demographicsPriority.emirate} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+                          <BarChart data={demoEmirate} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
@@ -1859,13 +1947,14 @@ const ExecutiveDashboard: React.FC = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+                      <DemoCoverage field="emirate" />
                     </CardContent>
                   </Card>
                 </div>
               )}
 
               {/* Empty state */}
-              {!demographicsData && (
+              {!demoCut && (
                 <Card className="bg-white border border-slate-200/80">
                   <CardContent className="p-8 text-center text-slate-500 font-dubai-medium">
                     <UserCheck className="h-10 w-10 text-slate-300 mx-auto mb-3" />

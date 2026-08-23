@@ -5,6 +5,7 @@ try:
 except ImportError:  # pragma: no cover
     from auth.access_control import require_roles, GOVERNANCE_ROLES
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,13 @@ except ImportError:
         from demographics_parser import get_cached_demographics
     except ImportError:
         get_cached_demographics = None
+
+try:
+    from backend import demographics as demog
+    from backend import populations as pop_defs
+except ImportError:  # pragma: no cover
+    import demographics as demog
+    import populations as pop_defs
 
 def get_db_counts():
     # On unavailability, return None (surfaced as null "not available") rather than
@@ -67,26 +75,56 @@ def get_db_counts():
 @strategic_metrics_bp.route('/demographics', methods=['GET'])
 @require_roles(*(GOVERNANCE_ROLES | {'career_services_operator'}))
 def get_demographics_metrics():
-    """
-    Serves structured demographic data (age distribution, education levels, geographic spread) 
-    based on the master file.
-    """
-    if get_cached_demographics:
-        excel_data = get_cached_demographics()
-        if excel_data:
-            return jsonify({'success': True, 'data': excel_data})
+    """Demographic distributions for the board tab and the /demographics page.
 
-    # No real demographic source connected — return EMPTY structures with an
-    # honest marker rather than fabricated distributions the UI would show as
-    # real. (data-honesty audit; supersedes the #26 placeholder-marker approach)
-    data = {
-        'source': 'unavailable',
-        'message': 'Demographics data not yet connected to a real source',
-        'age_distribution': [],
-        'regional_spread': [],
-        'education_levels': []
-    }
-    return jsonify({'success': True, 'data': data})
+    READS THE DATABASE. It used to read a spreadsheet: get_cached_demographics()
+    parses /app/master_file.xlsx, which is baked into the Docker image and was
+    last modified 2026-07-04. The tab therefore showed a seven-week-old snapshot
+    of 4,067 people while candidate_profiles held 38,297 — a board member had no
+    way to tell (2026-08-23).
+
+    The Excel parser is left in place because /executive-impact still uses it
+    for the rapid-nomination series, which has no database equivalent yet. It is
+    no longer the source of anything on this endpoint.
+    """
+    if not get_db_connection:
+        return jsonify({'success': False,
+                        'message': 'Database unavailable'}), 503
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cuts = demog.build_cuts(cur)
+
+        note = pop_defs.scope_note_bilingual('board')
+        data = dict(cuts)
+        data.update({
+            'source': 'database',
+            'as_of': datetime.utcnow().isoformat() + 'Z',
+            # The same disclosure the population strip carries. These are
+            # RECORDED people — imported from NAFIS and the CRM master file —
+            # not people who have signed in. Charting 38,297 without saying so
+            # is the failure this endpoint just stopped committing in a
+            # different way.
+            'scope_note': note['en'],
+            'scope_note_ar': note['ar'],
+            'segments': {k: {'label_en': v['label_en'], 'label_ar': v['label_ar']}
+                         for k, v in demog.SEGMENTS.items()},
+            'education_unspecified_level': demog.EDUCATION_UNSPECIFIED_LEVEL,
+            'education_labels_ar': demog.EDUCATION_LABELS_AR,
+        })
+        return jsonify({'success': True, 'data': data})
+
+    except Exception as e:
+        logger.error(f"Error building demographics from the database: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 @strategic_metrics_bp.route('/executive-impact', methods=['GET'])
 @require_roles(*GOVERNANCE_ROLES)
