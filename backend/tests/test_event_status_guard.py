@@ -169,3 +169,36 @@ def test_the_day_of_qr_instruction_is_not_shown_on_a_finished_event():
         'a finished event, telling the reader to attend something that has '
         'already happened.'
     )
+
+
+def test_a_future_event_is_not_described_as_finished():
+    """"Finished" is a claim about TIME, not about record state.
+
+    The first version derived it from status: an event marked completed before
+    its date rendered "This open day has finished" directly above a date four
+    days away — a contradiction the reader can see (fb_1787483507, 2026-08-23,
+    a regression from the fix for fb_1787480900).
+
+    Gating on isOver stays right — a closed record should not accept a
+    registration either way. Only the wording has to know the difference.
+    """
+    page = _calendar_page()
+    assert 'closedEarly' in page, (
+        'The page cannot tell "closed before its date" from "already happened", '
+        'so it will describe a future event as finished.'
+    )
+    assert 'Registration for this open day is closed' in page, (
+        'A future event marked completed must say registration is closed, not '
+        'that the day has finished.'
+    )
+
+
+def test_the_took_part_line_is_not_said_about_a_future_event():
+    """Past tense about a day that has not happened."""
+    page = _calendar_page()
+    took_part = page.index('The employers below took part')
+    window = page[max(0, took_part - 400):took_part]
+    assert 'closedEarly' in window, (
+        '"The employers below took part" is not conditioned on the day having '
+        'actually passed.'
+    )

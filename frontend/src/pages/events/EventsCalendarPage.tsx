@@ -91,8 +91,12 @@ export const EventsCalendarPage: React.FC = () => {
     // Same rule as the detail page: marked completed, or the date has passed and
     // nobody has marked it. Without this a finished day carried an employer-count
     // badge and was indistinguishable from one still to come.
-    const over = !cancelled && (e.status === 'completed'
-      || (!!(e.ends_at || e.starts_at) && new Date(e.ends_at || e.starts_at) < new Date()));
+    const passed = !!(e.ends_at || e.starts_at)
+      && new Date(e.ends_at || e.starts_at) < new Date();
+    const over = !cancelled && (e.status === 'completed' || passed);
+    // "Finished" is a claim about time; a day closed before its date has not
+    // finished, it is closed. See the detail page for the full reasoning.
+    const closedEarly = over && !passed;
     return (
       <Card key={e.id}
             className={`cursor-pointer transition-shadow hover:shadow-md ${
@@ -124,7 +128,7 @@ export const EventsCalendarPage: React.FC = () => {
               </Badge>
             ) : over ? (
               <Badge className="shrink-0 border-slate-200 bg-slate-100 text-slate-700">
-                {b('Finished', 'انتهت')}
+                {closedEarly ? b('Closed', 'مغلقة') : b('Finished', 'انتهت')}
               </Badge>
             ) : e.employer_count > 0 ? (
               <Badge className="shrink-0 border-teal-200 bg-teal-50 text-teal-800">
@@ -308,12 +312,19 @@ export const EventDetailPage: React.FC = () => {
   const invitedAwaiting = ev.my_response === 'invited';
   const hasPassed = !!(ev.ends_at || ev.starts_at)
     && new Date(ev.ends_at || ev.starts_at) < new Date();
-  // TO A READER an event is over for either of two reasons, and the page has to
-  // treat them the same: it was marked completed, or its date has passed and
-  // nobody has marked it yet. Keying only on the date missed the first case —
-  // the event that prompted this was marked completed while still dated in the
-  // future (fb_1787480900, 2026-08-23).
+  // TWO DIFFERENT FACTS, and the first version of this used one to assert the
+  // other:
+  //
+  //   hasPassed              a TIME fact — the day has actually happened
+  //   status === 'completed' a STATE fact — the record is closed to changes
+  //
+  // Both mean "you cannot register", so isOver drives the GATING. Only one of
+  // them means "finished", which is a claim about time: an organiser who marks
+  // an event completed before its date has closed it, not held it. Saying "this
+  // open day has finished" above a date four days away is a contradiction the
+  // reader can see, and it is what fb_1787483507 reported (2026-08-23).
   const isOver = ev.status === 'completed' || (ev.status !== 'cancelled' && hasPassed);
+  const closedEarly = isOver && !hasPassed;
 
   return (
     <>
@@ -356,11 +367,18 @@ export const EventDetailPage: React.FC = () => {
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <p className="flex items-center gap-2 font-semibold text-slate-800">
               <CheckCircle2 className="h-4 w-4 text-slate-500" />
-              {b('This open day has finished', 'انتهى هذا اليوم المفتوح')}
+              {closedEarly
+                ? b('Registration for this open day is closed', 'أُغلق التسجيل في هذا اليوم المفتوح')
+                : b('This open day has finished', 'انتهى هذا اليوم المفتوح')}
             </p>
             <p className="mt-2 text-xs text-slate-600">
-              {b('The employers below took part. Upcoming open days appear on the events page.',
-                 'شاركت جهات التوظيف أدناه. تظهر الأيام المفتوحة القادمة في صفحة الفعاليات.')}
+              {/* "took part" is past tense and must not be said about a day that
+                  has not happened yet. */}
+              {closedEarly
+                ? b('Other open days appear on the events page.',
+                    'تظهر الأيام المفتوحة الأخرى في صفحة الفعاليات.')
+                : b('The employers below took part. Upcoming open days appear on the events page.',
+                    'شاركت جهات التوظيف أدناه. تظهر الأيام المفتوحة القادمة في صفحة الفعاليات.')}
             </p>
           </div>
         )}
