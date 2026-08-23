@@ -315,6 +315,11 @@ def get_scholarships():
     provider = request.args.get('provider', '') or request.args.get('provider_type', '')
     search = request.args.get('search', '')
 
+    # Candidates only ever see published entries. The management view is a
+    # SEPARATE, guarded endpoint (/scholarships/manage) rather than a flag here:
+    # this route has no @jwt_required, so resolve_roles() would find no verified
+    # token and return an empty set — the flag could never be true, and mixing a
+    # privileged branch into a public handler is how a read guard gets missed.
     sql = "SELECT * FROM scholarships WHERE is_active = TRUE"
     params = []
     if academic_level:
@@ -345,6 +350,160 @@ def get_scholarships():
         if s.get('min_gpa') is not None:
             s['min_gpa'] = float(s['min_gpa'])
     return jsonify({"scholarships": scholarships, "total": len(scholarships)})
+
+
+# EHRDC does not award these. The directory points at programmes run elsewhere —
+# KHDA's Hamdan bin Mohammed programme, MoHESR's scholarships, university and
+# foundation awards — so an entry's job is to be findable, accurate and to hand
+# the candidate off to whoever actually takes the application. That is why
+# application_link is required to publish: an entry a candidate cannot act on is
+# a dead end wearing the clothes of an opportunity (owner decision, 2026-08-23).
+_DIRECTORY_FIELDS = ('title', 'description', 'provider_name', 'amount',
+                     'coverage_type', 'deadline', 'min_gpa', 'academic_level',
+                     'eligible_majors', 'application_link')
+
+
+def _clean_directory_payload(data):
+    """(values dict, error) for the fields a directory entry carries."""
+    out = {}
+    for f in _DIRECTORY_FIELDS:
+        if f not in data:
+            continue
+        v = data[f]
+        if f == 'eligible_majors' and not isinstance(v, str):
+            v = json.dumps(v or [])
+        if isinstance(v, str):
+            v = v.strip() or None
+        out[f] = v
+    return out, None
+
+
+@education_bp.route('/scholarships/manage', methods=['GET'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def list_scholarships_for_management():
+    """Every entry, published or not — the curator's view.
+
+    Separate from the public list because it needs a verified token to check the
+    caller's role, and the public route deliberately has none. It also answers a
+    different question: the public list is "what can I apply for", this is "what
+    are we maintaining", and most of what is maintained is not currently visible.
+    Dubai's Hamdan bin Mohammed programme runs an annual cohort — between cycles
+    its entry is dormant, not deleted.
+    """
+    rows = query_all("SELECT * FROM scholarships "
+                     "ORDER BY is_active DESC, deadline ASC NULLS LAST, created_at DESC")
+    for s in rows:
+        if isinstance(s.get('eligible_majors'), str):
+            try:
+                s['eligible_majors'] = json.loads(s['eligible_majors'])
+            except Exception:
+                s['eligible_majors'] = []
+        for k in ('deadline', 'created_at'):
+            if s.get(k):
+                s[k] = str(s[k])
+        if s.get('min_gpa') is not None:
+            s['min_gpa'] = float(s['min_gpa'])
+        if s.get('amount') is not None:
+            s['amount'] = float(s['amount'])
+    return jsonify({"scholarships": rows, "total": len(rows)})
+
+
+@education_bp.route('/scholarships/<int:scholarship_id>', methods=['PUT'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def update_scholarship(scholarship_id):
+    """Edit a directory entry.
+
+    A curated directory is only worth having if it is CURRENT: deadlines move
+    every cycle, links rot, and an out-of-date entry sends someone to a closed
+    application. Editing is therefore not a nice-to-have here, it is the
+    maintenance the whole idea depends on.
+    """
+    data = request.get_json() or {}
+    values, err = _clean_directory_payload(data)
+    if err:
+        return jsonify({"error": err}), 400
+
+    if 'is_active' in data:
+        values['is_active'] = bool(data['is_active'])
+
+    if not values:
+        return jsonify({"error": "Nothing to update"}), 400
+
+    db = get_db()
+    if not db:
+        return jsonify({"error": "Database unavailable"}), 500
+
+    existing = query_one("SELECT * FROM scholarships WHERE id = %s", (scholarship_id,))
+    if not existing:
+        return jsonify({"error": "Scholarship not found"}), 404
+
+    # Publishing needs somewhere to send people. Checked against the MERGED
+    # state, not the payload, so clearing the link on an already-published entry
+    # is refused just as surely as publishing without one.
+    merged_link = values.get('application_link', existing.get('application_link'))
+    merged_active = values.get('is_active', existing.get('is_active'))
+    if merged_active and not merged_link:
+        return jsonify({"error": "A published entry needs an application link — "
+                                 "that is where the candidate actually applies. "
+                                 "Save it as unpublished, or add the link."}), 400
+
+    sets = ', '.join(f"{k} = %s" for k in values)
+    params = list(values.values()) + [scholarship_id]
+    try:
+        cursor = db.cursor()
+        cursor.execute(f"UPDATE scholarships SET {sets} WHERE id = %s RETURNING id", params)
+        row = cursor.fetchone()
+        db.commit()
+        if not row:
+            return jsonify({"error": "Scholarship not found"}), 404
+        return jsonify({"id": scholarship_id, "message": "Scholarship updated", "updated": list(values)})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Update scholarship failed: {e}")
+        return jsonify({"error": "Could not update the scholarship"}), 500
+
+
+@education_bp.route('/scholarships/<int:scholarship_id>', methods=['DELETE'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def remove_scholarship(scholarship_id):
+    """Take an entry off the directory.
+
+    UNPUBLISH BY DEFAULT, delete only on request. Most removals are a programme
+    between cycles rather than one that never existed — Dubai's Hamdan bin
+    Mohammed programme opens a new cohort each year — and re-typing an entry
+    every June is how a directory stops being maintained. ?hard=true is for the
+    entry added in error, and refuses once anyone has applied through it, so a
+    delete cannot quietly take applications with it.
+    """
+    hard = request.args.get('hard', '').lower() == 'true'
+    db = get_db()
+    if not db:
+        return jsonify({"error": "Database unavailable"}), 500
+
+    existing = query_one("SELECT id FROM scholarships WHERE id = %s", (scholarship_id,))
+    if not existing:
+        return jsonify({"error": "Scholarship not found"}), 404
+
+    try:
+        cursor = db.cursor()
+        if hard:
+            used = query_one("SELECT COUNT(*) AS n FROM scholarship_applications "
+                             "WHERE scholarship_id = %s", (scholarship_id,))
+            if (used or {}).get('n'):
+                return jsonify({"error": "People have applied through this entry, so it "
+                                         "cannot be deleted. Unpublish it instead — the "
+                                         "record of who applied stays either way."}), 409
+            cursor.execute("DELETE FROM scholarships WHERE id = %s", (scholarship_id,))
+            db.commit()
+            return jsonify({"id": scholarship_id, "message": "Scholarship deleted"})
+
+        cursor.execute("UPDATE scholarships SET is_active = FALSE WHERE id = %s", (scholarship_id,))
+        db.commit()
+        return jsonify({"id": scholarship_id, "message": "Scholarship unpublished"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Remove scholarship failed: {e}")
+        return jsonify({"error": "Could not remove the scholarship"}), 500
 
 
 @education_bp.route('/scholarships/<int:scholarship_id>/apply', methods=['POST'])
@@ -407,6 +566,16 @@ def create_scholarship():
     if not title:
         return jsonify({"error": "Title is required"}), 400
 
+    # Same publish rule as update_scholarship: a directory entry a candidate
+    # cannot act on is a dead end. An entry may be SAVED without a link, it just
+    # cannot be visible to candidates until it has one.
+    link = (data.get('application_link') or '').strip()
+    is_active = bool(data.get('is_active', True))
+    if is_active and not link:
+        return jsonify({"error": "A published entry needs an application link — "
+                                 "that is where the candidate actually applies. "
+                                 "Save it as unpublished, or add the link."}), 400
+
     try:
         cursor = db.cursor()
         # INSERT restricted to columns that actually exist on the live
@@ -425,7 +594,7 @@ def create_scholarship():
             ) VALUES (
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, TRUE
+                %s, %s
             ) RETURNING id, created_at
         """, (
             title,
@@ -437,7 +606,8 @@ def create_scholarship():
             data.get('min_gpa'),
             data.get('academic_level'),
             eligible_majors,
-            data.get('website_url', data.get('application_link', '')),
+            link,
+            is_active,
         ))
         db.commit()
         row = cursor.fetchone()

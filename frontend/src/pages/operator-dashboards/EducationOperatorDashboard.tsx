@@ -5,9 +5,10 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
     GraduationCap, Building2, BookOpen, Users, Settings,
-    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle, MessageSquare
+    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle, MessageSquare, Award
 } from 'lucide-react';
 import InstitutionsManager from '@/components/education/InstitutionsManager';
+import ScholarshipDirectoryManager from '@/components/education/ScholarshipDirectoryManager';
 import Messages from '@/components/recruiter/Messages';
 
 const brand = {
@@ -72,6 +73,7 @@ const EducationOperatorDashboard: React.FC = () => {
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: TrendingUp },
         { id: 'institutions', label: t('Institutions & Staff', 'المؤسسات والطاقم'), icon: Building2 },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: BookOpen },
+        { id: 'scholarships', label: t('Scholarships', 'المنح الدراسية'), icon: Award },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
         { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
         { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
@@ -422,6 +424,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
                 {!loading && activeTab === 'overview' && renderOverview()}
                 {activeTab === 'institutions' && <InstitutionsManager />}
+                {activeTab === 'scholarships' && <ScholarshipDirectoryManager />}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
                 {!loading && activeTab === 'requests' && renderRoleRequests()}
