@@ -88,10 +88,17 @@ export const EventsCalendarPage: React.FC = () => {
      to attend) gives way to the cancellation. */
   const card = (e: any) => {
     const cancelled = e.status === 'cancelled';
+    // Same rule as the detail page: marked completed, or the date has passed and
+    // nobody has marked it. Without this a finished day carried an employer-count
+    // badge and was indistinguishable from one still to come.
+    const over = !cancelled && (e.status === 'completed'
+      || (!!(e.ends_at || e.starts_at) && new Date(e.ends_at || e.starts_at) < new Date()));
     return (
       <Card key={e.id}
             className={`cursor-pointer transition-shadow hover:shadow-md ${
-              cancelled ? 'border-red-200 bg-red-50/40' : 'border-slate-200'}`}
+              cancelled ? 'border-red-200 bg-red-50/40'
+                        : over ? 'border-slate-200 bg-slate-50/60'
+                               : 'border-slate-200'}`}
             onClick={() => navigate(`/events/${e.id}`)}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-3">
@@ -114,6 +121,10 @@ export const EventsCalendarPage: React.FC = () => {
             {cancelled ? (
               <Badge className="shrink-0 border-red-200 bg-red-100 text-red-800">
                 {b('Cancelled', 'ملغاة')}
+              </Badge>
+            ) : over ? (
+              <Badge className="shrink-0 border-slate-200 bg-slate-100 text-slate-700">
+                {b('Finished', 'انتهت')}
               </Badge>
             ) : e.employer_count > 0 ? (
               <Badge className="shrink-0 border-teal-200 bg-teal-50 text-teal-800">
@@ -297,6 +308,12 @@ export const EventDetailPage: React.FC = () => {
   const invitedAwaiting = ev.my_response === 'invited';
   const hasPassed = !!(ev.ends_at || ev.starts_at)
     && new Date(ev.ends_at || ev.starts_at) < new Date();
+  // TO A READER an event is over for either of two reasons, and the page has to
+  // treat them the same: it was marked completed, or its date has passed and
+  // nobody has marked it yet. Keying only on the date missed the first case —
+  // the event that prompted this was marked completed while still dated in the
+  // future (fb_1787480900, 2026-08-23).
+  const isOver = ev.status === 'completed' || (ev.status !== 'cancelled' && hasPassed);
 
   return (
     <>
@@ -330,6 +347,24 @@ export const EventDetailPage: React.FC = () => {
           </div>
         )}
 
+        {/* Say so POSITIVELY. The page used to have no finished state at all: it
+            silently dropped the register-interest card and said nothing, so a
+            reader could not tell whether the day was over or the page was
+            broken — and read it as broken (fb_1787480900). Sits above the venue
+            for the same reason the cancellation notice does. */}
+        {isOver && (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="flex items-center gap-2 font-semibold text-slate-800">
+              <CheckCircle2 className="h-4 w-4 text-slate-500" />
+              {b('This open day has finished', 'انتهى هذا اليوم المفتوح')}
+            </p>
+            <p className="mt-2 text-xs text-slate-600">
+              {b('The employers below took part. Upcoming open days appear on the events page.',
+                 'شاركت جهات التوظيف أدناه. تظهر الأيام المفتوحة القادمة في صفحة الفعاليات.')}
+            </p>
+          </div>
+        )}
+
         <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-700">
           <CalendarDays className="h-4 w-4" /> {fmtDate(ev.starts_at, isRTL)}
         </p>
@@ -353,11 +388,17 @@ export const EventDetailPage: React.FC = () => {
             <LocationPicker lat={ev.venue_lat} lng={ev.venue_lng} readOnly
                             onLocationSelect={() => {}}
                             label={b('Where it is', 'أين يقع')} height="240px" />
-            <a className="mt-2 inline-block text-sm font-medium text-ehrdc-teal underline"
-               href={`https://www.google.com/maps/dir/?api=1&destination=${ev.venue_lat},${ev.venue_lng}`}
-               target="_blank" rel="noopener noreferrer">
-              {b('Get directions', 'الحصول على الاتجاهات')}
-            </a>
+            {/* Withheld once the day is over, for the reason already applied to
+                a cancelled one: "Get directions" invites travel to somewhere
+                there is nothing left to attend. The map stays — where it was
+                held is still context. */}
+            {!isOver && (
+              <a className="mt-2 inline-block text-sm font-medium text-ehrdc-teal underline"
+                 href={`https://www.google.com/maps/dir/?api=1&destination=${ev.venue_lat},${ev.venue_lng}`}
+                 target="_blank" rel="noopener noreferrer">
+                {b('Get directions', 'الحصول على الاتجاهات')}
+              </a>
+            )}
           </div>
         )}
 
@@ -470,7 +511,10 @@ export const EventDetailPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {ev.status !== 'cancelled' && (
+        {/* Only 'cancelled' was excluded here, so a COMPLETED event still told
+            the reader to turn up on the day and scan a QR for something that
+            had already happened — visible in the reporter's screenshot. */}
+        {ev.status !== 'cancelled' && !isOver && (
           <p className="mt-6 text-xs leading-relaxed text-slate-500">
             {b('On the day, scan the QR code at the venue to register your attendance and receive your queue number.',
                'في يوم الفعالية، امسح رمز الاستجابة السريعة في المكان لتسجيل حضورك والحصول على رقمك في الطابور.')}

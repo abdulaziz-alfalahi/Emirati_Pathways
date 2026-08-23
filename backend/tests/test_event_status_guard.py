@@ -122,3 +122,50 @@ def test_the_ui_does_not_offer_a_control_the_api_will_refuse():
         'The page must mirror MUTABLE_STATUSES; if the backend set changes this '
         'is the other half to change.'
     )
+
+
+# ── The public page ─────────────────────────────────────────────────────────
+
+def _calendar_page():
+    with open(os.path.join(FRONTEND, 'pages', 'events', 'EventsCalendarPage.tsx'),
+              encoding='utf-8') as fh:
+        return fh.read()
+
+
+def test_the_public_page_says_when_an_event_is_over():
+    """It had no finished state at all, and read as broken.
+
+    The page silently dropped the register-interest card and said nothing else,
+    so a reader could not tell whether the day was over or the page had failed.
+    The owner read it as failed, which is the correct inference from what was
+    shown (fb_1787480900, 2026-08-23).
+    """
+    page = _calendar_page()
+    assert 'isOver' in page, 'The detail page has no notion of a finished event.'
+    assert 'This open day has finished' in page, (
+        'The page never states that the event is over. Dropping controls '
+        'without saying why is what produced the bug report.'
+    )
+
+
+def test_completed_is_recognised_even_when_the_date_has_not_passed():
+    """The event that prompted this was marked completed while dated in future.
+
+    Keying "is it over" on the date alone would have missed it, which is exactly
+    the case the reporter hit.
+    """
+    page = _calendar_page()
+    assert "ev.status === 'completed'" in page, (
+        'isOver must consider the completed STATUS, not only whether the date '
+        'has passed.'
+    )
+
+
+def test_the_day_of_qr_instruction_is_not_shown_on_a_finished_event():
+    """It excluded only 'cancelled', so a completed day still said "on the day"."""
+    page = _calendar_page()
+    assert "ev.status !== 'cancelled' && !isOver" in page, (
+        'The "scan the QR code at the venue on the day" line is still shown for '
+        'a finished event, telling the reader to attend something that has '
+        'already happened.'
+    )
