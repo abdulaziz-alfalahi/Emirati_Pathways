@@ -38,6 +38,15 @@ const EventManagePage: React.FC = () => {
   const [cancelReason, setCancelReason] = useState('');
 
   const [selected, setSelected] = useState<any | null>(null);
+
+  // Mirrors MUTABLE_STATUSES in backend/routes/recruitment_events_routes.py.
+  // The API is the authority and refuses regardless; this only decides whether
+  // the control is offered, so a closed event does not invite a click that will
+  // fail. Recording an OUTCOME is deliberately not covered — an employer
+  // confirms a placement days after the day, so that stays open on 'completed'
+  // (owner decision, 2026-08-23).
+  const eventIsEditable = !!selected && ['draft', 'published'].includes(selected.status);
+
   const [queue, setQueue] = useState<any[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [companyQuery, setCompanyQuery] = useState('');
@@ -540,6 +549,24 @@ const EventManagePage: React.FC = () => {
                   )}
 
                   <div>
+                    {/* Once the day is closed or cancelled its record stops
+                        accepting changes, so the controls go rather than failing
+                        on click — the owner reported being able to add and remove
+                        companies on a completed event (fb_1787471185). The API
+                        refuses either way; this is so the state is legible before
+                        the click instead of arriving as an error after it. */}
+                    {!eventIsEditable ? (
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {selected.status === 'cancelled'
+                            ? b('This event was cancelled, so its employers are fixed. Reopen it if it is going ahead after all.',
+                                'أُلغيت هذه الفعالية، لذا لا يمكن تعديل جهات التوظيف المشاركة. أعِد فتحها إذا كانت ستُقام بعد كل شيء.')
+                            : b('This event is completed, so its record is closed. Reopen it if you need to correct something — recording an outcome does not need it reopened.',
+                                'اكتملت هذه الفعالية، لذا أُغلق سجلها أمام التعديل. أعِد فتحها إذا احتجت إلى تصحيح شيء — أما تسجيل النتائج فلا يتطلب إعادة فتحها.')}
+                        </p>
+                      </div>
+                    ) : (
+                    <>
                     <Label className="text-xs">{b('Add an employer', 'إضافة جهة توظيف')}</Label>
                     <Input value={companyQuery} onChange={e => setCompanyQuery(e.target.value)}
                            placeholder={b('Search by company name or trade licence', 'ابحث باسم الشركة أو الرخصة التجارية')}
@@ -578,6 +605,8 @@ const EventManagePage: React.FC = () => {
                         );
                       })}
                     </div>
+                    </>
+                    )}
 
                     {/* Employers already on the event, WITH the vacancies candidates
                         will see — the organiser should not have to open the public
@@ -588,14 +617,16 @@ const EventManagePage: React.FC = () => {
                           <div key={c.company_id} className="rounded-lg border border-slate-100 p-2.5">
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-sm font-medium text-slate-900">{c.company_name}</p>
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] text-red-600"
-                                      onClick={async () => {
-                                        await restClient.delete(`/api/events/${selected.id}/employers/${c.company_id}`)
-                                          .catch(() => {});
-                                        openEvent(selected);
-                                      }}>
-                                {b('Remove', 'إزالة')}
-                              </Button>
+                              {eventIsEditable && (
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] text-red-600"
+                                        onClick={async () => {
+                                          await restClient.delete(`/api/events/${selected.id}/employers/${c.company_id}`)
+                                            .catch(() => {});
+                                          openEvent(selected);
+                                        }}>
+                                  {b('Remove', 'إزالة')}
+                                </Button>
+                              )}
                             </div>
                             {c.vacancies?.length ? (
                               <ul className="mt-1 space-y-0.5">
