@@ -33,6 +33,8 @@ is in it.
 | 2 | **Daily** link re-verification and **daily** re-scout of sources; notify the operator to act. |
 | 3 | **The Education Operator alone** owns the queue. No second approver. |
 | 4 | An approach to KHDA will be drafted **later, after further verification and testing**. |
+| 5 | **The Education Operator may add domains** to the allow-list themselves. No further approval. |
+| 6 | Notification is **in-app AND email**. Email is expected to be available soon. |
 
 ### 2.1 What decision 1 rules out, and why it matters
 
@@ -42,7 +44,28 @@ of those — even briefly, even flagged — is a reputational event, not a bug.
 An allow-list makes the failure mode "we missed a programme" rather than "we
 advertised a fraud", which is the right way round.
 
-Adding a domain is therefore an operator action with a name against it.
+Adding a domain is therefore an operator action with a name against it, and by
+decision 5 the operator makes that call alone. That is the right trade: a second
+approver on domain additions would slow the common case (adding a university
+that has just published an award) to guard against a rare one, and the operator
+is already trusted to publish the listings themselves. It does mean the domain
+list needs the same audit trail as everything else — who added it, when — so the
+decision is attributable rather than merely fast.
+
+### 2.2 Decision 6, and the order it has to be built in
+
+**Outbound email is still blocked at the firewall** (open with Moro, item 2).
+Nothing on this platform sends mail today.
+
+So the in-app queue must work standalone and email is added when the path opens
+— not the other way round. A daily notification that depends on a channel that
+does not exist yet is a feature that silently never fires, which is the exact
+failure §7 warns about: the operator would see no alerts and reasonably conclude
+there was nothing to act on.
+
+Concretely: build the queue and its in-app badge first, put the email behind a
+capability check, and make the absence of the email path visible to the operator
+("email notifications are not enabled yet") rather than silent.
 
 ## 3. The constraint that has already bitten
 
@@ -182,24 +205,65 @@ that decides whether this is worth running is **cost per accepted listing**, not
 cost per scout — a scout that produces forty drafts the operator rejects is a
 cost, not an achievement.
 
-## 9. What I would not build
+## 9. Rejections have to stick
+
+A scouted entry the operator turns down — not a scholarship, a duplicate of one
+already listed, out of scope, or simply wrong — is a **decision**, and decision 2
+makes remembering it a requirement rather than a preference.
+
+The scout reads the same allow-listed pages **every day**. If it does not
+remember what was already rejected, the same item returns to the queue every
+morning and the operator rejects it again. Within a fortnight the queue is mostly
+things they have already dismissed, and they stop opening it. That is how this
+tool dies — not by being wrong, but by being repetitive.
+
+So each rejection stores what was found, the source URL, when, and why, with
+enough identity — source URL plus a content fingerprint — to recognise the same
+thing tomorrow. The scout then suppresses it silently, and re-raises it **only if
+the page materially changes**, which is the same change-detection signal as §4.4.
+
+Three smaller reasons it earns its storage:
+
+- **"Why isn't X listed?"** A directory that omits a well-known programme will be
+  asked about it. *"Rejected 3 June, duplicate of the KHDA entry"* is a better
+  answer than a shrug.
+- **Measuring the tool.** Cost per accepted listing (§8) needs the denominator.
+  Forty drafts a day that are all rejected is a signal that the sources or the
+  prompts are wrong, and it is only visible if rejections are counted.
+- **Tuning.** The rejection reasons are the signal for making the scout quieter.
+
+**Superseded versions of a live entry** — the deadline and amount before an
+update — are kept for the same reason as provenance (§4.1). When a candidate says
+"it said 30 June last week", we should be able to check rather than guess.
+
+**Retention:** rejections indefinitely (a URL, a hash, a reason and a date are
+small, and they get more useful with age); superseded versions for about two
+years. Neither is personal data, so there is no privacy argument for deleting
+them.
+
+## 10. What I would not build
 
 - **Auto-publishing on high confidence.** The review step is the product.
 - **A confidence percentage.** It looks precise and is not.
 - **Anything behind a login.**
 - **Open-web search** — ruled out by decision 1.
 
-## 10. Open questions
+## 11. Open questions
 
-1. **Who maintains the allow-list**, and does adding a domain need anyone's
-   approval beyond the Education Operator?
-2. **What is the notification channel** for the daily queue — in-app only, or
-   does this finally need the email path that is still blocked at the firewall?
-3. **Retention**: how long do we keep rejected drafts and superseded versions of
-   an entry? They are the evidence for §4.1, so probably longer than feels
-   necessary.
+All three questions this document opened with were answered on 2026-08-23 —
+decisions 5 and 6 in §2, and retention in §9. What remains is not a decision so
+much as a dependency:
 
-## 11. Sequencing
+1. **When does outbound email actually open?** Decision 6 assumes it will. Until
+   Moro item 2 clears, half of the notification requirement cannot be delivered,
+   and §2.2 is the design that keeps that from being invisible.
+2. **What counts as "materially changed"** for re-raising a rejected item (§9)
+   and for flagging a live one (§4.4)? A deadline moving matters; a marketing
+   paragraph being reworded does not. This needs a first pass in code and then
+   the operator's judgement on how noisy it turns out to be — it is a tuning
+   question, not one to settle on paper.
+
+## 12. Sequencing
 
 **Phase 0 — before any AI.** Fix the container's certificate chain (§3), add the
 per-domain startup reachability check, and add the four link states plus
@@ -207,10 +271,15 @@ per-domain startup reachability check, and add the four link states plus
 checker alone already delivers most of the candidate-facing confidence.
 
 **Phase 1 — verification.** Daily link checking, change detection by content
-hash, the operator queue, and "Link checked on <date>" on the listing.
+hash, the operator queue with its in-app badge, and "Link checked on <date>" on
+the listing. Email notification behind a capability check (§2.2), visibly
+disabled until the firewall path opens.
 
 **Phase 2 — scouting.** Allow-listed extraction into drafts, with provenance and
-the field-level review UI.
+the field-level review UI — and the rejection store from §9 in the SAME phase,
+not after it. A daily scout that cannot remember a rejection is worse than no
+scout: it generates the same work every morning until the operator stops
+looking. The allow-list editor (decision 5) belongs here too.
 
 Phase 1 is useful on its own and is the half that cannot produce a wrong claim
 about a scholarship. Phase 2 without Phase 1 would be a machine for generating
