@@ -349,3 +349,23 @@
   transform: translateY(0) !important;
   box-shadow: 0 1px 2px rgba(13, 148, 136, 0.05) !important;
 }
+/* ── Keep Leaflet's stacking inside the map ─────────────────────────────────
+ *
+ * Leaflet gives its own layers high z-indexes — panes at 400, controls at 800,
+ * the zoom buttons at 1000 — which is fine INSIDE a map and wrong everywhere
+ * else. `.leaflet-container` is position:relative with `z-index: auto`, so it
+ * creates no stacking context of its own and those numbers compete in the root
+ * one. The sticky site header is `z-50`, so a 400 beats it: opening a nav
+ * dropdown over an event's venue map drew the map on top of the menu, cutting
+ * the items in half (owner screenshot, 2026-08-23).
+ *
+ * `isolation: isolate` forces the container to be a stacking context, so 400 /
+ * 800 / 1000 are resolved among themselves and the whole map sits at z-index 0
+ * relative to the page. Nothing inside the map changes; everything outside it —
+ * this dropdown, and equally any modal, toast or tooltip — now wins, which is
+ * the general fix rather than raising the header above one particular number.
+ */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+}
