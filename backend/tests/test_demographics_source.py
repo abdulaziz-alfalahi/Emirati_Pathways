@@ -174,3 +174,58 @@ def test_the_importer_normalises_on_write():
         "normalise_education(txt(r.get('Education')", ''), (
         "An un-normalised Education write remains."
     )
+
+
+# ── Age bands ───────────────────────────────────────────────────────────────
+
+def test_age_aliases_merge_into_the_containing_band():
+    """One stray row is enough to invent a category on a chart axis.
+
+    A single '30-35' row drew an empty labelled tick between two populated
+    bands, and the owner reported the chart as missing an age group
+    (fb_1787451875, 2026-08-23). The platform's bands are 18-23 / 24-35 /
+    36-45 / 46-60 / 60+; both aliases fall inside 24-35, so merging is lossless.
+    """
+    import sys
+    sys.path.insert(0, BACKEND)
+    from demographics import normalise_age
+
+    assert normalise_age('30-35') == '24-35'
+    assert normalise_age('25-30') == '24-35'
+    # Idempotent, and the real bands are untouched.
+    for band in ('18-23', '24-35', '36-45', '46-60', '60+'):
+        assert normalise_age(band) == band
+    assert normalise_age(None) is None
+
+
+def test_the_importer_normalises_age_on_write():
+    src = _read(BACKEND, 'scripts', 'import_crm_master_file.py')
+    assert 'normalise_age' in src, (
+        "import_crm_master_file.py writes Age Group straight through, so the "
+        "next import reintroduces the phantom band migration 082 removed."
+    )
+
+
+# ── NAFIS support rate ──────────────────────────────────────────────────────
+
+def test_nafis_support_rate_is_not_computed_before_the_programme_existed():
+    """NAFIS began in 2021; a support rate for 2010 cannot be plotted.
+
+    The query computes a rate for every cohort back to 2010, and those figures
+    are not nonsense in themselves — they are the share of that year's hires
+    who are on NAFIS support TODAY. But on a year axis beside "job starts in
+    that year" they read as support paid in a year the programme did not exist,
+    which is how the owner read it (fb_1787452023, 2026-08-23). The counts still
+    plot; only the ratio is withheld.
+    """
+    src = _read(BACKEND, 'routes', 'strategic_metrics_api.py')
+    assert 'NAFIS_START_YEAR' in src, (
+        'The support rate is no longer gated on the programme start year.'
+    )
+    assert re.search(r'NAFIS_START_YEAR\s*=\s*2021', src), (
+        'NAFIS_START_YEAR is not 2021.'
+    )
+    # Both series must be gated, not just the yearly one.
+    assert len(re.findall(r'>=\s*NAFIS_START_YEAR', src)) >= 2, (
+        'Only one of the yearly/monthly series gates on NAFIS_START_YEAR.'
+    )

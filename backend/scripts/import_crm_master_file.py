@@ -46,7 +46,9 @@ import psycopg2  # noqa: E402
 import psycopg2.extras  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
-from demographics import normalise_education, normalise_emirate  # noqa: E402
+from demographics import (  # noqa: E402
+    normalise_age, normalise_education, normalise_emirate,
+)
 
 EID_RE = r'784\d{12}'
 CYCLE_RE = re.compile(r'^(Added|Removed)\s+(.+)$', re.I)
@@ -203,7 +205,7 @@ def main():
                    updated_at = NOW()
         """, (eid, eid if eid in have_user else None,
               txt(r.get('Full Name'), 200), txt(r.get('Full Name Arabic'), 200),
-              txt(r.get('Gender'), 20), txt(r.get('Age Group'), 20),
+              txt(r.get('Gender'), 20), normalise_age(txt(r.get('Age Group'), 20)),
               normalise_education(txt(r.get('Education'), 60)),
               normalise_emirate(txt(r.get('Emirate Of Origin'), 60)),
               normalise_emirate(txt(r.get('Emirate Of Residence'), 60)),
@@ -244,7 +246,7 @@ def main():
                         military_status, salary_expectations, date_of_call, created_at)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NOW())
             """, (eid, txt(r.get('Full Name'), 200), txt(r.get('Gender'), 20),
-                  txt(r.get('Age Group'), 20),
+                  normalise_age(txt(r.get('Age Group'), 20)),
                   normalise_education(txt(r.get('Education'), 60)),
                   normalise_emirate(txt(r.get('Emirate Of Origin'), 60)),
                   txt(r.get('Marital Status'), 40),

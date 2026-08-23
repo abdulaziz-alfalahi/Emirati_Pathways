@@ -1506,11 +1506,21 @@ const ExecutiveDashboard: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <div style={{ width: '100%', height: 560 }}>
+                    {/* dir=ltr pins the tick anchoring; the RTL reading direction
+                        comes from the reversed number axis below. See the work-status
+                        chart on the Demographics tab for the full reasoning. */}
+                    <div style={{ width: '100%', height: 560 }} dir="ltr">
                       <ResponsiveContainer>
                         <BarChart data={empTimeline.sector_distribution} layout="vertical"
                                   margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
-                          <XAxis type="number" tick={{ fontSize: 11 }} />
+                          {/* `reversed` belongs on the NUMBER axis, not the category
+                              axis. It mirrors the bar direction so an Arabic reader
+                              starts at the right edge, next to the labels, and reads
+                              leftward — owner feedback fb_1787451952, 2026-08-23.
+                              Reversing the CATEGORY axis instead would invert the
+                              RANKING, which is the separate bug fixed in b04442e; the
+                              ranking is the same fact in both languages. */}
+                          <XAxis type="number" tick={{ fontSize: 11 }} reversed={isRTL} />
                           {/* NOT reversed in RTL. `reversed` on a category axis
                               inverts the ORDER, which put the smallest sector at
                               the top and made the Arabic chart rank backwards
@@ -1522,7 +1532,8 @@ const ExecutiveDashboard: React.FC = () => {
                                  orientation={isRTL ? 'right' : 'left'} />
                           <Tooltip formatter={(v: any, _n: any, p: any) =>
                             `${(v as number).toLocaleString()} (${p?.payload?.pct}%)`} />
-                          <Bar dataKey="headcount" fill="#047857" radius={[0, 3, 3, 0]}
+                          <Bar dataKey="headcount" fill="#047857"
+                               radius={isRTL ? [3, 0, 0, 3] : [0, 3, 3, 0]}
                                name={b('Employees', 'موظفون')} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -1647,7 +1658,7 @@ const ExecutiveDashboard: React.FC = () => {
                       {empTimeline.nafis_basis && (
                         <span className="block mb-2">
                           {b(empTimeline.nafis_basis,
-                             'نسبة كل دفعة توظيف تتلقى حالياً دعم الرواتب من نافس. النسبة أكثر موثوقية من الأعداد أعلاه لأن التحيّز يؤثر على البسط والمقام معاً. السنة الأخيرة تبدو منخفضة لأن دعم الملتحقين حديثاً قد لا يكون قد بدأ صرفه بعد، لا لأن عدداً أقل منهم مؤهل.')}
+                             'نسبة كل دفعة توظيف تتلقى حالياً دعم الرواتب من نافس. تُعرض النسبة اعتباراً من عام 2021 فقط، لأن برنامج نافس بدأ في ذلك العام — أما الدفعات الأقدم فيمكن حساب نسبتها، لكنها على محور السنوات ستُقرأ كدعم صُرف في سنة لم يكن البرنامج فيها قائماً، مع بقاء أعداد الالتحاق مرسومة. النسبة أكثر موثوقية من الأعداد أعلاه لأن التحيّز يؤثر على البسط والمقام معاً. السنة الأخيرة تبدو منخفضة لأن دعم الملتحقين حديثاً قد لا يكون قد بدأ صرفه بعد، لا لأن عدداً أقل منهم مؤهل.')}
                         </span>
                       )}
                       {b(empTimeline.basis,
@@ -1702,13 +1713,13 @@ const ExecutiveDashboard: React.FC = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <div style={{ height: 300 }}>
+                        <div style={{ height: 300 }} dir="ltr">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={executiveData?.sector_distribution || []} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                              <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                              <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={80} />
+                              <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} reversed={isRTL} />
+                              <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={80} orientation={isRTL ? 'right' : 'left'} />
                               <Tooltip content={<CustomTooltip />} />
-                              <Bar dataKey="value" fill="#10B981" radius={[0, 6, 6, 0]} />
+                              <Bar dataKey="value" fill="#10B981" radius={isRTL ? [6, 0, 0, 6] : [0, 6, 6, 0]} />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -1840,23 +1851,38 @@ const ExecutiveDashboard: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      {/* dir=ltr on the plot, deliberately.
+                      {/* TWO SEPARATE THINGS, and each needs its own fix.
+                      
+                          READING DIRECTION is the axis config's job: category axis on
+                          the right, NUMBER axis reversed, so an Arabic reader starts
+                          at the right edge beside the labels and reads leftward
+                          (owner: fb_1787451952, 2026-08-23). `reversed` stays OFF the
+                          category axis — that inverts the RANKING, the separate bug
+                          fixed in b04442e.
 
-                          This is the only chart here with categories on the vertical
-                          axis. Under the page's RTL direction Recharts anchored those
-                          tick labels into the plot area, so the bars were drawn over
-                          them and "لا يعمل" was clipped to a single glyph. A chart's
-                          coordinate system is not text and does not mirror; the tick
-                          labels are still Arabic and still shape right-to-left inside
-                          their own run. The category gutter (width 110) is sized for
-                          the longest label in either language. */}
+                          TEXT ANCHORING is dir's job. Recharts anchors a right-hand
+                          category tick with textAnchor="start", expecting it to flow
+                          rightward from the axis line; under an inherited dir=rtl the
+                          bidi algorithm flips that and the labels grow back INTO the
+                          plot, so the bars overdraw them (measured on staging: axis
+                          line at x=553, tick text ending at 562). dir=ltr on the
+                          container pins the anchor without touching the Arabic, which
+                          still shapes right-to-left inside its own run — measured
+                          again after the fix, every tick starts at 561 and runs
+                          outward.
+
+                          Doing only one of these was wrong twice: dir alone fixed the
+                          clipping and left the chart reading LTR; mirroring alone
+                          fixed the reading and brought the clipping back from the
+                          other side. */}
                       <div style={{ height: 280 }} dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={demoEmployment} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                            <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} />
+                            <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} reversed={isRTL} />
+                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} orientation={isRTL ? 'right' : 'left'} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[0, 6, 6, 0]} />
+                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B"
+                                 radius={isRTL ? [6, 0, 0, 6] : [0, 6, 6, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
