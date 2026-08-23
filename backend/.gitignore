@@ -14,6 +14,14 @@
 # API Keys and Secrets
 *.key
 *.pem
+# ...except the public CA intermediates the link checker carries. The rule above
+# exists to keep PRIVATE KEYS out, and it should stay that way — these are
+# public certificates that anyone can download from the issuing CA. They are in
+# the repo because KHDA's web host serves an incomplete chain and browsers hide
+# it by fetching the intermediate themselves; our fetcher cannot, so it ships
+# the certificate. See backend/link_verification.py.
+!certs/*.pem
+
 secrets/
 
 # Logs
