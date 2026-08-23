@@ -102,7 +102,7 @@
         }
     },
     "uploadYourCV": "Upload Your CV",
-    "uploadHint": "Maximum file size: 10MB • Powered by Gemini AI",
+    "uploadHint": "Maximum file size: 10MB • Powered by AI",
     "aiPoweredAnalysis": "AI-powered analysis with UAE job market insights",
     "chooseFile": "Choose File",
     "autoFill": "Auto-Fill with CV",
@@ -112,7 +112,6 @@
     "heroTitle": "AI-Powered CV Builder",
     "heroSubtitle": "Upload your CV, get AI analysis, and create a professional resume tailored for the UAE job market",
     "uaeFocused": "UAE Focused",
-    "geminiAI": "Gemini AI",
     "loadCV": "Load CV",
     "updateCV": "Update CV",
     "saveCV": "Save CV",
