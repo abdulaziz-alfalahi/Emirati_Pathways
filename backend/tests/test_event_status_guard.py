@@ -202,3 +202,31 @@ def test_the_took_part_line_is_not_said_about_a_future_event():
         '"The employers below took part" is not conditioned on the day having '
         'actually passed.'
     )
+
+
+# ── Map stacking ────────────────────────────────────────────────────────────
+
+def test_the_leaflet_map_is_its_own_stacking_context():
+    """Otherwise the map paints over the site chrome.
+
+    Leaflet gives its panes z-index 400 and its controls 800-1000. The container
+    is position:relative with z-index:auto, so it forms no stacking context and
+    those numbers compete in the root one against a sticky header at z-50 — the
+    map won, and a nav dropdown opened over an event's venue map was drawn
+    underneath it (owner screenshot, 2026-08-23).
+
+    Asserted here rather than left to a comment because the rule looks like dead
+    CSS to anyone tidying the file: nothing on the page obviously depends on it
+    until a dropdown happens to overlap a map.
+    """
+    css_path = os.path.join(FRONTEND, 'index.css')
+    with open(css_path, encoding='utf-8') as fh:
+        css = fh.read()
+    block = css.split('.leaflet-container')
+    assert len(block) > 1, 'No .leaflet-container rule in index.css.'
+    rule = block[-1].split('}')[0]
+    assert 'isolation' in rule and 'isolate' in rule, (
+        '.leaflet-container must isolate its stacking context, or Leaflet\'s '
+        'z-index 400 panes will paint over the header and any dropdown, modal '
+        'or toast that overlaps the map.'
+    )
