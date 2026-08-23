@@ -139,6 +139,23 @@ EMIRATE_ALIASES = {
 }
 
 
+# Age bands, same duplicate-vocabulary problem as education and even less
+# forgiving: ONE stray row is enough to put an empty category on a chart axis,
+# which is exactly what happened — a single '30-35' row drew a labelled gap
+# between two populated bands and the owner reported the chart as missing an
+# age group (fb_1787451875, 2026-08-23).
+#
+# The platform's bands are 18-23 / 24-35 / 36-45 / 46-60 / 60+. Both aliases
+# below fall INSIDE 24-35, so merging is lossless: every one of those people is
+# 24-35. Keeping them as their own band would instead split 24-35 on a boundary
+# decided by which importer touched the record. Migration 082 repairs the
+# stored rows; this map keeps the importer from reintroducing them.
+AGE_ALIASES = {
+    '25-30': '24-35',
+    '30-35': '24-35',
+}
+
+
 def _normalise(value, aliases):
     if value is None:
         return None
@@ -156,6 +173,11 @@ def normalise_education(value):
 def normalise_emirate(value):
     """Canonical emirate/city label, or None. Safe on already-canonical input."""
     return _normalise(value, EMIRATE_ALIASES)
+
+
+def normalise_age(value):
+    """Canonical age band, or None. Safe on already-canonical input."""
+    return _normalise(value, AGE_ALIASES)
 
 
 # ── Cohorts ─────────────────────────────────────────────────────────────────

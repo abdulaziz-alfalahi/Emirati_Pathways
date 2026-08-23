@@ -531,11 +531,28 @@ def employment_timeline():
                AND job_start_date >= DATE '2010-01-01'
              GROUP BY 1 ORDER BY 1
         """)
+        # THE SUPPORT RATE DOES NOT EXIST BEFORE THE PROGRAMME DID.
+        #
+        # NAFIS launched in 2021. The query happily computes a rate for every
+        # cohort back to 2010 — 66.9% for 2010, 77.1% for 2015 — and those
+        # numbers are not nonsense in themselves: they are the share of people
+        # hired that year who are on NAFIS support TODAY. But plotted against a
+        # year axis beside "job starts in that year", they read as "67% were on
+        # NAFIS support in 2010", which is impossible and is exactly how the
+        # owner read it (fb_1787452023, 2026-08-23).
+        #
+        # The cohort is kept and its COUNT still plots; only the ratio is
+        # withheld, for the same reason the monthly series withholds a rate on a
+        # tiny denominator below — a number the axis will cause to be misread is
+        # worse than a gap. nafis_basis states the cut-off so it is disclosed
+        # rather than silently applied.
+        NAFIS_START_YEAR = 2021
         by_year = [{
             'year': r[0],
             'starts': r[1],
             'nafis_supported': r[2],
-            'nafis_support_pct': round(r[2] / r[1] * 100, 1) if r[1] else None,
+            'nafis_support_pct': (round(r[2] / r[1] * 100, 1)
+                                  if r[1] and r[0] >= NAFIS_START_YEAR else None),
         } for r in cur.fetchall()]
 
         # Running total of people whose CURRENT job began on or before each year.
@@ -582,7 +599,8 @@ def employment_timeline():
             'starts': r[3],
             'nafis_supported': r[4],
             'nafis_support_pct': (round(r[4] / r[3] * 100, 1)
-                                  if r[3] >= MIN_N_FOR_RATE else None),
+                                  if r[3] >= MIN_N_FOR_RATE
+                                  and r[1] >= NAFIS_START_YEAR else None),
         } for r in cur.fetchall()]
 
         cur.execute("""
@@ -695,11 +713,15 @@ def employment_timeline():
                 'hiring in any given year.'),
             'nafis_basis': (
                 'Share of each hiring cohort currently receiving NAFIS salary '
-                'support (meaning confirmed 2026-08-21). The RATE is more '
-                'reliable than the counts above, because survivorship affects '
-                'its numerator and denominator together. The most recent year '
-                'reads low because support for very recent hires may not yet be '
-                'in payment, not because fewer of them qualify.'),
+                'support (meaning confirmed 2026-08-21). Shown from 2021 only, '
+                'because NAFIS began in 2021 — earlier cohorts have a '
+                'computable figure, but on a year axis it would read as support '
+                'paid in a year the programme did not exist. Their job-start '
+                'counts are still plotted. The RATE is more reliable than the '
+                'counts above, because survivorship affects its numerator and '
+                'denominator together. The most recent year reads low because '
+                'support for very recent hires may not yet be in payment, not '
+                'because fewer of them qualify.'),
             'sector_basis': (
                 'Where the 33,352 Emiratis in this file currently work, across '
                 'all years — not who is hiring now. "Not stated" is shown rather '
