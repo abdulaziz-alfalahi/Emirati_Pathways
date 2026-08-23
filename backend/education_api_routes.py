@@ -6,9 +6,6 @@ Blueprint prefix: /api/education
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
-# Roles permitted to review scholarship applicants' PII.
-_SCHOLARSHIP_REVIEWER_ROLES = {'educator', 'education_operator', 'operator',
-                               'admin', 'super_admin', 'platform_administrator'}
 import psycopg2
 import os
 import logging
@@ -20,9 +17,27 @@ logger = logging.getLogger(__name__)
 education_bp = Blueprint('education', __name__, url_prefix='/api/education')
 
 try:
-    from backend.auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES
+    from backend.auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES, ADMIN_ROLES
 except ImportError:
-    from auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES
+    from auth.access_control import resolve_roles, require_roles, OPERATOR_ROLES, PROFDEV_ROLES, ADMIN_ROLES
+
+# Roles permitted to review scholarship applicants' PII.
+# Who may publish a scholarship and decide an application. Built on ADMIN_ROLES
+# rather than listing admin names by hand — the hand-written set here missed
+# 'administrator' and 'super_user', so two real admin roles were refused.
+#
+# WHY THIS IS A MODULE CONSTANT AND A DECORATOR, not an `if` inside each handler:
+# create_scholarship and update_scholarship_application_status carried
+# @jwt_required() and NO role check at all, while their docstrings said
+# "(educator / operator)". Verified against staging 2026-08-23 — signed in as a
+# plain candidate, it was possible to publish a scholarship (201), apply to it
+# (201), and approve one's own application (200). Only the READ endpoint was
+# guarded, so the two dangerous verbs were the open ones.
+#
+# This is the failure mode CLAUDE.md names: a guard that lives in the handler is
+# a guard somebody forgets to write. require_roles() is the one that cannot be
+# forgotten silently, because its absence is visible at the route.
+SCHOLARSHIP_REVIEWER_ROLES = ADMIN_ROLES | {'educator', 'education_operator', 'operator'}
 
 
 def get_db():
@@ -379,7 +394,7 @@ def apply_to_scholarship(scholarship_id):
 
 
 @education_bp.route('/scholarships', methods=['POST'])
-@jwt_required()
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
 def create_scholarship():
     """Create a new scholarship (educator / operator)."""
     user_id = get_jwt_identity()
@@ -438,11 +453,9 @@ def create_scholarship():
 
 
 @education_bp.route('/scholarships/<int:scholarship_id>/applications', methods=['GET'])
-@jwt_required()
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
 def get_scholarship_applications(scholarship_id):
     """Get applications for a specific scholarship (educator / operator view)."""
-    if not (resolve_roles() & set(_SCHOLARSHIP_REVIEWER_ROLES)):
-        return jsonify({"error": "Forbidden - educator/operator access required"}), 403
     applications = query_all("""
         SELECT sa.id, sa.user_id, sa.scholarship_id, sa.status,
                sa.ai_match_score, sa.submitted_at, sa.application_data,
@@ -470,7 +483,7 @@ def get_scholarship_applications(scholarship_id):
 
 
 @education_bp.route('/scholarships/applications/<int:application_id>/status', methods=['PUT'])
-@jwt_required()
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
 def update_scholarship_application_status(application_id):
     """Update a scholarship application status (approved / rejected)."""
     user_id = get_jwt_identity()
