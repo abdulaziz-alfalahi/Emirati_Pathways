@@ -44,6 +44,7 @@ a whole domain going unreachable is an infrastructure alert rather than a pile
 of directory tasks.
 """
 import hashlib
+import html
 import logging
 import os
 import re
@@ -134,6 +135,15 @@ def content_fingerprint(body):
     text = body.decode('utf-8', errors='replace') if isinstance(body, bytes) else body
     text = re.sub(r'(?is)<(script|style)[^>]*>.*?</\1>', ' ', text)
     text = re.sub(r'(?s)<[^>]+>', ' ', text)
+    # UNESCAPE AFTER STRIPPING TAGS, never before. Measured on u.ae 2026-08-24:
+    # without this, Arabic pages hash as "&#x627;&#x644;..." rather than as
+    # their text, so the same page served with different entity encoding — which
+    # a CMS upgrade or a CDN can change on its own — reads as a changed
+    # programme. It also meant the extracted text was useless to a model.
+    #
+    # Order matters: unescaping first would turn a literal "&lt;div&gt;" that
+    # the page DISPLAYS into a real tag, and the next line would delete it.
+    text = html.unescape(text)
     text = re.sub(r'\s+', ' ', text).strip().lower()
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
