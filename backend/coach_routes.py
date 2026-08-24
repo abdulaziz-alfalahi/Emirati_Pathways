@@ -788,9 +788,15 @@ def join_coaching_session(session_id):
         end = platform_time.aware(end)
         now = platform_time.now()
         if now < start - _COACH_JOIN_BEFORE:
+            # Name the clock, and hand the client a machine-readable instant so
+            # it can show the reader THEIR time. "opens at 18:15" told a coach
+            # in Brisbane at 18:32 local that the platform was broken
+            # (fb_1787560378) — the server was right and the sentence was not.
+            opens = start - _COACH_JOIN_BEFORE
             return jsonify({"success": False, "error_code": "too_early",
+                            "opens_at": platform_time.iso(opens),
                             "message": f"This session opens at "
-                                       f"{(start - _COACH_JOIN_BEFORE).strftime('%H:%M')}."}), 409
+                                       f"{platform_time.clock(opens)}."}), 409
         if now > end + _COACH_JOIN_GRACE:
             return jsonify({"success": False, "error_code": "closed",
                             "message": "This session has ended."}), 409

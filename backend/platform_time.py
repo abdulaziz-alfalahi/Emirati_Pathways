@@ -55,6 +55,44 @@ def now() -> datetime:
     return datetime.now(PLATFORM_TZ)
 
 
+def clock(value: Optional[datetime]) -> str:
+    """A time a reader in another country cannot misread: '18:15 Dubai time'.
+
+    WHY THIS IS NOT strftime('%H:%M')
+
+    The comparison bug this module was written for is fixed: the server now
+    correctly decides that a session scheduled for 18:15 Gulf time has not
+    opened yet. But the REFUSAL still said only "This session opens at 18:15",
+    and a coach reading that at 18:32 in Brisbane concluded the platform was
+    broken (feedback fb_1787560378, 2026-08-24).
+
+    They were right to. A bare wall-clock time is a claim about a clock, and the
+    message never said whose. The server was correct and the sentence was
+    misleading — which, to the person locked out of their session, is the same
+    thing.
+
+    So every time we tell someone when something opens, we name the clock. The
+    endpoints also return `opens_at` as ISO 8601 with the offset, so a client
+    can render it in the reader's own timezone rather than relying on this
+    string at all.
+    """
+    v = aware(value)
+    if v is None:
+        return ''
+    return f"{v.strftime('%H:%M')} Dubai time"
+
+
+def iso(value: Optional[datetime]) -> Optional[str]:
+    """ISO 8601 with the offset, for a client to render in the reader's zone.
+
+    Naive timestamps in this database are Gulf wall-clock (see the module
+    docstring), so this is where that assumption becomes explicit to everyone
+    downstream instead of being re-guessed.
+    """
+    v = aware(value)
+    return v.isoformat() if v else None
+
+
 def aware(value: Optional[datetime]) -> Optional[datetime]:
     """Make a stored timestamp comparable.
 
