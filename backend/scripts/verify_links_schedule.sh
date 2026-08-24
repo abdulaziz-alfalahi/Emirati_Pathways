@@ -33,8 +33,8 @@ NAME="emirati-link-check"
 IMAGE="${IMAGE:-emirati_backend:latest}"
 # 02:15 UTC = 06:15 Gulf. After the 01:30 backup so the two are not competing,
 # and early enough that the operator finds the queue already populated.
-HOUR="${HOUR:-2}"
-MINUTE="${MINUTE:-15}"
+HOUR="$(( 10#${HOUR:-2} ))"
+MINUTE="$(( 10#${MINUTE:-15} ))"
 
 case "${1:-}" in
   --remove)
@@ -67,9 +67,13 @@ docker run -d --name "$NAME" \
     "$IMAGE" -c '
       echo "link check scheduled daily at ${HOUR}:${MINUTE} UTC"
       while true; do
-        now_h=$(date -u +%H); now_m=$(date -u +%M)
-        target=$(( 10#$HOUR * 60 + 10#$MINUTE ))
-        current=$(( 10#$now_h * 60 + 10#$now_m ))
+        # The image ships dash as /bin/sh, which has no bash "10#" base prefix —
+        # the first install crash-looped on it. date is asked for a non-padded
+        # hour and minute instead, so nothing needs a base hint and nothing is
+        # ever read as octal.
+        now_h=$(date -u +%-H); now_m=$(date -u +%-M)
+        target=$(( HOUR * 60 + MINUTE ))
+        current=$(( now_h * 60 + now_m ))
         wait_min=$(( target - current ))
         [ $wait_min -le 0 ] && wait_min=$(( wait_min + 1440 ))
         sleep $(( wait_min * 60 ))
