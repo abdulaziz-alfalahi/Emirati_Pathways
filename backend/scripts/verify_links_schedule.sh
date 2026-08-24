@@ -36,6 +36,21 @@ IMAGE="${IMAGE:-emirati_backend:latest}"
 HOUR="$(( 10#${HOUR:-2} ))"
 MINUTE="$(( 10#${MINUTE:-15} ))"
 
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# The image deliberately contains no .env — secrets are injected at run time, and
+# the running backend gets DB_* from its environment. The first --once run failed
+# because load_dotenv() found no file and psycopg2 fell back to a local unix
+# socket that does not exist in the container. So the credentials are read here,
+# in the installing shell, and passed in. Same approach as backup_schedule.sh.
+env_get() {
+    sed -n "s/^[[:space:]]*${1}[[:space:]]*=[[:space:]]*//p" "$HERE/.env" \
+        | head -1 | sed 's/^"//; s/"$//'
+}
+DB_HOST="$(env_get DB_HOST)"; DB_PORT="$(env_get DB_PORT)"
+DB_NAME="$(env_get DB_NAME)"; DB_USER="$(env_get DB_USER)"
+DB_PASSWORD="$(env_get DB_PASSWORD)"
+
 case "${1:-}" in
   --remove)
       docker rm -f "$NAME" >/dev/null 2>&1 && echo "removed $NAME" || echo "$NAME not running"
@@ -46,12 +61,16 @@ case "${1:-}" in
       docker logs --tail 25 "$NAME" 2>&1 | sed 's/^/    /'
       exit 0 ;;
   --once)
+      : "${DB_HOST:?DB_HOST missing from backend/.env}"
       exec docker run --rm --name "${NAME}-once" \
           --network host \
+          -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
           -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
           -e http_proxy -e https_proxy -e no_proxy \
           "$IMAGE" python /app/scripts/verify_links.py ;;
 esac
+
+: "${DB_HOST:?DB_HOST missing from backend/.env}"
 
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 
@@ -61,6 +80,7 @@ docker run -d --name "$NAME" \
     --restart unless-stopped \
     --network host \
     -e HOUR="$HOUR" -e MINUTE="$MINUTE" \
+    -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
     -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
     -e http_proxy -e https_proxy -e no_proxy \
     --entrypoint /bin/sh \

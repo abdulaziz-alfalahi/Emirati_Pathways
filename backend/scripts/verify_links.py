@@ -50,8 +50,15 @@ _PAUSE_SECONDS = 1.5
 
 
 def connect():
+    # In the container there is no .env — secrets are injected as environment
+    # variables, which is why the scheduled job passes DB_* in. load_dotenv does
+    # not overwrite what is already set, so the file is a convenience for
+    # running this by hand and the environment always wins.
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     load_dotenv(os.path.join(here, '.env'))
+    if not os.getenv('DB_HOST'):
+        raise SystemExit('DB_HOST is not set and backend/.env was not found — '
+                         'the checker cannot reach the database.')
     return psycopg2.connect(
         host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'),
         dbname=os.getenv('DB_NAME'), user=os.getenv('DB_USER'),
