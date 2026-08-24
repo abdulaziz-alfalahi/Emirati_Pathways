@@ -47,9 +47,15 @@ env_get() {
     sed -n "s/^[[:space:]]*${1}[[:space:]]*=[[:space:]]*//p" "$HERE/.env" \
         | head -1 | sed 's/^"//; s/"$//'
 }
-DB_HOST="$(env_get DB_HOST)"; DB_PORT="$(env_get DB_PORT)"
-DB_NAME="$(env_get DB_NAME)"; DB_USER="$(env_get DB_USER)"
-DB_PASSWORD="$(env_get DB_PASSWORD)"
+# EXPORTED, not just assigned: `docker run -e VAR` forwards a variable only if
+# it is in the environment, and a plain shell assignment is not. Without this the
+# flags are silently no-ops and the container falls back to a local unix socket —
+# which is exactly how the first two --once runs failed.
+export DB_HOST="$(env_get DB_HOST)"
+export DB_PORT="$(env_get DB_PORT)"
+export DB_NAME="$(env_get DB_NAME)"
+export DB_USER="$(env_get DB_USER)"
+export DB_PASSWORD="$(env_get DB_PASSWORD)"
 
 case "${1:-}" in
   --remove)
