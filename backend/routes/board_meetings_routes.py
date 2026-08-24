@@ -608,8 +608,14 @@ def join_meeting(meeting_id):
         end = platform_time.aware(end)
         now = platform_time.now()
         if now < start - JOIN_WINDOW_BEFORE:
+            # Same fix as the coaching join (fb_1787560378): a bare wall-clock
+            # time does not say whose clock, and a board member joining from
+            # another country reads it as their own.
+            opens = start - JOIN_WINDOW_BEFORE
             return jsonify({'success': False, 'error_code': 'too_early',
-                            'message': f"This meeting opens at {(start - JOIN_WINDOW_BEFORE).strftime('%H:%M')}."}), 409
+                            'opens_at': platform_time.iso(opens),
+                            'message': f"This meeting opens at "
+                                       f"{platform_time.clock(opens)}."}), 409
         if now > end + JOIN_GRACE_AFTER:
             return jsonify({'success': False, 'error_code': 'closed',
                             'message': 'This meeting has ended.'}), 409

@@ -221,3 +221,41 @@ def test_the_session_is_transcribed(app_ctx):
     # lookup returned — the session is recorded either way.
     assert body['data']['is_recorded'] is True
     assert 'policy_version' in body['data']
+
+
+def test_the_opening_time_names_which_clock(app_ctx):
+    """A bare wall-clock time does not say whose clock it is.
+
+    The comparison itself was fixed long ago (fb_1787135002): the server
+    correctly decides that a session scheduled for 18:15 Gulf time has not
+    opened yet. But the refusal still read "This session opens at 18:15", and a
+    coach reading that at 18:32 in Brisbane concluded the platform was broken
+    (fb_1787560378, 2026-08-24).
+
+    They were right to. The server was correct and the sentence was misleading,
+    which — to the person locked out of their session — is the same thing.
+    """
+    app_ctx.state['row'] = a_session(session_date=_now() + timedelta(hours=3))
+    status, body = _join(app_ctx)
+    assert status == 409
+    assert 'Dubai time' in body['message'], (
+        f"the refusal does not say which clock it means: {body['message']!r}"
+    )
+
+
+def test_the_opening_time_is_also_machine_readable(app_ctx):
+    """So a client can show the reader THEIR time rather than parse a string.
+
+    The message is a fallback. `opens_at` carries the offset, which is the only
+    form a browser in another country can render correctly.
+    """
+    app_ctx.state['row'] = a_session(session_date=_now() + timedelta(hours=3))
+    status, body = _join(app_ctx)
+    assert status == 409
+    assert body.get('opens_at'), 'no machine-readable opening time returned'
+    from datetime import datetime
+    parsed = datetime.fromisoformat(body['opens_at'])
+    assert parsed.utcoffset() is not None, (
+        f"opens_at carries no UTC offset, so it is as ambiguous as the string "
+        f"it was meant to replace: {body['opens_at']!r}"
+    )
