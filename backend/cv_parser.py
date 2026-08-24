@@ -544,11 +544,25 @@ class CVParser:
             elif ('word' in mime_type or 'office' in mime_type or path.endswith('.doc') or path.endswith('.docx')):
                  if docx:
                      doc = Document(path)
-                     text = "\n".join([p.text for p in doc.paragraphs])
+                     parts = [p.text for p in doc.paragraphs if p.text.strip()]
+                     # CELLS ARE ' | ' SEPARATED, matching the PDF branch above
+                     # and services/pdf_extractor.py. Joining them with a plain
+                     # space fused the columns: an employment table came out as
+                     # "Acme Corp Senior Analyst 2019 2023", from which no model
+                     # can tell the employer from the title from the dates.
+                     # Measured on a real bilingual document 2026-08-24.
+                     #
+                     # The paragraphs were also concatenated onto the first table
+                     # row, because the table text was appended with += to a
+                     # string that had no trailing newline — so the last sentence
+                     # of the letter ran into the first table header.
                      for table in doc.tables:
                          for row in table.rows:
-                             text += " ".join([c.text for c in row.cells]) + "\n"
-                     return text
+                             row_text = " | ".join(c.text.strip() for c in row.cells
+                                                   if c.text.strip())
+                             if row_text:
+                                 parts.append(row_text)
+                     return "\n".join(parts)
                  else:
                      return ""
             else:

@@ -142,3 +142,39 @@ def test_a_site_needing_our_intermediate_says_so():
     """
     src = open(os.path.join(BACKEND, 'link_verification.py'), encoding='utf-8').read()
     assert 'incomplete' in src and 'used_extra_cas' in src
+
+
+# ── HTML entities ───────────────────────────────────────────────────────────
+
+def test_the_fingerprint_decodes_html_entities():
+    """Otherwise an Arabic page hashes as its escape sequences, not its text.
+
+    Measured on https://u.ae/ar/... (2026-08-24): without unescaping, the
+    extracted text carried 984 entity artifacts and only 138 readable Arabic
+    characters; with it, 0 artifacts and 1,122 Arabic characters.
+
+    Two consequences, both bad. The text handed to a model was mostly
+    "&#x627;&#x644;" noise, and — worse for this module — the SAME page served
+    with different entity encoding hashed differently. A CMS upgrade or a CDN
+    can change that on its own, so a programme nobody had touched would be
+    reported as changed.
+    """
+    encoded = b'<html><body><p>&#x627;&#x644;&#x645;&#x646;&#x62D; &amp; scholarships</p></body></html>'
+    decoded = '<html><body><p>المنح & scholarships</p></body></html>'
+    assert content_fingerprint(encoded) == content_fingerprint(decoded), (
+        'the same page in two encodings hashes differently, so entity changes '
+        'read as programme changes'
+    )
+
+
+def test_entities_are_decoded_after_tags_are_stripped_not_before():
+    """Order matters, and getting it backwards deletes real content.
+
+    A page that DISPLAYS "&lt;script&gt;" as text means the characters
+    "<script>", not a script element. Unescaping first would turn it into a real
+    tag and the tag-stripping pass would then delete it.
+    """
+    shown_as_text = b'<html><body><p>Use &lt;script&gt; carefully</p></body></html>'
+    fp = content_fingerprint(shown_as_text)
+    # The words survive: nothing was mistaken for markup and removed.
+    assert fp == content_fingerprint('<p>Use <script> carefully</p>'.replace('<script>', '&lt;script&gt;'))
