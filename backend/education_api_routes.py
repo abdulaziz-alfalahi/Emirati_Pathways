@@ -349,6 +349,21 @@ def get_scholarships():
             s['created_at'] = str(s['created_at'])
         if s.get('min_gpa') is not None:
             s['min_gpa'] = float(s['min_gpa'])
+        # SHOWN TO THE CANDIDATE. Verification they cannot see does nothing for
+        # the confidence it exists to protect, and this is the smallest piece of
+        # the whole feature.
+        #
+        # Only sent when the last check actually SUCCEEDED. A date attached to a
+        # failed or unresolved check would be a claim we cannot support — worse
+        # than saying nothing, because "checked on Tuesday" reads as "working on
+        # Tuesday". link_status itself is deliberately NOT exposed here: "gone"
+        # or "changed" is the operator's business, and a candidate seeing it
+        # would be reading an internal review state as advice.
+        s['link_checked_at'] = (str(s['link_checked_at'])
+                                if s.get('link_status') == 'verified_ok'
+                                and s.get('link_checked_at') else None)
+        for internal in ('link_status', 'link_status_detail', 'link_fingerprint'):
+            s.pop(internal, None)
     return jsonify({"scholarships": scholarships, "total": len(scholarships)})
 
 
@@ -376,6 +391,54 @@ def _clean_directory_payload(data):
             v = v.strip() or None
         out[f] = v
     return out, None
+
+
+@education_bp.route('/scholarships/queue', methods=['GET'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def scholarship_link_queue():
+    """What the daily link check found that needs a person.
+
+    ONLY 'changed' and 'gone'. 'unreachable' is deliberately excluded: it means
+    WE could not fetch the page — a proxy problem, a TLS problem, a timeout —
+    and it is not evidence that a programme ended. Putting it here would mean a
+    proxy outage presenting as every scholarship in the directory dying at once,
+    with the obvious response being to unpublish them all.
+
+    That is not hypothetical. KHDA, which runs the AED 1.1bn Hamdan bin Mohammed
+    programme, failed verification from inside our container because their web
+    host serves an incomplete certificate chain (see backend/link_verification.py).
+
+    Ordered gone-before-changed: a dead link is actively sending candidates
+    somewhere useless, while a changed page is usually just a moved deadline.
+    """
+    rows = query_all("""
+        SELECT id, title, provider_name, application_link, link_type,
+               link_status, link_status_detail, link_checked_at, is_active
+          FROM scholarships
+         WHERE link_status IN ('gone', 'changed')
+         ORDER BY CASE link_status WHEN 'gone' THEN 0 ELSE 1 END,
+                  link_checked_at DESC NULLS LAST
+    """) or []
+    for r in rows:
+        if r.get('link_checked_at'):
+            r['link_checked_at'] = str(r['link_checked_at'])
+
+    # Reported alongside, never mixed in. The operator should be able to see
+    # that we are having trouble reading a source without it looking like work
+    # they can do.
+    unreachable = query_one("""SELECT COUNT(*) AS n FROM scholarships
+                                WHERE link_status = 'unreachable'""") or {}
+    stale = query_one("""SELECT COUNT(*) AS n FROM scholarships
+                          WHERE is_active = TRUE
+                            AND (link_checked_at IS NULL
+                                 OR link_checked_at < NOW() - INTERVAL '3 days')""") or {}
+
+    return jsonify({
+        'queue': rows,
+        'total': len(rows),
+        'unreachable': int(unreachable.get('n') or 0),
+        'not_checked_recently': int(stale.get('n') or 0),
+    })
 
 
 @education_bp.route('/scholarships/manage', methods=['GET'])
