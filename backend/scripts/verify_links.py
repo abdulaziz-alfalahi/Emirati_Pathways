@@ -76,13 +76,19 @@ def run(dry_run=False):
                             ORDER BY is_active DESC, id""")
             rows = cur.fetchall()
 
+        # Shared across the whole run so each site's homepage is fetched once,
+        # not once per link. The soft-404 check needs it to tell a live deep
+        # link from one that quietly lands on the front door.
+        front_door_cache = {}
+
         for i, row in enumerate(rows):
             if i:
                 time.sleep(_PAUSE_SECONDS)
 
             outcome = check_link(row['application_link'],
                                  link_type=row.get('link_type') or LINK_WEB,
-                                 previous_fingerprint=row.get('link_fingerprint'))
+                                 previous_fingerprint=row.get('link_fingerprint'),
+                                 front_door_cache=front_door_cache)
             results.append({'id': row['id'], 'title': row['title'], **outcome})
 
             if dry_run:
