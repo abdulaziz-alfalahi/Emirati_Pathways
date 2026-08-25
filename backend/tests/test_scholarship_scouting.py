@@ -153,3 +153,68 @@ def test_an_approved_draft_keeps_what_the_model_was_given():
         'the operator’s corrections are not recorded, so there is no honest '
         'measure of whether the scout is worth running'
     )
+
+
+# ── The review screen ───────────────────────────────────────────────────────
+#
+# The API can refuse a bad publish, but it cannot make a human look at the
+# source page. These assert the things that decide whether the reviewer is
+# reviewing or rubber-stamping.
+
+FRONTEND = os.path.join(os.path.dirname(BACKEND), 'frontend', 'src')
+REVIEW_UI = os.path.join(FRONTEND, 'components', 'education',
+                         'ScholarshipScoutReview.tsx')
+
+
+def test_the_review_screen_shows_where_a_draft_came_from():
+    """A reviewer who cannot see the source is not reviewing."""
+    page = _read(REVIEW_UI)
+    assert 'source_url' in page
+    assert 'Open the page it came from' in page, (
+        'the draft does not link to the page it was extracted from, so the '
+        'reviewer has nothing to check it against'
+    )
+
+
+def test_empty_fields_are_labelled_rather_than_left_ambiguous():
+    """An empty deadline means the page did not state one.
+
+    Without saying so, a reviewer assumes the scout missed it — and fills it in
+    from memory, which is exactly the invented eligibility the prompt refuses to
+    produce.
+    """
+    page = _read(REVIEW_UI)
+    assert 'not stated on the page' in page
+
+
+def test_rejecting_requires_a_reason_in_the_ui():
+    page = _read(REVIEW_UI)
+    for reason in ('not_a_scholarship', 'duplicate', 'out_of_scope',
+                   'wrong_details', 'expired', 'other'):
+        assert reason in page, f'{reason} is not offered as a rejection reason'
+
+
+def test_the_screen_explains_that_a_rejection_is_remembered():
+    """Otherwise the operator does not know the queue will stop repeating."""
+    page = _read(REVIEW_UI)
+    assert 'unless the page changes' in page or 'unless the page itself changes' in page
+
+
+def test_a_failing_source_is_visible_to_the_operator():
+    """Silence is not success — a source we cannot read must not look quiet."""
+    page = _read(REVIEW_UI)
+    assert 'last_outcome' in page
+    assert "startsWith('error')" in page, (
+        'a source whose last scout errored is rendered the same as a healthy '
+        'one, so an unreadable source looks like a quiet day'
+    )
+
+
+def test_the_review_tab_carries_a_badge():
+    dash = _read(os.path.join(FRONTEND, 'pages', 'operator-dashboards',
+                              'EducationOperatorDashboard.tsx'))
+    assert 'scoutPending' in dash
+    assert 'setScoutPending' in dash, (
+        'the badge count is never populated, so a queue with work in it looks '
+        'empty to an operator who does not open the tab'
+    )
