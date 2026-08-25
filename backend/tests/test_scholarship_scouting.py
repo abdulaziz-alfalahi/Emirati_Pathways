@@ -218,3 +218,55 @@ def test_the_review_tab_carries_a_badge():
         'the badge count is never populated, so a queue with work in it looks '
         'empty to an operator who does not open the tab'
     )
+
+
+# ── One domain, several pages ───────────────────────────────────────────────
+#
+# The allow-list first keyed identity on DOMAIN, so adding a second page from a
+# site already listed silently REPLACED the first one's URL. Adding
+# khda.gov.ae/en/hbmsp after khda.gov.ae/ moved the existing row rather than
+# creating one, and nothing on screen showed it had happened.
+#
+# The identity was simply wrong. A domain is the allow-list DECISION — "we trust
+# KHDA" — and a URL is the WORK — "read this page every morning". One trusted
+# domain routinely has several pages worth reading: KHDA runs the Hamdan bin
+# Mohammed programme on its own page while the homepage carries none, which is
+# why pointing the scout at homepages produced nothing on 2026-08-25.
+
+MIGRATION_085 = os.path.join(BACKEND, 'migrations',
+                             '085_allow_multiple_pages_per_source.sql')
+
+
+def test_a_source_is_identified_by_its_url_not_its_domain():
+    sql = _read(MIGRATION_085)
+    assert 'DROP CONSTRAINT IF EXISTS scholarship_sources_domain_key' in sql
+    assert re.search(r'UNIQUE INDEX.*idx_scholarship_sources_start_url', sql, re.S)
+
+
+def test_adding_a_second_page_does_not_overwrite_the_first():
+    body = _function(_read(ROUTES), 'scholarship_sources')
+    assert 'ON CONFLICT (start_url)' in body, (
+        'the upsert still conflicts on domain, so a second page from a listed '
+        'site replaces the first instead of being added'
+    )
+    # Checked against the SQL, not the whole function: the comment above the
+    # statement names the old behaviour to explain why it changed, and matching
+    # prose would fail on an accurate explanation.
+    statement = body[body.index('INSERT INTO scholarship_sources'):]
+    assert 'ON CONFLICT (domain)' not in statement
+
+
+def test_the_default_label_distinguishes_pages_on_one_domain():
+    """Otherwise every KHDA row prints the same heading."""
+    body = _function(_read(ROUTES), 'scholarship_sources')
+    assert "f'{domain}/{path}'" in body, (
+        'the default label falls back to the bare domain, so two pages from one '
+        'site are indistinguishable in the list'
+    )
+
+
+def test_the_migration_refuses_rather_than_half_applying():
+    """A live table deserves a loud failure, not a partial migration."""
+    sql = _read(MIGRATION_085)
+    assert 'RAISE EXCEPTION' in sql
+    assert 'HAVING COUNT(*) > 1' in sql
