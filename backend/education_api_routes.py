@@ -393,6 +393,231 @@ def _clean_directory_payload(data):
     return out, None
 
 
+# ═══════════════════════════════════════════
+# SCOUTING — drafts, rejections, the allow-list  (Phase 2)
+# ═══════════════════════════════════════════
+
+@education_bp.route('/scholarships/drafts', methods=['GET'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def list_scholarship_drafts():
+    """What the scout proposed and nobody has decided on yet.
+
+    Drafts are never visible to a candidate. This is the review step, and the
+    review step is the product: an AI that published directly would be a machine
+    for putting unverified claims about money in front of people.
+    """
+    rows = query_all("""
+        SELECT d.*, s.label AS source_label, s.domain AS source_domain
+          FROM scholarship_drafts d
+          LEFT JOIN scholarship_sources s ON s.id = d.source_id
+         WHERE d.status = 'pending'
+         ORDER BY d.scouted_at DESC
+    """) or []
+    for r in rows:
+        for k in ('scouted_at', 'reviewed_at', 'deadline'):
+            if r.get(k):
+                r[k] = str(r[k])
+        for k in ('amount', 'min_gpa'):
+            if r.get(k) is not None:
+                r[k] = float(r[k])
+    return jsonify({'drafts': rows, 'total': len(rows)})
+
+
+@education_bp.route('/scholarships/drafts/<int:draft_id>/approve', methods=['POST'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def approve_scholarship_draft(draft_id):
+    """Publish a draft, with the operator's corrections applied.
+
+    APPROVAL IS A COPY, NOT A PROMOTION. The draft and its provenance survive the
+    decision, so an approved listing can always be traced back to the page it
+    came from and to whoever changed what. "Where did this number come from" is
+    a question a government directory gets asked.
+
+    The published entry still obeys the directory's own rule: no application
+    link, no publishing. A scouted entry is not exempt from it.
+    """
+    data = request.get_json() or {}
+    draft = query_one("SELECT * FROM scholarship_drafts WHERE id = %s", (draft_id,))
+    if not draft:
+        return jsonify({'error': 'Draft not found'}), 404
+    if draft['status'] != 'pending':
+        return jsonify({'error': f"This draft was already {draft['status']}"}), 409
+
+    fields = ('title', 'provider_name', 'description', 'amount', 'coverage_type',
+              'deadline', 'min_gpa', 'academic_level', 'eligible_majors',
+              'application_link', 'link_type')
+    values, edits = {}, {}
+    for f in fields:
+        if f in data:
+            v = data[f]
+            if isinstance(v, str):
+                v = v.strip() or None
+            values[f] = v
+            if v != draft.get(f):
+                # Recorded per field: this is the honest measure of whether the
+                # scout is worth running. Drafts that are always rewritten are a
+                # cost, not an achievement.
+                edits[f] = {'from': str(draft.get(f)), 'to': str(v)}
+        else:
+            values[f] = draft.get(f)
+
+    if not values.get('title'):
+        return jsonify({'error': 'A title is required'}), 400
+    if not values.get('application_link'):
+        return jsonify({'error': 'A published entry needs an application link — '
+                                 'that is where the candidate actually applies.'}), 400
+
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 500
+    try:
+        cur = db.cursor()
+        cur.execute("""
+            INSERT INTO scholarships
+                   (title, provider_name, description, amount, coverage_type,
+                    deadline, min_gpa, academic_level, eligible_majors,
+                    application_link, link_type, is_active)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,TRUE) RETURNING id
+        """, tuple(values[f] for f in fields))
+        new_id = cur.fetchone()[0]
+        cur.execute("""UPDATE scholarship_drafts
+                          SET status = 'approved', reviewed_by = %s, reviewed_at = NOW(),
+                              operator_edits = %s::jsonb, published_id = %s
+                        WHERE id = %s""",
+                    (str(get_jwt_identity()), json.dumps(edits), new_id, draft_id))
+        db.commit()
+        return jsonify({'id': new_id, 'draft_id': draft_id,
+                        'edited_fields': sorted(edits),
+                        'message': 'Published'}), 201
+    except Exception as e:
+        db.rollback()
+        logger.error(f'approve draft failed: {e}')
+        return jsonify({'error': 'Could not publish the draft'}), 500
+
+
+@education_bp.route('/scholarships/drafts/<int:draft_id>/reject', methods=['POST'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def reject_scholarship_draft(draft_id):
+    """Turn a draft down, and REMEMBER it.
+
+    The scout reads the same pages every day. Without this the same item returns
+    to the queue every morning and the operator rejects it again — the tool dying
+    of repetition rather than of being wrong.
+
+    The memory is keyed on (source_url, fingerprint): the same page with the same
+    content gets the same answer, and a materially changed page is re-raised,
+    which is intended rather than a leak.
+    """
+    data = request.get_json() or {}
+    reason = (data.get('reason') or '').strip()
+    valid = ('not_a_scholarship', 'duplicate', 'out_of_scope',
+             'wrong_details', 'expired', 'other')
+    if reason not in valid:
+        return jsonify({'error': f"reason must be one of: {', '.join(valid)}"}), 400
+
+    draft = query_one("SELECT * FROM scholarship_drafts WHERE id = %s", (draft_id,))
+    if not draft:
+        return jsonify({'error': 'Draft not found'}), 404
+    if draft['status'] != 'pending':
+        return jsonify({'error': f"This draft was already {draft['status']}"}), 409
+
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 500
+    try:
+        cur = db.cursor()
+        cur.execute("""UPDATE scholarship_drafts
+                          SET status = 'rejected', reviewed_by = %s, reviewed_at = NOW()
+                        WHERE id = %s""", (str(get_jwt_identity()), draft_id))
+        cur.execute("""
+            INSERT INTO scholarship_rejections
+                   (source_url, fingerprint, title, reason, note, rejected_by)
+            VALUES (%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (source_url, fingerprint)
+              DO UPDATE SET reason = EXCLUDED.reason, note = EXCLUDED.note,
+                            rejected_at = NOW()
+        """, (draft['source_url'], draft['fingerprint'], draft.get('title'),
+              reason, data.get('note'), str(get_jwt_identity())))
+        db.commit()
+        return jsonify({'draft_id': draft_id, 'message': 'Rejected and remembered'})
+    except Exception as e:
+        db.rollback()
+        logger.error(f'reject draft failed: {e}')
+        return jsonify({'error': 'Could not reject the draft'}), 500
+
+
+@education_bp.route('/scholarships/sources', methods=['GET', 'POST'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def scholarship_sources():
+    """The allow-list. The operator maintains it alone (owner decision).
+
+    Adding a domain is attributable — added_by and added_at — because that is
+    the only control on a list whose whole job is to keep scam sites and paid
+    aggregators out of a government directory.
+    """
+    if request.method == 'GET':
+        rows = query_all("SELECT * FROM scholarship_sources ORDER BY is_active DESC, id") or []
+        for r in rows:
+            for k in ('added_at', 'last_scouted_at'):
+                if r.get(k):
+                    r[k] = str(r[k])
+        return jsonify({'sources': rows, 'total': len(rows)})
+
+    data = request.get_json() or {}
+    start_url = (data.get('start_url') or '').strip()
+    if not start_url.startswith('http'):
+        return jsonify({'error': 'A source needs a full URL to start from'}), 400
+    try:
+        from urllib.parse import urlparse
+        domain = (urlparse(start_url).hostname or '').lower()
+    except Exception:
+        domain = ''
+    if not domain:
+        return jsonify({'error': 'That URL has no host'}), 400
+
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 500
+    try:
+        cur = db.cursor()
+        cur.execute("""
+            INSERT INTO scholarship_sources (domain, label, start_url, added_by, notes)
+            VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT (domain) DO UPDATE
+              SET start_url = EXCLUDED.start_url, label = EXCLUDED.label,
+                  is_active = TRUE
+            RETURNING id
+        """, (domain, (data.get('label') or '').strip() or domain, start_url,
+              str(get_jwt_identity()), data.get('notes')))
+        sid = cur.fetchone()[0]
+        db.commit()
+        return jsonify({'id': sid, 'domain': domain, 'message': 'Source added'}), 201
+    except Exception as e:
+        db.rollback()
+        logger.error(f'add source failed: {e}')
+        return jsonify({'error': 'Could not add the source'}), 500
+
+
+@education_bp.route('/scholarships/sources/<int:source_id>', methods=['DELETE'])
+@require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
+def remove_scholarship_source(source_id):
+    """Stop scouting a source. Deactivates rather than deletes, so the drafts it
+    produced keep their provenance."""
+    db = get_db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 500
+    try:
+        cur = db.cursor()
+        cur.execute("UPDATE scholarship_sources SET is_active = FALSE WHERE id = %s",
+                    (source_id,))
+        db.commit()
+        return jsonify({'id': source_id, 'message': 'Source deactivated'})
+    except Exception as e:
+        db.rollback()
+        logger.error(f'remove source failed: {e}')
+        return jsonify({'error': 'Could not remove the source'}), 500
+
+
 @education_bp.route('/scholarships/queue', methods=['GET'])
 @require_roles(*SCHOLARSHIP_REVIEWER_ROLES)
 def scholarship_link_queue():

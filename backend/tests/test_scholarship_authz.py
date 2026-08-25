@@ -29,6 +29,16 @@ import re
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROUTES = os.path.join(BACKEND, 'education_api_routes.py')
 
+def _body(src, name):
+    """One function's source. Sliced by the NEXT def, not the next route
+    decorator: a helper defined between two endpoints would otherwise swallow
+    the rest of the file into whichever function preceded it."""
+    start = src.index(f'def {name}(')
+    nxt = src.find('\ndef ', start + 1)
+    at = src.find('\n@education_bp', start)
+    end = min(x for x in (nxt, at, len(src)) if x > 0)
+    return src[start:end]
+
 # Endpoints that create or change a scholarship or an application decision.
 PRIVILEGED = [
     'create_scholarship',
@@ -139,10 +149,17 @@ def test_a_published_entry_must_have_an_application_link():
     """
     with open(ROUTES, encoding='utf-8') as fh:
         src = fh.read()
-    assert src.count('A published entry needs an application link') == 2, (
-        'The publish rule must be enforced on BOTH create and update — '
-        'otherwise an entry can be published without a link by whichever path '
-        'is missing the check.'
+    # Every path that can PUBLISH must enforce it. Counted as "at least the
+    # three that exist" rather than an exact number: approving a scouted draft
+    # became a third publishing path in Phase 2, and an exact count would have
+    # to be edited every time a fourth appears — turning a real guard into
+    # maintenance that someone eventually relaxes.
+    publishers = ('create_scholarship', 'update_scholarship',
+                  'approve_scholarship_draft')
+    missing = [n for n in publishers
+               if 'needs an application link' not in _body(src, n)]
+    assert not missing, (
+        f'these can publish an entry with nowhere to apply: {missing}'
     )
 
 
@@ -154,7 +171,7 @@ def test_removal_unpublishes_by_default():
     """
     with open(ROUTES, encoding='utf-8') as fh:
         src = fh.read()
-    body = src.split('def remove_scholarship')[1].split('\n@education_bp')[0]
+    body = _body(src, 'remove_scholarship')
     assert "hard = request.args.get('hard'" in body, (
         'remove_scholarship should unpublish unless a hard delete is asked for.'
     )
