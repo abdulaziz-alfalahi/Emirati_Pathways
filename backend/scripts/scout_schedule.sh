@@ -47,8 +47,8 @@ IMAGE="${IMAGE:-emirati_backend:latest}"
 # 03:00 UTC = 07:00 Gulf. AFTER the 02:15 link check, deliberately: a link
 # the checker has just marked gone should not be proposed again minutes
 # later, and the operator wants one queue in the morning, not two.
-HOUR="$(( 10#${HOUR:-3} ))"
-MINUTE="$(( 10#${MINUTE:-0} ))"
+HOUR="$(printf '%02d' "$(( 10#${HOUR:-3} ))")"
+MINUTE="$(printf '%02d' "$(( 10#${MINUTE:-0} ))")"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -104,6 +104,7 @@ docker run -d --name "$NAME" \
     --restart unless-stopped \
     --network host \
     -e HOUR="$HOUR" -e MINUTE="$MINUTE" \
+    -e HOUR_N="$(( 10#$HOUR ))" -e MINUTE_N="$(( 10#$MINUTE ))" \
     -e PYTHONPATH=/ \
     -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
     -e DASHSCOPE_API_KEY \
@@ -111,14 +112,23 @@ docker run -d --name "$NAME" \
     -e http_proxy -e https_proxy -e no_proxy \
     --entrypoint /bin/sh \
     "$IMAGE" -c '
-      printf 'scholarship scout scheduled daily at %02d:%02d UTC\n' "$HOUR" "$MINUTE"
+      # echo, not printf: this whole block is inside a single-quoted -c '...'
+      # argument, so an inner single quote ENDS it. The first attempt used
+      # printf '...' here and the shell read it as `printf scholarship` on a
+      # loop, which crash-restarted the container while --once still worked.
+      # HOUR/MINUTE are already zero-padded by the installing shell below.
+      echo "scholarship scout scheduled daily at ${HOUR}:${MINUTE} UTC"
       while true; do
         # The image ships dash as /bin/sh, which has no bash "10#" base prefix —
         # the first install crash-looped on it. date is asked for a non-padded
         # hour and minute instead, so nothing needs a base hint and nothing is
         # ever read as octal.
         now_h=$(date -u +%-H); now_m=$(date -u +%-M)
-        target=$(( HOUR * 60 + MINUTE ))
+        # HOUR/MINUTE arrive zero-padded ("03") for display, and POSIX
+        # arithmetic would read that as octal — with 08 and 09 not valid octal
+        # at all. HOUR_N/MINUTE_N are the unpadded values, passed in separately
+        # so the display and the maths never have to agree on a format.
+        target=$(( HOUR_N * 60 + MINUTE_N ))
         current=$(( now_h * 60 + now_m ))
         wait_min=$(( target - current ))
         [ $wait_min -le 0 ] && wait_min=$(( wait_min + 1440 ))
