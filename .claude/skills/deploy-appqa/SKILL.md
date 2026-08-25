@@ -66,4 +66,17 @@ Restarting it:
 - Socket.IO handshake returns a sid: `curl 'https://stg-emirati.ehrdc.gov.ae/socket.io/?EIO=4&transport=polling'`.
 - For changed endpoints: probe via an in-process Flask test client inside the container (`docker exec backend python -c ...`) — this has caught handler-signature 500s that unit tests missed (PR #108).
 - **Confirm the rollback is real**: `docker inspect backend backend_old --format '{{.Image}}'` — two DIFFERENT image IDs. Identical IDs mean the deploy ran twice and there is no rollback (see step 3). This is the one check that fails silently: everything else still reports healthy.
+- **Repin the scheduled containers.** `run-backend-appqa.sh` recreates `backend` and nothing else. The schedulers — `emirati-link-check` (02:15 UTC) and `emirati-link-scout` (03:00 UTC) — were each created from whatever `emirati_backend:latest` pointed at on their install day, and Docker pins them to that image ID for ever. They keep reporting `Up (healthy)` while running code months old. Caught on 2026-08-25: `backend` had the new soft-404 fix and `emirati-link-check` was still two images behind, so the nightly run would have used the old logic.
+
+  Their installers are idempotent and default to `emirati_backend:latest`, so a reinstall is the fix:
+  ```bash
+  bash backend/scripts/verify_links_schedule.sh   # emirati-link-check
+  bash backend/scripts/scout_schedule.sh          # emirati-link-scout
+  ```
+  Then prove it, because "healthy" does not:
+  ```bash
+  for c in backend emirati-link-check emirati-link-scout; do
+      docker inspect $c --format "$c {{.Image}}"; done   # all three identical
+  ```
+  Watch them for a few seconds after: both run a shell loop from `-c`, and a quoting mistake crash-loops them while `--once` still works.
 - Record the new image hash and the backup dir name in the PR or memory.
