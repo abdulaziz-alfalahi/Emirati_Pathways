@@ -42,6 +42,25 @@ Hence four states, not two:
 Only `changed` and `gone` are the operator's problem. `unreachable` is ours, and
 a whole domain going unreachable is an infrastructure alert rather than a pile
 of directory tasks.
+
+THE SOFT 404 THAT ANSWERS 200 WITH A HOMEPAGE
+
+Added 2026-08-25, after KHDA turned out to do BOTH halves of this:
+
+  * www.khda.gov.ae/<any-path> 301s to https://web.khda.gov.ae/en — the path is
+    thrown away, so every deep link anyone has ever shared lands on the homepage.
+  * web.khda.gov.ae answers unknown paths with 200 and the homepage body. A link
+    taken from KHDA's OWN homepage extracted byte-for-byte the same 4,915
+    characters as the homepage.
+
+Neither says "page not found" anywhere, so `_CLOSED_PATTERNS` does not fire and
+the status code is a clean 200. Before this change such a link was `verified_ok`
+for ever while sending candidates to a homepage — the exact opposite of the
+confidence a pre-verified deep link is supposed to buy.
+
+It is classified `changed`, never `gone`. The programme is very likely still
+running at some other URL; what died is our link to it. That is a person's job
+to re-find, not a reason to archive a live government programme.
 """
 import hashlib
 import html
@@ -52,6 +71,7 @@ import ssl
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from urllib.parse import urljoin, urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +141,52 @@ def _fetch(url, with_extra_cas=False):
     with urllib.request.urlopen(req, timeout=_TIMEOUT,
                                 context=_context(with_extra_cas)) as resp:
         body = resp.read(400_000)           # enough to judge a page by
-        return resp.status, resp.headers.get('Content-Type', ''), body
+        # geturl() is where we ACTUALLY landed after redirects. Comparing it
+        # with what we asked for is what catches a host that drops the path.
+        return resp.status, resp.headers.get('Content-Type', ''), body, resp.geturl()
+
+
+#: Path segments that are navigation, not content. A site's homepage is often
+#: served at /en or /ar rather than /, so landing on one of these is landing on
+#: the front door.
+_LANGUAGE_SEGMENTS = frozenset(('en', 'ar', 'en-us', 'ar-ae', 'index.html',
+                                'index.aspx', 'default.aspx', 'home'))
+
+
+def _is_front_door(url):
+    """Is this URL the site's front door rather than a page within it?
+
+    Deliberately strict: a single segment only counts as the front door when it
+    is a language or index segment. A real programme can perfectly well live at
+    /scholarships, and flagging that would put honest links in the queue.
+    """
+    segments = [s for s in urlparse(url).path.split('/') if s]
+    if not segments:
+        return True
+    return len(segments) == 1 and segments[0].lower() in _LANGUAGE_SEGMENTS
+
+
+def _front_door_fingerprint(url, with_extra_cas, cache):
+    """Fingerprint of the front door of whatever site `url` lives on.
+
+    Returns None if we cannot get it. That is important: a failure to fetch the
+    homepage is OUR problem, and must never be turned into a verdict about
+    somebody's programme. No fingerprint simply means no soft-404 check.
+    """
+    parsed = urlparse(url)
+    origin = f'{parsed.scheme}://{parsed.netloc}'
+    if origin in cache:
+        return cache[origin]
+
+    fingerprint = None
+    try:
+        _status, _ctype, body, _final = _fetch(urljoin(origin, '/'), with_extra_cas)
+        fingerprint = content_fingerprint(body)
+    except Exception as exc:                # any failure at all — see docstring
+        logger.debug('front door of %s not fetched (%s); '
+                     'skipping the soft-404 check', origin, exc)
+    cache[origin] = fingerprint
+    return fingerprint
 
 
 def content_fingerprint(body):
@@ -148,15 +213,23 @@ def content_fingerprint(body):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
-def check_link(url, link_type=LINK_WEB, previous_fingerprint=None):
+def check_link(url, link_type=LINK_WEB, previous_fingerprint=None,
+               front_door_cache=None):
     """Classify one link. Returns a dict; never raises.
 
     A checker that raises is a checker that stops half way through the
     directory, so every failure becomes a state instead.
+
+    `front_door_cache` is a dict the caller can pass across a whole run so a
+    site's homepage is fetched once rather than once per link. Without it the
+    check still works, just without the sharing.
     """
     now = datetime.now(timezone.utc).isoformat()
     result = {'state': UNREACHABLE, 'detail': None, 'http_status': None,
-              'fingerprint': None, 'checked_at': now, 'used_extra_cas': False}
+              'fingerprint': None, 'checked_at': now, 'used_extra_cas': False,
+              'final_url': None}
+    if front_door_cache is None:
+        front_door_cache = {}
 
     if link_type != LINK_WEB:
         # An app deep link or an in-person process. Saying "unreachable" would
@@ -171,9 +244,10 @@ def check_link(url, link_type=LINK_WEB, previous_fingerprint=None):
 
     for attempt_with_cas in (False, True):
         try:
-            status, ctype, body = _fetch(url, with_extra_cas=attempt_with_cas)
+            status, ctype, body, final_url = _fetch(url, with_extra_cas=attempt_with_cas)
             result['used_extra_cas'] = attempt_with_cas
             result['http_status'] = status
+            result['final_url'] = final_url
             break
         except urllib.error.HTTPError as exc:
             # The server answered, so this is about the PAGE, not about us.
@@ -210,6 +284,32 @@ def check_link(url, link_type=LINK_WEB, previous_fingerprint=None):
         return result
 
     result['fingerprint'] = content_fingerprint(body)
+
+    # THE SOFT 404 THAT ANSWERS 200 WITH A HOMEPAGE (see the module docstring).
+    #
+    # This runs BEFORE the previous_fingerprint comparison on purpose. A link
+    # that has been soft-404ing since the day it was added has a previous
+    # fingerprint equal to its current one, so the "changed?" test below passes
+    # it cheerfully — which is exactly how such a link stayed green for ever.
+    # Only a link that ASKED for a page within a site can land on the front door
+    # of one; a link to the front door is meant to be there.
+    if not _is_front_door(url):
+        landed_on_front_door = _is_front_door(result['final_url'] or url)
+        front_door = _front_door_fingerprint(
+            result['final_url'] or url, result['used_extra_cas'], front_door_cache)
+        looks_like_front_door = (front_door is not None
+                                 and front_door == result['fingerprint'])
+        if landed_on_front_door or looks_like_front_door:
+            result['state'] = CHANGED
+            if landed_on_front_door and result['final_url'] != url:
+                result['detail'] = (
+                    f'this link now lands on the site homepage '
+                    f'({result["final_url"]}) — the deep link no longer resolves')
+            else:
+                result['detail'] = ('this link answers 200 but serves the site '
+                                    'homepage — the page it pointed at is gone')
+            return result
+
     if previous_fingerprint and previous_fingerprint != result['fingerprint']:
         result['state'] = CHANGED
         result['detail'] = 'the page changed since the last check'

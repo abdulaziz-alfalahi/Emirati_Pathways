@@ -178,3 +178,157 @@ def test_entities_are_decoded_after_tags_are_stripped_not_before():
     fp = content_fingerprint(shown_as_text)
     # The words survive: nothing was mistaken for markup and removed.
     assert fp == content_fingerprint('<p>Use <script> carefully</p>'.replace('<script>', '&lt;script&gt;'))
+
+
+# ── The soft 404 that answers 200 with a homepage ───────────────────────────
+#
+# Added 2026-08-25. KHDA does both halves of this, and neither is visible to a
+# status-code check:
+#
+#   * www.khda.gov.ae/<any-path> 301s to https://web.khda.gov.ae/en, discarding
+#     the path, so every deep link lands on the homepage.
+#   * web.khda.gov.ae answers unknown paths with 200 AND the homepage body. A
+#     link taken from KHDA's own homepage extracted byte-for-byte the same 4,915
+#     characters as the homepage.
+#
+# Before this, such a link was verified_ok for ever while sending candidates to
+# a homepage. These tests run against a real socket rather than a stubbed
+# fetcher, because the bug lived in what the network actually returned.
+
+import threading                                                  # noqa: E402
+from http.server import BaseHTTPRequestHandler, HTTPServer         # noqa: E402
+
+import pytest                                                      # noqa: E402
+
+from link_verification import _is_front_door                       # noqa: E402
+
+_HOME = b'<html><body><h1>Authority</h1><p>An exemplary education for all.</p></body></html>'
+_REAL = b'<html><body><h1>Scholarship Programme</h1><p>Applications close 2026-10-01.</p></body></html>'
+
+
+class _KhdaShapedHandler(BaseHTTPRequestHandler):
+    """A server that fails the two ways KHDA fails, and works otherwise."""
+
+    def log_message(self, *args):
+        pass                                    # keep pytest output readable
+
+    def do_GET(self):
+        if self.path.startswith('/discard'):    # the www.khda.gov.ae shape
+            self.send_response(301)
+            self.send_header('Location', '/en')
+            self.end_headers()
+            return
+        if self.path == '/hard-404':            # a site that fails honestly
+            self.send_error(404)
+            return
+        # Everything else answers 200: the front door, the one real page, and
+        # — the bug — any path that does not exist, served as the homepage.
+        body = _REAL if self.path == '/en/real-programme' else _HOME
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+@pytest.fixture(scope='module')
+def khda_shaped_site():
+    server = HTTPServer(('127.0.0.1', 0), _KhdaShapedHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f'http://127.0.0.1:{server.server_port}'
+    server.shutdown()
+
+
+def test_a_deep_link_served_the_homepage_is_flagged(khda_shaped_site):
+    """The core case: 200, no error text, and not the page it claims to be."""
+    result = check_link(f'{khda_shaped_site}/en/gone-programme')
+    assert result['http_status'] == 200
+    assert result['state'] == CHANGED, (
+        'a link that answers 200 with the site homepage was reported as '
+        'verified — this is how a dead deep link stays green for ever'
+    )
+    assert result['state'] in OPERATOR_ACTIONABLE
+
+
+def test_a_redirect_that_discards_the_path_is_flagged(khda_shaped_site):
+    result = check_link(f'{khda_shaped_site}/discard/en/programme')
+    assert result['state'] == CHANGED
+    assert 'homepage' in result['detail']
+    assert result['final_url'].endswith('/en'), (
+        'the URL we actually landed on is what makes this diagnosable'
+    )
+
+
+def test_a_soft_404_is_changed_and_never_gone(khda_shaped_site):
+    """The programme is almost certainly still running somewhere else.
+
+    `gone` invites the operator to archive it. What died is our link, not the
+    scholarship, so this must land in the review queue rather than the bin.
+    """
+    for path in ('/en/gone-programme', '/discard/en/programme'):
+        assert check_link(f'{khda_shaped_site}{path}')['state'] != GONE
+
+
+def test_a_real_page_on_a_soft_404ing_site_still_verifies(khda_shaped_site):
+    """The false positive that would matter most.
+
+    The same site soft-404s unknown paths, so the check must distinguish a live
+    programme page from the homepage rather than condemning the whole domain.
+    """
+    result = check_link(f'{khda_shaped_site}/en/real-programme')
+    assert result['state'] == VERIFIED_OK
+
+
+def test_a_link_to_the_front_door_is_not_flagged(khda_shaped_site):
+    """A source page IS the homepage. It has not 'become' one."""
+    for path in ('/', '/en'):
+        assert check_link(f'{khda_shaped_site}{path}')['state'] == VERIFIED_OK
+
+
+def test_the_soft_404_check_runs_even_when_the_page_has_not_changed(khda_shaped_site):
+    """The reason this bug survived: previous == current on a link that has
+    been soft-404ing since the day it was added, so a 'changed?' test passes it.
+    """
+    first = check_link(f'{khda_shaped_site}/en/gone-programme')
+    again = check_link(f'{khda_shaped_site}/en/gone-programme',
+                       previous_fingerprint=first['fingerprint'])
+    assert again['state'] == CHANGED, (
+        'an unchanged soft-404 was waved through — the check must not be '
+        'gated on the fingerprint differing'
+    )
+
+
+def test_an_honest_404_is_still_gone_not_changed(khda_shaped_site):
+    assert check_link(f'{khda_shaped_site}/hard-404')['state'] == GONE
+
+
+def test_the_front_door_is_fetched_once_per_site(khda_shaped_site):
+    """A cache the caller owns, so a run of 200 links is not 400 requests."""
+    cache = {}
+    for path in ('/en/one', '/en/two', '/en/three'):
+        check_link(f'{khda_shaped_site}{path}', front_door_cache=cache)
+    assert len(cache) == 1
+
+
+def test_an_unfetchable_front_door_never_downgrades_a_link():
+    """Our failure must not become a verdict about somebody's programme.
+
+    If the homepage cannot be fetched there is nothing to compare against, and
+    the honest answer is to leave the link alone — not to guess.
+    """
+    from link_verification import _front_door_fingerprint
+    assert _front_door_fingerprint('http://127.0.0.1:1/x', False, {}) is None
+
+
+def test_only_language_and_index_segments_count_as_the_front_door():
+    """Strictness here is what keeps honest links out of the queue.
+
+    A real programme can live at /scholarships; treating any one-segment path
+    as the homepage would flag it.
+    """
+    assert _is_front_door('https://example.gov.ae/')
+    assert _is_front_door('https://example.gov.ae')
+    assert _is_front_door('https://example.gov.ae/en')
+    assert _is_front_door('https://example.gov.ae/AR')
+    assert not _is_front_door('https://example.gov.ae/scholarships')
+    assert not _is_front_door('https://example.gov.ae/en/scholarships')
