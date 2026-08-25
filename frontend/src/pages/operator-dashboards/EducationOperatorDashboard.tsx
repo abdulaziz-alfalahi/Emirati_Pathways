@@ -5,10 +5,11 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
     GraduationCap, Building2, BookOpen, Users, Settings,
-    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle, MessageSquare, Award
+    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle, MessageSquare, Award, Sparkles
 } from 'lucide-react';
 import InstitutionsManager from '@/components/education/InstitutionsManager';
 import ScholarshipDirectoryManager from '@/components/education/ScholarshipDirectoryManager';
+import ScholarshipScoutReview from '@/components/education/ScholarshipScoutReview';
 import Messages from '@/components/recruiter/Messages';
 
 const brand = {
@@ -37,6 +38,9 @@ const EducationOperatorDashboard: React.FC = () => {
     const [pendingPrograms, setPendingPrograms] = useState<any[]>([]);
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
     const [roleRequests, setRoleRequests] = useState<any[]>([]);
+    /* Drafts waiting on a person. Shown as a badge because a review queue
+       nobody opens is the same as no queue at all. */
+    const [scoutPending, setScoutPending] = useState<number>(0);
     const [actioningId, setActioningId] = useState<string | null>(null);
     const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -63,6 +67,20 @@ const EducationOperatorDashboard: React.FC = () => {
                     const resp = await fetch(`${API_BASE}/api/roles/operator/requests`, { headers: getAuthHeaders() });
                     if (resp.ok && !cancelled) { const d = await resp.json(); setRoleRequests(d.data || []); }
                 }
+
+                /* The scout badge is fetched on EVERY tab, not only its own: a
+                   review queue is only useful if the operator learns it has
+                   something in it without going looking. Failures are ignored
+                   deliberately — a badge that cannot load must never break the
+                   dashboard around it. */
+                try {
+                    const dr = await fetch(`${API_BASE}/api/education/scholarships/drafts`,
+                                           { headers: getAuthHeaders(), credentials: 'include' });
+                    if (dr.ok && !cancelled) {
+                        const d = await dr.json();
+                        setScoutPending((d.drafts || []).length);
+                    }
+                } catch { /* badge only */ }
             } catch (err) { console.error('Edu operator fetch error:', err); }
             finally { if (!cancelled) setLoading(false); }
         })();
@@ -74,6 +92,8 @@ const EducationOperatorDashboard: React.FC = () => {
         { id: 'institutions', label: t('Institutions & Staff', 'المؤسسات والطاقم'), icon: Building2 },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: BookOpen },
         { id: 'scholarships', label: t('Scholarships', 'المنح الدراسية'), icon: Award },
+        { id: 'scout', label: t('Scout Review', 'مراجعة المكتشف'), icon: Sparkles,
+          badge: scoutPending || undefined },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
         { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
         { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
@@ -425,6 +445,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 {!loading && activeTab === 'overview' && renderOverview()}
                 {activeTab === 'institutions' && <InstitutionsManager />}
                 {activeTab === 'scholarships' && <ScholarshipDirectoryManager />}
+                {activeTab === 'scout' && <ScholarshipScoutReview />}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
                 {!loading && activeTab === 'requests' && renderRoleRequests()}
