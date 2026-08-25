@@ -8,6 +8,7 @@ import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorMana
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AuditLogTab from '@/components/admin/AuditLogTab';
 import StaffInvitationsTab from '@/components/admin/StaffInvitationsTab';
+import OutboundMailReview from '@/components/admin/OutboundMailReview';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import AIUsagePanel from '@/components/admin/AIUsagePanel';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
@@ -512,6 +513,9 @@ const AdminDashboard = () => {
                 <TabsTrigger value="staff-invitations" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Send className="h-3.5 w-3.5" />
                   {b('Invitations', 'الدعوات')}
+                </TabsTrigger>
+                <TabsTrigger value="outbound-mail" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Mail className="h-3.5 w-3.5" />{b('Outbound Mail', 'البريد الصادر')}
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Shield className="h-3.5 w-3.5" />
@@ -1496,6 +1500,10 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
               {/* Staff magic-link invitations — non-nationals cannot self-register */}
               <TabsContent value="staff-invitations" className="space-y-6">
                 <StaffInvitationsTab isRTL={isRTL} />
+              </TabsContent>
+
+              <TabsContent value="outbound-mail" className="space-y-6">
+                <OutboundMailReview />
               </TabsContent>
 
               {/* Audit Log Tab (G13) */}
