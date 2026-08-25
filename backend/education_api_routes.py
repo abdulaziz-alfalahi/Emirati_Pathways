@@ -569,26 +569,41 @@ def scholarship_sources():
         return jsonify({'error': 'A source needs a full URL to start from'}), 400
     try:
         from urllib.parse import urlparse
-        domain = (urlparse(start_url).hostname or '').lower()
+        parsed = urlparse(start_url)
+        domain = (parsed.hostname or '').lower()
+        path = (parsed.path or '').strip('/')
     except Exception:
-        domain = ''
+        domain, path = '', ''
     if not domain:
         return jsonify({'error': 'That URL has no host'}), 400
+
+    # A default label that DISTINGUISHES. Now that one domain can have several
+    # pages, falling back to the domain alone would print the same heading
+    # against every KHDA page in the list, and the operator could not tell which
+    # row is the programme page and which is the homepage.
+    label = (data.get('label') or '').strip()
+    if not label:
+        label = f'{domain}/{path}' if path else domain
 
     db = get_db()
     if not db:
         return jsonify({'error': 'Database unavailable'}), 500
     try:
         cur = db.cursor()
+        # Conflict on the URL, not the domain. One trusted domain can have
+        # several pages worth reading — KHDA runs the Hamdan bin Mohammed
+        # programme on its own page while the homepage carries none — and the
+        # earlier ON CONFLICT (domain) silently MOVED the existing row's URL
+        # instead of adding one, with nothing on screen to show it had happened.
+        # Re-adding the same page reactivates it, which is what an operator
+        # means by adding something already paused.
         cur.execute("""
             INSERT INTO scholarship_sources (domain, label, start_url, added_by, notes)
             VALUES (%s,%s,%s,%s,%s)
-            ON CONFLICT (domain) DO UPDATE
-              SET start_url = EXCLUDED.start_url, label = EXCLUDED.label,
-                  is_active = TRUE
+            ON CONFLICT (start_url) DO UPDATE
+              SET label = EXCLUDED.label, is_active = TRUE
             RETURNING id
-        """, (domain, (data.get('label') or '').strip() or domain, start_url,
-              str(get_jwt_identity()), data.get('notes')))
+        """, (domain, label, start_url, str(get_jwt_identity()), data.get('notes')))
         sid = cur.fetchone()[0]
         db.commit()
         return jsonify({'id': sid, 'domain': domain, 'message': 'Source added'}), 201
