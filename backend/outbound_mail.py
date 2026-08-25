@@ -37,16 +37,21 @@ out to an approved person.
 
 WHAT THIS MODULE DOES NOT DO
 
-It does not send. There is deliberately no transport here yet. `decide()` is
-pure and has no I/O, so it can be tested exhaustively and reused by whatever
-transport arrives — the Microsoft Graph client, once DGHR's secret is in place.
-Wiring a transport means calling `decide()` first and honouring it, and
-`record()` writing down what happened either way.
+It does not send. `decide()` is pure and has no I/O, so it can be tested
+exhaustively; the transport lives in `services/graph_mail.py` and consults it.
+The queue functions below are the only supported way to compose a message:
+they insert it `held`, and a person moves it out of `held` one message at a
+time.
 """
 import logging
 import os
 
 logger = logging.getLogger(__name__)
+
+try:
+    from backend.db_utils import execute_query
+except ImportError:                          # the app runs under both roots
+    from db_utils import execute_query
 
 # ── Decisions ───────────────────────────────────────────────────────────────
 ALLOWED = 'allowed'
@@ -148,3 +153,133 @@ def explain(decision):
                               'sending',
         BLOCKED_NO_RECIPIENT: 'held — no usable email address',
     }.get(decision, f'held — {decision}')
+
+
+# ── The queue ───────────────────────────────────────────────────────────────
+#
+# Composing a message and sending one are deliberately separate acts, with a
+# person in between. Everything the platform wants to email goes through
+# `queue()`, which can only ever produce a `held` row — migration 088 puts a
+# trigger behind that, so a call site cannot opt out by passing a status.
+
+HELD = 'held'
+APPROVED = 'approved'
+SENDING = 'sending'
+SENT = 'sent'
+FAILED = 'failed'
+REJECTED = 'rejected'
+
+
+def queue(to_email, subject, body_text, kind, body_html=None, to_name=None,
+          related_type=None, related_id=None, created_by=None):
+    """Compose a message and hold it for approval. Returns the new row id.
+
+    This never sends, and it never checks the gate: a message is worth holding
+    for review even when the gate would refuse it today, because the gate can
+    be opened later and the message is then still there to approve. The gate is
+    consulted at SEND time, against the configuration in force at that moment.
+    """
+    row = execute_query(
+        """INSERT INTO outbound_mail
+                  (to_email, to_name, subject, body_text, body_html, kind,
+                   related_type, related_id, created_by)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING id""",
+        (to_email, to_name, subject, body_text, body_html, kind,
+         related_type, related_id, created_by),
+        fetch_one=True)
+    return row['id'] if row else None
+
+
+def approve(message_id, approver_id, note=None):
+    """Approve exactly one message. Returns True if this call did it.
+
+    Guarded on `status = 'held'` in the WHERE clause rather than by reading the
+    row first: two reviewers clicking at the same moment must not produce two
+    approvals, and a rejected message must not be revivable by approving it.
+    """
+    row = execute_query(
+        """UPDATE outbound_mail
+              SET status = 'approved', approved_by = %s, approved_at = now(),
+                  decision_note = COALESCE(%s, decision_note)
+            WHERE id = %s AND status = 'held'
+        RETURNING id""",
+        (approver_id, note, message_id), fetch_one=True)
+    return bool(row)
+
+
+def reject(message_id, rejecter_id, note=None):
+    """Decline a message. It is never sent, and it stays as evidence."""
+    row = execute_query(
+        """UPDATE outbound_mail
+              SET status = 'rejected', rejected_by = %s, rejected_at = now(),
+                  decision_note = COALESCE(%s, decision_note)
+            WHERE id = %s AND status = 'held'
+        RETURNING id""",
+        (rejecter_id, note, message_id), fetch_one=True)
+    return bool(row)
+
+
+def claim_next_approved():
+    """Take one approved message for sending, atomically. None if there is none.
+
+    `FOR UPDATE SKIP LOCKED` plus the status flip in a single statement is what
+    stops two sender runs delivering the same message twice — a duplicate
+    invitation to a real employer is exactly the kind of thing this whole
+    mechanism exists to prevent.
+    """
+    return execute_query(
+        """UPDATE outbound_mail
+              SET status = 'sending', attempts = attempts + 1
+            WHERE id = (SELECT id FROM outbound_mail
+                         WHERE status = 'approved'
+                         ORDER BY created_at
+                         FOR UPDATE SKIP LOCKED
+                         LIMIT 1)
+        RETURNING id, to_email, to_name, subject, body_text, body_html, kind,
+                  attempts, approved_by""",
+        fetch_one=True)
+
+
+def mark_sent(message_id, provider_id=None, gate_decision=ALLOWED):
+    execute_query(
+        """UPDATE outbound_mail
+              SET status = 'sent', sent_at = now(), provider_id = %s,
+                  gate_decision = %s, last_error = NULL
+            WHERE id = %s""",
+        (provider_id, gate_decision, message_id), fetch_all=False)
+
+
+def mark_failed(message_id, error, gate_decision=None):
+    """Record a failure and put the message back where a person can see it.
+
+    It returns to `approved`, not to `held`: a human already approved this
+    content, and making them approve it again because our proxy was down would
+    train people to click approve without reading. A gate refusal is different
+    — that means the configuration says this must not go out, so it goes back
+    to `held` for a fresh decision.
+    """
+    back_to = HELD if (gate_decision and gate_decision != ALLOWED) else APPROVED
+    execute_query(
+        """UPDATE outbound_mail
+              SET status = %s, last_error = %s, gate_decision = %s
+            WHERE id = %s""",
+        (back_to, str(error)[:500], gate_decision, message_id), fetch_all=False)
+
+
+def held_messages(limit=100):
+    return execute_query(
+        """SELECT id, to_email, to_name, subject, body_text, body_html, kind,
+                  related_type, related_id, created_at, created_by, attempts,
+                  last_error
+             FROM outbound_mail
+            WHERE status = 'held'
+            ORDER BY created_at
+            LIMIT %s""", (limit,)) or []
+
+
+def queue_summary():
+    """Counts by state — what the operator's badge and the ops view need."""
+    rows = execute_query(
+        "SELECT status, count(*) AS n FROM outbound_mail GROUP BY status") or []
+    return {r['status']: r['n'] for r in rows}

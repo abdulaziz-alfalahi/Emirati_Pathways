@@ -748,6 +748,8 @@ _additional_blueprints = [
     ('backend.recruiter.jd_upload_routes', 'jd_upload_routes', None, 'JD Upload'),
     ('backend.intelligence_routes', 'intelligence_bp', None, 'Intelligence Backbone'),
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
+    ('backend.routes.outbound_mail_routes', 'outbound_mail_bp',
+     '/api/outbound-mail', 'Outbound mail review'),
     ('backend.career_services_routes', 'career_services_bp', None, 'Career Services'),
     ('backend.operations_routes', 'operations_bp', None, 'Operations Monitoring'),
     ('backend.demographics_routes', 'demographics_bp', None, 'Demographics Analytics'),
