@@ -33,6 +33,15 @@
 
 set -euo pipefail
 
+# WHY PYTHONPATH=/
+#
+# services/qwen_client.py imports `backend.config.qwen_config` unconditionally —
+# no try/except fallback, unlike most modules here. Inside the image /app is the
+# code root and /backend is a symlink to it, so `backend.*` resolves only when /
+# is on sys.path. WORKDIR is /app, so a plain `python /app/scripts/...` fails
+# with ModuleNotFoundError: No module named 'backend'. Setting PYTHONPATH=/ is
+# the smallest fix that does not require editing an import path shared with the
+# running application.
 NAME="emirati-link-scout"
 IMAGE="${IMAGE:-emirati_backend:latest}"
 # 03:00 UTC = 07:00 Gulf. AFTER the 02:15 link check, deliberately: a link
@@ -76,6 +85,7 @@ case "${1:-}" in
       : "${DB_HOST:?DB_HOST missing from backend/.env}"
       exec docker run --rm --name "${NAME}-once" \
           --network host \
+          -e PYTHONPATH=/ \
           -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
           -e DASHSCOPE_API_KEY \
     -e DASHSCOPE_API_KEY \
@@ -94,13 +104,14 @@ docker run -d --name "$NAME" \
     --restart unless-stopped \
     --network host \
     -e HOUR="$HOUR" -e MINUTE="$MINUTE" \
+    -e PYTHONPATH=/ \
     -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
     -e DASHSCOPE_API_KEY \
     -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
     -e http_proxy -e https_proxy -e no_proxy \
     --entrypoint /bin/sh \
     "$IMAGE" -c '
-      echo "scholarship scout scheduled daily at ${HOUR}:${MINUTE} UTC"
+      printf 'scholarship scout scheduled daily at %02d:%02d UTC\n' "$HOUR" "$MINUTE"
       while true; do
         # The image ships dash as /bin/sh, which has no bash "10#" base prefix —
         # the first install crash-looped on it. date is asked for a non-padded
@@ -116,5 +127,5 @@ docker run -d --name "$NAME" \
         python /app/scripts/scout_scholarships.py || echo "scout exited non-zero"
       done'
 
-echo "installed $NAME — daily at ${HOUR}:${MINUTE} UTC"
+printf 'installed %s — daily at %02d:%02d UTC\n' "$NAME" "$HOUR" "$MINUTE"
 echo "check it with: $0 --status"
