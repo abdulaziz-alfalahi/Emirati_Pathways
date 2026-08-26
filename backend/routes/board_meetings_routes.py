@@ -345,7 +345,7 @@ def _board_notice_parts(meeting, kind):
         f'\n'
         f'إلى مكتب سعادة عضو المجلس،\n'
         f'\n'
-        f'{verb_ar} اجتماع مجلس {COUNCIL_NAME_AR} "{title}".\n'
+        f'{verb_ar} اجتماع {COUNCIL_NAME_AR} "{title}".\n'
         f'\n'
         f'التاريخ والوقت: {when_ar}\n'
         f'المدة: {minutes} دقيقة\n'
@@ -379,7 +379,7 @@ def _board_notice_parts(meeting, kind):
         '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
         f'<div dir="rtl" style="text-align:right">'
         f'<p style="{p}">إلى مكتب سعادة عضو المجلس،</p>'
-        f'<p style="{p}">{verb_ar} اجتماع مجلس {COUNCIL_NAME_AR} '
+        f'<p style="{p}">{verb_ar} اجتماع {COUNCIL_NAME_AR} '
         f'<strong>{e(title)}</strong>.</p>'
         + detail_ar + agenda_html +
         f'<p style="{p}">تُرسل هذه الإفادة إلى مكتب عضو المجلس لتنسيق الاجتماع '

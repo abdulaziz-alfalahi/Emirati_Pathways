@@ -446,3 +446,27 @@ def test_the_declared_variables_are_attached_when_templates_are_listed():
                   encoding='utf-8').read()
     block = routes[routes.index('def list_templates('):routes.index('def register_templates(')]
     assert 'varies_for' in block
+
+
+def test_no_template_repeats_a_word_immediately():
+    """Owner, 2026-08-27: "كلمة مجلس متكررة" — the word مجلس appeared twice.
+
+    COUNCIL_NAME_AR begins with مجلس, and the board notice prepended another
+    one, rendering "اجتماع مجلس مجلس تنمية الموارد البشرية الإماراتية".
+
+    This is the shape of mistake that survives review: each half reads correctly
+    on its own, and it only appears once the name is substituted in. It is also
+    invisible to an English reader checking an Arabic string. So it is checked
+    on the RENDERED output of every template rather than left to be spotted.
+    """
+    import re
+    from services.mail_templates import TEMPLATES, render
+
+    offenders = []
+    for kind in sorted(TEMPLATES):
+        subject, text, _html = render(kind)
+        for where, blob in (('subject', subject), ('body', text)):
+            for match in re.finditer(r'\b(\S+)\s+\1\b', blob):
+                context = blob[max(0, match.start() - 25):match.end() + 15]
+                offenders.append(f'{kind} {where}: …{context}…')
+    assert not offenders, 'a word is repeated:\n  ' + '\n  '.join(offenders)
