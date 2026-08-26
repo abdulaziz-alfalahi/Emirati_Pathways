@@ -110,6 +110,24 @@ def register_all():
                               'status': existing['status']})
             continue
 
+        # Retire any PENDING version of this kind first. It was never approved
+        # and is now superseded, and leaving it on the approval screen invites
+        # the worst outcome available here: an owner approving the OLD wording,
+        # which then matches nothing that renders, so operators find they can
+        # release nothing and no error says why.
+        #
+        # An APPROVED version is deliberately left alone — it stays in force
+        # until someone approves the replacement, so a wording change does not
+        # silently halt an operation that is mid-flight.
+        superseded = execute_query(
+            """UPDATE outbound_mail_templates
+                  SET status = 'retired', retired_at = now()
+                WHERE kind = %s AND status = 'pending'
+            RETURNING id""", (kind,)) or []
+        if superseded:
+            logger.info('retired %s superseded pending version(s) of %s',
+                        len(superseded), kind)
+
         nxt = execute_query(
             """SELECT COALESCE(max(version), 0) + 1 AS v
                  FROM outbound_mail_templates WHERE kind = %s""",

@@ -57,38 +57,26 @@ def _role_label(role, arabic=False):
 
 
 def _vacancy_verification_subject(company_name, job_title):
-    """Company AND job title, both languages.
+    """Company AND job title, English first — this reaches an employer.
 
     A CSV import sends one of these per vacancy row, so an employer with twelve
     open roles receives twelve messages, and the reviewer sees twelve queue
     entries. Without the job title in the subject they are indistinguishable —
     to the employer and to whoever is approving them.
     """
-    return (f'التحقق من شاغر "{job_title}" — {company_name} / '
-            f'Verify the vacancy "{job_title}" — {company_name}')
+    return (f'Verify the vacancy "{job_title}" — {company_name} / '
+            f'التحقق من شاغر "{job_title}" — {company_name}')
 
 
 def _vacancy_verification_body(company_name, job_title, link):
-    """Plain-text vacancy verification, Arabic first."""
+    """Plain-text vacancy verification, ENGLISH first.
+
+    Employer messages lead in English (owner, 2026-08-26): this arrives in a
+    shared HR mailbox, which is business correspondence in the UAE and is
+    frequently not read in Arabic. The candidate invitation still leads in
+    Arabic, because that audience is the opposite case.
+    """
     return (
-        f"السادة/{company_name} المحترمين،\n"
-        f"\n"
-        f"وردنا ضمن بيانات نافس شاغر لديكم بعنوان \"{job_title}\".\n"
-        f"\n"
-        f"يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين المؤهلين "
-        f"والاطلاع على من يطابق متطلباتكم.\n"
-        f"\n"
-        f"للتأكيد، افتح الرابط التالي:\n"
-        f"\n"
-        f"{link}\n"
-        f"\n"
-        f"إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع هذه الرسالة، "
-        f"يمكنكم تجاهلها.\n"
-        f"\n"
-        f"— {COUNCIL_NAME_AR}\n"
-        f"\n"
-        f"{BILINGUAL_RULE}\n"
-        f"\n"
         f"Dear {company_name},\n"
         f"\n"
         f"A vacancy at your organisation — \"{job_title}\" — appears in the NAFIS "
@@ -105,11 +93,29 @@ def _vacancy_verification_body(company_name, job_title, link):
         f"this message, you can ignore it.\n"
         f"\n"
         f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"وردنا ضمن بيانات نافس شاغر لديكم بعنوان \"{job_title}\".\n"
+        f"\n"
+        f"يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين المؤهلين "
+        f"والاطلاع على من يطابق متطلباتكم.\n"
+        f"\n"
+        f"للتأكيد، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع هذه الرسالة، "
+        f"يمكنكم تجاهلها.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
     )
 
 
 def _vacancy_verification_html(company_name, job_title, link):
-    """The delivered vacancy verification. Arabic block first, dir="rtl".
+    """The delivered vacancy verification. ENGLISH block first — see the body.
 
     Company name and job title BOTH come from a NAFIS vacancy CSV, so both are
     escaped — a job title is free text typed by an employer, which makes it the
@@ -123,20 +129,6 @@ def _vacancy_verification_html(company_name, job_title, link):
     return (
         '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
         'font-size:15px;line-height:1.6;color:#1F2937">'
-        f'<div dir="rtl" style="text-align:right">'
-        f'<p style="{p}">السادة/{name} المحترمين،</p>'
-        f'<p style="{p}">وردنا ضمن بيانات نافس شاغر لديكم بعنوان '
-        f'<strong>{title}</strong>.</p>'
-        f'<p style="{p}">يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين '
-        'المؤهلين والاطلاع على من يطابق متطلباتكم.</p>'
-        f'<p style="{p}">للتأكيد، افتح الرابط التالي:</p>'
-        f'<p style="{p};text-align:right" dir="ltr">'
-        f'<a href="{href}" style="{link_style}">{href}</a></p>'
-        f'<p style="{p}">إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع '
-        'هذه الرسالة، يمكنكم تجاهلها.</p>'
-        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
-        '</div>'
-        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
         f'<div dir="ltr" style="text-align:left">'
         f'<p style="{p}">Dear {name},</p>'
         f'<p style="{p}">A vacancy at your organisation — <strong>{title}</strong> '
@@ -150,19 +142,40 @@ def _vacancy_verification_html(company_name, job_title, link):
         'did not expect this message, you can ignore it.</p>'
         f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
         '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">وردنا ضمن بيانات نافس شاغر لديكم بعنوان '
+        f'<strong>{title}</strong>.</p>'
+        f'<p style="{p}">يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين '
+        'المؤهلين والاطلاع على من يطابق متطلباتكم.</p>'
+        f'<p style="{p}">للتأكيد، افتح الرابط التالي:</p>'
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع '
+        'هذه الرسالة، يمكنكم تجاهلها.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
         '</div>'
     )
 
 
 def _company_invitation_subject(company_name):
-    """Arabic first — the same reasoning as the seeker invitation.
+    """ENGLISH first, unlike the candidate invitation.
+
+    Owner, 2026-08-26: employer messages lead in English. The audiences differ.
+    A NAFIS candidate is an Emirati national for whom Arabic IS the message; an
+    employer message arrives in a shared HR mailbox, which is business
+    correspondence in the UAE and is frequently not read in Arabic at all.
+    Leading in the wrong language for either audience buries the half that
+    matters to them.
 
     The company's own name is in the subject because an employer receiving an
     unexpected government email scans the subject line for something that
     identifies THEM before deciding it is genuine.
     """
-    return (f'دعوة للانضمام إلى {PLATFORM_NAME_AR} — {company_name} / '
-            f'Invitation to join the {PLATFORM_NAME_EN} — {company_name}')
+    return (f'Invitation to join the {PLATFORM_NAME_EN} — {company_name} / '
+            f'دعوة للانضمام إلى {PLATFORM_NAME_AR} — {company_name}')
 
 
 def _company_invitation_body(company_name, link, role=None):
@@ -173,24 +186,6 @@ def _company_invitation_body(company_name, link, role=None):
     every Arabic line at the left edge.
     """
     return (
-        f"السادة/{company_name} المحترمين،\n"
-        f"\n"
-        f"تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنكم نشر "
-        f"الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.\n"
-        f"\n"
-        f"صفة الدعوة: {_role_label(role, arabic=True)}\n"
-        f"\n"
-        f"لإكمال التسجيل، افتح الرابط التالي:\n"
-        f"\n"
-        f"{link}\n"
-        f"\n"
-        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
-        f"إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.\n"
-        f"\n"
-        f"— {COUNCIL_NAME_AR}\n"
-        f"\n"
-        f"{BILINGUAL_RULE}\n"
-        f"\n"
         f"Dear {company_name},\n"
         f"\n"
         f"Your organisation has been invited to join the {PLATFORM_NAME_EN}, "
@@ -207,11 +202,29 @@ def _company_invitation_body(company_name, link, role=None):
         f"this message.\n"
         f"\n"
         f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنكم نشر "
+        f"الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.\n"
+        f"\n"
+        f"صفة الدعوة: {_role_label(role, arabic=True)}\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
     )
 
 
 def _company_invitation_html(company_name, link, role=None):
-    """The delivered company invitation. Arabic block first, marked dir="rtl".
+    """The delivered company invitation. ENGLISH block first — see the body.
 
     Same shape as the seeker invitation, and for the same measured reason: in
     Outlook a plain-text Arabic paragraph renders with its punctuation at the
@@ -228,20 +241,6 @@ def _company_invitation_html(company_name, link, role=None):
     return (
         '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
         'font-size:15px;line-height:1.6;color:#1F2937">'
-        f'<div dir="rtl" style="text-align:right">'
-        f'<p style="{p}">السادة/{name} المحترمين،</p>'
-        f'<p style="{p}">تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث '
-        'يمكنكم نشر الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.</p>'
-        f'<p style="{p}">صفة الدعوة: <strong>{html_escape(_role_label(role, arabic=True))}</strong></p>'
-        f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
-        # The URL stays LTR inside the Arabic block — see the seeker invitation.
-        f'<p style="{p};text-align:right" dir="ltr">'
-        f'<a href="{href}" style="{link_style}">{href}</a></p>'
-        f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
-        'إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.</p>'
-        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
-        '</div>'
-        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
         f'<div dir="ltr" style="text-align:left">'
         f'<p style="{p}">Dear {name},</p>'
         f'<p style="{p}">Your organisation has been invited to join the '
@@ -254,6 +253,20 @@ def _company_invitation_html(company_name, link, role=None):
         'once.<br>If your organisation did not expect this invitation, you can '
         'ignore this message.</p>'
         f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث '
+        'يمكنكم نشر الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.</p>'
+        f'<p style="{p}">صفة الدعوة: <strong>{html_escape(_role_label(role, arabic=True))}</strong></p>'
+        f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
+        # The URL stays LTR inside the Arabic block — see the seeker invitation.
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
+        'إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
         '</div>'
         '</div>'
     )

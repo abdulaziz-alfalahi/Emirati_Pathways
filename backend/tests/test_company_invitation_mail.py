@@ -33,13 +33,21 @@ COMPANY = 'Al Rostamani Group'
 
 # ── The message an employer receives ────────────────────────────────────────
 
-def test_arabic_leads_the_message():
+def test_english_leads_an_EMPLOYER_message():
+    """Owner, 2026-08-26: employer messages lead in English.
+
+    The audiences are opposites. A NAFIS candidate is an Emirati national for
+    whom Arabic IS the message; an employer invitation lands in a shared HR
+    mailbox, which is business correspondence in the UAE and frequently is not
+    read in Arabic at all. The candidate invitation still leads in Arabic — see
+    test_seeker_invitation_mail.py — and that difference is deliberate.
+    """
     body = _company_invitation_body(COMPANY, LINK)
-    assert body.index('السادة') < body.index(f'Dear {COMPANY}')
+    assert body.index(f'Dear {COMPANY}') < body.index('السادة')
     html = _company_invitation_html(COMPANY, LINK)
-    assert html.index('dir="rtl"') < html.index('dir="ltr"')
+    assert html.index('dir="ltr"') < html.index('dir="rtl"')
     subject = _company_invitation_subject(COMPANY)
-    assert subject.index('دعوة للانضمام') < subject.index('Invitation to join')
+    assert subject.index('Invitation to join') < subject.index('دعوة للانضمام')
 
 
 def test_the_company_name_is_in_the_subject():
@@ -188,15 +196,19 @@ def test_the_subject_carries_both_the_company_and_the_job():
     indistinguishable — to both of them."""
     subject = _vacancy_verification_subject(COMPANY, JOB)
     assert COMPANY in subject and JOB in subject
-    assert subject.index('التحقق من شاغر') < subject.index('Verify the vacancy')
+    assert subject.index('Verify the vacancy') < subject.index('التحقق من شاغر')
 
 
-def test_arabic_leads_and_the_url_stays_ltr():
+def test_english_leads_and_the_url_stays_ltr():
+    """Also an employer message, so also English first."""
     body = _vacancy_verification_body(COMPANY, JOB, VLINK)
-    assert body.index('السادة') < body.index(f'Dear {COMPANY}')
+    assert body.index(f'Dear {COMPANY}') < body.index('السادة')
     html = _vacancy_verification_html(COMPANY, JOB, VLINK)
-    assert html.index('dir="rtl"') < html.index('dir="ltr"')
-    assert html.split('<hr', 1)[0].count('dir="ltr"') == 1   # the URL inside the Arabic half
+    assert html.index('dir="ltr"') < html.index('dir="rtl"')
+    # The Arabic half is now second; its URL paragraph still carries dir="ltr"
+    # so a bidi client does not reorder the punctuation inside the link text.
+    arabic_half = html.split('<hr', 1)[1]
+    assert 'dir="ltr"' in arabic_half
 
 
 def test_the_job_title_cannot_inject_markup():

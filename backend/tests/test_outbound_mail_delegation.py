@@ -359,3 +359,51 @@ def test_registering_approves_nothing():
     block = source[source.index('def register_all('):]
     assert "'approved'" not in block
     assert 'approved_by' not in block
+
+
+def test_a_new_version_retires_a_superseded_PENDING_one():
+    """The worst outcome available here is approving stale wording.
+
+    If a pending v1 stayed on the approval screen after v2 was registered, an
+    owner could approve v1 — which then matches nothing that renders, so
+    operators find they can release nothing and no error explains why.
+    """
+    source = open(os.path.join(BACKEND, 'services', 'mail_templates.py'),
+                  encoding='utf-8').read()
+    block = source[source.index('def register_all('):]
+    assert "status = 'retired'" in block
+    assert "status = 'pending'" in block
+
+
+def test_an_APPROVED_version_is_left_in_force_when_wording_changes():
+    """Deliberately different from the pending case. An approved version stays
+    in force until someone approves its replacement, so editing a template does
+    not silently halt an operation that is mid-flight — the new messages simply
+    do not match it, and say so through drift."""
+    source = open(os.path.join(BACKEND, 'services', 'mail_templates.py'),
+                  encoding='utf-8').read()
+    block = source[source.index('def register_all('):]
+    retire = block[block.index("SET status = 'retired'"):]
+    retire = retire[:retire.index('RETURNING')]
+    assert "status = 'pending'" in retire
+    assert "'approved'" not in retire
+
+
+def test_employer_messages_lead_in_english_and_candidate_ones_in_arabic():
+    """The audiences are opposites, and the difference is deliberate.
+
+    Pinned here rather than only in each flow's own tests, because the next
+    person adding a template will look for the rule, not for three assertions
+    spread across two files.
+    """
+    from nafis_talent_system import _invitation_body
+    from growth_system import _company_invitation_body, _vacancy_verification_body
+
+    candidate = _invitation_body('X', 'L')
+    assert candidate.index('عزيزي') < candidate.index('Dear X')
+
+    employer = _company_invitation_body('X', 'L')
+    assert employer.index('Dear X') < employer.index('السادة')
+
+    vacancy = _vacancy_verification_body('X', 'T', 'L')
+    assert vacancy.index('Dear X') < vacancy.index('السادة')
