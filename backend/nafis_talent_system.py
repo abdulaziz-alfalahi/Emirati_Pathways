@@ -20,6 +20,61 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
+try:
+    from backend import outbound_mail
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+
+
+def _invitation_subject():
+    return ('Complete your registration — Emirati Human Development Platform / '
+            'أكمل تسجيلك — منصة تنمية الموارد البشرية الإماراتية')
+
+
+def _invitation_body(full_name, link):
+    """The invitation, in both languages.
+
+    Every recipient here is an Emirati national reached through NAFIS, so
+    Arabic is not a translation of the real message — it IS the message for
+    many of them, and burying it under the English would say so.
+
+    The link is on its own line and never wrapped in punctuation: mail clients
+    that auto-link are unreliable about trailing characters, and a link that
+    arrives broken looks to the recipient like a broken platform.
+    """
+    return (
+        f"Dear {full_name},\n"
+        f"\n"
+        f"You have been invited to join the Emirati Human Development Platform, "
+        f"where you can complete your profile and be matched with opportunities "
+        f"from employers across the UAE.\n"
+        f"\n"
+        f"To complete your registration, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"The link is valid for 7 days and can only be used once.\n"
+        f"If you did not expect this invitation, you can ignore this message.\n"
+        f"\n"
+        f"— Emirati Human Development Council\n"
+        f"\n"
+        f"───────────────────────────────\n"
+        f"\n"
+        f"عزيزي/عزيزتي {full_name}،\n"
+        f"\n"
+        f"تمت دعوتك للانضمام إلى منصة تنمية الموارد البشرية الإماراتية، حيث يمكنك "
+        f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— مجلس تنمية الموارد البشرية الإماراتية\n"
+    )
+
 # ─────────────────────────────────────────────────────────────
 # Inlined schema (avoids file-path issues at runtime)
 # ─────────────────────────────────────────────────────────────
@@ -543,7 +598,11 @@ class NafisTalentSystem:
     # Magic Link Invitations
     # ══════════════════════════════════════════════════════════
     def create_seeker_invitations(self, seeker_ids, invited_by=None):
-        """Generate magic link tokens for selected seekers and mock-email them."""
+        """Generate magic link tokens for selected seekers and QUEUE their invitation emails.
+
+        Nothing is sent from here. Each message waits in outbound_mail for a
+        named person to approve it individually — see migration 088.
+        """
         self.ensure_tables()
         conn = self._get_db_connection()
         results = []
@@ -594,17 +653,21 @@ class NafisTalentSystem:
                         frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
                         link = f"{frontend_url}/register/{token}"
 
-                        # Mock email
-                        print(f"\n[SEEKER INVITATION EMAIL] ──────────────────────────────────")
-                        print(f"  To: {seeker['email']}")
-                        print(f"  Subject: Complete Your Registration — Emirati Human Development Platform")
-                        print(f"  Body:")
-                        print(f"  Dear {seeker['full_name']},")
-                        print(f"  You have been invited to join the Emirati Human Development Platform.")
-                        print(f"  Click the link below to complete your registration:")
-                        print(f"  🔗 MAGIC LINK: {link}")
-                        print(f"  This link expires in 7 days.")
-                        print(f"──────────────────────────────────────────────────────────────\n")
+                        # The message is queued for per-message approval, never
+                        # sent from here. It is written on THIS cursor so it
+                        # commits — or rolls back — with the token it contains:
+                        # a queued email holding a link to a token that never
+                        # existed is the orphan shape migration 086 cleaned up.
+                        message_id = outbound_mail.queue(
+                            to_email=seeker['email'],
+                            to_name=seeker['full_name'],
+                            subject=_invitation_subject(),
+                            body_text=_invitation_body(seeker['full_name'], link),
+                            kind='seeker_invitation',
+                            related_type='seeker_invitation',
+                            related_id=str(record['id']),
+                            created_by=invited_by,
+                            cursor=cur)
 
                         results.append({
                             'seeker_id': str(sid),
@@ -612,6 +675,11 @@ class NafisTalentSystem:
                             'email': seeker['email'],
                             'token': record['token'],
                             'magic_link': link,
+                            # The operator needs to know the email exists but is
+                            # waiting, so they do not send the link by hand as
+                            # well and invite the same person twice.
+                            'message_id': message_id,
+                            'message_status': 'awaiting_approval',
                         })
 
                     except Exception as e:

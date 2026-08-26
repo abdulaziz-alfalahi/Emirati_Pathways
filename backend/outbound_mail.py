@@ -170,24 +170,43 @@ FAILED = 'failed'
 REJECTED = 'rejected'
 
 
+_QUEUE_SQL = """INSERT INTO outbound_mail
+                       (to_email, to_name, subject, body_text, body_html, kind,
+                        related_type, related_id, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id"""
+
+
 def queue(to_email, subject, body_text, kind, body_html=None, to_name=None,
-          related_type=None, related_id=None, created_by=None):
+          related_type=None, related_id=None, created_by=None, cursor=None):
     """Compose a message and hold it for approval. Returns the new row id.
 
     This never sends, and it never checks the gate: a message is worth holding
     for review even when the gate would refuse it today, because the gate can
     be opened later and the message is then still there to approve. The gate is
     consulted at SEND time, against the configuration in force at that moment.
+
+    PASS `cursor` WHEN THE MESSAGE BELONGS TO A WIDER TRANSACTION.
+
+    A message that outlives the thing it describes is not a hypothetical: 42 of
+    the 46 board emails retired by migration 086 survived because their meeting
+    was deleted and the notification was not, leaving a fully-formed email about
+    a meeting that no longer existed. An invitation email carrying a token has
+    exactly that shape — if the token insert rolls back and the email does not,
+    the queue holds a message with a link to nothing.
+
+    So when the caller owns a transaction, it owns this row too: pass the
+    cursor and the message commits, or vanishes, with everything else.
+    Otherwise the shared connection is used, which commits on its own.
     """
-    row = execute_query(
-        """INSERT INTO outbound_mail
-                  (to_email, to_name, subject, body_text, body_html, kind,
-                   related_type, related_id, created_by)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-           RETURNING id""",
-        (to_email, to_name, subject, body_text, body_html, kind,
-         related_type, related_id, created_by),
-        fetch_one=True)
+    params = (to_email, to_name, subject, body_text, body_html, kind,
+              related_type, related_id, created_by)
+    if cursor is not None:
+        cursor.execute(_QUEUE_SQL, params)
+        row = cursor.fetchone()
+        # RealDictCursor gives a mapping, a plain cursor gives a tuple.
+        return row['id'] if isinstance(row, dict) else (row[0] if row else None)
+    row = execute_query(_QUEUE_SQL, params, fetch_one=True)
     return row['id'] if row else None
 
 

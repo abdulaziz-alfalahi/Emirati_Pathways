@@ -228,12 +228,18 @@ def invite_seekers():
             from backend.email_delivery import email_configured, invitation_result_message
         except ImportError:  # pragma: no cover - dual-root import
             from email_delivery import email_configured, invitation_result_message
+        # Each invitation now queues a real email that waits for per-message
+        # approval (migration 088). Report that plainly: an operator told
+        # "Sent" will never go and approve it, which is how 46 board emails sat
+        # unnoticed until migration 086 retired them.
+        queued = [r for r in successful if r.get('message_id')]
         return jsonify({
             'success': True,
-            # Never claim delivery that did not happen — no SMTP is configured,
-            # so these links exist but have not been sent to anyone.
+            # Never claim delivery that did not happen.
             'email_delivery_configured': email_configured(),
-            'message': invitation_result_message(len(successful), len(failed)),
+            'messages_awaiting_approval': len(queued),
+            'message': invitation_result_message(len(successful), len(failed),
+                                                 queued_count=len(queued)),
             'invitations': successful,
             'errors': failed,
         })
