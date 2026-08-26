@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PLATFORM_NAME_EN, PLATFORM_NAME_AR } from '@/lib/brand';
 import { X, Play, Pause, SkipForward, SkipBack, Users, BarChart3, Settings, BookOpen, UserCheck, Shield } from 'lucide-react';
 
 interface DemoStep {
@@ -124,7 +125,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
   const demoSteps = [
     {
       id: 1,
-      title: currentLanguage === 'ar' ? "مرحباً بكم في منصة الرحلة الإماراتية" : "Welcome to Emirati Pathways",
+      title: currentLanguage === 'ar' ? `مرحباً بكم في ${PLATFORM_NAME_AR}` : `Welcome to the ${PLATFORM_NAME_EN}`,
       description: currentLanguage === 'ar' ? 
         "اكتشف المنصة المدعومة بالذكاء الاصطناعي التي تربط المهنيين الإماراتيين وأصحاب العمل والمعلمين والموجهين والمقيمين في نظام بيئي موحد لتطوير ونمو المسيرة المهنية. منصة شاملة تدعم رؤية دبي D33 ومبادرة Talent33 لبناء اقتصاد معرفي متقدم." :
         "Discover the AI-powered platform that connects UAE professionals, employers, educators, mentors, and assessors in one unified ecosystem for career development and growth.",

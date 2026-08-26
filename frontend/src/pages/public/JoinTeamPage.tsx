@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { restClient } from '@/utils/api';
@@ -91,7 +92,7 @@ const JoinTeamPage: React.FC = () => {
             <div style={{ fontSize: 40 }}>🤝</div>
             <h1 style={{ fontSize: 22, fontWeight: 800, margin: '10px 0 6px', color: '#111827' }}>Join {inv.company_name}</h1>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 18 }}>
-              You've been invited to join <b>{inv.company_name}</b> on the Emirati Human Development Platform as a <b>{roleLabel(inv.role)}</b>.
+              You've been invited to join <b>{inv.company_name}</b> on the {PLATFORM_NAME_EN} as a <b>{roleLabel(inv.role)}</b>.
             </p>
             {error && <p style={{ color: '#b91c1c', fontSize: 13, marginBottom: 10 }}>{error}</p>}
             {loggedIn ? (
