@@ -746,6 +746,76 @@ class GrowthSystem:
             logger.error(f"Error fetching growth candidates: {e}")
             return []
 
+    def get_vacancy_concentration(self, min_vacancies=5):
+        """How much of the vacancy pool a threshold actually covers.
+
+        WHY THIS EXISTS (owner, 2026-08-26): the onboarding plan is to filter
+        employers by vacancy count and work the top of the list — 20% of the
+        effort for 80% of the effect. The operator screen already ranks and
+        filters, but the threshold slider defaulted to 5 with nothing to judge
+        it by, so the 80% was being guessed at rather than seen.
+
+        Returns the totals and, for this threshold, how many employers it
+        selects and what share of all pending vacancies they hold. Also the
+        SUGGESTED threshold: the smallest one whose selected employers hold at
+        least 80% of the vacancies.
+
+        Counts 'pending_verification' only — the same population the operator
+        can actually act on, and the same one get_growth_candidates ranks.
+        Counting every status would include draft and published postings that
+        are not part of this outreach.
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT COUNT(j.id) AS vacancies
+                      FROM companies c
+                      JOIN job_postings j ON c.id = j.company_id::uuid
+                     WHERE j.status = 'pending_verification'
+                     GROUP BY c.id
+                     ORDER BY vacancies DESC
+                """)
+                counts = [int(r['vacancies']) for r in cur.fetchall()]
+
+            total_vacancies = sum(counts)
+            total_companies = len(counts)
+            if not total_vacancies:
+                # Honest empty rather than a division by zero or a fake 100%.
+                # This is the state right after migration 089 and before a new
+                # NAFIS sheet is imported.
+                return {'total_companies': 0, 'total_vacancies': 0,
+                        'selected_companies': 0, 'selected_vacancies': 0,
+                        'coverage_percent': None, 'suggested_min_vacancies': None}
+
+            selected = [n for n in counts if n >= min_vacancies]
+            selected_vacancies = sum(selected)
+
+            # The smallest threshold reaching 80% coverage. Walking DOWN from
+            # the largest count means the answer is the point at which adding
+            # the next-smaller employer is no longer worth the visit.
+            suggested, running = None, 0
+            for n in counts:
+                running += n
+                if running * 100 >= total_vacancies * 80:
+                    suggested = n
+                    break
+
+            return {
+                'total_companies': total_companies,
+                'total_vacancies': total_vacancies,
+                'selected_companies': len(selected),
+                'selected_vacancies': selected_vacancies,
+                'coverage_percent': round(selected_vacancies * 100.0 / total_vacancies, 1),
+                'company_percent': round(len(selected) * 100.0 / total_companies, 1),
+                'suggested_min_vacancies': suggested,
+            }
+        except Exception as e:
+            logger.error(f"Error computing vacancy concentration: {e}")
+            return {'total_companies': 0, 'total_vacancies': 0,
+                    'selected_companies': 0, 'selected_vacancies': 0,
+                    'coverage_percent': None, 'suggested_min_vacancies': None}
+
     def send_bulk_emails(self, company_ids):
         """
         Sends verification emails to selected companies.

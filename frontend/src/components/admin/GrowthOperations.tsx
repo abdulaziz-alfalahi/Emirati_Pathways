@@ -24,6 +24,15 @@ export const GrowthOperations: React.FC = () => {
     const [candidates, setCandidates] = useState<CompanyCandidate[]>([]);
     const [minVacancies, setMinVacancies] = useState(5);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+    // How much of the vacancy pool the current threshold covers. Without this
+    // the slider is a guess: an operator working "the top of the list" cannot
+    // see where the 80% actually falls.
+    const [concentration, setConcentration] = useState<{
+        total_companies: number; total_vacancies: number;
+        selected_companies: number; selected_vacancies: number;
+        coverage_percent: number | null; company_percent?: number;
+        suggested_min_vacancies: number | null;
+    } | null>(null);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +45,7 @@ export const GrowthOperations: React.FC = () => {
             });
             if (response.data.success) {
                 setCandidates(response.data.candidates || []);
+                setConcentration(response.data.concentration || null);
                 setSelectedCompanies([]);
             } else {
                 setError(response.data.error || 'Failed to fetch candidates');
@@ -132,6 +142,45 @@ export const GrowthOperations: React.FC = () => {
                             <p className="text-xs text-slate-500">
                                 Showing companies with {minVacancies} or more pending jobs.
                             </p>
+
+                            {/* What this threshold actually buys. Reported as a
+                                share of vacancies, not of companies: the effort
+                                is per company visited, the return is per vacancy
+                                reached, and those are different denominators. */}
+                            {concentration && concentration.total_vacancies > 0 ? (
+                                <div className="rounded-md bg-teal-50 border border-teal-100 p-3 space-y-1">
+                                    <p className="text-xs text-teal-900">
+                                        <span className="font-bold">
+                                            {concentration.selected_companies}
+                                        </span>{' '}
+                                        of {concentration.total_companies} companies
+                                        {typeof concentration.company_percent === 'number'
+                                            ? ` (${concentration.company_percent}%)`
+                                            : ''}{' '}
+                                        hold{' '}
+                                        <span className="font-bold">
+                                            {concentration.coverage_percent}%
+                                        </span>{' '}
+                                        of all {concentration.total_vacancies} pending vacancies.
+                                    </p>
+                                    {concentration.suggested_min_vacancies !== null &&
+                                     concentration.suggested_min_vacancies !== minVacancies && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setMinVacancies(
+                                                concentration.suggested_min_vacancies as number)}
+                                            className="text-xs text-teal-700 underline hover:text-teal-900"
+                                        >
+                                            Use {concentration.suggested_min_vacancies}+ to cover 80% of vacancies
+                                        </button>
+                                    )}
+                                </div>
+                            ) : concentration ? (
+                                <p className="text-xs text-slate-500">
+                                    No pending vacancies to rank yet — import a NAFIS
+                                    vacancy sheet first.
+                                </p>
+                            ) : null}
                         </div>
 
                         <Button

@@ -115,7 +115,11 @@ def get_candidates():
     try:
         min_vacancies = int(request.args.get('min_vacancies', 5))
         candidates = growth_sys.get_growth_candidates(min_vacancies)
-        return jsonify({'success': True, 'candidates': candidates})
+        # How much of the vacancy pool this threshold covers, so the operator
+        # picks it on evidence rather than guessing (owner, 2026-08-26: work
+        # the top of the list — 20% of the effort for 80% of the effect).
+        return jsonify({'success': True, 'candidates': candidates,
+                        'concentration': growth_sys.get_vacancy_concentration(min_vacancies)})
     except Exception as e:
         logger.error(f"Get candidates error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
