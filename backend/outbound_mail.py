@@ -172,9 +172,30 @@ REJECTED = 'rejected'
 
 _QUEUE_SQL = """INSERT INTO outbound_mail
                        (to_email, to_name, subject, body_text, body_html, kind,
-                        related_type, related_id, created_by)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        related_type, related_id, created_by, template_fingerprint)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id"""
+
+
+def _fingerprint_for_kind(kind):
+    """Which registered wording produced this kind, or None if unregistered.
+
+    Imported late and on purpose: services.mail_templates imports the flows,
+    and the flows import this module. A late import keeps the cycle from
+    forming while letting call sites stay ignorant of fingerprints entirely —
+    a flow that had to remember to pass one would eventually forget, and its
+    messages would silently become unreleasable.
+    """
+    try:
+        try:
+            from backend.services import mail_templates
+        except ImportError:              # pragma: no cover — dual root
+            from services import mail_templates
+        return mail_templates.fingerprint_for(kind)
+    except Exception:
+        # An unregistered kind is not an error: it means per-message approval,
+        # which is the stricter path.
+        return None
 
 
 def queue(to_email, subject, body_text, kind, body_html=None, to_name=None,
@@ -200,7 +221,7 @@ def queue(to_email, subject, body_text, kind, body_html=None, to_name=None,
     Otherwise the shared connection is used, which commits on its own.
     """
     params = (to_email, to_name, subject, body_text, body_html, kind,
-              related_type, related_id, created_by)
+              related_type, related_id, created_by, _fingerprint_for_kind(kind))
     if cursor is not None:
         cursor.execute(_QUEUE_SQL, params)
         row = cursor.fetchone()
@@ -302,3 +323,350 @@ def queue_summary():
     rows = execute_query(
         "SELECT status, count(*) AS n FROM outbound_mail GROUP BY status") or []
     return {r['status']: r['n'] for r in rows}
+
+
+# ── Delegated release: templates, caps and a pause ──────────────────────────
+#
+# Per-message approval was right for the first five sends and wrong for four
+# hundred. An owner clicking approve on four hundred renderings of one template
+# is not reviewing them; it is rubber-stamping, which is worse than no review
+# because it produces a signature.
+#
+# Owner's decision, 2026-08-26: approve the TEMPLATE once, let operators
+# release messages that render from it, and give the owner an audit rather than
+# a queue. See migration 090.
+
+import hashlib as _hashlib
+
+RELEASE_PER_MESSAGE = 'per_message'
+RELEASE_TEMPLATE = 'template'
+
+#: Values fed to a template to produce its fingerprint. Fixed, so the hash
+#: reflects the WORDING and not whose invitation happened to be rendered.
+TEMPLATE_PROBE = {
+    'name': 'ZZ-PROBE',
+    'link': 'https://example.invalid/probe',
+    'title': 'ZZ-PROBE-TITLE',
+    'role': 'recruiter',
+}
+
+
+def template_fingerprint(subject, body_text, body_html=None):
+    """Identify a template by what it RENDERS, not by where it lives.
+
+    An approval of wording only means something if editing the wording
+    invalidates it. Hashing a probe rendering gets that for free: change the
+    template function and the fingerprint moves, the approval stops matching,
+    and those messages fall back to needing the owner. That is the safe
+    direction, and it needs nobody to remember anything.
+
+    The HTML is included. It is what is actually delivered, so a change there
+    that leaves the plain text alone is still a change to what a recipient
+    reads.
+    """
+    blob = '\x1f'.join([subject or '', body_text or '', body_html or ''])
+    return _hashlib.sha256(blob.encode('utf-8')).hexdigest()
+
+
+def controls():
+    row = execute_query(
+        """SELECT daily_release_cap, paused, pause_reason, paused_at,
+                  resumed_by, resumed_at
+             FROM outbound_mail_controls WHERE id = 1""", fetch_one=True)
+    return dict(row) if row else {'daily_release_cap': 500, 'paused': False,
+                                  'pause_reason': None}
+
+
+def pause(reason, by=None):
+    """Stop all releasing. Requires a reason — the constraint enforces it.
+
+    "Paused" with no reason is a dead end for whoever finds it, and they are
+    the person deciding whether it is safe to resume.
+    """
+    execute_query(
+        """UPDATE outbound_mail_controls
+              SET paused = TRUE, pause_reason = %s, paused_at = now(),
+                  resumed_by = NULL, resumed_at = NULL, updated_at = now()
+            WHERE id = 1""", (str(reason)[:500],), fetch_all=False)
+    logger.warning('outbound mail PAUSED: %s', reason)
+
+
+def resume(by):
+    execute_query(
+        """UPDATE outbound_mail_controls
+              SET paused = FALSE, pause_reason = NULL, resumed_by = %s,
+                  resumed_at = now(), updated_at = now()
+            WHERE id = 1""", (by,), fetch_all=False)
+
+
+def approved_template(kind):
+    return execute_query(
+        """SELECT id, kind, version, fingerprint, approved_by, approved_at
+             FROM outbound_mail_templates
+            WHERE kind = %s AND status = 'approved'""", (kind,), fetch_one=True)
+
+
+def released_today(operator_id):
+    row = execute_query(
+        """SELECT count(*) AS n FROM outbound_mail
+            WHERE released_by = %s AND released_at >= date_trunc('day', now())""",
+        (operator_id,), fetch_one=True)
+    return int(row['n']) if row else 0
+
+
+def releasable(kind):
+    """Messages of this kind whose body matches the approved template.
+
+    The fingerprint comparison is done in SQL against the approved row, so a
+    message composed before the wording changed is simply not returned — it
+    stays held for the owner rather than going out under an approval that no
+    longer describes it.
+    """
+    return execute_query(
+        """SELECT m.id, m.to_email, m.to_name, m.subject, m.kind
+             FROM outbound_mail m
+             JOIN outbound_mail_templates t
+               ON t.kind = m.kind AND t.status = 'approved'
+              AND t.fingerprint = m.template_fingerprint
+            WHERE m.status = 'held' AND m.kind = %s
+            ORDER BY m.created_at""", (kind,)) or []
+
+
+def release(kind, operator_id, limit=None):
+    """Release messages of one kind on the authority of an approved template.
+
+    Returns a dict describing what happened, including why it stopped. Every
+    refusal is a state the operator can act on rather than an exception:
+    they are running a bulk operation, and a traceback mid-run tells them
+    nothing about what already went.
+    """
+    state = controls()
+    if state.get('paused'):
+        return {'released': 0, 'blocked': 'paused',
+                'detail': state.get('pause_reason')}
+
+    template = approved_template(kind)
+    if not template:
+        return {'released': 0, 'blocked': 'no_approved_template',
+                'detail': f'no approved wording for "{kind}" — an administrator '
+                          f'approves the template once, then operators release'}
+
+    cap = int(state.get('daily_release_cap') or 500)
+    already = released_today(operator_id)
+    remaining = cap - already
+    if remaining <= 0:
+        return {'released': 0, 'blocked': 'daily_cap',
+                'detail': f'{already} of {cap} released today'}
+
+    candidates = releasable(kind)
+    if limit is not None:
+        candidates = candidates[:max(0, int(limit))]
+    candidates = candidates[:remaining]
+    if not candidates:
+        return {'released': 0, 'blocked': None, 'detail': 'nothing to release'}
+
+    anomaly = detect_anomaly([c['to_email'] for c in candidates])
+    if anomaly:
+        pause(anomaly, by=operator_id)
+        return {'released': 0, 'blocked': 'anomaly', 'detail': anomaly}
+
+    ids = [c['id'] for c in candidates]
+    execute_query(
+        """UPDATE outbound_mail
+              SET status = 'approved', approved_by = %s, approved_at = now(),
+                  released_by = %s, released_at = now(),
+                  release_basis = %s
+            WHERE id = ANY(%s) AND status = 'held'""",
+        (operator_id, operator_id, RELEASE_TEMPLATE, ids), fetch_all=False)
+
+    logger.info('outbound mail: %s released %s "%s" message(s) on template v%s',
+                operator_id, len(ids), kind, template['version'])
+    return {'released': len(ids), 'blocked': None,
+            'template_version': template['version'],
+            'remaining_today': remaining - len(ids)}
+
+
+#: A run that reaches this many recipient domains never seen before is more
+#: likely a wrong list than a good week. Deliberately generous — the cost of a
+#: false pause is one admin click; the cost of a miss is real people.
+NEW_DOMAIN_LIMIT = 25
+#: Recent failures above this share mean the transport or the data is wrong,
+#: and continuing just multiplies it.
+FAILURE_RATE_LIMIT = 0.5
+FAILURE_SAMPLE = 20
+
+
+def detect_anomaly(recipients):
+    """Return a reason to stop, or None. Never raises.
+
+    Checked BEFORE a release, not after: the point is to stop a bad run rather
+    than to explain one.
+    """
+    try:
+        domains = {(a or '').rsplit('@', 1)[-1].lower() for a in recipients if a and '@' in a}
+        if domains:
+            known = execute_query(
+                """SELECT DISTINCT lower(split_part(to_email, '@', 2)) AS d
+                     FROM outbound_mail WHERE status = 'sent'""") or []
+            unseen = domains - {r['d'] for r in known}
+            if len(unseen) > NEW_DOMAIN_LIMIT:
+                return (f'{len(unseen)} recipient domains never sent to before '
+                        f'in a single release (limit {NEW_DOMAIN_LIMIT}) — '
+                        f'check the recipient list before resuming')
+
+        recent = execute_query(
+            """SELECT status FROM outbound_mail
+                WHERE status IN ('sent', 'failed')
+                ORDER BY COALESCE(sent_at, created_at) DESC LIMIT %s""",
+            (FAILURE_SAMPLE,)) or []
+        if len(recent) >= FAILURE_SAMPLE:
+            failed = sum(1 for r in recent if r['status'] == 'failed')
+            if failed / len(recent) > FAILURE_RATE_LIMIT:
+                return (f'{failed} of the last {len(recent)} sends failed — '
+                        f'delivery is not working, so releasing more would only '
+                        f'multiply it')
+    except Exception as exc:            # a broken check must not block sending
+        logger.warning('anomaly check skipped: %s', exc)
+    return None
+
+
+# ── The audit ───────────────────────────────────────────────────────────────
+#
+# The owner stepped out of the per-message queue, so this is what replaces it.
+# The question being answered is not "how many did we send" — a count reassures
+# without informing. It is "what did real people actually receive, on whose
+# authority, and is anything drifting".
+
+def audit_summary(days=7):
+    """Volume, authority and failures over a window. The shape of the operation."""
+    rows = execute_query(
+        """SELECT kind, status, release_basis, count(*) AS n
+             FROM outbound_mail
+            WHERE created_at >= now() - make_interval(days => %s)
+            GROUP BY kind, status, release_basis""", (days,)) or []
+
+    by_operator = execute_query(
+        """SELECT m.released_by AS operator_id,
+                  COALESCE(u.full_name, u.first_name, m.released_by) AS operator_name,
+                  count(*) AS released,
+                  count(*) FILTER (WHERE m.status = 'sent')   AS sent,
+                  count(*) FILTER (WHERE m.status = 'failed') AS failed,
+                  max(m.released_at) AS last_release
+             FROM outbound_mail m
+             LEFT JOIN users u ON u.id = m.released_by
+            WHERE m.released_by IS NOT NULL
+              AND m.released_at >= now() - make_interval(days => %s)
+            GROUP BY m.released_by, u.full_name, u.first_name
+            ORDER BY released DESC""", (days,)) or []
+
+    failures = execute_query(
+        """SELECT id, kind, to_email, attempts, last_error, gate_decision
+             FROM outbound_mail
+            WHERE status = 'failed'
+              AND created_at >= now() - make_interval(days => %s)
+            ORDER BY id DESC LIMIT 20""", (days,)) or []
+
+    totals = {'sent': 0, 'held': 0, 'failed': 0, 'rejected': 0,
+              'approved': 0, 'sending': 0}
+    for r in rows:
+        totals[r['status']] = totals.get(r['status'], 0) + int(r['n'])
+
+    # On whose authority. This is the number that tells the owner whether
+    # delegation is being used as intended or routed around.
+    authority = {'template': 0, 'per_message': 0, 'unauthorised': 0}
+    for r in rows:
+        if r['status'] in ('sent', 'sending', 'approved'):
+            key = r['release_basis'] or 'unauthorised'
+            authority[key] = authority.get(key, 0) + int(r['n'])
+
+    return {
+        'days': days,
+        'totals': totals,
+        'by_kind': [dict(r) for r in rows],
+        'by_authority': authority,
+        'by_operator': [dict(r) for r in by_operator],
+        'recent_failures': [dict(r) for r in failures],
+        'controls': controls(),
+    }
+
+
+def audit_sample(days=7, size=5, kind=None):
+    """A random sample of what was ACTUALLY delivered, bodies included.
+
+    Random, not the most recent: the newest messages are the ones an operator
+    was watching, and those are the least likely to be wrong. Sampling is the
+    part that verifies quality rather than volume — a summary can look healthy
+    while every message in it says the wrong thing.
+    """
+    params = [days]
+    where = "status = 'sent' AND sent_at >= now() - make_interval(days => %s)"
+    if kind:
+        where += " AND kind = %s"
+        params.append(kind)
+    params.append(max(1, min(int(size), 25)))
+    return execute_query(
+        f"""SELECT id, kind, to_email, to_name, subject, body_text, sent_at,
+                   release_basis, released_by, approved_by
+              FROM outbound_mail
+             WHERE {where}
+             ORDER BY random()
+             LIMIT %s""", tuple(params)) or []
+
+
+def audit_drift():
+    """Things that are true now and should not be. Each needs a person.
+
+    Not a health score. A number that goes green hides the one row that matters,
+    and every item here is meant to be read and then acted on or dismissed.
+    """
+    findings = []
+
+    orphan = execute_query(
+        """SELECT count(*) AS n FROM outbound_mail
+            WHERE status IN ('sent', 'sending', 'approved')
+              AND release_basis IS NULL""", fetch_one=True)
+    if orphan and int(orphan['n']):
+        findings.append({
+            'severity': 'high',
+            'finding': f"{orphan['n']} message(s) left or are leaving with no "
+                       f"recorded authority — neither a per-message approval "
+                       f"nor a template release",
+        })
+
+    stale = execute_query(
+        """SELECT m.kind, count(*) AS n
+             FROM outbound_mail m
+             LEFT JOIN outbound_mail_templates t
+               ON t.kind = m.kind AND t.status = 'approved'
+              AND t.fingerprint = m.template_fingerprint
+            WHERE m.status = 'held' AND m.template_fingerprint IS NOT NULL
+              AND t.id IS NULL
+            GROUP BY m.kind""") or []
+    for r in stale:
+        findings.append({
+            'severity': 'medium',
+            'finding': f"{r['n']} held \"{r['kind']}\" message(s) do not match "
+                       f"any approved wording — the template changed after they "
+                       f"were composed, so they need an administrator",
+        })
+
+    unapproved = execute_query(
+        """SELECT DISTINCT kind FROM outbound_mail
+            WHERE status = 'held'
+              AND kind NOT IN (SELECT kind FROM outbound_mail_templates
+                                WHERE status = 'approved')""") or []
+    for r in unapproved:
+        findings.append({
+            'severity': 'low',
+            'finding': f'"{r["kind"]}" has messages waiting but no approved '
+                       f'template — operators cannot release them',
+        })
+
+    state = controls()
+    if state.get('paused'):
+        findings.append({
+            'severity': 'high',
+            'finding': f"Sending is PAUSED: {state.get('pause_reason')}",
+        })
+
+    return findings

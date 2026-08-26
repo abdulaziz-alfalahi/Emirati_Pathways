@@ -156,3 +156,176 @@ def send_approved():
     result = graph_mail.send_approved_batch()
     return jsonify({'success': True, **result,
                     'summary': outbound_mail.queue_summary()})
+
+
+# ── Templates: what the OWNER approves, once per message kind ───────────────
+
+@outbound_mail_bp.route('/templates', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def list_templates():
+    """Every template version, so "which wording was signed off, and when" has
+    an answer that does not depend on reading the code as it is today."""
+    from db_utils import execute_query as _q
+    rows = _q("""SELECT t.id, t.kind, t.version, t.fingerprint, t.status,
+                        t.sample_subject, t.sample_body, t.created_at,
+                        t.approved_at, t.note,
+                        COALESCE(u.full_name, u.first_name, t.approved_by) AS approved_by_name
+                   FROM outbound_mail_templates t
+                   LEFT JOIN users u ON u.id = t.approved_by
+                  ORDER BY t.kind, t.version DESC""") or []
+    return jsonify({'success': True, 'templates': [
+        {**dict(r),
+         'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
+         'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None}
+        for r in rows]})
+
+
+@outbound_mail_bp.route('/templates/register', methods=['POST'])
+@require_roles(*ADMIN_ROLES)
+def register_templates():
+    """Render every known template and record any whose wording is new.
+
+    Deliberately does NOT approve anything. It puts the current wording in
+    front of an administrator to read; approval is a separate, explicit act.
+    """
+    from services import mail_templates
+    return jsonify({'success': True, **mail_templates.register_all()})
+
+
+@outbound_mail_bp.route('/templates/<int:template_id>/approve', methods=['POST'])
+@require_roles(*ADMIN_ROLES)
+def approve_template(template_id):
+    """Approve one wording. Retires whatever it replaces.
+
+    This is the owner's whole involvement in a bulk send: read this text once,
+    approve it, and operators release messages that render from it.
+    """
+    from db_utils import execute_query as _q
+    payload = request.get_json(silent=True) or {}
+    approver = get_jwt_identity()
+    row = _q("SELECT kind, status FROM outbound_mail_templates WHERE id = %s",
+             (template_id,), fetch_one=True)
+    if not row:
+        return jsonify({'success': False, 'error': 'no such template'}), 404
+    if row['status'] == 'approved':
+        return jsonify({'success': False, 'error': 'already approved'}), 409
+
+    # One approved version per kind — the partial unique index enforces it, so
+    # the previous one is retired first rather than colliding.
+    _q("""UPDATE outbound_mail_templates
+             SET status = 'retired', retired_at = now()
+           WHERE kind = %s AND status = 'approved'""", (row['kind'],), fetch_all=False)
+    _q("""UPDATE outbound_mail_templates
+             SET status = 'approved', approved_by = %s, approved_at = now(),
+                 note = COALESCE(%s, note)
+           WHERE id = %s""", (approver, payload.get('note'), template_id), fetch_all=False)
+    logger.info('mail template %s (%s) approved by %s', template_id, row['kind'], approver)
+    return jsonify({'success': True,
+                    'message': f"Approved. Operators can now release "
+                               f"\"{row['kind']}\" messages."})
+
+
+# ── Release: what OPERATORS do ──────────────────────────────────────────────
+
+@outbound_mail_bp.route('/release', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def release_messages():
+    """Release held messages of one kind on an approved template's authority.
+
+    Every refusal comes back as a state with a reason rather than an error:
+    the caller is running a bulk operation, and a 500 mid-run says nothing
+    about what already went out.
+    """
+    payload = request.get_json(silent=True) or {}
+    kind = (payload.get('kind') or '').strip()
+    if not kind:
+        return jsonify({'success': False, 'error': 'kind is required'}), 400
+    result = outbound_mail.release(kind, get_jwt_identity(), limit=payload.get('limit'))
+    return jsonify({'success': True, **result,
+                    'summary': outbound_mail.queue_summary()})
+
+
+@outbound_mail_bp.route('/controls', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def get_controls():
+    state = outbound_mail.controls()
+    for key in ('paused_at', 'resumed_at'):
+        if state.get(key):
+            state[key] = state[key].isoformat()
+    return jsonify({'success': True, 'controls': state})
+
+
+@outbound_mail_bp.route('/controls/pause', methods=['POST'])
+@require_roles(*OPERATOR_ROLES)
+def pause_sending():
+    """Anyone who can release can stop. Stopping is never the risky direction."""
+    payload = request.get_json(silent=True) or {}
+    reason = (payload.get('reason') or '').strip() or 'paused by an operator'
+    outbound_mail.pause(reason, by=get_jwt_identity())
+    return jsonify({'success': True, 'message': 'Sending paused'})
+
+
+@outbound_mail_bp.route('/controls/resume', methods=['POST'])
+@require_roles(*ADMIN_ROLES)
+def resume_sending():
+    """Resuming is an ADMIN act, deliberately narrower than pausing.
+
+    A pause is usually automatic and means a run looked wrong; the person who
+    decides it is safe to continue should not be the one whose run tripped it.
+    """
+    outbound_mail.resume(get_jwt_identity())
+    return jsonify({'success': True, 'message': 'Sending resumed'})
+
+
+@outbound_mail_bp.route('/controls/cap', methods=['POST'])
+@require_roles(*ADMIN_ROLES)
+def set_cap():
+    from db_utils import execute_query as _q
+    payload = request.get_json(silent=True) or {}
+    try:
+        cap = int(payload.get('daily_release_cap'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'daily_release_cap must be a number'}), 400
+    if cap < 1:
+        return jsonify({'success': False, 'error': 'the cap must be at least 1'}), 400
+    _q("""UPDATE outbound_mail_controls SET daily_release_cap = %s,
+             updated_at = now() WHERE id = 1""", (cap,), fetch_all=False)
+    return jsonify({'success': True, 'daily_release_cap': cap})
+
+
+# ── Audit: what replaces the owner's queue ──────────────────────────────────
+
+@outbound_mail_bp.route('/audit', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def audit():
+    """Volume, authority, failures and drift over a window.
+
+    Includes a random sample of DELIVERED bodies, because a summary can look
+    healthy while every message in it says the wrong thing. The sample is what
+    verifies quality; the counts only describe volume.
+    """
+    try:
+        days = max(1, min(int(request.args.get('days', 7)), 90))
+    except (TypeError, ValueError):
+        days = 7
+    try:
+        size = int(request.args.get('sample', 5))
+    except (TypeError, ValueError):
+        size = 5
+
+    summary = outbound_mail.audit_summary(days=days)
+    sample = outbound_mail.audit_sample(days=days, size=size,
+                                        kind=(request.args.get('kind') or None))
+    for row in sample:
+        if row.get('sent_at'):
+            row['sent_at'] = row['sent_at'].isoformat()
+    for row in summary.get('by_operator', []):
+        if row.get('last_release'):
+            row['last_release'] = row['last_release'].isoformat()
+    for key in ('paused_at', 'resumed_at'):
+        if summary.get('controls', {}).get(key):
+            summary['controls'][key] = summary['controls'][key].isoformat()
+
+    return jsonify({'success': True, **summary,
+                    'sample': sample,
+                    'drift': outbound_mail.audit_drift()})
