@@ -48,6 +48,15 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 logger = logging.getLogger(__name__)
 
+try:
+    from backend import outbound_mail
+    from backend.brand import COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+    from brand import COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE
+
+from html import escape as html_escape
+
 board_meetings_bp = Blueprint('board_meetings', __name__, url_prefix='/api/board/meetings')
 
 # Who may schedule/edit. The Board Operator (secretary) role does not exist yet;
@@ -276,14 +285,118 @@ def _notify_organisers_of_waiting(meeting_id, meeting, waiter_id):
 
 # ── Board members' offices ──────────────────────────────────────────────
 # The offices are EXTERNAL email addresses, not platform users, so they cannot
-# be reached by in-app notifications. Outbound SMTP is blocked at the firewall
-# (item 2 of the infrastructure request; re-verified 2026-08-07), so what is
-# queued here is not delivered yet. It is queued rather than dropped so nothing
-# has to be re-entered when the port opens — and surfaced as undelivered so the
-# secretary can forward it by hand meanwhile.
+# be reached by in-app notifications.
+#
+# This used to write to board_office_notifications, a queue of its own, because
+# outbound SMTP was blocked at the firewall and nothing could be delivered. That
+# premise no longer holds: the platform sends through Microsoft Graph over
+# HTTPS, which never needed the SMTP port.
+#
+# It now goes through outbound_mail like every other outbound message, so board
+# notices get the same template approval, the same per-operator cap and the same
+# audit as candidate and employer mail. A second queue with its own rules would
+# be a blind spot in exactly the view the owner uses to check what left the
+# platform — and it was one: migration 086 found 46 rows sitting here, 42 of
+# them announcing test meetings that had already been deleted.
+#
+# board_office_notifications is kept as history and is no longer written to.
+
+def _board_notice_parts(meeting, kind):
+    """(subject, text, html) for one board office notice, bilingual.
+
+    The KIND changes the wording — scheduled, rescheduled, cancelled are three
+    different messages to an office diary, and "has been updated" would be worse
+    than any of them. All three are sampled for approval together.
+    """
+    when = meeting.get('scheduled_at')
+    when_en = when.strftime('%d %B %Y at %H:%M') if when else 'a date to be confirmed'
+    when_ar = when.strftime('%Y-%m-%d %H:%M') if when else 'موعد يُحدَّد لاحقاً'
+    title = meeting.get('title') or 'Board meeting'
+    where = meeting.get('location') or ('Online' if meeting.get('is_virtual') else 'To be confirmed')
+    minutes = meeting.get('duration_minutes') or 60
+    agenda = (meeting.get('agenda') or '').strip()
+
+    verb_en = {'scheduled': 'has been scheduled',
+               'rescheduled': 'has been rescheduled',
+               'cancelled': 'has been cancelled'}.get(kind, 'has been updated')
+    verb_ar = {'scheduled': 'تم تحديد موعد',
+               'rescheduled': 'تم تغيير موعد',
+               'cancelled': 'تم إلغاء'}.get(kind, 'تم تحديث')
+
+    subject = (f'{COUNCIL_NAME_EN} — board meeting {verb_en}: {title} / '
+               f'{verb_ar} اجتماع المجلس: {title}')
+
+    text = (
+        f'Dear Office,\n'
+        f'\n'
+        f'The {COUNCIL_NAME_EN} board meeting "{title}" {verb_en}.\n'
+        f'\n'
+        f'Date and time: {when_en}\n'
+        f'Duration: {minutes} minutes\n'
+        f'Location: {where}\n'
+        + (f'\n{agenda}\n' if agenda else '')
+        + f'\n'
+        f'This notice is sent to the office of the board member so the meeting '
+        f'can be coordinated in advance.\n'
+        f'\n'
+        f'— {COUNCIL_NAME_EN}\n'
+        f'\n'
+        f'{BILINGUAL_RULE}\n'
+        f'\n'
+        f'إلى مكتب سعادة عضو المجلس،\n'
+        f'\n'
+        f'{verb_ar} اجتماع مجلس {COUNCIL_NAME_AR} "{title}".\n'
+        f'\n'
+        f'التاريخ والوقت: {when_ar}\n'
+        f'المدة: {minutes} دقيقة\n'
+        f'المكان: {where}\n'
+        + (f'\n{agenda}\n' if agenda else '')
+        + f'\n'
+        f'تُرسل هذه الإفادة إلى مكتب عضو المجلس لتنسيق الاجتماع مسبقاً.\n'
+        f'\n'
+        f'— {COUNCIL_NAME_AR}\n'
+    )
+
+    e = html_escape
+    p = 'margin:0 0 12px'
+    detail = (f'<p style="{p}">Date and time: <strong>{e(when_en)}</strong><br>'
+              f'Duration: {minutes} minutes<br>Location: {e(where)}</p>')
+    detail_ar = (f'<p style="{p}">التاريخ والوقت: <strong>{e(when_ar)}</strong><br>'
+                 f'المدة: {minutes} دقيقة<br>المكان: {e(where)}</p>')
+    agenda_html = f'<p style="{p};white-space:pre-wrap">{e(agenda)}</p>' if agenda else ''
+    html = (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear Office,</p>'
+        f'<p style="{p}">The {COUNCIL_NAME_EN} board meeting '
+        f'<strong>{e(title)}</strong> {verb_en}.</p>'
+        + detail + agenda_html +
+        f'<p style="{p}">This notice is sent to the office of the board member '
+        'so the meeting can be coordinated in advance.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">إلى مكتب سعادة عضو المجلس،</p>'
+        f'<p style="{p}">{verb_ar} اجتماع مجلس {COUNCIL_NAME_AR} '
+        f'<strong>{e(title)}</strong>.</p>'
+        + detail_ar + agenda_html +
+        f'<p style="{p}">تُرسل هذه الإفادة إلى مكتب عضو المجلس لتنسيق الاجتماع '
+        'مسبقاً.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '</div>'
+    )
+    return subject, text, html
+
 
 def _queue_office_notifications(meeting, kind, invitees):
-    """Queue an office notification per invited member. Never raises."""
+    """Queue an office notification per invited member. Never raises.
+
+    A failure here must not break the meeting itself — the secretary scheduling
+    a board meeting should not lose it because an office address was malformed.
+    """
     try:
         if not invitees:
             return 0
@@ -295,32 +408,21 @@ def _queue_office_notifications(meeting, kind, invitees):
         if not rows:
             return 0
 
-        when = meeting.get('scheduled_at')
-        when_text = when.strftime('%d %B %Y at %H:%M') if when else 'a date to be confirmed'
-        title = meeting.get('title') or 'Board meeting'
-        verb = {'scheduled': 'has been scheduled',
-                'rescheduled': 'has been rescheduled',
-                'cancelled': 'has been cancelled'}.get(kind, 'has been updated')
-        subject = f"EHRDC Board meeting {verb}: {title}"
-        where = meeting.get('location') or ('Online' if meeting.get('is_virtual') else 'To be confirmed')
-        body = (
-            f"The EHRDC Board meeting \"{title}\" {verb}.\n\n"
-            f"Date and time: {when_text}\n"
-            f"Duration: {meeting.get('duration_minutes') or 60} minutes\n"
-            f"Location: {where}\n\n"
-            f"{(meeting.get('agenda') or '').strip()}\n\n"
-            "This notice is sent to the office of the board member so the meeting "
-            "can be coordinated in advance.\n"
-        )
+        subject, text, html = _board_notice_parts(meeting, kind)
         queued = 0
         for r in rows:
-            execute_query("""
-                INSERT INTO board_office_notifications
-                    (meeting_id, board_member_id, office_email, office_name,
-                     kind, subject, body)
-                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s)
-            """, (str(meeting['id']), r['user_id'], r['email'], r.get('office_name'),
-                  kind, subject, body), fetch_all=False)
+            if not (r.get('email') or '').strip():
+                continue
+            outbound_mail.queue(
+                to_email=r['email'].strip(),
+                to_name=r.get('office_name'),
+                subject=subject,
+                body_text=text,
+                body_html=html,
+                kind='board_office_notice',
+                related_type='board_meeting',
+                related_id=str(meeting['id']),
+            )
             queued += 1
         return queued
     except Exception as e:
@@ -460,15 +562,24 @@ def remove_office(office_id):
 def office_notifications():
     """What is queued for the offices, and whether it has actually gone out."""
     try:
+        # Reads outbound_mail, not board_office_notifications. Board notices
+        # moved onto the shared queue so they get the same approval, cap and
+        # audit as everything else; the old table is history and is no longer
+        # written to. Its 46 retired rows are deliberately NOT shown here —
+        # 42 of them announced meetings that no longer exist, and surfacing
+        # them as a backlog would invite someone to try to deliver them.
         rows = execute_query("""
-            SELECT n.id, n.meeting_id, n.office_email, n.office_name, n.kind,
-                   n.subject, n.status, n.queued_at, n.sent_at, n.last_error,
-                   m.title AS meeting_title,
-                   COALESCE(u.full_name, u.email, n.board_member_id) AS member_name
-            FROM board_office_notifications n
-            LEFT JOIN board_meetings m ON m.id = n.meeting_id
-            LEFT JOIN users u ON u.id = n.board_member_id
-            ORDER BY n.queued_at DESC
+            SELECT n.id, n.related_id AS meeting_id, n.to_email AS office_email,
+                   n.to_name AS office_name, n.subject, n.status,
+                   n.created_at AS queued_at, n.sent_at, n.last_error,
+                   n.release_basis,
+                   m.title AS meeting_title
+            FROM outbound_mail n
+            LEFT JOIN board_meetings m
+                   ON n.related_type = 'board_meeting'
+                  AND m.id::text = n.related_id
+            WHERE n.kind = 'board_office_notice'
+            ORDER BY n.created_at DESC
             LIMIT 100
         """) or []
         return jsonify({'success': True, 'data': [{
@@ -477,11 +588,13 @@ def office_notifications():
             # The queue view titles each row with this; selected but never
             # returned, so every notice rendered with a blank heading.
             'subject': r.get('subject'),
-            'member_name': r.get('member_name'),
             'office_email': r.get('office_email'),
             'office_name': r.get('office_name'),
-            'kind': r.get('kind'),
+            # 'kind' was scheduled/rescheduled/cancelled. That now lives in
+            # the subject line rather than a separate column, so it is not
+            # invented here — an empty field would render as a blank label.
             'status': r.get('status'),
+            'release_basis': r.get('release_basis'),
             'queued_at': r['queued_at'].isoformat() if r.get('queued_at') else None,
             'sent_at': r['sent_at'].isoformat() if r.get('sent_at') else None,
         } for r in rows]})
