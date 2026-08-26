@@ -1,4 +1,5 @@
 import * as React from 'react';
+import EventLiveBoard from '@/pages/events/EventLiveBoard';
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -273,6 +274,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -330,6 +332,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -1134,6 +1137,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
               {/* Login Test Route */}
@@ -1190,6 +1194,7 @@ const AppContent: React.FC = () => {
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 

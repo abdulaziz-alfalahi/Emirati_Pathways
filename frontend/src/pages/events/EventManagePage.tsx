@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import EventShareLinkPanel from '@/components/events/EventShareLinkPanel';
 import LocationPicker from '@/components/common/LocationPicker';
 import { CalendarDays, QrCode, Users, Plus, Loader2, RefreshCw, Download, Pencil, Ban } from 'lucide-react';
 
@@ -457,6 +458,10 @@ const EventManagePage: React.FC = () => {
 
           {selected && (
             <div className="space-y-4">
+              {/* The share link sits at the top of the selected event, because
+                  an organiser reaches for it while the event is running rather
+                  than while setting it up. */}
+              <EventShareLinkPanel eventId={selected.id} isRTL={isRTL} />
               <Card className="border-slate-200">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">{selected.title}</CardTitle>
