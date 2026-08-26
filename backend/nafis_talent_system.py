@@ -17,6 +17,21 @@ import bcrypt
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
+from html import escape as html_escape
+
+
+# The platform's name, in one place — mirrors frontend/src/lib/brand.ts.
+# THE QUOTES ARE PART OF THE NAME: "Emirati" / "إماراتي" is the product name
+# quoted inside the descriptive title, not emphasis. Before this was pinned,
+# the landing page and this email carried three different Arabic names between
+# them, which is not cosmetic when the name is the first thing a candidate sees
+# in a message from a government body they have never heard from.
+PLATFORM_NAME_EN = '"Emirati" Human Development Platform'
+PLATFORM_NAME_AR = 'منصة "إماراتي" للتنمية البشرية'
+# The Council is a different body from the platform it runs, and was NOT
+# renamed. Kept here so the two are not confused by whoever edits one of them.
+COUNCIL_NAME_EN = 'Emirati Human Development Council'
+COUNCIL_NAME_AR = 'مجلس تنمية الموارد البشرية الإماراتية'
 
 logger = logging.getLogger(__name__)
 
@@ -27,25 +42,52 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 def _invitation_subject():
-    return ('Complete your registration — Emirati Human Development Platform / '
-            'أكمل تسجيلك — منصة تنمية الموارد البشرية الإماراتية')
+    """Arabic first — see `_invitation_body` for why."""
+    return (f'أكمل تسجيلك — {PLATFORM_NAME_AR} / '
+            f'Complete your registration — {PLATFORM_NAME_EN}')
 
 
 def _invitation_body(full_name, link):
-    """The invitation, in both languages.
+    """The plain-text invitation. ARABIC FIRST, then English.
 
-    Every recipient here is an Emirati national reached through NAFIS, so
-    Arabic is not a translation of the real message — it IS the message for
-    many of them, and burying it under the English would say so.
+    WHY ARABIC LEADS (owner, 2026-08-26): every recipient of this message is an
+    Emirati national reached through NAFIS. Arabic is not a translation of the
+    real message for them — it is the message, and putting English above it
+    makes an Arabic reader scroll past a language they did not ask for to reach
+    their own. The first version sent led with English; that was wrong.
 
     The link is on its own line and never wrapped in punctuation: mail clients
     that auto-link are unreliable about trailing characters, and a link that
     arrives broken looks to the recipient like a broken platform.
+
+    NOTE ON WHAT THIS CANNOT FIX. A plain-text body carries no direction, so a
+    mail client lays the whole thing out left-to-right and the trailing "." and
+    ":" of each Arabic line are rendered at the LEFT edge. Confirmed in Outlook
+    on the first real send, 2026-08-26. Nothing in the text can correct that —
+    the characters are already in the right logical order. This is kept as the
+    fallback and for the reviewer to read; `_invitation_html` is what is
+    actually delivered, and it marks the Arabic block dir="rtl".
     """
     return (
+        f"عزيزي/عزيزتي {full_name}،\n"
+        f"\n"
+        f"تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك "
+        f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+        f"\n"
+        f"───────────────────────────────\n"
+        f"\n"
         f"Dear {full_name},\n"
         f"\n"
-        f"You have been invited to join the Emirati Human Development Platform, "
+        f"You have been invited to join the {PLATFORM_NAME_EN}, "
         f"where you can complete your profile and be matched with opportunities "
         f"from employers across the UAE.\n"
         f"\n"
@@ -56,24 +98,66 @@ def _invitation_body(full_name, link):
         f"The link is valid for 7 days and can only be used once.\n"
         f"If you did not expect this invitation, you can ignore this message.\n"
         f"\n"
-        f"— Emirati Human Development Council\n"
-        f"\n"
-        f"───────────────────────────────\n"
-        f"\n"
-        f"عزيزي/عزيزتي {full_name}،\n"
-        f"\n"
-        f"تمت دعوتك للانضمام إلى منصة تنمية الموارد البشرية الإماراتية، حيث يمكنك "
-        f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
-        f"\n"
-        f"لإكمال التسجيل، افتح الرابط التالي:\n"
-        f"\n"
-        f"{link}\n"
-        f"\n"
-        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
-        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
-        f"\n"
-        f"— مجلس تنمية الموارد البشرية الإماراتية\n"
+        f"— {COUNCIL_NAME_EN}\n"
     )
+
+
+def _invitation_html(full_name, link):
+    """The delivered invitation. ARABIC FIRST, and marked dir="rtl".
+
+    WHY HTML AT ALL, when the text says the same thing: direction. Measured in
+    Outlook on the first real send (2026-08-26), the plain-text Arabic rendered
+    with every full stop and colon at the LEFT edge — "‎.تمت دعوتك" — because a
+    text body carries no direction and the client laid the paragraph out
+    left-to-right. To an Arabic reader that is not a cosmetic wobble; it is the
+    punctuation being in the wrong place in every sentence, in the first message
+    the platform has ever sent them.
+
+    Deliberately plain markup: inline styles only, no external CSS, no images,
+    no tables. Mail clients strip stylesheets, and an image is a tracking pixel
+    to a spam filter on a domain with no sending reputation yet.
+
+    The name is escaped — it comes from a NAFIS CSV, and a stray "<" would
+    otherwise eat the rest of the paragraph.
+    """
+    name = html_escape(full_name or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">عزيزي/عزيزتي {name}،</p>'
+        f'<p style="{p}">تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك '
+        'استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة '
+        'الإمارات.</p>'
+        f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
+        # The URL itself is LTR even inside the Arabic block: left to the
+        # paragraph's rtl direction, a bidi client reorders the punctuation
+        # inside the link text and it stops being recognisable as the same URL.
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
+        'إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">You have been invited to join the {PLATFORM_NAME_EN}, '
+        'where you can complete your profile and be matched with opportunities '
+        'from employers across the UAE.</p>'
+        f'<p style="{p}">To complete your registration, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">The link is valid for 7 days and can only be used '
+        'once.<br>If you did not expect this invitation, you can ignore this '
+        'message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '</div>'
+    )
+
 
 # ─────────────────────────────────────────────────────────────
 # Inlined schema (avoids file-path issues at runtime)
@@ -663,6 +747,7 @@ class NafisTalentSystem:
                             to_name=seeker['full_name'],
                             subject=_invitation_subject(),
                             body_text=_invitation_body(seeker['full_name'], link),
+                            body_html=_invitation_html(seeker['full_name'], link),
                             kind='seeker_invitation',
                             related_type='seeker_invitation',
                             related_id=str(record['id']),

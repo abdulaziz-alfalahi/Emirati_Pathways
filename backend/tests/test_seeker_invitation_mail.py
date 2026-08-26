@@ -194,3 +194,175 @@ def test_the_invitation_is_queued_not_sent():
     assert 'outbound_mail.queue(' in source
     for forbidden in ('send_one', 'send_approved_batch', 'smtplib', 'graph_mail'):
         assert forbidden not in source, f'{forbidden} in the invitation flow'
+
+
+# ── Direction: what the first real send exposed ─────────────────────────────
+#
+# Outlook rendered the plain-text Arabic with every full stop and colon at the
+# LEFT edge — ".تمت دعوتك" — because a text body carries no direction and the
+# client laid the paragraph out left-to-right. The characters were already in
+# the right logical order, so no change to the text could fix it. HTML with an
+# explicit dir is the fix, and these tests keep it.
+
+from nafis_talent_system import _invitation_html  # noqa: E402
+
+
+def test_the_arabic_half_declares_rtl():
+    html = _invitation_html('Dhabya Alfalahi', LINK)
+    assert 'dir="rtl"' in html, (
+        'without an explicit direction the Arabic punctuation renders at the '
+        'wrong edge of every sentence'
+    )
+    assert 'dir="ltr"' in html
+
+
+def test_the_url_stays_ltr_inside_the_arabic_block():
+    """A bidi client reorders punctuation inside link TEXT in an rtl paragraph,
+    and the URL stops being recognisable as the same address."""
+    html = _invitation_html('X', LINK)
+    arabic_half = html.split('<hr', 1)[1]
+    assert 'dir="ltr"' in arabic_half
+
+
+def test_the_name_is_escaped():
+    """Names come from a NAFIS CSV. A stray '<' would eat the paragraph."""
+    html = _invitation_html('Ali <b>x</b>', LINK)
+    assert '&lt;b&gt;' in html
+    assert '<b>' not in html
+
+
+def test_no_duplicate_style_attributes():
+    """A second style attribute on one tag is silently ignored, so the styling
+    that was meant to apply just does not — and nothing reports it."""
+    import re
+    for tag in re.findall(r'<[a-z]+[^>]*>', _invitation_html('X', LINK)):
+        assert tag.count('style=') <= 1, f'duplicate style attribute: {tag}'
+
+
+def test_the_html_carries_no_images_or_external_css():
+    """An image is a tracking pixel to a spam filter, and this domain has no
+    sending reputation yet. Stylesheets are stripped by mail clients anyway."""
+    html = _invitation_html('X', LINK)
+    for forbidden in ('<img', '<link', '<style', 'background-image', 'http://'):
+        assert forbidden not in html, forbidden
+
+
+def test_the_html_and_text_carry_the_same_link():
+    text = _invitation_body('X', LINK)
+    html = _invitation_html('X', LINK)
+    assert LINK in text and LINK in html
+
+
+def test_the_delivered_body_is_the_html_one():
+    """graph_mail prefers body_html when present — so the flow must pass it,
+    or the direction fix is written and never used."""
+    path = os.path.join(BACKEND, 'nafis_talent_system.py')
+    source = open(path, encoding='utf-8').read()
+    assert 'body_html=_invitation_html(' in source
+
+
+# ── The platform's name ─────────────────────────────────────────────────────
+#
+# The quotes are part of the name: "Emirati" / "إماراتي" is the product name
+# quoted inside the descriptive title, not emphasis. Before this was pinned,
+# the landing page and this email carried three different Arabic names between
+# them — and the name is the first thing a candidate sees in a message from a
+# government body they have never heard from.
+
+from nafis_talent_system import (  # noqa: E402
+    PLATFORM_NAME_EN, PLATFORM_NAME_AR, COUNCIL_NAME_EN, COUNCIL_NAME_AR,
+)
+
+
+def test_the_quotes_are_part_of_the_name():
+    assert PLATFORM_NAME_EN == '"Emirati" Human Development Platform'
+    assert PLATFORM_NAME_AR == 'منصة "إماراتي" للتنمية البشرية'
+
+
+def test_the_name_appears_in_the_subject_in_both_languages():
+    subject = _invitation_subject()
+    assert PLATFORM_NAME_EN in subject
+    assert PLATFORM_NAME_AR in subject
+
+
+def test_the_name_appears_in_both_bodies():
+    for render in (_invitation_body, _invitation_html):
+        out = render('X', LINK)
+        assert PLATFORM_NAME_EN in out
+        assert PLATFORM_NAME_AR in out
+
+
+def test_the_superseded_names_are_gone():
+    """Two older Arabic names were in use. Either reappearing means the name
+    has drifted again."""
+    source = open(os.path.join(BACKEND, 'nafis_talent_system.py'),
+                  encoding='utf-8').read()
+    assert 'منصة تنمية الموارد البشرية الإماراتية' not in source.replace(
+        COUNCIL_NAME_AR, '')          # the COUNCIL keeps that wording
+    assert 'منصة رحلة المورد البشري الإماراتي' not in source
+
+
+def test_the_council_was_not_renamed():
+    """Only the platform was renamed. The Council is a different body."""
+    assert COUNCIL_NAME_EN == 'Emirati Human Development Council'
+    assert 'إماراتي"' not in COUNCIL_NAME_AR
+    body = _invitation_body('X', LINK)
+    assert COUNCIL_NAME_EN in body and COUNCIL_NAME_AR in body
+
+
+def test_the_quotes_survive_html_escaping():
+    """html.escape(quote=True) turns " into &quot;. In TEXT content that would
+    render as literal &quot; to the reader — so the name must not be escaped as
+    if it were an attribute value."""
+    html = _invitation_html('X', LINK)
+    assert '"Emirati" Human Development Platform' in html
+    assert '&quot;Emirati&quot;' not in html
+
+
+# ── Arabic leads ────────────────────────────────────────────────────────────
+#
+# Owner, 2026-08-26, after reading the second real send: "The Arabic part comes
+# in the top as it is sent to an Arabic person." Every recipient of this message
+# is an Emirati national reached through NAFIS. Putting English above the Arabic
+# makes them scroll past a language they did not ask for to reach their own.
+
+def test_the_arabic_greeting_comes_before_the_english_one():
+    body = _invitation_body('Dhabya Alfalahi', LINK)
+    assert body.index('عزيزي/عزيزتي') < body.index('Dear Dhabya'), (
+        'English leads the message sent to an Arabic reader'
+    )
+
+
+def test_the_arabic_block_comes_before_the_english_block_in_html():
+    html = _invitation_html('X', LINK)
+    assert html.index('dir="rtl"') < html.index('dir="ltr"')
+
+
+def test_the_subject_leads_in_arabic():
+    subject = _invitation_subject()
+    assert subject.index('أكمل تسجيلك') < subject.index('Complete your')
+
+
+def test_both_languages_survive_the_reordering():
+    """Reordering is where a half of the message quietly goes missing."""
+    for render in (_invitation_body, _invitation_html):
+        out = render('X', LINK)
+        assert 'تمت دعوتك' in out and 'You have been invited' in out
+        assert COUNCIL_NAME_AR in out and COUNCIL_NAME_EN in out
+        assert out.count(LINK) == (2 if render is _invitation_body else 4)
+
+
+def test_the_signature_block_is_not_ours():
+    """Outlook shows "Best Regards / Dubai Government Human Resources Dept. /
+    P.O.Box 242222 / dghr.gov.ae" beneath our message. None of it comes from
+    here — it is appended by Exchange on the tenant side, and it must not be
+    "fixed" by adding a competing signature of our own.
+    """
+    source = open(os.path.join(BACKEND, 'nafis_talent_system.py'),
+                  encoding='utf-8').read()
+    for theirs in ('Best Regards', 'P.O.Box', '242222',
+                   'Human Resources Dept', 'dghr.gov.ae'):
+        assert theirs not in source, (
+            f'{theirs!r} appeared in our template — the Exchange disclaimer is '
+            f'DGHR\'s to change, not something to duplicate here'
+        )
