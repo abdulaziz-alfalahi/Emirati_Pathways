@@ -44,9 +44,24 @@ mkdir -p "$BACKUP_DIR"
 if docker ps -a --format '{{.Names}}' | grep -qx "$NAME"; then
   echo "==> Backing up live container state to $BACKUP_DIR"
   # Env: strip image-provided vars, de-duplicate, keep out of the repo.
+  # LAST occurrence wins, not first — this must match Docker's own rule.
+  #
+  # The overlay below APPENDS its values, and `docker run --env-file` uses the
+  # last value for a repeated key, so an overlay takes effect correctly at run
+  # time. But the container then carries BOTH entries, and de-duplicating
+  # first-wins here would re-capture the value the overlay replaced — silently
+  # reverting it on the very next deploy.
+  #
+  # Measured 2026-08-26: MAIL_SENDING_ENABLED was set true by an overlay, the
+  # container ran with true, and the next deploy put it back to false with
+  # nothing reported. The same would have happened to the JWT secret rotation
+  # this mechanism was written for (docs/jwt_rotation_runbook.md).
+  #
+  # tac/awk/tac keeps the last occurrence while preserving order.
   docker inspect "$NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' \
     | grep -vE '^(PATH|LANG|GPG_KEY|PYTHON_[A-Z_]+)=' \
-    | awk '!seen[substr($0,1,index($0,"=")-1)]++' > "$BACKUP_DIR/backend.env"
+    | tac | awk '!seen[substr($0,1,index($0,"=")-1)]++' | tac \
+    > "$BACKUP_DIR/backend.env"
   chmod 600 "$BACKUP_DIR/backend.env"
 
   # Optional env overlay: any KEY=VALUE lines in this file win over the captured
