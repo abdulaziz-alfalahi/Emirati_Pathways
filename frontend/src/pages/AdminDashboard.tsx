@@ -10,6 +10,7 @@ import AuditLogTab from '@/components/admin/AuditLogTab';
 import StaffInvitationsTab from '@/components/admin/StaffInvitationsTab';
 import OutboundMailReview from '@/components/admin/OutboundMailReview';
 import OutboundMailAudit from '@/components/admin/OutboundMailAudit';
+import OutboundMailTemplates from '@/components/admin/OutboundMailTemplates';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import AIUsagePanel from '@/components/admin/AIUsagePanel';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
@@ -517,6 +518,9 @@ const AdminDashboard = () => {
                 </TabsTrigger>
                 <TabsTrigger value="outbound-mail" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Mail className="h-3.5 w-3.5" />{b('Outbound Mail', 'البريد الصادر')}
+                </TabsTrigger>
+                <TabsTrigger value="mail-templates" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5" />{b('Mail Wording', 'صياغة البريد')}
                 </TabsTrigger>
                 <TabsTrigger value="mail-audit" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Eye className="h-3.5 w-3.5" />{b('Mail Audit', 'مراجعة البريد')}
@@ -1508,6 +1512,10 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
 
               <TabsContent value="outbound-mail" className="space-y-6">
                 <OutboundMailReview />
+              </TabsContent>
+
+              <TabsContent value="mail-templates" className="space-y-6">
+                <OutboundMailTemplates />
               </TabsContent>
 
               <TabsContent value="mail-audit" className="space-y-6">

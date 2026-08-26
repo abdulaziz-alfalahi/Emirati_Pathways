@@ -407,11 +407,37 @@ def approved_template(kind):
 
 
 def released_today(operator_id):
+    """DISTINCT RECIPIENTS released today, not messages.
+
+    The owner set the cap as "10 companies per operator per day" (2026-08-26),
+    and the two are not the same number. A vacancy-verification run sends one
+    message PER VACANCY, so a single employer with twelve open roles would
+    consume twelve of a ten-message allowance — far more restrictive than
+    anyone intended, and restrictive in a way that punishes exactly the large
+    employers the onboarding plan targets.
+
+    Counting distinct addresses makes the cap mean what it says: how many
+    organisations one operator may reach out to in a day, however many
+    vacancies each of them has.
+    """
     row = execute_query(
-        """SELECT count(*) AS n FROM outbound_mail
+        """SELECT count(DISTINCT to_email) AS n FROM outbound_mail
             WHERE released_by = %s AND released_at >= date_trunc('day', now())""",
         (operator_id,), fetch_one=True)
     return int(row['n']) if row else 0
+
+
+def recipients_released_today(operator_id):
+    """The addresses this operator has already reached today, lower-cased.
+
+    Needed as a SET rather than a count: an employer already contacted must not
+    consume a second slot when their remaining vacancies go out.
+    """
+    rows = execute_query(
+        """SELECT DISTINCT lower(to_email) AS a FROM outbound_mail
+            WHERE released_by = %s AND released_at >= date_trunc('day', now())""",
+        (operator_id,)) or []
+    return {r['a'] for r in rows}
 
 
 def releasable(kind):
@@ -453,16 +479,35 @@ def release(kind, operator_id, limit=None):
 
     cap = int(state.get('daily_release_cap') or 500)
     already = released_today(operator_id)
-    remaining = cap - already
-    if remaining <= 0:
-        return {'released': 0, 'blocked': 'daily_cap',
-                'detail': f'{already} of {cap} released today'}
+    remaining = max(0, cap - already)
 
+    # NOT an early return when remaining is 0. An operator at their limit may
+    # still have queued vacancies belonging to an employer they ALREADY reached
+    # today, and those cost no further allowance — refusing them would hold a
+    # company's remaining roles until tomorrow for no benefit to anyone.
+    # Whether anything can go is decided by the trim below.
     candidates = releasable(kind)
     if limit is not None:
         candidates = candidates[:max(0, int(limit))]
-    candidates = candidates[:remaining]
+
+    # Trim by DISTINCT RECIPIENT, not by message count — see released_today.
+    # An employer already reached today costs nothing further, so their
+    # remaining vacancies go out together rather than being split across days,
+    # which would have them receive the same request on three mornings running.
+    already_today = recipients_released_today(operator_id)
+    selected, reached = [], set(already_today)
+    for candidate in candidates:
+        address = (candidate.get('to_email') or '').strip().lower()
+        if address not in reached:
+            if len(reached) - len(already_today) >= remaining:
+                break
+            reached.add(address)
+        selected.append(candidate)
+    candidates = selected
     if not candidates:
+        if remaining <= 0:
+            return {'released': 0, 'blocked': 'daily_cap',
+                    'detail': f'{already} of {cap} organisation(s) reached today'}
         return {'released': 0, 'blocked': None, 'detail': 'nothing to release'}
 
     anomaly = detect_anomaly([c['to_email'] for c in candidates])
@@ -479,11 +524,14 @@ def release(kind, operator_id, limit=None):
             WHERE id = ANY(%s) AND status = 'held'""",
         (operator_id, operator_id, RELEASE_TEMPLATE, ids), fetch_all=False)
 
-    logger.info('outbound mail: %s released %s "%s" message(s) on template v%s',
-                operator_id, len(ids), kind, template['version'])
+    new_recipients = len(reached) - len(already_today)
+    logger.info('outbound mail: %s released %s "%s" message(s) to %s new '
+                'recipient(s) on template v%s',
+                operator_id, len(ids), kind, new_recipients, template['version'])
     return {'released': len(ids), 'blocked': None,
+            'recipients': new_recipients,
             'template_version': template['version'],
-            'remaining_today': remaining - len(ids)}
+            'remaining_today': remaining - new_recipients}
 
 
 #: A run that reaches this many recipient domains never seen before is more

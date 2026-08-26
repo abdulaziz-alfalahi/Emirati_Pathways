@@ -161,33 +161,69 @@ def test_an_unapproved_kind_releases_nothing(monkeypatch):
     assert result['blocked'] == 'no_approved_template'
 
 
+def _cap_setup(monkeypatch, cap, already_count, already_addresses, releasable):
+    monkeypatch.setattr(outbound_mail, 'controls',
+                        lambda: {'paused': False, 'daily_release_cap': cap})
+    monkeypatch.setattr(outbound_mail, 'approved_template', lambda kind: {'version': 1})
+    monkeypatch.setattr(outbound_mail, 'released_today', lambda op: already_count)
+    monkeypatch.setattr(outbound_mail, 'recipients_released_today',
+                        lambda op: set(already_addresses))
+    monkeypatch.setattr(outbound_mail, 'releasable', lambda kind: releasable)
+    monkeypatch.setattr(outbound_mail, 'detect_anomaly', lambda r: None)
+    captured = {}
+    monkeypatch.setattr(outbound_mail, 'execute_query',
+                        lambda *a, **k: captured.update({'ids': a[1][3]}))
+    return captured
+
+
 def test_the_cap_is_per_operator_per_day(monkeypatch):
     """One mistake must not become four hundred emails."""
-    monkeypatch.setattr(outbound_mail, 'controls',
-                        lambda: {'paused': False, 'daily_release_cap': 10})
-    monkeypatch.setattr(outbound_mail, 'approved_template',
-                        lambda kind: {'version': 1})
-    monkeypatch.setattr(outbound_mail, 'released_today', lambda op: 10)
+    _cap_setup(monkeypatch, cap=10, already_count=10, already_addresses=set(),
+               releasable=[])
     result = outbound_mail.release('seeker_invitation', 'op')
     assert result['released'] == 0
     assert result['blocked'] == 'daily_cap'
 
 
-def test_a_release_is_trimmed_to_what_remains_of_the_cap(monkeypatch):
-    """Not refused — trimmed. An operator with 3 left should send 3, not zero,
-    and should be told what remains."""
-    monkeypatch.setattr(outbound_mail, 'controls',
-                        lambda: {'paused': False, 'daily_release_cap': 10})
-    monkeypatch.setattr(outbound_mail, 'approved_template', lambda kind: {'version': 1})
-    monkeypatch.setattr(outbound_mail, 'released_today', lambda op: 7)
-    monkeypatch.setattr(outbound_mail, 'releasable',
-                        lambda kind: [{'id': i, 'to_email': f'a{i}@ehrdc.gov.ae'}
-                                      for i in range(50)])
-    monkeypatch.setattr(outbound_mail, 'detect_anomaly', lambda r: None)
-    captured = {}
-    monkeypatch.setattr(outbound_mail, 'execute_query',
-                        lambda *a, **k: captured.update({'ids': a[1][3]}))
+def test_the_cap_counts_ORGANISATIONS_not_messages(monkeypatch):
+    """The owner set it as "10 companies per operator per day" (2026-08-26).
+
+    A vacancy run sends one message PER VACANCY, so counting messages would let
+    a single employer with twelve open roles consume a ten-message allowance —
+    and it would punish exactly the large employers the onboarding plan targets.
+    """
+    one_employer_many_vacancies = [
+        {'id': i, 'to_email': 'hr@alrostamanigroup.ae'} for i in range(12)]
+    captured = _cap_setup(monkeypatch, cap=10, already_count=0,
+                          already_addresses=set(),
+                          releasable=one_employer_many_vacancies)
+    result = outbound_mail.release('vacancy_verification', 'op')
+    assert result['released'] == 12, 'twelve vacancies at ONE employer were capped'
+    assert result['recipients'] == 1
+    assert result['remaining_today'] == 9
+
+
+def test_an_employer_already_reached_today_costs_no_further_allowance(monkeypatch):
+    """Otherwise their remaining vacancies split across days and they receive
+    the same request on three mornings running."""
+    captured = _cap_setup(
+        monkeypatch, cap=1, already_count=1,
+        already_addresses={'hr@alrostamanigroup.ae'},
+        releasable=[{'id': 1, 'to_email': 'HR@AlRostamaniGroup.ae'}])
+    result = outbound_mail.release('vacancy_verification', 'op')
+    assert result['released'] == 1, 'a matching address was treated as new'
+    assert result['recipients'] == 0
+
+
+def test_a_release_is_trimmed_to_the_organisations_that_remain(monkeypatch):
+    """Not refused — trimmed. An operator with 3 left should reach 3 more
+    employers, not zero, and be told what remains."""
+    many_employers = [{'id': i, 'to_email': f'hr@company{i}.ae'} for i in range(50)]
+    captured = _cap_setup(monkeypatch, cap=10, already_count=7,
+                          already_addresses={f'used{i}@x.ae' for i in range(7)},
+                          releasable=many_employers)
     result = outbound_mail.release('seeker_invitation', 'op')
+    assert result['recipients'] == 3
     assert result['released'] == 3
     assert result['remaining_today'] == 0
     assert len(captured['ids']) == 3
@@ -200,6 +236,7 @@ def test_an_anomaly_pauses_and_releases_nothing(monkeypatch):
     monkeypatch.setattr(outbound_mail, 'released_today', lambda op: 0)
     monkeypatch.setattr(outbound_mail, 'releasable',
                         lambda kind: [{'id': 1, 'to_email': 'a@x.ae'}])
+    monkeypatch.setattr(outbound_mail, 'recipients_released_today', lambda op: set())
     monkeypatch.setattr(outbound_mail, 'detect_anomaly', lambda r: 'looks wrong')
     paused = {}
     monkeypatch.setattr(outbound_mail, 'pause',
