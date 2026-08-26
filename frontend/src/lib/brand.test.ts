@@ -21,17 +21,24 @@ import enHome from '../locales/en/home-complete.json';
 import arHome from '../locales/ar/home-complete.json';
 import enNav from '../locales/en/navigation.json';
 import arNav from '../locales/ar/navigation.json';
+import enRoot from '../locales/en.json';
+import arRoot from '../locales/ar.json';
 
 const en = enHome as Record<string, any>;
 const ar = arHome as Record<string, any>;
 const enN = enNav as Record<string, any>;
 const arN = arNav as Record<string, any>;
+const enR = enRoot as Record<string, any>;
+const arR = arRoot as Record<string, any>;
 
 /** Every Arabic name this platform has been called, that it no longer is. */
 const SUPERSEDED_AR = [
     'منصة رحلة المورد البشري الإماراتي',
-    'منصة تنمية الموارد البشرية الإماراتية',
+    'منصة الإمارات للتنمية البشرية',
+    'منصة الرحلة الإماراتية',
 ];
+// Deliberately NOT in that list: منصة تنمية الموارد البشرية الإماراتية is the
+// COUNCIL's name, which was not renamed, so it legitimately still appears.
 
 describe('the platform name', () => {
     it('keeps its quotes — they are part of the name, not emphasis', () => {
@@ -92,5 +99,26 @@ describe('the header, which appears on every page', () => {
         // default and an Arabic reader saw the English name on every page.
         expect(arN.platform_title).toBeDefined();
         expect(arN.platform_title).toBe(PLATFORM_NAME_AR);
+    });
+});
+
+describe('the primary locale files (src/locales/{en,ar}.json)', () => {
+    // Loaded by i18n/config.ts, and what the live HEADER reads — a separate,
+    // older set from the per-page files under locales/en/. Correcting only the
+    // per-page ones left the header showing the old name on every page.
+    it('carries the current name in both languages', () => {
+        expect(enR.platform_title).toBe(PLATFORM_NAME_EN);
+        expect(arR.platform_title).toBe(PLATFORM_NAME_AR);
+        expect(enR.features_title).toContain(PLATFORM_NAME_EN);
+        expect(arR.features_title).toContain(PLATFORM_NAME_AR);
+        expect(enR.footer_copyright).toContain(PLATFORM_NAME_EN);
+        expect(arR.footer_copyright).toContain(PLATFORM_NAME_AR);
+    });
+
+    it('carries none of the superseded Arabic names', () => {
+        const blob = JSON.stringify(arR) + JSON.stringify(enR);
+        for (const old of SUPERSEDED_AR) {
+            expect(blob).not.toContain(old);
+        }
     });
 });
