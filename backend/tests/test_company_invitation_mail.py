@@ -56,25 +56,83 @@ def test_the_company_name_is_in_the_subject():
     assert COMPANY in _company_invitation_subject(COMPANY)
 
 
-def test_the_message_says_what_they_are_invited_AS():
-    """"You have been invited" without saying as what is how an employer
-    decides a message is phishing."""
-    for role, label in (('employer_admin', 'Employer Administrator'),
-                        ('recruiter', 'Recruiter'),
-                        ('hr_manager', 'HR Manager')):
-        body = _company_invitation_body(COMPANY, LINK, role)
-        assert label in body
-        assert 'صفة الدعوة' in body
+def test_the_message_says_what_the_invitation_GRANTS_not_who_the_reader_is():
+    """Owner, 2026-08-26: "The invitation is to join as a recruiter; what if he
+    is the HR manager?"
+
+    These addresses come from a NAFIS vacancy CSV — usually hr@ or info@, a
+    shared mailbox — so the operator was guessing the job title of somebody
+    they cannot identify, and the message asserted that guess back to them.
+    It now describes the ACCESS, which is a fact about the account rather than
+    a claim about the reader.
+    """
+    admin = _company_invitation_body(COMPANY, LINK, 'employer_admin')
+    assert 'manage your organisation' in admin
+    assert 'invite your colleagues' in admin
+
+    recruiter = _company_invitation_body(COMPANY, LINK, 'recruiter')
+    assert 'publish vacancies and review candidates' in recruiter
+
+    for body in (admin, recruiter):
+        # No job title is asserted about the reader in either language.
+        assert 'Invited as:' not in body
+        assert 'صفة الدعوة' not in body
+
+
+def test_the_message_tells_the_wrong_reader_what_to_do():
+    """A shared mailbox means the first reader is often not the right person,
+    and a government email with no instruction gets deleted rather than
+    forwarded."""
+    body = _company_invitation_body(COMPANY, LINK, 'employer_admin')
+    assert 'pass this message to the right colleague' in body
+    assert 'تحويل الرسالة إلى الزميل المختص' in body
+
+
+def test_a_role_the_system_cannot_grant_is_not_offered():
+    """The template once carried labels for HR Manager and HR, which
+    ALLOWED_INVITE_ROLES cannot produce — it offered a choice the system does
+    not have."""
+    from growth_system import _ROLE_LABELS, GrowthSystem
+    assert set(_ROLE_LABELS) <= set(GrowthSystem.ALLOWED_INVITE_ROLES)
 
 
 def test_an_unknown_role_still_reads_sensibly():
-    """The role comes from operator input, so it must not render as a raw
-    identifier or an empty space in a message to a real employer."""
+    """The role reaches the template from operator input, so it must never
+    render as a raw identifier or an empty space to a real employer."""
     for role in (None, '', 'something_new'):
         body = _company_invitation_body(COMPANY, LINK, role)
-        assert 'Recruiter or HR Manager' in body
         assert 'None' not in body
-        assert 'صفة الدعوة: \n' not in body
+        assert 'something_new' not in body
+        assert 'will be able to publish vacancies' in body
+
+
+def test_first_contact_makes_the_reader_the_account_owner():
+    """The company knows who is who and the operator does not, so the first
+    person to redeem administers their own account and invites colleagues from
+    inside. The guess disappears rather than being made more precisely."""
+    from growth_system import GrowthSystem
+    assert GrowthSystem._validate_role(None) == 'employer_admin'
+    assert GrowthSystem._validate_role('') == 'employer_admin'
+
+
+def test_an_unrecognised_role_still_degrades_rather_than_widening():
+    """Deliberately different from the absent case. "Nobody chose" and
+    "something supplied a value we do not understand" are different
+    situations, and collapsing them would turn a typo into a privilege
+    escalation."""
+    from growth_system import GrowthSystem
+    for junk in ('hr_manager', 'nonsense', 'admin', 123, object()):
+        assert GrowthSystem._validate_role(junk) == 'recruiter'
+
+
+def test_the_approval_sample_shows_BOTH_role_variants():
+    """The role sentence changes the WORDING, not just a name, so one
+    rendering does not represent every message the template can send. Without
+    this the owner approves one variant and the platform sends the other."""
+    from services.mail_templates import render
+    _subject, text, _html = render('company_invitation')
+    assert 'manage your organisation' in text
+    assert 'publish vacancies and review candidates' in text
 
 
 def test_the_link_appears_in_both_halves_and_alone_on_its_line():

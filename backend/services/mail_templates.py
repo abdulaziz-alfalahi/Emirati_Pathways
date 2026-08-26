@@ -51,10 +51,23 @@ def _seeker_invitation():
             _invitation_html(_P['name'], _P['link']))
 
 
+#: The company invitation's role sentence CHANGES THE WORDING, not just a name,
+#: so one rendering does not represent every message this template can send.
+#: Both variants are rendered into the sample and the fingerprint: the owner
+#: reads what each can say, and editing either one invalidates the approval.
+_COMPANY_ROLE_VARIANTS = ('employer_admin', 'recruiter')
+
+
 def _company_invitation():
-    return (_company_invitation_subject(_P['name']),
-            _company_invitation_body(_P['name'], _P['link'], _P['role']),
-            _company_invitation_html(_P['name'], _P['link'], _P['role']))
+    subject = _company_invitation_subject(_P['name'])
+    bodies, htmls = [], []
+    for role in _COMPANY_ROLE_VARIANTS:
+        bodies.append(
+            f'[ if invited as: {role} ]\n\n'
+            + _company_invitation_body(_P['name'], _P['link'], role))
+        htmls.append(_company_invitation_html(_P['name'], _P['link'], role))
+    separator = '\n\n' + ('=' * 60) + '\n\n'
+    return subject, separator.join(bodies), separator.join(htmls)
 
 
 def _vacancy_verification():

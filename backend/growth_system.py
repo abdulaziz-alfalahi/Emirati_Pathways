@@ -42,17 +42,29 @@ from html import escape as html_escape
 #: What an invited company is being asked to become. The operator picks the
 #: role at invite time, so the message must say which one — "you have been
 #: invited" without saying as what is how an employer decides it is phishing.
+#: What the invitation GRANTS — not who the reader is.
+#
+# The old version named job titles, including HR Manager and HR, which
+# ALLOWED_INVITE_ROLES cannot produce: it offered the reader a choice the system
+# does not have. Worse, it told a person their own job title, guessed by an
+# operator who had only a shared mailbox address to go on.
+#
+# These describe access instead, which is a fact about the account rather than
+# an assertion about the reader.
 _ROLE_LABELS = {
-    'employer_admin': ('Employer Administrator', 'مسؤول جهة العمل'),
-    'recruiter': ('Recruiter', 'أخصائي توظيف'),
-    'hr_manager': ('HR Manager', 'مدير الموارد البشرية'),
-    'hr': ('HR', 'الموارد البشرية'),
+    'employer_admin': (
+        'manage your organisation\'s account, publish vacancies, and invite '
+        'your colleagues',
+        'إدارة حساب مؤسستكم ونشر الشواغر ودعوة زملائكم'),
+    'recruiter': (
+        'publish vacancies and review candidates',
+        'نشر الشواغر والاطلاع على المرشحين'),
 }
 
 
 def _role_label(role, arabic=False):
     en, ar = _ROLE_LABELS.get((role or '').strip().lower(),
-                              ('Recruiter or HR Manager', 'أخصائي توظيف أو مدير موارد بشرية'))
+                              _ROLE_LABELS['recruiter'])
     return ar if arabic else en
 
 
@@ -191,7 +203,9 @@ def _company_invitation_body(company_name, link, role=None):
         f"Your organisation has been invited to join the {PLATFORM_NAME_EN}, "
         f"where you can publish vacancies and review qualified Emirati candidates.\n"
         f"\n"
-        f"Invited as: {_role_label(role)}\n"
+        f"Whoever accepts this invitation will be able to "
+        f"{_role_label(role)}. If that is not you, please pass this message to "
+        f"the right colleague — the link works for whoever opens it.\n"
         f"\n"
         f"To complete your registration, open this link:\n"
         f"\n"
@@ -210,7 +224,9 @@ def _company_invitation_body(company_name, link, role=None):
         f"تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنكم نشر "
         f"الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.\n"
         f"\n"
-        f"صفة الدعوة: {_role_label(role, arabic=True)}\n"
+        f"سيتمكّن من يقبل هذه الدعوة من {_role_label(role, arabic=True)}. "
+        f"وإذا لم تكن الشخص المعني، يُرجى تحويل الرسالة إلى الزميل المختص — "
+        f"فالرابط يعمل لمن يفتحه.\n"
         f"\n"
         f"لإكمال التسجيل، افتح الرابط التالي:\n"
         f"\n"
@@ -246,7 +262,10 @@ def _company_invitation_html(company_name, link, role=None):
         f'<p style="{p}">Your organisation has been invited to join the '
         f'{PLATFORM_NAME_EN}, where you can publish vacancies and review '
         'qualified Emirati candidates.</p>'
-        f'<p style="{p}">Invited as: <strong>{html_escape(_role_label(role))}</strong></p>'
+        f'<p style="{p}">Whoever accepts this invitation will be able to '
+        f'<strong>{html_escape(_role_label(role))}</strong>. If that is not you, '
+        'please pass this message to the right colleague — the link works for '
+        'whoever opens it.</p>'
         f'<p style="{p}">To complete your registration, open this link:</p>'
         f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
         f'<p style="{p}">The link is valid for 7 days and can only be used '
@@ -259,7 +278,10 @@ def _company_invitation_html(company_name, link, role=None):
         f'<p style="{p}">السادة/{name} المحترمين،</p>'
         f'<p style="{p}">تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث '
         'يمكنكم نشر الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.</p>'
-        f'<p style="{p}">صفة الدعوة: <strong>{html_escape(_role_label(role, arabic=True))}</strong></p>'
+        f'<p style="{p}">سيتمكّن من يقبل هذه الدعوة من '
+        f'<strong>{html_escape(_role_label(role, arabic=True))}</strong>. وإذا لم '
+        'تكن الشخص المعني، يُرجى تحويل الرسالة إلى الزميل المختص — فالرابط يعمل '
+        'لمن يفتحه.</p>'
         f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
         # The URL stays LTR inside the Arabic block — see the seeker invitation.
         f'<p style="{p};text-align:right" dir="ltr">'
@@ -301,19 +323,46 @@ class GrowthSystem:
     # workspace.manage_employees, i.e. the ability to add and remove team
     # members. It can only be set by the operator who creates the invitation.
     ALLOWED_INVITE_ROLES = ('recruiter', 'employer_admin')
-    DEFAULT_INVITE_ROLE = 'recruiter'
+
+    #: What a FIRST CONTACT with a company confers when no role is named.
+    #
+    # Owner's decision, 2026-08-26. Outreach invitations go to an address taken
+    # from a NAFIS vacancy CSV — usually hr@ or info@, a shared mailbox — so the
+    # operator was guessing the job title of somebody they cannot identify, and
+    # the invitation then asserted that guess back to them. Whoever opened it
+    # received the guessed role.
+    #
+    # The company knows who is who and the operator does not, so the first
+    # person to redeem becomes the ADMINISTRATOR of their own company account
+    # and invites their own recruiters and HR managers from inside. The guess
+    # disappears rather than being made more precisely.
+    FIRST_CONTACT_ROLE = 'employer_admin'
+
+    #: Where an UNRECOGNISED value lands. Deliberately different from
+    #: FIRST_CONTACT_ROLE and deliberately the least-privileged option: "the
+    #: operator did not name a role" and "something supplied a role we do not
+    #: understand" are different situations, and only the first is a decision.
+    #: Collapsing them would turn a typo into a privilege escalation.
+    FALLBACK_ROLE = 'recruiter'
+
+    #: Kept as an alias: other modules and tests refer to it.
+    DEFAULT_INVITE_ROLE = FIRST_CONTACT_ROLE
 
     @classmethod
     def _validate_role(cls, role):
-        """Return role if it is an allowed invite role, else the safe default.
+        """Return the role an invitation should confer. Never raises.
 
-        Never raises: an operator typo must not break invite generation, and an
-        invitee-supplied value must never widen privileges. Anything unknown
-        degrades to the least-privileged role.
+        An operator typo must not break invite generation, and nothing supplied
+        by an invitee may ever widen privileges.
         """
+        if role is None or (isinstance(role, str) and not role.strip()):
+            # Nobody chose. This is bulk outreach to a company that is not on
+            # the platform yet, so it is a first contact.
+            return cls.FIRST_CONTACT_ROLE
         if isinstance(role, str) and role.strip() in cls.ALLOWED_INVITE_ROLES:
             return role.strip()
-        return cls.DEFAULT_INVITE_ROLE
+        # Present but unrecognised — degrade, never widen.
+        return cls.FALLBACK_ROLE
 
     def _generate_synthetic_eid(self, cur):
         """Generate a unique 15-character synthetic EID for users without one."""
