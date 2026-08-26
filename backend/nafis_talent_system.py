@@ -28,9 +28,12 @@ from html import escape as html_escape
 # in a message from a government body they have never heard from.
 PLATFORM_NAME_EN = '"Emirati" Human Development Platform'
 PLATFORM_NAME_AR = 'منصة "إماراتي" للتنمية البشرية'
-# The Council is a different body from the platform it runs, and was NOT
-# renamed. Kept here so the two are not confused by whoever edits one of them.
-COUNCIL_NAME_EN = 'Emirati Human Development Council'
+# The Council is a different body from the platform it runs, so it carries no
+# quotes. Its English name was wrong here until 2026-08-26 — "Emirati Human
+# Development Council", omitting "Resources" — caught because our sign-off and
+# the Exchange signature sat one above the other in the same message and
+# disagreed. The Arabic is plural, which is what settles it.
+COUNCIL_NAME_EN = 'Emirati Human Resources Development Council'
 COUNCIL_NAME_AR = 'مجلس تنمية الموارد البشرية الإماراتية'
 
 logger = logging.getLogger(__name__)

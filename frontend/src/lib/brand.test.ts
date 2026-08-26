@@ -81,9 +81,11 @@ describe('the locale files agree with it', () => {
 });
 
 describe('the Council', () => {
-    it('was not renamed along with the platform', () => {
-        // A different body from the platform it runs. It has no quotes.
-        expect(COUNCIL_NAME_EN).toBe('Emirati Human Development Council');
+    it('keeps its own name, without the platform\'s quotes', () => {
+        // Ours dropped "Resources" until 2026-08-26. It surfaced only because
+        // our sign-off and the Exchange signature sat one above the other in a
+        // delivered email and disagreed.
+        expect(COUNCIL_NAME_EN).toBe('Emirati Human Resources Development Council');
         expect(COUNCIL_NAME_AR).not.toContain('"');
         expect(COUNCIL_NAME_EN).not.toContain('"');
     });
