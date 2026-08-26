@@ -194,3 +194,68 @@ def test_the_invitation_is_queued_not_sent():
     assert 'outbound_mail.queue(' in source
     for forbidden in ('send_one', 'send_approved_batch', 'smtplib', 'graph_mail'):
         assert forbidden not in source, f'{forbidden} in the invitation flow'
+
+
+# ── Direction: what the first real send exposed ─────────────────────────────
+#
+# Outlook rendered the plain-text Arabic with every full stop and colon at the
+# LEFT edge — ".تمت دعوتك" — because a text body carries no direction and the
+# client laid the paragraph out left-to-right. The characters were already in
+# the right logical order, so no change to the text could fix it. HTML with an
+# explicit dir is the fix, and these tests keep it.
+
+from nafis_talent_system import _invitation_html  # noqa: E402
+
+
+def test_the_arabic_half_declares_rtl():
+    html = _invitation_html('Dhabya Alfalahi', LINK)
+    assert 'dir="rtl"' in html, (
+        'without an explicit direction the Arabic punctuation renders at the '
+        'wrong edge of every sentence'
+    )
+    assert 'dir="ltr"' in html
+
+
+def test_the_url_stays_ltr_inside_the_arabic_block():
+    """A bidi client reorders punctuation inside link TEXT in an rtl paragraph,
+    and the URL stops being recognisable as the same address."""
+    html = _invitation_html('X', LINK)
+    arabic_half = html.split('<hr', 1)[1]
+    assert 'dir="ltr"' in arabic_half
+
+
+def test_the_name_is_escaped():
+    """Names come from a NAFIS CSV. A stray '<' would eat the paragraph."""
+    html = _invitation_html('Ali <b>x</b>', LINK)
+    assert '&lt;b&gt;' in html
+    assert '<b>' not in html
+
+
+def test_no_duplicate_style_attributes():
+    """A second style attribute on one tag is silently ignored, so the styling
+    that was meant to apply just does not — and nothing reports it."""
+    import re
+    for tag in re.findall(r'<[a-z]+[^>]*>', _invitation_html('X', LINK)):
+        assert tag.count('style=') <= 1, f'duplicate style attribute: {tag}'
+
+
+def test_the_html_carries_no_images_or_external_css():
+    """An image is a tracking pixel to a spam filter, and this domain has no
+    sending reputation yet. Stylesheets are stripped by mail clients anyway."""
+    html = _invitation_html('X', LINK)
+    for forbidden in ('<img', '<link', '<style', 'background-image', 'http://'):
+        assert forbidden not in html, forbidden
+
+
+def test_the_html_and_text_carry_the_same_link():
+    text = _invitation_body('X', LINK)
+    html = _invitation_html('X', LINK)
+    assert LINK in text and LINK in html
+
+
+def test_the_delivered_body_is_the_html_one():
+    """graph_mail prefers body_html when present — so the flow must pass it,
+    or the direction fix is written and never used."""
+    path = os.path.join(BACKEND, 'nafis_talent_system.py')
+    source = open(path, encoding='utf-8').read()
+    assert 'body_html=_invitation_html(' in source
