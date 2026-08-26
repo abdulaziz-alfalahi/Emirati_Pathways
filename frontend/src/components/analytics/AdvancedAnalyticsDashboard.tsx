@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -221,7 +222,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
-          <p className="text-gray-600 mt-1">AI-powered insights for the Emirati Human Development Platform</p>
+          <p className="text-gray-600 mt-1">AI-powered insights for the {PLATFORM_NAME_EN}</p>
         </div>
         <div className="flex items-center space-x-3">
           <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>

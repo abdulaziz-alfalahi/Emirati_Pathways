@@ -302,9 +302,15 @@ def test_the_superseded_names_are_gone():
     assert 'منصة رحلة المورد البشري الإماراتي' not in source
 
 
-def test_the_council_was_not_renamed():
-    """Only the platform was renamed. The Council is a different body."""
-    assert COUNCIL_NAME_EN == 'Emirati Human Development Council'
+def test_the_council_is_named_correctly_and_has_no_quotes():
+    """The Council is a different body from the platform, and keeps its own name.
+
+    Ours said "Emirati Human Development Council" until 2026-08-26, dropping
+    "Resources". It surfaced only because our sign-off and the Exchange
+    signature appeared one above the other in the same delivered email and did
+    not match — nothing in the codebase could have caught it.
+    """
+    assert COUNCIL_NAME_EN == 'Emirati Human Resources Development Council'
     assert 'إماراتي"' not in COUNCIL_NAME_AR
     body = _invitation_body('X', LINK)
     assert COUNCIL_NAME_EN in body and COUNCIL_NAME_AR in body

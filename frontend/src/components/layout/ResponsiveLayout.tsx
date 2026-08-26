@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -395,7 +396,7 @@ const TopHeader: React.FC<{
 
         <div className="flex items-center space-x-2">
           <h1 className="text-xl font-bold text-foreground">
-            {isMobile ? 'EHD Platform' : 'Emirati Human Development Platform'}
+            {isMobile ? 'EHD Platform' : PLATFORM_NAME_EN}
           </h1>
           {!isMobile && (
             <Badge variant="outline" className="hidden sm:flex">

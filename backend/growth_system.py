@@ -27,6 +27,273 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    from backend import outbound_mail
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+
+from html import escape as html_escape
+
+
+#: What an invited company is being asked to become. The operator picks the
+#: role at invite time, so the message must say which one — "you have been
+#: invited" without saying as what is how an employer decides it is phishing.
+#: What the invitation GRANTS — not who the reader is.
+#
+# The old version named job titles, including HR Manager and HR, which
+# ALLOWED_INVITE_ROLES cannot produce: it offered the reader a choice the system
+# does not have. Worse, it told a person their own job title, guessed by an
+# operator who had only a shared mailbox address to go on.
+#
+# These describe access instead, which is a fact about the account rather than
+# an assertion about the reader.
+_ROLE_LABELS = {
+    'employer_admin': (
+        'manage your organisation\'s account, publish vacancies, and invite '
+        'your colleagues',
+        'إدارة حساب مؤسستكم ونشر الشواغر ودعوة زملائكم'),
+    'recruiter': (
+        'publish vacancies and review candidates',
+        'نشر الشواغر والاطلاع على المرشحين'),
+}
+
+
+def _role_label(role, arabic=False):
+    en, ar = _ROLE_LABELS.get((role or '').strip().lower(),
+                              _ROLE_LABELS['recruiter'])
+    return ar if arabic else en
+
+
+def _vacancy_verification_subject(company_name, job_title):
+    """Company AND job title, English first — this reaches an employer.
+
+    A CSV import sends one of these per vacancy row, so an employer with twelve
+    open roles receives twelve messages, and the reviewer sees twelve queue
+    entries. Without the job title in the subject they are indistinguishable —
+    to the employer and to whoever is approving them.
+    """
+    return (f'Verify the vacancy "{job_title}" — {company_name} / '
+            f'التحقق من شاغر "{job_title}" — {company_name}')
+
+
+def _vacancy_verification_body(company_name, job_title, link):
+    """Plain-text vacancy verification, ENGLISH first.
+
+    Employer messages lead in English (owner, 2026-08-26): this arrives in a
+    shared HR mailbox, which is business correspondence in the UAE and is
+    frequently not read in Arabic. The candidate invitation still leads in
+    Arabic, because that audience is the opposite case.
+    """
+    return (
+        f"Dear {company_name},\n"
+        f"\n"
+        f"A vacancy at your organisation — \"{job_title}\" — appears in the NAFIS "
+        f"data provided to us.\n"
+        f"\n"
+        f"Please confirm its details so it can be shown to qualified Emirati "
+        f"candidates, and review those who match your requirements.\n"
+        f"\n"
+        f"To confirm, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"If this vacancy is no longer open, or your organisation did not expect "
+        f"this message, you can ignore it.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"وردنا ضمن بيانات نافس شاغر لديكم بعنوان \"{job_title}\".\n"
+        f"\n"
+        f"يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين المؤهلين "
+        f"والاطلاع على من يطابق متطلباتكم.\n"
+        f"\n"
+        f"للتأكيد، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع هذه الرسالة، "
+        f"يمكنكم تجاهلها.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+    )
+
+
+def _vacancy_verification_html(company_name, job_title, link):
+    """The delivered vacancy verification. ENGLISH block first — see the body.
+
+    Company name and job title BOTH come from a NAFIS vacancy CSV, so both are
+    escaped — a job title is free text typed by an employer, which makes it the
+    likelier of the two to contain a character that breaks markup.
+    """
+    name = html_escape(company_name or '')
+    title = html_escape(job_title or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">A vacancy at your organisation — <strong>{title}</strong> '
+        '— appears in the NAFIS data provided to us.</p>'
+        f'<p style="{p}">Please confirm its details so it can be shown to '
+        'qualified Emirati candidates, and review those who match your '
+        'requirements.</p>'
+        f'<p style="{p}">To confirm, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">If this vacancy is no longer open, or your organisation '
+        'did not expect this message, you can ignore it.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">وردنا ضمن بيانات نافس شاغر لديكم بعنوان '
+        f'<strong>{title}</strong>.</p>'
+        f'<p style="{p}">يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين '
+        'المؤهلين والاطلاع على من يطابق متطلباتكم.</p>'
+        f'<p style="{p}">للتأكيد، افتح الرابط التالي:</p>'
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع '
+        'هذه الرسالة، يمكنكم تجاهلها.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '</div>'
+    )
+
+
+def _company_invitation_subject(company_name):
+    """ENGLISH first, unlike the candidate invitation.
+
+    Owner, 2026-08-26: employer messages lead in English. The audiences differ.
+    A NAFIS candidate is an Emirati national for whom Arabic IS the message; an
+    employer message arrives in a shared HR mailbox, which is business
+    correspondence in the UAE and is frequently not read in Arabic at all.
+    Leading in the wrong language for either audience buries the half that
+    matters to them.
+
+    The company's own name is in the subject because an employer receiving an
+    unexpected government email scans the subject line for something that
+    identifies THEM before deciding it is genuine.
+    """
+    return (f'Invitation to join the {PLATFORM_NAME_EN} — {company_name} / '
+            f'دعوة للانضمام إلى {PLATFORM_NAME_AR} — {company_name}')
+
+
+def _company_invitation_body(company_name, link, role=None):
+    """Plain-text company invitation, Arabic first.
+
+    See `_invitation_html` for why the delivered copy is HTML: a text body
+    carries no direction, so a mail client renders the trailing "." and ":" of
+    every Arabic line at the left edge.
+    """
+    return (
+        f"Dear {company_name},\n"
+        f"\n"
+        f"Your organisation has been invited to join the {PLATFORM_NAME_EN}, "
+        f"where you can publish vacancies and review qualified Emirati candidates.\n"
+        f"\n"
+        f"Whoever accepts this invitation will be able to "
+        f"{_role_label(role)}. If that is not you, please pass this message to "
+        f"the right colleague — the link works for whoever opens it.\n"
+        f"\n"
+        f"To complete your registration, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"The link is valid for 7 days and can only be used once.\n"
+        f"If your organisation did not expect this invitation, you can ignore "
+        f"this message.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنكم نشر "
+        f"الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.\n"
+        f"\n"
+        f"سيتمكّن من يقبل هذه الدعوة من {_role_label(role, arabic=True)}. "
+        f"وإذا لم تكن الشخص المعني، يُرجى تحويل الرسالة إلى الزميل المختص — "
+        f"فالرابط يعمل لمن يفتحه.\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+    )
+
+
+def _company_invitation_html(company_name, link, role=None):
+    """The delivered company invitation. ENGLISH block first — see the body.
+
+    Same shape as the seeker invitation, and for the same measured reason: in
+    Outlook a plain-text Arabic paragraph renders with its punctuation at the
+    LEFT edge, because a text body carries no direction.
+
+    The company name is escaped. It arrives from a NAFIS vacancy CSV — the same
+    source that produced 126 invitation tokens to real employers — and a stray
+    "<" in a trade name would eat the rest of the paragraph.
+    """
+    name = html_escape(company_name or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">Your organisation has been invited to join the '
+        f'{PLATFORM_NAME_EN}, where you can publish vacancies and review '
+        'qualified Emirati candidates.</p>'
+        f'<p style="{p}">Whoever accepts this invitation will be able to '
+        f'<strong>{html_escape(_role_label(role))}</strong>. If that is not you, '
+        'please pass this message to the right colleague — the link works for '
+        'whoever opens it.</p>'
+        f'<p style="{p}">To complete your registration, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">The link is valid for 7 days and can only be used '
+        'once.<br>If your organisation did not expect this invitation, you can '
+        'ignore this message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث '
+        'يمكنكم نشر الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.</p>'
+        f'<p style="{p}">سيتمكّن من يقبل هذه الدعوة من '
+        f'<strong>{html_escape(_role_label(role, arabic=True))}</strong>. وإذا لم '
+        'تكن الشخص المعني، يُرجى تحويل الرسالة إلى الزميل المختص — فالرابط يعمل '
+        'لمن يفتحه.</p>'
+        f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
+        # The URL stays LTR inside the Arabic block — see the seeker invitation.
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
+        'إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '</div>'
+    )
+
+
 class GrowthSystem:
     def __init__(self, db_connection=None):
         self.conn = db_connection
@@ -56,19 +323,46 @@ class GrowthSystem:
     # workspace.manage_employees, i.e. the ability to add and remove team
     # members. It can only be set by the operator who creates the invitation.
     ALLOWED_INVITE_ROLES = ('recruiter', 'employer_admin')
-    DEFAULT_INVITE_ROLE = 'recruiter'
+
+    #: What a FIRST CONTACT with a company confers when no role is named.
+    #
+    # Owner's decision, 2026-08-26. Outreach invitations go to an address taken
+    # from a NAFIS vacancy CSV — usually hr@ or info@, a shared mailbox — so the
+    # operator was guessing the job title of somebody they cannot identify, and
+    # the invitation then asserted that guess back to them. Whoever opened it
+    # received the guessed role.
+    #
+    # The company knows who is who and the operator does not, so the first
+    # person to redeem becomes the ADMINISTRATOR of their own company account
+    # and invites their own recruiters and HR managers from inside. The guess
+    # disappears rather than being made more precisely.
+    FIRST_CONTACT_ROLE = 'employer_admin'
+
+    #: Where an UNRECOGNISED value lands. Deliberately different from
+    #: FIRST_CONTACT_ROLE and deliberately the least-privileged option: "the
+    #: operator did not name a role" and "something supplied a role we do not
+    #: understand" are different situations, and only the first is a decision.
+    #: Collapsing them would turn a typo into a privilege escalation.
+    FALLBACK_ROLE = 'recruiter'
+
+    #: Kept as an alias: other modules and tests refer to it.
+    DEFAULT_INVITE_ROLE = FIRST_CONTACT_ROLE
 
     @classmethod
     def _validate_role(cls, role):
-        """Return role if it is an allowed invite role, else the safe default.
+        """Return the role an invitation should confer. Never raises.
 
-        Never raises: an operator typo must not break invite generation, and an
-        invitee-supplied value must never widen privileges. Anything unknown
-        degrades to the least-privileged role.
+        An operator typo must not break invite generation, and nothing supplied
+        by an invitee may ever widen privileges.
         """
+        if role is None or (isinstance(role, str) and not role.strip()):
+            # Nobody chose. This is bulk outreach to a company that is not on
+            # the platform yet, so it is a first contact.
+            return cls.FIRST_CONTACT_ROLE
         if isinstance(role, str) and role.strip() in cls.ALLOWED_INVITE_ROLES:
             return role.strip()
-        return cls.DEFAULT_INVITE_ROLE
+        # Present but unrecognised — degrade, never widen.
+        return cls.FALLBACK_ROLE
 
     def _generate_synthetic_eid(self, cur):
         """Generate a unique 15-character synthetic EID for users without one."""
@@ -92,7 +386,11 @@ class GrowthSystem:
             'total_rows': 0,
             'companies_created': 0,
             'jobs_created': 0,
-            'emails_sent': 0,
+            # NOT 'emails_sent'. Nothing is sent here; each message waits
+            # for per-message approval. The old key fed a response that said
+            # "Sent N emails" when none had been.
+            'messages_queued': 0,
+            'without_email_on_file': 0,
             'errors': []
         }
         
@@ -249,9 +547,15 @@ class GrowthSystem:
                         # 4. Generate Magic Link
                         token_str = self._generate_verification_token(cur, job_id, company_email, company_name)
                         
-                        # 5. "Send" Email
-                        self._mock_send_email(company_email, company_name, job_title, token_str)
-                        report['emails_sent'] += 1
+                        # 5. Queue the verification email for approval.
+                        # On the SAME cursor as the job and its token, so a row
+                        # that rolls back does not leave a message behind.
+                        if self._queue_verification_email(
+                                cur, company_email, company_name, job_title,
+                                token_str, job_id):
+                            report['messages_queued'] += 1
+                        else:
+                            report['without_email_on_file'] += 1
                         
                         cur.execute("RELEASE SAVEPOINT sp_row")
                         
@@ -321,18 +625,40 @@ class GrowthSystem:
         
         return token
 
-    def _mock_send_email(self, email, company, job, token):
-        # MOCK EMAIL SENDER
-        # In real life, use SendGrid/SMTP
-        link = f"http://localhost:8089/verify-job/{token}"
-        print(f"\n[EMAIL SIMULATION] ---------------------------------------------------")
-        print(f"To: {email}")
-        print(f"Subject: Verify your vacancy for {job} at {company}")
-        print(f"Body:")
-        print(f"Hello {company},")
-        print(f"We have identified a vacancy '{job}' matching high-potential Emirati candidates.")
-        print(f"Please click here to verify requirements and view candidates:")
-        print(f"LINK: {link}")
+    def _queue_verification_email(self, cur, email, company, job, token, job_id,
+                                  invited_by=None):
+        """Hold a vacancy-verification message for approval. Returns its id.
+
+        Replaces a print that claimed to be an email. Two things were wrong
+        with it beyond not sending:
+
+          * The link was hardcoded to http://localhost:8089 — not even
+            FRONTEND_URL. Had this flow ever really sent, every employer would
+            have received a link to their own machine.
+          * The caller counted each one into report['emails_sent'], which the
+            import endpoint reported as "Sent N emails".
+
+        This runs ONCE PER VACANCY ROW, not once per company: a single CSV
+        import fans out to one message per job. That is how one test run on
+        2026-08-21 produced 126 live tokens across 219 domains. At that volume
+        the reviewer needs the company AND the job title in the subject, or the
+        queue is 126 indistinguishable rows.
+        """
+        if not (email or '').strip():
+            return None
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+        link = f"{frontend_url}/verify-job/{token}"
+        return outbound_mail.queue(
+            to_email=email.strip(),
+            to_name=company,
+            subject=_vacancy_verification_subject(company, job),
+            body_text=_vacancy_verification_body(company, job, link),
+            body_html=_vacancy_verification_html(company, job, link),
+            kind='vacancy_verification',
+            related_type='job_posting',
+            related_id=str(job_id),
+            created_by=invited_by,
+            cursor=cur)
         print(f"--------------------------------------------------------------------------\n")
         logger.info(f"Sent magic link to {email}")
 
@@ -482,6 +808,76 @@ class GrowthSystem:
             logger.error(f"Error fetching growth candidates: {e}")
             return []
 
+    def get_vacancy_concentration(self, min_vacancies=5):
+        """How much of the vacancy pool a threshold actually covers.
+
+        WHY THIS EXISTS (owner, 2026-08-26): the onboarding plan is to filter
+        employers by vacancy count and work the top of the list — 20% of the
+        effort for 80% of the effect. The operator screen already ranks and
+        filters, but the threshold slider defaulted to 5 with nothing to judge
+        it by, so the 80% was being guessed at rather than seen.
+
+        Returns the totals and, for this threshold, how many employers it
+        selects and what share of all pending vacancies they hold. Also the
+        SUGGESTED threshold: the smallest one whose selected employers hold at
+        least 80% of the vacancies.
+
+        Counts 'pending_verification' only — the same population the operator
+        can actually act on, and the same one get_growth_candidates ranks.
+        Counting every status would include draft and published postings that
+        are not part of this outreach.
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT COUNT(j.id) AS vacancies
+                      FROM companies c
+                      JOIN job_postings j ON c.id = j.company_id::uuid
+                     WHERE j.status = 'pending_verification'
+                     GROUP BY c.id
+                     ORDER BY vacancies DESC
+                """)
+                counts = [int(r['vacancies']) for r in cur.fetchall()]
+
+            total_vacancies = sum(counts)
+            total_companies = len(counts)
+            if not total_vacancies:
+                # Honest empty rather than a division by zero or a fake 100%.
+                # This is the state right after migration 089 and before a new
+                # NAFIS sheet is imported.
+                return {'total_companies': 0, 'total_vacancies': 0,
+                        'selected_companies': 0, 'selected_vacancies': 0,
+                        'coverage_percent': None, 'suggested_min_vacancies': None}
+
+            selected = [n for n in counts if n >= min_vacancies]
+            selected_vacancies = sum(selected)
+
+            # The smallest threshold reaching 80% coverage. Walking DOWN from
+            # the largest count means the answer is the point at which adding
+            # the next-smaller employer is no longer worth the visit.
+            suggested, running = None, 0
+            for n in counts:
+                running += n
+                if running * 100 >= total_vacancies * 80:
+                    suggested = n
+                    break
+
+            return {
+                'total_companies': total_companies,
+                'total_vacancies': total_vacancies,
+                'selected_companies': len(selected),
+                'selected_vacancies': selected_vacancies,
+                'coverage_percent': round(selected_vacancies * 100.0 / total_vacancies, 1),
+                'company_percent': round(len(selected) * 100.0 / total_companies, 1),
+                'suggested_min_vacancies': suggested,
+            }
+        except Exception as e:
+            logger.error(f"Error computing vacancy concentration: {e}")
+            return {'total_companies': 0, 'total_vacancies': 0,
+                    'selected_companies': 0, 'selected_vacancies': 0,
+                    'coverage_percent': None, 'suggested_min_vacancies': None}
+
     def send_bulk_emails(self, company_ids):
         """
         Sends verification emails to selected companies.
@@ -578,20 +974,35 @@ class GrowthSystem:
 
                         record = cur.fetchone()
 
-                        # Mock email
                         frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
                         link = f"{frontend_url}/join/{token}"
-                        print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
-                        print(f"  To: {company.get('email', 'N/A')}")
-                        print(f"  Subject: Join Emirati Human Development Platform — {company.get('name', '')}")
-                        print(f"  Body:")
-                        print(f"  Dear {company.get('name', '')},")
-                        print(f"  You have been invited to join the Emirati Human Development Platform")
-                        print(f"  as a Recruiter or HR Manager for your company.")
-                        print(f"  Click the link below to complete your registration:")
-                        print(f"  🔗 MAGIC LINK: {link}")
-                        print(f"  This link expires in 7 days.")
-                        print(f"─────────────────────────────────────────────────────────────\n")
+
+                        # Queued for per-message approval, never sent from here.
+                        # Written on THIS cursor so the message commits — or
+                        # rolls back — with the token it carries: a queued email
+                        # holding a link to a token that never existed is the
+                        # orphan shape migration 086 had to clean up.
+                        #
+                        # A company with no email address on file still gets an
+                        # invitation record; the operator passes that link on by
+                        # hand. Queuing a message addressed to nobody would put
+                        # an unsendable row in the reviewer's queue for ever.
+                        company_email = (record['company_email'] or '').strip()
+                        message_id = None
+                        if company_email:
+                            message_id = outbound_mail.queue(
+                                to_email=company_email,
+                                to_name=record['company_name'],
+                                subject=_company_invitation_subject(record['company_name']),
+                                body_text=_company_invitation_body(
+                                    record['company_name'], link, record['intended_role']),
+                                body_html=_company_invitation_html(
+                                    record['company_name'], link, record['intended_role']),
+                                kind='company_invitation',
+                                related_type='company_invitation',
+                                related_id=str(record['id']),
+                                created_by=invited_by,
+                                cursor=cur)
 
                         results.append({
                             'id': str(record['id']),
@@ -600,6 +1011,9 @@ class GrowthSystem:
                             'company_email': record['company_email'],
                             'intended_role': record['intended_role'],
                             'magic_link': link,
+                            'message_id': message_id,
+                            'message_status': ('awaiting_approval' if message_id
+                                               else 'no_email_on_file'),
                         })
 
                     except Exception as e:

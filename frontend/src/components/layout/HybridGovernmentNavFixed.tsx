@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe } from 'lucide-react';
 import { navigationGroups, operationsNavGroup } from '@/components/navigation/navigationConfig';
@@ -360,7 +361,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-foreground">{t('platform_title', 'Emirati Human Development Platform')}</h1>
+                  <h1 className="text-xl font-bold text-foreground">{t('platform_title', PLATFORM_NAME_EN)}</h1>
                   <p className="text-sm text-muted-foreground">{t('platform_subtitle', 'UAE Nationals Career Development')}</p>
                 </Link>
               </div>

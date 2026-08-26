@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 
@@ -99,7 +100,7 @@ const JoinStaffPage: React.FC = () => {
               {inv.full_name ? `Welcome, ${inv.full_name}` : 'Join the platform'}
             </h1>
             <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 6 }}>
-              You've been invited to join the Emirati Human Development Platform as a{' '}
+              You've been invited to join the {PLATFORM_NAME_EN} as a{' '}
               <b>{roleLabel(inv.role)}</b>{inv.organization ? <> at <b>{inv.organization}</b></> : null}.
             </p>
             <p style={{ color: '#9ca3af', fontSize: 13, marginBottom: 18 }}>

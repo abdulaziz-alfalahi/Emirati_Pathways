@@ -37,6 +37,10 @@ export const TeamManagementTab: React.FC = () => {
     const [inviteLink, setInviteLink] = useState('');
     const [linkBusy, setLinkBusy] = useState(false);
     const [copied, setCopied] = useState(false);
+    // Reuses the existing inviteEmail field: the same address the admin types
+    // to add a colleague is the one the invitation is sent to.
+    const [inviteRole, setInviteRole] = useState('recruiter');
+    const [queuedNotice, setQueuedNotice] = useState('');
 
     const { user } = useAuth();
 
@@ -93,14 +97,24 @@ export const TeamManagementTab: React.FC = () => {
         }
     };
 
+    /**
+     * Create the invitation. If an address is given the colleague is emailed
+     * (after approval); if not, the link comes back to hand over however the
+     * organisation actually communicates. Both remain available on purpose —
+     * forcing the email path would remove a working option to add a new one.
+     */
     const handleCreateLink = async () => {
         setError(''); setLinkBusy(true);
         try {
             const res = await restClient.post(`/api/company/team/invite-link`, {
-                company_id: COMPANY_ID, role: 'recruiter'
+                company_id: COMPANY_ID, role: inviteRole,
+                email: inviteEmail.trim() || undefined,
             });
             if (res.data?.success && res.data.invite_link) {
                 setInviteLink(res.data.invite_link);
+                setQueuedNotice(res.data.message_id
+                    ? `An email to ${inviteEmail.trim()} is queued — it is sent once released.`
+                    : '');
             } else {
                 setError(res.data?.error || res.data?.message || 'Could not generate a link');
             }

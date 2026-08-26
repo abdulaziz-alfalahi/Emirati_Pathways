@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,7 @@ const EnhancedAuthPage: React.FC = () => {
     const uaePassMessage = searchParams.get('message');
     if (uaePassError) {
       if (uaePassError === 'SOP1' || uaePassError === 'sop1') {
-        setError("Requestee is not eligible to use this service. Requestee's account is either not upgraded or have a visitor account. Please contact Emirati Human Development Platform to use the services.");
+        setError(`Requestee is not eligible to use this service. Requestee's account is either not upgraded or have a visitor account. Please contact the ${PLATFORM_NAME_EN} to use the services.`);
       } else if (uaePassError === 'access_denied' || uaePassError === 'user_cancelled' || uaePassError === 'uaepass_denied') {
         setError("User cancelled the login");
       } else {
@@ -453,7 +454,7 @@ const EnhancedAuthPage: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Account Created Successfully!</h2>
               <p className="text-gray-600">
-                Welcome to the Emirati Human Development Platform! You can now sign in using your WhatsApp number.
+                Welcome to the {PLATFORM_NAME_EN}! You can now sign in using your WhatsApp number.
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
@@ -477,7 +478,7 @@ const EnhancedAuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Emirati Human Development Platform
+              {PLATFORM_NAME_EN}
             </h1>
             <p className="text-slate-600">
               UAE Nationals Career Development Platform

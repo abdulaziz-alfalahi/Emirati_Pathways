@@ -52,7 +52,20 @@ def import_vacancies():
         
         return jsonify({
             'success': True,
-            'message': f"Processed {report['total_rows']} rows. Created {report['companies_created']} companies and {report['jobs_created']} jobs. Sent {report['emails_sent']} emails.",
+            # NOT "Sent N emails" — nothing is sent by an import. Each message
+            # waits for per-message approval, and an import of a few hundred
+            # rows queues a few hundred messages, so the operator has to be
+            # told that plainly rather than discovering it in the queue.
+            'message': (f"Processed {report['total_rows']} rows. Created "
+                        f"{report['companies_created']} companies and "
+                        f"{report['jobs_created']} jobs. Queued "
+                        f"{report['messages_queued']} email(s) — NOTHING HAS "
+                        f"BEEN SENT YET; each one waits for approval under "
+                        f"Admin → Outbound Mail"
+                        + (f", and {report['without_email_on_file']} vacancy(ies) "
+                           f"had no company email on file"
+                           if report.get('without_email_on_file') else '')
+                        + "."),
             'report': report
         })
         
@@ -102,7 +115,11 @@ def get_candidates():
     try:
         min_vacancies = int(request.args.get('min_vacancies', 5))
         candidates = growth_sys.get_growth_candidates(min_vacancies)
-        return jsonify({'success': True, 'candidates': candidates})
+        # How much of the vacancy pool this threshold covers, so the operator
+        # picks it on evidence rather than guessing (owner, 2026-08-26: work
+        # the top of the list — 20% of the effort for 80% of the effect).
+        return jsonify({'success': True, 'candidates': candidates,
+                        'concentration': growth_sys.get_vacancy_concentration(min_vacancies)})
     except Exception as e:
         logger.error(f"Get candidates error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -276,10 +293,18 @@ def invite_companies():
             from backend.email_delivery import email_configured, invitation_result_message
         except ImportError:  # pragma: no cover - dual-root import
             from email_delivery import email_configured, invitation_result_message
+        # Each invitation queues a real email that waits for per-message
+        # approval. A company with no address on file gets a link and no
+        # message, so the counts differ and both are reported.
+        queued = [r for r in successful if r.get('message_id')]
+        no_email = [r for r in successful if r.get('message_status') == 'no_email_on_file']
         return jsonify({
             'success': True,
             'email_delivery_configured': email_configured(),
-            'message': invitation_result_message(len(successful), len(failed)),
+            'messages_awaiting_approval': len(queued),
+            'without_email_on_file': len(no_email),
+            'message': invitation_result_message(len(successful), len(failed),
+                                                 queued_count=len(queued)),
             'invitations': successful,
             'errors': failed,
         })

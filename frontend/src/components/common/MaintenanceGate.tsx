@@ -50,8 +50,8 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   if (!state?.is_enabled || isAdminUser()) return <>{children}</>;
 
-  const en = state.message_en || 'The Emirati Human Development Platform is temporarily unavailable while we roll out an upgrade. We will be back shortly — thank you for your patience.';
-  const ar = state.message_ar || 'منصة تنمية الموارد البشرية الإماراتية غير متاحة مؤقتاً بينما نعمل على إطلاق تحديث. سنعود قريباً — شكراً لصبركم.';
+  const en = state.message_en || 'The \"Emirati\" Human Development Platform is temporarily unavailable while we roll out an upgrade. We will be back shortly — thank you for your patience.';
+  const ar = state.message_ar || 'منصة \"إماراتي\" للتنمية البشرية غير متاحة مؤقتاً بينما نعمل على إطلاق تحديث. سنعود قريباً — شكراً لصبركم.';
 
   return (
     <div style={{

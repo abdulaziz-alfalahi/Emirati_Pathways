@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PLATFORM_NAME_EN, PLATFORM_NAME_AR } from '@/lib/brand';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
@@ -338,7 +339,7 @@ const OurMission: React.FC = () => {
                                 <span className="text-white font-bold text-sm">E</span>
                             </div>
                             <span className="text-sm font-medium text-slate-300">
-                                {t('Emirati Human Development Platform', 'منصة تنمية الموارد البشرية الإماراتية')}
+                                {t(PLATFORM_NAME_EN, PLATFORM_NAME_AR)}
                             </span>
                         </div>
                         <div className="flex items-center gap-6 text-xs text-slate-400">
@@ -349,7 +350,7 @@ const OurMission: React.FC = () => {
                     </div>
                     <div className="border-t border-slate-800 mt-6 pt-6 text-center">
                         <p className="text-xs text-slate-500">
-                            © 2024 {t('Emirati Human Development Platform. All rights reserved.', 'منصة تنمية الموارد البشرية الإماراتية. جميع الحقوق محفوظة.')}
+                            © 2026 {t(`${PLATFORM_NAME_EN}. All rights reserved.`, `${PLATFORM_NAME_AR}. جميع الحقوق محفوظة.`)}
                         </p>
                     </div>
                 </div>

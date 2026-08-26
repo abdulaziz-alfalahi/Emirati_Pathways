@@ -30,9 +30,15 @@ export const platformName = (language: string): string =>
     language === 'ar' ? PLATFORM_NAME_AR : PLATFORM_NAME_EN;
 
 /**
- * The Council is a different body from the platform it runs, and its name is
- * NOT being renamed here — only the platform's was. Kept alongside so the two
- * are not confused again by someone updating one of them.
+ * The Council is a different body from the platform it runs, so it does NOT
+ * carry the quotes — those belong to the product name alone.
+ *
+ * Its English name was wrong here until 2026-08-26: this file said "Emirati
+ * Human Development Council", omitting "Resources". It was caught because the
+ * invitation email and the Exchange signature appeared one above the other in
+ * the same message and disagreed. Confirmed by the owner; note that DGHR's own
+ * signature says "Resource" singular, and the Arabic — مجلس تنمية الموارد
+ * البشرية الإماراتية — is plural, which is what settles it.
  */
-export const COUNCIL_NAME_EN = 'Emirati Human Development Council';
+export const COUNCIL_NAME_EN = 'Emirati Human Resources Development Council';
 export const COUNCIL_NAME_AR = 'مجلس تنمية الموارد البشرية الإماراتية';
