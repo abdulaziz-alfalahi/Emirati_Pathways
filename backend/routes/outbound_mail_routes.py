@@ -173,8 +173,14 @@ def list_templates():
                    FROM outbound_mail_templates t
                    LEFT JOIN users u ON u.id = t.approved_by
                   ORDER BY t.kind, t.version DESC""") or []
+    # What changes per message, attached at read time rather than stored: it is
+    # documentation about the template, not part of the wording, and folding it
+    # into the sample would move every fingerprint and invalidate approvals
+    # already given.
+    from services import mail_templates
     return jsonify({'success': True, 'templates': [
         {**dict(r),
+         'varies': mail_templates.varies_for(r['kind']),
          'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
          'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None}
         for r in rows]})

@@ -125,6 +125,58 @@ def _staff_invitation():
     return subject, body, html
 
 
+#: What changes from one delivered message to the next.
+#
+# WHY THIS IS NOT PART OF THE SAMPLE OR THE FINGERPRINT: it is documentation
+# about the template, not the message. Folding it into render() would change
+# every fingerprint and invalidate approvals the owner has already given, for a
+# change to the approval screen. It is attached when the templates are listed,
+# so it is always current and never causes DB churn.
+#
+# The list exists because a sample renders ONE set of values, and a plausible
+# real value reads as fixed text. Owner, 2026-08-26, reading the staff sample:
+# "Will the Career Services Operator change according to the selected role?" —
+# ZZ-PROBE-ORG reads as a placeholder; "Career Services Operator" does not.
+TEMPLATE_VARIES = {
+    'seeker_invitation': [
+        ("the candidate's name", 'اسم المرشح'),
+        ('the registration link', 'رابط التسجيل'),
+    ],
+    'company_invitation': [
+        ("the company's name", 'اسم المؤسسة'),
+        ('the registration link', 'رابط التسجيل'),
+        ('the access granted — the two variants are both shown below',
+         'الصلاحية الممنوحة — النسختان معروضتان أدناه'),
+    ],
+    'vacancy_verification': [
+        ("the company's name", 'اسم المؤسسة'),
+        ('the job title — it appears in the subject line too',
+         'المسمى الوظيفي — ويظهر في عنوان الرسالة أيضاً'),
+        ('the verification link', 'رابط التأكيد'),
+    ],
+    'team_invitation': [
+        ("the colleague's company", 'اسم مؤسسة الزميل'),
+        ('the name of the person inviting them', 'اسم الشخص الذي وجّه الدعوة'),
+        ('the invitation link', 'رابط الدعوة'),
+        ('the access granted — all three variants are shown below',
+         'الصلاحية الممنوحة — النسخ الثلاث معروضة أدناه'),
+    ],
+    'staff_invitation': [
+        ("the invited person's name", 'اسم الشخص المدعو'),
+        ('THE ROLE — every one of the sixteen is listed below',
+         'الصفة — وجميع الصفات الست عشرة مذكورة أدناه'),
+        ('the organisation, which is omitted entirely when none is given',
+         'الجهة، وتُحذف العبارة كاملةً إذا لم تُحدَّد'),
+        ('the invitation link', 'رابط الدعوة'),
+    ],
+}
+
+
+def varies_for(kind):
+    """[(english, arabic)] describing what changes per message. May be empty."""
+    return TEMPLATE_VARIES.get(kind, [])
+
+
 #: kind -> (human label, renderer). The kind must match what the flow passes to
 #: outbound_mail.queue(), or the message can never be released.
 TEMPLATES = {
