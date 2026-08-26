@@ -60,7 +60,14 @@ def create_invite_link():
         context = get_company_context(current_user_id, company_id)
         if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
             return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
-        result = team_system.create_team_invitation(company_id, role, current_user_id)
+        # Optional: an address queues a message for the colleague; without one
+        # the caller gets the link to pass on however they prefer.
+        result = team_system.create_team_invitation(
+            company_id, role, current_user_id, email=data.get('email'))
+        if result.get('message_id'):
+            result['message'] = ('Invitation created and an email queued — '
+                                 'NOTHING HAS BEEN SENT YET; it goes out once '
+                                 'released under Admin → Outbound Mail.')
         return jsonify(result), (200 if result.get('success') else 400)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

@@ -16,6 +16,136 @@ except ImportError:  # pragma: no cover
 # Roles an HR manager may hand out through a team invite link (never admin/owner).
 _INVITABLE_TEAM_ROLES = {'recruiter', 'hr_manager', 'hr'}
 
+try:
+    from backend import outbound_mail
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+
+from html import escape as html_escape
+
+
+#: What a colleague is being invited to do. Note hr_manager IS here, unlike the
+#: operator's outreach invitation which can only confer recruiter or
+#: employer_admin — the employer knows who their HR manager is and the operator
+#: does not, which is the whole reason a first contact becomes an administrator.
+_TEAM_ROLE_LABELS = {
+    'recruiter': ('publish vacancies and review candidates',
+                  'نشر الشواغر والاطلاع على المرشحين'),
+    'hr_manager': ('manage hiring and review candidates for your organisation',
+                   'إدارة التوظيف والاطلاع على المرشحين لمؤسستكم'),
+    'hr': ('review candidates for your organisation',
+           'الاطلاع على المرشحين لمؤسستكم'),
+}
+
+
+def _team_role_label(role, arabic=False):
+    en, ar = _TEAM_ROLE_LABELS.get((role or '').strip().lower(),
+                                   _TEAM_ROLE_LABELS['recruiter'])
+    return ar if arabic else en
+
+
+def _team_invitation_subject(company_name):
+    """English first — this reaches a colleague at an employer."""
+    return (f'You have been invited to join {company_name} on the '
+            f'{PLATFORM_NAME_EN} / '
+            f'دعوة للانضمام إلى {company_name} على {PLATFORM_NAME_AR}')
+
+
+def _team_invitation_body(company_name, inviter_name, link, role=None):
+    """Plain-text team invitation, English first.
+
+    THE INVITER IS NAMED, and that is the point. Every other message from this
+    platform arrives unbidden from a government body; this one arrives because
+    a named colleague at the recipient's own employer asked for it. Saying who
+    is the difference between a credible invitation and one that reads as
+    phishing — and this is the only message where we actually know.
+    """
+    by = f'{inviter_name} at {company_name}' if inviter_name else company_name
+    by_ar = f'{inviter_name} من {company_name}' if inviter_name else company_name
+    return (
+        f"Hello,\n"
+        f"\n"
+        f"{by} has invited you to join their team on the {PLATFORM_NAME_EN}.\n"
+        f"\n"
+        f"You will be able to {_team_role_label(role)}.\n"
+        f"\n"
+        f"To accept, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"You will be asked to verify your identity with UAE Pass.\n"
+        f"If you were not expecting this, you can ignore this message.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"مرحباً،\n"
+        f"\n"
+        f"دعاك {by_ar} للانضمام إلى فريق مؤسستكم على {PLATFORM_NAME_AR}.\n"
+        f"\n"
+        f"ستتمكّن من {_team_role_label(role, arabic=True)}.\n"
+        f"\n"
+        f"لقبول الدعوة، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"سيُطلب منك إثبات هويتك عبر الهوية الرقمية.\n"
+        f"إذا لم تكن تتوقع هذه الرسالة، يمكنك تجاهلها.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+    )
+
+
+def _team_invitation_html(company_name, inviter_name, link, role=None):
+    """The delivered team invitation. English block first, Arabic second.
+
+    Company name, inviter name and role label are all escaped: the inviter's
+    name comes from a user record and the company name from a NAFIS CSV.
+    """
+    company = html_escape(company_name or '')
+    inviter = html_escape(inviter_name or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    by = f'<strong>{inviter}</strong> at <strong>{company}</strong>' if inviter else f'<strong>{company}</strong>'
+    by_ar = f'<strong>{inviter}</strong> من <strong>{company}</strong>' if inviter else f'<strong>{company}</strong>'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Hello,</p>'
+        f'<p style="{p}">{by} has invited you to join their team on the '
+        f'{PLATFORM_NAME_EN}.</p>'
+        f'<p style="{p}">You will be able to '
+        f'<strong>{html_escape(_team_role_label(role))}</strong>.</p>'
+        f'<p style="{p}">To accept, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">You will be asked to verify your identity with UAE '
+        'Pass.<br>If you were not expecting this, you can ignore this message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">مرحباً،</p>'
+        f'<p style="{p}">دعاك {by_ar} للانضمام إلى فريق مؤسستكم على '
+        f'{PLATFORM_NAME_AR}.</p>'
+        f'<p style="{p}">ستتمكّن من '
+        f'<strong>{html_escape(_team_role_label(role, arabic=True))}</strong>.</p>'
+        f'<p style="{p}">لقبول الدعوة، افتح الرابط التالي:</p>'
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">سيُطلب منك إثبات هويتك عبر الهوية الرقمية.<br>'
+        'إذا لم تكن تتوقع هذه الرسالة، يمكنك تجاهلها.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '</div>'
+    )
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,11 +203,25 @@ class CompanyTeamSystem:
             logger.error(f"Error getting team members: {e}")
             return []
 
-    def create_team_invitation(self, company_id: str, role: str, invited_by_user_id) -> Dict[str, Any]:
-        """Create a copyable magic-link invitation to join this workspace as a
-        teammate. The link works for a brand-new user (they register via UAE Pass
-        and are added on redemption) or an existing one. Carries company_id — never
-        a name."""
+    def create_team_invitation(self, company_id: str, role: str, invited_by_user_id,
+                               email: str = None) -> Dict[str, Any]:
+        """Create a magic-link invitation to join this workspace as a teammate.
+
+        The link works for a brand-new user (they register via UAE Pass and are
+        added on redemption) or an existing one. Carries company_id — never a
+        name.
+
+        EMAIL IS OPTIONAL, and deliberately so. Passing an address queues a
+        message for the colleague; omitting it returns the link exactly as
+        before, for an administrator who would rather hand it over in person or
+        by whatever channel their organisation actually uses. Forcing the email
+        path would have removed a working option to add a new one.
+
+        This flow became load-bearing on 2026-08-26, when a first contact
+        started conferring employer_admin — an administrator whose entire
+        purpose is to invite their own colleagues. Until now it ended in a
+        printed link.
+        """
         role = (role or 'recruiter').strip()
         if role not in _INVITABLE_TEAM_ROLES:
             return {'success': False, 'message': f'Role must be one of {sorted(_INVITABLE_TEAM_ROLES)}'}
@@ -94,11 +238,46 @@ class CompanyTeamSystem:
                         "INSERT INTO team_invitations (token, company_id, role, invited_by) "
                         "VALUES (%s, %s, %s, %s) RETURNING id",
                         (token, company_id, role, str(invited_by_user_id)))
-                    conn.commit()
+                    invitation_id = cur.fetchone()['id']
                     frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                    link = f"{frontend_url}/join-team/{token}"
+
+                    message_id = None
+                    address = (email or '').strip()
+                    if address:
+                        # Who is doing the inviting. Named in the message
+                        # because this is the ONE outbound message where we
+                        # actually know — every other arrives unbidden from a
+                        # government body, and a colleague's name is the
+                        # difference between credible and phishing.
+                        cur.execute(
+                            "SELECT COALESCE(full_name, first_name) AS n FROM users WHERE id = %s",
+                            (str(invited_by_user_id),))
+                        inviter = cur.fetchone()
+                        inviter_name = (inviter or {}).get('n')
+
+                        # On THIS cursor, so the message commits or rolls back
+                        # with the token it carries.
+                        message_id = outbound_mail.queue(
+                            to_email=address,
+                            subject=_team_invitation_subject(company['name']),
+                            body_text=_team_invitation_body(
+                                company['name'], inviter_name, link, role),
+                            body_html=_team_invitation_html(
+                                company['name'], inviter_name, link, role),
+                            kind='team_invitation',
+                            related_type='team_invitation',
+                            related_id=str(invitation_id),
+                            created_by=str(invited_by_user_id),
+                            cursor=cur)
+
+                    conn.commit()
                     return {'success': True, 'token': token, 'role': role,
                             'company_name': company['name'],
-                            'invite_link': f"{frontend_url}/join-team/{token}"}
+                            'invite_link': link,
+                            'message_id': message_id,
+                            'message_status': ('awaiting_approval' if message_id
+                                               else 'no_email_given')}
         except Exception as e:
             logger.error(f"create_team_invitation failed: {e}")
             return {'success': False, 'message': str(e)}

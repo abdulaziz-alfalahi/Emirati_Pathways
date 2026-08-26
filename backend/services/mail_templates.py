@@ -31,6 +31,8 @@ try:
         _company_invitation_body, _company_invitation_html,
         _company_invitation_subject, _vacancy_verification_body,
         _vacancy_verification_html, _vacancy_verification_subject)
+    from backend.company_team_system import (
+        _team_invitation_body, _team_invitation_html, _team_invitation_subject)
     from backend.db_utils import execute_query
 except ImportError:                          # pragma: no cover — dual root
     import outbound_mail
@@ -40,6 +42,8 @@ except ImportError:                          # pragma: no cover — dual root
         _company_invitation_body, _company_invitation_html,
         _company_invitation_subject, _vacancy_verification_body,
         _vacancy_verification_html, _vacancy_verification_subject)
+    from company_team_system import (
+        _team_invitation_body, _team_invitation_html, _team_invitation_subject)
     from db_utils import execute_query
 
 _P = outbound_mail.TEMPLATE_PROBE
@@ -76,12 +80,31 @@ def _vacancy_verification():
             _vacancy_verification_html(_P['name'], _P['title'], _P['link']))
 
 
+#: A team invitation's role sentence varies the WORDING, like the company one,
+#: so all three variants are sampled and fingerprinted together.
+_TEAM_ROLE_VARIANTS = ('recruiter', 'hr_manager', 'hr')
+
+
+def _team_invitation():
+    subject = _team_invitation_subject(_P['name'])
+    bodies, htmls = [], []
+    for role in _TEAM_ROLE_VARIANTS:
+        bodies.append(f'[ if invited as: {role} ]\n\n'
+                      + _team_invitation_body(_P['name'], 'ZZ-PROBE-INVITER',
+                                              _P['link'], role))
+        htmls.append(_team_invitation_html(_P['name'], 'ZZ-PROBE-INVITER',
+                                           _P['link'], role))
+    separator = '\n\n' + ('=' * 60) + '\n\n'
+    return subject, separator.join(bodies), separator.join(htmls)
+
+
 #: kind -> (human label, renderer). The kind must match what the flow passes to
 #: outbound_mail.queue(), or the message can never be released.
 TEMPLATES = {
     'seeker_invitation': ('Candidate invitation (NAFIS seeker)', _seeker_invitation),
     'company_invitation': ('Employer invitation (magic link)', _company_invitation),
     'vacancy_verification': ('Vacancy verification (NAFIS import)', _vacancy_verification),
+    'team_invitation': ('Colleague invitation (sent by an employer admin)', _team_invitation),
 }
 
 
