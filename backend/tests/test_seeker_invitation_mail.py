@@ -317,3 +317,52 @@ def test_the_quotes_survive_html_escaping():
     html = _invitation_html('X', LINK)
     assert '"Emirati" Human Development Platform' in html
     assert '&quot;Emirati&quot;' not in html
+
+
+# ── Arabic leads ────────────────────────────────────────────────────────────
+#
+# Owner, 2026-08-26, after reading the second real send: "The Arabic part comes
+# in the top as it is sent to an Arabic person." Every recipient of this message
+# is an Emirati national reached through NAFIS. Putting English above the Arabic
+# makes them scroll past a language they did not ask for to reach their own.
+
+def test_the_arabic_greeting_comes_before_the_english_one():
+    body = _invitation_body('Dhabya Alfalahi', LINK)
+    assert body.index('عزيزي/عزيزتي') < body.index('Dear Dhabya'), (
+        'English leads the message sent to an Arabic reader'
+    )
+
+
+def test_the_arabic_block_comes_before_the_english_block_in_html():
+    html = _invitation_html('X', LINK)
+    assert html.index('dir="rtl"') < html.index('dir="ltr"')
+
+
+def test_the_subject_leads_in_arabic():
+    subject = _invitation_subject()
+    assert subject.index('أكمل تسجيلك') < subject.index('Complete your')
+
+
+def test_both_languages_survive_the_reordering():
+    """Reordering is where a half of the message quietly goes missing."""
+    for render in (_invitation_body, _invitation_html):
+        out = render('X', LINK)
+        assert 'تمت دعوتك' in out and 'You have been invited' in out
+        assert COUNCIL_NAME_AR in out and COUNCIL_NAME_EN in out
+        assert out.count(LINK) == (2 if render is _invitation_body else 4)
+
+
+def test_the_signature_block_is_not_ours():
+    """Outlook shows "Best Regards / Dubai Government Human Resources Dept. /
+    P.O.Box 242222 / dghr.gov.ae" beneath our message. None of it comes from
+    here — it is appended by Exchange on the tenant side, and it must not be
+    "fixed" by adding a competing signature of our own.
+    """
+    source = open(os.path.join(BACKEND, 'nafis_talent_system.py'),
+                  encoding='utf-8').read()
+    for theirs in ('Best Regards', 'P.O.Box', '242222',
+                   'Human Resources Dept', 'dghr.gov.ae'):
+        assert theirs not in source, (
+            f'{theirs!r} appeared in our template — the Exchange disclaimer is '
+            f'DGHR\'s to change, not something to duplicate here'
+        )

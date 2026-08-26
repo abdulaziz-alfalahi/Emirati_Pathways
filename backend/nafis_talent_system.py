@@ -42,16 +42,19 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 def _invitation_subject():
-    return (f'Complete your registration — {PLATFORM_NAME_EN} / '
-            f'أكمل تسجيلك — {PLATFORM_NAME_AR}')
+    """Arabic first — see `_invitation_body` for why."""
+    return (f'أكمل تسجيلك — {PLATFORM_NAME_AR} / '
+            f'Complete your registration — {PLATFORM_NAME_EN}')
 
 
 def _invitation_body(full_name, link):
-    """The plain-text invitation, in both languages.
+    """The plain-text invitation. ARABIC FIRST, then English.
 
-    Every recipient here is an Emirati national reached through NAFIS, so
-    Arabic is not a translation of the real message — it IS the message for
-    many of them, and burying it under the English would say so.
+    WHY ARABIC LEADS (owner, 2026-08-26): every recipient of this message is an
+    Emirati national reached through NAFIS. Arabic is not a translation of the
+    real message for them — it is the message, and putting English above it
+    makes an Arabic reader scroll past a language they did not ask for to reach
+    their own. The first version sent led with English; that was wrong.
 
     The link is on its own line and never wrapped in punctuation: mail clients
     that auto-link are unreliable about trailing characters, and a link that
@@ -66,6 +69,22 @@ def _invitation_body(full_name, link):
     actually delivered, and it marks the Arabic block dir="rtl".
     """
     return (
+        f"عزيزي/عزيزتي {full_name}،\n"
+        f"\n"
+        f"تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك "
+        f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+        f"\n"
+        f"───────────────────────────────\n"
+        f"\n"
         f"Dear {full_name},\n"
         f"\n"
         f"You have been invited to join the {PLATFORM_NAME_EN}, "
@@ -80,27 +99,11 @@ def _invitation_body(full_name, link):
         f"If you did not expect this invitation, you can ignore this message.\n"
         f"\n"
         f"— {COUNCIL_NAME_EN}\n"
-        f"\n"
-        f"───────────────────────────────\n"
-        f"\n"
-        f"عزيزي/عزيزتي {full_name}،\n"
-        f"\n"
-        f"تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك "
-        f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
-        f"\n"
-        f"لإكمال التسجيل، افتح الرابط التالي:\n"
-        f"\n"
-        f"{link}\n"
-        f"\n"
-        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
-        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
-        f"\n"
-        f"— {COUNCIL_NAME_AR}\n"
     )
 
 
 def _invitation_html(full_name, link):
-    """The delivered invitation. The Arabic half is marked dir="rtl".
+    """The delivered invitation. ARABIC FIRST, and marked dir="rtl".
 
     WHY HTML AT ALL, when the text says the same thing: direction. Measured in
     Outlook on the first real send (2026-08-26), the plain-text Arabic rendered
@@ -124,19 +127,6 @@ def _invitation_html(full_name, link):
     return (
         '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
         'font-size:15px;line-height:1.6;color:#1F2937">'
-        f'<div dir="ltr" style="text-align:left">'
-        f'<p style="{p}">Dear {name},</p>'
-        f'<p style="{p}">You have been invited to join the {PLATFORM_NAME_EN}, '
-        'where you can complete your profile and be matched with opportunities '
-        'from employers across the UAE.</p>'
-        f'<p style="{p}">To complete your registration, open this link:</p>'
-        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
-        f'<p style="{p}">The link is valid for 7 days and can only be used '
-        'once.<br>If you did not expect this invitation, you can ignore this '
-        'message.</p>'
-        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
-        '</div>'
-        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
         f'<div dir="rtl" style="text-align:right">'
         f'<p style="{p}">عزيزي/عزيزتي {name}،</p>'
         f'<p style="{p}">تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك '
@@ -151,6 +141,19 @@ def _invitation_html(full_name, link):
         f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
         'إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.</p>'
         f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">You have been invited to join the {PLATFORM_NAME_EN}, '
+        'where you can complete your profile and be matched with opportunities '
+        'from employers across the UAE.</p>'
+        f'<p style="{p}">To complete your registration, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">The link is valid for 7 days and can only be used '
+        'once.<br>If you did not expect this invitation, you can ignore this '
+        'message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
         '</div>'
         '</div>'
     )
