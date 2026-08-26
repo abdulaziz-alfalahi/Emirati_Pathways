@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { navigationGroups } from '@/components/navigation/navigationConfig';
@@ -42,7 +43,7 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-2xl font-bold text-foreground">Emirati Human Development Platform</h1>
+                  <h1 className="text-2xl font-bold text-foreground">{PLATFORM_NAME_EN}</h1>
                   <p className="text-sm text-muted-foreground">UAE Nationals Career Development</p>
                 </Link>
               </div>

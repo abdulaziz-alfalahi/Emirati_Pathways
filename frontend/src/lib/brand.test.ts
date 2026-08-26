@@ -19,9 +19,13 @@ import { PLATFORM_NAME_EN, PLATFORM_NAME_AR, platformName,
          COUNCIL_NAME_EN, COUNCIL_NAME_AR } from './brand';
 import enHome from '../locales/en/home-complete.json';
 import arHome from '../locales/ar/home-complete.json';
+import enNav from '../locales/en/navigation.json';
+import arNav from '../locales/ar/navigation.json';
 
 const en = enHome as Record<string, any>;
 const ar = arHome as Record<string, any>;
+const enN = enNav as Record<string, any>;
+const arN = arNav as Record<string, any>;
 
 /** Every Arabic name this platform has been called, that it no longer is. */
 const SUPERSEDED_AR = [
@@ -75,5 +79,18 @@ describe('the Council', () => {
         expect(COUNCIL_NAME_EN).toBe('Emirati Human Development Council');
         expect(COUNCIL_NAME_AR).not.toContain('"');
         expect(COUNCIL_NAME_EN).not.toContain('"');
+    });
+});
+
+describe('the header, which appears on every page', () => {
+    it('uses the current name in English', () => {
+        expect(enN.platform_title).toBe(PLATFORM_NAME_EN);
+    });
+
+    it('has an Arabic name at all', () => {
+        // There was no Arabic entry, so the header fell through to the English
+        // default and an Arabic reader saw the English name on every page.
+        expect(arN.platform_title).toBeDefined();
+        expect(arN.platform_title).toBe(PLATFORM_NAME_AR);
     });
 });
