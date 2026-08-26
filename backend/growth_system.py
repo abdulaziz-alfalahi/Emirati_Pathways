@@ -27,6 +27,140 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+try:
+    from backend import outbound_mail
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+
+from html import escape as html_escape
+
+
+#: What an invited company is being asked to become. The operator picks the
+#: role at invite time, so the message must say which one — "you have been
+#: invited" without saying as what is how an employer decides it is phishing.
+_ROLE_LABELS = {
+    'employer_admin': ('Employer Administrator', 'مسؤول جهة العمل'),
+    'recruiter': ('Recruiter', 'أخصائي توظيف'),
+    'hr_manager': ('HR Manager', 'مدير الموارد البشرية'),
+    'hr': ('HR', 'الموارد البشرية'),
+}
+
+
+def _role_label(role, arabic=False):
+    en, ar = _ROLE_LABELS.get((role or '').strip().lower(),
+                              ('Recruiter or HR Manager', 'أخصائي توظيف أو مدير موارد بشرية'))
+    return ar if arabic else en
+
+
+def _company_invitation_subject(company_name):
+    """Arabic first — the same reasoning as the seeker invitation.
+
+    The company's own name is in the subject because an employer receiving an
+    unexpected government email scans the subject line for something that
+    identifies THEM before deciding it is genuine.
+    """
+    return (f'دعوة للانضمام إلى {PLATFORM_NAME_AR} — {company_name} / '
+            f'Invitation to join the {PLATFORM_NAME_EN} — {company_name}')
+
+
+def _company_invitation_body(company_name, link, role=None):
+    """Plain-text company invitation, Arabic first.
+
+    See `_invitation_html` for why the delivered copy is HTML: a text body
+    carries no direction, so a mail client renders the trailing "." and ":" of
+    every Arabic line at the left edge.
+    """
+    return (
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنكم نشر "
+        f"الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.\n"
+        f"\n"
+        f"صفة الدعوة: {_role_label(role, arabic=True)}\n"
+        f"\n"
+        f"لإكمال التسجيل، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"Dear {company_name},\n"
+        f"\n"
+        f"Your organisation has been invited to join the {PLATFORM_NAME_EN}, "
+        f"where you can publish vacancies and review qualified Emirati candidates.\n"
+        f"\n"
+        f"Invited as: {_role_label(role)}\n"
+        f"\n"
+        f"To complete your registration, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"The link is valid for 7 days and can only be used once.\n"
+        f"If your organisation did not expect this invitation, you can ignore "
+        f"this message.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+    )
+
+
+def _company_invitation_html(company_name, link, role=None):
+    """The delivered company invitation. Arabic block first, marked dir="rtl".
+
+    Same shape as the seeker invitation, and for the same measured reason: in
+    Outlook a plain-text Arabic paragraph renders with its punctuation at the
+    LEFT edge, because a text body carries no direction.
+
+    The company name is escaped. It arrives from a NAFIS vacancy CSV — the same
+    source that produced 126 invitation tokens to real employers — and a stray
+    "<" in a trade name would eat the rest of the paragraph.
+    """
+    name = html_escape(company_name or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">تمت دعوة مؤسستكم للانضمام إلى {PLATFORM_NAME_AR}، حيث '
+        'يمكنكم نشر الشواغر والاطلاع على المرشحين الإماراتيين المؤهلين.</p>'
+        f'<p style="{p}">صفة الدعوة: <strong>{html_escape(_role_label(role, arabic=True))}</strong></p>'
+        f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
+        # The URL stays LTR inside the Arabic block — see the seeker invitation.
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
+        'إذا لم تكن مؤسستكم تتوقع هذه الدعوة، يمكنكم تجاهل هذه الرسالة.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">Your organisation has been invited to join the '
+        f'{PLATFORM_NAME_EN}, where you can publish vacancies and review '
+        'qualified Emirati candidates.</p>'
+        f'<p style="{p}">Invited as: <strong>{html_escape(_role_label(role))}</strong></p>'
+        f'<p style="{p}">To complete your registration, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">The link is valid for 7 days and can only be used '
+        'once.<br>If your organisation did not expect this invitation, you can '
+        'ignore this message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '</div>'
+    )
+
+
 class GrowthSystem:
     def __init__(self, db_connection=None):
         self.conn = db_connection
@@ -578,20 +712,35 @@ class GrowthSystem:
 
                         record = cur.fetchone()
 
-                        # Mock email
                         frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
                         link = f"{frontend_url}/join/{token}"
-                        print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
-                        print(f"  To: {company.get('email', 'N/A')}")
-                        print(f"  Subject: Join Emirati Human Development Platform — {company.get('name', '')}")
-                        print(f"  Body:")
-                        print(f"  Dear {company.get('name', '')},")
-                        print(f"  You have been invited to join the Emirati Human Development Platform")
-                        print(f"  as a Recruiter or HR Manager for your company.")
-                        print(f"  Click the link below to complete your registration:")
-                        print(f"  🔗 MAGIC LINK: {link}")
-                        print(f"  This link expires in 7 days.")
-                        print(f"─────────────────────────────────────────────────────────────\n")
+
+                        # Queued for per-message approval, never sent from here.
+                        # Written on THIS cursor so the message commits — or
+                        # rolls back — with the token it carries: a queued email
+                        # holding a link to a token that never existed is the
+                        # orphan shape migration 086 had to clean up.
+                        #
+                        # A company with no email address on file still gets an
+                        # invitation record; the operator passes that link on by
+                        # hand. Queuing a message addressed to nobody would put
+                        # an unsendable row in the reviewer's queue for ever.
+                        company_email = (record['company_email'] or '').strip()
+                        message_id = None
+                        if company_email:
+                            message_id = outbound_mail.queue(
+                                to_email=company_email,
+                                to_name=record['company_name'],
+                                subject=_company_invitation_subject(record['company_name']),
+                                body_text=_company_invitation_body(
+                                    record['company_name'], link, record['intended_role']),
+                                body_html=_company_invitation_html(
+                                    record['company_name'], link, record['intended_role']),
+                                kind='company_invitation',
+                                related_type='company_invitation',
+                                related_id=str(record['id']),
+                                created_by=invited_by,
+                                cursor=cur)
 
                         results.append({
                             'id': str(record['id']),
@@ -600,6 +749,9 @@ class GrowthSystem:
                             'company_email': record['company_email'],
                             'intended_role': record['intended_role'],
                             'magic_link': link,
+                            'message_id': message_id,
+                            'message_status': ('awaiting_approval' if message_id
+                                               else 'no_email_on_file'),
                         })
 
                     except Exception as e:

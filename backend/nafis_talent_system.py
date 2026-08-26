@@ -20,21 +20,16 @@ from datetime import datetime, timedelta
 from html import escape as html_escape
 
 
-# The platform's name, in one place — mirrors frontend/src/lib/brand.ts.
-# THE QUOTES ARE PART OF THE NAME: "Emirati" / "إماراتي" is the product name
-# quoted inside the descriptive title, not emphasis. Before this was pinned,
-# the landing page and this email carried three different Arabic names between
-# them, which is not cosmetic when the name is the first thing a candidate sees
-# in a message from a government body they have never heard from.
-PLATFORM_NAME_EN = '"Emirati" Human Development Platform'
-PLATFORM_NAME_AR = 'منصة "إماراتي" للتنمية البشرية'
-# The Council is a different body from the platform it runs, so it carries no
-# quotes. Its English name was wrong here until 2026-08-26 — "Emirati Human
-# Development Council", omitting "Resources" — caught because our sign-off and
-# the Exchange signature sat one above the other in the same message and
-# disagreed. The Arabic is plural, which is what settles it.
-COUNCIL_NAME_EN = 'Emirati Human Resources Development Council'
-COUNCIL_NAME_AR = 'مجلس تنمية الموارد البشرية الإماراتية'
+# The platform's and Council's names live in backend/brand.py — two modules
+# compose email that names them now, and a name copied into a second file is a
+# name that will eventually differ from the first. Re-exported here because
+# call sites and tests already import them from this module.
+try:
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +81,7 @@ def _invitation_body(full_name, link):
         f"\n"
         f"— {COUNCIL_NAME_AR}\n"
         f"\n"
-        f"───────────────────────────────\n"
+        f"{BILINGUAL_RULE}\n"
         f"\n"
         f"Dear {full_name},\n"
         f"\n"

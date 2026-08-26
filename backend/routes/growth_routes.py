@@ -276,10 +276,18 @@ def invite_companies():
             from backend.email_delivery import email_configured, invitation_result_message
         except ImportError:  # pragma: no cover - dual-root import
             from email_delivery import email_configured, invitation_result_message
+        # Each invitation queues a real email that waits for per-message
+        # approval. A company with no address on file gets a link and no
+        # message, so the counts differ and both are reported.
+        queued = [r for r in successful if r.get('message_id')]
+        no_email = [r for r in successful if r.get('message_status') == 'no_email_on_file']
         return jsonify({
             'success': True,
             'email_delivery_configured': email_configured(),
-            'message': invitation_result_message(len(successful), len(failed)),
+            'messages_awaiting_approval': len(queued),
+            'without_email_on_file': len(no_email),
+            'message': invitation_result_message(len(successful), len(failed),
+                                                 queued_count=len(queued)),
             'invitations': successful,
             'errors': failed,
         })
