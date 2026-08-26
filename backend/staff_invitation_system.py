@@ -47,6 +47,153 @@ ALLOWED_STAFF_ROLES = (
 )
 DEFAULT_EXPIRY_DAYS = 7
 
+try:
+    from backend import outbound_mail
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    import outbound_mail
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR, BILINGUAL_RULE)
+
+from html import escape as html_escape
+
+
+#: The role is NAMED in this message, unlike the employer invitation.
+#
+# That difference is deliberate. An employer invitation goes to a shared mailbox
+# from a NAFIS CSV, so the operator was guessing a job title for someone they
+# could not identify. Here the operator typed this person's name, address and
+# role on purpose — the role is a fact about the invitation, not a guess about
+# the reader, and leaving it out would make a government email vaguer than it
+# needs to be.
+#
+# ARABIC BELOW IS A BEST RENDERING and is worth a native check before this
+# carries real traffic; the English is authoritative.
+_STAFF_ROLE_LABELS = {
+    'career_services_operator': ('Career Services Operator', 'مشغّل خدمات المسار المهني'),
+    'call_center_agent':        ('Call Centre Agent', 'موظف مركز الاتصال'),
+    'talent_operator':          ('Talent Operator', 'مشغّل المواهب'),
+    'platform_operator':        ('Platform Operator', 'مشغّل المنصة'),
+    'education_operator':       ('Education Operator', 'مشغّل قطاع التعليم'),
+    'assessment_operator':      ('Assessment Operator', 'مشغّل التقييم'),
+    'mentorship_operator':      ('Mentorship Operator', 'مشغّل الإرشاد'),
+    'community_operator':       ('Community Operator', 'مشغّل المجتمعات'),
+    'professional_dev_operator':('Professional Development Operator', 'مشغّل التطوير المهني'),
+    'employer_relations':       ('Employer Relations', 'علاقات جهات العمل'),
+    'advisor':                  ('Academic Advisor', 'المرشد الأكاديمي'),
+    'internship_coordinator':   ('Internship Coordinator', 'منسّق التدريب العملي'),
+    'assessor':                 ('Assessor', 'المُقيِّم'),
+    'coach':                    ('Career Coach', 'المدرّب المهني'),
+    'mentor':                   ('Mentor', 'الموجّه'),
+    'compliance_auditor':       ('Compliance Auditor', 'مدقّق الامتثال'),
+}
+
+
+def _staff_role_label(role, arabic=False):
+    pair = _STAFF_ROLE_LABELS.get((role or '').strip().lower())
+    if not pair:
+        # Should be unreachable: validate_role rejects anything not invitable.
+        # If it ever happens, show nothing rather than a raw identifier.
+        return 'المنصة' if arabic else 'the platform'
+    return pair[1] if arabic else pair[0]
+
+
+def _staff_invitation_subject(role):
+    """English first. Arabic leads only the NAFIS candidate invitation, whose
+    audience is specifically Emirati nationals; everything else on this
+    platform is professional correspondence."""
+    return (f'Your invitation to join the {PLATFORM_NAME_EN} as '
+            f'{_staff_role_label(role)} / '
+            f'دعوتك للانضمام إلى {PLATFORM_NAME_AR}')
+
+
+def _staff_invitation_body(full_name, role, link, organization=None):
+    """Plain-text staff invitation, English first.
+
+    THIS ONE IS ADDRESSED TO A PERSON. Every other outbound message goes to an
+    organisation or a mailbox taken from a spreadsheet; here the operator typed
+    a name, so the message uses it.
+    """
+    who = full_name or 'Colleague'
+    org_en = f' on behalf of {organization}' if organization else ''
+    org_ar = f' نيابةً عن {organization}' if organization else ''
+    return (
+        f"Dear {who},\n"
+        f"\n"
+        f"You have been invited{org_en} to join the {PLATFORM_NAME_EN} as "
+        f"{_staff_role_label(role)}.\n"
+        f"\n"
+        f"To accept, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"You will be asked to verify your identity with UAE Pass. The link is "
+        f"valid for 7 days and can only be used once.\n"
+        f"If you were not expecting this invitation, you can ignore this message.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"عزيزي/عزيزتي {who}،\n"
+        f"\n"
+        f"تمت دعوتك{org_ar} للانضمام إلى {PLATFORM_NAME_AR} بصفة "
+        f"{_staff_role_label(role, arabic=True)}.\n"
+        f"\n"
+        f"لقبول الدعوة، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"سيُطلب منك إثبات هويتك عبر الهوية الرقمية. الرابط صالح لمدة 7 أيام "
+        f"ويُستخدم مرة واحدة فقط.\n"
+        f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+    )
+
+
+def _staff_invitation_html(full_name, role, link, organization=None):
+    """The delivered staff invitation. English block first, Arabic second."""
+    who = html_escape(full_name or 'Colleague')
+    org = html_escape(organization or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    org_en = f' on behalf of <strong>{org}</strong>' if org else ''
+    org_ar = f' نيابةً عن <strong>{org}</strong>' if org else ''
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {who},</p>'
+        f'<p style="{p}">You have been invited{org_en} to join the '
+        f'{PLATFORM_NAME_EN} as '
+        f'<strong>{html_escape(_staff_role_label(role))}</strong>.</p>'
+        f'<p style="{p}">To accept, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">You will be asked to verify your identity with UAE '
+        'Pass. The link is valid for 7 days and can only be used once.<br>'
+        'If you were not expecting this invitation, you can ignore this '
+        'message.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">عزيزي/عزيزتي {who}،</p>'
+        f'<p style="{p}">تمت دعوتك{org_ar} للانضمام إلى {PLATFORM_NAME_AR} بصفة '
+        f'<strong>{html_escape(_staff_role_label(role, arabic=True))}</strong>.</p>'
+        f'<p style="{p}">لقبول الدعوة، افتح الرابط التالي:</p>'
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">سيُطلب منك إثبات هويتك عبر الهوية الرقمية. الرابط صالح '
+        'لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>إذا لم تكن تتوقع هذه الدعوة، '
+        'يمكنك تجاهل هذه الرسالة.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '</div>'
+    )
+
 
 class StaffInvitationSystem:
     """Create / list / revoke / redeem platform-staff invitations."""
@@ -86,11 +233,35 @@ class StaffInvitationSystem:
                 """, (token, full_name, email, phone, role, organization, notes,
                       expires_at, str(invited_by)[:15] if invited_by else None))
                 row = dict(cur.fetchone())
+
+                # Queue the invitation email on THIS cursor, so the message
+                # commits or rolls back with the token it carries. An address
+                # is mandatory for a staff invitation, unlike a colleague
+                # invitation, so there is no no-email branch here.
+                link = self.build_link(token)
+                row['message_id'] = outbound_mail.queue(
+                    to_email=email,
+                    to_name=full_name,
+                    subject=_staff_invitation_subject(role),
+                    body_text=_staff_invitation_body(
+                        full_name, role, link, organization),
+                    body_html=_staff_invitation_html(
+                        full_name, role, link, organization),
+                    kind='staff_invitation',
+                    related_type='staff_invitation',
+                    related_id=str(row.get('id')),
+                    created_by=str(invited_by)[:15] if invited_by else None,
+                    cursor=cur)
             conn.commit()
         finally:
             conn.close()
 
+        # The link is still returned. An administrator may need to pass it on
+        # by hand — the message waits for approval, and somebody starting on
+        # Sunday should not be blocked on a review queue.
         row['magic_link'] = self.build_link(token)
+        row['message_status'] = ('awaiting_approval' if row.get('message_id')
+                                 else 'not_queued')
         return row
 
     @staticmethod

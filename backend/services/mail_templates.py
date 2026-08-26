@@ -33,6 +33,9 @@ try:
         _vacancy_verification_html, _vacancy_verification_subject)
     from backend.company_team_system import (
         _team_invitation_body, _team_invitation_html, _team_invitation_subject)
+    from backend.staff_invitation_system import (
+        _staff_invitation_body, _staff_invitation_html,
+        _staff_invitation_subject, _staff_role_label, ALLOWED_STAFF_ROLES)
     from backend.db_utils import execute_query
 except ImportError:                          # pragma: no cover — dual root
     import outbound_mail
@@ -44,6 +47,9 @@ except ImportError:                          # pragma: no cover — dual root
         _vacancy_verification_html, _vacancy_verification_subject)
     from company_team_system import (
         _team_invitation_body, _team_invitation_html, _team_invitation_subject)
+    from staff_invitation_system import (
+        _staff_invitation_body, _staff_invitation_html,
+        _staff_invitation_subject, _staff_role_label, ALLOWED_STAFF_ROLES)
     from db_utils import execute_query
 
 _P = outbound_mail.TEMPLATE_PROBE
@@ -98,6 +104,27 @@ def _team_invitation():
     return subject, separator.join(bodies), separator.join(htmls)
 
 
+def _staff_invitation():
+    """Sixteen invitable roles, and the role is the only thing that varies.
+
+    Rendering all sixteen messages would give the reviewer sixteen near-identical
+    pages. Instead: one full message, then every role label appended. The
+    reviewer reads the wording once and checks the labels as a list, and the
+    fingerprint still covers all of them — changing any label invalidates the
+    approval.
+    """
+    role = 'career_services_operator'
+    subject = _staff_invitation_subject(role)
+    body = _staff_invitation_body(_P['name'], role, _P['link'], 'ZZ-PROBE-ORG')
+    labels = '\n'.join(
+        f'  {r:28} {_staff_role_label(r)}  /  {_staff_role_label(r, arabic=True)}'
+        for r in sorted(ALLOWED_STAFF_ROLES))
+    body += ('\n\n' + ('=' * 60) + '\n\n'
+             'The role above varies. Every invitable role reads as:\n\n' + labels + '\n')
+    html = _staff_invitation_html(_P['name'], role, _P['link'], 'ZZ-PROBE-ORG')
+    return subject, body, html
+
+
 #: kind -> (human label, renderer). The kind must match what the flow passes to
 #: outbound_mail.queue(), or the message can never be released.
 TEMPLATES = {
@@ -105,6 +132,7 @@ TEMPLATES = {
     'company_invitation': ('Employer invitation (magic link)', _company_invitation),
     'vacancy_verification': ('Vacancy verification (NAFIS import)', _vacancy_verification),
     'team_invitation': ('Colleague invitation (sent by an employer admin)', _team_invitation),
+    'staff_invitation': ('Platform staff invitation', _staff_invitation),
 }
 
 
