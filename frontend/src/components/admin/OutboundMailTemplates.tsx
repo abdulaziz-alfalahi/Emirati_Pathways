@@ -53,6 +53,8 @@ interface Template {
     approved_at?: string | null;
     approved_by_name?: string | null;
     note?: string | null;
+    /** [english, arabic] pairs describing what changes from message to message. */
+    varies?: [string, string][];
 }
 
 const KIND_LABELS: Record<string, [string, string]> = {
@@ -243,6 +245,32 @@ const OutboundMailTemplates: React.FC = () => {
                         {t.sample_subject}
                     </div>
 
+                    {/* WHAT CHANGES, before the sample rather than after it.
+                        A sample renders ONE set of values, and a plausible real
+                        value reads as fixed text: "ZZ-PROBE-ORG" is obviously a
+                        placeholder, "Career Services Operator" is not. Without
+                        this, an approver can reasonably conclude every staff
+                        invitation names the same role. */}
+                    {t.varies && t.varies.length > 0 && (
+                        <div style={{ background: brand.blueBg, border: `1px solid ${brand.border}`,
+                                      borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 700, color: brand.blueText,
+                                          marginBottom: 4 }}>
+                                {b('What changes in each message', 'ما يتغيّر في كل رسالة')}
+                            </div>
+                            <ul style={{ margin: 0, paddingInlineStart: 18, fontSize: 12.5,
+                                         color: brand.textPrimary }}>
+                                {t.varies.map(([en, ar], i) => (
+                                    <li key={i} style={{ marginBottom: 2 }}>{isAr ? ar : en}</li>
+                                ))}
+                            </ul>
+                            <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 6 }}>
+                                {b('Everything else below is exactly what the recipient reads.',
+                                   'وكل ما عدا ذلك أدناه هو ما يقرأه المستلم تماماً.')}
+                            </div>
+                        </div>
+                    )}
+
                     {/* The full text. This is the only reading anyone does of what
                         hundreds of people will receive. */}
                     <pre style={{ background: brand.muted, border: `1px solid ${brand.border}`,
@@ -252,11 +280,6 @@ const OutboundMailTemplates: React.FC = () => {
                                   margin: '0 0 8px' }}>
                         {t.sample_body}
                     </pre>
-
-                    <p style={{ fontSize: 12, color: brand.textSecondary, margin: '0 0 10px' }}>
-                        {b('Names, links and job titles above are placeholders — each delivered message carries the real ones.',
-                           'الأسماء والروابط والمسميات أعلاه نصوص بديلة — وكل رسالة تُرسل تحمل البيانات الحقيقية.')}
-                    </p>
 
                     {t.status === 'pending' && (
                         <>

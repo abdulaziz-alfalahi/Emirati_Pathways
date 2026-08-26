@@ -407,3 +407,42 @@ def test_employer_messages_lead_in_english_and_candidate_ones_in_arabic():
 
     vacancy = _vacancy_verification_body('X', 'T', 'L')
     assert vacancy.index('Dear X') < vacancy.index('السادة')
+
+
+def test_every_template_declares_what_varies():
+    """A sample renders ONE set of values, and a plausible real value reads as
+    fixed text. The owner asked whether "Career Services Operator" changes with
+    the selected role — ZZ-PROBE-ORG reads as a placeholder and a real job title
+    does not, so an approver could reasonably conclude it never changes.
+    """
+    from services.mail_templates import TEMPLATES, varies_for
+    for kind in TEMPLATES:
+        assert varies_for(kind), f'{kind} does not say what varies'
+        for entry in varies_for(kind):
+            en, ar = entry
+            assert en and ar, f'{kind} has an untranslated entry'
+
+
+def test_what_varies_is_NOT_part_of_the_fingerprint():
+    """It is documentation about the template, not the message.
+
+    Folding it into render() would move every fingerprint and invalidate
+    approvals the owner has already given, for a change to the approval screen.
+    """
+    source = open(os.path.join(BACKEND, 'services', 'mail_templates.py'),
+                  encoding='utf-8').read()
+    render_block = source[source.index('def render('):source.index('def fingerprint_for(')]
+    assert 'varies' not in render_block
+    fp_block = source[source.index('def fingerprint_for('):source.index('def register_all(')]
+    assert 'varies' not in fp_block
+    register_block = source[source.index('def register_all('):]
+    assert 'varies' not in register_block, (
+        'storing it would make a documentation edit create a new template version'
+    )
+
+
+def test_the_declared_variables_are_attached_when_templates_are_listed():
+    routes = open(os.path.join(BACKEND, 'routes', 'outbound_mail_routes.py'),
+                  encoding='utf-8').read()
+    block = routes[routes.index('def list_templates('):routes.index('def register_templates(')]
+    assert 'varies_for' in block
