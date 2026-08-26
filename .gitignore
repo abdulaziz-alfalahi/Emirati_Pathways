@@ -28,6 +28,11 @@ eggs/
 .eggs/
 lib/
 lib64/
+# ...but frontend/src/lib is SOURCE, not build output. The rule above comes from
+# the Python packaging block and swallowed it by accident: only utils.ts is
+# tracked there, because it predates the rule. Anything added since would have
+# been silently uncommittable — brand.ts nearly was, 2026-08-26.
+!frontend/src/lib/
 parts/
 sdist/
 var/

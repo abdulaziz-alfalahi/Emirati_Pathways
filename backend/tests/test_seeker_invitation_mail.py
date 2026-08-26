@@ -259,3 +259,61 @@ def test_the_delivered_body_is_the_html_one():
     path = os.path.join(BACKEND, 'nafis_talent_system.py')
     source = open(path, encoding='utf-8').read()
     assert 'body_html=_invitation_html(' in source
+
+
+# ── The platform's name ─────────────────────────────────────────────────────
+#
+# The quotes are part of the name: "Emirati" / "إماراتي" is the product name
+# quoted inside the descriptive title, not emphasis. Before this was pinned,
+# the landing page and this email carried three different Arabic names between
+# them — and the name is the first thing a candidate sees in a message from a
+# government body they have never heard from.
+
+from nafis_talent_system import (  # noqa: E402
+    PLATFORM_NAME_EN, PLATFORM_NAME_AR, COUNCIL_NAME_EN, COUNCIL_NAME_AR,
+)
+
+
+def test_the_quotes_are_part_of_the_name():
+    assert PLATFORM_NAME_EN == '"Emirati" Human Development Platform'
+    assert PLATFORM_NAME_AR == 'منصة "إماراتي" للتنمية البشرية'
+
+
+def test_the_name_appears_in_the_subject_in_both_languages():
+    subject = _invitation_subject()
+    assert PLATFORM_NAME_EN in subject
+    assert PLATFORM_NAME_AR in subject
+
+
+def test_the_name_appears_in_both_bodies():
+    for render in (_invitation_body, _invitation_html):
+        out = render('X', LINK)
+        assert PLATFORM_NAME_EN in out
+        assert PLATFORM_NAME_AR in out
+
+
+def test_the_superseded_names_are_gone():
+    """Two older Arabic names were in use. Either reappearing means the name
+    has drifted again."""
+    source = open(os.path.join(BACKEND, 'nafis_talent_system.py'),
+                  encoding='utf-8').read()
+    assert 'منصة تنمية الموارد البشرية الإماراتية' not in source.replace(
+        COUNCIL_NAME_AR, '')          # the COUNCIL keeps that wording
+    assert 'منصة رحلة المورد البشري الإماراتي' not in source
+
+
+def test_the_council_was_not_renamed():
+    """Only the platform was renamed. The Council is a different body."""
+    assert COUNCIL_NAME_EN == 'Emirati Human Development Council'
+    assert 'إماراتي"' not in COUNCIL_NAME_AR
+    body = _invitation_body('X', LINK)
+    assert COUNCIL_NAME_EN in body and COUNCIL_NAME_AR in body
+
+
+def test_the_quotes_survive_html_escaping():
+    """html.escape(quote=True) turns " into &quot;. In TEXT content that would
+    render as literal &quot; to the reader — so the name must not be escaped as
+    if it were an attribute value."""
+    html = _invitation_html('X', LINK)
+    assert '"Emirati" Human Development Platform' in html
+    assert '&quot;Emirati&quot;' not in html

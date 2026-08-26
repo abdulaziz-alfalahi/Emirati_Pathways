@@ -19,6 +19,20 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 from html import escape as html_escape
 
+
+# The platform's name, in one place — mirrors frontend/src/lib/brand.ts.
+# THE QUOTES ARE PART OF THE NAME: "Emirati" / "إماراتي" is the product name
+# quoted inside the descriptive title, not emphasis. Before this was pinned,
+# the landing page and this email carried three different Arabic names between
+# them, which is not cosmetic when the name is the first thing a candidate sees
+# in a message from a government body they have never heard from.
+PLATFORM_NAME_EN = '"Emirati" Human Development Platform'
+PLATFORM_NAME_AR = 'منصة "إماراتي" للتنمية البشرية'
+# The Council is a different body from the platform it runs, and was NOT
+# renamed. Kept here so the two are not confused by whoever edits one of them.
+COUNCIL_NAME_EN = 'Emirati Human Development Council'
+COUNCIL_NAME_AR = 'مجلس تنمية الموارد البشرية الإماراتية'
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -28,8 +42,8 @@ except ImportError:  # pragma: no cover — the app runs under both roots
 
 
 def _invitation_subject():
-    return ('Complete your registration — Emirati Human Development Platform / '
-            'أكمل تسجيلك — منصة تنمية الموارد البشرية الإماراتية')
+    return (f'Complete your registration — {PLATFORM_NAME_EN} / '
+            f'أكمل تسجيلك — {PLATFORM_NAME_AR}')
 
 
 def _invitation_body(full_name, link):
@@ -54,7 +68,7 @@ def _invitation_body(full_name, link):
     return (
         f"Dear {full_name},\n"
         f"\n"
-        f"You have been invited to join the Emirati Human Development Platform, "
+        f"You have been invited to join the {PLATFORM_NAME_EN}, "
         f"where you can complete your profile and be matched with opportunities "
         f"from employers across the UAE.\n"
         f"\n"
@@ -65,13 +79,13 @@ def _invitation_body(full_name, link):
         f"The link is valid for 7 days and can only be used once.\n"
         f"If you did not expect this invitation, you can ignore this message.\n"
         f"\n"
-        f"— Emirati Human Development Council\n"
+        f"— {COUNCIL_NAME_EN}\n"
         f"\n"
         f"───────────────────────────────\n"
         f"\n"
         f"عزيزي/عزيزتي {full_name}،\n"
         f"\n"
-        f"تمت دعوتك للانضمام إلى منصة تنمية الموارد البشرية الإماراتية، حيث يمكنك "
+        f"تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك "
         f"استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة الإمارات.\n"
         f"\n"
         f"لإكمال التسجيل، افتح الرابط التالي:\n"
@@ -81,7 +95,7 @@ def _invitation_body(full_name, link):
         f"الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.\n"
         f"إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.\n"
         f"\n"
-        f"— مجلس تنمية الموارد البشرية الإماراتية\n"
+        f"— {COUNCIL_NAME_AR}\n"
     )
 
 
@@ -112,22 +126,22 @@ def _invitation_html(full_name, link):
         'font-size:15px;line-height:1.6;color:#1F2937">'
         f'<div dir="ltr" style="text-align:left">'
         f'<p style="{p}">Dear {name},</p>'
-        f'<p style="{p}">You have been invited to join the Emirati Human '
-        'Development Platform, where you can complete your profile and be '
-        'matched with opportunities from employers across the UAE.</p>'
+        f'<p style="{p}">You have been invited to join the {PLATFORM_NAME_EN}, '
+        'where you can complete your profile and be matched with opportunities '
+        'from employers across the UAE.</p>'
         f'<p style="{p}">To complete your registration, open this link:</p>'
         f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
         f'<p style="{p}">The link is valid for 7 days and can only be used '
         'once.<br>If you did not expect this invitation, you can ignore this '
         'message.</p>'
-        f'<p style="{p}">— Emirati Human Development Council</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
         '</div>'
         '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
         f'<div dir="rtl" style="text-align:right">'
         f'<p style="{p}">عزيزي/عزيزتي {name}،</p>'
-        f'<p style="{p}">تمت دعوتك للانضمام إلى منصة تنمية الموارد البشرية '
-        'الإماراتية، حيث يمكنك استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى '
-        'جهات العمل في دولة الإمارات.</p>'
+        f'<p style="{p}">تمت دعوتك للانضمام إلى {PLATFORM_NAME_AR}، حيث يمكنك '
+        'استكمال ملفك الشخصي والتقدم للفرص المتاحة لدى جهات العمل في دولة '
+        'الإمارات.</p>'
         f'<p style="{p}">لإكمال التسجيل، افتح الرابط التالي:</p>'
         # The URL itself is LTR even inside the Arabic block: left to the
         # paragraph's rtl direction, a bidi client reorders the punctuation
@@ -136,7 +150,7 @@ def _invitation_html(full_name, link):
         f'<a href="{href}" style="{link_style}">{href}</a></p>'
         f'<p style="{p}">الرابط صالح لمدة 7 أيام ويُستخدم مرة واحدة فقط.<br>'
         'إذا لم تكن تتوقع هذه الدعوة، يمكنك تجاهل هذه الرسالة.</p>'
-        f'<p style="{p}">— مجلس تنمية الموارد البشرية الإماراتية</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
         '</div>'
         '</div>'
     )

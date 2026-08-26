@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { platformName, PLATFORM_NAME_EN } from '@/lib/brand';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -457,7 +458,9 @@ const BilingualHomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-dubai-bold text-foreground mb-4">
-              {translations.whyChoose?.title || 'Why Choose Emirati Human Development Platform?'}
+              {translations.whyChoose?.title || (currentLanguage === 'ar'
+                ? `لماذا ${platformName('ar')}؟`
+                : `Why Choose ${PLATFORM_NAME_EN}?`)}
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {translations.whyChoose?.subtitle ||
@@ -657,7 +660,7 @@ const BilingualHomePage: React.FC = () => {
             {/* Platform info */}
             <div className="md:col-span-1">
               <h3 className="text-white font-dubai-bold text-lg mb-4">
-                {currentLanguage === 'ar' ? 'منصة رحلة المورد البشري الإماراتي' : 'Emirati Human Development Platform'}
+                {platformName(currentLanguage)}
               </h3>
               <p className="text-sm leading-relaxed">
                 {translations.footer?.description ||
@@ -702,7 +705,9 @@ const BilingualHomePage: React.FC = () => {
           {/* Bottom bar */}
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs">
-              {translations.footer?.copyright || '© 2025 Emirati Human Development Platform. All rights reserved.'}
+              {translations.footer?.copyright || (currentLanguage === 'ar'
+                ? `© 2026 ${platformName('ar')}. جميع الحقوق محفوظة.`
+                : `© 2026 ${PLATFORM_NAME_EN}. All rights reserved.`)}
             </p>
             {/* On the dark footer the brand teal is only 2.9:1 — light end of the
                 ramp instead, which reads as brand AND passes AA. */}
