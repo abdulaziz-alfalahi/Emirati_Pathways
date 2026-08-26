@@ -36,6 +36,7 @@ try:
     from backend.staff_invitation_system import (
         _staff_invitation_body, _staff_invitation_html,
         _staff_invitation_subject, _staff_role_label, ALLOWED_STAFF_ROLES)
+    from backend.routes.board_meetings_routes import _board_notice_parts
     from backend.db_utils import execute_query
 except ImportError:                          # pragma: no cover — dual root
     import outbound_mail
@@ -50,6 +51,7 @@ except ImportError:                          # pragma: no cover — dual root
     from staff_invitation_system import (
         _staff_invitation_body, _staff_invitation_html,
         _staff_invitation_subject, _staff_role_label, ALLOWED_STAFF_ROLES)
+    from routes.board_meetings_routes import _board_notice_parts
     from db_utils import execute_query
 
 _P = outbound_mail.TEMPLATE_PROBE
@@ -161,6 +163,15 @@ TEMPLATE_VARIES = {
         ('the access granted — all three variants are shown below',
          'الصلاحية الممنوحة — النسخ الثلاث معروضة أدناه'),
     ],
+    'board_office_notice': [
+        ('the meeting title, date, duration and location',
+         'عنوان الاجتماع وتاريخه ومدته ومكانه'),
+        ('the agenda, which is omitted entirely when there is none',
+         'جدول الأعمال، ويُحذف كاملاً إذا لم يوجد'),
+        ('whether the meeting was scheduled, rescheduled or CANCELLED — all '
+         'three are shown below',
+         'ما إذا كان الاجتماع قد تم تحديده أو تغييره أو إلغاؤه — والثلاثة معروضة أدناه'),
+    ],
     'staff_invitation': [
         ("the invited person's name", 'اسم الشخص المدعو'),
         ('THE ROLE — every one of the sixteen is listed below',
@@ -177,6 +188,34 @@ def varies_for(kind):
     return TEMPLATE_VARIES.get(kind, [])
 
 
+#: The three kinds of board notice are three different messages to an office
+#: diary — "has been cancelled" and "has been scheduled" are not variations on
+#: a theme — so all three are sampled and fingerprinted together.
+_BOARD_NOTICE_KINDS = ('scheduled', 'rescheduled', 'cancelled')
+
+
+def _board_office_notice():
+    from datetime import datetime
+    # A FIXED date, not now(): a probe that changes daily would move the
+    # fingerprint every day and retire the owner's approval overnight.
+    meeting = {
+        'id': 'ZZ-PROBE-MEETING',
+        'title': 'ZZ-PROBE-MEETING-TITLE',
+        'scheduled_at': datetime(2026, 1, 1, 10, 0),
+        'duration_minutes': 60,
+        'location': 'ZZ-PROBE-LOCATION',
+        'agenda': 'ZZ-PROBE-AGENDA',
+    }
+    subjects, bodies, htmls = [], [], []
+    for kind in _BOARD_NOTICE_KINDS:
+        subject, text, html = _board_notice_parts(meeting, kind)
+        subjects.append(f'[ {kind} ]  {subject}')
+        bodies.append(f'[ if the meeting is {kind} ]\n\n' + text)
+        htmls.append(html)
+    separator = '\n\n' + ('=' * 60) + '\n\n'
+    return ' / '.join(subjects), separator.join(bodies), separator.join(htmls)
+
+
 #: kind -> (human label, renderer). The kind must match what the flow passes to
 #: outbound_mail.queue(), or the message can never be released.
 TEMPLATES = {
@@ -185,6 +224,7 @@ TEMPLATES = {
     'vacancy_verification': ('Vacancy verification (NAFIS import)', _vacancy_verification),
     'team_invitation': ('Colleague invitation (sent by an employer admin)', _team_invitation),
     'staff_invitation': ('Platform staff invitation', _staff_invitation),
+    'board_office_notice': ('Board meeting notice to a member\'s office', _board_office_notice),
 }
 
 
