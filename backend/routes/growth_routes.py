@@ -52,7 +52,20 @@ def import_vacancies():
         
         return jsonify({
             'success': True,
-            'message': f"Processed {report['total_rows']} rows. Created {report['companies_created']} companies and {report['jobs_created']} jobs. Sent {report['emails_sent']} emails.",
+            # NOT "Sent N emails" — nothing is sent by an import. Each message
+            # waits for per-message approval, and an import of a few hundred
+            # rows queues a few hundred messages, so the operator has to be
+            # told that plainly rather than discovering it in the queue.
+            'message': (f"Processed {report['total_rows']} rows. Created "
+                        f"{report['companies_created']} companies and "
+                        f"{report['jobs_created']} jobs. Queued "
+                        f"{report['messages_queued']} email(s) — NOTHING HAS "
+                        f"BEEN SENT YET; each one waits for approval under "
+                        f"Admin → Outbound Mail"
+                        + (f", and {report['without_email_on_file']} vacancy(ies) "
+                           f"had no company email on file"
+                           if report.get('without_email_on_file') else '')
+                        + "."),
             'report': report
         })
         

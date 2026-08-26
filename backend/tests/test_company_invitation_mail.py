@@ -155,3 +155,87 @@ def test_the_operator_is_told_messages_are_waiting_not_sent():
     assert 'NOTHING HAS BEEN SENT YET' in message
     assert 'Outbound Mail' in message
     assert not message.startswith('Sent ')
+
+
+# ── Vacancy verification: one message PER VACANCY ROW ───────────────────────
+#
+# The highest-volume flow on the platform. A single CSV import fans out to one
+# message per job, which is how one test run on 2026-08-21 produced 126 live
+# tokens across 219 domains. Two things were wrong with it beyond not sending:
+# the link was hardcoded to http://localhost:8089, and each print incremented a
+# counter the import endpoint reported as "Sent N emails".
+
+from growth_system import (  # noqa: E402
+    _vacancy_verification_body, _vacancy_verification_html,
+    _vacancy_verification_subject,
+)
+
+JOB = 'Site Engineer'
+VLINK = 'https://stg-emirati.ehrdc.gov.ae/verify-job/tok123'
+
+
+def test_the_link_is_not_hardcoded_to_localhost():
+    """Had this flow ever really sent, every employer would have received a
+    link to their own machine."""
+    source = open(os.path.join(BACKEND, 'growth_system.py'), encoding='utf-8').read()
+    assert 'http://localhost:8089/verify-job/' not in source
+    assert "os.environ.get('FRONTEND_URL'" in source
+
+
+def test_the_subject_carries_both_the_company_and_the_job():
+    """An employer with twelve open roles gets twelve messages, and the
+    reviewer sees twelve queue rows. Without the job title they are
+    indistinguishable — to both of them."""
+    subject = _vacancy_verification_subject(COMPANY, JOB)
+    assert COMPANY in subject and JOB in subject
+    assert subject.index('التحقق من شاغر') < subject.index('Verify the vacancy')
+
+
+def test_arabic_leads_and_the_url_stays_ltr():
+    body = _vacancy_verification_body(COMPANY, JOB, VLINK)
+    assert body.index('السادة') < body.index(f'Dear {COMPANY}')
+    html = _vacancy_verification_html(COMPANY, JOB, VLINK)
+    assert html.index('dir="rtl"') < html.index('dir="ltr"')
+    assert html.split('<hr', 1)[0].count('dir="ltr"') == 1   # the URL inside the Arabic half
+
+
+def test_the_job_title_cannot_inject_markup():
+    """A job title is free text typed by an employer — likelier than the
+    company name to contain a character that breaks markup."""
+    html = _vacancy_verification_html(COMPANY, '<script>alert(1)</script>', VLINK)
+    assert '<script>' not in html
+    assert '&lt;script&gt;' in html
+
+
+def test_it_offers_a_way_out_for_a_closed_vacancy():
+    """These come from data the employer never gave us directly, and a vacancy
+    may have been filled months ago."""
+    body = _vacancy_verification_body(COMPANY, JOB, VLINK)
+    assert 'no longer open' in body
+    assert 'لم يعد هذا الشاغر متاحاً' in body
+
+
+def test_a_vacancy_with_no_company_email_queues_nothing():
+    source = open(os.path.join(BACKEND, 'growth_system.py'), encoding='utf-8').read()
+    assert "if not (email or '').strip():" in source
+    assert "'without_email_on_file'" in source
+
+
+def test_the_import_no_longer_counts_or_claims_emails_sent():
+    """The counter fed a response that said "Sent N emails" when none had been."""
+    source = open(os.path.join(BACKEND, 'growth_system.py'), encoding='utf-8').read()
+    routes = open(os.path.join(BACKEND, 'routes', 'growth_routes.py'), encoding='utf-8').read()
+    assert "'emails_sent': 0" not in source
+    assert "report['emails_sent'] += 1" not in source
+    assert 'Sent {report[' not in routes
+    # The phrase is split across concatenated literals in the source, so match
+    # a contiguous fragment rather than the sentence the operator will read.
+    assert 'BEEN SENT YET' in routes
+    assert 'Outbound Mail' in routes
+    assert 'messages_queued' in routes
+
+
+def test_the_verification_message_joins_the_import_transaction():
+    source = open(os.path.join(BACKEND, 'growth_system.py'), encoding='utf-8').read()
+    assert 'cursor=cur' in source
+    assert '[EMAIL SIMULATION]' not in source

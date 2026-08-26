@@ -56,6 +56,104 @@ def _role_label(role, arabic=False):
     return ar if arabic else en
 
 
+def _vacancy_verification_subject(company_name, job_title):
+    """Company AND job title, both languages.
+
+    A CSV import sends one of these per vacancy row, so an employer with twelve
+    open roles receives twelve messages, and the reviewer sees twelve queue
+    entries. Without the job title in the subject they are indistinguishable —
+    to the employer and to whoever is approving them.
+    """
+    return (f'التحقق من شاغر "{job_title}" — {company_name} / '
+            f'Verify the vacancy "{job_title}" — {company_name}')
+
+
+def _vacancy_verification_body(company_name, job_title, link):
+    """Plain-text vacancy verification, Arabic first."""
+    return (
+        f"السادة/{company_name} المحترمين،\n"
+        f"\n"
+        f"وردنا ضمن بيانات نافس شاغر لديكم بعنوان \"{job_title}\".\n"
+        f"\n"
+        f"يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين المؤهلين "
+        f"والاطلاع على من يطابق متطلباتكم.\n"
+        f"\n"
+        f"للتأكيد، افتح الرابط التالي:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع هذه الرسالة، "
+        f"يمكنكم تجاهلها.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_AR}\n"
+        f"\n"
+        f"{BILINGUAL_RULE}\n"
+        f"\n"
+        f"Dear {company_name},\n"
+        f"\n"
+        f"A vacancy at your organisation — \"{job_title}\" — appears in the NAFIS "
+        f"data provided to us.\n"
+        f"\n"
+        f"Please confirm its details so it can be shown to qualified Emirati "
+        f"candidates, and review those who match your requirements.\n"
+        f"\n"
+        f"To confirm, open this link:\n"
+        f"\n"
+        f"{link}\n"
+        f"\n"
+        f"If this vacancy is no longer open, or your organisation did not expect "
+        f"this message, you can ignore it.\n"
+        f"\n"
+        f"— {COUNCIL_NAME_EN}\n"
+    )
+
+
+def _vacancy_verification_html(company_name, job_title, link):
+    """The delivered vacancy verification. Arabic block first, dir="rtl".
+
+    Company name and job title BOTH come from a NAFIS vacancy CSV, so both are
+    escaped — a job title is free text typed by an employer, which makes it the
+    likelier of the two to contain a character that breaks markup.
+    """
+    name = html_escape(company_name or '')
+    title = html_escape(job_title or '')
+    href = html_escape(link, quote=True)
+    link_style = 'color:#1E40AF;word-break:break-all'
+    p = 'margin:0 0 14px'
+    return (
+        '<div style="font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        'font-size:15px;line-height:1.6;color:#1F2937">'
+        f'<div dir="rtl" style="text-align:right">'
+        f'<p style="{p}">السادة/{name} المحترمين،</p>'
+        f'<p style="{p}">وردنا ضمن بيانات نافس شاغر لديكم بعنوان '
+        f'<strong>{title}</strong>.</p>'
+        f'<p style="{p}">يرجى تأكيد تفاصيل الشاغر لعرضه على المرشحين الإماراتيين '
+        'المؤهلين والاطلاع على من يطابق متطلباتكم.</p>'
+        f'<p style="{p}">للتأكيد، افتح الرابط التالي:</p>'
+        f'<p style="{p};text-align:right" dir="ltr">'
+        f'<a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">إذا لم يعد هذا الشاغر متاحاً، أو لم تكن مؤسستكم تتوقع '
+        'هذه الرسالة، يمكنكم تجاهلها.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_AR}</p>'
+        '</div>'
+        '<hr style="border:none;border-top:1px solid #D1D5DB;margin:22px 0">'
+        f'<div dir="ltr" style="text-align:left">'
+        f'<p style="{p}">Dear {name},</p>'
+        f'<p style="{p}">A vacancy at your organisation — <strong>{title}</strong> '
+        '— appears in the NAFIS data provided to us.</p>'
+        f'<p style="{p}">Please confirm its details so it can be shown to '
+        'qualified Emirati candidates, and review those who match your '
+        'requirements.</p>'
+        f'<p style="{p}">To confirm, open this link:</p>'
+        f'<p style="{p}"><a href="{href}" style="{link_style}">{href}</a></p>'
+        f'<p style="{p}">If this vacancy is no longer open, or your organisation '
+        'did not expect this message, you can ignore it.</p>'
+        f'<p style="{p}">— {COUNCIL_NAME_EN}</p>'
+        '</div>'
+        '</div>'
+    )
+
+
 def _company_invitation_subject(company_name):
     """Arabic first — the same reasoning as the seeker invitation.
 
@@ -226,7 +324,11 @@ class GrowthSystem:
             'total_rows': 0,
             'companies_created': 0,
             'jobs_created': 0,
-            'emails_sent': 0,
+            # NOT 'emails_sent'. Nothing is sent here; each message waits
+            # for per-message approval. The old key fed a response that said
+            # "Sent N emails" when none had been.
+            'messages_queued': 0,
+            'without_email_on_file': 0,
             'errors': []
         }
         
@@ -383,9 +485,15 @@ class GrowthSystem:
                         # 4. Generate Magic Link
                         token_str = self._generate_verification_token(cur, job_id, company_email, company_name)
                         
-                        # 5. "Send" Email
-                        self._mock_send_email(company_email, company_name, job_title, token_str)
-                        report['emails_sent'] += 1
+                        # 5. Queue the verification email for approval.
+                        # On the SAME cursor as the job and its token, so a row
+                        # that rolls back does not leave a message behind.
+                        if self._queue_verification_email(
+                                cur, company_email, company_name, job_title,
+                                token_str, job_id):
+                            report['messages_queued'] += 1
+                        else:
+                            report['without_email_on_file'] += 1
                         
                         cur.execute("RELEASE SAVEPOINT sp_row")
                         
@@ -455,18 +563,40 @@ class GrowthSystem:
         
         return token
 
-    def _mock_send_email(self, email, company, job, token):
-        # MOCK EMAIL SENDER
-        # In real life, use SendGrid/SMTP
-        link = f"http://localhost:8089/verify-job/{token}"
-        print(f"\n[EMAIL SIMULATION] ---------------------------------------------------")
-        print(f"To: {email}")
-        print(f"Subject: Verify your vacancy for {job} at {company}")
-        print(f"Body:")
-        print(f"Hello {company},")
-        print(f"We have identified a vacancy '{job}' matching high-potential Emirati candidates.")
-        print(f"Please click here to verify requirements and view candidates:")
-        print(f"LINK: {link}")
+    def _queue_verification_email(self, cur, email, company, job, token, job_id,
+                                  invited_by=None):
+        """Hold a vacancy-verification message for approval. Returns its id.
+
+        Replaces a print that claimed to be an email. Two things were wrong
+        with it beyond not sending:
+
+          * The link was hardcoded to http://localhost:8089 — not even
+            FRONTEND_URL. Had this flow ever really sent, every employer would
+            have received a link to their own machine.
+          * The caller counted each one into report['emails_sent'], which the
+            import endpoint reported as "Sent N emails".
+
+        This runs ONCE PER VACANCY ROW, not once per company: a single CSV
+        import fans out to one message per job. That is how one test run on
+        2026-08-21 produced 126 live tokens across 219 domains. At that volume
+        the reviewer needs the company AND the job title in the subject, or the
+        queue is 126 indistinguishable rows.
+        """
+        if not (email or '').strip():
+            return None
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+        link = f"{frontend_url}/verify-job/{token}"
+        return outbound_mail.queue(
+            to_email=email.strip(),
+            to_name=company,
+            subject=_vacancy_verification_subject(company, job),
+            body_text=_vacancy_verification_body(company, job, link),
+            body_html=_vacancy_verification_html(company, job, link),
+            kind='vacancy_verification',
+            related_type='job_posting',
+            related_id=str(job_id),
+            created_by=invited_by,
+            cursor=cur)
         print(f"--------------------------------------------------------------------------\n")
         logger.info(f"Sent magic link to {email}")
 
