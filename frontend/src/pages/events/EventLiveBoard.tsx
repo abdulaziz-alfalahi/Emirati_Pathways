@@ -169,9 +169,14 @@ const EventLiveBoard: React.FC = () => {
      */
     const breakdown = (b: Breakdown, titleAr: string, titleEn: string,
                        colours: string[], translate?: Record<string, string>) => {
-        const enough = b.coverage_percent !== null
-            && b.coverage_percent >= MIN_COVERAGE_PERCENT
-            && b.known >= MIN_KNOWN;
+        // TWO different reasons not to draw this, and they need different
+        // wording. "Not enough data" beside "3 of 3 attendees have this" is a
+        // contradiction the reader has to resolve; the real reason there is
+        // that three people do not make a distribution.
+        const tooFewPeople = b.known < MIN_KNOWN;
+        const tooLittleKnown = b.coverage_percent === null
+            || b.coverage_percent < MIN_COVERAGE_PERCENT;
+        const enough = !tooFewPeople && !tooLittleKnown;
         return (
             <div style={{ background: brand.panel, border: `1px solid ${brand.line}`,
                           borderRadius: 16, padding: 20, flex: '1 1 320px' }}>
@@ -180,11 +185,13 @@ const EventLiveBoard: React.FC = () => {
 
                 {!enough ? (
                     <div style={{ color: brand.dim, fontSize: 13, lineHeight: 1.7 }}>
-                        لا تتوفر بيانات كافية لعرض هذا التوزيع
+                        {tooFewPeople
+                            ? 'عدد الحاضرين لا يكفي لعرض توزيع ذي دلالة'
+                            : 'البيانات المتوفرة لا تكفي لعرض هذا التوزيع'}
                         <div style={{ fontSize: 12, marginTop: 4 }}>
-                            {b.known} من {b.total} حاضراً لديهم هذه البيانات
-                            {' · '}
-                            not enough data to show a breakdown
+                            {tooFewPeople
+                                ? `${b.known} حاضراً حتى الآن · too few attendees so far for a meaningful breakdown`
+                                : `${b.known} من ${b.total} حاضراً لديهم هذه البيانات · not enough of the attendees have this on file`}
                         </div>
                     </div>
                 ) : (
