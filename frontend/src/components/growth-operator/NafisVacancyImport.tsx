@@ -140,6 +140,10 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
     const [showInviteConfirm, setShowInviteConfirm] = useState(false);
     const [inviteSending, setInviteSending] = useState(false);
     const [inviteResults, setInviteResults] = useState<any[] | null>(null);
+    // How many emails this actually put in the approval queue. The panel used
+    // to announce "Invitations Sent" — nothing is sent here; every message
+    // waits for the owner's approval and the recipient allow-list.
+    const [inviteQueued, setInviteQueued] = useState(0);
     const [inviteError, setInviteError] = useState('');
     // Platform sync: the CSV must also reach POST /api/growth/import — that is
     // what creates the companies (lead_source='nafis_import') and their NAFIS
@@ -952,11 +956,15 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                             </div>
                             <div>
                                 <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, margin: 0 }}>
-                                    {inviteResults ? t('Invitations Sent', 'تم إرسال الدعوات') : t('Confirm Invitation', 'تأكيد الدعوة')}
+                                    {inviteResults ? t('Invitations prepared', 'تم إعداد الدعوات') : t('Confirm Invitation', 'تأكيد الدعوة')}
                                 </h3>
                                 <p style={{ fontSize: 14, color: colors.textSecondary, margin: '4px 0 0' }}>
                                     {inviteResults
-                                        ? t(`${inviteResults.length} magic links generated`, `تم إنشاء ${inviteResults.length} رابط سحري`)
+                                        ? (inviteQueued > 0
+                                            ? t(`${inviteResults.length} link(s) generated · ${inviteQueued} email(s) waiting for approval — nothing has been sent yet`,
+                                                `تم إنشاء ${inviteResults.length} رابط · ${inviteQueued} رسالة بانتظار الاعتماد — لم يُرسل أي شيء بعد`)
+                                            : t(`${inviteResults.length} magic links generated · no emails prepared (no addresses on file)`,
+                                                `تم إنشاء ${inviteResults.length} رابط · لم تُعد أي رسائل (لا توجد عناوين مسجلة)`))
                                         : t(
                                             `You are about to invite ${selectedCompanies.size} companies to join ${PLATFORM_NAME_EN}`,
                                             `أنت على وشك دعوة ${selectedCompanies.size} شركة للانضمام إلى المسارات الإماراتية`
@@ -1142,6 +1150,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
 
                                                 if (response.data?.success) {
                                                     setInviteResults(response.data.invitations || []);
+                                                    setInviteQueued(response.data.messages_awaiting_approval ?? 0);
                                                 } else {
                                                     setInviteError(response.data?.error || t('Failed to send invitations', 'فشل إرسال الدعوات'));
                                                 }

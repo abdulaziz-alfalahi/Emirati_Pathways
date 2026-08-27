@@ -205,8 +205,21 @@ const GrowthOperatorDashboard: React.FC = () => {
   // Send / resend a magic-link invitation for a single pipeline company. The
   // Send Invite + Resend Link buttons previously had no onClick — the operator
   // had no working UI path to invite a company (C1 UAT [C1-OPR-4]); only the
-  // NAFIS-import bulk path worked. Auto-email is deferred, so we surface the
-  // magic link for the operator to copy (matches the invite-link feature).
+  // NAFIS-import bulk path worked.
+  //
+  // THIS ALSO COMPOSES AN EMAIL TO THE EMPLOYER, and used to say it did not.
+  //
+  // "Auto-email is deferred, so we surface the magic link for the operator to
+  // copy" was true when it was written and stopped being true when outbound
+  // mail shipped. The button kept telling the operator to send the link
+  // themselves while the platform quietly queued a message to the employer's
+  // real address. Reported 2026-08-27: an operator was asked about an
+  // invitation to a real employer and said he had not taken that action. He
+  // had clicked this button — and been told the opposite of what it did.
+  //
+  // Every message still waits behind the recipient allow-list and the owner's
+  // approval, so nothing reached anyone. The defect is that the person taking
+  // the action could not know they had taken it.
   const handleSendInvite = async (company: any) => {
     setInvitingCompanyId(company.id);
     try {
@@ -222,11 +235,16 @@ const GrowthOperatorDashboard: React.FC = () => {
       const result = r?.results?.[0] || r?.invitations?.[0] || {};
       const link = result.magic_link || result.magicLink || result.link || '';
       if (r.success !== false && (link || result.token)) {
-        window.prompt(
-          t('Invitation ready. Copy this magic link and send it to the employer:',
-            'الدعوة جاهزة. انسخ هذا الرابط وأرسله إلى صاحب العمل:'),
-          link
-        );
+        // Say what actually happened, in this order: the message first,
+        // because it is the part with a real employer's address on it.
+        const queued = r.messages_awaiting_approval ?? 0;
+        const to = company.contactEmail || '';
+        const what = queued > 0
+          ? t(`An email to ${to} has been prepared and is waiting for approval — it has NOT been sent yet. You can also pass this link on yourself:`,
+              `تم إعداد رسالة إلى ${to} وهي بانتظار الاعتماد — ولم تُرسل بعد. ويمكنك أيضاً إرسال هذا الرابط بنفسك:`)
+          : t('No email address on file for this employer, so no message was prepared. Send this link to them yourself:',
+              'لا يوجد بريد إلكتروني مسجل لجهة العمل هذه، لذلك لم تُعد أي رسالة. أرسل هذا الرابط إليهم بنفسك:');
+        window.prompt(what, link);
         await fetchDashboardStats();
       } else {
         alert(r.error || t('Failed to send invitation', 'فشل إرسال الدعوة'));
