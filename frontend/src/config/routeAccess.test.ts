@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { ROUTE_ROLES, canOpenPath, rolesForPath } from './routeAccess';
+import { GROWTH_OPERATOR_ROLES, ROUTE_ROLES, canOpenPath, rolesForPath } from './routeAccess';
 
 /**
  * ROUTE_ROLES must stay identical to what App.tsx actually enforces, and the
@@ -15,8 +15,14 @@ function rolesDeclaredInApp(): Record<string, string[]> {
     const roles = block.match(/allowedRoles=\{\[([\s\S]*?)\]\}/);
     if (!path || !roles) continue;
     if (roles.index !== undefined && roles.index > 600) continue;
+    // A spread of the shared constant is the OPPOSITE of drift — it is the one
+    // definition being reused — so resolve it rather than reading
+    // "...GROWTH_OPERATOR_ROLES" as a role literally called that.
+    const expanded = roles[1].replace(
+      /\.\.\.GROWTH_OPERATOR_ROLES/g,
+      GROWTH_OPERATOR_ROLES.map(r => `'${r}'`).join(', '));
     found['/' + path[1].replace(/^\//, '')] = [...new Set(
-      roles[1].split(',').map(r => r.trim().replace(/['"]/g, '').toLowerCase()).filter(Boolean)
+      expanded.split(',').map(r => r.trim().replace(/['"]/g, '').toLowerCase()).filter(Boolean)
     )].sort();
   }
   return found;

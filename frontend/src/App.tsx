@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { GROWTH_OPERATOR_ROLES } from '@/config/routeAccess';
+import EventLiveBoard from '@/pages/events/EventLiveBoard';
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -273,6 +275,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -330,6 +333,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -535,7 +539,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
+                  <ProtectedRoute allowedRoles={[...GROWTH_OPERATOR_ROLES, 'growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -543,7 +547,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard/:domain"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
+                  <ProtectedRoute allowedRoles={[...GROWTH_OPERATOR_ROLES, 'growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -948,7 +952,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/nafis-talent-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['talent_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['talent_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <NafisTalentDashboard />
                   </ProtectedRoute>
                 }
@@ -956,7 +960,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/education-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['education_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['education_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <EducationOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -964,7 +968,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/professional-dev-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['professional_dev_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['professional_dev_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <ProfessionalDevDashboard />
                   </ProtectedRoute>
                 }
@@ -972,7 +976,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/community-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['community_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['community_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <CommunityOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -980,7 +984,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/assessment-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['assessment_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['assessment_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <AssessmentOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -988,7 +992,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/mentorship-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['mentorship_operator', 'operator', 'growth_operator', 'admin', 'super_admin', 'platform_administrator']}>
+                  <ProtectedRoute allowedRoles={['mentorship_operator', 'operator', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'admin', 'super_admin', 'platform_administrator']}>
                     <MentorshipOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -1110,7 +1114,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/workspace/:companyId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'employer_admin', 'recruiter', 'growth_operator', 'employer_relations', 'admin', 'admin', 'candidate', 'candidate', 'seeker', 'employee']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'employer_admin', 'recruiter', 'growth_operator', ...GROWTH_OPERATOR_ROLES, 'employer_relations', 'admin', 'admin', 'candidate', 'candidate', 'seeker', 'employee']}>
                     <WorkspaceLayout />
                   </ProtectedRoute>
                 }
@@ -1134,6 +1138,7 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
               {/* Login Test Route */}
@@ -1190,6 +1195,7 @@ const AppContent: React.FC = () => {
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              <Route path="/live/:token" element={<EventLiveBoard />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 

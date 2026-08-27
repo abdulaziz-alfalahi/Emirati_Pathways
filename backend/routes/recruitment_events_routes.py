@@ -19,7 +19,7 @@ Decisions that shape this module:
 import io
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, request, Response
@@ -1216,3 +1216,244 @@ def event_funnel(event_id):
     except Exception as e:
         logger.error(f"funnel failed: {e}")
         return jsonify({'success': False, 'message': 'Failed to build the funnel'}), 500
+
+
+# ── Live turnout dashboard, shareable ───────────────────────────────────────
+#
+# Owner, 2026-08-27: a shareable live tracker for open days, like the one the
+# Ithra exhibition runs. That reference is open to anyone holding the URL — it
+# goes on a projector at the venue and into a group chat. Ours is the same idea
+# with an off switch (migration 091).
+#
+# WHAT A LINK-HOLDER MAY SEE, and what they may not:
+#
+#   shown   participating employers, registered, attended, walk-ins, and the
+#           gender and education of attendees
+#   hidden  interviewed, offered, hired
+#
+# The hiring funnel stays in the organiser view. Those numbers are commercially
+# sensitive to the employers standing in the room, and a live "hired: 2" beside
+# "340 attended" becomes a published statistic the moment the link is forwarded.
+# The split is enforced HERE, in the public endpoint, rather than by hoping the
+# front end asks for the right thing.
+
+import secrets as _secrets
+
+_SHARE_TOKEN_BYTES = 16          # 128 bits — guessing is not a strategy
+_SHARE_GRACE_HOURS = 24          # how long after an event a link keeps working
+
+
+@recruitment_events_bp.route('/<event_id>/share-link', methods=['POST'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def create_event_share_link(event_id):
+    """Mint a revocable public link to one event's live turnout board."""
+    ev = execute_query(
+        "SELECT id, title, ends_at FROM recruitment_events WHERE id = %s",
+        (event_id,), fetch_one=True)
+    if not ev:
+        return jsonify({'success': False, 'message': 'Event not found'}), 404
+
+    payload = request.get_json(silent=True) or {}
+    # Dies with the event, not on a fixed calendar date. An open-day board has
+    # no audience a week later, and a link that outlives its event is one nobody
+    # remembers to withdraw.
+    ends = ev.get('ends_at')
+    expires = (ends + timedelta(hours=_SHARE_GRACE_HOURS)) if ends else (
+        datetime.now() + timedelta(days=1))
+
+    row = execute_query("""
+        INSERT INTO event_share_links (event_id, token, created_by, expires_at, label)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id, token, expires_at
+    """, (event_id, _secrets.token_urlsafe(_SHARE_TOKEN_BYTES),
+          str(get_jwt_identity())[:15], expires,
+          (payload.get('label') or '').strip() or None), fetch_one=True)
+
+    base = (os.environ.get('FRONTEND_URL') or '').rstrip('/')
+    return jsonify({
+        'success': True,
+        'token': row['token'],
+        'url': f"{base}/live/{row['token']}",
+        'expires_at': row['expires_at'].isoformat() if row.get('expires_at') else None,
+        'note': ('Anyone with this link can see turnout and attendee '
+                 'demographics for this event. Hiring outcomes are not '
+                 'included. Revoke it at any time.'),
+    })
+
+
+@recruitment_events_bp.route('/<event_id>/share-link', methods=['GET'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def list_event_share_links(event_id):
+    rows = execute_query("""
+        SELECT l.id, l.token, l.label, l.created_at, l.expires_at,
+               l.revoked_at, l.view_count, l.last_seen_at,
+               COALESCE(u.full_name, u.first_name, l.created_by) AS created_by_name
+          FROM event_share_links l
+          LEFT JOIN users u ON u.id = l.created_by
+         WHERE l.event_id = %s
+         ORDER BY l.created_at DESC
+    """, (event_id,)) or []
+    base = (os.environ.get('FRONTEND_URL') or '').rstrip('/')
+    return jsonify({'success': True, 'links': [{
+        'id': r['id'],
+        'url': f"{base}/live/{r['token']}",
+        'label': r.get('label'),
+        'created_by_name': r.get('created_by_name'),
+        'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
+        'expires_at': r['expires_at'].isoformat() if r.get('expires_at') else None,
+        'revoked_at': r['revoked_at'].isoformat() if r.get('revoked_at') else None,
+        # Shown so an operator can tell a link nobody opened from one that has
+        # been passed around — the question they will ask before revoking.
+        'view_count': r.get('view_count', 0),
+        'last_seen_at': r['last_seen_at'].isoformat() if r.get('last_seen_at') else None,
+    } for r in rows]})
+
+
+@recruitment_events_bp.route('/share-link/<int:link_id>/revoke', methods=['POST'])
+@require_roles(*EVENT_ORGANISER_ROLES)
+def revoke_event_share_link(link_id):
+    """Turn a link off. Recorded with who and when, never deleted.
+
+    "Who turned this off and when" is the first question after a link leaks,
+    and a deleted row cannot answer it.
+    """
+    row = execute_query("""
+        UPDATE event_share_links
+           SET revoked_at = now(), revoked_by = %s
+         WHERE id = %s AND revoked_at IS NULL
+     RETURNING id
+    """, (str(get_jwt_identity())[:15], link_id), fetch_one=True)
+    if not row:
+        return jsonify({'success': False,
+                        'message': 'That link is already revoked'}), 409
+    return jsonify({'success': True, 'message': 'Link revoked'})
+
+
+@recruitment_events_bp.route('/live/<token>', methods=['GET'])
+def public_event_live(token):
+    """The shared board itself. NO AUTHENTICATION — the token is the credential.
+
+    Every number here is COUNTED from recorded rows. Nothing is estimated and
+    nothing is projected: this goes on a screen at the venue and gets quoted,
+    and a figure that turns out to have been extrapolated is worse than no
+    figure at all.
+    """
+    link = execute_query("""
+        SELECT l.id, l.event_id, l.revoked_at, l.expires_at
+          FROM event_share_links l
+         WHERE l.token = %s
+    """, (token,), fetch_one=True)
+
+    # One message for every way a link can be unusable. Distinguishing "revoked"
+    # from "expired" from "never existed" would tell someone probing tokens
+    # which of their guesses was once real.
+    if (not link or link.get('revoked_at')
+            or (link.get('expires_at') and link['expires_at'] < datetime.now(
+                link['expires_at'].tzinfo))):
+        return jsonify({'success': False,
+                        'message': 'This link is no longer available.'}), 404
+
+    ev = execute_query("""
+        SELECT id, title, title_ar, venue, venue_ar, starts_at, ends_at, status
+          FROM recruitment_events WHERE id = %s
+    """, (link['event_id'],), fetch_one=True)
+    if not ev:
+        return jsonify({'success': False,
+                        'message': 'This link is no longer available.'}), 404
+
+    event_id = link['event_id']
+
+    employers = execute_query("""
+        SELECT COALESCE(c.company_name, c.name) AS name, c.industry
+          FROM event_employers ee
+          JOIN companies c ON c.id = ee.company_id
+         WHERE ee.event_id = %s
+         ORDER BY 1
+    """, (event_id,)) or []
+
+    turnout = execute_query("""
+        SELECT COUNT(*) AS attended,
+               COUNT(*) FILTER (WHERE i.id IS NULL)      AS walk_ins,
+               COUNT(*) FILTER (WHERE a.method = 'self') AS self_check_in
+          FROM event_attendance a
+          LEFT JOIN event_invitations i
+                 ON i.event_id = a.event_id AND i.candidate_id = a.user_id
+         WHERE a.event_id = %s
+    """, (event_id,), fetch_one=True) or {}
+
+    registered = execute_query("""
+        SELECT COUNT(*) AS n FROM event_invitations
+         WHERE event_id = %s AND response IN ('invited', 'confirmed')
+    """, (event_id,), fetch_one=True) or {}
+
+    # Vacancies offered by the employers in the room. Counted from published
+    # postings only — a vacancy nobody has confirmed is not something to put on
+    # a screen in front of the people who would apply for it.
+    vacancies = execute_query("""
+        SELECT COUNT(*) AS n
+          FROM job_postings j
+          JOIN event_employers ee ON ee.company_id = j.company_id
+         WHERE ee.event_id = %s AND j.status = 'published'
+    """, (event_id,), fetch_one=True) or {}
+
+    # Demographics of the people who actually turned up. Coverage ships with
+    # every breakdown: a chart drawn from one profile out of eight is not a
+    # finding, and saying so is the difference between a dashboard and a
+    # decoration.
+    gender = execute_query("""
+        SELECT COALESCE(NULLIF(TRIM(p.gender), ''), 'unknown') AS bucket,
+               COUNT(*) AS n
+          FROM event_attendance a
+          LEFT JOIN candidate_profiles p ON p.user_id::text = a.user_id::text
+         WHERE a.event_id = %s
+         GROUP BY 1 ORDER BY 2 DESC
+    """, (event_id,)) or []
+
+    education = execute_query("""
+        SELECT COALESCE(NULLIF(TRIM(p.education_level), ''), 'unknown') AS bucket,
+               COUNT(*) AS n
+          FROM event_attendance a
+          LEFT JOIN candidate_profiles p ON p.user_id::text = a.user_id::text
+         WHERE a.event_id = %s
+         GROUP BY 1 ORDER BY 2 DESC
+    """, (event_id,)) or []
+
+    def _coverage(rows):
+        total = sum(r['n'] for r in rows)
+        known = sum(r['n'] for r in rows if r['bucket'] != 'unknown')
+        return {'buckets': [dict(r) for r in rows if r['bucket'] != 'unknown'],
+                'known': known, 'total': total,
+                'coverage_percent': round(known * 100.0 / total, 1) if total else None}
+
+    # Best-effort view accounting. A failure to count a view must never stop
+    # the board rendering — it is the least important thing on this page.
+    try:
+        execute_query("""UPDATE event_share_links
+                            SET view_count = view_count + 1, last_seen_at = now()
+                          WHERE id = %s""", (link['id'],), fetch_all=False)
+    except Exception:
+        logger.debug('share link view not counted', exc_info=True)
+
+    return jsonify({'success': True, 'event': {
+        'title': ev.get('title'),
+        'title_ar': ev.get('title_ar'),
+        'venue': ev.get('venue'),
+        'venue_ar': ev.get('venue_ar'),
+        'starts_at': ev['starts_at'].isoformat() if ev.get('starts_at') else None,
+        'ends_at': ev['ends_at'].isoformat() if ev.get('ends_at') else None,
+        'status': ev.get('status'),
+    }, 'totals': {
+        'employers': len(employers),
+        'vacancies': int(vacancies.get('n') or 0),
+        'registered': int(registered.get('n') or 0),
+        'attended': int(turnout.get('attended') or 0),
+        'walk_ins': int(turnout.get('walk_ins') or 0),
+        'self_check_in': int(turnout.get('self_check_in') or 0),
+    }, 'employers': [dict(e) for e in employers],
+       'gender': _coverage(gender),
+       'education': _coverage(education),
+       # Said in the payload, not only in the UI, so it survives being consumed
+       # by anything else: this endpoint does not carry hiring outcomes.
+       'excludes': 'hiring outcomes (interviewed, offered, hired)',
+       'as_of': datetime.now().isoformat(),
+    })

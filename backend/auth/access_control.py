@@ -153,8 +153,38 @@ def has_company_membership(user_id):
     except Exception as e:  # pragma: no cover — never block on a lookup failure
         logger.warning(f"company membership lookup failed for {user_id}: {e}")
         return False
+# A growth operator is assigned to one or more DOMAINS, and the assignment
+# writes a secondary role per domain: growth_operator_company,
+# growth_operator_candidate, and so on.
+#
+# THIS LIST IS THE ONE DEFINITION. It used to live only in
+# routes/growth_operator_assignment_api.py, which granted these names while
+# nothing here recognised them — so the assignment succeeded, the navigation
+# offered the page (the nav knew the string), and the guard then refused the
+# user, because it was checking for 'growth_operator' without the domain.
+#
+# Reported twice on 2026-08-27 from opposite ends of the same defect: "I added
+# Samir to the Company Growth role, but he told me he wasn't granted access",
+# and "Growth Operator Company — options not clickable".
+#
+# The domain SCOPES which companies or candidates an operator handles; it does
+# not change which pages they may reach. Scoping is enforced from the
+# growth_operator_assignments table, so every domain resolves to the same
+# authorisation here.
+GROWTH_OPERATOR_DOMAINS = (
+    'candidate', 'company', 'education', 'assessment',
+    'mentorship', 'community', 'monitoring',
+)
+
+#: Written out explicitly rather than matched by prefix. A guard that accepted
+#: anything starting with "growth_operator_" would grant a future
+#: 'growth_operator_superuser' the moment somebody typed it into a domain list.
+GROWTH_OPERATOR_ROLES = frozenset(
+    f'growth_operator_{domain}' for domain in GROWTH_OPERATOR_DOMAINS
+)
+
 # The full operator family (growth/education/assessment/mentorship/community/platform/etc.) plus admin.
-OPERATOR_ROLES = ADMIN_ROLES | {
+OPERATOR_ROLES = ADMIN_ROLES | GROWTH_OPERATOR_ROLES | {
     'operator', 'growth_operator', 'talent_operator', 'employer_relations',
     'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator',
     'platform_operator', 'professional_dev_operator', 'career_services_operator',
