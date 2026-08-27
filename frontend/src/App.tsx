@@ -1,4 +1,5 @@
 import * as React from 'react';
+import RouteErrorBoundary from '@/components/common/RouteErrorBoundary';
 import { GROWTH_OPERATOR_ROLES } from '@/config/routeAccess';
 import EventLiveBoard from '@/pages/events/EventLiveBoard';
 import { lazy, Suspense, useEffect } from 'react';
@@ -207,6 +208,10 @@ const GovernmentRedirect: React.FC = () => {
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
   const { i18n } = useTranslation();
+  // Direction for the route error boundary. Read from i18n rather than the
+  // language context: the boundary must be able to render when things are
+  // already going wrong, and i18n is initialised before any route loads.
+  const isRTL = i18n.language === 'ar';
   const { user, isAuthenticated, isLoading } = useAuth();
   const { pathname } = useLocation();
 
@@ -252,6 +257,12 @@ const AppContent: React.FC = () => {
         >
           {!isWallDisplay && <ConnectionBanner />}
           <SupportChatProvider>
+          {/* OUTSIDE Suspense on purpose. A lazy chunk that fails to fetch
+              rejects the promise Suspense is waiting on, so the boundary has
+              to sit above it to catch that — inside, it would never see the
+              failure and the tree would unmount to a white page, which is
+              exactly what was reported. */}
+          <RouteErrorBoundary isRTL={isRTL}>
           <Suspense fallback={<DashboardLoading />}>
             <Routes>
               {/* Public Routes */}
@@ -1148,6 +1159,8 @@ const AppContent: React.FC = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </RouteErrorBoundary>
+          
 
           {/* Toast Notifications */}
           <HotToaster
