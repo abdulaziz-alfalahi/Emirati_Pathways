@@ -20,23 +20,11 @@ import { useNavigate } from 'react-router-dom';
 import { getDashboardRoute, UserRole, normalizeRole, ROLE_DISPLAY_NAMES } from '@/types/auth';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 
-const ROLE_DISPLAY_NAMES_AR: Record<string, string> = {
-  'candidate': 'باحث عن عمل',
-  'employer_admin': 'صاحب عمل',
-  'recruiter': 'مسؤول توظيف',
-  'training_provider': 'مركز تدريب',
-  'parent': 'ولي أمر',
-  'admin': 'مسؤول النظام',
-  'growth_operator': 'مشغّل النمو',
-  'talent_operator': 'مشغّل نمو المرشحين',
-  'employer_relations': 'مشغّل نمو الشركات',
-  'education_operator': 'مشغّل نمو التعليم',
-  'assessment_operator': 'مشغّل نمو التقييم',
-  'mentorship_operator': 'مشغّل نمو الإرشاد',
-  'community_operator': 'مشغّل نمو المجتمع',
-  'mentor': 'مرشد',
-  'assessor': 'مُقيّم',
-};
+// The Arabic fallback map that stood here is gone. It covered fifteen roles,
+// disagreed with enumLabels on most of them (it called employer_relations
+// "مشغّل نمو الشركات" where every other screen said "علاقات أصحاب العمل"), and
+// is now redundant: enumLabels carries Arabic for all 38 roles, generated from
+// backend/role_labels.py.
 
 const UserMenu: React.FC = () => {
   const { language, isRTL } = useLanguage();
@@ -56,8 +44,7 @@ const UserMenu: React.FC = () => {
     // roleLabel echoes the raw value when unmapped; fall back to the old maps
     // rather than showing a bare token.
     if (label !== key) return label;
-    return (isRTL ? ROLE_DISPLAY_NAMES_AR[key] : undefined)
-      || ROLE_DISPLAY_NAMES[key as UserRole] || role;
+    return ROLE_DISPLAY_NAMES[key as UserRole] || role;
   };
 
   // Add error handling wrapper around useAuth

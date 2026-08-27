@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { roleLabel as enumRoleLabel } from '@/utils/enumLabels';
 import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,24 +15,11 @@ import { Copy, Check, Loader2, RefreshCw, Send, Ban, Link2 } from 'lucide-react'
 // agents, operators — join through a link an admin issues here; the invitee
 // completes registration with UAE Pass and receives the invited role.
 
-const ROLE_LABELS: Record<string, { en: string; ar: string }> = {
-  career_services_operator: { en: 'Career Services Operator', ar: 'مشغّل خدمات المسار المهني' },
-  call_center_agent: { en: 'Call Centre Agent', ar: 'موظف مركز الاتصال' },
-  talent_operator: { en: 'Talent Operator', ar: 'مشغّل المواهب' },
-  platform_operator: { en: 'Platform Operator', ar: 'مشغّل المنصة' },
-  education_operator: { en: 'Education Operator', ar: 'مشغّل التعليم' },
-  assessment_operator: { en: 'Assessment Operator', ar: 'مشغّل التقييم' },
-  mentorship_operator: { en: 'Mentorship Operator', ar: 'مشغّل الإرشاد' },
-  community_operator: { en: 'Community Operator', ar: 'مشغّل المجتمع' },
-  professional_dev_operator: { en: 'Professional Development Operator', ar: 'مشغّل التطوير المهني' },
-  employer_relations: { en: 'Employer Relations', ar: 'علاقات أصحاب العمل' },
-  advisor: { en: 'Academic Advisor', ar: 'المرشد الأكاديمي' },
-  internship_coordinator: { en: 'Internship Coordinator', ar: 'منسّق التدريب' },
-  assessor: { en: 'Assessor', ar: 'المقيّم' },
-  coach: { en: 'Coach', ar: 'المدرب' },
-  mentor: { en: 'Mentor', ar: 'الموجّه' },
-  compliance_auditor: { en: 'Compliance Auditor', ar: 'مدقق الامتثال' },
-};
+// Role names come from enumLabels, generated from backend/role_labels.py.
+// This file kept its own copy — byte-identical to the one in the other of these
+// two files, and different again from the email the invitee had just read: the
+// message appointed them "Company Onboarding Operator" while this page called
+// them "Employer Relations".
 
 interface StaffInvitation {
   id: number;
@@ -53,7 +41,7 @@ interface Props { isRTL?: boolean }
 
 const StaffInvitationsTab: React.FC<Props> = ({ isRTL = false }) => {
   const t = (en: string, ar: string) => (isRTL ? ar : en);
-  const roleLabel = (r: string) => (ROLE_LABELS[r] ? (isRTL ? ROLE_LABELS[r].ar : ROLE_LABELS[r].en) : r);
+  const roleLabel = (r: string) => enumRoleLabel(r, isRTL ? 'ar' : 'en');
 
   const [invitations, setInvitations] = useState<StaffInvitation[]>([]);
   const [roles, setRoles] = useState<string[]>([]);

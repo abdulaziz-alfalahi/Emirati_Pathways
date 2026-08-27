@@ -225,50 +225,59 @@ export const statusLabel = (raw: string | null | undefined, lang: Lang): string 
 // Domain from src/types/auth.ts ROLE_DISPLAY_NAMES + the role maps in
 // UserMenu.tsx / HybridGovernmentNavFixed.tsx.
 const ROLES: Domain = {
-  // The workforce role is `candidate`; job-seeking is now an availability_status,
-  // not the role name (identity rework 2026-07). Label it "Candidate".
-  candidate: { en: 'Candidate', ar: 'مرشح' },
-  'job seeker': { en: 'Candidate', ar: 'مرشح' },
-  jobseeker: { en: 'Candidate', ar: 'مرشح' },
-  'job seekers': { en: 'Job Seekers', ar: 'باحثون عن عمل' },
-  recruiter: { en: 'Recruiter', ar: 'مسؤول توظيف' },
-  employer: { en: 'Employer', ar: 'صاحب عمل' },
-  'employer admin': { en: 'HR Manager', ar: 'مدير الموارد البشرية' },
-  parent: { en: 'Parent', ar: 'ولي أمر' },
-  mentor: { en: 'Mentor', ar: 'مرشد' },
-  assessor: { en: 'Assessor', ar: 'مُقيّم' },
-  operator: { en: 'Operator', ar: 'مشغّل' },
+  // GENERATED FROM backend/role_labels.py — the one registry for what a role is
+  // CALLED. Regenerate rather than editing an entry here; enumLabels.roles.test
+  // fails if this drifts from the Python.
+  //
+  // There were SEVEN of these maps: this one, ROLE_DISPLAY_NAMES in
+  // types/auth.ts, ROLE_DISPLAY_NAMES_AR in UserMenu, a pair of identical
+  // ROLE_LABELS in StaffInvitationsTab and JoinStaffPage, and two on the
+  // backend. Reported 2026-08-27 — "the role is showing in one place but not
+  // the other" — and before that as fb_1785840837, which is the same defect
+  // with different screenshots.
   admin: { en: 'Administrator', ar: 'مسؤول النظام' },
-  'training center': { en: 'Training Center', ar: 'مركز تدريب' },
-  'training provider': { en: 'Training Center', ar: 'مركز تدريب' },
-  'educational institution': { en: 'Educational Institution', ar: 'مؤسسة تعليمية' },
+  administrator: { en: 'Administrator', ar: 'مسؤول النظام' },
+  advisor: { en: 'Academic Advisor', ar: 'المرشد الأكاديمي' },
+  'assessment operator': { en: 'Assessment Operator', ar: 'مشغّل التقييم' },
+  assessor: { en: 'Assessor', ar: 'المُقيِّم' },
+  'board chairman': { en: 'Board Chairman', ar: 'رئيس المجلس' },
+  'board member': { en: 'EHRDC Board Member', ar: 'عضو مجلس الموارد البشرية' },
+  'board operator': { en: 'Board Secretary', ar: 'أمين سر المجلس' },
+  'call center agent': { en: 'Call Center Agent', ar: 'موظف مركز الاتصال' },
+  candidate: { en: 'Job Seeker', ar: 'باحث عن عمل' },
+  'career services operator': { en: 'Career Services Operator', ar: 'مشغّل خدمات المسار المهني' },
+  coach: { en: 'Career Coach', ar: 'المدرّب المهني' },
+  'community operator': { en: 'Community Operator', ar: 'مشغّل المجتمعات' },
+  'compliance auditor': { en: 'Government Official', ar: 'مسؤول حكومي' },
+  'education operator': { en: 'Education Operator', ar: 'مشغّل قطاع التعليم' },
+  employee: { en: 'Employee', ar: 'موظف' },
+  'employer admin': { en: 'HR Manager', ar: 'مدير الموارد البشرية' },
+  'employer relations': { en: 'Company Onboarding Operator', ar: 'مشغّل انضمام الشركات' },
+  entrepreneur: { en: 'Entrepreneur', ar: 'رائد أعمال' },
+  'growth operator': { en: 'Growth Operator', ar: 'مشغّل النمو' },
+  hr: { en: 'HR', ar: 'الموارد البشرية' },
+  'hr manager': { en: 'HR Manager', ar: 'مدير الموارد البشرية' },
+  'internship coordinator': { en: 'Internship Coordinator', ar: 'منسّق التدريب العملي' },
+  mentor: { en: 'Mentor', ar: 'الموجّه' },
+  'mentorship operator': { en: 'Mentorship Operator', ar: 'مشغّل الإرشاد' },
+  operator: { en: 'Operator (legacy)', ar: 'مشغّل (قديم)' },
+  parent: { en: 'Parent / Guardian', ar: 'ولي الأمر' },
+  'platform administrator': { en: 'Administrator', ar: 'مسؤول النظام' },
+  'platform operator': { en: 'Monitoring Center Operator', ar: 'مشغّل مركز المتابعة' },
+  'professional dev operator': { en: 'Professional Development Operator', ar: 'مشغّل التطوير المهني' },
+  recruiter: { en: 'Recruiter', ar: 'أخصائي توظيف' },
+  seeker: { en: 'Job Seeker', ar: 'باحث عن عمل' },
+  student: { en: 'Student', ar: 'طالب' },
+  'super admin': { en: 'Administrator', ar: 'مسؤول النظام' },
+  'super user': { en: 'Administrator', ar: 'مسؤول النظام' },
+  'talent operator': { en: 'Candidate Onboarding Operator', ar: 'مشغّل انضمام المرشحين' },
+  'training center rep': { en: 'Training Center Representative', ar: 'ممثل مركز تدريب' },
+  'training provider': { en: 'Educator', ar: 'مزوّد تدريب' },
+
+  // Not roles, but role-shaped values the same lookup is asked for.
   'government entity': { en: 'Government Entity', ar: 'جهة حكومية' },
   'private sector': { en: 'Private Sector', ar: 'قطاع خاص' },
-  advisor: { en: 'Academic Advisor', ar: 'مستشار أكاديمي' },
-  coach: { en: 'Career Coach', ar: 'مدرب مهني' },
-  'internship coordinator': { en: 'Internship Coordinator', ar: 'منسق تدريب عملي' },
-  'call center agent': { en: 'Call Center Agent', ar: 'موظف مركز اتصال' },
-  student: { en: 'Student', ar: 'طالب' },
   'new member': { en: 'New Member', ar: 'عضو جديد' },
-
-  // Operator / governance personas. These are all in the UserRole union in
-  // src/types/auth.ts but were absent from every role map in the app, so in
-  // Arabic they fell through to the title-case fallback and rendered as
-  // English inside an otherwise-Arabic role switcher.
-  'board member': { en: 'Board Member', ar: 'عضو مجلس الإدارة' },
-  'board operator': { en: 'Board Secretary', ar: 'أمين سر المجلس' },
-  'board chairman': { en: 'Board Chairman', ar: 'رئيس مجلس الإدارة' },
-  'platform operator': { en: 'Platform Operator', ar: 'مشغّل المنصة' },
-  'career services operator': { en: 'Career Services Operator', ar: 'مشغّل الخدمات المهنية' },
-  'employer relations': { en: 'Employer Relations', ar: 'علاقات أصحاب العمل' },
-  'professional dev operator': { en: 'Professional Dev Operator', ar: 'مشغّل التطوير المهني' },
-  'compliance auditor': { en: 'Compliance Auditor', ar: 'مدقق الامتثال' },
-  'talent operator': { en: 'Talent Operator', ar: 'مشغّل المواهب' },
-  'mentorship operator': { en: 'Mentorship Operator', ar: 'مشغّل الإرشاد' },
-  'education operator': { en: 'Education Operator', ar: 'مشغّل التعليم' },
-  'assessment operator': { en: 'Assessment Operator', ar: 'مشغّل التقييم' },
-  'community operator': { en: 'Community Operator', ar: 'مشغّل المجتمع' },
-  'growth operator': { en: 'Growth Operator', ar: 'مشغّل النمو' },
 };
 
 export const roleLabel = (raw: string | null | undefined, lang: Lang): string =>
