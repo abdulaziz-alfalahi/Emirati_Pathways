@@ -195,7 +195,7 @@ const EventLiveBoard: React.FC = () => {
                             : 'البيانات المتوفرة لا تكفي لعرض هذا التوزيع'}
                         <div style={{ fontSize: 12, marginTop: 4 }}>
                             {tooFewPeople
-                                ? `${b.known} حاضراً حتى الآن · too few attendees so far for a meaningful breakdown`
+                                ? `${b.total} حاضراً حتى الآن · too few attendees so far for a meaningful breakdown`
                                 : `${b.known} من ${b.total} حاضراً لديهم هذه البيانات · not enough of the attendees have this on file`}
                         </div>
                     </div>
