@@ -101,3 +101,22 @@ def test_release_still_refuses_a_message_whose_wording_moved():
     source = open(os.path.join(BACKEND, 'outbound_mail.py'), encoding='utf-8').read()
     assert 't.fingerprint = m.template_fingerprint' in source
     assert "t.status = 'approved'" in source
+
+
+def test_no_message_kind_is_shown_as_a_raw_identifier():
+    """The screen kept names for three of six kinds. The other three — including
+    staff_invitation, the one being read — printed their database value."""
+    source = _routes()
+    listing = source[source.index('def list_templates'):source.index('def register_templates')]
+    assert 'kind_label' in listing, 'the listing does not send the kind its name'
+
+    from services import mail_templates
+    screen = _screen()
+    for kind in mail_templates.TEMPLATES:
+        assert kind in screen, f'{kind} has no Arabic name on the screen'
+
+
+def test_a_stale_kind_is_not_warned_about_twice():
+    """One kind with one problem produced two stacked banners saying it."""
+    source = _screen()
+    assert '.filter(k => !stale.includes(k))' in source

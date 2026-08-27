@@ -43,6 +43,7 @@ const brand = {
 
 interface KindState {
     kind: string;
+    kind_label?: string;
     fingerprint: string;
     /** An approved row exists whose fingerprint matches what the code renders. */
     approved_now: boolean;
@@ -63,15 +64,27 @@ interface Template {
     approved_by_name?: string | null;
     /** True only for the version the code renders TODAY. */
     is_current?: boolean;
+    /** The kind's registered English name, so no screen prints the raw id. */
+    kind_label?: string;
     note?: string | null;
     /** [english, arabic] pairs describing what changes from message to message. */
     varies?: [string, string][];
 }
 
-const KIND_LABELS: Record<string, [string, string]> = {
-    seeker_invitation: ['Candidate invitation (NAFIS seeker)', 'دعوة مرشح (باحث نافس)'],
-    company_invitation: ['Employer invitation (magic link)', 'دعوة جهة عمل (رابط مباشر)'],
-    vacancy_verification: ['Vacancy verification (NAFIS import)', 'التحقق من شاغر (استيراد نافس)'],
+/**
+ * Arabic names for the message kinds. English comes from the backend register
+ * (`kind_label`), so a kind added there cannot show up here as a raw identifier
+ * — which is what `staff_invitation`, `team_invitation` and
+ * `board_office_notice` did: this map covered three of six kinds and the other
+ * three printed their database value at the owner.
+ */
+const KIND_LABELS_AR: Record<string, string> = {
+    seeker_invitation: 'دعوة مرشح (باحث نافس)',
+    company_invitation: 'دعوة جهة عمل (رابط مباشر)',
+    vacancy_verification: 'التحقق من شاغر (استيراد نافس)',
+    team_invitation: 'دعوة زميل (يرسلها مسؤول جهة العمل)',
+    staff_invitation: 'دعوة موظفي المنصة',
+    board_office_notice: 'إشعار اجتماع المجلس إلى مكتب العضو',
 };
 
 const OutboundMailTemplates: React.FC = () => {
@@ -146,8 +159,10 @@ const OutboundMailTemplates: React.FC = () => {
     };
 
     const label = (kind: string) => {
-        const pair = KIND_LABELS[kind];
-        return pair ? (isAr ? pair[1] : pair[0]) : kind;
+        if (isAr) return KIND_LABELS_AR[kind] || kind;
+        return templates.find(t => t.kind === kind)?.kind_label
+            || kindState.find(k => k.kind === kind)?.kind_label
+            || kind;
     };
 
     const visible = templates.filter(t => showRetired || t.status !== 'retired');
@@ -159,10 +174,15 @@ const OutboundMailTemplates: React.FC = () => {
     // approved row existed for the kind, which stayed true after the text
     // changed, so the warning below went quiet at exactly the moment it was
     // needed. approved_now compares against what the code renders today.
-    const unapproved = kindState.length
-        ? kindState.filter(k => !k.approved_now).map(k => k.kind)
-        : kinds.filter(k => !templates.some(t => t.kind === k && t.status === 'approved'));
     const stale = kindState.filter(k => k.has_stale_approval).map(k => k.kind);
+    // Kinds with a STALE approval are excluded — they get the banner above,
+    // which says the same thing with the part that matters: you approved this
+    // once, and the text moved since. Two warnings about one kind read as two
+    // problems.
+    const unapproved = (kindState.length
+        ? kindState.filter(k => !k.approved_now).map(k => k.kind)
+        : kinds.filter(k => !templates.some(t => t.kind === k && t.status === 'approved'))
+    ).filter(k => !stale.includes(k));
 
     return (
         <div dir={isAr ? 'rtl' : 'ltr'} style={{ color: brand.textPrimary }}>

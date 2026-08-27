@@ -214,6 +214,11 @@ def list_templates():
                     'templates': [
                         {**dict(r),
                          'varies': mail_templates.varies_for(r['kind']),
+                         # The kind's registered name. The screen kept labels for
+                         # three of six kinds and printed the raw identifier for
+                         # the rest — including staff_invitation, which is the
+                         # one the owner was reading.
+                         'kind_label': (mail_templates.TEMPLATES.get(r['kind']) or (r['kind'],))[0],
                          # True only for the version the code actually produces.
                          'is_current': live.get(r['kind']) == r['fingerprint'],
                          'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
@@ -223,6 +228,7 @@ def list_templates():
                     # answer: may this be sent as it reads today?
                     'kinds': [
                         {'kind': kind,
+                         'kind_label': (mail_templates.TEMPLATES.get(kind) or (kind,))[0],
                          'fingerprint': fp,
                          'approved_now': any(r['kind'] == kind and r['status'] == 'approved'
                                              and r['fingerprint'] == fp for r in rows),
