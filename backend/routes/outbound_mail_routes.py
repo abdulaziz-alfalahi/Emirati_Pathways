@@ -164,8 +164,31 @@ def send_approved():
 @require_roles(*OPERATOR_ROLES)
 def list_templates():
     """Every template version, so "which wording was signed off, and when" has
-    an answer that does not depend on reading the code as it is today."""
+    an answer that does not depend on reading the code as it is today.
+
+    AND whether each one still describes what the code renders.
+
+    Reported 2026-08-27: "staff-invitation shows it is already approved." It
+    did, and the approval was real — but it was an approval of WORDING THAT NO
+    LONGER EXISTED. Four role names had changed that morning, so the rendering
+    had moved and the stored row still said `approved`, because this endpoint
+    reported the table and nothing had asked the code what it renders today.
+    Held messages were safe throughout (release joins on the fingerprint, so
+    they simply stay held) — but the screen told the owner there was nothing to
+    do, which is its own kind of failure: a gate nobody knows is closed.
+    """
     from db_utils import execute_query as _q
+    from services import mail_templates
+
+    # Record any wording that is new BEFORE listing, so a change surfaces here
+    # by itself. This is idempotent and APPROVES NOTHING — unchanged wording
+    # produces no row. It was only reachable by POSTing /templates/register,
+    # a button whose absence looked exactly like "nothing has changed".
+    try:
+        mail_templates.register_all()
+    except Exception as exc:            # never block the screen on this
+        logger.warning(f'template registration during listing failed: {exc}')
+
     rows = _q("""SELECT t.id, t.kind, t.version, t.fingerprint, t.status,
                         t.sample_subject, t.sample_body, t.created_at,
                         t.approved_at, t.note,
@@ -173,17 +196,42 @@ def list_templates():
                    FROM outbound_mail_templates t
                    LEFT JOIN users u ON u.id = t.approved_by
                   ORDER BY t.kind, t.version DESC""") or []
+    # What the code renders RIGHT NOW, per kind. An approval only means
+    # something while it still matches this.
+    live = {}
+    for kind in mail_templates.TEMPLATES:
+        try:
+            live[kind] = mail_templates.fingerprint_for(kind)
+        except Exception as exc:        # a template that cannot render is not
+            live[kind] = None           # silently "fine"
+            logger.warning(f'{kind} could not be rendered for comparison: {exc}')
+
     # What changes per message, attached at read time rather than stored: it is
     # documentation about the template, not part of the wording, and folding it
     # into the sample would move every fingerprint and invalidate approvals
     # already given.
-    from services import mail_templates
-    return jsonify({'success': True, 'templates': [
-        {**dict(r),
-         'varies': mail_templates.varies_for(r['kind']),
-         'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
-         'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None}
-        for r in rows]})
+    return jsonify({'success': True,
+                    'templates': [
+                        {**dict(r),
+                         'varies': mail_templates.varies_for(r['kind']),
+                         # True only for the version the code actually produces.
+                         'is_current': live.get(r['kind']) == r['fingerprint'],
+                         'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
+                         'approved_at': r['approved_at'].isoformat() if r.get('approved_at') else None}
+                        for r in rows],
+                    # Per kind, the answer to the question the screen exists to
+                    # answer: may this be sent as it reads today?
+                    'kinds': [
+                        {'kind': kind,
+                         'fingerprint': fp,
+                         'approved_now': any(r['kind'] == kind and r['status'] == 'approved'
+                                             and r['fingerprint'] == fp for r in rows),
+                         'has_stale_approval': (
+                             any(r['kind'] == kind and r['status'] == 'approved'
+                                 and r['fingerprint'] != fp for r in rows)
+                             and not any(r['kind'] == kind and r['status'] == 'approved'
+                                         and r['fingerprint'] == fp for r in rows))}
+                        for kind, fp in sorted(live.items())]})
 
 
 @outbound_mail_bp.route('/templates/register', methods=['POST'])
