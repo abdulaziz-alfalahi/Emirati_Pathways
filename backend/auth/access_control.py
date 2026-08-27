@@ -220,6 +220,54 @@ TRAINING_ROLES = ADMIN_ROLES | {'training_provider', 'training_center_rep'}
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 
 
+# ── Who works on the platform ───────────────────────────────────────────────
+#
+# Everyone who holds a role because of a JOB, as opposed to the people the
+# platform serves. Used by the operator console to answer "who has access, and
+# to what" — a question that previously had no honest answer.
+#
+# WHY THIS IS AN EXPLICIT UNION AND NOT A PATTERN
+#
+# The console used to find its people with
+#
+#     u.secondary_roles::text ILIKE '%operator%'
+#
+# a substring search over raw JSON. It matched every kind of operator when the
+# page was about one kind, and it matched anyone whose role list merely
+# CONTAINED the word — including a candidate carrying twenty-seven secondary
+# roles. Seventeen people were listed as growth operators; one was.
+#
+# That was harmless while the roles it offered to grant did nothing. Once
+# growth_operator_<domain> started actually granting access (2026-08-27), a
+# page inviting an administrator to drag thirteen of the wrong people into a
+# domain stopped being cosmetic.
+#
+# Composed from the sets that already gate staff surfaces, so a role added to
+# any of them appears here without anybody remembering to.
+STAFF_ROLES = (
+    ADMIN_ROLES | BOARD_ROLES | OPERATOR_ROLES | CAREER_SERVICES_ROLES
+    | ADVISOR_ROLES | INSTITUTION_ROLES | PROFDEV_ROLES | TRAINING_ROLES
+    | GOVERNANCE_ROLES
+    | {'assessor', 'coach', 'mentor', 'internship_coordinator',
+       'compliance_auditor', 'call_center_agent'}
+) - {
+    # Held BY the people the platform serves, and by staff only incidentally.
+    # Listing someone as staff because they are also a candidate would put
+    # 38,000 people in a directory of colleagues.
+    'candidate', 'student', 'parent', 'employee', 'seeker', 'entrepreneur',
+}
+
+
+def is_staff(roles):
+    """True if any of these roles is held because of a job.
+
+    Takes the already-resolved role list (primary + secondary), so callers
+    cannot accidentally check the primary role alone — which is how operators
+    granted through secondary_roles became invisible in the first place.
+    """
+    return any((r or '').strip().lower() in STAFF_ROLES for r in (roles or []))
+
+
 def _verify_any_jwt():
     """Verify a JWT from the Authorization header or the access_token cookie.
     Returns the identity (user id) string, or None if unauthenticated."""

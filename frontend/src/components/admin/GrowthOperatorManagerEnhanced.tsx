@@ -417,18 +417,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
       if (response.data?.data) {
         setDomainStats(response.data.data);
       } else {
-        // Generate mock stats
-        setDomainStats(Object.entries(DOMAIN_CONFIG).map(([key, config]) => ({
-          domain: key,
-          label: config.label,
-          operatorCount: Math.floor(Math.random() * 5) + 1,
-          activityCount: Math.floor(Math.random() * 100) + 20,
-          icon: key,
-          trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
-          trendValue: Math.floor(Math.random() * 30) - 10,
-          workload: ['low', 'medium', 'high', 'overloaded'][Math.floor(Math.random() * 4)] as 'low' | 'medium' | 'high' | 'overloaded',
-          kpis: config.kpis.reduce((acc, kpi) => ({ ...acc, [kpi]: Math.floor(Math.random() * 1000) }), {})
-        })));
+        // NO FABRICATED FALLBACK. This used to invent operatorCount,
+        // activityCount, trend, workload and every KPI with Math.random() and
+        // render them as real. An administrator deciding who should hold a role
+        // cannot tell a plausible number from a counted one, so an empty list
+        // is the only honest answer when the statistics call returns nothing.
+        setDomainStats([]);
       }
     } catch (error) {
       console.error('Failed to load domain stats:', error);

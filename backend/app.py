@@ -750,6 +750,8 @@ _additional_blueprints = [
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
     ('backend.routes.outbound_mail_routes', 'outbound_mail_bp',
      '/api/outbound-mail', 'Outbound mail review'),
+    ('backend.routes.staff_directory_routes', 'staff_directory_bp',
+     '/api/admin/staff', 'Staff directory'),
     ('backend.career_services_routes', 'career_services_bp', None, 'Career Services'),
     ('backend.operations_routes', 'operations_bp', None, 'Operations Monitoring'),
     ('backend.demographics_routes', 'demographics_bp', None, 'Demographics Analytics'),
