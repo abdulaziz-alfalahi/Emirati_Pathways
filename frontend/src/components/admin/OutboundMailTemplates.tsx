@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { mailKindLabel } from '@/config/mailKinds';
 import { restClient } from '@/utils/api';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
@@ -71,21 +72,6 @@ interface Template {
     varies?: [string, string][];
 }
 
-/**
- * Arabic names for the message kinds. English comes from the backend register
- * (`kind_label`), so a kind added there cannot show up here as a raw identifier
- * — which is what `staff_invitation`, `team_invitation` and
- * `board_office_notice` did: this map covered three of six kinds and the other
- * three printed their database value at the owner.
- */
-const KIND_LABELS_AR: Record<string, string> = {
-    seeker_invitation: 'دعوة مرشح (باحث نافس)',
-    company_invitation: 'دعوة جهة عمل (رابط مباشر)',
-    vacancy_verification: 'التحقق من شاغر (استيراد نافس)',
-    team_invitation: 'دعوة زميل (يرسلها مسؤول جهة العمل)',
-    staff_invitation: 'دعوة موظفي المنصة',
-    board_office_notice: 'إشعار اجتماع المجلس إلى مكتب العضو',
-};
 
 const OutboundMailTemplates: React.FC = () => {
     const { language } = useLanguage();
@@ -158,12 +144,10 @@ const OutboundMailTemplates: React.FC = () => {
         }
     };
 
-    const label = (kind: string) => {
-        if (isAr) return KIND_LABELS_AR[kind] || kind;
-        return templates.find(t => t.kind === kind)?.kind_label
-            || kindState.find(k => k.kind === kind)?.kind_label
-            || kind;
-    };
+    const label = (kind: string) => mailKindLabel(
+        kind, isAr,
+        templates.find(t => t.kind === kind)?.kind_label
+        || kindState.find(k => k.kind === kind)?.kind_label);
 
     const visible = templates.filter(t => showRetired || t.status !== 'retired');
     const pendingCount = templates.filter(t => t.status === 'pending').length;

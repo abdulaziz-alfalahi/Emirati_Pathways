@@ -78,11 +78,34 @@ def get_queue():
         limit = min(int(request.args.get('limit', 50)), 200)
     except (TypeError, ValueError):
         limit = 50
-    held = outbound_mail.held_messages(limit=limit)
+    try:
+        offset = max(0, int(request.args.get('offset', 0)))
+    except (TypeError, ValueError):
+        offset = 0
+    kind = (request.args.get('kind') or '').strip() or None
+
+    from services import mail_templates
+    def _kind_label(k):
+        return (mail_templates.TEMPLATES.get(k) or (k,))[0]
+
+    held = outbound_mail.held_messages(limit=limit, offset=offset, kind=kind)
+    matching = outbound_mail.held_count(kind=kind)
     return jsonify({
         'success': True,
-        'messages': [_serialise(r) for r in held],
+        # kind_label so the queue stops printing 'vacancy_verification' at the
+        # reviewer under every recipient's address.
+        'messages': [{**_serialise(r), 'kind_label': _kind_label(r['kind'])}
+                     for r in held],
         'summary': outbound_mail.queue_summary(),
+        # What this page is a page OF. Without it the screen showed fifty
+        # messages and no indication that two hundred more existed.
+        'offset': offset,
+        'limit': limit,
+        'matching': matching,
+        'has_more': offset + len(held) < matching,
+        'kind': kind,
+        'kinds': [{**k, 'kind_label': _kind_label(k['kind'])}
+                  for k in outbound_mail.held_kinds()],
     })
 
 

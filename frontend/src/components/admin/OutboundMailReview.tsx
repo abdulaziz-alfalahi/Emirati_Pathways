@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { mailKindLabel } from '@/config/mailKinds';
 import { restClient } from '@/utils/api';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
@@ -88,17 +89,33 @@ const OutboundMailReview: React.FC = () => {
     const [notice, setNotice] = useState<string | null>(null);
     const [rejecting, setRejecting] = useState<QueuedMessage | null>(null);
     const [rejectNote, setRejectNote] = useState('');
+    // The queue outgrew its screen. It showed the oldest fifty with nothing to
+    // say more existed, so once 267 vacancy verifications were queued on one
+    // day, the single invitation to a real employer — the only message actually
+    // waiting on a decision — sat at position 268 and could not be reached.
+    const [kindFilter, setKindFilter] = useState<string>('');
+    const [offset, setOffset] = useState(0);
+    const [page, setPage] = useState<{ matching: number; has_more: boolean;
+                                       kinds: { kind: string; count: number }[] }>(
+        { matching: 0, has_more: false, kinds: [] });
 
     const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
+            const q = new URLSearchParams({ offset: String(offset) });
+            if (kindFilter) q.set('kind', kindFilter);
             const [queueRes, configRes] = await Promise.all([
-                restClient.get('/api/outbound-mail/queue'),
+                restClient.get(`/api/outbound-mail/queue?${q.toString()}`),
                 restClient.get('/api/outbound-mail/config'),
             ]);
             setMessages(queueRes.data?.messages || []);
             setSummary(queueRes.data?.summary || {});
+            setPage({
+                matching: queueRes.data?.matching ?? 0,
+                has_more: Boolean(queueRes.data?.has_more),
+                kinds: queueRes.data?.kinds || [],
+            });
             setSettings(configRes.data?.settings || null);
             setConfigured(Boolean(configRes.data?.configured));
         } catch (e: any) {
@@ -106,7 +123,7 @@ const OutboundMailReview: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [language]);
+    }, [language, offset, kindFilter]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -254,6 +271,33 @@ const OutboundMailReview: React.FC = () => {
                               padding: '10px 14px', marginBottom: 12, fontSize: 13 }}>{notice}</div>
             )}
 
+            {page.kinds.length > 1 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {[{ kind: '', count: page.kinds.reduce((n, k) => n + k.count, 0) }, ...page.kinds]
+                        .map(k => {
+                            const on = kindFilter === k.kind;
+                            return (
+                                <button key={k.kind || 'all'}
+                                        onClick={() => { setKindFilter(k.kind); setOffset(0); }}
+                                        style={{ borderRadius: 999, padding: '5px 13px', fontSize: 12.5,
+                                                 fontWeight: 600, cursor: 'pointer',
+                                                 border: `1px solid ${on ? brand.blueText : brand.border}`,
+                                                 background: on ? brand.blueBg : '#fff',
+                                                 color: on ? brand.blueText : brand.textSecondary }}>
+                                    {(k.kind ? mailKindLabel(k.kind, isAr, (k as any).kind_label) : b('All', 'الكل'))} ({k.count})
+                                </button>
+                            );
+                        })}
+                </div>
+            )}
+
+            {!loading && page.matching > 0 && (
+                <div style={{ fontSize: 12.5, color: brand.textSecondary, marginBottom: 10 }}>
+                    {b(`Showing ${offset + 1}–${offset + messages.length} of ${page.matching}`,
+                       `عرض ${offset + 1}–${offset + messages.length} من ${page.matching}`)}
+                </div>
+            )}
+
             {loading ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: brand.textSecondary }}>
                     <Loader2 size={16} className="animate-spin" /> {b('Loading…', 'جارٍ التحميل…')}
@@ -285,7 +329,7 @@ const OutboundMailReview: React.FC = () => {
                             </div>
                             <span style={{ background: brand.muted, color: brand.textSecondary, borderRadius: 999,
                                            padding: '2px 10px', fontSize: 12, height: 'fit-content' }}>
-                                {m.kind}
+                                {mailKindLabel(m.kind, isAr, (m as any).kind_label)}
                             </span>
                         </div>
 
@@ -333,6 +377,36 @@ const OutboundMailReview: React.FC = () => {
                     </div>
                 );
             })}
+
+            {/* Reaching the rest. Without this the screen was a window onto the
+                oldest fifty, and everything behind them was invisible. */}
+            {!loading && (offset > 0 || page.has_more) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              gap: 10, marginTop: 6, marginBottom: 12 }}>
+                    <button onClick={() => setOffset(Math.max(0, offset - 50))}
+                            disabled={offset === 0}
+                            style={{ borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600,
+                                     border: `1px solid ${brand.border}`, background: '#fff',
+                                     color: offset === 0 ? brand.textSecondary : brand.textPrimary,
+                                     cursor: offset === 0 ? 'default' : 'pointer',
+                                     opacity: offset === 0 ? 0.5 : 1 }}>
+                        {b('Previous', 'السابق')}
+                    </button>
+                    <span style={{ fontSize: 12.5, color: brand.textSecondary }}>
+                        {b(`${offset + 1}–${offset + messages.length} of ${page.matching}`,
+                           `${offset + 1}–${offset + messages.length} من ${page.matching}`)}
+                    </span>
+                    <button onClick={() => setOffset(offset + 50)}
+                            disabled={!page.has_more}
+                            style={{ borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 600,
+                                     border: `1px solid ${brand.border}`, background: '#fff',
+                                     color: page.has_more ? brand.textPrimary : brand.textSecondary,
+                                     cursor: page.has_more ? 'pointer' : 'default',
+                                     opacity: page.has_more ? 1 : 0.5 }}>
+                        {b('Next', 'التالي')}
+                    </button>
+                </div>
+            )}
 
             {rejecting && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
