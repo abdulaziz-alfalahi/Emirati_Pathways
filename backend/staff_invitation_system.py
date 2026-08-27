@@ -14,6 +14,11 @@ import os
 import secrets
 from datetime import datetime, timedelta
 
+try:
+    from backend.role_labels import ROLE_LABELS
+except ImportError:                          # pragma: no cover — dual root
+    from role_labels import ROLE_LABELS
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -68,33 +73,24 @@ from html import escape as html_escape
 # the reader, and leaving it out would make a government email vaguer than it
 # needs to be.
 #
-# ARABIC BELOW IS A BEST RENDERING and is worth a native check before this
-# carries real traffic; the English is authoritative.
-_STAFF_ROLE_LABELS = {
-    'career_services_operator': ('Career Services Operator', 'مشغّل خدمات المسار المهني'),
-    'call_center_agent':        ('Call Centre Agent', 'موظف مركز الاتصال'),
-    'talent_operator':          ('Talent Operator', 'مشغّل المواهب'),
-    'platform_operator':        ('Platform Operator', 'مشغّل المنصة'),
-    'education_operator':       ('Education Operator', 'مشغّل قطاع التعليم'),
-    'assessment_operator':      ('Assessment Operator', 'مشغّل التقييم'),
-    'mentorship_operator':      ('Mentorship Operator', 'مشغّل الإرشاد'),
-    'community_operator':       ('Community Operator', 'مشغّل المجتمعات'),
-    'professional_dev_operator':('Professional Development Operator', 'مشغّل التطوير المهني'),
-    'employer_relations':       ('Employer Relations', 'علاقات جهات العمل'),
-    'advisor':                  ('Academic Advisor', 'المرشد الأكاديمي'),
-    'internship_coordinator':   ('Internship Coordinator', 'منسّق التدريب العملي'),
-    'assessor':                 ('Assessor', 'المُقيِّم'),
-    'coach':                    ('Career Coach', 'المدرّب المهني'),
-    'mentor':                   ('Mentor', 'الموجّه'),
-    'compliance_auditor':       ('Compliance Auditor', 'مدقّق الامتثال'),
-}
+# The names themselves live in role_labels.ROLE_LABELS, with every other screen
+# that shows a role. They used to live here as well, and the two lists drifted:
+# somebody granted "Company Onboarding Operator" on the Users tab received an
+# email appointing them "Employer Relations". Which roles may be INVITED is a
+# separate question and stays with ALLOWED_STAFF_ROLES — a label registry must
+# never decide who can be invited.
+#
+# ARABIC IS A BEST RENDERING and is worth a native check before this carries
+# real traffic; the English is authoritative.
 
 
 def _staff_role_label(role, arabic=False):
-    pair = _STAFF_ROLE_LABELS.get((role or '').strip().lower())
+    pair = ROLE_LABELS.get((role or '').strip().lower())
     if not pair:
         # Should be unreachable: validate_role rejects anything not invitable.
-        # If it ever happens, show nothing rather than a raw identifier.
+        # If it ever happens, show nothing rather than a raw identifier. This
+        # is why the email does NOT use label_for(), whose fallback titles the
+        # identifier — readable in an admin table, wrong in a government letter.
         return 'المنصة' if arabic else 'the platform'
     return pair[1] if arabic else pair[0]
 

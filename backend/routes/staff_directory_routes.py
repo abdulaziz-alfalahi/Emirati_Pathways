@@ -33,60 +33,22 @@ from flask import Blueprint, jsonify, request
 
 try:
     from backend.auth.access_control import (
-        require_roles, ADMIN_ROLES, STAFF_ROLES, GROWTH_OPERATOR_DOMAINS)
+        require_roles, ADMIN_ROLES, STAFF_ROLES)
     from backend.db_utils import execute_query
-    from backend.staff_invitation_system import _STAFF_ROLE_LABELS
+    from backend.role_labels import label_for
 except ImportError:                          # pragma: no cover — dual root
-    from auth.access_control import (
-        require_roles, ADMIN_ROLES, STAFF_ROLES, GROWTH_OPERATOR_DOMAINS)
+    from auth.access_control import require_roles, ADMIN_ROLES, STAFF_ROLES
     from db_utils import execute_query
-    from staff_invitation_system import _STAFF_ROLE_LABELS
+    from role_labels import label_for
 
 logger = logging.getLogger(__name__)
 
 staff_directory_bp = Blueprint('staff_directory', __name__)
 
-#: Roles the invitation flow already names in both languages, plus the ones it
-#: cannot issue. Reused rather than re-written: a directory that labels a role
-#: differently from the invitation that granted it is its own small confusion.
-_EXTRA_LABELS = {
-    'admin': ('Administrator', 'مسؤول النظام'),
-    'administrator': ('Administrator', 'مسؤول النظام'),
-    'super_admin': ('Administrator', 'مسؤول النظام'),
-    'super_user': ('Administrator', 'مسؤول النظام'),
-    'platform_administrator': ('Administrator', 'مسؤول النظام'),
-    'board_member': ('Board Member', 'عضو المجلس'),
-    'board_operator': ('Board Secretary', 'أمين سر المجلس'),
-    'board_chairman': ('Board Chairman', 'رئيس المجلس'),
-    'operator': ('Operator (legacy)', 'مشغّل (قديم)'),
-    'growth_operator': ('Growth Operator', 'مشغّل النمو'),
-    'recruiter': ('Recruiter', 'أخصائي توظيف'),
-    'employer_admin': ('Employer Administrator', 'مسؤول جهة العمل'),
-    'hr': ('HR', 'الموارد البشرية'),
-    'hr_manager': ('HR Manager', 'مدير الموارد البشرية'),
-    'training_provider': ('Training Provider', 'مزوّد تدريب'),
-    'training_center_rep': ('Training Centre Representative', 'ممثل مركز تدريب'),
-}
-_EXTRA_LABELS.update({
-    f'growth_operator_{d}': (f'Growth Operator — {d.title()}',
-                             f'مشغّل النمو — {d}')
-    for d in GROWTH_OPERATOR_DOMAINS
-})
-
-
-def _label(role, arabic=False):
-    """A readable name, never a raw identifier.
-
-    An unlabelled role becomes "Professional Dev Operator" rather than
-    "professional_dev_operator" — an administrator deciding whether somebody
-    should hold a role should not have to read a database value to know what it
-    is.
-    """
-    key = (role or '').strip().lower()
-    pair = _STAFF_ROLE_LABELS.get(key) or _EXTRA_LABELS.get(key)
-    if pair:
-        return pair[1] if arabic else pair[0]
-    return key.replace('_', ' ').title()
+#: One registry, shared with the Users tab and the invitation email. This module
+#: kept its own list for a day and promptly invented a fourth name for a role
+#: that already had three.
+_label = label_for
 
 
 @staff_directory_bp.route('', methods=['GET'])

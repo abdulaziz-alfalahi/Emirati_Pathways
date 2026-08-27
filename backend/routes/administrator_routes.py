@@ -6,6 +6,11 @@ providing endpoints for user management, system monitoring, and administrative o
 """
 
 from flask import Blueprint, request, jsonify, current_app
+
+try:
+    from backend.role_labels import label_for
+except ImportError:                          # pragma: no cover — dual root
+    from role_labels import label_for
 from datetime import datetime, timedelta
 import json
 import logging
@@ -780,8 +785,37 @@ def get_roles():
             {'id': 'board_member', 'name': 'board_member', 'display_name': 'EHRDC Board Member', 'description': 'Board member of the Emirati Human Development Council', 'permissions': ['view_dashboard', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'board_operator', 'name': 'board_operator', 'display_name': 'Board Secretary', 'description': 'Secretary of the EHRDC Board: schedules board meetings, sets the quorum rule, keeps minutes and tracks implementation of board recommendations', 'permissions': ['manage_board_meetings', 'view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'board_chairman', 'name': 'board_chairman', 'display_name': 'Board Chairman', 'description': 'Chair of the EHRDC Board: adopts the minutes and declares a meeting open once quorum is met. These are the board\u2019s own acts and are deliberately not available to administrators', 'permissions': ['adopt_board_minutes', 'declare_meeting_open', 'view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
-            {'id': 'platform_operator', 'name': 'platform_operator', 'display_name': 'Platform Operations Officer', 'description': 'Deep, detailed metrics for platform operations', 'permissions': ['view_operations_center', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            # 'Platform Operations Officer' was a SECOND entry for platform_operator
+            # here, so the same role appeared twice in this list under two names
+            # and in two categories. Its permissions are merged into the Growth
+            # Operators entry above; removing it removes a checkbox that granted
+            # exactly what the other one granted.
         ]
+
+        # Labels come from role_labels.ROLE_LABELS, shared with the staff
+        # invitation email and the operators screen. They were maintained here
+        # AND there, and drifted: this tab called talent_operator "Candidate
+        # Onboarding Operator" while the invitation appointing somebody to it
+        # said "Talent Operator".
+        #
+        # Two ids still appear TWICE in the list above — 'candidate' as both
+        # "Job Seeker" and "Student", and 'training_provider' as both "Educator"
+        # and "Training Center Representative". Those are not duplicate labels
+        # but almost certainly the WRONG ID on the second checkbox: 'student'
+        # and 'training_center_rep' are real roles that exist and are not
+        # offered here. Correcting them changes what those checkboxes grant, so
+        # it is left for a deliberate decision rather than folded into a
+        # labelling change. Until then their authored names stand, and they get
+        # no Arabic — one Arabic name on two different checkboxes would restate
+        # the confusion rather than remove it.
+        seen = {}
+        for entry in roles:
+            seen[entry['id']] = seen.get(entry['id'], 0) + 1
+        for entry in roles:
+            if seen[entry['id']] == 1:
+                entry['display_name'] = label_for(entry['id'])
+                entry['display_name_ar'] = label_for(entry['id'], arabic=True)
+
         return jsonify({
             'status': 'success',
             'data': roles

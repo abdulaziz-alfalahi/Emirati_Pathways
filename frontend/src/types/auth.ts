@@ -1,3 +1,5 @@
+import { domainForRole } from '../config/routeAccess';
+
 // Emirati Human Development Platform - Core Auth Types
 
 export type Permission =
@@ -296,9 +298,11 @@ export const isGrowthOperatorRole = (role: UserRole | string): boolean => {
 };
 
 export const getGrowthOperatorDomain = (role: UserRole | string): GrowthOperatorDomain | null => {
-  const roleStr = role.toString();
-  if (!roleStr.startsWith('growth_operator_')) return null;
-  return roleStr.replace('growth_operator_', '') as GrowthOperatorDomain;
+  // Derived from the role->domain map rather than by stripping a prefix: since
+  // 2026-08-27 a domain grants the platform's established role for it
+  // (company -> employer_relations), and prefix-stripping returned null for
+  // every one of those.
+  return domainForRole(role.toString()) as GrowthOperatorDomain | null;
 };
 
 // UAE Emirates

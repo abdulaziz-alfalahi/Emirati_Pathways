@@ -29,27 +29,63 @@
 // #474). Opening the page is not the same as getting in; anyone not on the list
 // still gets "Unable to join" from the API.
 /**
- * A growth operator is assigned to DOMAINS, and each assignment grants a
- * secondary role of the form growth_operator_<domain>.
+ * A growth operator is assigned to DOMAINS, and each domain grants the role the
+ * platform ALREADY HAS for that domain — "company" grants employer_relations,
+ * the role the Users tab calls "Company Onboarding Operator".
  *
- * These names have to appear anywhere 'growth_operator' does. When they did not,
- * the assignment succeeded, the navigation offered the page because it knew the
- * string, and the guard refused the user because it was looking for the
- * un-suffixed name — reported twice on 2026-08-27 from opposite ends of the same
- * defect.
+ * It did not always. Each domain used to grant growth_operator_<domain>, a
+ * second name for a job that already had one. The same person then appeared as
+ * an operator on one screen, as nothing on another, and with a third label on a
+ * third — reported 2026-08-27 as "the role is showing in one place but not the
+ * other". Owner's decision the same day: keep talent_operator and
+ * employer_relations. The parallel family had one holder across all seven of
+ * its names; the roles it duplicated had eleven.
  *
- * Mirrors GROWTH_OPERATOR_DOMAINS in backend/auth/access_control.py, which is
- * where the authorisation decision is actually made.
+ * Mirrors GROWTH_OPERATOR_DOMAIN_ROLES in backend/auth/access_control.py, which
+ * is where the authorisation decision is actually made.
  */
-export const GROWTH_OPERATOR_DOMAINS = [
-  'candidate', 'company', 'education', 'assessment',
-  'mentorship', 'community', 'monitoring',
-] as const;
+export const GROWTH_OPERATOR_DOMAIN_ROLES: Record<string, string> = {
+  candidate: 'talent_operator',
+  company: 'employer_relations',
+  education: 'education_operator',
+  assessment: 'assessment_operator',
+  mentorship: 'mentorship_operator',
+  community: 'community_operator',
+  monitoring: 'platform_operator',
+};
 
-export const GROWTH_OPERATOR_ROLES: readonly string[] =
+export const GROWTH_OPERATOR_DOMAINS = Object.keys(GROWTH_OPERATOR_DOMAIN_ROLES);
+
+/** Retired spellings. Still admitted so nobody is locked out mid-sweep. */
+export const LEGACY_GROWTH_OPERATOR_ROLES: readonly string[] =
   GROWTH_OPERATOR_DOMAINS.map(d => `growth_operator_${d}`);
 
-export const ROUTE_ROLES: Record<string, readonly string[]> = {
+/**
+ * Every role that reaches a growth-operator page, retired spellings included.
+ * Spread into the route lists below; the established names also appear there
+ * by hand, and a duplicate in a membership check costs nothing.
+ */
+export const GROWTH_OPERATOR_ROLES: readonly string[] = [
+  ...new Set([
+    ...Object.values(GROWTH_OPERATOR_DOMAIN_ROLES),
+    ...LEGACY_GROWTH_OPERATOR_ROLES,
+  ]),
+];
+
+/** The domain a role covers, or null. Understands the retired spelling too. */
+export const domainForRole = (role: string | null | undefined): string | null => {
+  const key = (role || '').trim().toLowerCase();
+  const direct = Object.entries(GROWTH_OPERATOR_DOMAIN_ROLES)
+    .find(([, r]) => r === key);
+  if (direct) return direct[0];
+  if (key.startsWith('growth_operator_')) {
+    const legacy = key.slice('growth_operator_'.length);
+    return legacy in GROWTH_OPERATOR_DOMAIN_ROLES ? legacy : null;
+  }
+  return null;
+};
+
+const DECLARED_ROUTE_ROLES: Record<string, readonly string[]> = {
   '/admin-dashboard': ['admin'],
   '/admin/role-requests': ['admin'],
   '/admin/school-programs': ['admin', 'content_manager', 'khda_staff'],
@@ -102,6 +138,17 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/training-center-dashboard': ['admin', 'training_provider'],
   '/workspace/:companyId': ['admin', 'candidate', 'employee', 'employer_admin', 'employer_relations', 'growth_operator', 'recruiter', 'seeker', ...GROWTH_OPERATOR_ROLES],
 };
+
+/**
+ * The same role reached several of these lists twice — once written out and
+ * once again through ...GROWTH_OPERATOR_ROLES, which since the 2026-08-27
+ * unification contains those very names. A duplicate changes no decision (these
+ * are membership tests) but it makes the lists unreadable and it made them
+ * differ from the identical declarations in App.tsx.
+ */
+export const ROUTE_ROLES: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries(DECLARED_ROUTE_ROLES).map(([path, roles]) => [path, [...new Set(roles)]]),
+);
 
 /**
  * Roles permitted to open `path`, or null when the route is not gated.

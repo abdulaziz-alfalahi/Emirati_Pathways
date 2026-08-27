@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { domainForRole } from '../../config/routeAccess';
 import { getDisplayName } from '@/utils/nameUtils';
 import { roleLabel, langOf } from '@/utils/enumLabels';
 import { useAuth } from '@/context/AuthContext';
@@ -196,8 +197,10 @@ const UserMenu: React.FC = () => {
             rawRoles.map(r => normalizeRole(r as string))
           )).filter(Boolean);
 
-          // Filter out the generic 'growth_operator' role if the user has specific domain roles
-          const hasSpecificGoRole = uniqueRoles.some(r => typeof r === 'string' && r !== 'growth_operator' && r.startsWith('growth_operator_'));
+          // Filter out the generic 'growth_operator' role if the user has specific domain roles.
+          // See the same test in HybridGovernmentNavFixed: prefix-matching stopped
+          // finding the domain roles when they took the platform's own names.
+          const hasSpecificGoRole = uniqueRoles.some(r => typeof r === 'string' && r !== 'growth_operator' && domainForRole(r) !== null);
           if (hasSpecificGoRole) {
             uniqueRoles = uniqueRoles.filter(r => r !== 'growth_operator');
           }

@@ -153,38 +153,74 @@ def has_company_membership(user_id):
     except Exception as e:  # pragma: no cover — never block on a lookup failure
         logger.warning(f"company membership lookup failed for {user_id}: {e}")
         return False
-# A growth operator is assigned to one or more DOMAINS, and the assignment
-# writes a secondary role per domain: growth_operator_company,
-# growth_operator_candidate, and so on.
+# A growth operator is assigned to one or more DOMAINS. Each domain maps to a
+# role the platform ALREADY HAS — the one an administrator sees on the Users
+# tab, with permissions attached and people already holding it.
 #
-# THIS LIST IS THE ONE DEFINITION. It used to live only in
-# routes/growth_operator_assignment_api.py, which granted these names while
-# nothing here recognised them — so the assignment succeeded, the navigation
-# offered the page (the nav knew the string), and the guard then refused the
-# user, because it was checking for 'growth_operator' without the domain.
+# WHY THERE IS A MAP HERE RATHER THAN A growth_operator_<domain> FAMILY
 #
-# Reported twice on 2026-08-27 from opposite ends of the same defect: "I added
-# Samir to the Company Growth role, but he told me he wasn't granted access",
-# and "Growth Operator Company — options not clickable".
+# There was such a family. The domain screen wrote growth_operator_company while
+# the Users tab offered "Company Onboarding Operator" (employer_relations), so
+# the same job had two role ids: a checkbox that stayed unchecked for somebody
+# who plainly held the role, and three different labels across three screens.
 #
-# The domain SCOPES which companies or candidates an operator handles; it does
-# not change which pages they may reach. Scoping is enforced from the
-# growth_operator_assignments table, so every domain resolves to the same
-# authorisation here.
-GROWTH_OPERATOR_DOMAINS = (
-    'candidate', 'company', 'education', 'assessment',
-    'mentorship', 'community', 'monitoring',
-)
+# Owner, 2026-08-27: keep talent_operator and employer_relations. The parallel
+# family had ONE holder between all seven of its names; the roles it duplicated
+# had eleven. Every domain already had a role, so the family was never needed.
+#
+# I made that worse before I noticed it: earlier the same day I taught the
+# guards to accept growth_operator_<domain>, which fixed the reported symptom by
+# legitimising the duplicate instead of removing it.
+GROWTH_OPERATOR_DOMAIN_ROLES = {
+    'candidate':  'talent_operator',        # "Candidate Onboarding Operator"
+    'company':    'employer_relations',     # "Company Onboarding Operator"
+    'education':  'education_operator',
+    'assessment': 'assessment_operator',
+    'mentorship': 'mentorship_operator',
+    'community':  'community_operator',
+    'monitoring': 'platform_operator',      # "Monitoring Center Operator"
+}
 
-#: Written out explicitly rather than matched by prefix. A guard that accepted
-#: anything starting with "growth_operator_" would grant a future
-#: 'growth_operator_superuser' the moment somebody typed it into a domain list.
-GROWTH_OPERATOR_ROLES = frozenset(
+GROWTH_OPERATOR_DOMAINS = tuple(GROWTH_OPERATOR_DOMAIN_ROLES)
+
+#: Retired. Kept ONLY so a guard still admits anyone carrying one of these from
+#: before the sweep, and so migration 092 has a definition to clean up against.
+#: Nothing grants them any more — see GROWTH_OPERATOR_DOMAIN_ROLES.
+LEGACY_GROWTH_OPERATOR_ROLES = frozenset(
     f'growth_operator_{domain}' for domain in GROWTH_OPERATOR_DOMAINS
 )
 
+#: What the domain screen now grants: the platform's own role for that domain.
+GROWTH_OPERATOR_ROLES = frozenset(GROWTH_OPERATOR_DOMAIN_ROLES.values())
+
+
+def role_for_domain(domain):
+    """The role a domain assignment grants, or None if the domain is unknown."""
+    return GROWTH_OPERATOR_DOMAIN_ROLES.get((domain or '').strip().lower())
+
+
+#: role -> domain, the reverse of GROWTH_OPERATOR_DOMAIN_ROLES.
+DOMAIN_FOR_ROLE = {role: domain for domain, role in GROWTH_OPERATOR_DOMAIN_ROLES.items()}
+
+
+def domain_for_role(role):
+    """The domain a role covers, or None if it covers none.
+
+    Understands the retired ``growth_operator_<domain>`` spelling as well, so a
+    person who still carries one is shown on the domain they were assigned
+    rather than silently dropping off the screen.
+    """
+    key = (role or '').strip().lower()
+    if key in DOMAIN_FOR_ROLE:
+        return DOMAIN_FOR_ROLE[key]
+    if key.startswith('growth_operator_'):
+        legacy = key[len('growth_operator_'):]
+        return legacy if legacy in GROWTH_OPERATOR_DOMAIN_ROLES else None
+    return None
+
+
 # The full operator family (growth/education/assessment/mentorship/community/platform/etc.) plus admin.
-OPERATOR_ROLES = ADMIN_ROLES | GROWTH_OPERATOR_ROLES | {
+OPERATOR_ROLES = ADMIN_ROLES | GROWTH_OPERATOR_ROLES | LEGACY_GROWTH_OPERATOR_ROLES | {
     'operator', 'growth_operator', 'talent_operator', 'employer_relations',
     'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator',
     'platform_operator', 'professional_dev_operator', 'career_services_operator',
