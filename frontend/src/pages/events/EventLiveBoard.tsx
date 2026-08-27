@@ -173,7 +173,12 @@ const EventLiveBoard: React.FC = () => {
         // wording. "Not enough data" beside "3 of 3 attendees have this" is a
         // contradiction the reader has to resolve; the real reason there is
         // that three people do not make a distribution.
-        const tooFewPeople = b.known < MIN_KNOWN;
+        // TOTAL, not known. `known` is how many have THIS field on file; using
+        // it here made the education panel say "1 attendee so far" when three
+        // people had turned up and only one had education recorded — which is
+        // the other reason entirely, and understates the turnout on a board
+        // whose whole job is reporting turnout.
+        const tooFewPeople = b.total < MIN_KNOWN;
         const tooLittleKnown = b.coverage_percent === null
             || b.coverage_percent < MIN_COVERAGE_PERCENT;
         const enough = !tooFewPeople && !tooLittleKnown;
