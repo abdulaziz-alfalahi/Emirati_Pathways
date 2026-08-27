@@ -775,12 +775,12 @@ def get_roles():
             {'id': 'training_provider', 'name': 'training_provider', 'display_name': 'Educator', 'description': 'Academic educator', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             {'id': 'parent', 'name': 'parent', 'display_name': 'Parent / Guardian', 'description': 'Parent or guardian of a student', 'permissions': ['view_dashboard'], 'is_system': True, 'category': 'End Users'},
             {'id': 'compliance_auditor', 'name': 'compliance_auditor', 'display_name': 'Government Official', 'description': 'Government entity representative', 'permissions': ['view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'End Users'},
-            {'id': 'candidate', 'name': 'candidate', 'display_name': 'Student', 'description': 'School or university student', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
+            {'id': 'student', 'name': 'student', 'display_name': 'Student', 'description': 'School or university student', 'permissions': ['view_dashboard', 'manage_profile'], 'is_system': True, 'category': 'End Users'},
             # Specialized Roles (Phase 2-4)
             {'id': 'advisor', 'name': 'advisor', 'display_name': 'Academic Advisor', 'description': 'Academic pathway advisor for students and job seekers', 'permissions': ['view_dashboard', 'manage_profile', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'coach', 'name': 'coach', 'display_name': 'Career Coach', 'description': 'Professional career coach providing 1-on-1 coaching', 'permissions': ['view_dashboard', 'manage_profile', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'internship_coordinator', 'name': 'internship_coordinator', 'display_name': 'Internship Coordinator', 'description': 'Manages internship programs and student placements', 'permissions': ['view_dashboard', 'manage_profile', 'manage_candidates', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
-            {'id': 'training_provider', 'name': 'training_provider', 'display_name': 'Training Center Representative', 'description': 'Manages training center programs and enrollments', 'permissions': ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            {'id': 'training_center_rep', 'name': 'training_center_rep', 'display_name': 'Training Center Representative', 'description': 'Manages training center programs and enrollments', 'permissions': ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'call_center_agent', 'name': 'call_center_agent', 'display_name': 'Call Center Agent', 'description': 'Handles support tickets and user inquiries', 'permissions': ['view_dashboard', 'view_users', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'board_member', 'name': 'board_member', 'display_name': 'EHRDC Board Member', 'description': 'Board member of the Emirati Human Development Council', 'permissions': ['view_dashboard', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'board_operator', 'name': 'board_operator', 'display_name': 'Board Secretary', 'description': 'Secretary of the EHRDC Board: schedules board meetings, sets the quorum rule, keeps minutes and tracks implementation of board recommendations', 'permissions': ['manage_board_meetings', 'view_dashboard', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
@@ -798,16 +798,22 @@ def get_roles():
         # Onboarding Operator" while the invitation appointing somebody to it
         # said "Talent Operator".
         #
-        # Two ids still appear TWICE in the list above — 'candidate' as both
-        # "Job Seeker" and "Student", and 'training_provider' as both "Educator"
-        # and "Training Center Representative". Those are not duplicate labels
-        # but almost certainly the WRONG ID on the second checkbox: 'student'
-        # and 'training_center_rep' are real roles that exist and are not
-        # offered here. Correcting them changes what those checkboxes grant, so
-        # it is left for a deliberate decision rather than folded into a
-        # labelling change. Until then their authored names stand, and they get
-        # no Arabic — one Arabic name on two different checkboxes would restate
-        # the confusion rather than remove it.
+        # Every id in the list above is now distinct. Two were not: 'candidate'
+        # was offered as both "Job Seeker" AND "Student", and 'training_provider'
+        # as both "Educator" and "Training Center Representative". Those were not
+        # duplicate labels but the WRONG ID on the second checkbox — ticking
+        # "Student" granted 'candidate', and 'student' and 'training_center_rep'
+        # are real roles that were offered nowhere. Corrected 2026-08-27 on the
+        # owner's instruction.
+        #
+        # Both corrected roles are bound roles, so granting one here is refused
+        # unless the binding exists and the refusal names the flow that does it
+        # properly — see BOUND_ROLE_REQUIREMENTS. Ticking "Student" by hand
+        # would otherwise produce a student workspace scoped to an enrolment
+        # that does not exist.
+        #
+        # The `seen` guard stays: it is what keeps a future duplicate from
+        # silently taking the registry's name for a different checkbox.
         seen = {}
         for entry in roles:
             seen[entry['id']] = seen.get(entry['id'], 0) + 1

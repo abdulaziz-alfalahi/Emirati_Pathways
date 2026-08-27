@@ -92,6 +92,14 @@ BOUND_ROLE_REQUIREMENTS = {
     'training_provider':   ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
     'training_center_rep': ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
     'assessor':            ('assessor',    'certifying them at an assessment centre (Assessment Centres → add assessor), which grants the role automatically'),
+    # Added 2026-08-27 with the checkbox correction below it. `student` is an
+    # ENROLMENT-VERIFIED role — ENROLMENT_ROLES makes granting it an
+    # institution-side act owned by the Academic Advisor, who writes the
+    # `students` row and the role in one call. A hand grant produces the same
+    # dead end as the others: a student workspace scoped to an enrolment that
+    # does not exist. One person already holds the role this way, against zero
+    # rows in `students`.
+    'student':             ('enrolment',   'enrolling them at an institution (Students → Enrolment), which grants the role automatically'),
 }
 
 
@@ -109,6 +117,7 @@ def _has_binding(user_id, kind):
         'institution': "SELECT 1 FROM institution_staff WHERE user_id::text = %s LIMIT 1",
         'centre':      "SELECT 1 FROM training_center_staff WHERE user_id::text = %s LIMIT 1",
         'assessor':    "SELECT 1 FROM assessor_profiles WHERE user_id::text = %s LIMIT 1",
+        'enrolment':   "SELECT 1 FROM students WHERE user_id::text = %s LIMIT 1",
     }
     sql = queries.get(kind)
     if not sql or not user_id:
@@ -278,6 +287,14 @@ GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
 # page inviting an administrator to drag thirteen of the wrong people into a
 # domain stopped being cosmetic.
 #
+#: Roles held BY the people the platform serves rather than because of a job.
+#: Named because two things need it: STAFF_ROLES subtracts it, and the Users tab
+#: role list is checked against it — an end-user role belongs to no guard set,
+#: so "is this role recognised?" has to be asked differently for these six.
+END_USER_ROLES = frozenset({
+    'candidate', 'student', 'parent', 'employee', 'seeker', 'entrepreneur',
+})
+
 # Composed from the sets that already gate staff surfaces, so a role added to
 # any of them appears here without anybody remembering to.
 STAFF_ROLES = (
@@ -286,12 +303,9 @@ STAFF_ROLES = (
     | GOVERNANCE_ROLES
     | {'assessor', 'coach', 'mentor', 'internship_coordinator',
        'compliance_auditor', 'call_center_agent'}
-) - {
-    # Held BY the people the platform serves, and by staff only incidentally.
-    # Listing someone as staff because they are also a candidate would put
-    # 38,000 people in a directory of colleagues.
-    'candidate', 'student', 'parent', 'employee', 'seeker', 'entrepreneur',
-}
+) - END_USER_ROLES  # listing someone as staff because they are also a
+                      # candidate would put 38,000 people in a directory of
+                      # colleagues.
 
 
 def is_staff(roles):

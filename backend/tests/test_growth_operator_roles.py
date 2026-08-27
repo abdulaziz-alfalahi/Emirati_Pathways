@@ -232,3 +232,82 @@ def test_no_screen_keeps_its_own_copy_of_the_names():
         assert '_STAFF_ROLE_LABELS = {' not in source
         assert '_EXTRA_LABELS = {' not in source
         assert 'role_labels import' in source
+
+
+# ── The role list an administrator actually ticks ───────────────────────────
+
+def _users_tab_roles():
+    import re
+    source = open(os.path.join(BACKEND, 'routes', 'administrator_routes.py'),
+                  encoding='utf-8').read()
+    block = source[source.index('def get_roles()'):source.index('seen = {}')]
+    return re.findall(r"\{'id': '([a-z_]+)'.*?'display_name': '([^']+)'", block)
+
+
+def test_no_role_is_offered_twice():
+    """Three ids appeared twice, so six checkboxes granted three roles.
+
+    platform_operator was a genuine duplicate — two names, two categories, the
+    same grant. The other two were the WRONG ID: ticking "Student" granted
+    'candidate', and ticking "Training Center Representative" granted
+    'training_provider'.
+    """
+    import collections
+    ids = [rid for rid, _ in _users_tab_roles()]
+    dupes = {k: v for k, v in collections.Counter(ids).items() if v > 1}
+    assert not dupes, f'the same role is offered under more than one checkbox: {dupes}'
+
+
+def test_the_two_corrected_checkboxes_grant_what_they_say():
+    offered = dict(_users_tab_roles())
+    assert offered.get('student') == 'Student'
+    assert offered.get('training_center_rep') == 'Training Center Representative'
+    assert offered.get('candidate') == 'Job Seeker'
+    assert offered.get('training_provider') == 'Educator'
+
+
+def test_every_offered_role_is_a_role_the_platform_KNOWS():
+    """A checkbox granting a name nothing recognises is the whole defect this
+    file is named after, in miniature.
+
+    "Known" means two things, and a role needs both: the platform can NAME it
+    (it is in the label registry, so no screen shows a raw identifier) and some
+    guard ADMITS it (it is in at least one role set, so holding it does
+    something). 'student' failed the second test as recently as this morning —
+    it existed in STUDENT_ROLES but no checkbox granted it.
+    """
+    from auth import access_control
+    from auth.access_control import END_USER_ROLES
+    from role_labels import ROLE_LABELS
+
+    admitted = set()
+    for name, value in vars(access_control).items():
+        if name.endswith('ROLES') and isinstance(value, (set, frozenset)):
+            admitted |= {str(r).lower() for r in value}
+
+    for rid, label in _users_tab_roles():
+        assert rid in ROLE_LABELS, f'"{label}" grants {rid}, which has no name'
+        if rid in END_USER_ROLES:
+            continue          # held by the people the platform serves; gated by
+                              # what they own, not by membership of a role set
+        assert rid in admitted, f'"{label}" grants {rid}, which no guard admits'
+
+
+def test_the_enrolment_verified_role_cannot_be_granted_by_hand_alone():
+    """`student` is granted by an advisor enrolling somebody, which writes the
+    students row and the role together. Granted alone it scopes a workspace to
+    an enrolment that does not exist — one person already holds it that way,
+    against zero rows in `students`."""
+    from auth.access_control import BOUND_ROLE_REQUIREMENTS
+    assert 'student' in BOUND_ROLE_REQUIREMENTS
+    kind, how = BOUND_ROLE_REQUIREMENTS['student']
+    assert kind == 'enrolment'
+    assert 'enrolling them' in how, 'the refusal must name the flow that works'
+
+
+def test_both_corrected_roles_are_bound_roles():
+    """Correcting an id changes what a checkbox GRANTS. Neither correction may
+    hand out a role that means nothing without its binding."""
+    from auth.access_control import BOUND_ROLE_REQUIREMENTS
+    for role in ('student', 'training_center_rep'):
+        assert role in BOUND_ROLE_REQUIREMENTS, f'{role} can now be granted unbound'
