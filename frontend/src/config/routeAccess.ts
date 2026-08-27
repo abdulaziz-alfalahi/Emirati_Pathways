@@ -28,6 +28,27 @@
 // waiting room (PR #471) unreachable by the people they exist for (PRs #472,
 // #474). Opening the page is not the same as getting in; anyone not on the list
 // still gets "Unable to join" from the API.
+/**
+ * A growth operator is assigned to DOMAINS, and each assignment grants a
+ * secondary role of the form growth_operator_<domain>.
+ *
+ * These names have to appear anywhere 'growth_operator' does. When they did not,
+ * the assignment succeeded, the navigation offered the page because it knew the
+ * string, and the guard refused the user because it was looking for the
+ * un-suffixed name — reported twice on 2026-08-27 from opposite ends of the same
+ * defect.
+ *
+ * Mirrors GROWTH_OPERATOR_DOMAINS in backend/auth/access_control.py, which is
+ * where the authorisation decision is actually made.
+ */
+export const GROWTH_OPERATOR_DOMAINS = [
+  'candidate', 'company', 'education', 'assessment',
+  'mentorship', 'community', 'monitoring',
+] as const;
+
+export const GROWTH_OPERATOR_ROLES: readonly string[] =
+  GROWTH_OPERATOR_DOMAINS.map(d => `growth_operator_${d}`);
+
 export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/admin-dashboard': ['admin'],
   '/admin/role-requests': ['admin'],
@@ -35,7 +56,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/admin/user-roles': ['admin', 'super_admin'],
   '/advisor-dashboard': ['admin', 'advisor'],
   '/applications': ['candidate'],
-  '/assessment-operator-dashboard': ['admin', 'assessment_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
+  '/assessment-operator-dashboard': ['admin', 'assessment_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin', ...GROWTH_OPERATOR_ROLES],
   '/assessor-dashboard': ['assessor'],
   '/board-secretary': ['admin', 'board_operator', 'platform_operator'],
   '/call-center-dashboard': ['admin', 'call_center_agent'],
@@ -46,10 +67,10 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/career-services-crm': ['admin', 'career_services_operator', 'operator'],
   '/career-services-dashboard': ['admin', 'career_services_operator', 'operator'],
   '/coach-dashboard': ['admin', 'coach'],
-  '/community-operator-dashboard': ['admin', 'community_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
+  '/community-operator-dashboard': ['admin', 'community_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin', ...GROWTH_OPERATOR_ROLES],
   '/cv-builder': ['candidate'],
   '/demographics': ['admin', 'board_member', 'career_services_operator', 'compliance_auditor', 'platform_operator'],
-  '/education-operator-dashboard': ['admin', 'education_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin'],
+  '/education-operator-dashboard': ['admin', 'education_operator', 'growth_operator', 'operator', 'platform_administrator', 'super_admin', ...GROWTH_OPERATOR_ROLES],
   '/educator-dashboard': ['training_provider'],
   '/events/manage': ['admin', 'call_center_agent', 'career_services_operator', 'operator', 'platform_administrator', 'super_admin'],
   // board_operator is the board SECRETARY. They were admitted to
@@ -60,18 +81,18 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   // was the only thing keeping them out.
   '/executive': ['admin', 'board_chairman', 'board_member', 'board_operator', 'compliance_auditor', 'platform_operator'],
   '/government-dashboard': ['admin', 'compliance_auditor', 'platform_operator'],
-  '/growth-operator-dashboard': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],
-  '/growth-operator-dashboard/:domain': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator'],
+  '/growth-operator-dashboard': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator', ...GROWTH_OPERATOR_ROLES],
+  '/growth-operator-dashboard/:domain': ['admin', 'assessment_operator', 'community_operator', 'education_operator', 'employer_relations', 'growth_operator', 'mentorship_operator', 'operator', 'platform_operator', 'talent_operator', ...GROWTH_OPERATOR_ROLES],
   '/guardian-dashboard': ['parent'],
   '/hr-dashboard': ['employer_admin'],
   '/internship-coordinator-dashboard': ['admin', 'internship_coordinator'],
   '/mentor-dashboard': ['mentor'],
-  '/mentorship-operator-dashboard': ['admin', 'growth_operator', 'mentorship_operator', 'operator', 'platform_administrator', 'super_admin'],
-  '/nafis-talent-dashboard': ['admin', 'growth_operator', 'operator', 'platform_administrator', 'super_admin', 'talent_operator'],
+  '/mentorship-operator-dashboard': ['admin', 'growth_operator', 'mentorship_operator', 'operator', 'platform_administrator', 'super_admin', ...GROWTH_OPERATOR_ROLES],
+  '/nafis-talent-dashboard': ['admin', 'growth_operator', 'operator', 'platform_administrator', 'super_admin', 'talent_operator', ...GROWTH_OPERATOR_ROLES],
   '/operations-center': ['admin', 'platform_administrator', 'platform_operator', 'super_admin'],
   '/operations-center/display': ['admin', 'platform_administrator', 'platform_operator', 'super_admin'],
   '/operator-dashboard': ['admin', 'operator'],
-  '/professional-dev-dashboard': ['admin', 'growth_operator', 'operator', 'platform_administrator', 'professional_dev_operator', 'super_admin'],
+  '/professional-dev-dashboard': ['admin', 'growth_operator', 'operator', 'platform_administrator', 'professional_dev_operator', 'super_admin', ...GROWTH_OPERATOR_ROLES],
   '/recruiter-dashboard': ['employer_admin', 'recruiter'],
   '/recruiter/*': ['employer_admin', 'recruiter'],
   '/recruiter/jd-builder': ['employer_admin', 'recruiter'],
@@ -79,7 +100,7 @@ export const ROUTE_ROLES: Record<string, readonly string[]> = {
   '/service-catalog': ['admin', 'board_member', 'compliance_auditor', 'platform_operator'],
   '/student-dashboard': ['candidate'],
   '/training-center-dashboard': ['admin', 'training_provider'],
-  '/workspace/:companyId': ['admin', 'candidate', 'employee', 'employer_admin', 'employer_relations', 'growth_operator', 'recruiter', 'seeker'],
+  '/workspace/:companyId': ['admin', 'candidate', 'employee', 'employer_admin', 'employer_relations', 'growth_operator', 'recruiter', 'seeker', ...GROWTH_OPERATOR_ROLES],
 };
 
 /**

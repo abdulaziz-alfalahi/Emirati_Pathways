@@ -22,8 +22,18 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 growth_operator_assignment_bp = Blueprint('growth_operator_assignment_api', __name__, url_prefix='/api/admin/growth-operators')
 
-# Valid Growth Operator Domains
-VALID_DOMAINS = ['candidate', 'company', 'education', 'assessment', 'mentorship', 'community', 'monitoring']
+# Valid Growth Operator Domains — imported, NOT redefined.
+#
+# This list and the authorisation role set have to agree, and when they were
+# maintained separately they did not: this module granted growth_operator_<domain>
+# while access_control had never heard of those names, so the grant worked and
+# the guard refused. One definition, in the module that does the authorising.
+try:
+    from backend.auth.access_control import GROWTH_OPERATOR_DOMAINS
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from auth.access_control import GROWTH_OPERATOR_DOMAINS
+
+VALID_DOMAINS = list(GROWTH_OPERATOR_DOMAINS)
 
 # Domain metadata
 DOMAIN_METADATA = {

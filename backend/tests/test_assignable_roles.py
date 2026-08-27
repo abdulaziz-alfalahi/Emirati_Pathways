@@ -47,6 +47,23 @@ def _assignable_role_ids():
 # role, deleting its line here is what makes this test demand a checkbox.
 SYNONYMS = {'hr', 'hr_manager', 'growth_operator', 'operator'}
 
+# Gated, grantable, but NOT through the Users tab — and deliberately so.
+#
+# growth_operator_<domain> is granted by assigning an operator to a domain on
+# the Growth Operator screen, which also records WHICH companies or candidates
+# they handle. Offering the same role as a Users-tab checkbox would grant the
+# name without the scope, and produce a user the guards admit and the
+# assignment table knows nothing about.
+#
+# It would also be the second place to do one thing, which is already a
+# reported complaint: "Duplicate locations for role assignment" (2026-08-27).
+# One grant path, on the screen that carries the scope with it.
+GRANTED_BY_DOMAIN_ASSIGNMENT = {
+    f'growth_operator_{d}' for d in
+    ('candidate', 'company', 'education', 'assessment',
+     'mentorship', 'community', 'monitoring')
+}
+
 
 def _gated_roles():
     """Roles named in access_control's role sets — what the platform enforces.
@@ -61,7 +78,8 @@ def _gated_roles():
     for name in ('BOARD_ROLES', 'OPERATOR_ROLES', 'CAREER_SERVICES_ROLES',
                  'HR_ROLES', 'RECRUITER_ROLES', 'CHAIRMAN_ROLES'):
         gated |= set(getattr(ac, name, set()) or set())
-    return {r for r in gated if r not in ac.ADMIN_ROLES and r not in SYNONYMS} | {'admin'}
+    excluded = SYNONYMS | GRANTED_BY_DOMAIN_ASSIGNMENT
+    return {r for r in gated if r not in ac.ADMIN_ROLES and r not in excluded} | {'admin'}
 
 
 def test_every_gated_role_can_be_assigned():
@@ -95,3 +113,27 @@ def test_the_frontend_fallback_agrees_about_the_board():
         src = fh.read()
     for role in ('board_member', 'board_operator', 'board_chairman'):
         assert f"id: '{role}'" in src, f'{role} missing from the offline fallback'
+
+
+def test_domain_roles_are_granted_by_assignment_and_not_by_checkbox():
+    """The exemption above must stay honest.
+
+    If these ever appear as Users-tab checkboxes, an administrator can grant the
+    role without the domain scope that gives it meaning — and the platform grows
+    a second place to do one thing, which is what was reported.
+    """
+    offered = _assignable_role_ids()
+    for role in GRANTED_BY_DOMAIN_ASSIGNMENT:
+        assert role not in offered, (
+            f'{role} is offered as a checkbox; it should be granted by domain '
+            f'assignment, which carries the scope with it'
+        )
+
+
+def test_the_domain_roles_really_are_gated():
+    """The exemption is only safe while these are enforced somewhere. If they
+    stopped gating anything, exempting them would hide a dead role rather than
+    a deliberately-scoped one."""
+    from auth import access_control as ac
+    for role in GRANTED_BY_DOMAIN_ASSIGNMENT:
+        assert role in ac.OPERATOR_ROLES
