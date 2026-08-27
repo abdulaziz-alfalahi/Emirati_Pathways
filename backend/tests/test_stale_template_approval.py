@@ -110,10 +110,15 @@ def test_no_message_kind_is_shown_as_a_raw_identifier():
     listing = source[source.index('def list_templates'):source.index('def register_templates')]
     assert 'kind_label' in listing, 'the listing does not send the kind its name'
 
+    # The names live in ONE place for both mail screens, as of the queue fix.
     from services import mail_templates
-    screen = _screen()
+    path = os.path.join(os.path.dirname(BACKEND), 'frontend', 'src', 'config', 'mailKinds.ts')
+    if not os.path.exists(path):
+        pytest.skip('frontend not present')
+    registry = open(path, encoding='utf-8').read()
     for kind in mail_templates.TEMPLATES:
-        assert kind in screen, f'{kind} has no Arabic name on the screen'
+        assert kind in registry, f'{kind} has no name in the shared registry'
+    assert 'mailKindLabel' in _screen(), 'the wording screen keeps its own copy'
 
 
 def test_a_stale_kind_is_not_warned_about_twice():
