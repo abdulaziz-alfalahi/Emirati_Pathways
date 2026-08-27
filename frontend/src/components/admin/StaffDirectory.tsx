@@ -79,7 +79,9 @@ const StaffDirectory: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
+    // Holds the role IDS behind the chosen label, so one 'Administrator'
+    // chip filters every alias of it.
+    const [roleFilter, setRoleFilter] = useState<string[]>([]);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -104,13 +106,42 @@ const StaffDirectory: React.FC = () => {
     const visible = useMemo(() => {
         const q = search.trim().toLowerCase();
         return staff.filter(p => {
-            if (roleFilter && !p.roles.some(r => r.role === roleFilter)) return false;
+            if (roleFilter.length && !p.roles.some(r => roleFilter.includes(r.role))) return false;
             if (!q) return true;
             return `${p.name} ${p.email || ''}`.toLowerCase().includes(q);
         });
     }, [staff, search, roleFilter]);
 
     const label = (r: RoleEntry) => (isAr ? r.label_ar : r.label);
+
+    /**
+     * Collapse role ids that share a label.
+     *
+     * 'admin', 'administrator', 'super_admin', 'super_user' and
+     * 'platform_administrator' are aliases for one job and all read
+     * "Administrator", so the raw per-id counts rendered as two chips both
+     * labelled Administrator, with the total split between them — which reads
+     * as two different things rather than one.
+     *
+     * Grouped by LABEL, and the filter then matches every id behind it.
+     */
+    const grouped = useMemo(() => {
+        const byLabel = new Map<string, { label: string; label_ar: string;
+                                          roles: string[]; count: number }>();
+        for (const r of byRole) {
+            const key = r.label;
+            const existing = byLabel.get(key);
+            if (existing) {
+                existing.count += r.count;
+                existing.roles.push(r.role);
+            } else {
+                byLabel.set(key, { label: r.label, label_ar: r.label_ar,
+                                   roles: [r.role], count: r.count });
+            }
+        }
+        return [...byLabel.values()].sort((a, b) => b.count - a.count
+            || a.label.localeCompare(b.label));
+    }, [byRole]);
 
     const roleChip = (r: RoleEntry) => (
         <span key={r.role}
@@ -152,27 +183,30 @@ const StaffDirectory: React.FC = () => {
             )}
 
             {/* Counts across the whole directory, and a one-click filter. */}
-            {byRole.length > 0 && (
+            {grouped.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                    <button onClick={() => setRoleFilter('')}
-                            style={{ background: roleFilter ? '#fff' : brand.blueBg,
-                                     color: roleFilter ? brand.dim : brand.blueText,
+                    <button onClick={() => setRoleFilter([])}
+                            style={{ background: roleFilter.length ? '#fff' : brand.blueBg,
+                                     color: roleFilter.length ? brand.dim : brand.blueText,
                                      border: `1px solid ${brand.border}`, borderRadius: 999,
                                      padding: '4px 12px', fontSize: 12.5, cursor: 'pointer',
-                                     fontWeight: roleFilter ? 400 : 600 }}>
+                                     fontWeight: roleFilter.length ? 400 : 600 }}>
                         {b('All', 'الكل')} ({staff.length})
                     </button>
-                    {byRole.map(r => (
-                        <button key={r.role} onClick={() => setRoleFilter(
-                                    roleFilter === r.role ? '' : r.role)}
-                                style={{ background: roleFilter === r.role ? brand.blueBg : '#fff',
-                                         color: roleFilter === r.role ? brand.blueText : brand.dim,
-                                         border: `1px solid ${brand.border}`, borderRadius: 999,
-                                         padding: '4px 12px', fontSize: 12.5, cursor: 'pointer',
-                                         fontWeight: roleFilter === r.role ? 600 : 400 }}>
-                            {isAr ? r.label_ar : r.label} ({r.count})
-                        </button>
-                    ))}
+                    {grouped.map(g => {
+                        const active = g.roles.every(x => roleFilter.includes(x))
+                            && roleFilter.length === g.roles.length;
+                        return (
+                            <button key={g.label} onClick={() => setRoleFilter(active ? [] : g.roles)}
+                                    style={{ background: active ? brand.blueBg : '#fff',
+                                             color: active ? brand.blueText : brand.dim,
+                                             border: `1px solid ${brand.border}`, borderRadius: 999,
+                                             padding: '4px 12px', fontSize: 12.5, cursor: 'pointer',
+                                             fontWeight: active ? 600 : 400 }}>
+                                {isAr ? g.label_ar : g.label} ({g.count})
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 
@@ -193,7 +227,7 @@ const StaffDirectory: React.FC = () => {
             ) : visible.length === 0 ? (
                 <div style={{ background: brand.muted, border: `1px dashed ${brand.border}`,
                               borderRadius: 10, padding: 26, textAlign: 'center', color: brand.dim }}>
-                    {search || roleFilter
+                    {search || roleFilter.length
                         ? b('Nobody matches that.', 'لا أحد يطابق هذا البحث.')
                         : b('No staff are recorded.', 'لا يوجد فريق مسجّل.')}
                 </div>
