@@ -150,6 +150,13 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
     // job postings in the DB. Without it the funnel has no leads and there is
     // nothing to auto-assign to the recruiter who redeems an invitation.
     // The in-browser parse below is only the preview/filter working set.
+    //
+    // THIS RUNS THE MOMENT A FILE IS CHOSEN, so it must never write to anyone.
+    // It used to: the import composed a verification email per vacancy row, so
+    // picking a CSV to preview put 267 messages to 145 real employers into the
+    // queue on 2026-08-27 without anybody deciding to write to a single one.
+    // The import is now data-only unless explicitly asked for mail, and this
+    // call never asks.
     const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'failed'>('idle');
     const [syncReport, setSyncReport] = useState<any>(null);
     const [syncError, setSyncError] = useState('');
@@ -552,8 +559,8 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 12, background: colors.greenBg, color: colors.greenText, fontSize: 13 }}>
                     <CheckCircle size={15} />
                     {t(
-                        `Synced to platform: ${syncReport.companies_created ?? 0} new companies, ${syncReport.jobs_created ?? 0} new vacancies (${syncReport.total_rows ?? 0} rows processed).`,
-                        `تمت المزامنة مع المنصة: ${syncReport.companies_created ?? 0} شركة جديدة، ${syncReport.jobs_created ?? 0} شاغر جديد (${syncReport.total_rows ?? 0} صف تمت معالجته).`
+                        `Synced to platform: ${syncReport.companies_created ?? 0} new companies, ${syncReport.jobs_created ?? 0} new vacancies (${syncReport.total_rows ?? 0} rows processed). No emails were composed — the data is in, and writing to these employers is a separate step.`,
+                        `تمت المزامنة مع المنصة: ${syncReport.companies_created ?? 0} شركة جديدة، ${syncReport.jobs_created ?? 0} شاغر جديد (${syncReport.total_rows ?? 0} صف تمت معالجته). لم تُنشأ أي رسائل — البيانات مستوردة فقط، ومراسلة جهات العمل خطوة منفصلة.`
                     )}
                 </div>
             )}

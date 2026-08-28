@@ -602,8 +602,17 @@ export default function GrowthTools() {
                                                 <div className="text-xs text-blue-800">Jobs Created</div>
                                             </div>
                                             <div className="bg-white p-3 rounded border border-green-100 shadow-sm text-center">
-                                                <div className="text-2xl font-bold text-orange-600">{importReport.emails_sent}</div>
-                                                <div className="text-xs text-orange-800">Invites Sent</div>
+                                                {/* Was {importReport.emails_sent} labelled "Invites Sent".
+                                                    The backend stopped returning emails_sent when it
+                                                    stopped pretending to send — so this tile rendered
+                                                    BLANK under the word "Sent", on the one screen that
+                                                    should have said 267 messages had just been composed. */}
+                                                <div className="text-2xl font-bold text-orange-600">
+                                                    {importReport.queued_emails ? (importReport.messages_queued ?? 0) : 0}
+                                                </div>
+                                                <div className="text-xs text-orange-800">
+                                                    {importReport.queued_emails ? 'Emails Queued (awaiting approval)' : 'Emails Composed'}
+                                                </div>
                                             </div>
                                         </div>
 
