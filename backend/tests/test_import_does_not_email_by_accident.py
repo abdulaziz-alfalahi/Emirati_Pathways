@@ -77,25 +77,21 @@ def test_the_endpoint_takes_the_identity_from_the_token_not_the_body():
     assert "request.form.get('imported_by')" not in endpoint
 
 
-def _routes_raw():
-    """Raw, not code_only: the INSERT lives in a triple-quoted SQL string, which
-    the comment/docstring stripper removes."""
-    return open(os.path.join(BACKEND, 'routes', 'growth_routes.py'),
-                encoding='utf-8').read()
-
-
 def test_the_import_is_audited():
-    endpoint = _routes_raw()
+    endpoint = _routes()
     endpoint = endpoint[endpoint.index('def import_vacancies'):]
-    assert 'admin_audit_log' in endpoint
-    assert 'nafis_vacancy_import' in endpoint
+    assert 'record_admin_action(' in endpoint
+    assert "'nafis_vacancy_import'" in endpoint
 
 
 def test_auditing_never_costs_the_import():
-    endpoint = _routes_raw()
-    endpoint = endpoint[endpoint.index('def import_vacancies'):]
-    audit = endpoint.index('admin_audit_log')
-    assert 'except Exception' in endpoint[audit:audit + 900]
+    """The guarantee moved to the shared writer, which is where it belongs: it
+    now holds for every audited action rather than for whichever call site
+    remembered to wrap itself."""
+    import admin_audit
+    source = inspect.getsource(admin_audit.record_admin_action)
+    assert 'except Exception' in source
+    assert 'return False' in source
 
 
 def test_the_preview_upload_never_asks_for_mail():

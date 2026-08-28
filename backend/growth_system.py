@@ -1,4 +1,9 @@
 import logging
+
+try:
+    from backend.admin_audit import record_invitation
+except ImportError:                          # pragma: no cover — dual root
+    from admin_audit import record_invitation
 import os
 import csv
 import io
@@ -1005,6 +1010,20 @@ class GrowthSystem:
                         ))
 
                         record = cur.fetchone()
+
+                        # Who issued this, recorded before anything is sent.
+                        #
+                        # Asked on 2026-08-27 who had invited a real employer,
+                        # the platform could not say: the invitation named an
+                        # operator who truthfully denied it (the button told him
+                        # it had sent nothing) and the ACT of issuing it was
+                        # recorded nowhere. A row naming an operator is not an
+                        # audit trail on its own.
+                        record_invitation(
+                            'company', invited_by, str(record['id']),
+                            record['company_email'],
+                            intended_role=record.get('intended_role'),
+                            extra={'company_name': record['company_name']})
 
                         frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
                         link = f"{frontend_url}/join/{token}"

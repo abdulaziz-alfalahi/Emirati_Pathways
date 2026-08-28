@@ -1,4 +1,9 @@
 import os
+
+try:
+    from backend.admin_audit import record_invitation
+except ImportError:                          # pragma: no cover — dual root
+    from admin_audit import record_invitation
 import json
 import logging
 import secrets
@@ -239,6 +244,17 @@ class CompanyTeamSystem:
                         "VALUES (%s, %s, %s, %s) RETURNING id",
                         (token, company_id, role, str(invited_by_user_id)))
                     invitation_id = cur.fetchone()['id']
+
+                    # The one invitation issued by an EMPLOYER rather than by
+                    # us, which is exactly why it is worth recording: it grants
+                    # access to a company workspace and we are not the ones
+                    # deciding who gets it.
+                    record_invitation('team', invited_by_user_id, str(invitation_id),
+                                      (email or '').strip() or None,
+                                      intended_role=role,
+                                      extra={'company_id': str(company_id),
+                                             'company_name': company['name']})
+
                     frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
                     link = f"{frontend_url}/join-team/{token}"
 
