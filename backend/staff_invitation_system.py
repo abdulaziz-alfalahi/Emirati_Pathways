@@ -10,6 +10,11 @@ redeems the invitation against the identity UAE Pass proved (issue #90: never
 bind an invitation to a phone/email supplied by the redeemer).
 """
 import logging
+
+try:
+    from backend.admin_audit import record_invitation
+except ImportError:                          # pragma: no cover — dual root
+    from admin_audit import record_invitation
 import os
 import secrets
 from datetime import datetime, timedelta
@@ -229,6 +234,12 @@ class StaffInvitationSystem:
                 """, (token, full_name, email, phone, role, organization, notes,
                       expires_at, str(invited_by)[:15] if invited_by else None))
                 row = dict(cur.fetchone())
+
+                # A staff invitation confers a ROLE on a named person, which
+                # makes who issued it the most consequential fact about it.
+                record_invitation('staff', invited_by, str(row.get('id')),
+                                  email, intended_role=role,
+                                  extra={'organization': organization})
 
                 # Queue the invitation email on THIS cursor, so the message
                 # commits or rolls back with the token it carries. An address

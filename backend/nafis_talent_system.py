@@ -3,6 +3,11 @@ NAFIS Talent System
 
 Handles importing job seekers from NAFIS CSV exports (26 columns),
 creating user accounts, tracking import batches, and managing
+
+try:
+    from backend.admin_audit import record_invitation
+except ImportError:                          # pragma: no cover — dual root
+    from admin_audit import record_invitation
 magic link invitations for seeker onboarding.
 """
 
@@ -725,6 +730,13 @@ class NafisTalentSystem:
                             RETURNING id, token
                         """, (token, sid, seeker['full_name'], seeker['email'], invited_by, expires_at))
                         record = cur.fetchone()
+
+                        # A seeker invitation carries a real person's name and
+                        # address out of the NAFIS data, so who sent it is worth
+                        # the row.
+                        record_invitation('seeker', invited_by, str(record['id']),
+                                          seeker['email'],
+                                          extra={'seeker_id': sid})
 
                         # Update seeker status
                         cur.execute("""

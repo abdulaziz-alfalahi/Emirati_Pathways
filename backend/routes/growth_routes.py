@@ -68,26 +68,17 @@ def import_vacancies():
         # worth a line in the audit log. There was none, so answering "who ran
         # this" meant reading timestamps out of the data itself.
         try:
-            import json as _json
-            try:
-                from backend.db_utils import execute_query as _q
-            except ImportError:              # pragma: no cover — dual root
-                from db_utils import execute_query as _q
-            _q("""INSERT INTO admin_audit_log
-                      (user_id, action, resource_type, details, created_at)
-                  VALUES (%s, %s, %s, %s, NOW())""",
-               (imported_by, 'nafis_vacancy_import', 'job_posting',
-                _json.dumps({'file': file.filename,
-                             'rows': report.get('total_rows'),
-                             'companies_created': report.get('companies_created'),
-                             'jobs_created': report.get('jobs_created'),
-                             'queued_emails': bool(queue_emails),
-                             'messages_queued': report.get('messages_queued')})),
-               fetch_all=False)
-        except Exception as audit_err:
-            # Never fails the import: a missing audit row is bad, losing a
-            # completed import because of one is worse.
-            logger.warning(f'Could not audit the import: {audit_err}')
+            from backend.admin_audit import record_admin_action
+        except ImportError:                  # pragma: no cover — dual root
+            from admin_audit import record_admin_action
+        record_admin_action(
+            'nafis_vacancy_import', imported_by, resource_type='job_posting',
+            details={'file': file.filename,
+                     'rows': report.get('total_rows'),
+                     'companies_created': report.get('companies_created'),
+                     'jobs_created': report.get('jobs_created'),
+                     'queued_emails': bool(queue_emails),
+                     'messages_queued': report.get('messages_queued')})
         
         return jsonify({
             'success': True,
