@@ -23,8 +23,9 @@ import pytest  # noqa: E402
 
 from brand import (COUNCIL_NAME_EN, COUNCIL_NAME_AR, PLATFORM_NAME_EN,  # noqa: E402
                    BILINGUAL_RULE)
+from role_labels import ROLE_LABELS  # noqa: E402
 from staff_invitation_system import (  # noqa: E402
-    ALLOWED_STAFF_ROLES, _STAFF_ROLE_LABELS, _staff_invitation_body,
+    ALLOWED_STAFF_ROLES, _staff_invitation_body,
     _staff_invitation_html, _staff_invitation_subject, _staff_role_label,
 )
 
@@ -35,10 +36,10 @@ LINK = 'https://stg-emirati.ehrdc.gov.ae/join-staff/tok123'
 def test_every_invitable_role_has_a_label_in_both_languages():
     """A role added to ALLOWED_STAFF_ROLES without a label reaches a real
     person as a raw identifier or as nothing."""
-    missing = set(ALLOWED_STAFF_ROLES) - set(_STAFF_ROLE_LABELS)
+    missing = set(ALLOWED_STAFF_ROLES) - set(ROLE_LABELS)
     assert not missing, f'roles with no wording: {missing}'
     for role in ALLOWED_STAFF_ROLES:
-        en, ar = _STAFF_ROLE_LABELS[role]
+        en, ar = ROLE_LABELS[role]
         assert en and ar
         assert '_' not in en, f'{role} label is a raw identifier: {en}'
         assert any('؀' <= c <= 'ۿ' for c in ar), f'{role} has no Arabic'

@@ -11,6 +11,7 @@ import StaffInvitationsTab from '@/components/admin/StaffInvitationsTab';
 import OutboundMailReview from '@/components/admin/OutboundMailReview';
 import OutboundMailAudit from '@/components/admin/OutboundMailAudit';
 import OutboundMailTemplates from '@/components/admin/OutboundMailTemplates';
+import StaffDirectory from '@/components/admin/StaffDirectory';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import AIUsagePanel from '@/components/admin/AIUsagePanel';
 import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
@@ -1480,8 +1481,15 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
               </TabsContent>
 
               {/* Growth Operators Tab */}
-              <TabsContent value="operators" className="space-y-6">
-                <GrowthOperatorManagerEnhanced />
+              {/* The directory answers "who has access and to what", which is
+                  what this tab is actually opened for. Growth-domain assignment
+                  is a narrower job and keeps its own screen below, rather than
+                  being the whole tab as it was. */}
+              <TabsContent value="operators" className="space-y-8">
+                <StaffDirectory />
+                <div className="border-t border-slate-200 pt-6">
+                  <GrowthOperatorManagerEnhanced />
+                </div>
               </TabsContent>
 
               {/* Interviews Tab */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { mailKindLabel } from '@/config/mailKinds';
 import { restClient } from '@/utils/api';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
@@ -41,6 +42,16 @@ const brand = {
     redText: '#DC2626', muted: '#F9FAFB',
 };
 
+interface KindState {
+    kind: string;
+    kind_label?: string;
+    fingerprint: string;
+    /** An approved row exists whose fingerprint matches what the code renders. */
+    approved_now: boolean;
+    /** An approval exists, but for wording that has since changed. */
+    has_stale_approval: boolean;
+}
+
 interface Template {
     id: number;
     kind: string;
@@ -52,16 +63,15 @@ interface Template {
     created_at?: string | null;
     approved_at?: string | null;
     approved_by_name?: string | null;
+    /** True only for the version the code renders TODAY. */
+    is_current?: boolean;
+    /** The kind's registered English name, so no screen prints the raw id. */
+    kind_label?: string;
     note?: string | null;
     /** [english, arabic] pairs describing what changes from message to message. */
     varies?: [string, string][];
 }
 
-const KIND_LABELS: Record<string, [string, string]> = {
-    seeker_invitation: ['Candidate invitation (NAFIS seeker)', 'دعوة مرشح (باحث نافس)'],
-    company_invitation: ['Employer invitation (magic link)', 'دعوة جهة عمل (رابط مباشر)'],
-    vacancy_verification: ['Vacancy verification (NAFIS import)', 'التحقق من شاغر (استيراد نافس)'],
-};
 
 const OutboundMailTemplates: React.FC = () => {
     const { language } = useLanguage();
@@ -75,6 +85,10 @@ const OutboundMailTemplates: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [showRetired, setShowRetired] = useState(false);
+    // Per kind, whether the wording AS IT READS TODAY is approved. Computed on
+    // the server against a live rendering, because a stored 'approved' row only
+    // describes the text it was approved for.
+    const [kindState, setKindState] = useState<KindState[]>([]);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -82,6 +96,7 @@ const OutboundMailTemplates: React.FC = () => {
         try {
             const res = await restClient.get('/api/outbound-mail/templates');
             setTemplates(res.data?.templates || []);
+            setKindState(res.data?.kinds || []);
         } catch (e: any) {
             setError(e?.response?.data?.error
                 || b('Could not load the templates', 'تعذر تحميل القوالب'));
@@ -129,16 +144,29 @@ const OutboundMailTemplates: React.FC = () => {
         }
     };
 
-    const label = (kind: string) => {
-        const pair = KIND_LABELS[kind];
-        return pair ? (isAr ? pair[1] : pair[0]) : kind;
-    };
+    const label = (kind: string) => mailKindLabel(
+        kind, isAr,
+        templates.find(t => t.kind === kind)?.kind_label
+        || kindState.find(k => k.kind === kind)?.kind_label);
 
     const visible = templates.filter(t => showRetired || t.status !== 'retired');
     const pendingCount = templates.filter(t => t.status === 'pending').length;
     const kinds = Array.from(new Set(templates.map(t => t.kind)));
-    const unapproved = kinds.filter(
-        k => !templates.some(t => t.kind === k && t.status === 'approved'));
+
+    // Reported 2026-08-27: "staff-invitation shows it is already approved."
+    // It did — of wording that no longer existed. This asked only whether SOME
+    // approved row existed for the kind, which stayed true after the text
+    // changed, so the warning below went quiet at exactly the moment it was
+    // needed. approved_now compares against what the code renders today.
+    const stale = kindState.filter(k => k.has_stale_approval).map(k => k.kind);
+    // Kinds with a STALE approval are excluded — they get the banner above,
+    // which says the same thing with the part that matters: you approved this
+    // once, and the text moved since. Two warnings about one kind read as two
+    // problems.
+    const unapproved = (kindState.length
+        ? kindState.filter(k => !k.approved_now).map(k => k.kind)
+        : kinds.filter(k => !templates.some(t => t.kind === k && t.status === 'approved'))
+    ).filter(k => !stale.includes(k));
 
     return (
         <div dir={isAr ? 'rtl' : 'ltr'} style={{ color: brand.textPrimary }}>
@@ -161,6 +189,19 @@ const OutboundMailTemplates: React.FC = () => {
                 {b('Approve the wording of a message type once. Operators then release individual messages that render from it — you do not review them one by one. If the wording is ever edited, your approval stops applying automatically and it comes back here.',
                    'وافق على صياغة نوع الرسالة مرة واحدة. بعدها يرسل المشغّلون الرسائل المبنية عليها دون مراجعتك لكل رسالة. وإذا عُدّلت الصياغة، تسقط موافقتك تلقائياً وتعود إلى هنا.')}
             </p>
+
+            {stale.length > 0 && (
+                <div style={{ background: brand.amberBg, color: brand.amberText,
+                              border: `1px solid ${brand.amberText}`, borderRadius: 8,
+                              padding: '10px 14px', marginBottom: 12, fontSize: 13,
+                              display: 'flex', gap: 8 }}>
+                    <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                        {b(`The wording changed after you approved it: ${stale.map(label).join(', ')}. Your earlier approval still stands for the old text, but that text is no longer what would be sent — so nothing of this type can go out until you read the new version below and approve it.`,
+                           `تغيّرت الصياغة بعد اعتمادك لها: ${stale.map(label).join('، ')}. موافقتك السابقة تخص النص القديم، وهو لم يعد ما سيُرسل — فلا يمكن إرسال هذا النوع حتى تقرأ النسخة الجديدة أدناه وتعتمدها.`)}
+                    </span>
+                </div>
+            )}
 
             {unapproved.length > 0 && (
                 <div style={{ background: brand.amberBg, color: brand.amberText,
@@ -224,20 +265,34 @@ const OutboundMailTemplates: React.FC = () => {
                                     : ''}
                             </div>
                         </div>
-                        <span style={{
-                            background: t.status === 'approved' ? brand.greenBg
-                                      : t.status === 'retired' ? brand.muted : brand.amberBg,
-                            color: t.status === 'approved' ? brand.greenText
-                                 : t.status === 'retired' ? brand.textSecondary : brand.amberText,
-                            borderRadius: 999, padding: '3px 12px', fontSize: 12,
-                            fontWeight: 600, height: 'fit-content',
-                            display: 'flex', alignItems: 'center', gap: 5 }}>
-                            {t.status === 'approved' ? <Check size={13} />
-                             : t.status === 'retired' ? <Archive size={13} /> : <Clock size={13} />}
-                            {t.status === 'approved' ? b('In use', 'قيد الاستخدام')
-                             : t.status === 'retired' ? b('Superseded', 'نسخة سابقة')
-                             : b('Awaiting your approval', 'بانتظار موافقتك')}
-                        </span>
+                        {/* An approved version that is no longer what the code
+                            renders must NOT read "In use" — that sentence is
+                            what made the changed wording invisible. */}
+                        {(() => {
+                            const staleApproval = t.status === 'approved' && t.is_current === false;
+                            const tone = staleApproval ? 'amber'
+                                       : t.status === 'approved' ? 'green'
+                                       : t.status === 'retired' ? 'muted' : 'amber';
+                            return (
+                                <span style={{
+                                    background: tone === 'green' ? brand.greenBg
+                                              : tone === 'muted' ? brand.muted : brand.amberBg,
+                                    color: tone === 'green' ? brand.greenText
+                                         : tone === 'muted' ? brand.textSecondary : brand.amberText,
+                                    borderRadius: 999, padding: '3px 12px', fontSize: 12,
+                                    fontWeight: 600, height: 'fit-content',
+                                    display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    {staleApproval ? <AlertTriangle size={13} />
+                                     : t.status === 'approved' ? <Check size={13} />
+                                     : t.status === 'retired' ? <Archive size={13} /> : <Clock size={13} />}
+                                    {staleApproval ? b('Approved, but the wording has since changed',
+                                                       'معتمدة، لكن الصياغة تغيّرت بعدها')
+                                     : t.status === 'approved' ? b('In use', 'قيد الاستخدام')
+                                     : t.status === 'retired' ? b('Superseded', 'نسخة سابقة')
+                                     : b('Awaiting your approval', 'بانتظار موافقتك')}
+                                </span>
+                            );
+                        })()}
                     </div>
 
                     <div style={{ fontSize: 13, marginBottom: 6 }}>

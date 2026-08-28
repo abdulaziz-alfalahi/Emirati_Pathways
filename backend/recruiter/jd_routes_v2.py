@@ -1948,11 +1948,22 @@ def save_jd(jd_id):
                 ))
                 ds_conn.commit()
 
-                # Notify NAFIS / Growth Talent operators (first job only)
+                # Notify candidate-onboarding operators (first job only).
+                #
+                # This asked for 'nafis_operator' and 'growth_operator_talent'.
+                # Nobody holds the first and the second NEVER EXISTED — the
+                # domain is "candidate", so the role would have been
+                # growth_operator_candidate. Checking only users.role also
+                # skipped everyone holding it as a secondary role, which is how
+                # most operators hold theirs. This notification reached zero
+                # people. talent_operator has six holders.
                 if published_count == 1:
-                    ds_cur.execute(
-                        "SELECT id FROM users WHERE role IN ('nafis_operator', 'growth_operator_talent')"
-                    )
+                    ds_cur.execute("""
+                        SELECT id FROM users
+                         WHERE role = 'talent_operator'
+                            OR (jsonb_typeof(secondary_roles) = 'array'
+                                AND secondary_roles ? 'talent_operator')
+                    """)
                     operator_rows = ds_cur.fetchall()
                     for op in operator_rows:
                         try:

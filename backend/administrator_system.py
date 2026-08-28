@@ -17,6 +17,11 @@ from psycopg2.extras import RealDictCursor
 import bcrypt
 import jwt
 from functools import wraps
+
+try:
+    from backend.auth.access_control import domain_for_role
+except ImportError:                          # pragma: no cover — dual root
+    from auth.access_control import domain_for_role
 try:
     import psutil
 except ImportError:
@@ -267,29 +272,15 @@ class AdministratorSystem:
                             
                         final_roles.add(norm_role)
                     
-                    # 3. For growth operators, override with assignments table (source of truth)
-                    #    This ensures Operators tab and Users tab show consistent data
-                    user_id = user.get('id')
-                    has_go_roles = any(r and r.startswith('growth_operator_') for r in final_roles)
-                    if has_go_roles and user_id:
-                        try:
-                            # Check if this user has EVER been managed via the Operators tab
-                            all_assignments = self._execute_query(
-                                "SELECT domain, is_active FROM growth_operator_assignments WHERE user_id = %s",
-                                (user_id,)
-                            )
-                            if all_assignments:
-                                # User has been managed via Operators tab — use assignments as source of truth
-                                active_domains = [a['domain'] for a in all_assignments if a.get('is_active')]
-                                # Remove all old growth_operator_* roles
-                                final_roles = {r for r in final_roles if not (r and r.startswith('growth_operator_'))}
-                                # Add back only the active ones from the assignments table
-                                for domain in active_domains:
-                                    final_roles.add(f"growth_operator_{domain}")
-                            # else: no records at all — keep the secondary_roles-derived roles as fallback
-                        except Exception as go_err:
-                            logger.warning(f"Could not check growth_operator_assignments for user {user_id}: {go_err}")
-                    
+                    # 3. No override from growth_operator_assignments.
+                    #
+                    # This read used to replace the user's growth-operator roles
+                    # with whatever that table held, papering over a removal path
+                    # that never revoked roles. Domain roles are now the
+                    # platform's own roles, grantable from this very tab, so an
+                    # override here would silently undo an administrator's own
+                    # edit. Removal revokes where removal happens.
+
                     # Store as list
                     user['roles'] = list(final_roles)
                     
@@ -779,8 +770,13 @@ class AdministratorSystem:
                 # Extract growth operator domains from roles
                 new_domains = set()
                 for role_name in roles:
-                    if role_name.startswith('growth_operator_'):
-                        domain = role_name.replace('growth_operator_', '')
+                    # domain_for_role maps the established names — checking
+                    # "Company Onboarding Operator" here creates the company
+                    # assignment on the Operators screen, which is what makes
+                    # the two tabs agree. It also still understands the retired
+                    # growth_operator_<domain> spelling.
+                    domain = domain_for_role(role_name)
+                    if domain:
                         new_domains.add(domain)
                 
                 # Get current domain assignments

@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { roleLabel } from '@/utils/enumLabels';
 import { ROLE_DISPLAY_NAMES } from '@/types/auth';
 
@@ -44,5 +46,48 @@ describe('roleLabel — Arabic coverage', () => {
 
   it('echoes an unknown role rather than rendering an empty string', () => {
     expect(roleLabel('not_a_real_role', 'ar')).toBe('not_a_real_role');
+  });
+});
+
+
+/**
+ * The frontend labels are GENERATED from backend/role_labels.py. This asserts
+ * they still match it, character for character.
+ *
+ * Seven maps named these roles before 2026-08-27 — this one, ROLE_DISPLAY_NAMES
+ * in types/auth.ts, an Arabic map in UserMenu, identical copies in
+ * StaffInvitationsTab and JoinStaffPage, and two on the backend. They disagreed
+ * on most of the operator roles, so somebody granted "Company Onboarding
+ * Operator" was appointed "Employer Relations" by email and shown a third name
+ * in the header. Reported as "the role is showing in one place but not the
+ * other", and before that as fb_1785840837.
+ *
+ * A test is what keeps this one registry from quietly becoming two again.
+ */
+describe('the labels match the backend registry', () => {
+  const python = readFileSync(
+    join(__dirname, '..', '..', '..', '..', 'backend', 'role_labels.py'), 'utf-8');
+
+  // Entries look like:  'employer_relations': ('Company Onboarding Operator',
+  //                                            'مشغّل انضمام الشركات'),
+  // and wrap freely, so the pattern spans newlines rather than assuming one line.
+  const backend: Record<string, { en: string; ar: string }> = {};
+  const entry = /'([a-z_]+)':\s*\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g;
+  const body = python.slice(python.indexOf('ROLE_LABELS = {'), python.indexOf('\ndef label_for'));
+  for (let m = entry.exec(body); m; m = entry.exec(body)) {
+    backend[m[1]] = { en: m[2], ar: m[3] };
+  }
+
+  it('parsed the backend registry', () => {
+    expect(Object.keys(backend).length).toBeGreaterThan(30);
+    expect(backend.employer_relations?.en).toBe('Company Onboarding Operator');
+  });
+
+  it.each(Object.keys(ROLE_DISPLAY_NAMES))('%s reads the same on both sides', (role) => {
+    const expected = backend[role];
+    expect(expected, `${role} is not in backend/role_labels.py`).toBeDefined();
+    expect(roleLabel(role, 'en')).toBe(expected.en);
+    expect(roleLabel(role, 'ar')).toBe(expected.ar);
+    expect(ROLE_DISPLAY_NAMES[role as keyof typeof ROLE_DISPLAY_NAMES]).toBe(expected.en);
   });
 });

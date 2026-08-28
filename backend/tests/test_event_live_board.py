@@ -21,8 +21,12 @@ import sys
 
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BACKEND)
+# The helper lives beside this file; BACKEND alone does not reach it.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pytest  # noqa: E402
+
+from source_utils import code_only  # noqa: E402
 
 ROUTES = os.path.join(BACKEND, 'routes', 'recruitment_events_routes.py')
 
@@ -34,19 +38,6 @@ def _source():
 def _public_endpoint():
     s = _source()
     return s[s.index('def public_event_live('):]
-
-
-def _code_only(block):
-    """The block with docstrings and comments removed.
-
-    A source-matching test that searches raw text finds the COMMENT explaining
-    why something is not done, and fails on the explanation. That has now
-    happened three times in this session — on "ON CONFLICT (domain)", on
-    "not now()", and here on "nothing is estimated". The words being searched
-    for are exactly the words a good comment uses.
-    """
-    without_docstrings = re.sub(r'(?s)"""..*?"""', '', block)
-    return '\n'.join(line.split('#')[0] for line in without_docstrings.splitlines())
 
 
 # ── The share/organiser split ───────────────────────────────────────────────
@@ -144,7 +135,7 @@ def test_creating_and_revoking_are_organiser_only():
 def test_every_figure_is_counted_not_estimated():
     """This goes on a screen at a venue and gets quoted. A number that turns
     out to have been extrapolated is worse than no number."""
-    code = _code_only(_public_endpoint()).lower()
+    code = code_only(_public_endpoint()).lower()
     for invented in ('estimate', 'projected', 'forecast', 'extrapolat'):
         assert invented not in code
 

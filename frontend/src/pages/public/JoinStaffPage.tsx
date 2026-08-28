@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { roleLabel as enumRoleLabel } from '@/utils/enumLabels';
 import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -10,24 +11,11 @@ import axios from 'axios';
 // Pass proved (invitation_type=staff).
 const API = '';
 
-const ROLE_LABELS: Record<string, { en: string; ar: string }> = {
-  career_services_operator: { en: 'Career Services Operator', ar: 'مشغّل خدمات المسار المهني' },
-  call_center_agent: { en: 'Call Centre Agent', ar: 'موظف مركز الاتصال' },
-  talent_operator: { en: 'Talent Operator', ar: 'مشغّل المواهب' },
-  platform_operator: { en: 'Platform Operator', ar: 'مشغّل المنصة' },
-  education_operator: { en: 'Education Operator', ar: 'مشغّل التعليم' },
-  assessment_operator: { en: 'Assessment Operator', ar: 'مشغّل التقييم' },
-  mentorship_operator: { en: 'Mentorship Operator', ar: 'مشغّل الإرشاد' },
-  community_operator: { en: 'Community Operator', ar: 'مشغّل المجتمع' },
-  professional_dev_operator: { en: 'Professional Development Operator', ar: 'مشغّل التطوير المهني' },
-  employer_relations: { en: 'Employer Relations', ar: 'علاقات أصحاب العمل' },
-  advisor: { en: 'Academic Advisor', ar: 'المرشد الأكاديمي' },
-  internship_coordinator: { en: 'Internship Coordinator', ar: 'منسّق التدريب' },
-  assessor: { en: 'Assessor', ar: 'المقيّم' },
-  coach: { en: 'Coach', ar: 'المدرب' },
-  mentor: { en: 'Mentor', ar: 'الموجّه' },
-  compliance_auditor: { en: 'Compliance Auditor', ar: 'مدقق الامتثال' },
-};
+// Role names come from enumLabels, generated from backend/role_labels.py.
+// This file kept its own copy — byte-identical to the one in the other of these
+// two files, and different again from the email the invitee had just read: the
+// message appointed them "Company Onboarding Operator" while this page called
+// them "Employer Relations".
 
 const JoinStaffPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -65,7 +53,7 @@ const JoinStaffPage: React.FC = () => {
     } catch { setError('Could not start sign-in.'); setState('ready'); }
   };
 
-  const roleLabel = (r?: string) => (r && ROLE_LABELS[r]?.en) || r || 'Staff';
+  const roleLabel = (r?: string) => (r ? enumRoleLabel(r, 'en') : 'Staff');
 
   const card: React.CSSProperties = {
     maxWidth: 480, margin: '8vh auto', background: '#fff', border: '1px solid #e5e7eb',

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
+import { domainForRole } from '../../config/routeAccess';
 import { PLATFORM_NAME_EN } from '@/lib/brand';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe } from 'lucide-react';
@@ -183,14 +184,14 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       '/interview-preparation',
       '/emiratization-tracker',
     ],
-    growth_operator_company: [
+    employer_relations: [
       '/analytics',
       '/cv-builder',
       '/portfolio',
       '/interview-preparation',
       '/emiratization-tracker',
     ],
-    growth_operator_candidate: [
+    talent_operator: [
       '/analytics',
       '/emiratization-tracker',
     ],
@@ -421,8 +422,12 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         rawRoles.map(r => normalizeRole(r as string))
                       )).filter(Boolean) as string[];
 
-                      // Filter out the generic 'growth_operator' role if the user has specific domain roles
-                      const hasSpecificGoRole = uniqueRoles.some(r => r !== 'growth_operator' && r.startsWith('growth_operator_'));
+                      // Filter out the generic 'growth_operator' role if the user has specific domain roles.
+                      // Matched on the role->domain map: the domain roles are
+                      // the platform's established names since 2026-08-27, so a
+                      // startsWith('growth_operator_') test now matches none of
+                      // them and left the vague label showing beside the real one.
+                      const hasSpecificGoRole = uniqueRoles.some(r => r !== 'growth_operator' && domainForRole(r) !== null);
                       if (hasSpecificGoRole) {
                         uniqueRoles = uniqueRoles.filter(r => r !== 'growth_operator');
                       }

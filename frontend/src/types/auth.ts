@@ -1,3 +1,5 @@
+import { domainForRole } from '../config/routeAccess';
+
 // Emirati Human Development Platform - Core Auth Types
 
 export type Permission =
@@ -102,23 +104,33 @@ export type UserRole =
   | 'mentor'
   | 'assessor';
 
+/**
+ * GENERATED FROM backend/role_labels.py. Regenerate rather than editing an
+ * entry: this map named talent_operator "Nafis Talent Operator" while the Users
+ * tab called it "Candidate Onboarding Operator" and the invitation email called
+ * it "Talent Operator" — one role, three names, which is what was reported on
+ * 2026-08-27 and, with different screenshots, as fb_1785840837 before that.
+ *
+ * Arabic lives in the same registry; read it through roleLabel() in
+ * utils/enumLabels, which is generated from the same source.
+ */
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  'candidate': 'Candidate',
+  'candidate': 'Job Seeker',
   'student': 'Student',
-  'employer_admin': 'Employer',
+  'employer_admin': 'HR Manager',
   'recruiter': 'Recruiter',
-  'training_provider': 'Training Center Representative',
-  'parent': 'Parent',
+  'training_provider': 'Educator',
+  'parent': 'Parent / Guardian',
   'admin': 'Administrator',
-  'talent_operator': 'Nafis Talent Operator',
-  'employer_relations': 'Employer Relations',
+  'talent_operator': 'Candidate Onboarding Operator',
+  'employer_relations': 'Company Onboarding Operator',
   'education_operator': 'Education Operator',
   'assessment_operator': 'Assessment Operator',
   'mentorship_operator': 'Mentorship Operator',
-  'community_operator': 'Community & Engagement Operator',
-  'platform_operator': 'Platform Operations Officer',
-  'compliance_auditor': 'Compliance Auditor',
-  'board_member': 'EHDC Board Member',
+  'community_operator': 'Community Operator',
+  'platform_operator': 'Monitoring Center Operator',
+  'compliance_auditor': 'Government Official',
+  'board_member': 'EHRDC Board Member',
   'board_operator': 'Board Secretary',
   'board_chairman': 'Board Chairman',
   'professional_dev_operator': 'Professional Development Operator',
@@ -128,7 +140,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'internship_coordinator': 'Internship Coordinator',
   'call_center_agent': 'Call Center Agent',
   'mentor': 'Mentor',
-  'assessor': 'Assessor'
+  'assessor': 'Assessor',
 };
 
 export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
@@ -296,9 +308,11 @@ export const isGrowthOperatorRole = (role: UserRole | string): boolean => {
 };
 
 export const getGrowthOperatorDomain = (role: UserRole | string): GrowthOperatorDomain | null => {
-  const roleStr = role.toString();
-  if (!roleStr.startsWith('growth_operator_')) return null;
-  return roleStr.replace('growth_operator_', '') as GrowthOperatorDomain;
+  // Derived from the role->domain map rather than by stripping a prefix: since
+  // 2026-08-27 a domain grants the platform's established role for it
+  // (company -> employer_relations), and prefix-stripping returned null for
+  // every one of those.
+  return domainForRole(role.toString()) as GrowthOperatorDomain | null;
 };
 
 // UAE Emirates

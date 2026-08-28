@@ -377,7 +377,34 @@ def uaepass_callback():
                 logger.error(f"Invitation redemption failed for {mask_eid(user_id)}: {e}")
                 invitation_error = 'Invitation could not be redeemed'
 
-        # Step 5: Issue our JWT tokens
+        # Step 5: Record the sign-in, then issue our JWT tokens.
+        #
+        # WHY THIS WRITE EXISTS
+        #
+        # users.last_login was written only by the legacy PASSWORD auth managers
+        # and by dev-login. UAE Pass is the sole real login, and this — the one
+        # place a real person actually signs in — never touched it. So the
+        # column held whatever a password login last wrote, frozen, and read as
+        # a current fact everywhere it was shown.
+        #
+        # That cost a real answer on 2026-08-27. Asked whether an operator had
+        # issued an invitation to an employer, the column said he had not signed
+        # in for twelve days; the audit log showed him working that afternoon.
+        # A stale timestamp presented as "last signed in" is worse than an empty
+        # one — it argues confidently for the wrong conclusion.
+        #
+        # Never allowed to break the login: somebody who has just proved their
+        # identity must get their session even if this bookkeeping fails.
+        try:
+            _login_conn = _get_db()
+            with _login_conn.cursor() as _login_cur:
+                _login_cur.execute(
+                    "UPDATE users SET last_login = NOW() WHERE id = %s", (user_id,))
+            _login_conn.commit()
+            _login_conn.close()
+        except Exception as e:
+            logger.warning(f"Could not record last_login for {mask_eid(user_id)}: {e}")
+
         additional_claims = {
             'role': user_data.get('role', 'candidate'),
             'auth_method': 'uaepass'

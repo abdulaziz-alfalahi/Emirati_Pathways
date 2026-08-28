@@ -376,10 +376,29 @@ class GrowthSystem:
         return f"784{'0000'}{max_seq + 1:07d}{'0'}"
 
 
-    def import_vacancies_from_csv(self, csv_file_content):
+    def import_vacancies_from_csv(self, csv_file_content, queue_emails=False,
+                                  imported_by=None):
         """
         Parses Nafis CSV and creates Pending Jobs + Shadow Companies.
         Returns report of actions taken.
+
+        queue_emails DEFAULTS TO FALSE, AND THAT IS THE POINT.
+
+        Importing used to compose a verification email for every vacancy row as
+        an unavoidable side effect. On 2026-08-27 that put 267 messages to 145
+        REAL employers into the approval queue in a single transaction, and
+        nobody had decided to email anyone: the operator screen uploads the file
+        the moment it is chosen, so picking a CSV to preview and filter was
+        enough to compose them all.
+
+        Nothing was delivered — the allow-list and per-message approval both
+        held — but "nothing escaped" is luck about configuration, not a design.
+        Bringing data in and writing to 145 companies are different decisions
+        and one must not imply the other.
+
+        imported_by is recorded on everything this creates. It was not, so the
+        rows carried recruiter_id '0' and created_by NULL, and the platform
+        could not say who had run the import that produced them.
         """
         conn = self._get_db_connection()
         report = {
@@ -390,7 +409,12 @@ class GrowthSystem:
             # for per-message approval. The old key fed a response that said
             # "Sent N emails" when none had been.
             'messages_queued': 0,
+            # Rows that WOULD have had a message composed had this import been
+            # asked to. Reported so "no emails" is a visible fact rather than a
+            # silence that looks identical to "the mail step is broken".
+            'messages_not_queued': 0,
             'without_email_on_file': 0,
+            'queued_emails': queue_emails,
             'errors': []
         }
         
@@ -521,8 +545,13 @@ class GrowthSystem:
                         # Calculate expiry (default 30 days) if not provided
                         # Or stick to default logic
 
-                        # Placeholder for creator_id, as it's not in the CSV
-                        creator_id = None 
+                        # Who ran the import. It is not in the CSV — it is the
+                        # operator who uploaded it, and it used to be dropped:
+                        # every row landed with created_by NULL and
+                        # recruiter_id the literal string '0', so 267 vacancies
+                        # and 267 messages to real employers existed with
+                        # nothing anywhere naming who had produced them.
+                        creator_id = imported_by
 
                         cur.execute("""
                             INSERT INTO public.job_postings (
@@ -547,12 +576,15 @@ class GrowthSystem:
                         # 4. Generate Magic Link
                         token_str = self._generate_verification_token(cur, job_id, company_email, company_name)
                         
-                        # 5. Queue the verification email for approval.
+                        # 5. Queue the verification email for approval — ONLY
+                        # if this import was explicitly asked to compose mail.
                         # On the SAME cursor as the job and its token, so a row
                         # that rolls back does not leave a message behind.
-                        if self._queue_verification_email(
+                        if not queue_emails:
+                            report['messages_not_queued'] += 1
+                        elif self._queue_verification_email(
                                 cur, company_email, company_name, job_title,
-                                token_str, job_id):
+                                token_str, job_id, invited_by=imported_by):
                             report['messages_queued'] += 1
                         else:
                             report['without_email_on_file'] += 1

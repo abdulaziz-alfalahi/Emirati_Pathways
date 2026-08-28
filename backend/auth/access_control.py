@@ -92,6 +92,14 @@ BOUND_ROLE_REQUIREMENTS = {
     'training_provider':   ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
     'training_center_rep': ('centre',      'binding them to a training centre (Training Centres → add staff), which grants the role automatically'),
     'assessor':            ('assessor',    'certifying them at an assessment centre (Assessment Centres → add assessor), which grants the role automatically'),
+    # Added 2026-08-27 with the checkbox correction below it. `student` is an
+    # ENROLMENT-VERIFIED role — ENROLMENT_ROLES makes granting it an
+    # institution-side act owned by the Academic Advisor, who writes the
+    # `students` row and the role in one call. A hand grant produces the same
+    # dead end as the others: a student workspace scoped to an enrolment that
+    # does not exist. One person already holds the role this way, against zero
+    # rows in `students`.
+    'student':             ('enrolment',   'enrolling them at an institution (Students → Enrolment), which grants the role automatically'),
 }
 
 
@@ -109,6 +117,7 @@ def _has_binding(user_id, kind):
         'institution': "SELECT 1 FROM institution_staff WHERE user_id::text = %s LIMIT 1",
         'centre':      "SELECT 1 FROM training_center_staff WHERE user_id::text = %s LIMIT 1",
         'assessor':    "SELECT 1 FROM assessor_profiles WHERE user_id::text = %s LIMIT 1",
+        'enrolment':   "SELECT 1 FROM students WHERE user_id::text = %s LIMIT 1",
     }
     sql = queries.get(kind)
     if not sql or not user_id:
@@ -153,38 +162,74 @@ def has_company_membership(user_id):
     except Exception as e:  # pragma: no cover — never block on a lookup failure
         logger.warning(f"company membership lookup failed for {user_id}: {e}")
         return False
-# A growth operator is assigned to one or more DOMAINS, and the assignment
-# writes a secondary role per domain: growth_operator_company,
-# growth_operator_candidate, and so on.
+# A growth operator is assigned to one or more DOMAINS. Each domain maps to a
+# role the platform ALREADY HAS — the one an administrator sees on the Users
+# tab, with permissions attached and people already holding it.
 #
-# THIS LIST IS THE ONE DEFINITION. It used to live only in
-# routes/growth_operator_assignment_api.py, which granted these names while
-# nothing here recognised them — so the assignment succeeded, the navigation
-# offered the page (the nav knew the string), and the guard then refused the
-# user, because it was checking for 'growth_operator' without the domain.
+# WHY THERE IS A MAP HERE RATHER THAN A growth_operator_<domain> FAMILY
 #
-# Reported twice on 2026-08-27 from opposite ends of the same defect: "I added
-# Samir to the Company Growth role, but he told me he wasn't granted access",
-# and "Growth Operator Company — options not clickable".
+# There was such a family. The domain screen wrote growth_operator_company while
+# the Users tab offered "Company Onboarding Operator" (employer_relations), so
+# the same job had two role ids: a checkbox that stayed unchecked for somebody
+# who plainly held the role, and three different labels across three screens.
 #
-# The domain SCOPES which companies or candidates an operator handles; it does
-# not change which pages they may reach. Scoping is enforced from the
-# growth_operator_assignments table, so every domain resolves to the same
-# authorisation here.
-GROWTH_OPERATOR_DOMAINS = (
-    'candidate', 'company', 'education', 'assessment',
-    'mentorship', 'community', 'monitoring',
-)
+# Owner, 2026-08-27: keep talent_operator and employer_relations. The parallel
+# family had ONE holder between all seven of its names; the roles it duplicated
+# had eleven. Every domain already had a role, so the family was never needed.
+#
+# I made that worse before I noticed it: earlier the same day I taught the
+# guards to accept growth_operator_<domain>, which fixed the reported symptom by
+# legitimising the duplicate instead of removing it.
+GROWTH_OPERATOR_DOMAIN_ROLES = {
+    'candidate':  'talent_operator',        # "Candidate Onboarding Operator"
+    'company':    'employer_relations',     # "Company Onboarding Operator"
+    'education':  'education_operator',
+    'assessment': 'assessment_operator',
+    'mentorship': 'mentorship_operator',
+    'community':  'community_operator',
+    'monitoring': 'platform_operator',      # "Monitoring Center Operator"
+}
 
-#: Written out explicitly rather than matched by prefix. A guard that accepted
-#: anything starting with "growth_operator_" would grant a future
-#: 'growth_operator_superuser' the moment somebody typed it into a domain list.
-GROWTH_OPERATOR_ROLES = frozenset(
+GROWTH_OPERATOR_DOMAINS = tuple(GROWTH_OPERATOR_DOMAIN_ROLES)
+
+#: Retired. Kept ONLY so a guard still admits anyone carrying one of these from
+#: before the sweep, and so migration 092 has a definition to clean up against.
+#: Nothing grants them any more — see GROWTH_OPERATOR_DOMAIN_ROLES.
+LEGACY_GROWTH_OPERATOR_ROLES = frozenset(
     f'growth_operator_{domain}' for domain in GROWTH_OPERATOR_DOMAINS
 )
 
+#: What the domain screen now grants: the platform's own role for that domain.
+GROWTH_OPERATOR_ROLES = frozenset(GROWTH_OPERATOR_DOMAIN_ROLES.values())
+
+
+def role_for_domain(domain):
+    """The role a domain assignment grants, or None if the domain is unknown."""
+    return GROWTH_OPERATOR_DOMAIN_ROLES.get((domain or '').strip().lower())
+
+
+#: role -> domain, the reverse of GROWTH_OPERATOR_DOMAIN_ROLES.
+DOMAIN_FOR_ROLE = {role: domain for domain, role in GROWTH_OPERATOR_DOMAIN_ROLES.items()}
+
+
+def domain_for_role(role):
+    """The domain a role covers, or None if it covers none.
+
+    Understands the retired ``growth_operator_<domain>`` spelling as well, so a
+    person who still carries one is shown on the domain they were assigned
+    rather than silently dropping off the screen.
+    """
+    key = (role or '').strip().lower()
+    if key in DOMAIN_FOR_ROLE:
+        return DOMAIN_FOR_ROLE[key]
+    if key.startswith('growth_operator_'):
+        legacy = key[len('growth_operator_'):]
+        return legacy if legacy in GROWTH_OPERATOR_DOMAIN_ROLES else None
+    return None
+
+
 # The full operator family (growth/education/assessment/mentorship/community/platform/etc.) plus admin.
-OPERATOR_ROLES = ADMIN_ROLES | GROWTH_OPERATOR_ROLES | {
+OPERATOR_ROLES = ADMIN_ROLES | GROWTH_OPERATOR_ROLES | LEGACY_GROWTH_OPERATOR_ROLES | {
     'operator', 'growth_operator', 'talent_operator', 'employer_relations',
     'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator',
     'platform_operator', 'professional_dev_operator', 'career_services_operator',
@@ -218,6 +263,59 @@ PROFDEV_ROLES = ADMIN_ROLES | {'professional_dev_operator'}
 TRAINING_ROLES = ADMIN_ROLES | {'training_provider', 'training_center_rep'}
 # Governance / oversight surfaces (metrics, demographics, executive analytics).
 GOVERNANCE_ROLES = BOARD_ROLES | {'compliance_auditor', 'platform_operator'}
+
+
+# ── Who works on the platform ───────────────────────────────────────────────
+#
+# Everyone who holds a role because of a JOB, as opposed to the people the
+# platform serves. Used by the operator console to answer "who has access, and
+# to what" — a question that previously had no honest answer.
+#
+# WHY THIS IS AN EXPLICIT UNION AND NOT A PATTERN
+#
+# The console used to find its people with
+#
+#     u.secondary_roles::text ILIKE '%operator%'
+#
+# a substring search over raw JSON. It matched every kind of operator when the
+# page was about one kind, and it matched anyone whose role list merely
+# CONTAINED the word — including a candidate carrying twenty-seven secondary
+# roles. Seventeen people were listed as growth operators; one was.
+#
+# That was harmless while the roles it offered to grant did nothing. Once
+# growth_operator_<domain> started actually granting access (2026-08-27), a
+# page inviting an administrator to drag thirteen of the wrong people into a
+# domain stopped being cosmetic.
+#
+#: Roles held BY the people the platform serves rather than because of a job.
+#: Named because two things need it: STAFF_ROLES subtracts it, and the Users tab
+#: role list is checked against it — an end-user role belongs to no guard set,
+#: so "is this role recognised?" has to be asked differently for these six.
+END_USER_ROLES = frozenset({
+    'candidate', 'student', 'parent', 'employee', 'seeker', 'entrepreneur',
+})
+
+# Composed from the sets that already gate staff surfaces, so a role added to
+# any of them appears here without anybody remembering to.
+STAFF_ROLES = (
+    ADMIN_ROLES | BOARD_ROLES | OPERATOR_ROLES | CAREER_SERVICES_ROLES
+    | ADVISOR_ROLES | INSTITUTION_ROLES | PROFDEV_ROLES | TRAINING_ROLES
+    | GOVERNANCE_ROLES
+    | {'assessor', 'coach', 'mentor', 'internship_coordinator',
+       'compliance_auditor', 'call_center_agent'}
+) - END_USER_ROLES  # listing someone as staff because they are also a
+                      # candidate would put 38,000 people in a directory of
+                      # colleagues.
+
+
+def is_staff(roles):
+    """True if any of these roles is held because of a job.
+
+    Takes the already-resolved role list (primary + secondary), so callers
+    cannot accidentally check the primary role alone — which is how operators
+    granted through secondary_roles became invisible in the first place.
+    """
+    return any((r or '').strip().lower() in STAFF_ROLES for r in (roles or []))
 
 
 def _verify_any_jwt():

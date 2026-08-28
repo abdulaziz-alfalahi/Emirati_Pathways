@@ -15,6 +15,11 @@ from functools import wraps
 
 from backend.db import get_db_connection
 
+try:
+    from backend.auth.access_control import role_for_domain, domain_for_role
+except ImportError:                          # pragma: no cover — dual root
+    from auth.access_control import role_for_domain, domain_for_role
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -188,7 +193,12 @@ try:
 except ImportError:  # pragma: no cover
     from auth.access_control import require_roles, ADMIN_ROLES
 
-optional_auth = require_roles(*ADMIN_ROLES)
+# Named for what it does. It was called `optional_auth`, which reads as
+# "signing in is optional" on endpoints that GRANT OPERATOR ROLES — the exact
+# misreading that produced the no-op auth findings in the 2026-07-15 audit.
+admin_only = require_roles(*ADMIN_ROLES)
+optional_auth = admin_only          # retained: the decorator is applied by this
+                                    # name in eight places below.
 
 
 # =====================================================
@@ -319,10 +329,12 @@ def list_growth_operators():
                 # Derive domains from user's primary role and secondary_roles as fallback
                 role_domains = set()
                 user_role = op.get('role', '')
-                if user_role.startswith('growth_operator_'):
-                    derived_domain = user_role.replace('growth_operator_', '')
-                    if derived_domain in VALID_DOMAINS:
-                        role_domains.add(derived_domain)
+                # domain_for_role understands both the established role names
+                # and the retired growth_operator_<domain> spelling, so nobody
+                # drops off this screen mid-sweep.
+                derived_domain = domain_for_role(user_role)
+                if derived_domain in VALID_DOMAINS:
+                    role_domains.add(derived_domain)
                 
                 # Check secondary_roles for additional growth operator roles
                 secondary_roles_query = """
@@ -331,10 +343,9 @@ def list_growth_operators():
                 sr_result = execute_query(secondary_roles_query, (op['id'],), fetch_one=True)
                 if sr_result and sr_result.get('secondary_roles'):
                     for sr in sr_result['secondary_roles']:
-                        if isinstance(sr, str) and sr.startswith('growth_operator_'):
-                            derived = sr.replace('growth_operator_', '')
-                            if derived:
-                                role_domains.add(derived)
+                        derived = domain_for_role(sr) if isinstance(sr, str) else None
+                        if derived in VALID_DOMAINS:
+                            role_domains.add(derived)
                 
                 all_domains = list(role_domains)
             
@@ -364,7 +375,7 @@ def list_growth_operators():
                 for rd in all_domains:
                     serialized_assignments.append({
                         'domain': rd,
-                        'is_primary': (rd == user_role.replace('growth_operator_', '')),
+                        'is_primary': (rd == domain_for_role(user_role)),
                         'is_active': True,
                         'created_at': op_data.get('created_at', '')
                     })
@@ -376,7 +387,7 @@ def list_growth_operators():
                 'primaryDomain': next(
                     (a['domain'] for a in (assignments or []) if a.get('is_primary')),
                     # Fallback: derive from primary role
-                    op.get('role', '').replace('growth_operator_', '') if op.get('role', '').startswith('growth_operator_') else None
+                    domain_for_role(op.get('role', ''))
                 )
             })
         
@@ -589,8 +600,15 @@ def assign_domains(user_id):
                     """, (user_id, domain, assigned_by, is_primary, notes))
                 
                 # Update secondary_roles to match the new domain assignments
-                # This keeps the users table in sync with the assignments table
-                new_secondary_roles = [f"growth_operator_{d}" for d in domains]
+                # This keeps the users table in sync with the assignments table.
+                #
+                # Each domain grants the role the platform ALREADY HAS for it —
+                # "company" grants employer_relations, the same role the Users
+                # tab calls "Company Onboarding Operator". This screen used to
+                # grant growth_operator_<domain> instead, so somebody assigned
+                # here showed as an operator on this page and as nothing on the
+                # Users tab. Owner, 2026-08-27: keep the established names.
+                new_secondary_roles = [r for r in (role_for_domain(d) for d in domains) if r]
                 try:
                     cursor.execute("SAVEPOINT update_secondary_roles")
                     # users.secondary_roles is jsonb on the live DB — the old
@@ -653,6 +671,37 @@ def assign_domains(user_id):
         }), 500
 
 
+def _revoke_domain_role(user_id, domain, role):
+    """Drop `role` from secondary_roles — unless another live domain grants it.
+
+    Two domains never share a role today, but the check costs nothing and means
+    a future one cannot silently revoke a role somebody still holds.
+    """
+    others = execute_query(
+        "SELECT domain FROM growth_operator_assignments "
+        " WHERE user_id = %s AND domain <> %s AND is_active = true",
+        (user_id, domain)) or []
+    if any(role_for_domain(row.get('domain')) == role for row in others):
+        return
+    try:
+        # secondary_roles is jsonb on the live DB. A ::text[] cast fails here —
+        # the mistake that made domain assignments invisible on the Users tab
+        # in the first place (P3/C5).
+        execute_query("""
+            UPDATE users
+               SET secondary_roles = COALESCE((
+                     SELECT jsonb_agg(r) FROM jsonb_array_elements_text(
+                         CASE WHEN jsonb_typeof(secondary_roles) = 'array'
+                              THEN secondary_roles ELSE '[]'::jsonb END) AS r
+                      WHERE r <> %s), '[]'::jsonb),
+                   updated_at = CURRENT_TIMESTAMP
+             WHERE id = %s
+        """, (role, user_id), fetch_all=False)
+    except Exception as exc:
+        logger.error(f"Domain {domain} deactivated for {user_id} but role "
+                     f"{role} could not be revoked: {exc}")
+
+
 @growth_operator_assignment_bp.route('/<user_id>/domains/<domain>', methods=['DELETE'])
 @optional_auth
 def remove_domain(user_id, domain):
@@ -670,7 +719,23 @@ def remove_domain(user_id, domain):
             WHERE user_id = %s AND domain = %s
         """
         execute_query(query, (user_id, domain), fetch_all=False)
-        
+
+        # ...and take back the role that assignment granted.
+        #
+        # This step did not exist. Deactivating a domain left the role sitting
+        # in secondary_roles, so two readers — the profile endpoint and the
+        # Users tab — each grew their own code to re-derive roles from this
+        # table on EVERY READ and quietly overwrite what they found.
+        #
+        # That compensation cannot survive the unification: a domain role is now
+        # a role the Users tab can grant directly, and a reader cannot tell one
+        # granted there from one granted here. Stripping on read would revoke
+        # roles nobody asked to revoke. So the revocation happens HERE, once,
+        # where the decision is actually made.
+        revoked = role_for_domain(domain)
+        if revoked:
+            _revoke_domain_role(user_id, domain, revoked)
+
         return jsonify({
             'success': True,
             'message': f'Domain {domain} removed from Growth Operator'
@@ -721,11 +786,17 @@ def set_primary_domain(user_id):
                     WHERE user_id = %s AND domain = %s
                 """, (user_id, domain))
                 
-                # Update user role
-                cursor.execute("""
-                    UPDATE users SET role = %s, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                """, (f"growth_operator_{domain}", user_id))
+                # users.role is deliberately NOT written here.
+                #
+                # It used to be set to growth_operator_<domain>, which OVERWROTE
+                # the person's primary role: naming an administrator's primary
+                # domain cost them 'admin'. Folding the domain roles into the
+                # established names would have made that worse, not better —
+                # the clobber would now install a real, checked role.
+                #
+                # Which domain is primary is a property of the ASSIGNMENT, and
+                # growth_operator_assignments.is_primary (set just above) is
+                # where this module already reads it from.
                 
                 conn.commit()
                 

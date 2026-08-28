@@ -481,34 +481,20 @@ def get_profile():
         if user_data:
             raw_secondary = user_data.get('secondary_roles') or []
             
-            # Cross-reference growth_operator_* roles against the authoritative
-            # growth_operator_assignments table.  The Operators tab may deactivate
-            # domain assignments without updating the secondary_roles column,
-            # causing stale roles to appear in the role-switcher.
-            has_go_roles = any(
-                r and r.startswith('growth_operator') for r in raw_secondary
-            ) or (user_data.get('role') or '').startswith('growth_operator')
-            
-            if has_go_roles:
-                try:
-                    from backend.db import get_db_connection
-                    go_conn = get_db_connection()
-                    go_cur = go_conn.cursor()
-                    go_cur.execute(
-                        "SELECT domain FROM growth_operator_assignments WHERE user_id = %s AND is_active = true",
-                        (user_id,)
-                    )
-                    active_domains = [row[0] for row in go_cur.fetchall()]
-                    go_conn.close()
-                    
-                    if active_domains:
-                        # Keep non-growth-operator roles, replace GO roles with active assignments
-                        non_go = [r for r in raw_secondary if not r.startswith('growth_operator')]
-                        go_from_assignments = [f"growth_operator_{d}" for d in active_domains]
-                        raw_secondary = non_go + go_from_assignments
-                except Exception as go_err:
-                    logger.warning(f"Could not cross-ref growth_operator_assignments for profile: {go_err}")
-            
+            # NO cross-reference against growth_operator_assignments here.
+            #
+            # This used to rebuild the caller's growth-operator roles from that
+            # table on every profile read, to hide the fact that removing a
+            # domain assignment never revoked the role it granted.
+            #
+            # Since 2026-08-27 a domain grants the role the platform already has
+            # for it (company -> employer_relations), and the Users tab grants
+            # those same roles directly. A role therefore no longer says where
+            # it came from, so rebuilding the set from assignments would revoke
+            # roles an administrator granted by hand. Removal now revokes at the
+            # point of removal — see _revoke_domain_role in
+            # routes/growth_operator_assignment_api.py.
+
             # Default Job Seeker role for UAE Nationals
             nationality = (user_data.get('nationality') or '').upper()
             if nationality in ['UAE', 'AE', 'UNITED ARAB EMIRATES']:

@@ -47,8 +47,47 @@ def import_vacancies():
             
         # Read file content
         content = file.read()
-        
-        report = growth_sys.import_vacancies_from_csv(content)
+
+        # Composing mail is OPT-IN. Importing data and writing to a hundred and
+        # forty-five real employers are different decisions, and this endpoint
+        # used to make the second one on the caller's behalf every time.
+        raw = (request.form.get('queue_emails') or '').strip().lower()
+        queue_emails = raw in ('1', 'true', 'yes', 'on')
+
+        imported_by = None
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            imported_by = get_jwt_identity()
+        except Exception:
+            pass
+
+        report = growth_sys.import_vacancies_from_csv(
+            content, queue_emails=queue_emails, imported_by=imported_by)
+
+        # An import that creates companies and vacancies for real employers is
+        # worth a line in the audit log. There was none, so answering "who ran
+        # this" meant reading timestamps out of the data itself.
+        try:
+            import json as _json
+            try:
+                from backend.db_utils import execute_query as _q
+            except ImportError:              # pragma: no cover — dual root
+                from db_utils import execute_query as _q
+            _q("""INSERT INTO admin_audit_log
+                      (user_id, action, resource_type, details, created_at)
+                  VALUES (%s, %s, %s, %s, NOW())""",
+               (imported_by, 'nafis_vacancy_import', 'job_posting',
+                _json.dumps({'file': file.filename,
+                             'rows': report.get('total_rows'),
+                             'companies_created': report.get('companies_created'),
+                             'jobs_created': report.get('jobs_created'),
+                             'queued_emails': bool(queue_emails),
+                             'messages_queued': report.get('messages_queued')})),
+               fetch_all=False)
+        except Exception as audit_err:
+            # Never fails the import: a missing audit row is bad, losing a
+            # completed import because of one is worse.
+            logger.warning(f'Could not audit the import: {audit_err}')
         
         return jsonify({
             'success': True,
@@ -58,13 +97,17 @@ def import_vacancies():
             # told that plainly rather than discovering it in the queue.
             'message': (f"Processed {report['total_rows']} rows. Created "
                         f"{report['companies_created']} companies and "
-                        f"{report['jobs_created']} jobs. Queued "
-                        f"{report['messages_queued']} email(s) — NOTHING HAS "
-                        f"BEEN SENT YET; each one waits for approval under "
-                        f"Admin → Outbound Mail"
-                        + (f", and {report['without_email_on_file']} vacancy(ies) "
-                           f"had no company email on file"
-                           if report.get('without_email_on_file') else '')
+                        f"{report['jobs_created']} jobs. "
+                        + (f"Queued {report['messages_queued']} email(s) — NOTHING "
+                           f"HAS BEEN SENT YET; each one waits for approval under "
+                           f"Admin → Outbound Mail"
+                           + (f", and {report['without_email_on_file']} vacancy(ies) "
+                              f"had no company email on file"
+                              if report.get('without_email_on_file') else '')
+                           if queue_emails else
+                           "No emails were composed — this import brought the data "
+                           "in only. Writing to these employers is a separate, "
+                           "deliberate step")
                         + "."),
             'report': report
         })

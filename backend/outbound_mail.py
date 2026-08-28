@@ -307,15 +307,55 @@ def mark_failed(message_id, error, gate_decision=None):
         (back_to, str(error)[:500], gate_decision, message_id), fetch_all=False)
 
 
-def held_messages(limit=100):
+def held_messages(limit=100, offset=0, kind=None):
+    """One page of the review queue, oldest first.
+
+    OFFSET AND KIND EXIST BECAUSE THE QUEUE OUTGREW ITS SCREEN.
+
+    This returned the oldest 50 with no way to ask for the rest. Once 267
+    vacancy verifications were queued on one day, every later message was
+    unreachable: the one invitation to a real employer — the only message
+    actually waiting on a decision — sat at position 268 behind 267 renderings
+    of the same template, on a screen whose entire purpose is deciding what
+    leaves the platform.
+
+    Oldest-first is kept deliberately: a review queue that shows the newest
+    first quietly buries whatever was not dealt with.
+    """
+    params = []
+    where = "status = 'held'"
+    if kind:
+        where += " AND kind = %s"
+        params.append(kind)
+    params.extend([int(limit), max(0, int(offset))])
     return execute_query(
-        """SELECT id, to_email, to_name, subject, body_text, body_html, kind,
-                  related_type, related_id, created_at, created_by, attempts,
-                  last_error
-             FROM outbound_mail
-            WHERE status = 'held'
-            ORDER BY created_at
-            LIMIT %s""", (limit,)) or []
+        f"""SELECT id, to_email, to_name, subject, body_text, body_html, kind,
+                   related_type, related_id, created_at, created_by, attempts,
+                   last_error
+              FROM outbound_mail
+             WHERE {where}
+             ORDER BY created_at
+             LIMIT %s OFFSET %s""", tuple(params)) or []
+
+
+def held_count(kind=None):
+    """How many are held in total — the denominator a page needs to mean anything."""
+    if kind:
+        row = execute_query("SELECT count(*) AS n FROM outbound_mail "
+                            "WHERE status = 'held' AND kind = %s", (kind,), fetch_one=True)
+    else:
+        row = execute_query("SELECT count(*) AS n FROM outbound_mail "
+                            "WHERE status = 'held'", fetch_one=True)
+    return (row or {}).get('n', 0)
+
+
+def held_kinds():
+    """Held counts per kind, so the reviewer can separate the one message that
+    needs a decision from four hundred renderings of one template."""
+    rows = execute_query(
+        "SELECT kind, count(*) AS n FROM outbound_mail WHERE status = 'held' "
+        "GROUP BY kind ORDER BY count(*) DESC") or []
+    return [{'kind': r['kind'], 'count': r['n']} for r in rows]
 
 
 def queue_summary():
