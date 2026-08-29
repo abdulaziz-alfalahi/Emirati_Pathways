@@ -133,3 +133,18 @@ docker restart emirati_frontend >/dev/null
 echo "==> Verify"
 curl -fsS -o /dev/null -w '  /health -> %{http_code}\n' http://127.0.0.1:5005/health || echo "  HEALTH CHECK FAILED"
 echo "  rollback: docker rm -f $NAME && docker rename ${NAME}_old $NAME && docker start $NAME"
+
+# Every deploy retags emirati_backend:latest and orphans the image it replaced.
+# Each one is ~2GB on a 20GB /var, so three days of deploying took the partition
+# from comfortable to 92% full — and a full /var has previously broken apt AND
+# dockerd on this host.
+#
+# `image prune` removes only DANGLING (untagged) images. It cannot touch:
+#   * the image backend_old is holding for the rollback — in use by a container
+#   * emirati_backend:main and :rollback-pre-phase0 — deliberately tagged
+#   * the python/nginx base images — tagged, and this host is behind a forward
+#     proxy where a re-pull is not guaranteed to succeed
+# Never `-a`, and never `volume prune`: uploads live in a volume.
+echo "==> Reclaiming space from images this deploy orphaned"
+docker image prune -f 2>/dev/null | tail -1 || echo "  prune skipped"
+df -h /var | awk 'NR==2 {print "  /var now " $5 " used, " $4 " free"}'
