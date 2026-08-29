@@ -752,6 +752,8 @@ _additional_blueprints = [
      '/api/outbound-mail', 'Outbound mail review'),
     ('backend.routes.staff_directory_routes', 'staff_directory_bp',
      '/api/admin/staff', 'Staff directory'),
+    ('backend.routes.knowledge_camps_routes', 'camps_bp',
+     '/api/knowledge-camps', 'Knowledge Camps'),
     ('backend.career_services_routes', 'career_services_bp', None, 'Career Services'),
     ('backend.operations_routes', 'operations_bp', None, 'Operations Monitoring'),
     ('backend.demographics_routes', 'demographics_bp', None, 'Demographics Analytics'),

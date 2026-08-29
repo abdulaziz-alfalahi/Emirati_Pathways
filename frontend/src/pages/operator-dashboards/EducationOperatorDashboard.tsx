@@ -10,6 +10,7 @@ import {
 import InstitutionsManager from '@/components/education/InstitutionsManager';
 import ScholarshipDirectoryManager from '@/components/education/ScholarshipDirectoryManager';
 import ScholarshipScoutReview from '@/components/education/ScholarshipScoutReview';
+import { CampReviewQueue } from '@/components/education/CampReviewQueue';
 import Messages from '@/components/recruiter/Messages';
 
 const brand = {
@@ -33,6 +34,9 @@ const EducationOperatorDashboard: React.FC = () => {
     const isRTL = language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const [activeTab, setActiveTab] = useState('overview');
+    // How many camps await a decision — the badge is the only thing that tells
+    // an operator a provider is waiting on them.
+    const [campsPending, setCampsPending] = useState(0);
 
     const [stats, setStats] = useState<any>({ institutions: 0, active_programs: 0, enrolled_students: 0, pending_approvals: 0, enrollment_by_type: [] });
     const [pendingPrograms, setPendingPrograms] = useState<any[]>([]);
@@ -81,6 +85,13 @@ const EducationOperatorDashboard: React.FC = () => {
                         setScoutPending((d.drafts || []).length);
                     }
                 } catch { /* badge only */ }
+                try {
+                    const cq = await fetch(`${API_BASE}/api/knowledge-camps/review-queue`,
+                                           { headers: getAuthHeaders(), credentials: 'include' });
+                    if (cq.ok && !cancelled) {
+                        setCampsPending((await cq.json()).total || 0);
+                    }
+                } catch { /* badge only, same as above */ }
             } catch (err) { console.error('Edu operator fetch error:', err); }
             finally { if (!cancelled) setLoading(false); }
         })();
@@ -94,6 +105,11 @@ const EducationOperatorDashboard: React.FC = () => {
         { id: 'scholarships', label: t('Scholarships', 'المنح الدراسية'), icon: Award },
         { id: 'scout', label: t('Scout Review', 'مراجعة المكتشف'), icon: Sparkles,
           badge: scoutPending || undefined },
+        // Beside Scout Review deliberately: reviewing a submitted camp is the
+        // same act on a different object. Owner, 2026-08-29 — stakeholders
+        // post, this operator approves.
+        { id: 'camps', label: t('Camps Review', 'مراجعة المعسكرات'), icon: BookOpen,
+          badge: campsPending || undefined },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
         { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
         { id: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
@@ -446,6 +462,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 {activeTab === 'institutions' && <InstitutionsManager />}
                 {activeTab === 'scholarships' && <ScholarshipDirectoryManager />}
                 {activeTab === 'scout' && <ScholarshipScoutReview />}
+                {activeTab === 'camps' && <CampReviewQueue />}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
                 {!loading && activeTab === 'requests' && renderRoleRequests()}
