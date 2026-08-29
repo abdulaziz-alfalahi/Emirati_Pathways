@@ -17,7 +17,10 @@ description: Deploy the backend or frontend to APPQA staging and verify it. Use 
    - **Do not use `docker build -q`.** It suppresses all step output, so a build that is stalled and one that is progressing look identical — and you cannot tell which without guessing.
    - **`--progress` does not exist** on this Docker CLI. Plain `docker build` already prints step-by-step.
    - The build **outlives the ssh session that started it** (the harness kills a foreground ssh at its timeout; the remote build keeps running). Launch it detached with its own log and poll that, rather than restarting a build that is already halfway done: `setsid nohup ~/build-backend.sh > ~/backend-build.log 2>&1 < /dev/null &`, then wait on `grep -qE "Successfully tagged|^Error|returned a non-zero" ~/backend-build.log`. Waiting on the success marker alone will hang forever on a failed build.
-   - If `/var` is tight, `docker image prune -f` (dangling only) is safe and reclaimed ~660MB. It cannot remove an image a stopped container still references — remove the dead container first.
+   - If `/var` is tight, `docker image prune -f` (dangling only) is safe. `run-backend-appqa.sh` now does this itself after a successful deploy (2026-08-29) — every deploy retags `:latest` and orphans a ~2GB image, and ten of them took `/var` from comfortable to 92%. Never `-a` (it would take the rollback tags and the python/nginx base images, and this host is behind a proxy where a re-pull may fail); never `volume prune` (uploads live in a volume).
+   - **A `<none>` image that prune refuses to reclaim is a diagnosis, not an obstacle.** Read `docker system df -v` and look at its CONTAINERS column:
+     - **stopped** container holding it → a dead container; remove it, then prune.
+     - **running** container holding it → **a scheduler pinned to an old build.** The space is the symptom; the bug is that it has been running stale code, possibly for months. Do not chase the megabytes — reinstall it (see *Repin the scheduled containers* below), which releases the image as a side effect. On 2026-08-29 this was 1.93GB held by `emirati-link-scout` and `emirati-link-check`, both still on the 25 August build.
 3. Recreate with `./deployment/run-backend-appqa.sh [IMAGE_TAG]`. Never use docker-compose on APPQA (v1.29.2 is broken against that engine — recreate causes an outage).
 
    **RUN IT ONCE. Check whether a deploy is already in flight first** (hit 2026-08-23): the script has no locking, and running it twice in quick succession makes `backend_old` a copy of the NEW build instead of the previous one. The printed rollback then restores the exact code you were trying to escape — a safety net that looks present and does nothing. Nothing warns you; both runs report `/health -> 200` and look successful.
@@ -79,4 +82,8 @@ Restarting it:
       docker inspect $c --format "$c {{.Image}}"; done   # all three identical
   ```
   Watch them for a few seconds after: both run a shell loop from `-c`, and a quoting mistake crash-loops them while `--once` still works.
+
+  **Run the installer. Do not rebuild these by hand from `docker inspect`.** Reconstructing the container from the running one — copying its env, CMD and flags into a fresh `docker run` — produces something that starts, reports healthy, connects to the DB and passes every check you can think to make. It is still wrong: it copies the RUNNING config FORWARD, so it faithfully reproduces whatever was there, including any drift the installer has since fixed. The whole reason you are touching these containers is that they are stale; hand-copying preserves exactly what you set out to replace. Done on 2026-08-29 and caught only afterwards, by a search that happened to surface this file.
+
+  The same reasoning applies to *finding* them: these two are easy to meet from a direction that has nothing to do with deploying — disk pressure, an odd `<none>` image, a container list. Whatever brought you here, the fix is the installer.
 - Record the new image hash and the backup dir name in the PR or memory.
