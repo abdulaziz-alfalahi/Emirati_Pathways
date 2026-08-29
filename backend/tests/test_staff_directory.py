@@ -151,3 +151,35 @@ def test_the_growth_manager_no_longer_invents_numbers():
     if not os.path.exists(path):
         pytest.skip('frontend not present')
     assert 'Math.random' not in js_code_only(open(path, encoding='utf-8').read())
+
+
+# ── The two-tables problem, one layer down ──────────────────────────────────
+
+def test_growth_domains_come_from_the_roles_not_only_the_assignments_table():
+    """Reported 2026-08-29 from the screen itself.
+
+    An administrator holding all seven domain roles showed "—" under Growth
+    domains, while somebody holding one showed his. The columns read two
+    different tables — "Roles held" from users, "Growth domains" from
+    growth_operator_assignments — and only the growth screen writes the second,
+    so roles granted from the Users tab produced no row.
+
+    Since the 2026-08-27 unification the role IS the domain grant, so the domain
+    is derivable from the role and the two columns can no longer disagree. The
+    assignments table keeps the one thing it alone knows: which domain is
+    primary.
+    """
+    from tests.source_utils import code_only
+    source = code_only(open(os.path.join(BACKEND, 'routes', 'staff_directory_routes.py'),
+                            encoding='utf-8').read())
+    assert 'domain_for_role(x) for x in held' in source, (
+        'the domains column still reads only the assignments table')
+    assert 'primary_domain' in source
+
+
+def test_a_person_with_a_domain_role_is_never_shown_with_no_domain():
+    from auth.access_control import GROWTH_OPERATOR_DOMAIN_ROLES, domain_for_role
+    for domain, role in GROWTH_OPERATOR_DOMAIN_ROLES.items():
+        held = ['candidate', role]
+        derived = sorted({d for d in (domain_for_role(x) for x in held) if d})
+        assert derived == [domain], f'holding {role} must show the {domain} domain'

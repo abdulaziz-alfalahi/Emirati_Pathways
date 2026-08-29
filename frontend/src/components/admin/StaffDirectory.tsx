@@ -64,6 +64,8 @@ interface StaffMember {
     roles: RoleEntry[];
     staff_role_count: number;
     growth_domains: string[];
+    /** The domain the growth screen marks as this person's main one, if any. */
+    primary_domain?: string | null;
 }
 
 interface RoleCount { role: string; label: string; label_ar: string; count: number; }
@@ -281,17 +283,26 @@ const StaffDirectory: React.FC = () => {
                                     <td style={{ padding: '10px 12px', verticalAlign: 'top' }}>
                                         {p.growth_domains.length === 0 ? (
                                             <span style={{ color: brand.dim }}>—</span>
-                                        ) : p.growth_domains.map(d => (
-                                            <span key={d} style={{ background: brand.amberBg,
-                                                                   color: brand.amberText,
-                                                                   border: `1px solid ${brand.border}`,
-                                                                   borderRadius: 999, padding: '2px 9px',
-                                                                   fontSize: 12, marginInlineEnd: 5,
-                                                                   display: 'inline-flex', alignItems: 'center',
-                                                                   gap: 4 }}>
-                                                <Layers size={11} />{d}
-                                            </span>
-                                        ))}
+                                        ) : p.growth_domains.map(d => {
+                                            // A filled chip marks the person's PRIMARY domain, which is
+                                            // the one thing growth_operator_assignments knows and the
+                                            // roles do not. The domains themselves are read off the
+                                            // roles — see the note in staff_directory_routes.
+                                            const isPrimary = p.primary_domain === d;
+                                            return (
+                                                <span key={d} title={isPrimary ? 'primary domain' : undefined}
+                                                      style={{ background: brand.amberBg,
+                                                               color: brand.amberText,
+                                                               border: `1px solid ${isPrimary ? brand.amberText : brand.border}`,
+                                                               borderRadius: 999, padding: '2px 9px',
+                                                               fontSize: 12, marginInlineEnd: 5, marginBottom: 4,
+                                                               fontWeight: isPrimary ? 700 : 400,
+                                                               display: 'inline-flex', alignItems: 'center',
+                                                               gap: 4 }}>
+                                                    <Layers size={11} />{d}
+                                                </span>
+                                            );
+                                        })}
                                     </td>
                                     <td style={{ padding: '10px 12px', verticalAlign: 'top',
                                                  color: brand.dim, whiteSpace: 'nowrap' }}>

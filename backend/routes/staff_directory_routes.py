@@ -33,11 +33,12 @@ from flask import Blueprint, jsonify, request
 
 try:
     from backend.auth.access_control import (
-        require_roles, ADMIN_ROLES, STAFF_ROLES)
+        require_roles, ADMIN_ROLES, STAFF_ROLES, domain_for_role)
     from backend.db_utils import execute_query
     from backend.role_labels import label_for
 except ImportError:                          # pragma: no cover — dual root
-    from auth.access_control import require_roles, ADMIN_ROLES, STAFF_ROLES
+    from auth.access_control import (
+        require_roles, ADMIN_ROLES, STAFF_ROLES, domain_for_role)
     from db_utils import execute_query
     from role_labels import label_for
 
@@ -69,10 +70,9 @@ def list_staff():
                    AS full_name,
                u.role AS primary_role,
                u.secondary_roles,
-               COALESCE(
-                 (SELECT array_agg(g.domain ORDER BY g.domain)
-                    FROM growth_operator_assignments g
-                   WHERE g.user_id = u.id AND g.is_active), '{}') AS growth_domains
+               (SELECT g.domain FROM growth_operator_assignments g
+                 WHERE g.user_id = u.id AND g.is_active AND g.is_primary
+                 LIMIT 1) AS primary_domain
           FROM users u
          ORDER BY COALESCE(u.full_name, u.first_name)
     """) or []
@@ -122,7 +122,24 @@ def list_staff():
             'primary_label': _label(primary) if primary else None,
             'roles': entries,
             'staff_role_count': len(staff_roles),
-            'growth_domains': list(r.get('growth_domains') or []),
+            # Derived from the ROLES the person holds, not only from
+            # growth_operator_assignments.
+            #
+            # Reported 2026-08-29: an administrator holding all seven domain
+            # roles showed "—" here, while somebody holding one showed his
+            # domain. The two columns read two different tables — "Roles held"
+            # from users, this one from growth_operator_assignments — and only
+            # the growth screen writes the second. Roles granted from the Users
+            # tab produced no row, so the same fact had two answers side by side
+            # on one screen. That is the defect this directory was built to end,
+            # one layer down, and I introduced it.
+            #
+            # Since the 2026-08-27 unification the role IS the domain grant, so
+            # the roles are the authoritative source and this column can simply
+            # be read off them. The assignments table keeps what it alone knows:
+            # which domain is the person's PRIMARY one.
+            'growth_domains': sorted({d for d in (domain_for_role(x) for x in held) if d}),
+            'primary_domain': r.get('primary_domain'),
         })
 
     # Counts across the WHOLE directory, not the filtered view: a filter that
