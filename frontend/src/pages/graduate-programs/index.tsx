@@ -59,7 +59,7 @@ const GraduateProgramsPage: React.FC = () => {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`${API_BASE}/api/graduate-programs`);
+      const resp = await fetch(`${API_BASE}/api/academic-programs?level=masters,doctorate`);
       const data = await resp.json();
       setPrograms((data.programs || []).map((p: any) => ({
         id: Number(p.id),
@@ -88,7 +88,7 @@ const GraduateProgramsPage: React.FC = () => {
     }
     if (isAuthenticated) {
       try {
-        const r = await restClient.get('/api/graduate-programs/my-interest');
+        const r = await restClient.get('/api/academic-programs/my-interest');
         const map: Record<string, string> = {};
         for (const row of (r.data?.interest || [])) map[String(row.id)] = row.interest_status;
         setInterest(map);
@@ -101,8 +101,8 @@ const GraduateProgramsPage: React.FC = () => {
   const setStage = async (id: number, status: string) => {
     setBusyId(id);
     try {
-      if (status === 'none') await restClient.delete(`/api/graduate-programs/${id}/interest`);
-      else await restClient.post(`/api/graduate-programs/${id}/interest`, { status });
+      if (status === 'none') await restClient.delete(`/api/academic-programs/${id}/interest`);
+      else await restClient.post(`/api/academic-programs/${id}/interest`, { status });
       await load();
     } catch (e) { console.error(e); } finally { setBusyId(null); }
   };

@@ -11,7 +11,7 @@ system to six NAMED REAL UNIVERSITIES — AED 95,000 for the MBRSG MBA, "Fully
 Funded" for a Masdar PhD. Removed by migration 096. The page's button ran a
 Google search for "<university> <programme> graduate admissions".
 
-Design and the personas: docs/graduate_programs_design.md
+Design and the personas: docs/academic_programs_design.md
 
 THE CONSTRAINT THAT SHAPES THIS
 
@@ -55,7 +55,7 @@ except ImportError:                          # pragma: no cover — dual root
 
 logger = logging.getLogger(__name__)
 
-grad_bp = Blueprint('graduate_programs', __name__)
+academic_bp = Blueprint('academic_programs', __name__)
 
 #: The Education Operator curates the directory — the same persona that owns
 #: institutions, scholarships and Scout Review.
@@ -73,7 +73,7 @@ GUIDANCE_ROLES = CAREER_SERVICES_ROLES | ADVISOR_ROLES | {'coach'} | ADMIN_ROLES
 #: Fields a curator or an institution may set. `status`, the review fields and
 #: everything the link checker owns are the workflow's.
 EDITABLE = (
-    'title', 'title_ar', 'university', 'university_ar', 'location', 'location_ar',
+    'level', 'title', 'title_ar', 'university', 'university_ar', 'location', 'location_ar',
     'duration', 'duration_ar', 'program_type', 'type_label', 'type_label_ar',
     'tuition', 'tuition_ar', 'specializations', 'specializations_ar',
     'highlights', 'highlights_ar', 'featured', 'application_link',
@@ -81,7 +81,7 @@ EDITABLE = (
 )
 
 PUBLIC_FIELDS = """
-    p.id, p.title, p.title_ar, p.university, p.university_ar, p.location,
+    p.id, p.level, p.title, p.title_ar, p.university, p.university_ar, p.location,
     p.location_ar, p.duration, p.duration_ar, p.program_type, p.type_label,
     p.type_label_ar, p.tuition, p.tuition_ar, p.specializations,
     p.specializations_ar, p.highlights, p.highlights_ar, p.featured, p.status,
@@ -115,7 +115,7 @@ def _institution_ids(user_id):
 
 # ── The directory ───────────────────────────────────────────────────────────
 
-@grad_bp.route('', methods=['GET'])
+@academic_bp.route('', methods=['GET'])
 def list_programs():
     """Published programmes only.
 
@@ -125,14 +125,24 @@ def list_programs():
     platform asserting a fee it cannot know.
     """
     program_type = (request.args.get('program_type') or '').strip()
+    # `level` is what makes ONE directory serve both pages: University Programs
+    # asks for undergraduate, Graduate Programs for the rest. An undergraduate
+    # degree and a master's are the same object — a programme, at an
+    # institution, with a link and a checked date — and two tables for that is
+    # how `university_programs` came to sit beside `graduate_programs`.
+    level = (request.args.get('level') or '').strip()
     where, params = ["p.status = 'published'", "p.is_active = TRUE"], []
     if program_type and program_type != 'All':
         where.append("p.program_type = %s")
         params.append(program_type)
+    if level and level != 'All':
+        levels = [x.strip() for x in level.split(',') if x.strip()]
+        where.append("p.level = ANY(%s)")
+        params.append(levels)
 
     rows = execute_query(f"""
         SELECT {PUBLIC_FIELDS}
-          FROM graduate_programs p
+          FROM academic_programs p
          WHERE {' AND '.join(where)}
          ORDER BY p.featured DESC, p.university, p.title
     """, tuple(params)) or []
@@ -140,9 +150,41 @@ def list_programs():
                     'total': len(rows)})
 
 
+@academic_bp.route('/institutions', methods=['GET'])
+def listed_institutions():
+    """The institutions that actually have a published programme here.
+
+    DERIVED, not a second directory. The page used to read a `universities`
+    table that existed only for it, carrying an invented ranking of real UAE
+    universities (1st, 2nd, 3rd), invented student counts and invented graduate
+    employment rates of 96-98%. Migration 098 dropped it.
+
+    What can be said honestly is this: these institutions have programmes listed
+    here, this many, and here is the link they gave us. Anything more — a
+    ranking, an employment rate, a student count — is a claim the platform has
+    no way to know and no business publishing about a named university.
+    """
+    rows = execute_query("""
+        SELECT p.university, p.university_ar,
+               count(*) AS program_count,
+               min(p.location) AS location,
+               max(p.application_link) AS a_link,
+               max(p.details_checked_on) AS last_checked
+          FROM academic_programs p
+         WHERE p.status = 'published' AND p.is_active = TRUE
+           AND COALESCE(p.university, '') <> ''
+         GROUP BY p.university, p.university_ar
+         ORDER BY count(*) DESC, p.university
+    """) or []
+    for r in rows:
+        if r.get('last_checked'):
+            r['last_checked'] = str(r['last_checked'])
+    return jsonify({'success': True, 'institutions': rows, 'total': len(rows)})
+
+
 # ── Curating: what the Education Operator does ──────────────────────────────
 
-@grad_bp.route('', methods=['POST'])
+@academic_bp.route('', methods=['POST'])
 @require_roles(*(CURATOR_ROLES | INSTITUTION_ROLES))
 def create_program():
     """Add a programme as a draft, or submit one as an institution.
@@ -177,7 +219,7 @@ def create_program():
 
     cols = list(fields)
     row = execute_query(
-        f"""INSERT INTO graduate_programs ({', '.join(cols)}
+        f"""INSERT INTO academic_programs ({', '.join(cols)}
             {', submitted_at' if payload.get('submit') else ''})
             VALUES ({', '.join(['%s'] * len(cols))}
             {', now()' if payload.get('submit') else ''})
@@ -186,7 +228,7 @@ def create_program():
     return jsonify({'success': True, 'id': row['id'], 'status': row['status']}), 201
 
 
-@grad_bp.route('/<int:program_id>', methods=['PATCH'])
+@academic_bp.route('/<int:program_id>', methods=['PATCH'])
 @require_roles(*(CURATOR_ROLES | INSTITUTION_ROLES))
 def update_program(program_id):
     """Edit a programme. An institution may only touch its own."""
@@ -194,7 +236,7 @@ def update_program(program_id):
     user_id = get_jwt_identity()
     roles = resolve_roles() or []
 
-    prog = execute_query("SELECT * FROM graduate_programs WHERE id = %s",
+    prog = execute_query("SELECT * FROM academic_programs WHERE id = %s",
                          (program_id,), fetch_one=True)
     if not prog:
         return jsonify({'success': False, 'error': 'no such programme'}), 404
@@ -207,12 +249,12 @@ def update_program(program_id):
         return jsonify({'success': False, 'error': 'nothing to change'}), 400
 
     sets = [f"{k} = %s" for k in updates] + ["updated_at = now()"]
-    execute_query(f"UPDATE graduate_programs SET {', '.join(sets)} WHERE id = %s",
+    execute_query(f"UPDATE academic_programs SET {', '.join(sets)} WHERE id = %s",
                   tuple(list(updates.values()) + [program_id]), fetch_all=False)
     return jsonify({'success': True})
 
 
-@grad_bp.route('/manage', methods=['GET'])
+@academic_bp.route('/manage', methods=['GET'])
 @require_roles(*(CURATOR_ROLES | INSTITUTION_ROLES))
 def manage_list():
     """Everything in every state, for whoever may act on it.
@@ -228,9 +270,9 @@ def manage_list():
             SELECT {PUBLIC_FIELDS}, p.review_note, p.submitted_at, p.reviewed_at,
                    p.source_note, p.provider_institution_id, p.link_status_detail,
                    i.name AS institution_name,
-                   (SELECT count(*) FROM graduate_program_interest g
+                   (SELECT count(*) FROM academic_program_interest g
                      WHERE g.program_id = p.id AND g.status <> 'withdrawn') AS interested
-              FROM graduate_programs p
+              FROM academic_programs p
               LEFT JOIN institutions i ON i.id = p.provider_institution_id
              ORDER BY CASE p.status WHEN 'submitted' THEN 0 WHEN 'draft' THEN 1
                                     WHEN 'published' THEN 2 ELSE 3 END,
@@ -242,14 +284,14 @@ def manage_list():
             SELECT {PUBLIC_FIELDS}, p.review_note, p.submitted_at, p.reviewed_at,
                    p.source_note, p.provider_institution_id, p.link_status_detail,
                    NULL AS institution_name, 0 AS interested
-              FROM graduate_programs p
+              FROM academic_programs p
              WHERE p.provider_institution_id = ANY(%s)
              ORDER BY p.updated_at DESC NULLS LAST, p.id
         """, (list(mine) or [-1],)) or []
     return jsonify({'success': True, 'programs': _stringify(rows), 'total': len(rows)})
 
 
-@grad_bp.route('/<int:program_id>/publish', methods=['POST'])
+@academic_bp.route('/<int:program_id>/publish', methods=['POST'])
 @require_roles(*CURATOR_ROLES)
 def publish(program_id):
     """List a programme publicly.
@@ -261,7 +303,7 @@ def publish(program_id):
     """
     prog = execute_query(
         "SELECT id, title, university, application_link, details_checked_on "
-        "FROM graduate_programs WHERE id = %s", (program_id,), fetch_one=True)
+        "FROM academic_programs WHERE id = %s", (program_id,), fetch_one=True)
     if not prog:
         return jsonify({'success': False, 'error': 'no such programme'}), 404
     if not prog.get('application_link') or not prog.get('details_checked_on'):
@@ -274,20 +316,20 @@ def publish(program_id):
 
     reviewer = get_jwt_identity()
     execute_query("""
-        UPDATE graduate_programs
+        UPDATE academic_programs
            SET status = 'published', reviewed_by = %s, reviewed_at = now(),
                updated_at = now()
          WHERE id = %s""",
         (str(reviewer)[:15] if reviewer else None, program_id), fetch_all=False)
 
-    record_admin_action('graduate_program_published', reviewer,
-                        resource_type='graduate_program', resource_id=program_id,
+    record_admin_action('academic_program_published', reviewer,
+                        resource_type='academic_program', resource_id=program_id,
                         details={'title': prog['title'], 'university': prog['university']})
     return jsonify({'success': True,
                     'message': f"\"{prog['title']}\" is now listed."})
 
 
-@grad_bp.route('/<int:program_id>/reject', methods=['POST'])
+@academic_bp.route('/<int:program_id>/reject', methods=['POST'])
 @require_roles(*CURATOR_ROLES)
 def reject(program_id):
     """Decline an institution's submission, with a reason it can read."""
@@ -297,7 +339,7 @@ def reject(program_id):
                         'error': 'a reason is required — the institution sees it'}), 400
     reviewer = get_jwt_identity()
     row = execute_query("""
-        UPDATE graduate_programs
+        UPDATE academic_programs
            SET status = 'rejected', reviewed_by = %s, reviewed_at = now(),
                review_note = %s, updated_at = now()
          WHERE id = %s AND status IN ('submitted','published')
@@ -305,13 +347,13 @@ def reject(program_id):
         (str(reviewer)[:15] if reviewer else None, note, program_id), fetch_one=True)
     if not row:
         return jsonify({'success': False, 'error': 'this programme cannot be rejected'}), 409
-    record_admin_action('graduate_program_rejected', reviewer,
-                        resource_type='graduate_program', resource_id=program_id,
+    record_admin_action('academic_program_rejected', reviewer,
+                        resource_type='academic_program', resource_id=program_id,
                         details={'title': row['title'], 'reason': note})
     return jsonify({'success': True, 'message': 'Returned with your reason.'})
 
 
-@grad_bp.route('/link-health', methods=['GET'])
+@academic_bp.route('/link-health', methods=['GET'])
 @require_roles(*CURATOR_ROLES)
 def link_health():
     """Published programmes whose link the nightly checker could not confirm.
@@ -324,7 +366,7 @@ def link_health():
     """
     rows = execute_query(f"""
         SELECT {PUBLIC_FIELDS}, p.link_status_detail
-          FROM graduate_programs p
+          FROM academic_programs p
          WHERE p.status = 'published'
            AND (p.link_status IS DISTINCT FROM 'ok' OR p.link_checked_at IS NULL)
          ORDER BY p.link_checked_at NULLS FIRST, p.id
@@ -334,7 +376,7 @@ def link_health():
 
 # ── The candidate's journey ─────────────────────────────────────────────────
 
-@grad_bp.route('/<int:program_id>/interest', methods=['POST'])
+@academic_bp.route('/<int:program_id>/interest', methods=['POST'])
 @require_roles(*(CANDIDATE_ROLES + tuple(ADMIN_ROLES)))
 def set_interest(program_id):
     """Record where somebody is with a programme.
@@ -352,7 +394,7 @@ def set_interest(program_id):
         return jsonify({'success': False,
                         'error': f"status must be one of {', '.join(allowed)}"}), 400
 
-    prog = execute_query("SELECT id, status FROM graduate_programs WHERE id = %s",
+    prog = execute_query("SELECT id, status FROM academic_programs WHERE id = %s",
                          (program_id,), fetch_one=True)
     if not prog:
         return jsonify({'success': False, 'error': 'no such programme'}), 404
@@ -361,27 +403,27 @@ def set_interest(program_id):
 
     user_id = get_jwt_identity()
     execute_query("""
-        INSERT INTO graduate_program_interest (program_id, user_id, status, note)
+        INSERT INTO academic_program_interest (program_id, user_id, status, note)
         VALUES (%s, %s, %s, %s)
         ON CONFLICT (program_id, user_id) DO UPDATE
             SET status = EXCLUDED.status,
-                note = COALESCE(EXCLUDED.note, graduate_program_interest.note),
+                note = COALESCE(EXCLUDED.note, academic_program_interest.note),
                 updated_at = now()""",
         (program_id, str(user_id), status, payload.get('note')), fetch_all=False)
     return jsonify({'success': True, 'status': status})
 
 
-@grad_bp.route('/<int:program_id>/interest', methods=['DELETE'])
+@academic_bp.route('/<int:program_id>/interest', methods=['DELETE'])
 @require_roles(*(CANDIDATE_ROLES + tuple(ADMIN_ROLES)))
 def clear_interest(program_id):
     user_id = get_jwt_identity()
-    execute_query("DELETE FROM graduate_program_interest "
+    execute_query("DELETE FROM academic_program_interest "
                   "WHERE program_id = %s AND user_id = %s",
                   (program_id, str(user_id)), fetch_all=False)
     return jsonify({'success': True})
 
 
-@grad_bp.route('/my-interest', methods=['GET'])
+@academic_bp.route('/my-interest', methods=['GET'])
 @require_roles(*(CANDIDATE_ROLES + tuple(ADMIN_ROLES)))
 def my_interest():
     """What this person is considering, applying to, or has heard back about."""
@@ -389,15 +431,15 @@ def my_interest():
     rows = execute_query(f"""
         SELECT g.status AS interest_status, g.note, g.noted_at, g.updated_at,
                {PUBLIC_FIELDS}
-          FROM graduate_program_interest g
-          JOIN graduate_programs p ON p.id = g.program_id
+          FROM academic_program_interest g
+          JOIN academic_programs p ON p.id = g.program_id
          WHERE g.user_id = %s
          ORDER BY g.updated_at DESC
     """, (str(user_id),)) or []
     return jsonify({'success': True, 'interest': _stringify(rows), 'total': len(rows)})
 
 
-@grad_bp.route('/interest/<user_id>', methods=['GET'])
+@academic_bp.route('/interest/<user_id>', methods=['GET'])
 @require_roles(*GUIDANCE_ROLES)
 def interest_for_person(user_id):
     """What a candidate is considering, for whoever is advising them.
@@ -409,15 +451,15 @@ def interest_for_person(user_id):
     rows = execute_query(f"""
         SELECT g.status AS interest_status, g.note, g.noted_at, g.updated_at,
                {PUBLIC_FIELDS}
-          FROM graduate_program_interest g
-          JOIN graduate_programs p ON p.id = g.program_id
+          FROM academic_program_interest g
+          JOIN academic_programs p ON p.id = g.program_id
          WHERE g.user_id = %s
          ORDER BY g.updated_at DESC
     """, (str(user_id),)) or []
     return jsonify({'success': True, 'interest': _stringify(rows), 'total': len(rows)})
 
 
-@grad_bp.route('/outcomes', methods=['GET'])
+@academic_bp.route('/outcomes', methods=['GET'])
 @require_roles(*(CURATOR_ROLES | CAREER_SERVICES_ROLES))
 def outcomes():
     """How many nationals progressed to graduate study.
@@ -428,12 +470,12 @@ def outcomes():
     """
     rows = execute_query("""
         SELECT status, count(*) AS n, count(DISTINCT user_id) AS people
-          FROM graduate_program_interest GROUP BY status ORDER BY status""") or []
+          FROM academic_program_interest GROUP BY status ORDER BY status""") or []
     return jsonify({'success': True, 'by_status': rows,
                     'note': ('Self-reported by candidates. The platform does not '
                              'submit applications, so an outcome is only known '
                              'when the person records it.')})
 
 
-def register_graduate_programs_routes(app):
-    app.register_blueprint(grad_bp, url_prefix='/api/graduate-programs')
+def register_academic_programs_routes(app):
+    app.register_blueprint(academic_bp, url_prefix='/api/academic-programs')

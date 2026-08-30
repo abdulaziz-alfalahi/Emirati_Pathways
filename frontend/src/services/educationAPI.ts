@@ -8,6 +8,11 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL
     ? `${import.meta.env.VITE_API_BASE_URL}/api/education`
     : '/api/education');
 
+// The academic directory is its own blueprint, not part of /api/education, so
+// it needs the root rather than API_BASE — which already ends in /api/education
+// and would otherwise produce /api/education/api/academic-programs.
+const ROOT = import.meta.env.VITE_API_BASE_URL || '';
+
 // ── Types ──
 
 export interface University {
@@ -130,10 +135,22 @@ function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 // ── University functions ──
 
-export async function getUniversities(search?: string): Promise<University[]> {
-    const params = search ? `?search=${encodeURIComponent(search)}` : '';
-    const data = await apiFetch<{ universities: University[]; total: number }>(`/universities${params}`);
-    return data.universities;
+// Derived from the programmes actually listed, not from a `universities` table.
+// That table existed only for this page and carried an invented ranking of real
+// UAE universities, invented student counts and invented graduate employment
+// rates of 96-98%. Migration 098 dropped it; what remains is what can be said
+// honestly — these institutions have programmes here, this many.
+export async function getUniversities(_search?: string): Promise<University[]> {
+    const res = await fetch(`${ROOT}/api/academic-programs/institutions`);
+    const data = await res.json();
+    return (data.institutions || []).map((i: any, idx: number) => ({
+        id: idx + 1,
+        name: i.university,
+        name_ar: i.university_ar || i.university,
+        location: i.location || '',
+        programs_count: i.program_count,
+        website: i.a_link || '',
+    })) as University[];
 }
 
 export async function getUniversity(id: number): Promise<University> {
@@ -155,8 +172,13 @@ export async function getPrograms(filters?: {
     if (filters?.search) params.set('search', filters.search);
     if (filters?.university_id) params.set('university_id', String(filters.university_id));
     if (filters?.limit) params.set('limit', String(filters.limit));
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    const data = await apiFetch<{ programs: UniversityProgram[]; total: number }>(`/programs${qs}`);
+    // Undergraduate slice of the ONE academic directory. `/programs` read
+    // university_programs, a parallel table to graduate_programs holding the
+    // same object; migration 098 folded both into academic_programs with a
+    // `level`, so this page and Graduate Programs are two views of one list.
+    params.set('level', 'undergraduate');
+    const res = await fetch(`${ROOT}/api/academic-programs?${params.toString()}`);
+    const data = (await res.json()) as { programs: UniversityProgram[]; total: number };
     return data.programs;
 }
 
@@ -164,14 +186,12 @@ export async function getProgram(id: number): Promise<UniversityProgram> {
     return apiFetch<UniversityProgram>(`/programs/${id}`);
 }
 
-export async function applyToProgram(programId: number, applicationData?: Record<string, any>) {
-    return authFetch<{ application_id: number; status: string; message: string }>(
-        `/programs/${programId}/apply`,
-        { method: 'POST', body: JSON.stringify(applicationData || {}) }
-    );
-}
-
-// ── Scholarship functions ──
+// applyToProgram() was here. It POSTed to
+// /api/education/programs/<id>/apply, which answered "Application submitted
+// successfully" while sending nothing to any university. No component ever
+// called it. The endpoint and its table are gone (migration 098); use
+// /api/academic-programs/<id>/interest, which records that somebody is
+// applying without claiming to have applied for them.
 
 export async function getScholarships(filters?: {
     category?: string;

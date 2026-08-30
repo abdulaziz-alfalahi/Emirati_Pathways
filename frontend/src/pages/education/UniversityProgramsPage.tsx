@@ -341,13 +341,20 @@ const UniversityProgramsPage: React.FC = () => {
 
                       {/* Rating & Apply */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Star style={{ width: 14, height: 14, color: '#F59E0B', fill: '#F59E0B' }} />
-                          <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{p.rating}</span>
+                        {/* Was a star rating from a rating system that does not
+                            exist, beside a button that Googled the programme.
+                            Now the source the listing is published against —
+                            a programme cannot be published without one. */}
+                        <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                          {(p as any).details_checked_on
+                            ? t(`Details checked ${(p as any).details_checked_on}`,
+                                `تم التحقق من التفاصيل في ${(p as any).details_checked_on}`)
+                            : ''}
                         </div>
                         <button
                           data-has-handler="true"
-                          onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${loc(p.university_name, p.university_name) || ''} ${loc(p.title, p.title) || ''} admissions`)}`, '_blank', 'noopener')}
+                          disabled={!(p as any).application_link}
+                          onClick={() => window.open((p as any).application_link, '_blank', 'noopener')}
                           style={{
                             display: 'inline-flex', alignItems: 'center', gap: 6,
                             padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
@@ -458,9 +465,12 @@ const UniversityProgramsPage: React.FC = () => {
                   <button
                     data-has-handler="true"
                     onClick={() => {
-                      const url = u.website && /^https?:\/\//.test(u.website) ? u.website
-                        : u.website ? `https://${u.website}`
-                        : `https://www.google.com/search?q=${encodeURIComponent((loc(u.name, u.name) || '') + ' UAE')}`;
+                      // Was: fall back to a Google search for the university's
+                      // name. A government directory that cannot say where an
+                      // institution lives should say nothing, not guess via a
+                      // search engine.
+                      if (!u.website) return;
+                      const url = /^https?:\/\//.test(u.website) ? u.website : `https://${u.website}`;
                       window.open(url, '_blank', 'noopener');
                     }}
                     style={{
