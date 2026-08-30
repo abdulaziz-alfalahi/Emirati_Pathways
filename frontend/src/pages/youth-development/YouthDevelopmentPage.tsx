@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -44,33 +46,54 @@ const YouthDevelopmentPage2: React.FC = () => {
     // No fabricated fallback programs — the list comes from the API; an empty
     // response renders an honest empty state (data-honesty).
     const [programs, setPrograms] = useState<any[]>([]);
+    const [mine, setMine] = useState<Set<number>>(new Set());
+    const [busyId, setBusyId] = useState<number | null>(null);
+    const { isAuthenticated } = useAuth();
 
-    useEffect(() => {
-        const fetchPrograms = async () => {
+    const load = React.useCallback(async () => {
+        const API_BASE = import.meta.env.VITE_API_URL || '';
+        try {
+            // The SAME directory Knowledge Camps reads, filtered to the
+            // development stream. Both are a youth programme run by an
+            // organisation, with an age range, dates and people who want a
+            // place — migration 100 folded the separate youth_programs table,
+            // which had no workflow and no registration, into this one.
+            const res = await fetch(`${API_BASE}/api/youth-programs?stream=development`);
+            const data = await res.json();
+            setPrograms((data.programs || []).map((p: any) => ({
+                id: Number(p.id),
+                title: isRTL ? (p.title_ar || p.title) : p.title,
+                org: p.organizer || '',
+                duration: p.duration || '',
+                ageGroup: p.age_group || '',
+                // A COUNT of registrations. The column this replaces held
+                // invented figures — 1200/1200 credited to the Ministry of
+                // Defence — which the old endpoint then sorted by.
+                registered: p.registered || 0,
+                capacity: p.capacity || 0,
+                tags: [],
+                icon: '🎓',
+                desc: isRTL ? (p.description_ar || p.description) : p.description,
+            })));
+        } catch (e) { console.error('Error fetching youth programs:', e); }
+        if (isAuthenticated) {
             try {
-                const API_BASE = import.meta.env.VITE_API_URL || '';
-                const res = await fetch(`${API_BASE}/api/education/content/youth-programs`);
-                if (res.ok) {
-                    const data = await res.json();
-                    const apiPrograms = (data.programs || []).map((p: any) => ({
-                        title: isRTL ? (p.title_ar || p.title) : p.title,
-                        org: isRTL ? (p.org_ar || p.org) : p.org,
-                        duration: isRTL ? (p.duration_ar || p.duration) : p.duration,
-                        ageGroup: p.age_group || '18–25',
-                        enrolled: p.enrolled || 0,
-                        capacity: p.capacity || 100,
-                        statusKey: (p.status === 'full' ? 'Full' : 'Open') as 'Open' | 'Full',
-                        statusLabel: p.status === 'full' ? t('Full', 'مكتمل') : t('Open', 'مفتوح'),
-                        tags: (() => { try { return JSON.parse(p.tags || '[]'); } catch { return []; } })(),
-                        icon: p.icon || '🎓',
-                        desc: isRTL ? (p.description_ar || p.description) : p.description,
-                    }));
-                    if (apiPrograms.length > 0) setPrograms(apiPrograms);
-                }
-            } catch (e) { console.error('Error fetching youth programs:', e); }
-        };
-        fetchPrograms();
-    }, [isRTL]);
+                const r = await restClient.get('/api/youth-programs/my-registrations');
+                setMine(new Set((r.data?.registrations || []).map((x: any) => Number(x.id))));
+            } catch { /* signed in but not a role that registers */ }
+        }
+    }, [isRTL, isAuthenticated]);
+
+    useEffect(() => { load(); }, [load]);
+
+    const toggle = async (id: number, joined: boolean) => {
+        setBusyId(id);
+        try {
+            if (joined) await restClient.delete(`/api/youth-programs/${id}/register`);
+            else await restClient.post(`/api/youth-programs/${id}/register`, {});
+            await load();
+        } catch (e) { console.error(e); } finally { setBusyId(null); }
+    };
 
     const leadershipPath = [
         { level: 1, title: t('Foundation', 'الأساسيات'), desc: t('Self-awareness, personal values, and basic leadership principles', 'الوعي الذاتي والقيم الشخصية ومبادئ القيادة الأساسية'), color: brand.blue, colorText: brand.blueText },
@@ -149,21 +172,41 @@ const YouthDevelopmentPage2: React.FC = () => {
                         <div style={{ display: 'flex', gap: 14, fontSize: 12, color: brand.textSecondary }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={12} /> {p.duration}</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={12} /> {t('Ages', 'الأعمار')} {p.ageGroup}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Target size={12} /> {p.enrolled}/{p.capacity}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Target size={12} /> {p.registered}{p.capacity ? `/${p.capacity}` : ''}</span>
                         </div>
 
-                        <button
-                            data-has-handler="true"
-                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.title || ''} ${p.org || ''} UAE`)}`, '_blank', 'noopener')}
-                            style={{
-                                background: p.statusKey === 'Open' ? brand.primary : 'transparent',
-                                color: p.statusKey === 'Open' ? '#fff' : brand.textSecondary,
-                                border: p.statusKey === 'Open' ? 'none' : `1px solid ${brand.border}`,
-                                padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                                marginTop: 'auto', width: '100%',
-                            }}>
-                            {t('Find how to apply', 'كيفية التقديم')}
-                        </button>
+                        {/* Was a Google search for the programme's name. The
+                            platform records the place instead — same mechanism
+                            Knowledge Camps uses, because it is the same table. */}
+                        {isAuthenticated ? (() => {
+                            const joined = mine.has(p.id);
+                            const full = p.capacity > 0 && p.registered >= p.capacity;
+                            return (
+                                <button
+                                    data-has-handler="true"
+                                    disabled={busyId === p.id}
+                                    onClick={() => toggle(p.id, joined)}
+                                    style={{
+                                        background: joined ? 'transparent' : brand.primary,
+                                        color: joined ? brand.textSecondary : '#fff',
+                                        border: joined ? `1px solid ${brand.border}` : 'none',
+                                        padding: '9px 0', borderRadius: 8, fontSize: 13,
+                                        fontWeight: 600, cursor: busyId === p.id ? 'wait' : 'pointer',
+                                        marginTop: 'auto', width: '100%',
+                                    }}>
+                                    {joined ? t('Registered — give up place', 'مسجَّل — التخلي عن المقعد')
+                                            : full ? t('Full — join waiting list', 'مكتمل — الانضمام لقائمة الانتظار')
+                                                   : t('Register', 'سجّل')}
+                                </button>
+                            );
+                        })() : (
+                            <a href="/auth" style={{ background: brand.primary, color: '#fff',
+                                    padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                    marginTop: 'auto', width: '100%', textAlign: 'center',
+                                    textDecoration: 'none' }}>
+                                {t('Sign in to register', 'سجّل الدخول للتسجيل')}
+                            </a>
+                        )}
                     </div>
                 ))}
             </div>

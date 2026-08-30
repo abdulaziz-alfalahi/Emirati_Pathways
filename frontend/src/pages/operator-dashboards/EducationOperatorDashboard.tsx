@@ -86,7 +86,7 @@ const EducationOperatorDashboard: React.FC = () => {
                     }
                 } catch { /* badge only */ }
                 try {
-                    const cq = await fetch(`${API_BASE}/api/knowledge-camps/review-queue`,
+                    const cq = await fetch(`${API_BASE}/api/youth-programs/review-queue`,
                                            { headers: getAuthHeaders(), credentials: 'include' });
                     if (cq.ok && !cancelled) {
                         setCampsPending((await cq.json()).total || 0);

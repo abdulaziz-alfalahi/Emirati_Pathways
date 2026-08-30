@@ -2186,48 +2186,14 @@ def government_dashboard():
 # CONTENT MANAGEMENT – Youth Programs
 # ═══════════════════════════════════════════════════════════════════
 
-def ensure_youth_programs_table():
-    db = get_db()
-    if not db:
-        return
-    try:
-        cursor = db.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS youth_programs (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                title_ar TEXT,
-                org TEXT,
-                org_ar TEXT,
-                duration TEXT,
-                duration_ar TEXT,
-                age_group TEXT,
-                enrolled INT DEFAULT 0,
-                capacity INT DEFAULT 100,
-                status TEXT DEFAULT 'open',
-                tags TEXT DEFAULT '[]',
-                icon TEXT DEFAULT '🎓',
-                description TEXT,
-                description_ar TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """)
-        # Seeding removed 2026-08-30 (migration 096). It inserted six youth
-        # programmes whenever the table was empty, with invented participation
-        # attributed to real federal bodies — including "National Service
-        # Career Track, 1200/1200, full" credited to the Ministry of Defence.
-        db.commit()
-    except Exception as e:
-        logger.error(f"ensure_youth_programs_table: {e}")
-        db.rollback()
-
-
-@education_bp.route('/content/youth-programs', methods=['GET'])
-def get_youth_programs():
-    ensure_youth_programs_table()
-    programs = query_all("SELECT * FROM youth_programs ORDER BY enrolled DESC")
-    return jsonify({'programs': programs})
-
+# ensure_youth_programs_table() and GET /api/education/content/youth-programs
+# were here. The endpoint read `SELECT * FROM youth_programs ORDER BY enrolled
+# DESC` — sorting by the invented enrolment column migration 096 removed, from a
+# table that had no workflow, no review and no registration.
+#
+# Migration 100 folded that table into the one that has all three: the former
+# knowledge_camps, now youth_programs, with a `stream` telling a camp from a
+# development programme. Both pages read /api/youth-programs.
 
 # ═══════════════════════════════════════════════════════════════════
 # CONTENT MANAGEMENT – Industry Sectors

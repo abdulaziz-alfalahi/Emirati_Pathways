@@ -2032,7 +2032,7 @@ def get_parent_dashboard():
 
             children.append(child)
 
-        # ── Knowledge Camps (from knowledge_camps if table exists) ──
+        # ── Knowledge Camps (from youth_programs if table exists) ──
         camps = []
         try:
             # Selected start_date, end_date, location_ar, age_range and
@@ -2045,10 +2045,10 @@ def get_parent_dashboard():
                 SELECT c.id, c.title, c.title_ar, c.category, c.start_date, c.end_date,
                        c.location, c.location_ar, c.age_group AS age_range,
                        GREATEST(COALESCE(c.capacity, 0) - (
-                           SELECT count(*) FROM camp_registrations r
+                           SELECT count(*) FROM youth_program_registrations r
                             WHERE r.camp_id = c.id AND r.status = 'registered'), 0)
                            AS spots_remaining
-                  FROM knowledge_camps c
+                  FROM youth_programs c
                  WHERE c.is_active = true AND c.status = 'published'
                  ORDER BY c.start_date NULLS LAST LIMIT 6
             """)

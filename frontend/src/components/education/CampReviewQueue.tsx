@@ -66,8 +66,8 @@ export const CampReviewQueue: React.FC = () => {
     const load = useCallback(async () => {
         setLoading(true); setError(null);
         try {
-            const res = await restClient.get('/api/knowledge-camps/review-queue');
-            setCamps(res.data?.camps || []);
+            const res = await restClient.get('/api/youth-programs/review-queue');
+            setCamps(res.data?.programs || []);
         } catch (e: any) {
             setError(e?.response?.data?.error
                 || b('Could not load the review queue', 'تعذّر تحميل قائمة المراجعة'));
@@ -79,7 +79,7 @@ export const CampReviewQueue: React.FC = () => {
     const publish = async (camp: Camp) => {
         setBusyId(camp.id); setError(null);
         try {
-            const res = await restClient.post(`/api/knowledge-camps/${camp.id}/publish`, {});
+            const res = await restClient.post(`/api/youth-programs/${camp.id}/publish`, {});
             setNotice(res.data?.message || b('Published.', 'تم النشر.'));
             await load();
         } catch (e: any) {
@@ -92,7 +92,7 @@ export const CampReviewQueue: React.FC = () => {
         setBusyId(rejecting.id); setError(null);
         try {
             const res = await restClient.post(
-                `/api/knowledge-camps/${rejecting.id}/reject`, { note: reason.trim() });
+                `/api/youth-programs/${rejecting.id}/reject`, { note: reason.trim() });
             setNotice(res.data?.message || b('Returned to the provider.', 'أُعيد إلى الجهة.'));
             setRejecting(null); setReason('');
             await load();

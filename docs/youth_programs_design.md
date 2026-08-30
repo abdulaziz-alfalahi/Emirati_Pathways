@@ -1,4 +1,7 @@
-# Knowledge Camps — listing, review and registration
+# Youth Programmes — listing, review and registration
+
+One directory behind two pages: **Knowledge Camps** (`stream=camp`) and **Youth
+Development** (`stream=development`).
 
 Owner request, 2026-08-29: *"Which operator should have control over what gets
 posted? Does the operator post, or do the different stakeholders post, and does
@@ -142,3 +145,39 @@ Until that is decided, registration is for the signed-in user only.
 
 **Payment.** Camps carry a price as free text and always have. Nothing on this
 platform takes money, and this change does not start.
+
+
+## Youth Development joined this (2026-08-30)
+
+`youth_programs` was a parallel table to this one: a single read endpoint doing
+`SELECT * ... ORDER BY enrolled DESC` — sorting by the invented enrolment column
+migration 096 removed — with no workflow, no review and no registration.
+
+Its rows make the point. "Youth Innovation Bootcamp" (Dubai Future Foundation)
+and "STEM Excellence Academy" (Ministry of Education) are camps in all but name,
+and one of them credited **1200/1200 participants to the Ministry of Defence**.
+
+A youth programme and a knowledge camp are the same object: a youth-oriented
+programme, run by an organisation, with an age range, dates, a capacity and
+people who want a place. Keeping both would have given the platform a **third**
+programme table with its own workflow, review queue and registration — after
+folding university programmes into `academic_programs` the same morning for
+exactly that reason.
+
+So migration 100 dropped the vestigial table, renamed this one to
+`youth_programs`, and added `stream`. One directory, one review queue, one
+registration mechanism, two pages.
+
+### Two things that migration got right because an earlier one got them wrong
+
+**Constraint names were renamed in the same migration.** Migration 098 renamed a
+table and left seventeen constraints, three indexes and two sequences carrying
+the old name, needing 099 to repair it. Postgres renames the table and nothing
+else.
+
+**The response key was `camps` and the new page read `programs`.** The page
+would have rendered silently empty — HTTP 200, no error, no listings. It was
+caught by a verification script raising `KeyError`, not by any test, and is the
+same shape as the outbound-mail defects: the backend returns one name, the
+frontend reads another, and nothing fails loudly enough to notice. There is now
+a test asserting the key matches what both pages read.

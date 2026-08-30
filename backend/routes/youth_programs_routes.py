@@ -11,7 +11,7 @@ None of it existed. The page listed six seed rows written on 2026-05-04 with
 invented ratings and enrolment counts, its register button ran a Google search
 for the camp's name, and there was no endpoint that could create a camp at all.
 
-Design and the decisions behind it: docs/knowledge_camps_design.md
+Design and the decisions behind it: docs/youth_programs_design.md
 
 THE SHAPE, AND WHY IT IS NOT A NEW ONE
 
@@ -48,7 +48,7 @@ except ImportError:                          # pragma: no cover — dual root
 
 logger = logging.getLogger(__name__)
 
-camps_bp = Blueprint('knowledge_camps', __name__)
+youth_bp = Blueprint('youth_programs', __name__)
 
 #: Who reviews. The Education Operator already partners with schools and
 #: institutes and already provisions institutions; reviewing a camp is the same
@@ -60,14 +60,14 @@ REVIEW_ROLES = ADMIN_ROLES | {'education_operator'}
 #: workflow's, never the submitter's — a payload that could set its own status
 #: would let a provider publish straight past the review this exists for.
 SUBMITTABLE = (
-    'title', 'title_ar', 'description', 'description_ar', 'category',
+    'stream', 'title', 'title_ar', 'description', 'description_ar', 'category',
     'age_group', 'location', 'location_ar', 'organizer', 'duration', 'price',
     'capacity', 'start_date', 'end_date', 'registration_closes_on',
     'contact_email',
 )
 
 PUBLIC_FIELDS = """
-    c.id, c.title, c.title_ar, c.description, c.description_ar, c.category,
+    c.id, c.stream, c.title, c.title_ar, c.description, c.description_ar, c.category,
     c.age_group, c.location, c.location_ar, c.organizer, c.duration, c.price,
     c.capacity, c.start_date, c.end_date, c.registration_closes_on,
     c.contact_email, c.featured, c.status, c.created_at
@@ -80,7 +80,7 @@ def _registered_count_sql(alias='c'):
     The column it replaces held values nobody counted — 45 of 60, 52 of 60 —
     and the page summed them into a public total.
     """
-    return (f"(SELECT count(*) FROM camp_registrations r "
+    return (f"(SELECT count(*) FROM youth_program_registrations r "
             f" WHERE r.camp_id = {alias}.id AND r.status = 'registered')")
 
 
@@ -106,7 +106,7 @@ def _may_review(roles):
 
 # ── Listing: the public page ────────────────────────────────────────────────
 
-@camps_bp.route('', methods=['GET'])
+@youth_bp.route('', methods=['GET'])
 def list_camps():
     """Published camps only.
 
@@ -115,9 +115,18 @@ def list_camps():
     """
     category = (request.args.get('category') or '').strip()
     age_group = (request.args.get('age_group') or '').strip()
+    # `stream` is what lets ONE directory serve two pages: Knowledge Camps asks
+    # for 'camp', Youth Development for 'development'. Both are the same object
+    # — a youth programme run by an organisation, with an age range, dates, a
+    # capacity and people who want a place — which is why migration 100 folded
+    # the second table into this one rather than giving it its own workflow.
+    stream = (request.args.get('stream') or '').strip()
 
     where = ["c.status = 'published'", "c.is_active = TRUE"]
     params = []
+    if stream and stream != 'All':
+        where.append("c.stream = %s")
+        params.append(stream)
     if category and category != 'All':
         where.append("c.category = %s")
         params.append(category)
@@ -128,7 +137,7 @@ def list_camps():
     rows = execute_query(f"""
         SELECT {PUBLIC_FIELDS},
                {_registered_count_sql()} AS registered
-          FROM knowledge_camps c
+          FROM youth_programs c
          WHERE {' AND '.join(where)}
          ORDER BY c.featured DESC, c.start_date NULLS LAST, c.id
     """, tuple(params)) or []
@@ -137,12 +146,12 @@ def list_camps():
         for k in ('start_date', 'end_date', 'registration_closes_on', 'created_at'):
             if r.get(k):
                 r[k] = str(r[k])
-    return jsonify({'success': True, 'camps': rows, 'total': len(rows)})
+    return jsonify({'success': True, 'programs': rows, 'total': len(rows)})
 
 
 # ── Submission: what a provider does ────────────────────────────────────────
 
-@camps_bp.route('', methods=['POST'])
+@youth_bp.route('', methods=['POST'])
 @require_roles(*(INSTITUTION_ROLES | REVIEW_ROLES | {'training_provider', 'training_center_rep'}))
 def create_camp():
     """Create a camp as a draft, or submit it for review.
@@ -194,7 +203,7 @@ def create_camp():
     extra_col = ', submitted_at' if submit_now else ''
     extra_val = ', now()' if submit_now else ''
     row = execute_query(
-        f"""INSERT INTO knowledge_camps ({', '.join(cols)}{extra_col})
+        f"""INSERT INTO youth_programs ({', '.join(cols)}{extra_col})
             VALUES ({', '.join(['%s'] * len(cols))}{extra_val})
             RETURNING id, status""",
         tuple(values), fetch_one=True)
@@ -202,7 +211,7 @@ def create_camp():
     return jsonify({'success': True, 'id': row['id'], 'status': row['status']}), 201
 
 
-@camps_bp.route('/<int:camp_id>', methods=['PATCH'])
+@youth_bp.route('/<int:camp_id>', methods=['PATCH'])
 @require_roles(*(INSTITUTION_ROLES | REVIEW_ROLES | {'training_provider', 'training_center_rep'}))
 def update_camp(camp_id):
     """Edit a camp, and re-enter review if it was already published.
@@ -217,7 +226,7 @@ def update_camp(camp_id):
     roles = resolve_roles() or []
 
     camp = execute_query(
-        "SELECT * FROM knowledge_camps WHERE id = %s", (camp_id,), fetch_one=True)
+        "SELECT * FROM youth_programs WHERE id = %s", (camp_id,), fetch_one=True)
     if not camp:
         return jsonify({'success': False, 'error': 'no such camp'}), 404
 
@@ -242,7 +251,7 @@ def update_camp(camp_id):
     sets.append("updated_at = now()")
     params.append(camp_id)
 
-    execute_query(f"UPDATE knowledge_camps SET {', '.join(sets)} WHERE id = %s",
+    execute_query(f"UPDATE youth_programs SET {', '.join(sets)} WHERE id = %s",
                   tuple(params), fetch_all=False)
     return jsonify({'success': True,
                     'returned_to_review': bool(was_live),
@@ -250,7 +259,7 @@ def update_camp(camp_id):
                                 'to review.' if was_live else 'Saved.')})
 
 
-@camps_bp.route('/mine', methods=['GET'])
+@youth_bp.route('/mine', methods=['GET'])
 @require_roles(*(INSTITUTION_ROLES | REVIEW_ROLES | {'training_provider', 'training_center_rep'}))
 def my_camps():
     """What this provider has submitted, in every state — including the
@@ -260,7 +269,7 @@ def my_camps():
     rows = execute_query(f"""
         SELECT {PUBLIC_FIELDS}, c.review_note, c.reviewed_at,
                {_registered_count_sql()} AS registered
-          FROM knowledge_camps c
+          FROM youth_programs c
          WHERE c.created_by::text = %s
             OR c.provider_institution_id = ANY(%s)
             OR c.provider_training_center_id = ANY(%s)
@@ -271,12 +280,12 @@ def my_camps():
                   'created_at', 'reviewed_at'):
             if r.get(k):
                 r[k] = str(r[k])
-    return jsonify({'success': True, 'camps': rows, 'total': len(rows)})
+    return jsonify({'success': True, 'programs': rows, 'total': len(rows)})
 
 
 # ── Review: what the Education Operator does ────────────────────────────────
 
-@camps_bp.route('/review-queue', methods=['GET'])
+@youth_bp.route('/review-queue', methods=['GET'])
 @require_roles(*REVIEW_ROLES)
 def review_queue():
     """Everything awaiting a decision, oldest first — a queue that shows the
@@ -286,7 +295,7 @@ def review_queue():
                i.name AS institution_name, t.name AS training_center_name,
                COALESCE(u.full_name, c.created_by) AS submitted_by_name,
                {_registered_count_sql()} AS registered
-          FROM knowledge_camps c
+          FROM youth_programs c
           LEFT JOIN institutions i ON i.id = c.provider_institution_id
           LEFT JOIN training_centers t ON t.id = c.provider_training_center_id
           LEFT JOIN users u ON u.id = c.created_by
@@ -298,16 +307,16 @@ def review_queue():
                   'created_at', 'submitted_at'):
             if r.get(k):
                 r[k] = str(r[k])
-    return jsonify({'success': True, 'camps': rows, 'total': len(rows)})
+    return jsonify({'success': True, 'programs': rows, 'total': len(rows)})
 
 
-@camps_bp.route('/<int:camp_id>/publish', methods=['POST'])
+@youth_bp.route('/<int:camp_id>/publish', methods=['POST'])
 @require_roles(*REVIEW_ROLES)
 def publish_camp(camp_id):
     """Publish one camp. This is the act that makes it public."""
     reviewer = get_jwt_identity()
     row = execute_query("""
-        UPDATE knowledge_camps
+        UPDATE youth_programs
            SET status = 'published', reviewed_by = %s, reviewed_at = now(),
                review_note = COALESCE(%s, review_note), updated_at = now()
          WHERE id = %s AND status IN ('submitted', 'rejected')
@@ -319,13 +328,13 @@ def publish_camp(camp_id):
         return jsonify({'success': False,
                         'error': 'this camp is not awaiting review'}), 409
 
-    record_admin_action('knowledge_camp_published', reviewer,
-                        resource_type='knowledge_camp', resource_id=camp_id,
+    record_admin_action('youth_program_published', reviewer,
+                        resource_type='youth_program', resource_id=camp_id,
                         details={'title': row['title']})
     return jsonify({'success': True, 'message': f"\"{row['title']}\" is now listed."})
 
 
-@camps_bp.route('/<int:camp_id>/reject', methods=['POST'])
+@youth_bp.route('/<int:camp_id>/reject', methods=['POST'])
 @require_roles(*REVIEW_ROLES)
 def reject_camp(camp_id):
     """Decline one camp, with a reason the provider can read.
@@ -341,7 +350,7 @@ def reject_camp(camp_id):
 
     reviewer = get_jwt_identity()
     row = execute_query("""
-        UPDATE knowledge_camps
+        UPDATE youth_programs
            SET status = 'rejected', reviewed_by = %s, reviewed_at = now(),
                review_note = %s, updated_at = now()
          WHERE id = %s AND status IN ('submitted', 'published')
@@ -350,15 +359,15 @@ def reject_camp(camp_id):
     if not row:
         return jsonify({'success': False, 'error': 'this camp cannot be rejected'}), 409
 
-    record_admin_action('knowledge_camp_rejected', reviewer,
-                        resource_type='knowledge_camp', resource_id=camp_id,
+    record_admin_action('youth_program_rejected', reviewer,
+                        resource_type='youth_program', resource_id=camp_id,
                         details={'title': row['title'], 'reason': note})
     return jsonify({'success': True, 'message': 'Returned to the provider with your reason.'})
 
 
 # ── Registration: what a candidate does ─────────────────────────────────────
 
-@camps_bp.route('/<int:camp_id>/register', methods=['POST'])
+@youth_bp.route('/<int:camp_id>/register', methods=['POST'])
 @require_roles('candidate', 'student', 'parent', 'seeker', 'employee',
                'entrepreneur', *ADMIN_ROLES)
 def register(camp_id):
@@ -376,7 +385,7 @@ def register(camp_id):
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT id, title, capacity, status, registration_closes_on "
-                        "FROM knowledge_camps WHERE id = %s FOR UPDATE", (camp_id,))
+                        "FROM youth_programs WHERE id = %s FOR UPDATE", (camp_id,))
             camp = cur.fetchone()
             if not camp:
                 return jsonify({'success': False, 'error': 'no such camp'}), 404
@@ -386,7 +395,7 @@ def register(camp_id):
                 return jsonify({'success': False,
                                 'error': 'this camp is not open for registration'}), 409
 
-            cur.execute("SELECT status FROM camp_registrations "
+            cur.execute("SELECT status FROM youth_program_registrations "
                         "WHERE camp_id = %s AND user_id = %s", (camp_id, str(user_id)))
             existing = cur.fetchone()
             if existing and existing[0] in ('registered', 'waitlisted'):
@@ -394,14 +403,14 @@ def register(camp_id):
                                 'error': 'you are already registered for this camp',
                                 'status': existing[0]}), 409
 
-            cur.execute("SELECT count(*) FROM camp_registrations "
+            cur.execute("SELECT count(*) FROM youth_program_registrations "
                         "WHERE camp_id = %s AND status = 'registered'", (camp_id,))
             taken = cur.fetchone()[0]
             capacity = camp['capacity'] or 0
             status = 'waitlisted' if capacity and taken >= capacity else 'registered'
 
             cur.execute("""
-                INSERT INTO camp_registrations (camp_id, user_id, status)
+                INSERT INTO youth_program_registrations (camp_id, user_id, status)
                 VALUES (%s, %s, %s)
                 ON CONFLICT (camp_id, user_id) DO UPDATE
                     SET status = EXCLUDED.status, registered_at = now(),
@@ -419,7 +428,7 @@ def register(camp_id):
                                 else 'You are registered.')})
 
 
-@camps_bp.route('/<int:camp_id>/register', methods=['DELETE'])
+@youth_bp.route('/<int:camp_id>/register', methods=['DELETE'])
 @require_roles('candidate', 'student', 'parent', 'seeker', 'employee',
                'entrepreneur', *ADMIN_ROLES)
 def cancel_registration(camp_id):
@@ -427,7 +436,7 @@ def cancel_registration(camp_id):
     operator can see that somebody registered and withdrew."""
     user_id = get_jwt_identity()
     row = execute_query("""
-        UPDATE camp_registrations SET status = 'cancelled', cancelled_at = now()
+        UPDATE youth_program_registrations SET status = 'cancelled', cancelled_at = now()
          WHERE camp_id = %s AND user_id = %s AND status IN ('registered','waitlisted')
         RETURNING id""", (camp_id, str(user_id)), fetch_one=True)
     if not row:
@@ -435,7 +444,7 @@ def cancel_registration(camp_id):
     return jsonify({'success': True, 'message': 'Your place has been given up.'})
 
 
-@camps_bp.route('/my-registrations', methods=['GET'])
+@youth_bp.route('/my-registrations', methods=['GET'])
 @require_roles('candidate', 'student', 'parent', 'seeker', 'employee',
                'entrepreneur', *ADMIN_ROLES)
 def my_registrations():
@@ -443,8 +452,8 @@ def my_registrations():
     user_id = get_jwt_identity()
     rows = execute_query(f"""
         SELECT r.status AS registration_status, r.registered_at, {PUBLIC_FIELDS}
-          FROM camp_registrations r
-          JOIN knowledge_camps c ON c.id = r.camp_id
+          FROM youth_program_registrations r
+          JOIN youth_programs c ON c.id = r.camp_id
          WHERE r.user_id = %s AND r.status <> 'cancelled'
          ORDER BY c.start_date NULLS LAST, c.id
     """, (str(user_id),)) or []
@@ -456,14 +465,14 @@ def my_registrations():
     return jsonify({'success': True, 'registrations': rows, 'total': len(rows)})
 
 
-@camps_bp.route('/<int:camp_id>/registrations', methods=['GET'])
+@youth_bp.route('/<int:camp_id>/registrations', methods=['GET'])
 @require_roles(*REVIEW_ROLES)
-def camp_registrations(camp_id):
+def youth_program_registrations(camp_id):
     """Who registered — for the operator and, later, the provider running it."""
     rows = execute_query("""
         SELECT r.id, r.status, r.registered_at,
                COALESCE(u.full_name, u.email, r.user_id) AS person, u.email
-          FROM camp_registrations r
+          FROM youth_program_registrations r
           LEFT JOIN users u ON u.id = r.user_id
          WHERE r.camp_id = %s
          ORDER BY r.registered_at""", (camp_id,)) or []
@@ -473,5 +482,5 @@ def camp_registrations(camp_id):
     return jsonify({'success': True, 'registrations': rows, 'total': len(rows)})
 
 
-def register_knowledge_camps_routes(app):
-    app.register_blueprint(camps_bp, url_prefix='/api/knowledge-camps')
+def register_youth_programs_routes(app):
+    app.register_blueprint(youth_bp, url_prefix='/api/youth-programs')
