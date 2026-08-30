@@ -119,7 +119,38 @@ def recipient_allowed(address, allow_list=None):
     return False
 
 
-def decide(address, approved=False, allow_list=None):
+#: The ONE kind that may reach an address outside the allow-list.
+#:
+#: Owner decision, 2026-08-30. Guardian consent is the first message type whose
+#: recipients are by nature outside any government domain: a parent's own Gmail
+#: or Etisalat address, typed by their child at registration. Staff invitations
+#: and vacancy verifications go to organisations; this one goes to a mother's
+#: phone, and an allow-list of government domains can never contain it.
+#:
+#: A consent nobody receives is worse than no consent at all — the place is held
+#: for fourteen days and then silently released, and the young person simply
+#: never gets in.
+#:
+#: WHAT THIS DOES NOT BYPASS, and the order matters:
+#:   * sending_enabled()   — the environment switch still applies
+#:   * template approval   — the wording still needs the owner's signature
+#:   * per-message release — the message is still queued `held`
+#: Only the RECIPIENT check is skipped, and only for this kind.
+#:
+#: The residual risk is that a signed-in user can name any address and cause a
+#: government-branded email to reach it. Two things bound it: the body carries
+#: no caller-supplied text (programme and organiser come from an operator-
+#: reviewed listing, the name from the user record), and
+#: GUARDIAN_REQUESTS_PER_DAY caps how many one person can cause.
+KINDS_EXEMPT_FROM_ALLOW_LIST = frozenset({'guardian_consent'})
+
+#: How many guardian requests one registrant may cause in a day. A young person
+#: registers for a handful of programmes; fifty is somebody using the platform
+#: as a mailer.
+GUARDIAN_REQUESTS_PER_DAY = 5
+
+
+def decide(address, approved=False, allow_list=None, kind=None):
     """Should this message be sent? Returns (bool, decision).
 
     Pure: no database, no network, no clock. The transport calls this and
@@ -134,7 +165,8 @@ def decide(address, approved=False, allow_list=None):
         return False, BLOCKED_NO_RECIPIENT
     if not sending_enabled():
         return False, BLOCKED_SENDING_OFF
-    if not recipient_allowed(address, allow_list=allow_list):
+    if (kind not in KINDS_EXEMPT_FROM_ALLOW_LIST
+            and not recipient_allowed(address, allow_list=allow_list)):
         return False, BLOCKED_RECIPIENT_NOT_ALLOWED
     if not approved:
         return False, BLOCKED_NOT_APPROVED

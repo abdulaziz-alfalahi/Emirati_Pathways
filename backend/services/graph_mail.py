@@ -185,7 +185,10 @@ def send_one(message):
     never approved cannot be sent by passing a flag.
     """
     approved = bool(message.get('approved_by'))
-    ok, decision = outbound_mail.decide(message.get('to_email'), approved=approved)
+    # The kind is taken off the ROW, like the approval — a caller cannot assert
+    # a kind to win an allow-list exemption it was not queued with.
+    ok, decision = outbound_mail.decide(message.get('to_email'), approved=approved,
+                                        kind=message.get('kind'))
     if not ok:
         return False, decision, outbound_mail.explain(decision)
 

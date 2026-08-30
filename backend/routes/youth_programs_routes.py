@@ -477,6 +477,27 @@ def register(camp_id):
                     return jsonify({'success': False,
                                     'error': 'that does not look like an email address'}), 400
 
+                # guardian_consent is the one kind allowed past the recipient
+                # allow-list, which means a signed-in user can name any address
+                # and cause a government-branded email to reach it. The body
+                # carries no text they supply — programme and organiser come
+                # from an operator-reviewed listing — so the bound that matters
+                # is VOLUME. A young person registers for a handful of
+                # programmes; fifty is somebody using the platform as a mailer.
+                cur.execute("""SELECT count(*) FROM outbound_mail
+                                WHERE kind = 'guardian_consent'
+                                  AND created_by::text = %s
+                                  AND created_at >= date_trunc('day', now())""",
+                            (str(user_id),))
+                sent_today = cur.fetchone()[0]
+                if sent_today >= outbound_mail.GUARDIAN_REQUESTS_PER_DAY:
+                    conn.rollback()
+                    return jsonify({
+                        'success': False,
+                        'error': ('You have asked for several guardian confirmations '
+                                  'today. Please try again tomorrow, or ask an '
+                                  'operator to help.')}), 429
+
             cur.execute("SELECT count(*) FROM youth_program_registrations "
                         "WHERE camp_id = %s AND status IN ('registered','pending_consent')",
                         (camp_id,))
