@@ -17,6 +17,7 @@ const KIND_LABELS_AR: Record<string, string> = {
     team_invitation: 'دعوة زميل (يرسلها مسؤول جهة العمل)',
     staff_invitation: 'دعوة موظفي المنصة',
     board_office_notice: 'إشعار اجتماع المجلس إلى مكتب العضو',
+    guardian_consent: 'موافقة ولي الأمر على برنامج شبابي',
 };
 
 /** English fallback for when the caller has no `kind_label` from the server. */
@@ -27,6 +28,7 @@ const KIND_LABELS_EN: Record<string, string> = {
     team_invitation: 'Colleague invitation (sent by an employer admin)',
     staff_invitation: 'Platform staff invitation',
     board_office_notice: "Board meeting notice to a member's office",
+    guardian_consent: 'Guardian consent for a youth programme',
 };
 
 /**

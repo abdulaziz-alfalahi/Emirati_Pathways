@@ -92,7 +92,22 @@ const YouthDevelopmentPage2: React.FC = () => {
             if (joined) await restClient.delete(`/api/youth-programs/${id}/register`);
             else await restClient.post(`/api/youth-programs/${id}/register`, {});
             await load();
-        } catch (e) { console.error(e); } finally { setBusyId(null); }
+        } catch (e: any) {
+            // Under-18 programmes hold the place and ask a parent to confirm.
+            if (e?.response?.data?.consent_required) {
+                const email = window.prompt(
+                    `${e.response.data.message || ''}\n\n` +
+                    t('Enter a parent or guardian email address:',
+                      'أدخل البريد الإلكتروني لولي الأمر:'), '');
+                if (email) {
+                    try {
+                        await restClient.post(`/api/youth-programs/${id}/register`,
+                                              { guardian_email: email });
+                        await load();
+                    } catch (e2) { console.error(e2); }
+                }
+            } else { console.error(e); }
+        } finally { setBusyId(null); }
     };
 
     const leadershipPath = [

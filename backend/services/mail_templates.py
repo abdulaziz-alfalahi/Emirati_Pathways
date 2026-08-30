@@ -140,6 +140,13 @@ def _staff_invitation():
 # "Will the Career Services Operator change according to the selected role?" —
 # ZZ-PROBE-ORG reads as a placeholder; "Career Services Operator" does not.
 TEMPLATE_VARIES = {
+    'guardian_consent': [
+        ("the young person's name", 'اسم الشاب أو الشابة'),
+        ('the programme, its organiser and its dates',
+         'اسم البرنامج والجهة المنظِّمة وتواريخه'),
+        ('the confirmation link, which is unique to one registration',
+         'رابط التأكيد، وهو خاص بتسجيل واحد فقط'),
+    ],
     'seeker_invitation': [
         ("the candidate's name", 'اسم المرشح'),
         ('the registration link', 'رابط التسجيل'),
@@ -218,6 +225,24 @@ def _board_office_notice():
 
 #: kind -> (human label, renderer). The kind must match what the flow passes to
 #: outbound_mail.queue(), or the message can never be released.
+def _guardian_consent():
+    """A parent asked to confirm a place for somebody under 18.
+
+    The only message on the platform sent to a person who is NOT a user and
+    will never have an account, which is why its link carries a token instead
+    of requiring a sign-in.
+    """
+    try:
+        from backend.youth_consent import guardian_consent_subject, guardian_consent_body
+    except ImportError:                      # pragma: no cover — dual root
+        from youth_consent import guardian_consent_subject, guardian_consent_body
+    subject = guardian_consent_subject('ZZ-PROBE-PROGRAMME')
+    body = guardian_consent_body('ZZ-PROBE-NAME', 'ZZ-PROBE-PROGRAMME',
+                                 'ZZ-PROBE-ORG', '01-14 January 2026',
+                                 'https://example.invalid/probe')
+    return subject, body, None
+
+
 TEMPLATES = {
     'seeker_invitation': ('Candidate invitation (NAFIS seeker)', _seeker_invitation),
     'company_invitation': ('Employer invitation (magic link)', _company_invitation),
@@ -225,6 +250,7 @@ TEMPLATES = {
     'team_invitation': ('Colleague invitation (sent by an employer admin)', _team_invitation),
     'staff_invitation': ('Platform staff invitation', _staff_invitation),
     'board_office_notice': ('Board meeting notice to a member\'s office', _board_office_notice),
+    'guardian_consent': ('Guardian consent for a youth programme', _guardian_consent),
 }
 
 
