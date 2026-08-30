@@ -70,11 +70,11 @@ def connect():
 #: link_type, link_status, link_status_detail, link_checked_at, link_fingerprint
 #: — so one checker covers them all.
 #:
-#: graduate_programs joined on 2026-08-30. Its previous six rows attributed
+#: academic_programs joined on 2026-08-30. Its previous six rows attributed
 #: invented tuition to named real universities with no source at all; the
 #: replacement cannot be published without a link, which is only worth
 #: something if somebody keeps checking the link still resolves.
-CHECKED_TABLES = ('scholarships', 'graduate_programs')
+CHECKED_TABLES = ('scholarships', 'academic_programs')
 
 
 def run(dry_run=False, tables=CHECKED_TABLES):

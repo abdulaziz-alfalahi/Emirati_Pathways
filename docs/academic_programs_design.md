@@ -1,4 +1,4 @@
-# Graduate Programs — directory, personas and the study journey
+# Academic Programs — one directory, two pages, and the study journey
 
 Owner, 2026-08-30: *"take graduate programs next. I need you to cover the full
 workflow and the involved personas."*
@@ -95,6 +95,39 @@ published by <institution>, checked <date>"* — attribution, never assertion.
 withdrawn`. The name matters: the platform is recording what a person told us,
 not an application it processed. Calling the table `applications` would invite
 the next reader to build a submit button that cannot exist.
+
+## University Programs joined this, rather than getting its own (2026-08-30)
+
+University Programs was a **doubly parallel** subsystem — two tables for each
+concept the platform already had:
+
+| concept | the real one | the parallel one |
+|---|---|---|
+| institution | `institutions` (staff, students, camps, programmes) | `universities` |
+| programme | `graduate_programs` | `university_programs` |
+
+Both parallel tables were empty, filled only by `seed_education.py`, which the
+migrations README documented as the way to populate the page. It would have
+inserted a **ranking of real UAE universities** (1st, 2nd, 3rd), their student
+counts, and **graduate employment rates of 96–98%** — the exact number a student
+uses to choose a degree, invented and attributed to named institutions. That
+script is deleted.
+
+An undergraduate degree and a master's are the same object: a programme, at an
+institution, with a link and a date its details were checked. So
+`graduate_programs` became **`academic_programs` with a `level`**, and serves
+both pages — University Programs asks for `undergraduate`, this page for the
+rest. `universities` and `university_programs` are dropped.
+
+The **Universities tab is derived**: the institutions that actually have a
+published programme here, with a count. That is what can be said honestly. A
+ranking, an employment rate or a student count is a claim the platform has no
+way to know and no business publishing about a named university.
+
+Also removed: `POST /api/education/programs/<id>/apply`, which answered
+*"Application submitted successfully"* while sending nothing to any university.
+No page called it. It is the exact claim the constraint above says this platform
+cannot make.
 
 ## Deliberately not built
 

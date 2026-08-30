@@ -34,6 +34,21 @@ def code_only(source):
     return '\n'.join(line.split('#')[0] for line in without_blocks.splitlines())
 
 
+def comments_only_removed(source):
+    """`source` with only # comments gone — TRIPLE-QUOTED STRINGS KEPT.
+
+    Use this when the thing you are asserting on is SQL. `code_only` strips
+    every triple-quoted block, and almost all SQL in this codebase lives in one,
+    so a query assertion against `code_only` output silently matches nothing and
+    fails with a confusing diff. That mistake was made four times in two days
+    before this helper existed.
+
+    Reach for `code_only` when the risk is matching PROSE that merely describes
+    the behaviour; reach for this when the risk is losing the SQL itself.
+    """
+    return re.sub(r'(?m)^\s*#.*$', '', source)
+
+
 def js_code_only(source):
     """The same, for TypeScript and JavaScript: /* */ and // removed."""
     without_blocks = re.sub(r'(?s)/\*.*?\*/', '', source)

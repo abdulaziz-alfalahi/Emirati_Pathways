@@ -121,7 +121,7 @@ Run these manually when setting up a **new environment** to populate reference d
 | File | Purpose |
 |------|---------|
 | `seed_career_services.py` | Seeds internships, gigs, salary benchmarks |
-| `seed_education.py` | Seeds universities, programs, scholarships, LMS courses |
+| ~~`seed_education.py`~~ | **Deleted 2026-08-30.** It inserted a ranking of real UAE universities, their student counts, and graduate EMPLOYMENT RATES of 96-98% — all invented, attributed to named institutions. Also invented scholarships and LMS courses. Listings are curated through the operator screens now, and a programme cannot be published without a source link and a checked date. |
 | `seed_roles.py` | Seeds role skill requirements and skill taxonomy |
 
 ---

@@ -261,43 +261,15 @@ def get_program(program_id):
     return jsonify(p)
 
 
-@education_bp.route('/programs/<int:program_id>/apply', methods=['POST'])
-@jwt_required()
-def apply_to_program(program_id):
-    """Apply to a university program."""
-    user_id = get_jwt_identity()
-    data = request.get_json() or {}
-    db = get_db()
-    if not db:
-        return jsonify({"error": "Database unavailable"}), 500
-    try:
-        cursor = db.cursor()
-        # Check for existing application
-        existing = query_one(
-            "SELECT id FROM program_applications WHERE user_id = %s AND program_id = %s",
-            (user_id, program_id)
-        )
-        if existing:
-            return jsonify({"error": "Already applied", "application_id": existing['id']}), 409
-        cursor.execute("""
-            INSERT INTO program_applications (user_id, program_id, application_data)
-            VALUES (%s, %s, %s) RETURNING id, status, submitted_at
-        """, (user_id, program_id, json.dumps(data)))
-        db.commit()
-        row = cursor.fetchone()
-        return jsonify({
-            "application_id": row[0], "status": row[1],
-            "submitted_at": str(row[2]), "message": "Application submitted successfully"
-        }), 201
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Apply failed: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-# ═══════════════════════════════════════════
-# SCHOLARSHIPS
-# ═══════════════════════════════════════════
+# POST /api/education/programs/<id>/apply was here. It inserted into
+# program_applications and replied "Application submitted successfully" while
+# submitting nothing to any university — the platform cannot lodge an
+# application on an institution's behalf, and saying otherwise is the one claim
+# somebody would act on. No page ever called it; the service function existed
+# and no component used it. Migration 098 dropped the table.
+#
+# What replaces it: POST /api/academic-programs/<id>/interest, which records
+# that a person is APPLYING and is named so nobody mistakes it for lodging one.
 
 @education_bp.route('/scholarships', methods=['GET'])
 def get_scholarships():
@@ -1366,39 +1338,13 @@ def ensure_grad_programs_table():
         logger.error(f"ensure_grad_programs_table: {e}")
 
 
-@education_bp.route('/graduate-programs', methods=['GET'])
-def list_graduate_programs():
-    """List graduate programs with optional type filter."""
-    ensure_grad_programs_table()
-    program_type = request.args.get('type')
-
-    where, params = ["is_active = TRUE"], []
-    if program_type and program_type != 'All':
-        where.append("program_type = %s")
-        params.append(program_type)
-
-    programs = query_all(f"""
-        SELECT * FROM graduate_programs
-        WHERE {' AND '.join(where)}
-        ORDER BY featured DESC, rating DESC
-    """, tuple(params))
-
-    for p in programs:
-        if p.get('created_at'):
-            p['created_at'] = str(p['created_at'])
-        # Parse JSONB fields
-        for field in ('specializations', 'specializations_ar', 'highlights', 'highlights_ar'):
-            if isinstance(p.get(field), str):
-                try:
-                    p[field] = json.loads(p[field])
-                except:
-                    pass
-    return jsonify({"programs": programs, "total": len(programs)})
-
-
-# ═══════════════════════════════════════════
-# HEALTH CHECK
-# ═══════════════════════════════════════════
+# GET /api/education/graduate-programs was here. Superseded by
+# /api/academic-programs (routes/academic_programs_routes.py), which serves both
+# undergraduate and postgraduate listings from ONE directory and cannot return a
+# programme that lacks a source link and a checked date.
+#
+# Removed rather than left pointing at a renamed table: migration 098 renamed
+# graduate_programs to academic_programs, so this would now 500 on every call.
 
 @education_bp.route('/health', methods=['GET'])
 def education_health():
