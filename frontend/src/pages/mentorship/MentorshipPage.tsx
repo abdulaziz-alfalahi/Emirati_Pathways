@@ -211,14 +211,16 @@ const MentorshipPage: React.FC = () => {
     const myMentorships: any[] = [];
     const pastMentorships: any[] = [];
 
-    const resources = [
-        { title: t('Effective Mentoring in the UAE Workplace', 'الإرشاد الفعّال في بيئة العمل الإماراتية'), type: t('Guide', 'دليل'), readTime: t('12 min', '12 دقيقة'), icon: '📖' },
-        { title: t('Setting Goals with Your Mentor', 'تحديد الأهداف مع مرشدك'), type: t('Template', 'قالب'), readTime: t('5 min', '5 دقائق'), icon: '🎯' },
-        { title: t('How to Be a Great Mentee', 'كيف تكون متدرباً مميزاً'), type: t('Video Course', 'دورة فيديو'), readTime: t('45 min', '45 دقيقة'), icon: '🎥' },
-        { title: t('Mentorship Meeting Agenda Template', 'قالب جدول أعمال جلسات الإرشاد'), type: t('Template', 'قالب'), readTime: t('3 min', '3 دقائق'), icon: '📋' },
-        { title: t('Building Cross-Generational Connections', 'بناء روابط بين الأجيال'), type: t('Article', 'مقالة'), readTime: t('8 min', '8 دقائق'), icon: '🤝' },
-        { title: t('UAE Career Development Framework', 'إطار التطوير المهني في الإمارات'), type: t('Guide', 'دليل'), readTime: t('15 min', '15 دقيقة'), icon: '🇦🇪' },
-    ];
+    // Six "resources" were listed here — a 12-minute guide, a 45-minute video
+    // course, meeting-agenda templates — with read times, and a button that ran
+    // a Google search for each title. None of them exists. The platform was
+    // advertising documents it does not have and then sending people to a
+    // search engine to look for them.
+    //
+    // Kept as an empty list rather than deleted outright: the tab and its
+    // honest empty state stay, so the day real guidance is written there is
+    // somewhere for it to go.
+    const resources: { title: string; type: string; readTime: string; icon: string }[] = [];
 
     // Real counts only — no fabricated/inflated numbers (C3-MEE-1). Prefer live
     // stats from the backend; otherwise derive from what we actually loaded.
@@ -518,11 +520,18 @@ const MentorshipPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Guides, templates, and courses to help you get the most out of your mentoring experience.',
-                    'أدلة وقوالب ودورات لمساعدتك على تحقيق أقصى استفادة من تجربة الإرشاد.'
+                    'Guides and templates for getting the most out of mentoring will appear here as they are published.',
+                    'ستظهر هنا الأدلة والقوالب الخاصة بالاستفادة من الإرشاد عند نشرها.'
                 )}
             </p>
 
+            {resources.length === 0 ? (
+                <div style={{ background: '#fff', borderRadius: 12, border: `1px dashed ${brand.border}`,
+                              padding: 32, textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                    {t('No mentoring guides have been published yet.',
+                       'لم تُنشر أي أدلة إرشاد بعد.')}
+                </div>
+            ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
                 {resources.map((r, i) => (
                     <div key={i} className="ep-card" style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -536,18 +545,14 @@ const MentorshipPage: React.FC = () => {
                                 <Clock size={12} /> {r.readTime}
                             </div>
                         </div>
-                        <button
-                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(r.title + ' UAE')}`, '_blank', 'noopener')}
-                            style={{
-                                background: brand.primary, color: '#fff', border: 'none',
-                                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                marginTop: 'auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            }}>
-                            {t('Find this resource', 'ابحث عن هذا المورد')} <ArrowIcon size={13} />
-                        </button>
+                        {/* The "Find this resource" button ran a Google search
+                            for the title. When real guidance is published it
+                            will carry its own link; until then there is nothing
+                            to press. */}
                     </div>
                 ))}
             </div>
+            )}
         </div>
     );
 

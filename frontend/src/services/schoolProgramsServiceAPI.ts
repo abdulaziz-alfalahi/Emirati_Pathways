@@ -253,7 +253,12 @@ class SchoolProgramsAPIService {
         logo: '/images/schools/default-logo.png',
         location: data.school_location,
         type: 'private',
-        accreditation: ['KHDA']
+        accreditation: ['KHDA'],
+        // Carried through so the apply button has somewhere real to send
+        // people. It used to run a Google search for the school and programme.
+        website: data.school_website || '',
+        email: data.school_email || '',
+        phone: data.school_phone || '',
       },
       category: data.category,
       subcategory: data.subcategory,

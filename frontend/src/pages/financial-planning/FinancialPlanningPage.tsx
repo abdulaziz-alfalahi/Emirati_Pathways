@@ -110,13 +110,21 @@ const FinancialPlanningPage: React.FC = () => {
 
     /* ──────────────────────── STATIC DATA ──────────────────────── */
 
+    // The `risk` field on each of these was a RATING — Low / Moderate / High —
+    // assigned by nobody, published by a government council, on products a
+    // citizen might act on. A description of what a Sukuk is is education; a
+    // risk rating is advice, and advice is regulated.
+    //
+    // The descriptions stay. The ratings and the call-to-action buttons are
+    // gone. Whether the Council should carry an investment tab at all is a
+    // policy question raised with the owner on 2026-08-30.
     const investmentOptions = [
-        { title: t('UAE Equity Funds', 'صناديق أسهم الإمارات'), risk: t('Moderate', 'متوسط'), desc: t('Diversified exposure to UAE stock market', 'تعرض متنوع لسوق الأسهم الإماراتية'), catBg: brand.blue, catColor: brand.blueText },
-        { title: t('National Bonds', 'السندات الوطنية'), risk: t('Low', 'منخفض'), desc: t('Government-backed savings with Sharia compliance', 'ادخار مدعوم حكومياً ومتوافق مع الشريعة'), catBg: brand.green, catColor: brand.greenText },
-        { title: t('REIT (Real Estate)', 'صناديق العقارات (REIT)'), risk: t('Moderate', 'متوسط'), desc: t('Property-backed income through listed REITs', 'دخل مدعوم بالعقارات عبر صناديق REIT المدرجة'), catBg: brand.amber, catColor: brand.amberText },
-        { title: t('Sukuk (Islamic Bonds)', 'الصكوك (سندات إسلامية)'), risk: t('Low', 'منخفض'), desc: t('Fixed-income instruments compliant with Islamic principles', 'أدوات دخل ثابت متوافقة مع المبادئ الإسلامية'), catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Gold Savings Plan', 'خطة ادخار الذهب'), risk: t('Low-Moderate', 'منخفض-متوسط'), desc: t('Physical gold accumulation through monthly purchases', 'تراكم الذهب الفعلي من خلال مشتريات شهرية'), catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Venture Capital', 'رأس المال المغامر'), risk: t('High', 'مرتفع'), desc: t('Early-stage startup investments in UAE ecosystem', 'استثمارات في شركات ناشئة بالمنظومة الإماراتية'), catBg: brand.red, catColor: brand.redText },
+        { title: t('UAE Equity Funds', 'صناديق أسهم الإمارات'), desc: t('Diversified exposure to UAE stock market', 'تعرض متنوع لسوق الأسهم الإماراتية'), catBg: brand.blue, catColor: brand.blueText },
+        { title: t('National Bonds', 'السندات الوطنية'), desc: t('Government-backed savings with Sharia compliance', 'ادخار مدعوم حكومياً ومتوافق مع الشريعة'), catBg: brand.green, catColor: brand.greenText },
+        { title: t('REIT (Real Estate)', 'صناديق العقارات (REIT)'), desc: t('Property-backed income through listed REITs', 'دخل مدعوم بالعقارات عبر صناديق REIT المدرجة'), catBg: brand.amber, catColor: brand.amberText },
+        { title: t('Sukuk (Islamic Bonds)', 'الصكوك (سندات إسلامية)'), desc: t('Fixed-income instruments compliant with Islamic principles', 'أدوات دخل ثابت متوافقة مع المبادئ الإسلامية'), catBg: brand.purple, catColor: brand.purpleText },
+        { title: t('Gold Savings Plan', 'خطة ادخار الذهب'), desc: t('Physical gold accumulation through monthly purchases', 'تراكم الذهب الفعلي من خلال مشتريات شهرية'), catBg: brand.primarySurface, catColor: brand.primary },
+        { title: t('Venture Capital', 'رأس المال المغامر'), desc: t('Early-stage startup investments in UAE ecosystem', 'استثمارات في شركات ناشئة بالمنظومة الإماراتية'), catBg: brand.red, catColor: brand.redText },
     ];
 
     const govBenefits = [
@@ -128,14 +136,15 @@ const FinancialPlanningPage: React.FC = () => {
         { title: t('Business Start-up Fund', 'صندوق تأسيس الأعمال'), desc: t('Khalifa Fund and SME support for entrepreneurial nationals', 'صندوق خليفة ودعم المشاريع الصغيرة والمتوسطة لرواد الأعمال المواطنين'), Icon: Award },
     ];
 
-    const resources = [
-        { title: t('Salary Calculator', 'حاسبة الرواتب'), desc: t('Calculate take-home pay, end-of-service, and gratuity', 'احسب الراتب الصافي ومكافأة نهاية الخدمة'), Icon: Calculator, action: t('Calculate', 'احسب') },
-        { title: t('Budget Planner', 'مخطط الميزانية'), desc: t('Create a personalized monthly budget plan', 'أنشئ خطة ميزانية شهرية مخصصة'), Icon: Wallet, action: t('Plan Budget', 'خطّط الميزانية') },
-        { title: t('Loan Comparator', 'مقارنة القروض'), desc: t('Compare personal and home loan rates across UAE banks', 'قارن أسعار القروض الشخصية والعقارية في بنوك الإمارات'), Icon: BarChart3, action: t('Compare', 'قارن') },
-        { title: t('Financial Literacy', 'الثقافة المالية'), desc: t('Learn fundamental financial concepts and strategies', 'تعلّم المفاهيم والاستراتيجيات المالية الأساسية'), Icon: BookOpen, action: t('Start Learning', 'ابدأ التعلم') },
-        { title: t('Tax Guide', 'دليل الضرائب'), desc: t('Understand UAE corporate tax and international obligations', 'افهم ضريبة الشركات في الإمارات والالتزامات الدولية'), Icon: Banknote, action: t('Read Guide', 'اقرأ الدليل') },
-        { title: t('Retirement Planner', 'مخطط التقاعد'), desc: t('Plan your retirement timeline and savings targets', 'خطّط لجدولك الزمني للتقاعد وأهداف الادخار'), Icon: Target, action: t('Plan Retirement', 'خطّط للتقاعد') },
-    ];
+    // Six tools were listed here — Salary Calculator, Budget Planner, Loan
+    // Comparator, Tax Guide, Retirement Planner, Financial Literacy — each with
+    // an action button ("Calculate", "Compare") that ran a Google search for its
+    // own name. The platform has none of them. Cards describing a tool that does
+    // not exist are a promise, whether or not there is a button to press.
+    //
+    // Left as an empty list so the tab and its honest empty state remain for
+    // whenever a real tool is built.
+    const resources: { title: string; desc: string; Icon: any; action: string }[] = [];
 
     const stats = [
         { value: `AED ${Math.round(salary / 1000)}K`, label: t('Est. Monthly Salary', 'الراتب الشهري المقدّر'), icon: Banknote },
@@ -314,16 +323,14 @@ const FinancialPlanningPage: React.FC = () => {
                         <div style={{ padding: 22 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                                 <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{opt.title}</h3>
-                                <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: opt.catBg, color: opt.catColor }}>{opt.risk}</span>
+                                {/* The risk rating badge was here — Low / Moderate /
+                                    High, assigned by nobody and published by a
+                                    government council beside a product a citizen
+                                    might act on. */}
                             </div>
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{opt.desc}</p>
-                            <button
-                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(opt.title + ' UAE investment')}`, '_blank', 'noopener')}
-                                style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                                onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
-                                onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
-                                {t('Learn More', 'اعرف المزيد')} <ArrowIcon style={{ width: 14, height: 14 }} />
-                            </button>
+                            {/* Web-search button removed. An investment product is the last thing to hand somebody to a search engine for. */}
+
                         </div>
                     </div>
                 ))}
@@ -400,13 +407,8 @@ const FinancialPlanningPage: React.FC = () => {
                                     <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{ben.desc}</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(ben.title + ' UAE government')}`, '_blank', 'noopener')}
-                                style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: '#fff', color: brand.primary, fontSize: 14, fontWeight: 600, border: `1px solid ${brand.primary}`, cursor: 'pointer', transition: 'all 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                                onMouseEnter={e => { e.currentTarget.style.background = brand.primarySurface; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
-                                {t('Learn More', 'اعرف المزيد')} <ArrowIcon style={{ width: 14, height: 14 }} />
-                            </button>
+                            {/* Web-search button removed. These are real schemes. We have no verified official link for each, and inventing one is worse than offering none. */}
+
                         </div>
                     );
                 })}
@@ -428,7 +430,15 @@ const FinancialPlanningPage: React.FC = () => {
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-                {resources.map((r, i) => (
+                {resources.length === 0 ? (
+                    <div style={{ gridColumn: '1 / -1', background: '#fff', borderRadius: 16,
+                                  border: `1px dashed ${brand.border}`, padding: 32,
+                                  textAlign: 'center', fontSize: 13, color: brand.textSecondary }}>
+                        {t('No financial planning tools are available yet.',
+                           'لا تتوفر أدوات للتخطيط المالي بعد.')}
+                    </div>
+                ) : (
+                    resources.map((r, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
@@ -437,15 +447,10 @@ const FinancialPlanningPage: React.FC = () => {
                         </div>
                         <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{r.title}</h3>
                         <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{r.desc}</p>
-                        <button
-                            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(r.title + ' UAE')}`, '_blank', 'noopener')}
-                            style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                            onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
-                            onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
-                            {r.action} <ArrowIcon style={{ width: 14, height: 14 }} />
-                        </button>
+                        {/* Web-search button removed. These were tools the platform does not have. */}
                     </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
     );

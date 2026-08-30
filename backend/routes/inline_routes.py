@@ -2550,6 +2550,14 @@ Return only the JSON object, no additional text."""
                     s.name_ar as school_name_ar,
                     s.location as school_location,
                     s.khda_rating,
+                    -- The school's own contact details. Without them the page's
+                    -- apply button ran a Google search for "<school> <programme>
+                    -- admissions" — a guess dressed as a destination. Where a
+                    -- school has given us nothing, the page now says so rather
+                    -- than inventing a way to reach them.
+                    s.website_url as school_website,
+                    s.contact_email as school_email,
+                    s.contact_phone as school_phone,
                     COALESCE(
                         json_agg(
                             json_build_object(
@@ -2583,7 +2591,9 @@ Return only the JSON object, no additional text."""
                 query += " AND sp.featured = %s"
                 params.append(featured.lower() == 'true')
 
-            query += " GROUP BY sp.id, s.name_en, s.name_ar, s.location, s.khda_rating ORDER BY sp.created_at DESC"
+            query += (" GROUP BY sp.id, s.name_en, s.name_ar, s.location, s.khda_rating,"
+                      " s.website_url, s.contact_email, s.contact_phone"
+                      " ORDER BY sp.created_at DESC")
 
             programs = execute_query(query, params)
 

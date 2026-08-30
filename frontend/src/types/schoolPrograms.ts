@@ -21,6 +21,12 @@ export interface SchoolProgram {
     location: string;
     type: 'public' | 'private' | 'charter';
     accreditation: string[];
+    /** The school's own contact details, where it has given them.
+     *  Applications are handled by the school directly; without these the
+     *  apply button ran a Google search for the school and programme name. */
+    website?: string;
+    email?: string;
+    phone?: string;
   };
   category: ProgramCategory;
   subcategory: string;
