@@ -1273,74 +1273,19 @@ def education_operator_pending_programs():
 # ═══════════════════════════════════════════
 
 def ensure_camps_table():
-    """Create knowledge_camps table and seed if needed."""
-    db = get_db()
-    if not db:
-        return
-    try:
-        cursor = db.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS knowledge_camps (
-                id SERIAL PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                title_ar VARCHAR(255),
-                description TEXT,
-                description_ar TEXT,
-                category VARCHAR(100),
-                age_group VARCHAR(50),
-                location VARCHAR(255),
-                organizer VARCHAR(255),
-                duration VARCHAR(100),
-                price VARCHAR(100),
-                rating NUMERIC(2,1) DEFAULT 0,
-                enrolled INT DEFAULT 0,
-                capacity INT DEFAULT 0,
-                featured BOOLEAN DEFAULT FALSE,
-                is_active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT NOW()
-            )
-        """)
-        db.commit()
-        cursor.execute("SELECT COUNT(*) FROM knowledge_camps")
-        if cursor.fetchone()[0] == 0:
-            seeds = [
-                ('Coding Bootcamp for Teens', 'معسكر البرمجة للمراهقين',
-                 'Learn Python, JavaScript, and app development in this intensive knowledge camp.',
-                 'تعلم بايثون وجافاسكريبت وتطوير التطبيقات في هذا المعسكر المعرفي المكثف.',
-                 'Technology', '14-18', 'Dubai Internet City', None, '4 weeks', 'AED 2,500', 4.8, 45, 60, True),
-                ('Robotics & AI Camp', 'معسكر الروبوتات والذكاء الاصطناعي',
-                 'Build and program robots using the latest AI technologies.',
-                 'ابنِ وبرمج الروبوتات باستخدام أحدث تقنيات الذكاء الاصطناعي.',
-                 'Technology', '10-16', 'Dubai Silicon Oasis', None, '3 weeks', 'AED 2,200', 4.7, 38, 50, False),
-                ('Creative Arts Workshop', 'ورشة الفنون الإبداعية',
-                 'Explore painting, sculpture, digital art and creative expression.',
-                 'استكشف الرسم والنحت والفن الرقمي والتعبير الإبداعي.',
-                 'Arts', '8-14', 'Dubai Media City', None, '2 weeks', 'AED 1,800', 4.9, 28, 30, True),
-                ('Young Scientists Academy', 'أكاديمية العلماء الصغار',
-                 'Hands-on experiments in physics, chemistry, and biology.',
-                 'تجارب عملية في الفيزياء والكيمياء والأحياء.',
-                 'Science', '10-16', 'DIFC', None, '3 weeks', 'AED 2,000', 4.6, 32, 40, False),
-                ('Leadership & Public Speaking', 'القيادة والخطابة',
-                 'Develop leadership skills, public speaking, and confidence.',
-                 'طوّر مهارات القيادة والخطابة والثقة بالنفس.',
-                 'Leadership', '14-18', 'Business Bay', None, '2 weeks', 'AED 1,500', 4.5, 20, 25, False),
-                ('Sports Excellence Program', 'برنامج التميز الرياضي',
-                 'Multi-sport training including swimming, football, basketball, and athletics.',
-                 'تدريب رياضات متعددة تشمل السباحة وكرة القدم والسلة وألعاب القوى.',
-                 'Sports', '6-9', 'Dubai Marina', None, '4 weeks', 'AED 1,900', 4.7, 52, 60, True),
-            ]
-            for s in seeds:
-                cursor.execute("""
-                    INSERT INTO knowledge_camps (title, title_ar, description, description_ar,
-                        category, age_group, location, organizer, duration, price,
-                        rating, enrolled, capacity, featured)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                """, s)
-            db.commit()
-            logger.info("✅ Seeded 6 knowledge camps")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"ensure_camps_table: {e}")
+    """Present so callers keep working. It no longer creates or seeds anything.
+
+    It used to CREATE TABLE and then, finding the table empty, insert six camps
+    with invented ratings (4.5-4.9), invented enrolment counts (45/60, 52/60)
+    and invented prices — which the public page then summed into a "Students
+    Enrolled" figure.
+
+    The schema is migration 095's now, and the seeding is gone for good: an
+    empty listing is the truth until a provider submits a camp and an operator
+    publishes it. Leaving the seed in would have re-inserted all six the moment
+    migration 095 deleted them.
+    """
+    return
 
 
 @education_bp.route('/camps', methods=['GET'])
