@@ -519,22 +519,38 @@ const SchoolProgramsPage: React.FC = () => {
                   </div>
 
                   {/* Applications for school programs are handled by the school
-                      directly (no in-app enrolment backend). Point the user to the
-                      school so the button does something real, and be explicit. */}
+                      directly — there is no in-app enrolment backend, and there
+                      should not be one that pretends otherwise.
+                      This used to run a Google search for
+                      "<school> <programme> admissions". A search is a guess
+                      dressed as a destination; where the school has given us a
+                      website we use it, and where it has not we say so. */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <button
-                      onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${selectedProgram.school.name.en} ${selectedProgram.title.en} admissions`)}`, '_blank', 'noopener')}
-                      style={{
-                        width: '100%', padding: '12px 24px', borderRadius: 12,
-                        background: brand.primary, color: '#fff', fontWeight: 600, fontSize: 14,
-                        border: 'none', cursor: 'pointer', transition: 'background 150ms',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
-                      onMouseLeave={e => e.currentTarget.style.background = brand.primary}
-                    >
-                      {t('Find how to apply', 'كيفية التقديم')} <ArrowRight size={16} />
-                    </button>
+                    {selectedProgram.school.website ? (
+                      <a href={selectedProgram.school.website}
+                         target="_blank" rel="noopener noreferrer"
+                         style={{
+                           width: '100%', padding: '12px 24px', borderRadius: 12,
+                           background: brand.primary, color: '#fff', fontWeight: 600,
+                           fontSize: 14, textAlign: 'center', textDecoration: 'none',
+                           display: 'block', boxSizing: 'border-box',
+                         }}>
+                        {t('Apply on the school website', 'التقديم عبر موقع المدرسة')}
+                      </a>
+                    ) : (
+                      <div style={{
+                        width: '100%', padding: '12px 16px', borderRadius: 12,
+                        background: '#F9FAFB', border: `1px solid ${brand.border}`,
+                        fontSize: 13, color: brand.textSecondary, textAlign: 'center',
+                      }}>
+                        {t('Applications are handled by the school directly.',
+                           'تتولى المدرسة معالجة الطلبات مباشرة.')}
+                        {selectedProgram.school.email
+                          ? ` ${selectedProgram.school.email}` : ''}
+                        {selectedProgram.school.phone
+                          ? ` · ${selectedProgram.school.phone}` : ''}
+                      </div>
+                    )}
                     <p style={{ fontSize: 12, color: brand.textTertiary, textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
                       {t('Applications are handled directly by the school.', 'تتم معالجة الطلبات مباشرةً من قبل المدرسة.')}
                     </p>

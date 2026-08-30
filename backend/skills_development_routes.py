@@ -358,8 +358,12 @@ def get_certifications():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Certification programs available
+        # `url` is selected because the page needs somewhere real to send
+        # people. Without it the button ran a Google search for
+        # "<provider> <title> certification" — a government platform handing a
+        # citizen to a search engine for a certification it is listing.
         cur.execute("""
-            SELECT id, title, title_ar, provider, category, duration, level
+            SELECT id, title, title_ar, provider, category, duration, level, url
             FROM training_programs
             WHERE certification_offered = true AND active = true
             ORDER BY relevance_score DESC

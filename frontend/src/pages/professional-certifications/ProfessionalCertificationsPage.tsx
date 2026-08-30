@@ -193,16 +193,28 @@ const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embe
                                     <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={12} /> {p.duration}</span>
                                 </div>
 
+                                {/* Was a Google search for "<provider> <title>
+                                    certification". The provider's own link is
+                                    on the record; where there isn't one, the
+                                    honest thing is to name the provider and
+                                    offer no button rather than guess. */}
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto' }}>
-                                    <button
-                                        onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.provider || ''} ${p.title || ''} certification`)}`, '_blank', 'noopener')}
-                                        style={{
-                                            background: brand.primary, color: '#fff', border: 'none',
-                                            padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', gap: 4,
-                                        }}>
-                                        {t('Find this certification', 'ابحث عن الشهادة')} <ExternalLink size={14} />
-                                    </button>
+                                    {p.url ? (
+                                        <a href={p.url} target="_blank" rel="noopener noreferrer"
+                                           style={{
+                                               background: brand.primary, color: '#fff',
+                                               padding: '8px 16px', borderRadius: 8, fontSize: 12,
+                                               fontWeight: 600, textDecoration: 'none',
+                                               display: 'flex', alignItems: 'center', gap: 4,
+                                           }}>
+                                            {t('Open on the provider site', 'افتح على موقع المزوّد')} <ExternalLink size={14} />
+                                        </a>
+                                    ) : (
+                                        <span style={{ fontSize: 12, color: brand.textSecondary }}>
+                                            {t(`Offered by ${p.provider || 'the provider'}`,
+                                               `يقدّمها ${p.provider || 'المزوّد'}`)}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         );
