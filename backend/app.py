@@ -30,6 +30,16 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 # Ensure parent directory is on path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Make psycopg2 yield to the gevent hub instead of freezing the single worker.
+# MUST happen before any module opens a connection — the wait callback is bound
+# per connection at creation — so this sits ahead of every blueprint import.
+# No-op outside gevent. See gevent_db.py.
+try:
+    from backend.gevent_db import patch_psycopg2_for_gevent
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from gevent_db import patch_psycopg2_for_gevent
+patch_psycopg2_for_gevent()
+
 from dotenv import load_dotenv  # noqa: E402
 
 # Load environment variables
@@ -209,6 +219,17 @@ socketio.online_users = online_users
 
 # Create Flask app
 app = Flask(__name__)
+
+# Encode the column types psycopg2 returns that Flask cannot (TIME, INTERVAL,
+# NUMERIC, BYTEA). Set before any request is served. See json_provider.py: a
+# TIME column made GET /api/video-interview/sessions/<id> return 500 for every
+# interview ever scheduled, and the same landmine sits under every SELECT *.
+try:
+    from backend.json_provider import DatabaseFriendlyJSONProvider
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from json_provider import DatabaseFriendlyJSONProvider
+app.json = DatabaseFriendlyJSONProvider(app)
+
 socketio.init_app(app)
 
 # JWT Configuration

@@ -65,7 +65,43 @@ logging:
   level: info
   pion_level: warn
 
+# TURN is how a DATACENTER-INTERNAL browser gets media at all.
+#
+# THE PROBLEM IT SOLVES (measured 2026-08-31)
+#
+# rtc.node_ip above is the public address, and the NAT does not hairpin, so the
+# only media candidates the server offers are unreachable from inside:
+#
+#   publisherCandidates: ["udp4 host 213.42.53.198:7882",
+#                         "tcp4 host 213.42.53.198:7881",
+#                         "[remote][filtered] udp host :51093"]
+#   Failed to ping without candidate pairs. Connection is not possible yet.
+#
+# A recruiter's browser joined the room, sat there for fifteen seconds, then
+# died with "could not establish pc connection". Signalling was never the
+# problem; there was simply no address both ends could reach.
+#
+# ONE node_ip CANNOT BE BOTH ADDRESSES. Internal clients can reach only
+# 10.228.145.5; external clients can reach only 213.42.53.198 (verified from
+# the dev box and from APPQA: TCP 7881 to either public address times out from
+# inside). use_external_ip cannot help — STUN egress is blocked from this
+# datacenter, so auto-discovery times out (tested against stun.l.google.com).
+#
+# So the public address stays on node_ip, serving external browsers exactly as
+# before, and internal browsers are given a relay they CAN reach. Nothing about
+# the external path changes.
 turn:
   enabled: true
   udp_port: 3478
   tls_port: 0
+  # The address handed to clients as the relay. The internal one: external
+  # clients do not need TURN — they already have working host candidates — and
+  # an unreachable extra candidate costs them only a little ICE gathering time,
+  # whereas internal clients have nothing else at all.
+  domain: 10.228.145.5
+  # Relay allocations. LiveKit's default is 30000-40000; every port in the range
+  # has to be published on the container, and Docker spawns a userland proxy per
+  # port, so ten thousand of them is not deployable. Thirty concurrent relayed
+  # allocations is ample against room.max_participants: 10.
+  relay_range_start: 30000
+  relay_range_end: 30029
