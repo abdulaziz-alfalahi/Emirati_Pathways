@@ -103,6 +103,26 @@ const SummerCampsPage: React.FC = () => {
       setNotice(r.data?.message || t('You are registered.', 'تم تسجيلك.'));
       await load();
     } catch (e: any) {
+      // A programme whose age range may include under-18s holds the place and
+      // asks a parent to confirm it. The server decides that, from the age
+      // range the PROVIDER declared — the page only relays the ask.
+      if (e?.response?.data?.consent_required) {
+        const why = e.response.data.message || '';
+        const email = window.prompt(
+          `${why}\n\n` + t('Enter a parent or guardian email address:',
+                            'أدخل البريد الإلكتروني لولي الأمر:'), '');
+        if (!email) { setNotice(t('Registration not completed.', 'لم يكتمل التسجيل.')); return; }
+        try {
+          const r2 = await restClient.post(
+            `/api/youth-programs/${campId}/register`, { guardian_email: email });
+          setNotice(r2.data?.message || '');
+          await load();
+          return;
+        } catch (e2: any) {
+          setNotice(e2?.response?.data?.error || t('Could not register.', 'تعذّر التسجيل.'));
+          return;
+        }
+      }
       setNotice(e?.response?.data?.error
         || t('Could not register you for this camp.', 'تعذّر تسجيلك في هذا المعسكر.'));
     } finally { setBusyId(null); }

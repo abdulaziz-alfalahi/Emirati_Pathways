@@ -31,6 +31,9 @@ WHO MAY DO WHAT
   register any signed-in user, on a published camp
 """
 import logging
+import os
+import secrets
+from datetime import timedelta
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity
@@ -40,11 +43,19 @@ try:
         require_roles, ADMIN_ROLES, INSTITUTION_ROLES, resolve_roles)
     from backend.db_utils import execute_query, get_db
     from backend.admin_audit import record_admin_action
+    from backend.youth_consent import (
+        consent_requirement, explain as explain_consent,
+        guardian_consent_subject, guardian_consent_body)
+    from backend import outbound_mail
 except ImportError:                          # pragma: no cover — dual root
     from auth.access_control import (
         require_roles, ADMIN_ROLES, INSTITUTION_ROLES, resolve_roles)
     from db_utils import execute_query, get_db
     from admin_audit import record_admin_action
+    from youth_consent import (
+        consent_requirement, explain as explain_consent,
+        guardian_consent_subject, guardian_consent_body)
+    import outbound_mail
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +91,13 @@ def _registered_count_sql(alias='c'):
     The column it replaces held values nobody counted — 45 of 60, 52 of 60 —
     and the page summed them into a public total.
     """
+    # `pending_consent` counts. A place held while a parent is asked is a place
+    # taken — the alternative is confirming consent and then being told the camp
+    # filled up while you waited, which is worse than a seat somebody never
+    # confirms.
     return (f"(SELECT count(*) FROM youth_program_registrations r "
-            f" WHERE r.camp_id = {alias}.id AND r.status = 'registered')")
+            f" WHERE r.camp_id = {alias}.id "
+            f"   AND r.status IN ('registered', 'pending_consent'))")
 
 
 def _provider_bindings(user_id):
@@ -98,6 +114,14 @@ def _provider_bindings(user_id):
         (str(user_id),)) or []
     return ({r['id'] for r in inst if r.get('id')},
             {r['id'] for r in centre if r.get('id')})
+
+
+def _now():
+    """Timezone-aware now, matching the TIMESTAMPTZ columns these compare to.
+    Comparing a naive datetime against one of those raises rather than
+    misbehaving, which is the good failure — but only if it never happens."""
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc)
 
 
 def _may_review(roles):
@@ -380,16 +404,19 @@ def register(camp_id):
     A full camp waitlists rather than refuses: demand the operator cannot see
     is demand the platform has thrown away.
     """
+    payload = request.get_json(silent=True) or {}
     user_id = get_jwt_identity()
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, title, capacity, status, registration_closes_on "
+            cur.execute("SELECT id, title, capacity, status, registration_closes_on, "
+                        "       age_group, organizer, start_date, end_date "
                         "FROM youth_programs WHERE id = %s FOR UPDATE", (camp_id,))
             camp = cur.fetchone()
             if not camp:
                 return jsonify({'success': False, 'error': 'no such camp'}), 404
-            camp = dict(zip(('id', 'title', 'capacity', 'status', 'closes'), camp))
+            camp = dict(zip(('id', 'title', 'capacity', 'status', 'closes',
+                             'age_group', 'organizer', 'start', 'end'), camp))
 
             if camp['status'] != 'published':
                 return jsonify({'success': False,
@@ -398,34 +425,132 @@ def register(camp_id):
             cur.execute("SELECT status FROM youth_program_registrations "
                         "WHERE camp_id = %s AND user_id = %s", (camp_id, str(user_id)))
             existing = cur.fetchone()
-            if existing and existing[0] in ('registered', 'waitlisted'):
+            if existing and existing[0] in ('registered', 'waitlisted', 'pending_consent'):
                 return jsonify({'success': False,
                                 'error': 'you are already registered for this camp',
                                 'status': existing[0]}), 409
 
+            # Does a guardian have to confirm this? Decided from the age range
+            # the PROVIDER declared, because the registrant's own date of birth
+            # is on file for only about one person in nine. See youth_consent.
+            cur.execute("SELECT dob FROM candidate_profiles WHERE user_id::text = %s",
+                        (str(user_id),))
+            dob_row = cur.fetchone()
+            needs_consent, reason = consent_requirement(
+                camp['age_group'], registrant_dob=dob_row[0] if dob_row else None)
+
+            guardian_email = None
+            guardian_user = None
+            if needs_consent:
+                # A guardian already linked through school enrolment is used
+                # without asking.
+                #
+                # student_guardians holds the guardian's CONTACT DETAILS, not a
+                # user id — first_name, email, phone, is_primary_contact. That
+                # suits this better than a link to an account would: the parent
+                # being asked does not need one. (It is also currently EMPTY,
+                # being filled only by school enrolment, so in practice the
+                # address below is the one the registrant supplies.)
+                cur.execute("""SELECT sg.email
+                                 FROM student_guardians sg
+                                 JOIN students st ON st.id = sg.student_id
+                                WHERE st.user_id::text = %s
+                                  AND COALESCE(sg.email, '') <> ''
+                                ORDER BY sg.is_primary_contact DESC NULLS LAST
+                                LIMIT 1""", (str(user_id),))
+                linked = cur.fetchone()
+                linked_email = linked[0] if linked else None
+                guardian_email = ((payload.get('guardian_email') or '').strip()
+                                  or linked_email or None)
+
+                if not guardian_email:
+                    conn.rollback()
+                    return jsonify({
+                        'success': False,
+                        'consent_required': True,
+                        'reason': reason,
+                        'message': explain_consent(reason, camp.get('age_group')),
+                        'error': 'a parent or guardian address is needed to hold this place',
+                    }), 400
+                if guardian_email and '@' not in guardian_email:
+                    conn.rollback()
+                    return jsonify({'success': False,
+                                    'error': 'that does not look like an email address'}), 400
+
             cur.execute("SELECT count(*) FROM youth_program_registrations "
-                        "WHERE camp_id = %s AND status = 'registered'", (camp_id,))
+                        "WHERE camp_id = %s AND status IN ('registered','pending_consent')",
+                        (camp_id,))
             taken = cur.fetchone()[0]
             capacity = camp['capacity'] or 0
-            status = 'waitlisted' if capacity and taken >= capacity else 'registered'
+            if needs_consent:
+                status = 'pending_consent'
+            else:
+                status = 'waitlisted' if capacity and taken >= capacity else 'registered'
 
+            token = secrets.token_urlsafe(32) if needs_consent else None
             cur.execute("""
-                INSERT INTO youth_program_registrations (camp_id, user_id, status)
-                VALUES (%s, %s, %s)
+                INSERT INTO youth_program_registrations
+                    (camp_id, user_id, status, guardian_email, guardian_user_id,
+                     consent_token, consent_requested_at, consent_expires_at)
+                VALUES (%s, %s, %s, %s, %s, %s,
+                        CASE WHEN %s THEN now() END,
+                        CASE WHEN %s THEN now() + interval '14 days' END)
                 ON CONFLICT (camp_id, user_id) DO UPDATE
                     SET status = EXCLUDED.status, registered_at = now(),
-                        cancelled_at = NULL
-                RETURNING status""", (camp_id, str(user_id), status))
+                        cancelled_at = NULL,
+                        guardian_email = EXCLUDED.guardian_email,
+                        guardian_user_id = EXCLUDED.guardian_user_id,
+                        consent_token = EXCLUDED.consent_token,
+                        consent_requested_at = EXCLUDED.consent_requested_at,
+                        consent_expires_at = EXCLUDED.consent_expires_at
+                RETURNING status""",
+                (camp_id, str(user_id), status, guardian_email, guardian_user,
+                 token, needs_consent, needs_consent))
             final = cur.fetchone()[0]
+
+            # Queue the guardian's message on THIS cursor, so it commits — or
+            # rolls back — with the registration it refers to. A queued email
+            # holding a consent link to a registration that never existed is
+            # the orphan shape migration 086 had to clean up.
+            #
+            # It only ever HOLDS: outbound_mail.queue cannot produce a sendable
+            # row, and `guardian_consent` is a new template kind, so nothing
+            # sends until the owner reads and approves the wording.
+            if final == 'pending_consent' and guardian_email:
+                to = guardian_email
+                if to:
+                    frontend = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                    link = f"{frontend}/youth-consent/{token}"
+                    cur.execute("SELECT COALESCE(full_name, email) FROM users WHERE id = %s",
+                                (str(user_id),))
+                    who = (cur.fetchone() or [None])[0]
+                    when = ' to '.join(str(x) for x in (camp.get('start'), camp.get('end')) if x)
+                    outbound_mail.queue(
+                        to_email=to,
+                        to_name=None,
+                        subject=guardian_consent_subject(camp['title']),
+                        body_text=guardian_consent_body(
+                            who, camp['title'], camp.get('organizer'), when, link),
+                        kind='guardian_consent',
+                        related_type='youth_program_registration',
+                        related_id=str(camp_id),
+                        created_by=str(user_id)[:15] if user_id else None,
+                        cursor=cur)
         conn.commit()
     except Exception as exc:
         conn.rollback()
         logger.error(f'camp registration failed for {camp_id}: {exc}')
         return jsonify({'success': False, 'error': 'registration failed'}), 500
 
+    messages = {
+        'waitlisted': 'You are on the waiting list.',
+        'registered': 'You are registered.',
+        'pending_consent': ('Your place is held. We have asked your parent or '
+                            'guardian to confirm it — it is not final until they do.'),
+    }
     return jsonify({'success': True, 'status': final,
-                    'message': ('You are on the waiting list.' if final == 'waitlisted'
-                                else 'You are registered.')})
+                    'consent_pending': final == 'pending_consent',
+                    'message': messages.get(final, 'Registered.')})
 
 
 @youth_bp.route('/<int:camp_id>/register', methods=['DELETE'])
@@ -442,6 +567,83 @@ def cancel_registration(camp_id):
     if not row:
         return jsonify({'success': False, 'error': 'you are not registered'}), 404
     return jsonify({'success': True, 'message': 'Your place has been given up.'})
+
+
+# ── The guardian's side ─────────────────────────────────────────────────────
+#
+# UNAUTHENTICATED, deliberately. A parent asked to confirm their child's place
+# is not a platform user and will not have a UAE Pass account. Requiring one
+# would mean the consent never arrives, and a consent step nobody completes is
+# worse than none: the place is held for ever and the child never attends.
+#
+# The token is the credential — 32 random bytes, one row, expiring in 14 days.
+
+@youth_bp.route('/consent/<token>', methods=['GET'])
+def consent_details(token):
+    """What a guardian is being asked to agree to, before they agree to it."""
+    row = execute_query("""
+        SELECT r.id, r.status, r.consent_expires_at,
+               COALESCE(u.full_name, u.email) AS young_person,
+               c.title, c.title_ar, c.organizer, c.location, c.age_group,
+               c.start_date, c.end_date, c.duration
+          FROM youth_program_registrations r
+          JOIN youth_programs c ON c.id = r.camp_id
+          LEFT JOIN users u ON u.id = r.user_id
+         WHERE r.consent_token = %s""", (token,), fetch_one=True)
+    if not row:
+        return jsonify({'success': False, 'error': 'this link is not valid'}), 404
+    if row['status'] != 'pending_consent':
+        return jsonify({'success': False, 'already_decided': True,
+                        'status': row['status'],
+                        'error': 'this request has already been dealt with'}), 409
+
+    expired = row.get('consent_expires_at') and row['consent_expires_at'] < _now()
+    for k in ('start_date', 'end_date', 'consent_expires_at'):
+        if row.get(k):
+            row[k] = str(row[k])
+    return jsonify({'success': True, 'expired': bool(expired), 'request': row})
+
+
+@youth_bp.route('/consent/<token>', methods=['POST'])
+def give_consent(token):
+    """Confirm or decline. Both are recorded — a declined place is released
+    rather than left held, and the young person can see what happened."""
+    decision = ((request.get_json(silent=True) or {}).get('decision') or '').strip().lower()
+    if decision not in ('confirm', 'decline'):
+        return jsonify({'success': False,
+                        'error': "decision must be 'confirm' or 'decline'"}), 400
+
+    row = execute_query("""
+        SELECT r.id, r.camp_id, r.consent_expires_at, c.capacity
+          FROM youth_program_registrations r
+          JOIN youth_programs c ON c.id = r.camp_id
+         WHERE r.consent_token = %s AND r.status = 'pending_consent'""",
+        (token,), fetch_one=True)
+    if not row:
+        return jsonify({'success': False,
+                        'error': 'this link is not valid, or the request has '
+                                 'already been dealt with'}), 404
+    if row.get('consent_expires_at') and row['consent_expires_at'] < _now():
+        return jsonify({'success': False, 'expired': True,
+                        'error': 'this request has expired — the young person '
+                                 'can register again'}), 409
+
+    if decision == 'decline':
+        execute_query("""UPDATE youth_program_registrations
+                            SET status = 'cancelled', cancelled_at = now(),
+                                consent_token = NULL
+                          WHERE id = %s""", (row['id'],), fetch_all=False)
+        return jsonify({'success': True, 'status': 'cancelled',
+                        'message': 'The place has been released.'})
+
+    # Confirming keeps the seat this row has held since it was created, so no
+    # capacity re-check: the place was counted from the moment it was requested.
+    execute_query("""UPDATE youth_program_registrations
+                        SET status = 'registered', minor_consent_at = now(),
+                            consent_token = NULL
+                      WHERE id = %s""", (row['id'],), fetch_all=False)
+    return jsonify({'success': True, 'status': 'registered',
+                    'message': 'Thank you — the place is confirmed.'})
 
 
 @youth_bp.route('/my-registrations', methods=['GET'])

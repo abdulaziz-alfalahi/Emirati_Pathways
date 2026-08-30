@@ -23,7 +23,8 @@ sys.path.insert(0, BACKEND)
 
 import pytest  # noqa: E402
 
-from tests.source_utils import code_only, js_code_only  # noqa: E402
+from tests.source_utils import (  # noqa: E402
+    code_only, comments_only_removed, js_code_only)
 
 FRONTEND = os.path.join(os.path.dirname(BACKEND), 'frontend', 'src')
 
@@ -268,3 +269,99 @@ def test_the_response_key_matches_what_the_pages_read():
         js = _js(*page)
         assert 'data.programs' in js or 'data?.programs' in js, f'{page} reads the wrong key'
         assert 'data.camps' not in js
+
+
+# ── Guardian consent for minors (migration 101) ─────────────────────────────
+
+def test_consent_is_decided_by_the_programme_not_the_registrant():
+    """The registrant's birthday is on file for about one person in nine, so
+    the provider's declared age range is what the rule reads. The rule itself is
+    tested exhaustively in test_youth_consent_rule.py."""
+    source = _routes()
+    register = source[source.index('def register('):source.index('def cancel_registration')]
+    assert 'consent_requirement(' in register
+    assert "camp['age_group']" in register
+
+
+def test_a_pending_place_is_held_not_given_away():
+    """Confirming your consent and then being told the camp filled up while you
+    waited is worse than a seat somebody never confirms."""
+    source = comments_only_removed(
+        open(os.path.join(BACKEND, 'routes', 'youth_programs_routes.py'),
+             encoding='utf-8').read())
+    assert "IN ('registered', 'pending_consent')" in source
+
+
+def test_a_pending_row_must_carry_somebody_to_ask_and_a_way_to_confirm():
+    """Otherwise the seat is held for ever and nothing can release it."""
+    sql = open(os.path.join(BACKEND, 'migrations',
+                            '101_guardian_consent_for_minors.sql'), encoding='utf-8').read()
+    assert 'youth_program_registrations_consent_ck' in sql
+    assert "status <> 'pending_consent'" in sql
+
+
+def test_the_guardian_endpoints_need_no_account():
+    """A parent asked to confirm a child's place is not a platform user and will
+    not have UAE Pass. Requiring a sign-in means the consent never arrives, and
+    a consent step nobody can complete holds the place for ever."""
+    # Check the decorators ATTACHED to each consent view, not a slice between
+    # functions — a slice runs on into the decorator belonging to the next one.
+    raw = open(os.path.join(BACKEND, 'routes', 'youth_programs_routes.py'),
+               encoding='utf-8').read().splitlines()
+    for fn in ('def consent_details(', 'def give_consent('):
+        i = next(n for n, l in enumerate(raw) if l.startswith(fn))
+        decorators = []
+        j = i - 1
+        while j >= 0 and (raw[j].startswith('@') or not raw[j].strip()):
+            if raw[j].startswith('@'):
+                decorators.append(raw[j])
+            j -= 1
+        joined = ' '.join(decorators)
+        assert 'require_roles' not in joined, f'{fn} demands a signed-in user'
+        assert 'jwt_required' not in joined, f'{fn} demands a signed-in user' 
+
+
+def test_the_consent_token_is_single_use():
+    source = comments_only_removed(
+        open(os.path.join(BACKEND, 'routes', 'youth_programs_routes.py'),
+             encoding='utf-8').read())
+    block = source[source.index('def give_consent'):source.index('def my_registrations')]
+    assert 'consent_token = NULL' in block, 'a used token still works'
+
+
+def test_declining_releases_the_place():
+    source = comments_only_removed(
+        open(os.path.join(BACKEND, 'routes', 'youth_programs_routes.py'),
+             encoding='utf-8').read())
+    block = source[source.index('def give_consent'):source.index('def my_registrations')]
+    assert "status = 'cancelled'" in block
+
+
+def test_the_guardian_message_is_a_registered_template():
+    """New wording cannot send until the owner approves it — the same gate every
+    other outbound kind passes through."""
+    from services.mail_templates import TEMPLATES, render
+    assert 'guardian_consent' in TEMPLATES
+    subject, body, _html = render('guardian_consent')
+    assert subject and body
+
+
+def test_the_guardian_message_says_what_happens_if_it_is_ignored():
+    """A parent who does nothing must know the place is released, and must not
+    be asked to create an account."""
+    from youth_consent import guardian_consent_body
+    body = guardian_consent_body('Sara', 'Robotics Camp', 'Some Org',
+                                 '15-29 September', 'https://x/consent/tok')
+    assert 'released' in body and 'يُلغى' in body
+    assert 'do not need an account' in body
+    assert body.index('عزيزي') < body.index('Dear Parent'), 'Arabic should lead'
+
+
+def test_the_consent_mail_commits_with_the_registration():
+    """A queued email holding a consent link to a registration that never
+    existed is the orphan shape migration 086 had to clean up."""
+    source = comments_only_removed(
+        open(os.path.join(BACKEND, 'routes', 'youth_programs_routes.py'),
+             encoding='utf-8').read())
+    register = source[source.index('def register('):source.index('def cancel_registration')]
+    assert 'cursor=cur' in register

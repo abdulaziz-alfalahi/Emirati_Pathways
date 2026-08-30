@@ -39,6 +39,7 @@ const VerifyJob = lazy(() => import('@/pages/public/VerifyJob').then(m => ({ def
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
 const JoinTeamPage = lazy(() => import('@/pages/public/JoinTeamPage'));
 const JoinStaffPage = lazy(() => import('@/pages/public/JoinStaffPage'));
+const YouthConsentPage = lazy(() => import('@/pages/public/YouthConsentPage'));
 import MaintenanceGate from '@/components/common/MaintenanceGate';
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
@@ -286,6 +287,13 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              {/* Public and unauthenticated on purpose: the parent asked to
+                  confirm a place is not a platform user and will never have a
+                  UAE Pass account. Sits beside join-staff because it is the
+                  same shape — a token in the URL is the credential.
+                  Added to ALL FOUR route groups; missing one is the recurring
+                  App.tsx trap. */}
+              <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
 
               {/* Protected Role-Based Routes */}
@@ -344,6 +352,13 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              {/* Public and unauthenticated on purpose: the parent asked to
+                  confirm a place is not a platform user and will never have a
+                  UAE Pass account. Sits beside join-staff because it is the
+                  same shape — a token in the URL is the credential.
+                  Added to ALL FOUR route groups; missing one is the recurring
+                  App.tsx trap. */}
+              <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
@@ -1149,6 +1164,13 @@ const AppContent: React.FC = () => {
               <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              {/* Public and unauthenticated on purpose: the parent asked to
+                  confirm a place is not a platform user and will never have a
+                  UAE Pass account. Sits beside join-staff because it is the
+                  same shape — a token in the URL is the credential.
+                  Added to ALL FOUR route groups; missing one is the recurring
+                  App.tsx trap. */}
+              <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
@@ -1208,6 +1230,13 @@ const AppContent: React.FC = () => {
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/join-team/:token" element={<JoinTeamPage />} />
               <Route path="/join-staff/:token" element={<JoinStaffPage />} />
+              {/* Public and unauthenticated on purpose: the parent asked to
+                  confirm a place is not a platform user and will never have a
+                  UAE Pass account. Sits beside join-staff because it is the
+                  same shape — a token in the URL is the credential.
+                  Added to ALL FOUR route groups; missing one is the recurring
+                  App.tsx trap. */}
+              <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
