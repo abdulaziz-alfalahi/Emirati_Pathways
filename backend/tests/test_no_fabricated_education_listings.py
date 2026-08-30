@@ -83,8 +83,7 @@ def test_no_invented_rating_survives():
 
 
 @pytest.mark.parametrize('fn_name', ('ensure_camps_table',
-                                     'ensure_grad_programs_table',
-                                     'ensure_youth_programs_table'))
+                                     'ensure_grad_programs_table'))
 def test_the_ensure_functions_say_why_they_no_longer_seed(fn_name):
     """The next person to look at an empty listing needs to know it is empty on
     purpose, not broken."""
@@ -92,3 +91,16 @@ def test_the_ensure_functions_say_why_they_no_longer_seed(fn_name):
     src = inspect.getsource(fn)
     assert 'migration 09' in src or 'Seeding removed' in src, (
         f'{fn_name} does not record why it stopped seeding')
+
+
+def test_ensure_youth_programs_table_is_gone_entirely():
+    """Stronger than explaining itself: the function and its endpoint were
+    removed by migration 100, which folded that table into the one that has a
+    workflow. The endpoint read `ORDER BY enrolled DESC` — sorting by the
+    invented column migration 096 deleted."""
+    assert not hasattr(_module(), 'ensure_youth_programs_table')
+    # code_only: the comment recording the removal quotes that query on purpose.
+    src = code_only(open(os.path.join(BACKEND, 'education_api_routes.py'),
+                         encoding='utf-8').read())
+    assert "route('/content/youth-programs'" not in src
+    assert 'ORDER BY enrolled DESC' not in src

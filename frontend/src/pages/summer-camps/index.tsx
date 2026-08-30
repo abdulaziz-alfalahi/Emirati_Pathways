@@ -62,9 +62,9 @@ const SummerCampsPage: React.FC = () => {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await fetch(`${API_BASE}/api/knowledge-camps`);
+      const resp = await fetch(`${API_BASE}/api/youth-programs?stream=camp`);
       const data = await resp.json();
-      setCamps((data.camps || []).map((c: any) => ({
+      setCamps((data.programs || []).map((c: any) => ({
         id: String(c.id),
         title: { en: c.title || '', ar: c.title_ar || c.title || '' },
         category: c.category || '',
@@ -86,7 +86,7 @@ const SummerCampsPage: React.FC = () => {
     }
     if (isAuthenticated) {
       try {
-        const r = await restClient.get('/api/knowledge-camps/my-registrations');
+        const r = await restClient.get('/api/youth-programs/my-registrations');
         setRegistrations(r.data?.registrations || []);
       } catch { /* signed in but not a role that registers — leave it empty */ }
     }
@@ -99,7 +99,7 @@ const SummerCampsPage: React.FC = () => {
   const registerFor = async (campId: string) => {
     setBusyId(campId); setNotice(null);
     try {
-      const r = await restClient.post(`/api/knowledge-camps/${campId}/register`, {});
+      const r = await restClient.post(`/api/youth-programs/${campId}/register`, {});
       setNotice(r.data?.message || t('You are registered.', 'تم تسجيلك.'));
       await load();
     } catch (e: any) {
@@ -111,7 +111,7 @@ const SummerCampsPage: React.FC = () => {
   const cancelFor = async (campId: string) => {
     setBusyId(campId); setNotice(null);
     try {
-      const r = await restClient.delete(`/api/knowledge-camps/${campId}/register`);
+      const r = await restClient.delete(`/api/youth-programs/${campId}/register`);
       setNotice(r.data?.message || t('Your place has been given up.', 'تم التخلي عن مقعدك.'));
       await load();
     } catch (e: any) {
