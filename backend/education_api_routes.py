@@ -1355,75 +1355,12 @@ def ensure_grad_programs_table():
             )
         """)
         db.commit()
-        cursor.execute("SELECT COUNT(*) FROM graduate_programs")
-        if cursor.fetchone()[0] == 0:
-            seeds = [
-                ('MBA – Executive Leadership', 'ماجستير إدارة أعمال – القيادة التنفيذية',
-                 'Mohammed Bin Rashid School of Government', 'كلية محمد بن راشد للإدارة الحكومية',
-                 'Dubai, UAE', 'دبي، الإمارات', '18 months', '18 شهراً',
-                 'Full-Time', 'Full-Time', 'دوام كامل',
-                 'AED 95,000', '95,000 د.إ', 4.9, 45, 50, True,
-                 json.dumps(['Strategic Management','Digital Transformation','Government Innovation']),
-                 json.dumps(['الإدارة الاستراتيجية','التحول الرقمي','الابتكار الحكومي']),
-                 json.dumps(['AACSB Accredited','Industry Capstone','C-Suite Mentorship']),
-                 json.dumps(['معتمد من AACSB','مشروع تطبيقي','إرشاد من القيادات العليا'])),
-                ('MSc Data Science & AI', 'ماجستير علوم البيانات والذكاء الاصطناعي',
-                 'Khalifa University', 'جامعة خليفة',
-                 'Abu Dhabi, UAE', 'أبوظبي، الإمارات', '2 years', 'سنتان',
-                 'Full-Time', 'Full-Time', 'دوام كامل',
-                 'AED 78,000', '78,000 د.إ', 4.8, 60, 70, True,
-                 json.dumps(['Machine Learning','Natural Language Processing','Computer Vision']),
-                 json.dumps(['التعلم الآلي','معالجة اللغات الطبيعية','الرؤية الحاسوبية']),
-                 json.dumps(['Research Lab Access','Industry Partnerships','Publication Support']),
-                 json.dumps(['الوصول لمختبرات البحث','شراكات صناعية','دعم النشر العلمي'])),
-                ('MSc Engineering Management', 'ماجستير إدارة الهندسة',
-                 'American University of Sharjah', 'الجامعة الأمريكية في الشارقة',
-                 'Sharjah, UAE', 'الشارقة، الإمارات', '2 years', 'سنتان',
-                 'Part-Time', 'Part-Time', 'دوام جزئي',
-                 'AED 72,000', '72,000 د.إ', 4.7, 35, 45, False,
-                 json.dumps(['Systems Engineering','Project Management','Quality Engineering']),
-                 json.dumps(['هندسة النظم','إدارة المشاريع','هندسة الجودة']),
-                 json.dumps(['Flexible Schedule','Industry Projects','Professional Network']),
-                 json.dumps(['جدول مرن','مشاريع صناعية','شبكة مهنية'])),
-                ('Master of Public Administration', 'ماجستير الإدارة العامة',
-                 'UAE University', 'جامعة الإمارات',
-                 'Al Ain, UAE', 'العين، الإمارات', '2 years', 'سنتان',
-                 'Full-Time', 'Full-Time', 'دوام كامل',
-                 'AED 55,000', '55,000 د.إ', 4.6, 40, 60, False,
-                 json.dumps(['Policy Analysis','Urban Governance','Public Finance']),
-                 json.dumps(['تحليل السياسات','الحوكمة الحضرية','المالية العامة']),
-                 json.dumps(['Government Placements','Policy Lab Access','International Exchange']),
-                 json.dumps(['تعيينات حكومية','الوصول لمختبر السياسات','تبادل دولي'])),
-                ('PhD in Sustainable Energy', 'دكتوراه في الطاقة المستدامة',
-                 'Masdar Institute – Khalifa University', 'معهد مصدر – جامعة خليفة',
-                 'Abu Dhabi, UAE', 'أبوظبي، الإمارات', '3-4 years', '3-4 سنوات',
-                 'Full-Time Research', 'Full-Time Research', 'بحث بدوام كامل',
-                 'Fully Funded', 'ممولة بالكامل', 4.9, 15, 20, True,
-                 json.dumps(['Solar Energy','Energy Storage','Smart Grid Systems']),
-                 json.dumps(['الطاقة الشمسية','تخزين الطاقة','أنظمة الشبكات الذكية']),
-                 json.dumps(['Full Scholarship','Research Stipend','International Conference Travel']),
-                 json.dumps(['منحة كاملة','بدل بحثي','سفر لمؤتمرات دولية'])),
-                ('LLM – International Business Law', 'ماجستير القانون – قانون الأعمال الدولي',
-                 'University of Sharjah', 'جامعة الشارقة',
-                 'Sharjah, UAE', 'الشارقة، الإمارات', '18 months', '18 شهراً',
-                 'Part-Time', 'Part-Time', 'دوام جزئي',
-                 'AED 65,000', '65,000 د.إ', 4.5, 28, 35, False,
-                 json.dumps(['Arbitration & Dispute Resolution','Corporate Governance','IP Law']),
-                 json.dumps(['التحكيم وحل النزاعات','حوكمة الشركات','قانون الملكية الفكرية']),
-                 json.dumps(['Moot Court Competitions','Dual Certification','Legal Clinic']),
-                 json.dumps(['مسابقات المحاكم الصورية','شهادة مزدوجة','عيادة قانونية'])),
-            ]
-            for s in seeds:
-                cursor.execute("""
-                    INSERT INTO graduate_programs (title, title_ar, university, university_ar,
-                        location, location_ar, duration, duration_ar,
-                        program_type, type_label, type_label_ar,
-                        tuition, tuition_ar, rating, enrolled, capacity, featured,
-                        specializations, specializations_ar, highlights, highlights_ar)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                """, s)
-            db.commit()
-            logger.info("✅ Seeded 6 graduate programs")
+        # Seeding removed 2026-08-30 (migration 096). It inserted six graduate
+        # programmes whenever the table was empty, with invented tuition,
+        # invented enrolment and a rating from a rating system that does not
+        # exist — all attributed to six NAMED REAL UNIVERSITIES. A wrong
+        # tuition figure is the Council publishing incorrect financial
+        # information about a named institution.
     except Exception as e:
         db.rollback()
         logger.error(f"ensure_grad_programs_table: {e}")
@@ -2329,17 +2266,10 @@ def ensure_youth_programs_table():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        cursor.execute("SELECT COUNT(*) FROM youth_programs")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("""
-                INSERT INTO youth_programs (title, title_ar, org, org_ar, duration, duration_ar, age_group, enrolled, capacity, status, tags, icon, description, description_ar) VALUES
-                ('Future Leaders Initiative', 'مبادرة قادة المستقبل', 'Federal Youth Authority', 'الهيئة الاتحادية للشباب', '12 months', '12 شهراً', '18–25', 450, 500, 'open', '["Leadership","Mentorship","Policy"]', '🏅', 'Comprehensive program developing next-generation Emirati leaders.', 'برنامج شامل لتطوير الجيل القادم من القادة الإماراتيين.'),
-                ('Youth Innovation Bootcamp', 'معسكر الابتكار الشبابي', 'Dubai Future Foundation', 'مؤسسة دبي للمستقبل', '6 weeks', '6 أسابيع', '16–22', 180, 200, 'open', '["AI","Startups","Innovation"]', '🚀', 'Intensive bootcamp teaching design thinking and entrepreneurship.', 'معسكر تدريبي مكثف يعلم التفكير التصميمي وريادة الأعمال.'),
-                ('National Service Career Track', 'المسار المهني للخدمة الوطنية', 'Ministry of Defence', 'وزارة الدفاع', '18 months', '18 شهراً', '18–30', 1200, 1200, 'full', '["Military","Discipline","Fitness"]', '🎖️', 'Career-oriented national service combining military training with professional development.', 'خدمة وطنية موجهة مهنياً تجمع بين التدريب العسكري والتطوير المهني.'),
-                ('STEM Excellence Academy', 'أكاديمية التميز في العلوم والتكنولوجيا', 'Ministry of Education', 'وزارة التربية والتعليم', '9 months', '9 أشهر', '15–18', 320, 400, 'open', '["Science","Technology","Research"]', '🔬', 'Advanced STEM program for high-achieving students.', 'برنامج متقدم في العلوم والتكنولوجيا للطلاب المتفوقين.'),
-                ('Emirati Heritage & Culture Program', 'برنامج التراث والثقافة الإماراتية', 'Dubai Culture & Arts Authority', 'هيئة الثقافة والفنون في دبي', '4 months', '4 أشهر', '14–25', 280, 350, 'open', '["Heritage","Culture","Arabic"]', '🏛️', 'Deepening cultural identity through Emirati heritage studies.', 'تعميق الهوية الثقافية من خلال دراسات التراث الإماراتي.'),
-                ('Youth Entrepreneurship Lab', 'مختبر ريادة الأعمال الشبابي', 'Khalifa Fund', 'صندوق خليفة', '6 months', '6 أشهر', '18–30', 150, 200, 'open', '["Business","Funding","Pitch"]', '💡', 'End-to-end startup program with up to AED 100K seed funding.', 'برنامج شامل للشركات الناشئة مع تمويل أولي يصل إلى 100 ألف درهم.');
-            """)
+        # Seeding removed 2026-08-30 (migration 096). It inserted six youth
+        # programmes whenever the table was empty, with invented participation
+        # attributed to real federal bodies — including "National Service
+        # Career Track, 1200/1200, full" credited to the Ministry of Defence.
         db.commit()
     except Exception as e:
         logger.error(f"ensure_youth_programs_table: {e}")
