@@ -2,7 +2,34 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { GraduationCap, Users, Building, Target, BookOpen, Award, Clock, MapPin, Star, ArrowRight, ArrowLeft, CheckCircle, Globe, Briefcase } from 'lucide-react';
+import { GraduationCap, Users, Building, Target, BookOpen, Award, Clock, MapPin, Star, ArrowRight, ArrowLeft, CheckCircle, Globe, Briefcase, ExternalLink, Bookmark, Loader2 } from 'lucide-react';
+import { restClient } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
+
+/**
+ * Graduate programmes — a curated directory, and the candidate's journey.
+ *
+ * WHAT THIS PAGE USED TO SHOW
+ *
+ * Six rows written in one instant on 2026-06-17 attributing invented tuition,
+ * invented enrolment and a rating from a non-existent rating system to six
+ * NAMED REAL UNIVERSITIES: AED 95,000 for the MBRSG MBA, AED 78,000 at Khalifa,
+ * "Fully Funded" for a Masdar PhD. Its button ran a Google search for
+ * "<university> <programme> graduate admissions". Removed by migration 096.
+ *
+ * WHAT REPLACES IT, AND THE ONE CONSTRAINT
+ *
+ * The platform CANNOT accept an application for a university — admissions run
+ * through each institution's own system. So it points accurately (every listing
+ * carries the institution's own link and the date its details were checked) and
+ * remembers the journey (interested / applying / admitted), which is the part
+ * no admissions system will ever report back to the Council.
+ *
+ * Tuition is shown as "as published by <institution>, checked <date>" —
+ * attribution, never the platform asserting a fee it cannot know.
+ *
+ * See docs/graduate_programs_design.md.
+ */
 
 // Brand tokens
 const brand = {
@@ -25,41 +52,61 @@ const GraduateProgramsPage: React.FC = () => {
 
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [interest, setInterest] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const resp = await fetch(`${API_BASE}/api/graduate-programs`);
+      const data = await resp.json();
+      setPrograms((data.programs || []).map((p: any) => ({
+        id: Number(p.id),
+        title: isRTL ? (p.title_ar || p.title) : p.title,
+        university: isRTL ? (p.university_ar || p.university) : p.university,
+        location: isRTL ? (p.location_ar || p.location) : p.location,
+        duration: isRTL ? (p.duration_ar || p.duration) : p.duration,
+        type: p.program_type || 'Full-Time',
+        typeLabel: isRTL ? (p.type_label_ar || p.type_label) : p.type_label,
+        tuition: isRTL ? (p.tuition_ar || p.tuition) : p.tuition,
+        // No rating and no enrolment: there is no rating system, and capacity
+        // is the university's number, which this platform cannot know. The
+        // removed rows invented both.
+        featured: p.featured || false,
+        applicationLink: p.application_link || '',
+        checkedOn: p.details_checked_on || '',
+        deadline: p.application_deadline || '',
+        linkStatus: p.link_status || '',
+        specializations: (isRTL ? p.specializations_ar : p.specializations) || [],
+        highlights: (isRTL ? p.highlights_ar : p.highlights) || [],
+      })));
+    } catch (err) {
+      console.error('Failed to load graduate programs:', err);
+    } finally {
+      setLoading(false);
+    }
+    if (isAuthenticated) {
       try {
-        setLoading(true);
-        const resp = await fetch(`${API_BASE}/api/education/graduate-programs`);
-        if (!resp.ok) throw new Error('API error');
-        const data = await resp.json();
-        if (!cancelled) {
-          setPrograms((data.programs || []).map((p: any) => ({
-            id: String(p.id),
-            title: isRTL ? (p.title_ar || p.title) : p.title,
-            university: isRTL ? (p.university_ar || p.university) : p.university,
-            location: isRTL ? (p.location_ar || p.location) : p.location,
-            duration: isRTL ? (p.duration_ar || p.duration) : p.duration,
-            type: p.program_type || 'Full-Time',
-            typeLabel: isRTL ? (p.type_label_ar || p.type_label) : p.type_label,
-            tuition: isRTL ? (p.tuition_ar || p.tuition) : p.tuition,
-            rating: Number(p.rating) || 0,
-            enrolled: p.enrolled || 0,
-            capacity: p.capacity || 1,
-            featured: p.featured || false,
-            specializations: (isRTL ? p.specializations_ar : p.specializations) || [],
-            highlights: (isRTL ? p.highlights_ar : p.highlights) || [],
-          })));
-        }
-      } catch (err) {
-        console.error('Failed to load graduate programs:', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isRTL]);
+        const r = await restClient.get('/api/graduate-programs/my-interest');
+        const map: Record<string, string> = {};
+        for (const row of (r.data?.interest || [])) map[String(row.id)] = row.interest_status;
+        setInterest(map);
+      } catch { /* signed in but not a role that records interest */ }
+    }
+  }, [isRTL, isAuthenticated]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const setStage = async (id: number, status: string) => {
+    setBusyId(id);
+    try {
+      if (status === 'none') await restClient.delete(`/api/graduate-programs/${id}/interest`);
+      else await restClient.post(`/api/graduate-programs/${id}/interest`, { status });
+      await load();
+    } catch (e) { console.error(e); } finally { setBusyId(null); }
+  };
+
 
   const generalRequirements = [
     t('UAE National or eligible resident', 'مواطن إماراتي أو مقيم مؤهل'),
@@ -99,11 +146,14 @@ const GraduateProgramsPage: React.FC = () => {
 
   // Real counts derived from the loaded programs — no fabricated figures.
   const uniCount = new Set(programs.map(p => (p.university || '').trim()).filter(Boolean)).size;
-  const gradEnrolled = programs.reduce((s: number, p: any) => s + (p.enrolled || 0), 0);
+  // Was a sum of the seeded `enrolled` column — numbers this platform cannot
+  // know, added up and shown as "Graduate Students". Replaced by something it
+  // does know: how many of these listings have a checked source.
+  const sourced = programs.filter((p: any) => p.checkedOn).length;
   const stats = [
     { value: `${programs.length}`, label: t('Graduate Programs', 'برامج الدراسات العليا'), icon: GraduationCap },
     { value: `${uniCount}`, label: t('Partner Universities', 'الجامعات الشريكة'), icon: Building },
-    { value: `${gradEnrolled}`, label: t('Graduate Students', 'طلاب الدراسات العليا'), icon: Users },
+    { value: `${sourced}`, label: t('With a checked source', 'بمصدر تم التحقق منه'), icon: CheckCircle },
   ];
 
   const tabs = [
@@ -279,38 +329,56 @@ const GraduateProgramsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Enrollment bar */}
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
-                        <span>{p.enrolled} {t('enrolled', 'مسجّل')}</span>
-                        <span>{p.capacity - p.enrolled} {t('spots left', 'مقعد متاح')}</span>
-                      </div>
-                      <div style={{ height: 4, borderRadius: 2, background: '#F3F4F6' }}>
-                        <div style={{
-                          height: '100%', borderRadius: 2, background: brand.primary,
-                          width: `${(p.enrolled / p.capacity) * 100}%`,
-                          transition: 'width 300ms',
-                        }} />
-                      </div>
+                    {/* Was an enrolment bar over invented figures (45/50, 60/70).
+                        What the platform can honestly say is where the details
+                        came from and when they were last checked. */}
+                    <div style={{ marginBottom: 16, fontSize: 12, color: brand.textSecondary }}>
+                      {p.checkedOn && (
+                        <div>
+                          {t('Details as published by', 'التفاصيل كما نشرتها')} {p.university}
+                          {t(', checked ', '، تم التحقق منها في ')}{p.checkedOn}
+                        </div>
+                      )}
+                      {p.deadline && (
+                        <div style={{ marginTop: 3 }}>
+                          {t('Applications close', 'يغلق التقديم')} {p.deadline}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Rating & Apply */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Star style={{ width: 14, height: 14, color: '#F59E0B', fill: '#F59E0B' }} />
-                        <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{p.rating}</span>
-                      </div>
-                      <button
-                        data-has-handler="true"
-                        onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(`${p.university || ''} ${p.title || ''} graduate admissions`)}`, '_blank', 'noopener')}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                          background: brand.primary, color: '#fff', border: 'none',
-                          cursor: 'pointer', transition: 'background 150ms',
-                        }}>
-                        {t('How to apply', 'كيفية التقديم')} <ArrowIcon style={{ width: 16, height: 16 }} />
-                      </button>
+                    {/* Was a star rating from a rating system that does not exist,
+                        beside a button that Googled "<university> <programme>
+                        graduate admissions". Now: the institution's own link,
+                        and where this person is with it. */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between',
+                                  alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      {p.applicationLink ? (
+                        <a href={p.applicationLink} target="_blank" rel="noopener noreferrer"
+                           style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    padding: '10px 18px', borderRadius: 20, fontSize: 14,
+                                    fontWeight: 600, background: brand.primary, color: '#fff',
+                                    textDecoration: 'none' }}>
+                          {t('Apply on the university site', 'التقديم عبر موقع الجامعة')}
+                          <ExternalLink style={{ width: 15, height: 15 }} />
+                        </a>
+                      ) : <span />}
+
+                      {isAuthenticated && (
+                        <select
+                          value={interest[String(p.id)] || 'none'}
+                          disabled={busyId === p.id}
+                          onChange={e => setStage(p.id, e.target.value)}
+                          style={{ borderRadius: 10, padding: '9px 12px', fontSize: 13.5,
+                                   border: `1px solid ${brand.border}`, background: '#fff',
+                                   color: brand.textPrimary, cursor: 'pointer' }}>
+                          <option value="none">{t('Not tracking', 'غير متابَع')}</option>
+                          <option value="interested">{t('Interested', 'مهتم')}</option>
+                          <option value="applying">{t('Applying', 'أتقدّم')}</option>
+                          <option value="admitted">{t('Admitted', 'تم القبول')}</option>
+                          <option value="declined">{t('Not admitted', 'لم يتم القبول')}</option>
+                          <option value="withdrawn">{t('Withdrew', 'انسحبت')}</option>
+                        </select>
+                      )}
                     </div>
                   </div>
                 </div>
