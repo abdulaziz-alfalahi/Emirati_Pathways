@@ -112,3 +112,42 @@ def test_the_council_publishes_no_investment_risk_rating():
     body = open(path, encoding='utf-8').read()
     assert 'opt.risk' not in body
     assert not re.search(r"risk: t\('", body)
+
+
+def test_the_council_publishes_no_investment_guidance_at_all():
+    """Owner instruction, 2026-08-30: remove the investment tab.
+
+    It listed six investment vehicles — UAE Equity Funds, REITs, Sukuk, Venture
+    Capital — each with a Low/Moderate/High risk rating the platform had
+    assigned, on a page a citizen reads for guidance.
+
+    The disclaimer beneath it was the tell: "not financial advice, no returns
+    are guaranteed, consult a licensed financial advisor". A page that needs
+    that paragraph to be safe is a page a careers platform should not carry.
+    Financial promotion is regulated and the Council is not a licensed adviser.
+    """
+    path = os.path.join(FRONTEND, 'pages', 'financial-planning', 'FinancialPlanningPage.tsx')
+    if not os.path.exists(path):
+        pytest.skip('frontend not present')
+    body = open(path, encoding='utf-8').read()
+    code = '\n'.join(l for l in body.splitlines() if not _COMMENT.match(l))
+
+    assert 'investTab' not in code
+    assert "id: 'invest'" not in code
+    for product in ('Venture Capital', 'REIT', 'Equity Funds', 'Gold Savings'):
+        assert product not in code, f'the page still lists {product!r}'
+
+
+def test_the_salary_benchmarks_were_kept():
+    """They lived at the bottom of the investment tab but are real market data
+    from the API, not advice — and they belong with budgeting. Deleting the tab
+    wholesale would have taken them."""
+    path = os.path.join(FRONTEND, 'pages', 'financial-planning', 'FinancialPlanningPage.tsx')
+    if not os.path.exists(path):
+        pytest.skip('frontend not present')
+    body = open(path, encoding='utf-8').read()
+    assert 'UAE Salary Benchmarks' in body
+    assert 'data.benchmarks' in body
+    # and they now sit inside the budget tab, not orphaned
+    assert body.index('const budgetTab') < body.index('Salary Benchmarks from API')
+    assert body.index('Salary Benchmarks from API') < body.index('const benefitsTab')

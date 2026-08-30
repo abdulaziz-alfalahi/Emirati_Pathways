@@ -110,22 +110,9 @@ const FinancialPlanningPage: React.FC = () => {
 
     /* ──────────────────────── STATIC DATA ──────────────────────── */
 
-    // The `risk` field on each of these was a RATING — Low / Moderate / High —
-    // assigned by nobody, published by a government council, on products a
-    // citizen might act on. A description of what a Sukuk is is education; a
-    // risk rating is advice, and advice is regulated.
-    //
-    // The descriptions stay. The ratings and the call-to-action buttons are
-    // gone. Whether the Council should carry an investment tab at all is a
-    // policy question raised with the owner on 2026-08-30.
-    const investmentOptions = [
-        { title: t('UAE Equity Funds', 'صناديق أسهم الإمارات'), desc: t('Diversified exposure to UAE stock market', 'تعرض متنوع لسوق الأسهم الإماراتية'), catBg: brand.blue, catColor: brand.blueText },
-        { title: t('National Bonds', 'السندات الوطنية'), desc: t('Government-backed savings with Sharia compliance', 'ادخار مدعوم حكومياً ومتوافق مع الشريعة'), catBg: brand.green, catColor: brand.greenText },
-        { title: t('REIT (Real Estate)', 'صناديق العقارات (REIT)'), desc: t('Property-backed income through listed REITs', 'دخل مدعوم بالعقارات عبر صناديق REIT المدرجة'), catBg: brand.amber, catColor: brand.amberText },
-        { title: t('Sukuk (Islamic Bonds)', 'الصكوك (سندات إسلامية)'), desc: t('Fixed-income instruments compliant with Islamic principles', 'أدوات دخل ثابت متوافقة مع المبادئ الإسلامية'), catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Gold Savings Plan', 'خطة ادخار الذهب'), desc: t('Physical gold accumulation through monthly purchases', 'تراكم الذهب الفعلي من خلال مشتريات شهرية'), catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Venture Capital', 'رأس المال المغامر'), desc: t('Early-stage startup investments in UAE ecosystem', 'استثمارات في شركات ناشئة بالمنظومة الإماراتية'), catBg: brand.red, catColor: brand.redText },
-    ];
+    // `investmentOptions` was here — UAE Equity Funds, REITs, Sukuk, Venture
+    // Capital, each carrying a Low/Moderate/High risk rating assigned by
+    // nobody. Removed with the tab it fed.
 
     const govBenefits = [
         { title: t('GPSSA Pension', 'معاش الهيئة العامة للمعاشات'), desc: t('Government pension scheme for UAE nationals in the public sector', 'نظام المعاشات الحكومي للمواطنين الإماراتيين في القطاع العام'), Icon: Shield },
@@ -289,52 +276,6 @@ const FinancialPlanningPage: React.FC = () => {
                 })}
             </div>
             )}
-        </div>
-    );
-
-    /* ── Tab 2: Investment Options ── */
-    const investTab = (
-        <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('Investment Options in the UAE', 'خيارات الاستثمار في الإمارات')}
-            </h2>
-            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t(
-                    'Explore Sharia-compliant and conventional investment vehicles available to UAE residents.',
-                    'استكشف أدوات الاستثمار المتوافقة مع الشريعة والتقليدية المتاحة للمقيمين في الإمارات.'
-                )}
-            </p>
-
-            <div style={{ background: brand.amber, border: `1px solid ${brand.amberText}22`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                <p style={{ fontSize: 13, color: brand.amberText, lineHeight: 1.6, margin: 0 }}>
-                    {t(
-                        'These are general categories of investment vehicles shown for educational purposes only. This is not financial advice, no returns are guaranteed, and all investments carry risk. Consult a licensed financial advisor before investing.',
-                        'هذه فئات عامة من أدوات الاستثمار معروضة لأغراض تعليمية فقط. هذه ليست نصيحة مالية، ولا تُضمن أي عوائد، وكل استثمار ينطوي على مخاطر. استشر مستشاراً مالياً مرخّصاً قبل الاستثمار.'
-                    )}
-                </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-                {investmentOptions.map((opt, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
-                        <div style={{ height: 4, background: brand.primary }} />
-                        <div style={{ padding: 22 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{opt.title}</h3>
-                                {/* The risk rating badge was here — Low / Moderate /
-                                    High, assigned by nobody and published by a
-                                    government council beside a product a citizen
-                                    might act on. */}
-                            </div>
-                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{opt.desc}</p>
-                            {/* Web-search button removed. An investment product is the last thing to hand somebody to a search engine for. */}
-
-                        </div>
-                    </div>
-                ))}
-            </div>
 
             {/* Salary Benchmarks from API */}
             {data.benchmarks.length > 0 && (
@@ -367,6 +308,20 @@ const FinancialPlanningPage: React.FC = () => {
             )}
         </div>
     );
+
+    /* Tab 2 was "Investment Options" — six investment vehicles, each with a
+       risk rating the Council had assigned to it, on a page a citizen reads for
+       guidance. Removed on the owner's instruction, 2026-08-30.
+
+       The disclaimer beneath it ("not financial advice, no returns guaranteed,
+       consult a licensed advisor") was doing real work, which is the tell: a
+       page needing that paragraph to be safe is a page a careers platform
+       should not be carrying. Financial promotion is regulated, and the Council
+       is not a licensed advisor.
+
+       The UAE Salary Benchmarks table that lived at the bottom of this tab is
+       KEPT — it is real market data from the API, it is not advice, and it
+       belongs with budgeting anyway. It has moved into Budget & Savings. */
 
     /* ── Tab 3: Government Benefits ── */
     const benefitsTab = (
@@ -459,7 +414,6 @@ const FinancialPlanningPage: React.FC = () => {
     // firing a false "Coming soon" toast on the Learn More / resource buttons.
     const tabs = [
         { id: 'budget', label: t('Budget & Savings', 'الميزانية والادخار'), icon: <Banknote className="h-4 w-4" />, content: budgetTab },
-        { id: 'invest', label: t('Investments', 'الاستثمارات'), icon: <TrendingUp className="h-4 w-4" />, content: investTab },
         { id: 'benefits', label: t('Gov. Benefits', 'المزايا الحكومية'), icon: <Shield className="h-4 w-4" />, content: benefitsTab },
         { id: 'tools', label: t('Tools & Resources', 'الأدوات والموارد'), icon: <Calculator className="h-4 w-4" />, content: toolsTab },
     ].map(tb => ({ ...tb, content: <div onClick={e => e.stopPropagation()}>{tb.content}</div> }));
@@ -468,7 +422,7 @@ const FinancialPlanningPage: React.FC = () => {
         <EducationPathwayLayout
             title={t('Financial Planning', 'التخطيط المالي')}
             description={t(
-                'Comprehensive financial wellness and planning tools — budgeting, investments, government benefits, and career-aligned financial growth.',
+                'Financial wellness for UAE nationals — budgeting, salary benchmarks, and the government benefits you may be entitled to.',
                 'أدوات شاملة للتخطيط المالي والعافية المالية — الميزانية والاستثمارات والمزايا الحكومية والنمو المالي المتوافق مع المسار المهني.'
             )}
             icon={<Banknote className="h-6 w-6" />}
