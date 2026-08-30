@@ -65,16 +65,31 @@ def connect():
         password=os.getenv('DB_PASSWORD'), connect_timeout=10)
 
 
-def run(dry_run=False):
+#: Every directory whose rows carry a link the platform published and therefore
+#: has to keep honest. They share the same six columns — application_link,
+#: link_type, link_status, link_status_detail, link_checked_at, link_fingerprint
+#: — so one checker covers them all.
+#:
+#: graduate_programs joined on 2026-08-30. Its previous six rows attributed
+#: invented tuition to named real universities with no source at all; the
+#: replacement cannot be published without a link, which is only worth
+#: something if somebody keeps checking the link still resolves.
+CHECKED_TABLES = ('scholarships', 'graduate_programs')
+
+
+def run(dry_run=False, tables=CHECKED_TABLES):
     conn = connect()
     results = []
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("""SELECT id, title, application_link, link_type, link_status,
-                                  link_fingerprint
-                             FROM scholarships
-                            ORDER BY is_active DESC, id""")
-            rows = cur.fetchall()
+        rows = []
+        for table in tables:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(f"""SELECT id, title, application_link, link_type,
+                                       link_status, link_fingerprint
+                                  FROM {table}
+                                 WHERE application_link IS NOT NULL
+                                 ORDER BY is_active DESC, id""")
+                rows += [{**r, '_table': table} for r in cur.fetchall()]
 
         # Shared across the whole run so each site's homepage is fetched once,
         # not once per link. The soft-404 check needs it to tell a live deep
@@ -89,7 +104,8 @@ def run(dry_run=False):
                                  link_type=row.get('link_type') or LINK_WEB,
                                  previous_fingerprint=row.get('link_fingerprint'),
                                  front_door_cache=front_door_cache)
-            results.append({'id': row['id'], 'title': row['title'], **outcome})
+            results.append({'id': row['id'], 'title': row['title'],
+                            'table': row['_table'], **outcome})
 
             if dry_run:
                 continue
@@ -99,7 +115,7 @@ def run(dry_run=False):
                     # Record that we looked and could not judge. The status is
                     # left untouched so a human's verdict is never overwritten
                     # by a machine that cannot follow the link.
-                    cur.execute("""UPDATE scholarships
+                    cur.execute(f"""UPDATE {row['_table']}
                                       SET link_status_detail = %s, link_checked_at = NOW()
                                     WHERE id = %s""", (outcome['detail'], row['id']))
                 else:
@@ -108,14 +124,14 @@ def run(dry_run=False):
                     # queue item and find nothing to compare against — and the
                     # next run would call the new content unchanged.
                     if outcome['state'] == VERIFIED_OK and outcome['fingerprint']:
-                        cur.execute("""UPDATE scholarships
+                        cur.execute(f"""UPDATE {row['_table']}
                                           SET link_status = %s, link_status_detail = %s,
                                               link_fingerprint = %s, link_checked_at = NOW()
                                         WHERE id = %s""",
                                     (outcome['state'], outcome['detail'],
                                      outcome['fingerprint'], row['id']))
                     else:
-                        cur.execute("""UPDATE scholarships
+                        cur.execute(f"""UPDATE {row['_table']}
                                           SET link_status = %s, link_status_detail = %s,
                                               link_checked_at = NOW()
                                         WHERE id = %s""",
