@@ -1,68 +1,60 @@
-"""Stop psycopg2 from blocking the gevent hub.
+"""DO NOT RE-ENABLE psycogreen UNTIL THE SHARED CONNECTIONS ARE GONE.
 
-THE BUG THIS FIXES
+This module is kept, unused, as the record of an outage — so that the next
+person who notices psycopg2 blocking the gevent hub does not "fix" it the same
+way.
 
-Staging serves Socket.IO from ONE gunicorn worker — it has to, because
-Socket.IO session state is per-worker (see deployment/run-backend-appqa.sh).
-That worker is a gevent worker: thousands of greenlets cooperatively scheduled
-on a single OS thread.
+WHAT WAS TRIED
 
-psycopg2 is a C extension. Its `execute()` blocks in libpq, and because gevent
-cannot preempt C code, the ENTIRE worker stops — every greenlet, including the
-Engine.IO housekeeping greenlet that answers ping/poll requests. A page that
-fires a dozen queries can hold the hub long enough for Engine.IO to expire the
-client's session. The browser then polls a sid the server has forgotten:
+Staging serves Socket.IO from ONE gunicorn gevent worker. psycopg2 is a C
+extension, gevent cannot preempt C, so every query freezes the whole worker.
+On 2026-08-31 psycogreen was added to make queries yield to the hub instead.
 
-    Invalid session uugV72lKM9C_6jYQAAAb     (server log)
-    GET /socket.io/?...&sid=... -> 400        (browser)
+WHAT HAPPENED
 
-socket.io-client reconnects, gets a new sid, and the cycle repeats. That is the
-reconnect loop observed on 2026-08-31, and it is why the video call's P2P
-fallback — which signals over Socket.IO — could not rescue a call either.
+The backend went unreachable within a day. Both workers wedged at the first
+concurrent traffic of the morning — alive, 252 MB, 0.01% CPU, serving nothing,
+the log stopping dead at:
 
-THE FIX
+    WARNING:backend.administrator_system:Database connection is stale, reconnecting...
 
-psycogreen installs a libpq wait callback that puts the connection in
-non-blocking mode and yields to the gevent hub while waiting on the socket.
-The query takes the same wall-clock time; the difference is that the other
-greenlets keep running, so pings are answered and sessions survive.
+WHY
 
-WHY IT IS GUARDED
+`administrator_routes` builds ONE `AdministratorSystem` at module level, and it
+holds ONE psycopg2 connection in `self.connection`, used in sixteen places by
+every request that touches an administrator surface.
 
-Tests, `flask run`, and any non-gevent context must not be patched: without
-gevent's monkey-patched socket the callback would be pointless at best. The
-patch therefore applies only when gevent has actually patched the socket
-module, which is true under GeventWebSocketWorker and false everywhere else.
+With ordinary blocking psycopg2 that is accidentally safe: a query holds the
+entire worker, so concurrent requests serialise onto the connection one at a
+time. **psycogreen removes exactly that accident.** A query yields mid-protocol,
+a second greenlet enters the same connection while the first is still waiting on
+its result, and the connection's state is now being driven by two conversations
+at once. Both wait forever.
 
-MUST RUN BEFORE THE FIRST CONNECTION. The callback is consulted per connection
-at creation, so connections opened before patching keep blocking. app.py calls
-this at the top of the module, ahead of every blueprint import.
+psycogreen did not cause the bug. It removed the property that was hiding it.
+
+THE PRECONDITION FOR TRYING AGAIN
+
+**A psycopg2 connection may not be shared between greenlets.** Before this is
+re-enabled, every module-level/shared connection must become per-request or come
+from a pool that hands one connection to one greenlet at a time. Start with
+`administrator_system.AdministratorSystem`, then audit for the same shape —
+modules that open their own connection are common here (see CLAUDE.md).
+
+AND MEASURE FIRST
+
+The change was made to stop a Socket.IO 400 reconnect loop. It did not: an A/B
+of a 40-query burst against the pre- and post-psycogreen builds both returned
+200, so the starvation was never reproduced and the fix was never shown to fix
+anything. It carried a real cost for an unproven benefit. Reproduce the failure
+before reaching for this again.
 """
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def patch_psycopg2_for_gevent():
-    """Returns True if the patch was applied, False if it was not needed."""
-    try:
-        from gevent import monkey
-    except ImportError:  # pragma: no cover — gevent absent (plain test run)
-        return False
+    """Deliberately does nothing. See the module docstring before changing this.
 
-    if not monkey.is_module_patched('socket'):
-        # Not running under gevent — nothing blocks a hub that does not exist.
-        return False
-
-    try:
-        from psycogreen.gevent import patch_psycopg
-    except ImportError:  # pragma: no cover
-        logger.warning(
-            'Running under gevent WITHOUT psycogreen: every psycopg2 query will '
-            'block the whole worker, and Socket.IO sessions will time out under '
-            'load. Install psycogreen.')
-        return False
-
-    patch_psycopg()
-    logger.info('psycopg2 patched for gevent — queries now yield to the hub')
-    return True
+    Kept as a named no-op rather than deleted so that a search for the outage
+    lands here rather than on an empty file.
+    """
+    return False
