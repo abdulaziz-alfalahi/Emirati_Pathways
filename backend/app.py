@@ -203,9 +203,33 @@ socketio = SocketIO(
     message_queue=_socketio_message_queue,
 )
 
-# In-memory presence tracking
-online_users: dict[str, str] = {}
+# In-memory presence tracking.
+#
+# A PERSON IS NOT A SOCKET. This used to map user_id -> ONE sid, which broke in
+# two ways that were reported as separate faults on 2026-08-31:
+#
+#   * "Huda is online, but the status still shows a grey dot" (fb_1788180336).
+#     Disconnecting ANY of a user's sockets deleted the user outright and
+#     broadcast user_offline — so a second tab closing, or one turn of the
+#     reconnect churn, marked a person offline while they were sitting in a
+#     live interview.
+#
+#   * Personal notification rooms being refused ("denied joining personal room
+#     784000000000240", 11 times during that same interview). Authorisation
+#     reverse-looked-up the sid in a map that only ever held the NEWEST one, so
+#     every socket but the last was treated as belonging to nobody and could not
+#     join its own room — which is why real-time notifications never arrived.
+#
+# One person legitimately holds several sockets: more than one tab, and a
+# reconnect always overlaps the socket it replaces.
+#
+#: user_id -> the set of sids that person currently holds.
+online_users: dict[str, set[str]] = {}
+#: sid -> user_id. The authority for "who is this socket?", so authorisation is
+#: a direct lookup rather than a scan that can only find one socket per user.
+sid_to_user: dict[str, str] = {}
 socketio.online_users = online_users
+socketio.sid_to_user = sid_to_user
 
 # Create Flask app
 app = Flask(__name__)
@@ -506,9 +530,17 @@ def on_connect(auth=None):
         user_id = payload.get('sub') or payload.get('user_id')
         if user_id:
             user_id = str(user_id)
-            online_users[user_id] = request.sid
-            print(f"[Presence] User {user_id} connected (sid={request.sid}). Online: {list(online_users.keys())}")
-            socketio.emit('user_online', {'user_id': user_id})
+            sids = online_users.setdefault(user_id, set())
+            first_socket = not sids
+            sids.add(request.sid)
+            sid_to_user[request.sid] = user_id
+            print(f"[Presence] User {user_id} connected (sid={request.sid}, "
+                  f"{len(sids)} socket(s)). Online: {list(online_users.keys())}")
+            # Only announce arrival when they were not already here. Re-announcing
+            # on a second tab is harmless; the matching problem on the other side
+            # is not, which is why disconnect is the careful one.
+            if first_socket:
+                socketio.emit('user_online', {'user_id': user_id})
             emit('online_users', {'users': list(online_users.keys())})
     except Exception as e:
         print(f"[Presence] connect error: {e}")
@@ -524,7 +556,11 @@ def on_join(data):
     room = str((data or {}).get('room') or '')
     if not room:
         return
-    my_user_id = next((uid for uid, sid in online_users.items() if sid == request.sid), None)
+    # Direct lookup. The old reverse scan over online_users could only ever find
+    # ONE socket per person, so a user's second tab — or the socket a reconnect
+    # was replacing — was treated as belonging to nobody and refused its own
+    # notification room (fb_1788180336 and the 11 denials logged alongside it).
+    my_user_id = sid_to_user.get(request.sid)
 
     # A room name that is some user's id is a personal message room.
     looks_personal = room.isdigit() and len(room) == 15
@@ -564,15 +600,23 @@ def on_ice_candidate(data):
 
 @socketio.on('disconnect')
 def on_disconnect():
-    user_id = None
-    for uid, sid in list(online_users.items()):
-        if sid == request.sid:
-            user_id = uid
-            break
-    if user_id:
-        del online_users[user_id]
-        print(f"[Presence] User {user_id} disconnected. Online: {list(online_users.keys())}")
-        socketio.emit('user_offline', {'user_id': user_id})
+    # Drop THIS socket, not the person. Somebody is offline only once their last
+    # socket has gone — closing a second tab, or one turn of a reconnect, must
+    # not grey them out while they are still on the call (fb_1788180336).
+    user_id = sid_to_user.pop(request.sid, None)
+    if not user_id:
+        return
+    sids = online_users.get(user_id)
+    if sids:
+        sids.discard(request.sid)
+        if not sids:
+            del online_users[user_id]
+            print(f"[Presence] User {user_id} went offline (last socket). "
+                  f"Online: {list(online_users.keys())}")
+            socketio.emit('user_offline', {'user_id': user_id})
+        else:
+            print(f"[Presence] User {user_id} closed one socket, "
+                  f"{len(sids)} still open — still online")
 
 
 @socketio.on('get_online_users')
@@ -622,9 +666,11 @@ def push_notification_to_user(user_id, event_type, payload):
     try:
         room = f"notifications:{str(user_id)}"
         socketio.emit(event_type, payload, room=room)
-        # Also emit to user's direct SID if online
-        sid = online_users.get(str(user_id))
-        if sid:
+        # Also emit to the user's own sockets. Every one of them: a person may
+        # have the platform open in more than one tab, and delivering to only
+        # one of them means the notification lands on whichever tab they are
+        # not looking at.
+        for sid in list(online_users.get(str(user_id)) or ()):
             socketio.emit(event_type, payload, to=sid)
         logger.info(f"[G12] Pushed {event_type} to user {user_id}")
     except Exception as e:
