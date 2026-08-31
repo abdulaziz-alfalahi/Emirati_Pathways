@@ -127,52 +127,38 @@ def test_the_app_actually_installs_the_provider():
         'app.py does not install the JSON provider'
 
 
-# ── the gevent decision ─────────────────────────────────────────────────────
+# ── the outage guard ────────────────────────────────────────────────────────
+#
+# psycogreen was added on 2026-08-31 to stop psycopg2 freezing the single
+# Socket.IO worker, and took the backend down within a day: it removed the
+# accidental serialisation that was the only thing making a SHARED psycopg2
+# connection safe, and two greenlets deadlocked on it. See gevent_db.py.
 
 from gevent_db import patch_psycopg2_for_gevent  # noqa: E402
 
 
-def test_it_does_not_patch_when_gevent_is_not_running():
-    """Under pytest the socket module is unpatched, so patching would be
-    meaningless. It must decline rather than guess."""
+def test_the_gevent_patch_is_disabled():
+    """It must stay a no-op until no connection is shared between greenlets."""
     assert patch_psycopg2_for_gevent() is False
 
 
-def test_it_patches_when_gevent_has_patched_the_socket(monkeypatch):
-    called = {}
-
-    class FakeMonkey:
-        @staticmethod
-        def is_module_patched(name):
-            return name == 'socket'
-
-    import gevent_db
-    monkeypatch.setitem(sys.modules, 'gevent', type(sys)('gevent'))
-    sys.modules['gevent'].monkey = FakeMonkey
-    fake = type(sys)('psycogreen.gevent')
-    fake.patch_psycopg = lambda: called.setdefault('yes', True)
-    monkeypatch.setitem(sys.modules, 'psycogreen', type(sys)('psycogreen'))
-    monkeypatch.setitem(sys.modules, 'psycogreen.gevent', fake)
-
-    assert gevent_db.patch_psycopg2_for_gevent() is True
-    assert called.get('yes'), 'patch_psycopg was never called'
-
-
-def test_the_patch_runs_before_any_blueprint_is_imported():
-    """The wait callback binds per connection at creation. If a blueprint opens
-    a connection at import time before the patch runs, that connection keeps
-    blocking the hub — so ORDER is the whole fix, and it is asserted here."""
+def test_the_app_does_not_install_the_patch():
+    """The outage was caused by calling this at import. If someone re-adds the
+    call without first fixing the shared connections, this fails."""
     body = open(os.path.join(BACKEND, 'app.py'), encoding='utf-8').read()
-    patch_at = body.find('patch_psycopg2_for_gevent()')
-    assert patch_at != -1, 'app.py never calls the patch'
-    registry_at = body.find('blueprint_registry')
-    if registry_at != -1:
-        assert patch_at < registry_at, \
-            'blueprints are imported before psycopg2 is patched'
+    assert 'patch_psycopg2_for_gevent()' not in body, (
+        'app.py calls the gevent patch again — read gevent_db.py first: this '
+        'deadlocked the worker on administrator_system\'s shared connection')
 
 
-def test_psycogreen_is_declared_as_a_dependency():
-    """Without it the patch silently no-ops in production and the 400 loop
-    comes back — with nothing in the diff to explain why."""
+def test_psycogreen_is_not_a_dependency():
     req = open(os.path.join(BACKEND, 'requirements.txt'), encoding='utf-8').read()
-    assert 'psycogreen' in req
+    assert 'psycogreen' not in req
+
+
+def test_the_reason_is_recorded_where_someone_would_look():
+    """The next person hits the same symptom; the docstring is what stops them
+    repeating the fix."""
+    doc = open(os.path.join(BACKEND, 'gevent_db.py'), encoding='utf-8').read()
+    assert 'may not be shared between greenlets' in doc
+    assert 'administrator' in doc.lower()
