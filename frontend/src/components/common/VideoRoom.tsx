@@ -7,6 +7,7 @@ import {
   useDataChannel,
   useRemoteParticipants,
 } from '@livekit/components-react';
+import { DisconnectReason } from 'livekit-client';
 import '@livekit/components-styles';
 // AFTER the vendor stylesheet, so the focus-layout height override wins.
 import '@/styles/livekit-overrides.css';
@@ -103,7 +104,10 @@ interface VideoRoomProps {
     sessionId: string;
     userId: string;
     userName: string;
-    onEndCall: () => void;
+    /** Called when the call finishes. `deliberate` is true only when the person
+     *  chose to leave — a dropped connection passes false, so the caller can
+     *  avoid closing an interview record that somebody intends to rejoin. */
+    onEndCall: (deliberate: boolean) => void;
     isRecruiter?: boolean;
     isObserver?: boolean;
     /** Overrides the interview-specific placeholder shown for the other seat.
@@ -482,7 +486,13 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                         console.log("LiveKit connected.");
                         setIsConnected(true);
                     }}
-                    onDisconnected={onEndCall}
+                    onDisconnected={(reason?: DisconnectReason) => {
+                        // Only a person pressing Leave ends the interview.
+                        // A dropped signal, a server restart or a lost network
+                        // must NOT close the session record — the interview is
+                        // still happening and they will come back to it.
+                        onEndCall(reason === DisconnectReason.CLIENT_INITIATED);
+                    }}
                     onError={(err: any) => {
                         // A cancelled handshake is what our own teardown looks
                         // like; never treat it as a server failure once we are
@@ -679,7 +689,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     <button 
                         onClick={() => {
                             toast.info("Ending call...");
-                            onEndCall();
+                            onEndCall(true);
                         }}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-all shadow-lg shadow-rose-600/25 active:scale-95"
                     >
