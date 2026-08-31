@@ -272,7 +272,20 @@ const GrowthOperatorDashboard: React.FC = () => {
   // top-down to invite, and the company with the most open roles is the one
   // worth the call today. Alphabetical is kept because finding one named
   // company among ~245 otherwise means scrolling.
+  // Stays 'vacancies'. A call-centre operator asked for alphabetical by default
+  // (fb_1788155851, 2026-08-31) so companies are easier to LOCATE — but the
+  // owner set this deliberately on 2026-08-22: "I need to sort companies by the
+  // number of vacancies so I can start inviting those with the most vacancies
+  // first." The pipeline is worked top-down, so its order is the work order,
+  // and alphabetical sends an operator to invite whoever is called "A..."
+  // instead of whoever has the most open roles.
+  //
+  // The operator's actual need is FINDING a named company, which is what the
+  // search above now does — that was the real defect. Alphabetical stays one
+  // click away.
   const [pipelineSort, setPipelineSort] = useState<'vacancies' | 'name'>('vacancies');
+  const [emirateFilter, setEmirateFilter] = useState<string>('all');
+  const [withVacanciesOnly, setWithVacanciesOnly] = useState(false);
   const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -590,14 +603,42 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   // ═══════ COMPANY ONBOARDING TAB ═══════
   const renderPipeline = () => {
+    // Reported 2026-08-31: "the Search Companies search bar is not functioning
+    // — no results are displayed even when the company exists."
+    //
+    // Two separate things were true. The box wrote to `searchTerm` and this
+    // list never read it, so typing changed nothing. And the pipeline holds
+    // only companies still being onboarded, so a company that has already gone
+    // ACTIVE is legitimately absent — which looks identical to a broken search.
+    // Both are handled: the term is applied here, and an absent-but-existing
+    // company is named in the empty state rather than left as a blank list.
+    const q = searchTerm.trim().toLowerCase();
+    const matches = (c: Company) => !q || [
+      c.name, c.nameAr, c.industry, c.emirate, c.contactPerson, c.contactEmail,
+    ].some(v => (v || '').toLowerCase().includes(q));
+
+    const inPipelineStage = (c: Company) =>
+      ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status);
+
     const pipelineCompanies = companies
-      .filter(c => ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status))
+      .filter(c => inPipelineStage(c) && matches(c)
+        && (emirateFilter === 'all' || c.emirate === emirateFilter)
+        && (!withVacanciesOnly || c.jobsPosted > 0))
       .slice()
       .sort((a, b) => pipelineSort === 'vacancies'
         // Most vacancies first; ties fall back to name so the order is stable
         // rather than shuffling between renders.
         ? (b.jobsPosted - a.jobsPosted) || a.name.localeCompare(b.name)
         : a.name.localeCompare(b.name));
+
+    // Companies the search DOES match that simply are not at a pipeline stage.
+    const matchedElsewhere = q
+      ? companies.filter(c => !inPipelineStage(c) && matches(c))
+      : [];
+
+    const emirates = Array.from(
+      new Set(companies.filter(inPipelineStage).map(c => c.emirate).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -677,7 +718,63 @@ const GrowthOperatorDashboard: React.FC = () => {
                 style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
               />
             </div>
+
+            <select
+              value={emirateFilter}
+              onChange={e => setEmirateFilter(e.target.value)}
+              style={{ padding: '10px 12px', borderRadius: 10, border: `1px solid ${colors.border}`,
+                       fontSize: 14, background: '#F8FAFC', color: colors.text, cursor: 'pointer' }}
+            >
+              <option value="all">{t('All emirates', 'كل الإمارات')}</option>
+              {emirates.map(em => <option key={em} value={em}>{em}</option>)}
+            </select>
+
+            <button
+              onClick={() => setWithVacanciesOnly(v => !v)}
+              style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13.5, fontWeight: 600,
+                       cursor: 'pointer', whiteSpace: 'nowrap',
+                       border: `1px solid ${withVacanciesOnly ? colors.primary : colors.border}`,
+                       background: withVacanciesOnly ? colors.primaryLight : colors.card,
+                       color: withVacanciesOnly ? colors.primary : colors.textSecondary }}
+            >
+              {t('With vacancies', 'لديها شواغر')}
+            </button>
           </div>
+
+          {/* An empty list must say WHY it is empty. A search that matches a
+              company which has already finished onboarding used to render
+              nothing at all, and read as a broken search bar. */}
+          {(statusFilter !== 'all'
+              ? pipelineCompanies.filter(c => c.status === statusFilter)
+              : pipelineCompanies).length === 0 && (
+            <div style={{ padding: '20px 16px', borderRadius: 12, border: `1px dashed ${colors.border}`,
+                          background: '#FAFBFC', fontSize: 14, color: colors.textSecondary }}>
+              {matchedElsewhere.length > 0 ? (
+                <>
+                  <div style={{ color: colors.text, fontWeight: 600, marginBottom: 6 }}>
+                    {t('Not in the onboarding pipeline', 'ليست ضمن مسار الانضمام')}
+                  </div>
+                  {t(
+                    `"${searchTerm}" matches ${matchedElsewhere.length} compan${matchedElsewhere.length === 1 ? 'y' : 'ies'} that ${matchedElsewhere.length === 1 ? 'has' : 'have'} already finished onboarding, so ${matchedElsewhere.length === 1 ? 'it does' : 'they do'} not appear here:`,
+                    `"${searchTerm}" يطابق ${matchedElsewhere.length} من الشركات التي أكملت الانضمام، لذا لا تظهر هنا:`
+                  )}
+                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {matchedElsewhere.slice(0, 6).map(c => (
+                      <span key={c.id} style={{ fontSize: 13, padding: '3px 10px', borderRadius: 999,
+                                                background: colors.primaryLight, color: colors.primary }}>
+                        {isRTL ? (c.nameAr || c.name) : c.name}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                t(searchTerm ? `No company in the pipeline matches "${searchTerm}".`
+                             : 'No companies are currently in the onboarding pipeline.',
+                  searchTerm ? `لا توجد شركة في مسار الانضمام تطابق "${searchTerm}".`
+                             : 'لا توجد شركات في مسار الانضمام حالياً.')
+              )}
+            </div>
+          )}
 
           {/* Companies in Pipeline */}
           {(statusFilter !== 'all' ? pipelineCompanies.filter(c => c.status === statusFilter) : pipelineCompanies).map(company => (
