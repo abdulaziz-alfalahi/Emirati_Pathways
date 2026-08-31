@@ -1261,16 +1261,43 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                     {Object.entries(DOMAIN_CONFIG).map(([key, config]) => (
                       <div
                         key={key}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedDomains.includes(key)
+                        role="checkbox"
+                        tabIndex={0}
+                        aria-checked={selectedDomains.includes(key)}
+                        aria-label={config.label}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${selectedDomains.includes(key)
                           ? 'border-teal-500 bg-teal-50'
                           : 'border-gray-200 hover:border-gray-300'
                           }`}
                         onClick={() => handleDomainToggle(key)}
+                        onKeyDown={e => {
+                          // A div with onClick is unreachable by keyboard. The
+                          // tile is the control now, so it has to behave like
+                          // one — Space and Enter, as a checkbox does.
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault();
+                            handleDomainToggle(key);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-3">
+                          {/* Reported 2026-08-27 as "Growth Operator Company —
+                              Options Not Clickable" (fb_1787815977). The tile
+                              is clickable AND the checkbox handled its own
+                              change, so clicking the checkbox toggled once for
+                              the checkbox and once more as the event bubbled to
+                              the tile — a net change of nothing. The option
+                              looked dead, while clicking the tile's whitespace
+                              worked, which is what made it read as broken
+                              rather than fiddly.
+
+                              The tile is the single handler now; the checkbox
+                              shows state and lets the click through to it. */}
                           <Checkbox
                             checked={selectedDomains.includes(key)}
-                            onCheckedChange={() => handleDomainToggle(key)}
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            className="pointer-events-none"
                           />
                           <div className={`p-2 rounded ${config.bgColor} ${config.color}`}>
                             {config.icon}
