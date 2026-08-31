@@ -1,0 +1,164 @@
+"""The interview analytics screen must not invent anything about a candidate.
+
+Reported 2026-08-31, minutes after a real interview (fb_1788181600): "I clicked
+on analytics after the interview and saw mock data in the tabs."
+
+Every figure was a hardcoded constant, identical for every candidate:
+
+    overall score 88 · Culture Fit 92 · Leadership 80 · Technical 90
+    sentiment "Positive" over ten invented time points
+    duration 45:20        (the interview had run 14:21)
+    speaking ratio 65/35  (which happened to be RIGHT — and that is why
+                           nobody caught any of the rest)
+
+Those were hiring judgements about a named person, invented by nobody. The
+backend had never agreed to any of it: its report endpoint has always refused
+to score without a real transcript.
+
+Owner decision, 2026-08-31: show a real AI assessment — "the final say will be
+with the recruiter and the HR Manager. The AI analysis are to expedite the
+decision making process." So the tests below are about two things: that nothing
+is fabricated, and that what IS shown is unmistakably labelled.
+"""
+import os
+import sys
+
+BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BACKEND)
+
+import pytest  # noqa: E402
+
+from tests.source_utils import comments_only_removed  # noqa: E402
+
+FRONTEND = os.path.join(os.path.dirname(BACKEND), 'frontend', 'src')
+PANEL = os.path.join(FRONTEND, 'components', 'recruiter', 'interviews',
+                     'InterviewAnalytics.tsx')
+ROUTES = os.path.join(BACKEND, 'video_interview_routes.py')
+
+
+def tsx(path):
+    if not os.path.exists(path):
+        pytest.skip(f'{os.path.basename(path)} not present')
+    src = open(path, encoding='utf-8').read()
+    out, i, n = [], 0, len(src)
+    while i < n:
+        two = src[i:i + 2]
+        if two == '/*':
+            j = src.find('*/', i + 2)
+            i = n if j == -1 else j + 2
+        elif two == '//':
+            j = src.find('\n', i)
+            i = n if j == -1 else j
+        else:
+            out.append(src[i]); i += 1
+    return ''.join(out)
+
+
+# ── nothing invented ────────────────────────────────────────────────────────
+
+def test_the_fabricated_constants_are_gone():
+    """The exact values that were shown about a real candidate."""
+    code = tsx(PANEL)
+    for ghost in ('overallScore', 'Culture Fit', 'fullMark: 100, ',
+                  "'45:20'", 'System Design', 'Scalability'):
+        assert ghost not in code, f'fabricated value still present: {ghost}'
+
+
+def test_no_hardcoded_score_arrays_remain():
+    """sentimentData/skillsData/topicData were literal arrays of invented
+    numbers. Any reappearance is the bug returning."""
+    code = tsx(PANEL)
+    for name in ('sentimentData', 'skillsData', 'topicData', 'summaryData'):
+        assert name not in code, f'{name} is back'
+
+
+def test_the_panel_reads_the_interview_instead_of_declaring_it():
+    code = tsx(PANEL)
+    assert 'restClient.get' in code, 'the panel fetches nothing'
+    assert '/transcript' in code
+    assert 'analyze-transcript' in code
+
+
+def test_duration_is_computed_from_the_record():
+    code = tsx(PANEL)
+    assert 'started_at' in code and 'ended_at' in code, \
+        'duration is not derived from when the interview actually ran'
+
+
+def test_speaking_share_is_counted_not_asserted():
+    code = tsx(PANEL)
+    assert 'segments' in code and 'split(' in code, \
+        'the speaking share is not counted from the transcript'
+
+
+# ── what is shown is labelled ───────────────────────────────────────────────
+
+def test_the_assessment_is_labelled_as_ai_generated():
+    """The owner's condition for showing it at all."""
+    code = tsx(PANEL)
+    assert 'AI-generated assessment' in code
+    assert 'advisory' in code.lower()
+
+
+def test_it_says_who_decides():
+    code = tsx(PANEL)
+    assert 'recruiter and the HR Manager' in code, \
+        'nothing states that the decision rests with a person'
+
+
+# ── absence is stated, and blamed correctly ─────────────────────────────────
+
+def test_a_missing_transcript_is_reported_as_missing():
+    code = tsx(PANEL)
+    assert 'no_transcript' in code
+    assert 'nothing to assess' in code
+
+
+def test_a_poor_transcript_is_not_reported_as_a_poor_candidate():
+    """The distinction the whole feature turns on."""
+    code = tsx(PANEL)
+    assert 'transcript_quality' in code
+    assert 'not about the candidate' in code, \
+        'a bad recording could be read as a bad candidate'
+
+
+# ── the analysis must describe the interview that happened ──────────────────
+
+def test_the_server_analyses_its_own_transcript():
+    """A browser must not be able to post arbitrary text and have the result
+    attached to a named candidate in a hiring decision."""
+    body = comments_only_removed(open(ROUTES, encoding='utf-8').read())
+    assert '_stored_transcript' in body, \
+        'the analysis still depends on whatever the client sends'
+
+
+def test_the_stored_transcript_is_resolved_by_room_as_well():
+    """Segments are filed under the room name, not the interview id."""
+    body = comments_only_removed(open(ROUTES, encoding='utf-8').read())
+    fn = body[body.index('def _stored_transcript'):]
+    fn = fn[:fn.index('def _stored_analysis')]
+    assert 'meeting_link' in fn and "split('/')" in fn
+
+
+def test_the_assessment_is_stored_so_everyone_sees_the_same_one():
+    """The recruiter and the HR manager must weigh the same assessment.
+    Re-running the model per page load would show them different scores for
+    one interview and leave no record of which a decision was made against."""
+    body = comments_only_removed(open(ROUTES, encoding='utf-8').read())
+    assert '_save_analysis' in body
+    assert 'ai_analysis' in body
+
+
+def test_a_live_chunk_is_not_stored_as_the_assessment():
+    """Mid-interview impressions stream in continuously; the assessment of the
+    interview is computed once, from the whole record."""
+    body = comments_only_removed(open(ROUTES, encoding='utf-8').read())
+    assert 'stored_only' in body, \
+        'the live path and the finished-interview path are not distinguished'
+
+
+def test_a_failure_to_store_does_not_deny_the_caller_its_analysis():
+    body = comments_only_removed(open(ROUTES, encoding='utf-8').read())
+    fn = body[body.index('def _save_analysis'):]
+    fn = fn[:fn.index('@video_interview_bp')]
+    assert 'except' in fn, 'a storage failure would propagate as a request failure'
