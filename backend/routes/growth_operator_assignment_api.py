@@ -16,9 +16,11 @@ from functools import wraps
 from backend.db import get_db_connection
 
 try:
-    from backend.auth.access_control import role_for_domain, domain_for_role
+    from backend.auth.access_control import (role_for_domain, domain_for_role,
+                                              GROWTH_OPERATOR_DOMAIN_ROLES)
 except ImportError:                          # pragma: no cover — dual root
-    from auth.access_control import role_for_domain, domain_for_role
+    from auth.access_control import (role_for_domain, domain_for_role,
+                                     GROWTH_OPERATOR_DOMAIN_ROLES)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -85,6 +87,36 @@ DOMAIN_METADATA = {
         'permissions': ['view_monitoring', 'manage_alerts', 'view_analytics']
     }
 }
+
+def merge_domain_roles(existing, domains):
+    """The person's secondary roles after this screen assigns `domains`.
+
+    THIS SCREEN OWNS THE DOMAIN ROLES AND NOTHING ELSE.
+
+    It used to REPLACE secondary_roles with the domain-derived list, destroying
+    every other role the person held — assessor, coach, call_center_agent,
+    career_services_operator, anything granted from the Users tab. Measured on
+    the live database 2026-08-31: 24 of the 28 people holding secondary roles
+    would have lost at least one on the next save here, and one person holding
+    twenty-two would have been cut to a single role.
+
+    That is the "duplicate locations for role assignment" report
+    (fb_1787816290) in its most damaging form: two screens write one field, and
+    this one silently overwrote the other's work — which is exactly what
+    "I added Samir to the Company Growth role, but he told me he wasn't granted
+    access" looks like from the other side.
+
+    So it reconciles WITHIN the domain namespace: domain roles no longer
+    assigned come off, the assigned ones go on, and a role this screen cannot
+    grant is never touched. Order is preserved and duplicates collapse, so a
+    save is idempotent.
+    """
+    all_domain_roles = set(GROWTH_OPERATOR_DOMAIN_ROLES.values())
+    kept = [r for r in (existing or [])
+            if isinstance(r, str) and r not in all_domain_roles]
+    granted = [r for r in (role_for_domain(d) for d in (domains or [])) if r]
+    return list(dict.fromkeys(kept + granted))
+
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
     """Execute a database query with error handling"""
@@ -608,13 +640,41 @@ def assign_domains(user_id):
                 # grant growth_operator_<domain> instead, so somebody assigned
                 # here showed as an operator on this page and as nothing on the
                 # Users tab. Owner, 2026-08-27: keep the established names.
-                new_secondary_roles = [r for r in (role_for_domain(d) for d in domains) if r]
+                # THIS SCREEN OWNS THE DOMAIN ROLES AND NOTHING ELSE.
+                #
+                # It used to REPLACE secondary_roles with the domain-derived list,
+                # which silently destroyed every other role the person held —
+                # assessor, coach, call_center_agent, career_services_operator,
+                # anything granted from the Users tab. Measured on the live
+                # database 2026-08-31: 24 of the 28 people holding secondary
+                # roles would have lost at least one on the next save here, and
+                # one person holding twenty-two would have been cut to a single
+                # role. That is the "duplicate locations for role assignment"
+                # report (fb_1787816290) in its most damaging form: two screens
+                # write one field and this one overwrote the other's work.
+                #
+                # So reconcile WITHIN the domain namespace and leave the rest
+                # untouched: drop domain roles no longer assigned, add the ones
+                # now assigned, and never touch a role this screen cannot grant.
+                import json as _json
+                cursor.execute(
+                    "SELECT COALESCE(secondary_roles, '[]'::jsonb) FROM users WHERE id = %s",
+                    (user_id,))
+                _row = cursor.fetchone()
+                _existing = _row[0] if _row else []
+                if isinstance(_existing, str):
+                    try:
+                        _existing = _json.loads(_existing)
+                    except Exception:
+                        _existing = []
+                _existing = [r for r in (_existing or []) if isinstance(r, str)]
+
+                new_secondary_roles = merge_domain_roles(_existing, domains)
                 try:
                     cursor.execute("SAVEPOINT update_secondary_roles")
                     # users.secondary_roles is jsonb on the live DB — the old
                     # ::text[] cast silently failed inside this savepoint, so
                     # domain assignments never reached the users table (P3/C5).
-                    import json as _json
                     cursor.execute("""
                         UPDATE users SET secondary_roles = %s::jsonb
                         WHERE id = %s
