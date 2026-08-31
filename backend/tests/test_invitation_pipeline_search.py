@@ -82,12 +82,25 @@ def test_an_empty_result_explains_itself():
 
 # ── what the operators asked for ───────────────────────────────────────────
 
-def test_companies_are_listed_alphabetically_by_default():
-    """They asked to be able to LOCATE a company. "Most vacancies" is a
-    reporting order, not a finding order."""
+def test_the_owners_work_order_survives_the_search_request():
+    """The operator asked for alphabetical by default (fb_1788155851). The owner
+    had deliberately set most-vacancies-first on 2026-08-22: "I need to sort
+    companies by the number of vacancies so I can start inviting those with the
+    most vacancies first."
+
+    The pipeline is worked top-down, so its order is the WORK order —
+    alphabetical would send an operator to invite whoever is called "A..."
+    rather than whoever has the most open roles. The operator's real need is
+    LOCATING a named company, which the search now does; that was the actual
+    defect. This asserts the default was left alone."""
     body = code()
-    assert "useState<'vacancies' | 'name'>('name')" in body, \
-        'the pipeline no longer defaults to alphabetical order'
+    assert "useState<'vacancies' | 'name'>('vacancies')" in body, \
+        "the owner's most-vacancies-first default was overridden"
+
+
+def test_alphabetical_is_still_one_click_away():
+    body = code()
+    assert "{ key: 'name'" in body, 'name order is no longer offered at all'
 
 
 def test_there_is_an_emirate_filter():

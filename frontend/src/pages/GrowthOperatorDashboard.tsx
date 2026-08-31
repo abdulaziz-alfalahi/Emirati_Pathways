@@ -272,9 +272,18 @@ const GrowthOperatorDashboard: React.FC = () => {
   // top-down to invite, and the company with the most open roles is the one
   // worth the call today. Alphabetical is kept because finding one named
   // company among ~245 otherwise means scrolling.
-  // Alphabetical by default: operators asked to be able to LOCATE a company,
-  // and "most vacancies" is a reporting order, not a finding order (fb 2026-08-31).
-  const [pipelineSort, setPipelineSort] = useState<'vacancies' | 'name'>('name');
+  // Stays 'vacancies'. A call-centre operator asked for alphabetical by default
+  // (fb_1788155851, 2026-08-31) so companies are easier to LOCATE — but the
+  // owner set this deliberately on 2026-08-22: "I need to sort companies by the
+  // number of vacancies so I can start inviting those with the most vacancies
+  // first." The pipeline is worked top-down, so its order is the work order,
+  // and alphabetical sends an operator to invite whoever is called "A..."
+  // instead of whoever has the most open roles.
+  //
+  // The operator's actual need is FINDING a named company, which is what the
+  // search above now does — that was the real defect. Alphabetical stays one
+  // click away.
+  const [pipelineSort, setPipelineSort] = useState<'vacancies' | 'name'>('vacancies');
   const [emirateFilter, setEmirateFilter] = useState<string>('all');
   const [withVacanciesOnly, setWithVacanciesOnly] = useState(false);
   const [dashLoading, setDashLoading] = useState(true);
