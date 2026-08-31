@@ -215,3 +215,61 @@ def test_it_says_when_nothing_has_been_recorded():
     to read as empty, not as broken."""
     code = tsx(ASSESSOR)
     assert 'No quality measures have been recorded' in code
+
+
+# ── the admin system analytics ──────────────────────────────────────────────
+#
+# Also surveyed out of fb_1788181600. It reported 1,247 users when the platform
+# held 38,339; a role split invented to round numbers (45/25/15/10/5); five
+# named articles with view counts that were never written; and a full
+# infrastructure console — CPU, memory, disk, network, error rate, "99.8%
+# uptime" — for infrastructure this platform does not monitor.
+#
+# And it MOVED: those came from Math.random() on a thirty-second refresh, so an
+# administrator watching it saw CPU fluctuate and had every reason to believe
+# it was live.
+
+SYSAN = os.path.join(FRONTEND, 'components', 'admin', 'SystemAnalytics.tsx')
+
+
+def test_no_random_numbers_are_presented_as_measurements():
+    """The most deceptive part: figures that animate look measured."""
+    code = tsx(SYSAN)
+    assert 'Math.random()' not in code, \
+        'randomly generated figures are being shown as system metrics'
+
+
+def test_the_invented_user_totals_are_gone():
+    code = tsx(SYSAN)
+    for ghost in ('1247', 'total_users: 1247', "value: 45", 'user_retention_rate: 78.3'):
+        assert ghost not in code, f'invented figure still present: {ghost}'
+
+
+def test_infrastructure_it_cannot_measure_is_not_reported():
+    """A console that reports uptime from nowhere is worse than one that does
+    not offer it — an administrator would trust it during an incident."""
+    code = tsx(SYSAN)
+    for ghost in ('cpu_usage:', 'memory_usage:', 'disk_usage:', 'formatUptime'):
+        assert ghost not in code, f'fabricated infrastructure metric: {ghost}'
+
+
+def test_it_says_where_server_health_actually_lives():
+    code = tsx(SYSAN)
+    assert 'not' in code and 'collected by this platform' in code
+
+
+def test_it_reads_the_real_user_statistics():
+    code = tsx(SYSAN)
+    assert '/api/admin/users/statistics' in code
+
+
+def test_the_role_split_is_read_not_declared():
+    code = tsx(SYSAN)
+    assert 'users_by_role' in code
+    assert "{ name: 'Job Seekers'" not in code, 'the invented role split is back'
+
+
+def test_the_invented_articles_are_gone():
+    code = tsx(SYSAN)
+    assert 'UAE Career Development Guide' not in code
+    assert 'popular_content' not in code

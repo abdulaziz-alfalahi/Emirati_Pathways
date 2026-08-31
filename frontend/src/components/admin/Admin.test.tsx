@@ -102,13 +102,24 @@ describe('Administrator Persona Frontend Components', () => {
       });
     });
 
-    test('displays system health overview cards', async () => {
+    // This test used to require CPU Usage, Memory Usage, Response Time and
+    // Uptime to render. The platform monitors none of them — those figures came
+    // from Math.random() on a thirty-second refresh, so an administrator saw
+    // them MOVE. The test was holding the fabrication in place.
+    test('does not claim to monitor infrastructure it cannot see', async () => {
       render(<SystemAnalytics />);
       await waitFor(() => {
-        expect(screen.getByText('CPU Usage')).toBeInTheDocument();
-        expect(screen.getByText('Memory Usage')).toBeInTheDocument();
-        expect(screen.getByText('Response Time')).toBeInTheDocument();
-        expect(screen.getByText('Uptime')).toBeInTheDocument();
+        expect(screen.getByText('System Analytics')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('CPU Usage')).not.toBeInTheDocument();
+      expect(screen.queryByText('Memory Usage')).not.toBeInTheDocument();
+      expect(screen.queryByText('Uptime')).not.toBeInTheDocument();
+    });
+
+    test('says plainly that server health is not collected here', async () => {
+      render(<SystemAnalytics />);
+      await waitFor(() => {
+        expect(screen.getByText(/not\s+collected by this platform/i)).toBeInTheDocument();
       });
     });
   });
