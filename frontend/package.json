@@ -21,6 +21,7 @@
     "@hookform/resolvers": "^3.3.0",
     "@livekit/components-react": "^2.9.21",
     "@livekit/components-styles": "^1.2.0",
+    "@livekit/track-processors": "^0.7.2",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.6",
     "@playwright/test": "^1.56.1",

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNotifications } from '@/components/notifications/NotificationSystem';
+import VideoEffects from '@/components/common/VideoEffects';
 
 /** The identity the transcription agent joins the room under. */
 const TRANSCRIPTION_AGENT = 'transcription-agent';
@@ -482,6 +483,20 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     connect={true}
                     video={!isObserver && !!inputs?.cam}
                     audio={!isObserver && !!inputs?.mic}
+                    options={{
+                        // The platform was asking browsers for a raw microphone.
+                        // None of these were set, so an interview carried the
+                        // candidate's room echo, keyboard and air conditioning
+                        // straight through, and a quiet speaker stayed quiet.
+                        // They cost nothing — every supported browser implements
+                        // them natively — and they change what the interviewer
+                        // actually HEARS, which no amount of volume does.
+                        audioCaptureDefaults: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                        },
+                    }}
                     onConnected={() => {
                         console.log("LiveKit connected.");
                         setIsConnected(true);
@@ -509,6 +524,15 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                     <VideoConference />
                     <RoomAudioRenderer />
                     <LiveCaptions />
+                    {/* Camera effects. Inside LiveKitRoom because it needs the
+                        local participant's published track — the effect has to
+                        change what the OTHER side receives, not just the
+                        self-view (fb_1788181374). */}
+                    {!isObserver && (
+                        <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 6 }}>
+                            <VideoEffects />
+                        </div>
+                    )}
                 </LiveKitRoom>
             </div>
         );
