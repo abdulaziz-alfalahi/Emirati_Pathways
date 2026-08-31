@@ -579,86 +579,32 @@ const AssessorDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="nqf" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* NQF Level Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  NQF Level Distribution
-                </CardTitle>
-                <CardDescription>Assessments by UAE NQF levels</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { level: 'Level 6 (Bachelor)', count: 25, percentage: 35 },
-                    { level: 'Level 7 (Honours)', count: 18, percentage: 25 },
-                    { level: 'Level 5 (Advanced Diploma)', count: 15, percentage: 21 },
-                    { level: 'Level 8 (Master)', count: 10, percentage: 14 },
-                    { level: 'Level 4 (Higher Diploma)', count: 4, percentage: 5 }
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm">{item.level}</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={item.percentage} className="w-20 h-2" />
-                        <span className="text-sm font-medium w-8">{item.count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          {/* WHAT STOOD HERE WAS INVENTED IN FULL.
+              A distribution of assessments across UAE NQF levels (25 at Level 6,
+              18 at Level 7, and so on), "47 Digital Credentials Issued" with 42
+              active and 5 pending, and a compliance panel showing green ticks
+              against Assessment Standards.
 
-            {/* Digital Credentials */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Digital Credentials Issued</CardTitle>
-                <CardDescription>Blockchain-verified credentials generated</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center space-y-4">
-                  <div className="text-3xl font-bold text-blue-600">47</div>
-                  <div className="text-sm text-gray-600">Total Credentials Issued</div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium">Active</div>
-                      <div className="text-green-600">42</div>
-                    </div>
-                    <div>
-                      <div className="font-medium">Pending</div>
-                      <div className="text-yellow-600">5</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* NQF Compliance */}
+              None of it was measured. The assessments table has no NQF level
+              column at all — there is no field to count — and it holds zero
+              rows. A green compliance tick that nothing checks is the most
+              dangerous item on an assessment console: it is exactly what
+              somebody would point at to show the service is compliant. */}
           <Card>
             <CardHeader>
-              <CardTitle>NQF Compliance Status</CardTitle>
-              <CardDescription>Alignment with UAE National Qualifications Framework</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                NQF levels and credentials
+              </CardTitle>
+              <CardDescription>Not recorded by the platform yet</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 border rounded-lg bg-green-50">
-                  <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <div className="font-medium">Fully Compliant</div>
-                  <div className="text-sm text-gray-600">Assessment Standards</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg bg-green-50">
-                  <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <div className="font-medium">Certified</div>
-                  <div className="text-sm text-gray-600">NQF Level Mapping</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg bg-blue-50">
-                  <Award className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <div className="font-medium">Authorized</div>
-                  <div className="text-sm text-gray-600">Credential Issuing</div>
-                </div>
-              </div>
+              <p className="text-sm text-gray-600">
+                Assessments do not currently carry a UAE NQF level, so no
+                distribution can be shown, and no digital credentials have been
+                issued. Compliance against assessment standards is not evaluated
+                by this platform and is not reported here.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

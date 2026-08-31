@@ -356,3 +356,63 @@ def test_an_untracked_measure_is_not_shown_as_zero():
     """The educator backend returns null for placement success on purpose."""
     code = tsx(FOUR['PerformanceAnalytics'])
     assert 'not tracked yet' in code
+
+
+# ── the sweep that has to keep passing ──────────────────────────────────────
+#
+# The first survey counted `{ position: 'fixed', inset: 0 }` as chart data and
+# so reported thirteen suspect screens that were not suspect. Tuned to ignore
+# CSS and to require a REPEATED data-shaped row, it found exactly one thing the
+# hand review had missed: an inline NQF distribution inside AssessorDashboard
+# (25 assessments at Level 6, 18 at Level 7 …) plus "47 Digital Credentials
+# Issued" and a compliance panel of green ticks. The assessments table has no
+# NQF column at all.
+#
+# This is the guard against the whole class returning anywhere in the frontend.
+
+_CSS_KEYS = {
+    'width', 'height', 'top', 'left', 'right', 'bottom', 'margin', 'padding', 'gap',
+    'position', 'inset', 'fontSize', 'lineHeight', 'zIndex', 'flex', 'minHeight',
+    'maxWidth', 'borderRadius', 'opacity', 'stroke', 'fill', 'strokeWidth',
+    'fontWeight', 'minWidth', 'maxHeight', 'marginTop', 'marginBottom', 'marginLeft',
+    'marginRight', 'paddingTop', 'paddingBottom', 'order', 'flexGrow', 'outerRadius',
+    'innerRadius', 'cx', 'cy', 'paddingAngle', 'strokeDasharray', 'r', 'x', 'y',
+    'dx', 'dy',
+}
+
+
+def test_no_screen_authors_its_own_chart_data():
+    """A chart whose numbers are written into the source is a chart about
+    nobody. Three or more identically-shaped literal rows is an authored
+    dataset, not configuration."""
+    import re
+    if not os.path.isdir(FRONTEND):
+        pytest.skip('frontend not present')
+
+    row = re.compile(
+        r"\{\s*(\w+)\s*:\s*['\"][^'\"]{1,60}['\"]\s*,\s*(\w+)\s*:\s*(-?\d+(?:\.\d+)?)\s*[,}]")
+    chart = re.compile(r"<(Bar|Line|Area|Pie|Radar|Radial|Scatter)\b|<ResponsiveContainer")
+
+    offenders = []
+    for dirpath, _dirs, files in os.walk(FRONTEND):
+        if 'node_modules' in dirpath or '__tests__' in dirpath:
+            continue
+        for fn in files:
+            if not fn.endswith('.tsx'):
+                continue
+            path = os.path.join(dirpath, fn)
+            code = tsx(path)
+            if not chart.search(code):
+                continue
+            shapes = {}
+            for k1, k2, _v in row.findall(code):
+                if k1 in _CSS_KEYS or k2 in _CSS_KEYS:
+                    continue
+                shapes[(k1, k2)] = shapes.get((k1, k2), 0) + 1
+            worst = [(s, n) for s, n in shapes.items() if n >= 3]
+            if worst:
+                offenders.append((os.path.relpath(path, FRONTEND), worst))
+
+    assert not offenders, (
+        'these screens write their own chart data instead of reading it:\n'
+        + '\n'.join(f'  {rel}: {w}' for rel, w in offenders))
