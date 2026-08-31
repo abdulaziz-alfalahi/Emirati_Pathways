@@ -274,6 +274,64 @@ def process_realtime_analysis(session_id):
             'message': str(e)
         }), 500
 
+def _db():
+    try:
+        from backend.db_utils import execute_query
+    except ImportError:  # pragma: no cover — the app runs under both roots
+        from db_utils import execute_query
+    return execute_query
+
+
+def _stored_transcript(session_id, max_chars=24000):
+    """The interview as the platform recorded it, speaker-labelled.
+
+    Resolves the room name the same way the transcript endpoint does, because
+    segments are filed under the room and callers hold the interview id.
+    """
+    execute_query = _db()
+    keys = [str(session_id)]
+    link = execute_query(
+        "SELECT meeting_link FROM interview_schedules WHERE interview_id = %s",
+        (str(session_id),), fetch_one=True)
+    if link and link.get('meeting_link'):
+        room = str(link['meeting_link']).rstrip('/').split('/')[-1]
+        if room and room not in keys:
+            keys.append(room)
+    rows = execute_query(
+        """SELECT participant_name, text FROM interview_transcripts
+           WHERE room_name = ANY(%s) ORDER BY created_at""", (keys,)) or []
+    lines = [f"{r.get('participant_name') or 'Speaker'}: {r.get('text') or ''}".strip()
+             for r in rows if (r.get('text') or '').strip()]
+    text = '\n'.join(lines)
+    # A long interview can exceed what one request should carry. Keep the END:
+    # closing answers carry more signal than the opening pleasantries, and a
+    # truncated middle is visible to the model as a jump rather than as fluent
+    # speech it might over-read.
+    return text[-max_chars:] if len(text) > max_chars else text
+
+
+def _stored_analysis(session_id):
+    execute_query = _db()
+    row = execute_query(
+        "SELECT ai_analysis FROM interview_schedules WHERE interview_id = %s",
+        (str(session_id),), fetch_one=True)
+    return (row or {}).get('ai_analysis') or None
+
+
+def _save_analysis(session_id, analysis):
+    """Persist so the same assessment is shown to everyone who opens it."""
+    try:
+        import json as _json
+        _db()("""UPDATE interview_schedules
+                 SET ai_analysis = %s::jsonb, updated_at = NOW()
+                 WHERE interview_id = %s""",
+              (_json.dumps(analysis), str(session_id)), fetch_all=False)
+    except Exception as e:                                   # pragma: no cover
+        # A failure to record must not deny the caller an analysis it already
+        # has — it only means the next reader recomputes it.
+        logger.warning(f"could not store interview analysis: {e}")
+
+
 @video_interview_bp.route('/sessions/<session_id>/analyze-transcript', methods=['POST'])
 @jwt_required()
 def analyze_transcript(session_id):
@@ -287,9 +345,43 @@ def analyze_transcript(session_id):
     try:
         user_id = get_jwt_identity()
         session_id = request.view_args['session_id']
-        data = request.get_json()
-        
-        transcript = data.get('transcript', '').strip()
+        data = request.get_json(silent=True) or {}
+
+        transcript = (data.get('transcript') or '').strip()
+
+        # WHERE THE TRANSCRIPT COMES FROM MATTERS FOR A HIRING DECISION.
+        #
+        # This endpoint was built for the LIVE path, where the browser streams
+        # what it has just heard. When it is asked for the analysis of a
+        # FINISHED interview no text is sent, and the server uses the record it
+        # holds — 213 attributed segments for the interview of 2026-08-31, not
+        # whatever a client chooses to post.
+        #
+        # That difference is the point. Analysis that a recruiter and an HR
+        # manager will weigh must be computed from the interview that actually
+        # happened; a browser must not be able to post arbitrary text and have
+        # the result attached to a named candidate.
+        stored_only = not transcript
+        if stored_only:
+            transcript = _stored_transcript(session_id)
+            if not transcript:
+                return jsonify({
+                    'success': False,
+                    'analysis_withheld': True,
+                    'withheld_reason': 'no_transcript',
+                    'message': 'This interview has no transcript to analyse.',
+                }), 200
+
+            # ONE ANALYSIS PER INTERVIEW, unless somebody asks for a new one.
+            # The recruiter and the HR manager have to be looking at the same
+            # assessment: re-running the model on each page load would show them
+            # different scores for the same interview and leave no record of
+            # which one a decision was made against.
+            if not data.get('refresh'):
+                existing = _stored_analysis(session_id)
+                if existing:
+                    return jsonify({'success': True, 'analysis': existing,
+                                    'source': 'stored'}), 200
         # The caller used to hardcode 'Interview Position' (#360), so the model was
         # asked to judge role fit for a role nobody had named. If we do not know the
         # role, say so and forbid role-fit commentary rather than inventing one.
@@ -402,9 +494,18 @@ be reported as a failing candidate."""
             }), 200
 
         analysis['transcript_quality'] = tq
+        # Stamped so a reader can tell how old the assessment is, and recorded
+        # only when it was computed from the platform's own transcript — a live
+        # chunk streamed mid-interview is a running impression, not the
+        # assessment of the interview.
+        if stored_only:
+            analysis['analysed_at'] = datetime.now().isoformat()
+            analysis['analysis_source'] = 'stored_transcript'
+            _save_analysis(session_id, analysis)
         return jsonify({
             'success': True,
-            'analysis': analysis
+            'analysis': analysis,
+            'source': 'computed'
         }), 200
         
     except json.JSONDecodeError as e:
