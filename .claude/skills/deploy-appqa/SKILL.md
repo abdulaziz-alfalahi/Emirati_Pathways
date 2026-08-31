@@ -65,6 +65,11 @@ Restarting it:
 - `curl -fsS http://127.0.0.1:5005/health` on the host (script does it) AND the public URL through the WAF.
 - Socket.IO handshake returns a sid: `curl 'https://stg-emirati.ehrdc.gov.ae/socket.io/?EIO=4&transport=polling'`.
 - For changed endpoints: probe via an in-process Flask test client inside the container (`docker exec backend python -c ...`) — this has caught handler-signature 500s that unit tests missed (PR #108).
+- **Soak it under concurrency — a single `/health` 200 proves nothing.** `bash deployment/post-deploy-soak.sh` on the host: it drives real DB-backed endpoints in parallel (including an administrator surface) and then asks whether the worker still answers.
+
+  Why this exists: the 2026-08-31 `psycogreen` deploy passed **every** check above — health 200 locally and through the WAF, Socket.IO handshake fine, container `healthy` — and then deadlocked at the first real concurrent traffic, **fifteen hours later**, taking the backend down. Run against that image afterwards, this soak reproduced the hang on its first round, in seconds.
+
+  The failure mode it catches is specific to this deployment: **one gunicorn gevent worker** (forced by Socket.IO) plus modules that hold a **shared psycopg2 connection**. Anything that changes how database calls yield — a driver swap, a pool, an async patch — can turn a latent shared-connection bug into a wedged worker, and it will look perfectly healthy until somebody uses the site.
 - **Confirm the rollback is real**: `docker inspect backend backend_old --format '{{.Image}}'` — two DIFFERENT image IDs. Identical IDs mean the deploy ran twice and there is no rollback (see step 3). This is the one check that fails silently: everything else still reports healthy.
 - **Repin the scheduled containers.** `run-backend-appqa.sh` recreates `backend` and nothing else. The schedulers — `emirati-link-check` (02:15 UTC) and `emirati-link-scout` (03:00 UTC) — were each created from whatever `emirati_backend:latest` pointed at on their install day, and Docker pins them to that image ID for ever. They keep reporting `Up (healthy)` while running code months old. Caught on 2026-08-25: `backend` had the new soft-404 fix and `emirati-link-check` was still two images behind, so the nightly run would have used the old logic.
 

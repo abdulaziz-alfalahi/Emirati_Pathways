@@ -444,12 +444,30 @@ def get_session_transcript(session_id):
             from backend.db_utils import execute_query
         except ImportError:
             from db_utils import execute_query
+        # Segments are filed under the ROOM name, which is not the interview id.
+        # Asked by interview id this returned `success: true` with an empty list
+        # — indistinguishable from "nothing was said", while 192 segments sat in
+        # the table (reported 2026-08-31, during a real interview).
+        #
+        # The room name is the last path segment of meeting_link, exactly as
+        # start_interview_session derives it; interview_id is the fallback for
+        # rows written before meeting_link carried a URL. Both are tried, so a
+        # caller holding either identifier gets the transcript.
+        keys = [str(session_id)]
+        link = execute_query(
+            "SELECT meeting_link FROM interview_schedules WHERE interview_id = %s",
+            (str(session_id),), fetch_one=True)
+        if link and link.get('meeting_link'):
+            room = str(link['meeting_link']).rstrip('/').split('/')[-1]
+            if room and room not in keys:
+                keys.append(room)
+
         rows = execute_query(
             """SELECT participant_identity, participant_name, text, language,
                       created_at
                FROM interview_transcripts
-               WHERE room_name = %s ORDER BY created_at""",
-            (str(session_id),)) or []
+               WHERE room_name = ANY(%s) ORDER BY created_at""",
+            (keys,)) or []
         return jsonify({'success': True, 'data': {'segments': [{
             'identity': r['participant_identity'],
             'name': r['participant_name'],
