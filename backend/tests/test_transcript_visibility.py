@@ -134,3 +134,37 @@ def test_it_says_so_when_transcription_is_not_running():
     code = tsx_code_only(read(VIDEO_ROOM))
     assert 'Transcription not running' in code or 'not available' in code, \
         'there is no wording for transcription being off'
+
+
+# ── the interview must actually be closed when it ends ──────────────────────
+#
+# Found 2026-08-31: an interview that had plainly finished was still
+# `status=in_progress` with no `ended_at`. Leaving the call only navigated;
+# nothing told the backend. The attendance rule that decides `completed` vs
+# `no_show` runs on that call, so every interview stayed open for ever.
+
+VIDEO_PAGE = os.path.join(FRONTEND, 'pages', 'recruiter', 'VideoInterviewPage.tsx')
+
+
+def test_finishing_the_call_tells_the_backend():
+    code = tsx_code_only(read(VIDEO_PAGE))
+    assert '/end' in code, \
+        'ending the interview never posts to the end endpoint — the record stays open'
+
+
+def test_a_dropped_connection_does_not_close_the_interview():
+    """A network blip is not somebody finishing. Closing the record on any
+    disconnect would mark a live interview complete while it is still running."""
+    room = tsx_code_only(read(VIDEO_ROOM))
+    assert 'CLIENT_INITIATED' in room, \
+        'the disconnect reason is ignored, so a dropped call looks like leaving'
+    page = tsx_code_only(read(VIDEO_PAGE))
+    assert 'deliberate' in page, \
+        'the page cannot tell a deliberate leave from a dropped connection'
+
+
+def test_a_failed_stamp_cannot_trap_someone_in_the_call():
+    page = tsx_code_only(read(VIDEO_PAGE))
+    start = page.index('handleEndSession')
+    assert 'catch' in page[start:start + 900], \
+        'if recording the end fails, the person is never navigated out'

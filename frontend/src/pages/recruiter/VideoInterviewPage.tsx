@@ -622,9 +622,31 @@ const VideoInterviewPage = () => {
         }
     }, [sessionId]);
 
-    const handleEndSession = () => {
+    /**
+     * Finish the interview.
+     *
+     * REPORTED 2026-08-31: an interview that had plainly finished was still
+     * `status=in_progress` with no `ended_at`. This handler only navigated —
+     * nothing ever told the backend the call was over. That matters beyond
+     * tidiness: the attendance rule that decides `completed` versus `no_show`
+     * runs on the end call, so every interview stayed open for ever and
+     * attendance reporting was wrong.
+     *
+     * `deliberate` is false when the connection merely dropped. In that case
+     * the person has NOT finished — they may be reconnecting — so the record is
+     * left open and only the navigation happens.
+     */
+    const handleEndSession = async (deliberate: boolean = true) => {
+        if (deliberate && sessionId) {
+            try {
+                await restClient.post(`/api/video-interview/sessions/${sessionId}/end`);
+            } catch (err) {
+                // Never trap somebody in the call because the stamp failed.
+                console.error('Failed to record the end of the session', err);
+            }
+        }
         const role = user?.role || user?.user_type || '';
-        if (role === 'employer_admin' || role === 'employer_admin') {
+        if (role === 'employer_admin') {
             navigate('/hr-dashboard?tab=interviews');
         } else {
             navigate('/recruiter/interviews');
