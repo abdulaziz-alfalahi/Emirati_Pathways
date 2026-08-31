@@ -4,6 +4,8 @@ import {
   LiveKitRoom,
   VideoConference,
   RoomAudioRenderer,
+  useDataChannel,
+  useRemoteParticipants,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 // AFTER the vendor stylesheet, so the focus-layout height override wins.
@@ -21,6 +23,81 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNotifications } from '@/components/notifications/NotificationSystem';
+
+/** The identity the transcription agent joins the room under. */
+const TRANSCRIPTION_AGENT = 'transcription-agent';
+
+/**
+ * Live captions, and an honest answer to "is this being transcribed?".
+ *
+ * REPORTED 2026-08-31, during a real interview: "The transcription is showing
+ * it is happening but it is not."
+ *
+ * Both halves of that were true at once. The agent WAS transcribing — 192
+ * segments, correctly labelled Interviewer and Candidate — and it publishes
+ * every utterance into the room on the `transcription` data topic. Nothing in
+ * this application had ever subscribed to it, so the captions were published
+ * and dropped, and no participant could see a word.
+ *
+ * Meanwhile a badge reading "AI Transcribe Active" was a plain div with no
+ * condition attached. It said Active whenever the call UI was open — it would
+ * have said Active with the agent stopped, which is the one moment somebody
+ * needs it to say otherwise.
+ *
+ * So this does two things, and the second matters as much as the first:
+ * it renders what arrives, and it reports the agent's ACTUAL presence in the
+ * room rather than asserting it.
+ */
+const LiveCaptions: React.FC = () => {
+    const [lines, setLines] = useState<{ name: string; text: string; at: number }[]>([]);
+    const participants = useRemoteParticipants();
+    const agentPresent = participants.some(p => p.identity === TRANSCRIPTION_AGENT);
+
+    useDataChannel('transcription', (msg) => {
+        try {
+            const d = JSON.parse(new TextDecoder().decode(msg.payload));
+            if (d?.type !== 'transcript_segment' || !d?.text) return;
+            setLines(prev => [...prev, {
+                name: d.name || d.identity || 'Speaker',
+                text: String(d.text),
+                at: Date.now(),
+            }].slice(-3));   // the last few only: this sits over the video
+        } catch {
+            /* a malformed packet must never take the call down */
+        }
+    });
+
+    return (
+        <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 76,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 6, pointerEvents: 'none', zIndex: 5, padding: '0 16px',
+        }}>
+            {lines.map(l => (
+                <div key={l.at + l.text} style={{
+                    background: 'rgba(15,23,42,0.82)', color: '#F8FAFC',
+                    borderRadius: 8, padding: '6px 12px', fontSize: 14,
+                    lineHeight: 1.5, maxWidth: 'min(760px, 92%)',
+                }}>
+                    <span style={{ color: '#5EEAD4', fontWeight: 600 }}>{l.name}: </span>
+                    {l.text}
+                </div>
+            ))}
+            {/* The status is derived, never asserted. */}
+            <div style={{
+                pointerEvents: 'auto', fontSize: 11.5, fontWeight: 600,
+                borderRadius: 999, padding: '3px 10px',
+                background: agentPresent ? 'rgba(20,184,166,0.14)' : 'rgba(100,116,139,0.18)',
+                border: `1px solid ${agentPresent ? 'rgba(20,184,166,0.35)' : 'rgba(100,116,139,0.35)'}`,
+                color: agentPresent ? '#5EEAD4' : '#94A3B8',
+            }}>
+                {agentPresent
+                    ? (lines.length ? 'Transcribing' : 'Transcription ready — waiting for speech')
+                    : 'Transcription not running'}
+            </div>
+        </div>
+    );
+};
 
 interface VideoRoomProps {
     sessionId: string;
@@ -421,6 +498,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                 >
                     <VideoConference />
                     <RoomAudioRenderer />
+                    <LiveCaptions />
                 </LiveKitRoom>
             </div>
         );
@@ -584,9 +662,15 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                         <span>Share Screen unavailable</span>
                     </button>
                     
-                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/20 text-xs text-teal-400 font-medium">
-                        <Sparkles className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '4s' }} />
-                        <span>AI Transcribe Active</span>
+                    {/* The "AI Transcribe Active" badge that used to sit here was
+                        unconditional — it claimed transcription was running even
+                        with the agent stopped (reported 2026-08-31). The real
+                        status is derived from the agent's presence in the room
+                        and shown by LiveCaptions; this degraded P2P path has no
+                        agent at all, so it says so plainly. */}
+                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-500/10 border border-slate-500/20 text-xs text-slate-400 font-medium">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Transcription not available on the backup connection</span>
                     </div>
                 </div>
 
