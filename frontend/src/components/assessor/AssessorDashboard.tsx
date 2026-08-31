@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,29 +57,61 @@ const AssessorDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
 
-  // Sample data for demonstration
-  const performanceData = [
-    { month: 'Jan', assessments: 12, avgScore: 78, reliability: 0.85 },
-    { month: 'Feb', assessments: 15, avgScore: 82, reliability: 0.87 },
-    { month: 'Mar', assessments: 18, avgScore: 79, reliability: 0.89 },
-    { month: 'Apr', assessments: 14, avgScore: 85, reliability: 0.91 },
-    { month: 'May', assessments: 20, avgScore: 83, reliability: 0.88 },
-    { month: 'Jun', assessments: 16, avgScore: 87, reliability: 0.92 }
-  ];
+  // REAL DATA ONLY.
+  //
+  // Reported 2026-08-31 (fb_1788181600, surveyed from it): this screen invented
+  // everything it showed. Ninety-five assessments, an 83.2 average, a
+  // reliability of 0.89 — and a work queue of candidates who do not exist:
+  // "Ahmed Al Mansouri", "Fatima Al Zahra", "Omar Hassan", each with a
+  // scheduled date. It also published a Bias Detection Score and a Fairness
+  // figure, invented, on a government assessment platform.
+  //
+  // It even faked the wait: `await new Promise(r => setTimeout(r, 1000))`
+  // before setting constants, so it looked like it had fetched something.
+  //
+  // The backend was already honest — /api/assessor/dashboard aggregates the
+  // assessor's own assessments and returns zeros for what it does not track.
+  // This now reads it.
+  //
+  // Series with no source were REMOVED rather than kept: there is nothing
+  // behind inter-rater reliability, consistency, bias or fairness, and a
+  // plausible number is worse than an absent one on exactly these measures.
+  const [rows, setRows] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
-  const competencyDistribution = [
-    { name: 'Technical', value: 45, color: '#0088FE' },
-    { name: 'Behavioral', value: 30, color: '#00C49F' },
-    { name: 'Cognitive', value: 15, color: '#FFBB28' },
-    { name: 'Leadership', value: 10, color: '#FF8042' }
-  ];
+  // Assessments per month, counted from the assessor's real rows.
+  const performanceData = React.useMemo(() => {
+    const byMonth = new Map<string, { month: string; assessments: number; total: number; scored: number }>();
+    rows.forEach(r => {
+      const when = r.scheduled_date || r.created_at;
+      if (!when) return;
+      const d = new Date(when);
+      if (Number.isNaN(d.getTime())) return;
+      const key = d.toLocaleString('en', { month: 'short', year: '2-digit' });
+      const e = byMonth.get(key) || { month: key, assessments: 0, total: 0, scored: 0 };
+      e.assessments += 1;
+      if (typeof r.percentage_score === 'number') { e.total += r.percentage_score; e.scored += 1; }
+      byMonth.set(key, e);
+    });
+    return Array.from(byMonth.values()).map(e => ({
+      month: e.month,
+      assessments: e.assessments,
+      avgScore: e.scored ? Math.round(e.total / e.scored) : null,
+    }));
+  }, [rows]);
 
-  const qualityTrends = [
-    { metric: 'Reliability', current: 0.89, target: 0.85, status: 'excellent' },
-    { metric: 'Consistency', current: 0.82, target: 0.80, status: 'good' },
-    { metric: 'Fairness', current: 0.94, target: 0.90, status: 'excellent' },
-    { metric: 'Bias Score', current: 0.08, target: 0.05, status: 'needs_improvement' }
-  ];
+  // How the assessor's work divides, by the assessment mode actually recorded.
+  const competencyDistribution = React.useMemo(() => {
+    const palette = ['#0F766E', '#0891B2', '#CA8A04', '#DC2626', '#7C3AED'];
+    const by = new Map<string, number>();
+    rows.forEach(r => {
+      const k = (r.assessment_mode || r.competencyType || 'Unspecified').toString();
+      by.set(k, (by.get(k) || 0) + 1);
+    });
+    return Array.from(by.entries()).map(([name, value], i) => ({
+      name, value, color: palette[i % palette.length],
+    }));
+  }, [rows]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -86,57 +119,61 @@ const AssessorDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
-      // Simulate API calls
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStats({
-        totalAssessments: 95,
-        scheduledAssessments: 8,
-        inProgressAssessments: 3,
-        completedAssessments: 84,
-        averageScore: 83.2,
-        qualityRating: 4.6,
-        reliabilityScore: 0.89,
-        biasScore: 0.08
-      });
-
-      setUpcomingAssessments([
-        {
-          id: 1,
-          candidateName: 'Ahmed Al Mansouri',
-          assessmentTitle: 'Senior Software Engineer Assessment',
-          scheduledDate: '2025-09-22T10:00:00Z',
-          competencyType: 'Technical',
-          status: 'scheduled'
-        },
-        {
-          id: 2,
-          candidateName: 'Fatima Al Zahra',
-          assessmentTitle: 'Project Management Competency',
-          scheduledDate: '2025-09-23T14:00:00Z',
-          competencyType: 'Leadership',
-          status: 'confirmed'
-        },
-        {
-          id: 3,
-          candidateName: 'Omar Hassan',
-          assessmentTitle: 'Financial Analysis Skills',
-          scheduledDate: '2025-09-24T09:30:00Z',
-          competencyType: 'Technical',
-          status: 'scheduled'
-        }
+      const [dash, apps] = await Promise.allSettled([
+        restClient.get('/api/assessor/dashboard'),
+        restClient.get('/api/assessor/applications'),
       ]);
 
-      setQualityMetrics([
-        { metricType: 'Inter-rater Reliability', value: 0.89, benchmark: 0.85, flag: 'excellent', trend: 'up' },
-        { metricType: 'Assessment Consistency', value: 0.82, benchmark: 0.80, flag: 'good', trend: 'stable' },
-        { metricType: 'Bias Detection Score', value: 0.08, benchmark: 0.05, flag: 'needs_improvement', trend: 'down' },
-        { metricType: 'Candidate Satisfaction', value: 4.6, benchmark: 4.0, flag: 'excellent', trend: 'up' }
-      ]);
+      if (dash.status === 'fulfilled') {
+        const d = dash.value.data || {};
+        const a = d.assessments || {};
+        const c = d.candidates || {};
+        const p = d.performance || {};
+        setStats({
+          totalAssessments: a.totalAssessments ?? 0,
+          scheduledAssessments: a.pendingReview ?? 0,
+          inProgressAssessments: 0,
+          completedAssessments: c.passedAssessments + c.failedAssessments || 0,
+          averageScore: p.feedbackRating ?? 0,
+          qualityRating: p.qualityScore ?? 0,
+          reliabilityScore: 0,
+          biasScore: 0,
+        });
+        // Only measures the platform actually records.
+        const metrics: QualityMetric[] = [];
+        if (p.qualityScore) metrics.push({
+          metricType: 'Average quality score', value: p.qualityScore,
+          benchmark: 0, flag: 'recorded', trend: 'stable',
+        });
+        if (p.feedbackRating) metrics.push({
+          metricType: 'Average assessment score', value: p.feedbackRating,
+          benchmark: 0, flag: 'recorded', trend: 'stable',
+        });
+        setQualityMetrics(metrics);
+      } else {
+        setLoadError(true);
+      }
 
+      if (apps.status === 'fulfilled') {
+        const list = apps.value.data?.applications || apps.value.data?.data || [];
+        setRows(Array.isArray(list) ? list : []);
+        setUpcomingAssessments((Array.isArray(list) ? list : [])
+          .filter((r: any) => ['scheduled', 'confirmed', 'pending'].includes((r.status || '').toLowerCase()))
+          .slice(0, 10)
+          .map((r: any, i: number) => ({
+            id: r.id ?? i,
+            candidateName: (r.candidate_name || '').trim() || 'Candidate not named',
+            assessmentTitle: r.assessment_title || 'Assessment',
+            scheduledDate: r.scheduled_date || r.created_at || '',
+            competencyType: r.assessment_mode || '—',
+            status: r.status || 'scheduled',
+          })));
+      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching assessor dashboard:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -421,24 +458,23 @@ const AssessorDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {qualityTrends.map((metric, index) => (
+                  {/* The block that stood here published invented Reliability,
+                      Consistency, Fairness and Bias Detection scores against
+                      invented targets. Nothing in the platform measures any of
+                      them. On a government assessment service a plausible
+                      fairness number is worse than none at all, so the section
+                      reports only what is recorded. */}
+                  {qualityMetrics.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      No quality measures have been recorded for your assessments yet.
+                    </p>
+                  ) : qualityMetrics.map((metric, index) => (
                     <div key={index} className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{metric.metric}</span>
-                        <span className={`text-sm font-medium ${getQualityFlagColor(metric.status)}`}>
-                          {metric.current}
-                        </span>
+                        <span className="text-sm font-medium">{metric.metricType}</span>
+                        <span className="text-sm font-medium">{metric.value}</span>
                       </div>
-                      <Progress 
-                        value={(metric.current / (metric.target * 1.2)) * 100} 
-                        className="h-2"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>Target: {metric.target}</span>
-                        <span className={getQualityFlagColor(metric.status)}>
-                          {metric.status.replace('_', ' ')}
-                        </span>
-                      </div>
+                      <Progress value={Math.min(100, Number(metric.value) || 0)} className="h-2" />
                     </div>
                   ))}
                 </div>
