@@ -162,3 +162,56 @@ def test_a_failure_to_store_does_not_deny_the_caller_its_analysis():
     fn = body[body.index('def _save_analysis'):]
     fn = fn[:fn.index('@video_interview_bp')]
     assert 'except' in fn, 'a storage failure would propagate as a request failure'
+
+
+# ── the assessor dashboard ──────────────────────────────────────────────────
+#
+# Surveyed out of the same report. This screen invented ninety-five assessments,
+# an 83.2 average and a reliability of 0.89 — and a work queue of candidates who
+# do not exist ("Ahmed Al Mansouri", "Fatima Al Zahra", "Omar Hassan"), each
+# with a scheduled date. It also published a Bias Detection Score and a Fairness
+# figure, invented, on a government assessment platform.
+#
+# It faked the wait too: a 1000ms setTimeout before setting constants, so it
+# looked like it had fetched something.
+
+ASSESSOR = os.path.join(FRONTEND, 'components', 'assessor', 'AssessorDashboard.tsx')
+
+
+def test_the_invented_candidates_are_gone():
+    code = tsx(ASSESSOR)
+    for name in ('Ahmed Al Mansouri', 'Fatima Al Zahra', 'Omar Hassan'):
+        assert name not in code, f'invented candidate still in the work queue: {name}'
+
+
+def test_no_invented_fairness_or_bias_scores():
+    """Nothing in the platform measures these. On an assessment service a
+    plausible fairness number is worse than none at all."""
+    code = tsx(ASSESSOR)
+    for ghost in ('Bias Detection', 'Inter-rater', 'Fairness', 'qualityTrends'):
+        assert ghost not in code, f'invented quality measure still present: {ghost}'
+
+
+def test_the_fake_loading_delay_is_gone():
+    """A setTimeout before setting constants made it look like a fetch."""
+    code = tsx(ASSESSOR)
+    assert 'setTimeout(resolve, 1000)' not in code
+
+
+def test_it_reads_the_real_assessor_endpoints():
+    code = tsx(ASSESSOR)
+    assert '/api/assessor/dashboard' in code
+    assert '/api/assessor/applications' in code
+
+
+def test_the_charts_are_derived_from_the_assessors_own_rows():
+    code = tsx(ASSESSOR)
+    assert 'useMemo' in code, 'chart data is not derived from fetched rows'
+    assert 'competencyDistribution = [' not in code, 'the literal split is back'
+
+
+def test_it_says_when_nothing_has_been_recorded():
+    """There are zero assessments on the platform today. An empty dashboard has
+    to read as empty, not as broken."""
+    code = tsx(ASSESSOR)
+    assert 'No quality measures have been recorded' in code

@@ -38,11 +38,22 @@ describe('Assessor Persona Frontend Components', () => {
       expect(screen.getByText('Reliability Score')).toBeInTheDocument();
     });
 
-    test('renders upcoming assessments', async () => {
+    // This test used to assert that "Ahmed Al Mansouri" rendered — a candidate
+    // who does not exist, invented by the component along with his scheduled
+    // assessment. The test was locking in the fabrication it should have
+    // caught. It now asserts the real behaviour: the queue is READ, and an
+    // empty queue reads as empty rather than as broken.
+    test('shows the assessment queue, and says so when it is empty', async () => {
       render(<AssessorDashboard />);
       await waitFor(() => {
-        expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument();
+        expect(screen.getByText('Total Assessments')).toBeInTheDocument();
       }, LOAD_TIMEOUT);
+
+      // No API is mocked here, so the fetch fails and the queue is empty —
+      // which is exactly the state of the platform today (zero assessments).
+      // Nothing may be invented to fill it.
+      expect(screen.queryByText('Ahmed Al Mansouri')).not.toBeInTheDocument();
+      expect(screen.queryByText('Fatima Al Zahra')).not.toBeInTheDocument();
     });
   });
 
