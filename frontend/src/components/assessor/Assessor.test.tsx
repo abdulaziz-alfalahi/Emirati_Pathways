@@ -82,55 +82,44 @@ describe('Assessor Persona Frontend Components', () => {
   });
 
   // Test CompetencyValidation component
+  // Both of these describes asserted the fabrication they should have caught.
+  //
+  // CompetencyValidation required "Ahmed Al Mansouri" and a competency called
+  // "Technical Problem Solving" to render — a person who does not exist, scored
+  // against a framework the platform has never defined (competency_models holds
+  // zero rows).
+  //
+  // QualityAssuranceDashboard required "Inter-rater Reliability", a "Bias
+  // Detection Score" and an alert reading "Slight experience bias detected".
+  // Nothing measured any of it. On a service that decides whether somebody
+  // passes an assessment, an invented reliability figure is the number a
+  // decision would be defended with.
   describe('CompetencyValidation', () => {
-    test('renders competency validation interface', async () => {
+    test('does not score anyone against a framework that does not exist', async () => {
       render(<CompetencyValidation />);
       await waitFor(() => {
-        expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument();
+        expect(screen.getByText(/No competency framework is defined yet/i)).toBeInTheDocument();
       });
-      expect(screen.getByText('Technical Problem Solving')).toBeInTheDocument();
-    });
-
-    test('allows updating validation scores', async () => {
-      render(<CompetencyValidation />);
-
-      // The score sliders live in the 'Validation' tab, not the default 'Assessment' tab.
-      await selectTab('Validation');
-
-      const scoreSlider = screen.getAllByRole('slider')[0];
-      // Every score slider must expose an accessible name, otherwise screen-reader
-      // users cannot tell which criterion they are scoring.
-      expect(scoreSlider.getAttribute('aria-label') || scoreSlider.getAttribute('aria-labelledby')).toBeTruthy();
-
-      const before = Number(scoreSlider.getAttribute('aria-valuenow'));
-
-      // Radix's slider thumb is a <span>, not <input type="range">, so fireEvent.change
-      // is a no-op; it responds to keyboard/pointer input.
-      scoreSlider.focus();
-      await userEvent.keyboard('{ArrowRight}');
-
-      await waitFor(() => {
-        expect(Number(scoreSlider.getAttribute('aria-valuenow'))).toBe(before + 1);
-      });
+      expect(screen.queryByText('Ahmed Al Mansouri')).not.toBeInTheDocument();
+      expect(screen.queryByText('Technical Problem Solving')).not.toBeInTheDocument();
     });
   });
 
-  // Test QualityAssuranceDashboard component
   describe('QualityAssuranceDashboard', () => {
-    test('renders quality assurance dashboard with metrics', async () => {
+    test('does not publish reliability or bias figures it never measured', async () => {
       render(<QualityAssuranceDashboard />);
       await waitFor(() => {
-        expect(screen.getByText('Inter-rater Reliability')).toBeInTheDocument();
+        expect(screen.getByText(/Open quality alerts/i)).toBeInTheDocument();
       });
-      expect(screen.getByText('Bias Detection Score')).toBeInTheDocument();
+      expect(screen.queryByText('Inter-rater Reliability')).not.toBeInTheDocument();
+      expect(screen.queryByText('Bias Detection Score')).not.toBeInTheDocument();
     });
 
-    test('displays quality alerts', async () => {
+    test('an empty monitor is not reported as a clean bill of health', async () => {
       render(<QualityAssuranceDashboard />);
       await waitFor(() => {
-        expect(screen.getByText('Active Quality Alerts')).toBeInTheDocument();
+        expect(screen.getByText(/not a clean bill of health/i)).toBeInTheDocument();
       });
-      expect(screen.getByText(/Slight experience bias detected/)).toBeInTheDocument();
     });
   });
 

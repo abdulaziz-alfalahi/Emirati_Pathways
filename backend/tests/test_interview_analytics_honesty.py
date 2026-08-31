@@ -273,3 +273,86 @@ def test_the_invented_articles_are_gone():
     code = tsx(SYSAN)
     assert 'UAE Career Development Guide' not in code
     assert 'popular_content' not in code
+
+
+# ── the four screens that had no data behind them ───────────────────────────
+#
+# Completing the survey. Each charted literal arrays and fetched nothing:
+# 2,767 lines between them, about people who do not exist.
+#
+# Their backends were already honest — the educator analytics endpoint has
+# carried "leave null rather than assert a fabricated 85 (#26)" for months.
+# None of the four called anything.
+
+FOUR = {
+    'QualityAssuranceDashboard': os.path.join(FRONTEND, 'components', 'assessor',
+                                              'QualityAssuranceDashboard.tsx'),
+    'CompetencyValidation': os.path.join(FRONTEND, 'components', 'assessor',
+                                         'CompetencyValidation.tsx'),
+    'StudentTracking': os.path.join(FRONTEND, 'components', 'educator',
+                                    'StudentTracking.tsx'),
+    'PerformanceAnalytics': os.path.join(FRONTEND, 'components', 'educator',
+                                         'PerformanceAnalytics.tsx'),
+}
+
+
+@pytest.mark.parametrize('name', sorted(FOUR))
+def test_each_screen_reads_something(name):
+    code = tsx(FOUR[name])
+    assert 'restClient.get' in code, f'{name} still fetches nothing'
+
+
+@pytest.mark.parametrize('name', sorted(FOUR))
+def test_each_screen_says_when_it_is_empty(name):
+    """All four are empty today. Empty has to read as empty, not as broken and
+    not as a result."""
+    code = tsx(FOUR[name])
+    assert 'yet' in code.lower(), f'{name} has no empty state wording'
+
+
+#: CSS keys that look exactly like data rows — `{ width: '100%', height: 220 }`
+#: matches the same shape as `{ subject: 'Technical', A: 90 }`. Excluding them
+#: is what keeps this test from failing on a style object later.
+_STYLE_KEYS = ('width', 'height', 'top', 'left', 'right', 'bottom', 'margin',
+               'padding', 'gap', 'fontSize', 'lineHeight', 'zIndex', 'flex',
+               'minHeight', 'maxWidth', 'borderRadius', 'opacity')
+
+
+@pytest.mark.parametrize('name', sorted(FOUR))
+def test_no_literal_score_rows_remain(name):
+    """The signature of the defect: a literal object carrying a label and a
+    number, rendered into a chart."""
+    import re
+    code = tsx(FOUR[name])
+    rows = [m for m in re.findall(
+                r"\{\s*(\w+)\s*:\s*['\"][^'\"]+['\"]\s*,\s*\w+\s*:\s*-?\d+", code)
+            if m not in _STYLE_KEYS]
+    assert not rows, f'{name} still declares literal data rows: {rows[:3]}'
+
+
+def test_the_invented_people_are_gone_everywhere():
+    for name, path in FOUR.items():
+        code = tsx(path)
+        for ghost in ('Ahmed Al Mansouri', 'Fatima Al Zahra', 'Omar Hassan'):
+            assert ghost not in code, f'{name} still names {ghost}'
+
+
+def test_competency_validation_admits_it_has_no_framework():
+    """competency_models holds zero rows. Scoring against a framework nobody has
+    defined is how the original numbers came to exist."""
+    code = tsx(FOUR['CompetencyValidation'])
+    assert 'No competency framework is defined yet' in code
+
+
+def test_quality_monitoring_states_its_own_limit():
+    """The endpoint reads an in-memory store that empties on restart. An empty
+    monitor presented as 'no problems found' would be its own kind of lie."""
+    code = tsx(FOUR['QualityAssuranceDashboard'])
+    assert 'not a clean bill of health' in code
+    assert 'in memory' in code
+
+
+def test_an_untracked_measure_is_not_shown_as_zero():
+    """The educator backend returns null for placement success on purpose."""
+    code = tsx(FOUR['PerformanceAnalytics'])
+    assert 'not tracked yet' in code

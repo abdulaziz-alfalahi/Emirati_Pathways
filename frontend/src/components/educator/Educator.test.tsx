@@ -147,63 +147,23 @@ describe('Educator Persona Components', () => {
     });
   });
 
+  // These tests required invented students to appear — "Ahmed Al Mansouri" and
+  // a roster described in the test's own name as "seeded data". They were
+  // holding the fabrication in place: the component declared students and their
+  // grades as literal arrays and fetched nothing (fb_1788181600).
   describe('StudentTracking', () => {
-    test('renders student tracking interface', () => {
-      render(
-        <TestWrapper>
-          <StudentTracking />
-        </TestWrapper>
-      );
-
-      expect(screen.getByText('Student Tracking')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Search by name or ID...')).toBeInTheDocument();
-      expect(screen.getByText('Add Student')).toBeInTheDocument();
-    });
-
-    test('handles student search functionality', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TestWrapper>
-          <StudentTracking />
-        </TestWrapper>
-      );
-
-      const searchInput = screen.getByPlaceholderText('Search by name or ID...');
-      await user.type(searchInput, 'Ahmed');
-
-      expect(searchInput).toHaveValue('Ahmed');
-    });
-
-    test('displays student list with seeded data', () => {
-      render(
-        <TestWrapper>
-          <StudentTracking />
-        </TestWrapper>
-      );
-
-      expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument();
-      expect(screen.getByText('Fatima Al Zahra')).toBeInTheDocument();
-    });
-
-    test('handles student status filtering', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TestWrapper>
-          <StudentTracking />
-        </TestWrapper>
-      );
-
-      // Radix Select renders a combobox button, not an <input>, so there is no
-      // display value to query — getByDisplayValue can never match it.
-      const statusFilter = screen.getByRole('combobox', { name: /status/i });
-      expect(statusFilter).toHaveTextContent('All Status');
-
-      await user.click(statusFilter);
-
+    test('reads the roster instead of declaring one', async () => {
+      render(<StudentTracking />);
       await waitFor(() => {
-        expect(screen.getByRole('option', { name: 'All Status' })).toBeInTheDocument();
+        expect(screen.getByText('Student Tracking')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Ahmed Al Mansouri')).not.toBeInTheDocument();
+    });
+
+    test('says the roster is empty rather than filling it', async () => {
+      render(<StudentTracking />);
+      await waitFor(() => {
+        expect(screen.getByText(/No students are enrolled with you yet/i)).toBeInTheDocument();
       });
     });
   });
@@ -261,61 +221,22 @@ describe('Educator Persona Components', () => {
     });
   });
 
+  // Same shape: these asserted invented performance figures. The backend has
+  // returned honest nulls since #26 ("leave null rather than assert a
+  // fabricated 85"); the screen simply never called it.
   describe('PerformanceAnalytics', () => {
-    test('renders performance analytics interface', () => {
-      render(
-        <TestWrapper>
-          <PerformanceAnalytics />
-        </TestWrapper>
-      );
-
-      expect(screen.getByText('Performance Analytics')).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Overview' })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Student Performance' })).toBeInTheDocument();
-    });
-
-    test('shows key performance metrics', () => {
-      render(
-        <TestWrapper>
-          <PerformanceAnalytics />
-        </TestWrapper>
-      );
-
-      expect(screen.getByText(/class average/i)).toBeInTheDocument();
-      expect(screen.getByText(/attendance rate/i)).toBeInTheDocument();
-      expect(screen.getByText(/pass rate/i)).toBeInTheDocument();
-    });
-
-    test('handles time period filtering', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TestWrapper>
-          <PerformanceAnalytics />
-        </TestWrapper>
-      );
-
-      const periodFilter = screen.getByRole('combobox', { name: /time period/i });
-      await user.click(periodFilter);
-
+    test('reads the analytics endpoint instead of declaring figures', async () => {
+      render(<PerformanceAnalytics />);
       await waitFor(() => {
-        expect(screen.getByRole('option', { name: 'Current Term' })).toBeInTheDocument();
-        expect(screen.getByRole('option', { name: 'Academic Year' })).toBeInTheDocument();
+        expect(screen.getByText(/Average GPA/i)).toBeInTheDocument();
       });
     });
 
-    test('displays student performance table', async () => {
-      render(
-        <TestWrapper>
-          <PerformanceAnalytics />
-        </TestWrapper>
-      );
-
-      await selectTab('Student Performance');
-
-      expect(screen.getByText('Ahmed Al Mansouri')).toBeInTheDocument();
-      expect(screen.getByText('Fatima Al Zahra')).toBeInTheDocument();
-      expect(screen.getByText('Omar Al Rashid')).toBeInTheDocument();
+    test('reports an untracked measure as untracked, not as zero', async () => {
+      render(<PerformanceAnalytics />);
+      await waitFor(() => {
+        expect(screen.getByText(/not tracked yet/i)).toBeInTheDocument();
+      });
     });
   });
 
@@ -461,14 +382,18 @@ describe('Educator Persona Components', () => {
   });
 
   describe('Accessibility Tests', () => {
-    test('search inputs have associated labels', () => {
+    // StudentTracking now FETCHES its roster, where it used to declare one, so
+    // the assertion has to wait for the load to finish.
+    test('search inputs have associated labels', async () => {
       render(
         <TestWrapper>
           <StudentTracking />
         </TestWrapper>
       );
 
-      expect(screen.getByLabelText('Search Students')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByLabelText('Search Students')).toBeInTheDocument();
+      });
     });
 
     test('components have proper heading hierarchy', () => {
@@ -495,14 +420,16 @@ describe('Educator Persona Components', () => {
   });
 
   describe('Performance Tests', () => {
-    test('components handle large datasets efficiently', () => {
+    test('components handle large datasets efficiently', async () => {
       render(
         <TestWrapper>
           <StudentTracking />
         </TestWrapper>
       );
 
-      expect(screen.getByText('Student Tracking')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Student Tracking')).toBeInTheDocument();
+      });
     });
   });
 });
