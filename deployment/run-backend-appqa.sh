@@ -145,6 +145,58 @@ echo "  rollback: docker rm -f $NAME && docker rename ${NAME}_old $NAME && docke
 #   * the python/nginx base images — tagged, and this host is behind a forward
 #     proxy where a re-pull is not guaranteed to succeed
 # Never `-a`, and never `volume prune`: uploads live in a volume.
+# DANGLING IS NOT ENOUGH, which is what the comment above missed in practice.
+#
+# Every deploy leaves the superseded build TAGGED — emirati_backend:analytics,
+# :roles-presence, :transcript-fix and so on, one per build, ~2GB each. Because
+# they carry a tag they are not dangling, so `image prune` reported "0B
+# reclaimed" while /var climbed to 92% (2026-09-01). The tags accumulate
+# silently and nothing ever removes them.
+#
+# So: drop superseded emirati_backend images, and NOTHING else. Kept, in order
+# of how badly it would hurt to lose them:
+#
+#   the running image      resolved from the container, not from a tag, because
+#                          a tag can be moved and the container is the truth
+#   the rollback image      whatever ${NAME}_old holds — this is the one that
+#                          gets you back, and a blanket clean-up removed it
+#                          once already
+#   main, rollback-pre-*    deliberately named safety nets, somebody's decision
+#   everything non-backend  base images especially: this host is behind a
+#                          forward proxy and a re-pull is not guaranteed
 echo "==> Reclaiming space from images this deploy orphaned"
+
+KEEP_RUNNING="$(docker inspect "$NAME" --format '{{.Image}}' 2>/dev/null || true)"
+KEEP_ROLLBACK="$(docker inspect "${NAME}_old" --format '{{.Image}}' 2>/dev/null || true)"
+
+removed=0
+while read -r tag id; do
+  [ -n "$tag" ] || continue
+  case "$tag" in
+    *:latest|*:main|*:rollback-*) continue ;;   # named on purpose
+  esac
+  [ "sha256:$id" = "$KEEP_RUNNING"  ] && continue
+  [ "sha256:$id" = "$KEEP_ROLLBACK" ] && continue
+  # Long-form ids differ from the 12-char listing; compare on the prefix too.
+  case "$KEEP_RUNNING"  in *"$id"*) continue ;; esac
+  case "$KEEP_ROLLBACK" in *"$id"*) continue ;; esac
+  if docker rmi "$tag" >/dev/null 2>&1; then
+    echo "  removed superseded image $tag"
+    removed=$((removed + 1))
+  fi
+done <<EOF
+$(docker images emirati_backend --format '{{.Repository}}:{{.Tag}} {{.ID}}' 2>/dev/null)
+EOF
+[ "$removed" -eq 0 ] && echo "  no superseded images to remove"
+
 docker image prune -f 2>/dev/null | tail -1 || echo "  prune skipped"
 df -h /var | awk 'NR==2 {print "  /var now " $5 " used, " $4 " free"}'
+
+# A partition that fills has broken apt AND dockerd on this host before, so say
+# so loudly while there is still room to act rather than at the next deploy.
+USEDPCT="$(df --output=pcent /var | tail -1 | tr -dc '0-9')"
+if [ "${USEDPCT:-0}" -ge 85 ]; then
+  echo "  WARNING: /var is ${USEDPCT}% full. Extension requested from Moro"
+  echo "           (ubuntu_vg/ubuntu_var, 20GB -> 60GB). Until that lands, an"
+  echo "           image build needs ~2GB free and a full /var breaks dockerd."
+fi
