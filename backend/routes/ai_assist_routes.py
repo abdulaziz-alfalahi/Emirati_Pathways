@@ -26,14 +26,44 @@ from flask_jwt_extended import jwt_required
 
 logger = logging.getLogger(__name__)
 
+# The platform's own names, in both languages. Hard-coding the English
+# "EHRDC Emirati Pathways platform" in these prompts and then asking the model to
+# "Respond in Arabic" left it with nothing but an English acronym, so it spelled
+# EHRDC phonetically: Arabic readers were shown "منصة إهردك", which is not a name
+# in any language. Reported from the mentorship page 2026-09-01.
+try:
+    from backend.brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                               COUNCIL_NAME_EN, COUNCIL_NAME_AR)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from brand import (PLATFORM_NAME_EN, PLATFORM_NAME_AR,
+                       COUNCIL_NAME_EN, COUNCIL_NAME_AR)
+
 ai_assist_bp = Blueprint('ai_assist', __name__, url_prefix='/api/ai')
 
 _MAX_VALUE_LEN = 1500          # per context field, after JSON serialisation
 _MAX_CONTEXT_LEN = 6000        # whole context blob
 
+def _build_lang_clause(language):
+    """Tell the model which language to answer in — and what to call us in it.
+
+    Naming the platform is not optional detail. This clause was once the whole
+    of "Respond in Arabic.", which left the model writing Arabic about a
+    platform it had only ever been given an English acronym for; it spelled
+    EHRDC phonetically and candidates were shown "\u0645\u0646\u0635\u0629 \u0625\u0647\u0631\u062f\u0643". "NEVER transliterate"
+    is explicit because that is precisely the move to rule out.
+    """
+    if language == 'ar':
+        return ("Respond in Arabic. Refer to the platform as "
+                f"\u201c{PLATFORM_NAME_AR}\u201d and to the council as "
+                f"\u201c{COUNCIL_NAME_AR}\u201d. NEVER transliterate the English name, "
+                "or the acronym EHRDC, into Arabic letters.")
+    return f"Respond in English. Refer to the platform as \u201c{PLATFORM_NAME_EN}\u201d."
+
+
 _BASE_SYSTEM = (
-    "You are the AI career assistant of the EHRDC Emirati Pathways platform "
-    "(UAE government employment platform for Emirati nationals). "
+    "You are the AI career assistant of {platform_en} ({platform_ar}), the "
+    "UAE government employment platform for Emirati nationals, run by "
+    "{council_en} ({council_ar}). "
     "Be practical, specific and encouraging; use short paragraphs or bullet "
     "points; never invent statistics, salaries, named people or named "
     "employers; never request or repeat personal identifiers. "
@@ -54,8 +84,9 @@ _AUTHORING_FEATURES = {
 }
 
 _AUTHORING_SYSTEM = (
-    "You write recruitment content for the EHRDC Emirati Pathways platform "
-    "(UAE government employment platform). You are writing FOR a recruiter or "
+    "You write recruitment content for {platform_en} ({platform_ar}), the UAE "
+    "government employment platform run by {council_en} ({council_ar}). "
+    "You are writing FOR a recruiter or "
     "interviewer, not advising a candidate. Produce the requested text and "
     "nothing else: no preamble, no commentary, no tips, no explanation of what "
     "you produced. Never invent statistics, salaries, named people or named "
@@ -228,11 +259,14 @@ def assist():
     context = _clean_context(allowed, data.get('context'))
     blob = json.dumps(context, ensure_ascii=False)[:_MAX_CONTEXT_LEN]
 
-    lang_clause = ("Respond in Arabic." if language == 'ar' else "Respond in English.")
+    lang_clause = _build_lang_clause(language)
     # qwen_client.chat_completion is JSON-only (it parses the reply and
     # retries on malformed output), so we ask for a fixed JSON envelope.
     _authoring = feature in _AUTHORING_FEATURES
-    _system = (_AUTHORING_SYSTEM if _authoring else _BASE_SYSTEM).format(lang_clause=lang_clause)
+    _system = (_AUTHORING_SYSTEM if _authoring else _BASE_SYSTEM).format(
+        lang_clause=lang_clause,
+        platform_en=PLATFORM_NAME_EN, platform_ar=PLATFORM_NAME_AR,
+        council_en=COUNCIL_NAME_EN, council_ar=COUNCIL_NAME_AR)
     _envelope = ('Return ONLY a JSON object of the form {"content": "<the requested '
                  'text itself, plain lines separated by newlines — no commentary>"}.'
                  if _authoring else
