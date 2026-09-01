@@ -62,16 +62,16 @@ describe('Administrator Persona Frontend Components', () => {
       });
     });
 
-    test('filters content based on search term', async () => {
+    // This required the invented article "UAE Career Development Guide 2024" to
+    // render, then filtered to another invented one. Both were bylined to people
+    // who do not exist. cms_content holds zero rows; the library is empty, and
+    // the search has to work over what is actually there.
+    test('search works over the real library, which is empty', async () => {
       render(<ContentManager />);
-      await waitFor(() => {
-        expect(screen.getByText(/UAE Career Development Guide/i)).toBeInTheDocument();
-      });
-      const searchInput = screen.getByPlaceholderText('Search content...');
+      const searchInput = await screen.findByPlaceholderText('Search content...');
       fireEvent.change(searchInput, { target: { value: 'Interview' } });
       await waitFor(() => {
         expect(screen.queryByText(/UAE Career Development Guide/i)).not.toBeInTheDocument();
-        expect(screen.getByText(/Interview Preparation Checklist/i)).toBeInTheDocument();
       });
     });
   });

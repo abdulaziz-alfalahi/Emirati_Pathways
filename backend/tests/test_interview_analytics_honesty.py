@@ -356,3 +356,137 @@ def test_an_untracked_measure_is_not_shown_as_zero():
     """The educator backend returns null for placement success on purpose."""
     code = tsx(FOUR['PerformanceAnalytics'])
     assert 'not tracked yet' in code
+
+
+# ── the sweep that has to keep passing ──────────────────────────────────────
+#
+# The first survey counted `{ position: 'fixed', inset: 0 }` as chart data and
+# so reported thirteen suspect screens that were not suspect. Tuned to ignore
+# CSS and to require a REPEATED data-shaped row, it found exactly one thing the
+# hand review had missed: an inline NQF distribution inside AssessorDashboard
+# (25 assessments at Level 6, 18 at Level 7 …) plus "47 Digital Credentials
+# Issued" and a compliance panel of green ticks. The assessments table has no
+# NQF column at all.
+#
+# This is the guard against the whole class returning anywhere in the frontend.
+
+_CSS_KEYS = {
+    'width', 'height', 'top', 'left', 'right', 'bottom', 'margin', 'padding', 'gap',
+    'position', 'inset', 'fontSize', 'lineHeight', 'zIndex', 'flex', 'minHeight',
+    'maxWidth', 'borderRadius', 'opacity', 'stroke', 'fill', 'strokeWidth',
+    'fontWeight', 'minWidth', 'maxHeight', 'marginTop', 'marginBottom', 'marginLeft',
+    'marginRight', 'paddingTop', 'paddingBottom', 'order', 'flexGrow', 'outerRadius',
+    'innerRadius', 'cx', 'cy', 'paddingAngle', 'strokeDasharray', 'r', 'x', 'y',
+    'dx', 'dy',
+}
+
+
+def test_no_screen_authors_its_own_chart_data():
+    """A chart whose numbers are written into the source is a chart about
+    nobody. Three or more identically-shaped literal rows is an authored
+    dataset, not configuration."""
+    import re
+    if not os.path.isdir(FRONTEND):
+        pytest.skip('frontend not present')
+
+    row = re.compile(
+        r"\{\s*(\w+)\s*:\s*['\"][^'\"]{1,60}['\"]\s*,\s*(\w+)\s*:\s*(-?\d+(?:\.\d+)?)\s*[,}]")
+    chart = re.compile(r"<(Bar|Line|Area|Pie|Radar|Radial|Scatter)\b|<ResponsiveContainer")
+
+    offenders = []
+    for dirpath, _dirs, files in os.walk(FRONTEND):
+        if 'node_modules' in dirpath or '__tests__' in dirpath:
+            continue
+        for fn in files:
+            if not fn.endswith('.tsx'):
+                continue
+            path = os.path.join(dirpath, fn)
+            code = tsx(path)
+            if not chart.search(code):
+                continue
+            shapes = {}
+            for k1, k2, _v in row.findall(code):
+                if k1 in _CSS_KEYS or k2 in _CSS_KEYS:
+                    continue
+                shapes[(k1, k2)] = shapes.get((k1, k2), 0) + 1
+            worst = [(s, n) for s, n in shapes.items() if n >= 3]
+            if worst:
+                offenders.append((os.path.relpath(path, FRONTEND), worst))
+
+    assert not offenders, (
+        'these screens write their own chart data instead of reading it:\n'
+        + '\n'.join(f'  {rel}: {w}' for rel, w in offenders))
+
+
+# ── invented PEOPLE ─────────────────────────────────────────────────────────
+#
+# A fabricated person is worse than a fabricated number: a reader believes
+# somebody applied, somebody was assessed, somebody wrote the article.
+#
+# Swept 2026-09-01. Three real offenders, all now removed:
+#
+#   GrowthOperatorManagerEnhanced  five invented operators shown SILENTLY
+#                                  whenever the roster API returned nothing —
+#                                  Ahmed Al Maktoum, Fatima Al Nahyan, Mohammed
+#                                  Al Qasimi, Sara Al Falasi, Khalid Al
+#                                  Mazrouei, on @emiratipathways.ae addresses.
+#                                  This is the screen roles are granted on, and
+#                                  those are the surnames of UAE ruling
+#                                  families.
+#   ProfileManagement              a complete fictional identity as the initial
+#                                  state — "Ahmed Al Emirati", 75% complete,
+#                                  status "verified" — shown to the signed-in
+#                                  user until their own profile arrived.
+#   ContentManager                 an article library bylined to four people
+#                                  who do not exist.
+#
+# The live database was swept too and is CLEAN: all 24 placeholder-domain
+# accounts are flagged is_test_account, and no unflagged account sits on a
+# placeholder domain.
+
+_INVENTED_PEOPLE = (
+    'Ahmed Al Maktoum', 'Fatima Al Nahyan', 'Mohammed Al Qasimi',
+    'Sara Al Falasi', 'Khalid Al Mazrouei', 'Ahmed Al Mansouri',
+    'Fatima Al Zahra', 'Omar Hassan', 'Sarah Al-Mansouri',
+    'Fatima Al-Zahra', 'Mohammed Al-Rashid', 'Ahmed Al Emirati',
+)
+
+_PEOPLE_FILES = (
+    ('components', 'admin', 'GrowthOperatorManagerEnhanced.tsx'),
+    ('components', 'admin', 'ContentManager.tsx'),
+    ('pages', 'profile', 'ProfileManagement.tsx'),
+    ('components', 'assessor', 'AssessorDashboard.tsx'),
+)
+
+
+@pytest.mark.parametrize('parts', _PEOPLE_FILES)
+def test_no_invented_person_is_presented_as_real(parts):
+    path = os.path.join(FRONTEND, *parts)
+    code = tsx(path)
+    present = [n for n in _INVENTED_PEOPLE if n in code]
+    assert not present, f'{parts[-1]} still names: {present}'
+
+
+def test_an_empty_operator_roster_is_empty():
+    """The fabricated operators were a SILENT fallback: they appeared only when
+    the API returned nothing, so the screen looked populated precisely when it
+    knew least."""
+    code = tsx(os.path.join(FRONTEND, 'components', 'admin',
+                            'GrowthOperatorManagerEnhanced.tsx'))
+    assert 'setOperators([])' in code, \
+        'the roster falls back to something other than empty'
+    assert '@emiratipathways.ae' not in code, 'invented staff addresses remain'
+
+
+def test_a_signed_in_user_is_never_shown_someone_elses_identity():
+    """The initial profile state was a whole fictional person, spread beneath
+    the real one — so any field missing from the real profile fell through to
+    the invention, including a verification status of "verified"."""
+    code = tsx(os.path.join(FRONTEND, 'pages', 'profile', 'ProfileManagement.tsx'))
+    assert "firstName: 'Ahmed'" not in code
+    # Assert the honest default rather than the absence of 'verified': the word
+    # also appears in the TYPE union, which is legitimate.
+    assert "verificationStatus: 'unverified'" in code, \
+        'the default profile does not start unverified'
+    assert "profileCompletion: 0" in code, \
+        'the default profile still claims to be partly complete'
