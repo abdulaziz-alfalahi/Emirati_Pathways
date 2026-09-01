@@ -142,7 +142,29 @@ def recipient_allowed(address, allow_list=None):
 #: no caller-supplied text (programme and organiser come from an operator-
 #: reviewed listing, the name from the user record), and
 #: GUARDIAN_REQUESTS_PER_DAY caps how many one person can cause.
-KINDS_EXEMPT_FROM_ALLOW_LIST = frozenset({'guardian_consent'})
+#: The second kind, added 2026-09-01 on the owner's instruction: company
+#: onboarding cannot run behind an allow-list.
+#:
+#: A growth operator onboards employers from NAFIS vacancy files. The recipient
+#: is whatever address that employer publishes — alrostamani.ae, maf.ae, a
+#: trading company's own domain — and the whole point of the exercise is to
+#: reach companies the platform has never dealt with. An allow-list can only
+#: ever contain organisations somebody has already thought of, which is the
+#: exact opposite of onboarding.
+#:
+#: WHAT THIS DOES NOT BYPASS, and it is most of the protection:
+#:   * sending_enabled()   — the environment switch still applies
+#:   * template approval   — the wording still carries the owner's signature,
+#:                           and editing the wording revokes it automatically
+#:   * per-message release — every message is still queued `held` and released
+#:                           by a named operator, under a daily cap
+#:
+#: So the accident this module was written to prevent is still prevented. The
+#: 2026-08-25 backlog went unsent because nothing had ever been approved or
+#: released, not because the addresses were unfamiliar — the allow-list is the
+#: weakest of the three gates and the only one that cannot express "an employer
+#: we are deliberately contacting for the first time".
+KINDS_EXEMPT_FROM_ALLOW_LIST = frozenset({'guardian_consent', 'company_invitation'})
 
 #: How many guardian requests one registrant may cause in a day. A young person
 #: registers for a handful of programmes; fifty is somebody using the platform

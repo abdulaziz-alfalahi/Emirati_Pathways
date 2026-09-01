@@ -45,17 +45,21 @@ def sending_on(monkeypatch):
 
 # ── The exemption is exactly one kind wide ──────────────────────────────────
 
-def test_only_guardian_consent_is_exempt():
-    assert outbound_mail.KINDS_EXEMPT_FROM_ALLOW_LIST == {'guardian_consent'}
+def test_the_exemption_is_exactly_the_two_intended_kinds():
+    """Written as an equality on purpose: a kind added to the set later shows up
+    here as a failing test rather than as silently widened reach."""
+    assert outbound_mail.KINDS_EXEMPT_FROM_ALLOW_LIST == {
+        'guardian_consent', 'company_invitation'}
 
 
 @pytest.mark.parametrize('kind', [
-    'company_invitation', 'vacancy_verification', 'staff_invitation',
-    'seeker_invitation', 'team_invitation', 'board_office_notice', None,
+    'vacancy_verification', 'staff_invitation', 'seeker_invitation',
+    'team_invitation', 'board_office_notice', None,
 ])
 def test_every_other_kind_still_obeys_the_allow_list(kind, sending_on):
     """The 267 vacancy messages to real employers were held by this check. It
-    must keep holding them."""
+    must keep holding them — vacancy_verification is deliberately still on this
+    list, and it is the kind that produced them."""
     ok, why = outbound_mail.decide('stranger@example.com', approved=True,
                                    allow_list=['@ehrdc.gov.ae'], kind=kind)
     assert not ok
@@ -67,6 +71,31 @@ def test_guardian_consent_reaches_an_address_off_the_list(sending_on):
                                  allow_list=['@ehrdc.gov.ae'],
                                  kind='guardian_consent')
     assert ok
+
+
+def test_a_company_invitation_reaches_an_employer_off_the_list(sending_on):
+    """Owner, 2026-09-01: onboarding companies is the point, and the companies
+    being onboarded are by definition not ones somebody already listed."""
+    ok, _ = outbound_mail.decide('careers@some-trading-llc.ae', approved=True,
+                                 allow_list=['@ehrdc.gov.ae'],
+                                 kind='company_invitation')
+    assert ok
+
+
+@pytest.mark.parametrize('gate,kwargs,expected', [
+    ('the environment switch', dict(approved=True), 'BLOCKED_SENDING_OFF'),
+    ('per-message approval', dict(approved=False), 'BLOCKED_NOT_APPROVED'),
+])
+def test_a_company_invitation_still_passes_the_other_gates(gate, kwargs, expected,
+                                                           monkeypatch):
+    """Only the RECIPIENT check is skipped. If this ever stops being true, an
+    operator error reaches an employer with nobody having released it."""
+    if expected != 'BLOCKED_SENDING_OFF':
+        monkeypatch.setattr(outbound_mail, 'sending_enabled', lambda: True)
+    ok, why = outbound_mail.decide('careers@some-trading-llc.ae', allow_list=[],
+                                   kind='company_invitation', **kwargs)
+    assert not ok, f'company_invitation bypassed {gate}'
+    assert why == getattr(outbound_mail, expected)
 
 
 # ── What the exemption does NOT bypass ──────────────────────────────────────
