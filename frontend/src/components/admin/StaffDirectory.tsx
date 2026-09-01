@@ -63,6 +63,8 @@ interface StaffMember {
     primary_label?: string | null;
     roles: RoleEntry[];
     staff_role_count: number;
+    /** A dev-login test persona, not a real member of staff. */
+    is_test_account?: boolean;
     growth_domains: string[];
     /** The domain the growth screen marks as this person's main one, if any. */
     primary_domain?: string | null;
@@ -84,6 +86,7 @@ const StaffDirectory: React.FC = () => {
     // Holds the role IDS behind the chosen label, so one 'Administrator'
     // chip filters every alias of it.
     const [roleFilter, setRoleFilter] = useState<string[]>([]);
+    const [hideTestAccounts, setHideTestAccounts] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -108,11 +111,15 @@ const StaffDirectory: React.FC = () => {
     const visible = useMemo(() => {
         const q = search.trim().toLowerCase();
         return staff.filter(p => {
+            if (hideTestAccounts && p.is_test_account) return false;
             if (roleFilter.length && !p.roles.some(r => roleFilter.includes(r.role))) return false;
             if (!q) return true;
             return `${p.name} ${p.email || ''}`.toLowerCase().includes(q);
         });
-    }, [staff, search, roleFilter]);
+    }, [staff, search, roleFilter, hideTestAccounts]);
+
+    const testAccountCount = useMemo(
+        () => staff.filter(p => p.is_test_account).length, [staff]);
 
     const label = (r: RoleEntry) => (isAr ? r.label_ar : r.label);
 
@@ -222,6 +229,19 @@ const StaffDirectory: React.FC = () => {
                                 fontSize: 13.5 }} />
             </div>
 
+            {/* Only offered when there is something to hide, so the control does
+                not imply the directory is full of fakes when it is not. */}
+            {testAccountCount > 0 && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8,
+                                marginBottom: 14, fontSize: 13, color: brand.dim,
+                                cursor: 'pointer' }}>
+                    <input type="checkbox" checked={hideTestAccounts}
+                           onChange={e => setHideTestAccounts(e.target.checked)} />
+                    {b(`Hide ${testAccountCount} test accounts used for verification`,
+                       `إخفاء ${testAccountCount} حسابًا اختباريًا مستخدمًا للتحقق`)}
+                </label>
+            )}
+
             {loading ? (
                 <p style={{ display: 'flex', alignItems: 'center', gap: 8, color: brand.dim, fontSize: 13 }}>
                     <Loader2 size={15} className="animate-spin" /> {b('Loading…', 'جارٍ التحميل…')}
@@ -258,6 +278,20 @@ const StaffDirectory: React.FC = () => {
                                                 <span title={b('Suspended', 'موقوف')}
                                                       style={{ color: brand.redText, display: 'flex' }}>
                                                     <CircleSlash size={13} />
+                                                </span>
+                                            )}
+                                            {/* Unmistakable, and next to the name rather
+                                                than at the end of the row: the whole problem
+                                                was that these read as real people. */}
+                                            {p.is_test_account && (
+                                                <span title={b('Test account used for verification — not a real person',
+                                                               'حساب اختباري للتحقق — ليس شخصًا حقيقيًا')}
+                                                      style={{ background: '#FEF3C7', color: '#92400E',
+                                                               border: '1px solid #FDE68A',
+                                                               borderRadius: 4, padding: '1px 6px',
+                                                               fontSize: 11, fontWeight: 700,
+                                                               letterSpacing: 0.3 }}>
+                                                    {b('TEST', 'اختباري')}
                                                 </span>
                                             )}
                                         </div>
