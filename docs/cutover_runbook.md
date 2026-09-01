@@ -160,8 +160,21 @@ membership and authored content on the abandoned row.
 ```
 
 Run it **before** cutover and clear what it names — collect the real Emirates ID
-for each account listed and migrate it while it is cheap. As measured 2026-09-01:
-**11 accounts would strand, 10 would rebind.**
+for each account listed and migrate it while it is cheap.
+
+It flags any account whose stored id **cannot be the Emirates ID its owner will
+present**, and says which kind of problem it is:
+
+| Problem | Meaning |
+|---|---|
+| `placeholder id minted by the platform` | the `7840000…` band, awaiting a real EID |
+| `impossible birth year in the id` | positions 4–7 are not a year anyone could be born in |
+| `not the shape of an Emirates ID` | not `784` + 12 digits |
+
+The last two are not hypothetical. Three **real people** are in the table with
+ids that cannot be theirs — `789197420484632` (wrong national prefix),
+`874199876073703` (`784` transposed) and `784189273907082` (birth year 1892) —
+all from the 21 August import. They need correcting at source, not migrating.
 
 Two traps the check encodes, both of which read as "fine" if you eyeball the
 table instead:
