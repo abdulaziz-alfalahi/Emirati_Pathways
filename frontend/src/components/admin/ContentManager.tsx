@@ -97,71 +97,17 @@ const ContentManager: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Mock data - replace with actual API call
-      const mockContent: ContentItem[] = [
-        {
-          id: 1,
-          title: 'UAE Career Development Guide 2024',
-          slug: 'uae-career-development-guide-2024',
-          content_type: 'article',
-          status: 'published',
-          language: 'en',
-          category: 'Career Guidance',
-          tags: ['career', 'development', 'UAE', 'guide'],
-          excerpt: 'Comprehensive guide for career development in the UAE, focusing on Emiratization initiatives and professional growth opportunities.',
-          author: 'Sarah Al-Mansouri',
-          created_at: '2024-01-15T10:30:00Z',
-          updated_at: '2024-01-20T14:45:00Z',
-          publish_date: '2024-01-20T14:45:00Z',
-          view_count: 1247
-        },
-        {
-          id: 2,
-          title: 'دليل التطوير المهني في دولة الإمارات',
-          slug: 'uae-professional-development-guide-ar',
-          content_type: 'article',
-          status: 'published',
-          language: 'ar',
-          category: 'التوجيه المهني',
-          tags: ['تطوير', 'مهني', 'الإمارات', 'دليل'],
-          excerpt: 'دليل شامل للتطوير المهني في دولة الإمارات العربية المتحدة مع التركيز على مبادرات التوطين والفرص المهنية.',
-          author: 'أحمد الزعابي',
-          created_at: '2024-01-18T09:15:00Z',
-          updated_at: '2024-01-22T11:30:00Z',
-          publish_date: '2024-01-22T11:30:00Z',
-          view_count: 892
-        },
-        {
-          id: 3,
-          title: 'Interview Preparation Checklist',
-          slug: 'interview-preparation-checklist',
-          content_type: 'resource',
-          status: 'draft',
-          language: 'en',
-          category: 'Interview Skills',
-          tags: ['interview', 'preparation', 'checklist', 'tips'],
-          excerpt: 'Essential checklist for job interview preparation, including common questions and best practices.',
-          author: 'Mohammed Al-Rashid',
-          created_at: '2024-01-25T16:20:00Z',
-          updated_at: '2024-01-25T16:20:00Z',
-          view_count: 0
-        },
-        {
-          id: 4,
-          title: 'UAE Job Market Trends 2024',
-          slug: 'uae-job-market-trends-2024',
-          content_type: 'report',
-          status: 'review',
-          language: 'en',
-          category: 'Market Analysis',
-          tags: ['job market', 'trends', 'UAE', '2024', 'analysis'],
-          excerpt: 'Comprehensive analysis of the UAE job market trends, emerging sectors, and employment opportunities.',
-          author: 'Fatima Al-Zahra',
-          created_at: '2024-01-20T13:45:00Z',
-          updated_at: '2024-01-28T10:15:00Z',
-          view_count: 156
-        }
-      ];
+      // NO SEEDED ARTICLES, AND NO INVENTED AUTHORS.
+      //
+      // What stood here were fabricated articles — "UAE Career Development
+      // Guide 2024" and others — bylined to people who do not exist: Sarah
+      // Al-Mansouri, Fatima Al-Zahra, Mohammed Al-Rashid, أحمد الزعابي. An
+      // administrator opening this screen saw a content library that had never
+      // been written, attributed to staff who had never been hired.
+      //
+      // cms_content holds zero rows. Empty is the correct answer until
+      // somebody publishes something.
+      const mockContent: ContentItem[] = [];
 
       setContent(mockContent);
       setTotalPages(Math.ceil(mockContent.length / itemsPerPage));

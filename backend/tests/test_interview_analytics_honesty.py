@@ -416,3 +416,77 @@ def test_no_screen_authors_its_own_chart_data():
     assert not offenders, (
         'these screens write their own chart data instead of reading it:\n'
         + '\n'.join(f'  {rel}: {w}' for rel, w in offenders))
+
+
+# ── invented PEOPLE ─────────────────────────────────────────────────────────
+#
+# A fabricated person is worse than a fabricated number: a reader believes
+# somebody applied, somebody was assessed, somebody wrote the article.
+#
+# Swept 2026-09-01. Three real offenders, all now removed:
+#
+#   GrowthOperatorManagerEnhanced  five invented operators shown SILENTLY
+#                                  whenever the roster API returned nothing —
+#                                  Ahmed Al Maktoum, Fatima Al Nahyan, Mohammed
+#                                  Al Qasimi, Sara Al Falasi, Khalid Al
+#                                  Mazrouei, on @emiratipathways.ae addresses.
+#                                  This is the screen roles are granted on, and
+#                                  those are the surnames of UAE ruling
+#                                  families.
+#   ProfileManagement              a complete fictional identity as the initial
+#                                  state — "Ahmed Al Emirati", 75% complete,
+#                                  status "verified" — shown to the signed-in
+#                                  user until their own profile arrived.
+#   ContentManager                 an article library bylined to four people
+#                                  who do not exist.
+#
+# The live database was swept too and is CLEAN: all 24 placeholder-domain
+# accounts are flagged is_test_account, and no unflagged account sits on a
+# placeholder domain.
+
+_INVENTED_PEOPLE = (
+    'Ahmed Al Maktoum', 'Fatima Al Nahyan', 'Mohammed Al Qasimi',
+    'Sara Al Falasi', 'Khalid Al Mazrouei', 'Ahmed Al Mansouri',
+    'Fatima Al Zahra', 'Omar Hassan', 'Sarah Al-Mansouri',
+    'Fatima Al-Zahra', 'Mohammed Al-Rashid', 'Ahmed Al Emirati',
+)
+
+_PEOPLE_FILES = (
+    ('components', 'admin', 'GrowthOperatorManagerEnhanced.tsx'),
+    ('components', 'admin', 'ContentManager.tsx'),
+    ('pages', 'profile', 'ProfileManagement.tsx'),
+    ('components', 'assessor', 'AssessorDashboard.tsx'),
+)
+
+
+@pytest.mark.parametrize('parts', _PEOPLE_FILES)
+def test_no_invented_person_is_presented_as_real(parts):
+    path = os.path.join(FRONTEND, *parts)
+    code = tsx(path)
+    present = [n for n in _INVENTED_PEOPLE if n in code]
+    assert not present, f'{parts[-1]} still names: {present}'
+
+
+def test_an_empty_operator_roster_is_empty():
+    """The fabricated operators were a SILENT fallback: they appeared only when
+    the API returned nothing, so the screen looked populated precisely when it
+    knew least."""
+    code = tsx(os.path.join(FRONTEND, 'components', 'admin',
+                            'GrowthOperatorManagerEnhanced.tsx'))
+    assert 'setOperators([])' in code, \
+        'the roster falls back to something other than empty'
+    assert '@emiratipathways.ae' not in code, 'invented staff addresses remain'
+
+
+def test_a_signed_in_user_is_never_shown_someone_elses_identity():
+    """The initial profile state was a whole fictional person, spread beneath
+    the real one — so any field missing from the real profile fell through to
+    the invention, including a verification status of "verified"."""
+    code = tsx(os.path.join(FRONTEND, 'pages', 'profile', 'ProfileManagement.tsx'))
+    assert "firstName: 'Ahmed'" not in code
+    # Assert the honest default rather than the absence of 'verified': the word
+    # also appears in the TYPE union, which is legitimate.
+    assert "verificationStatus: 'unverified'" in code, \
+        'the default profile does not start unverified'
+    assert "profileCompletion: 0" in code, \
+        'the default profile still claims to be partly complete'

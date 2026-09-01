@@ -299,89 +299,18 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
         console.log('[DEBUG loadOperators] Setting operators count:', response.data.data.operators.length);
         setOperators(response.data.data.operators);
       } else {
-        // Mock data for development
-        setOperators([
-          {
-            id: '1',
-            username: 'ahmed.operator',
-            email: 'ahmed@emiratipathways.ae',
-            full_name: 'Ahmed Al Maktoum',
-            role: 'growth_operator',
-            is_active: true,
-            created_at: '2024-01-15T10:00:00Z',
-            last_login: '2024-12-28T08:30:00Z',
-            domains: ['candidate', 'community'],
-            primaryDomain: 'candidate',
-            assignments: [
-              { domain: 'candidate', is_primary: true, is_active: true, created_at: '2024-01-15T10:00:00Z' },
-              { domain: 'community', is_primary: false, is_active: true, created_at: '2024-03-01T10:00:00Z' }
-            ],
-            performance: { tasksCompleted: 156, avgResponseTime: '2.5h', rating: 4.8 }
-          },
-          {
-            id: '2',
-            username: 'fatima.operator',
-            email: 'fatima@emiratipathways.ae',
-            full_name: 'Fatima Al Nahyan',
-            role: 'growth_operator',
-            is_active: true,
-            created_at: '2024-02-01T10:00:00Z',
-            last_login: '2024-12-28T09:15:00Z',
-            domains: ['company', 'education'],
-            primaryDomain: 'company',
-            assignments: [
-              { domain: 'company', is_primary: true, is_active: true, created_at: '2024-02-01T10:00:00Z' },
-              { domain: 'education', is_primary: false, is_active: true, created_at: '2024-04-01T10:00:00Z' }
-            ],
-            performance: { tasksCompleted: 203, avgResponseTime: '1.8h', rating: 4.9 }
-          },
-          {
-            id: '3',
-            username: 'mohammed.operator',
-            email: 'mohammed@emiratipathways.ae',
-            full_name: 'Mohammed Al Qasimi',
-            role: 'growth_operator',
-            is_active: true,
-            created_at: '2024-03-01T10:00:00Z',
-            last_login: '2024-12-27T16:45:00Z',
-            domains: ['assessment'],
-            primaryDomain: 'assessment',
-            assignments: [
-              { domain: 'assessment', is_primary: true, is_active: true, created_at: '2024-03-01T10:00:00Z' }
-            ],
-            performance: { tasksCompleted: 89, avgResponseTime: '3.2h', rating: 4.5 }
-          },
-          {
-            id: '4',
-            username: 'sara.operator',
-            email: 'sara@emiratipathways.ae',
-            full_name: 'Sara Al Falasi',
-            role: 'growth_operator',
-            is_active: true,
-            created_at: '2024-04-01T10:00:00Z',
-            last_login: '2024-12-28T07:00:00Z',
-            domains: ['mentorship'],
-            primaryDomain: 'mentorship',
-            assignments: [
-              { domain: 'mentorship', is_primary: true, is_active: true, created_at: '2024-04-01T10:00:00Z' }
-            ],
-            performance: { tasksCompleted: 124, avgResponseTime: '2.1h', rating: 4.7 }
-          },
-          {
-            id: '5',
-            username: 'khalid.operator',
-            email: 'khalid@emiratipathways.ae',
-            full_name: 'Khalid Al Mazrouei',
-            role: 'growth_operator',
-            is_active: false,
-            created_at: '2024-05-01T10:00:00Z',
-            last_login: '2024-11-15T10:00:00Z',
-            domains: [],
-            primaryDomain: undefined,
-            assignments: [],
-            performance: { tasksCompleted: 45, avgResponseTime: '4.5h', rating: 3.8 }
-          }
-        ]);
+        // NO FALLBACK ROSTER.
+        //
+        // What stood here was five invented operators — Ahmed Al Maktoum,
+        // Fatima Al Nahyan, Mohammed Al Qasimi, Sara Al Falasi, Khalid Al
+        // Mazrouei — with @emiratipathways.ae addresses, shown silently
+        // whenever the API returned nothing.
+        //
+        // This is the screen an administrator grants platform roles on. It
+        // presented fabricated staff, bearing the surnames of UAE ruling
+        // families, as people who could be assigned a domain. An empty roster
+        // now reads as empty.
+        setOperators([]);
       }
     } catch (error: any) {
       console.error('[DEBUG loadOperators] CATCH ERROR:', error?.message, error?.response?.status, error?.response?.data);

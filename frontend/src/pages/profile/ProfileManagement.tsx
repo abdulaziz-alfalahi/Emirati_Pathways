@@ -66,16 +66,25 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const location = useLocation();
   const { toast } = useToast();
   const { switchRole, refreshUser, getUserRole } = useAuth();
+  // NOBODY IS CALLED "AHMED AL EMIRATI".
+  //
+  // The initial state used to be a complete fictional person — that name,
+  // ahmed.alemirati@example.ae, a profile 75% complete and a verification
+  // status of "verified" — spread underneath the real profile. Until the real
+  // one arrived, or wherever a field was missing from it, the signed-in user
+  // was looking at somebody invented and being told they were verified.
+  //
+  // Empty is the honest initial state: unknown, not verified, nothing complete.
   const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: '1',
-    firstName: 'Ahmed',
-    lastName: 'Al Emirati',
-    email: 'ahmed.alemirati@example.ae',
-    primaryRole: 'Job Seeker',
+    id: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    primaryRole: '',
     secondaryRoles: [],
-    profileCompletion: 75,
-    lastUpdated: '2024-01-15',
-    verificationStatus: 'verified',
+    profileCompletion: 0,
+    lastUpdated: '',
+    verificationStatus: 'unverified',
     profileVisibility: 'professional',
     ...userProfile
   });
