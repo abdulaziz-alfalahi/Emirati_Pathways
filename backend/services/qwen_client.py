@@ -16,15 +16,26 @@ from typing import Any, Dict, List, Optional
 from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 import httpx
 
-from backend.config.qwen_config import (
-    DASHSCOPE_API_KEY,
-    QWEN_BASE_URL,
-    REQUEST_TIMEOUT,
-    MAX_RETRIES,
-    TEMPERATURE,
-    COST_PER_MILLION_TOKENS,
-    get_model_for_task,
-)
+try:
+    from backend.config.qwen_config import (
+        DASHSCOPE_API_KEY,
+        QWEN_BASE_URL,
+        REQUEST_TIMEOUT,
+        MAX_RETRIES,
+        TEMPERATURE,
+        COST_PER_MILLION_TOKENS,
+        get_model_for_task,
+    )
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from config.qwen_config import (
+        DASHSCOPE_API_KEY,
+        QWEN_BASE_URL,
+        REQUEST_TIMEOUT,
+        MAX_RETRIES,
+        TEMPERATURE,
+        COST_PER_MILLION_TOKENS,
+        get_model_for_task,
+    )
 
 try:
     from backend.services import ai_usage_log
