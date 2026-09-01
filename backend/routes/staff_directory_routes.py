@@ -66,6 +66,7 @@ def list_staff():
 
     rows = execute_query("""
         SELECT u.id, u.email, u.is_active, u.last_login, u.created_at,
+               u.is_test_account,
                COALESCE(u.full_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''))
                    AS full_name,
                u.role AS primary_role,
@@ -116,6 +117,15 @@ def list_staff():
             'name': r.get('full_name') or r.get('email') or r['id'],
             'email': r.get('email'),
             'is_active': bool(r.get('is_active')),
+            # Reported by the owner 2026-09-01, looking at this very screen:
+            # "these operators are invented". They are — they are the
+            # dev-login fleet (one per role, migration 073), and they sat
+            # here indistinguishable from real staff under invented Emirati
+            # names. The flag existed all along; this directory simply never
+            # asked for it. Deleting them is not the fix: dev-login refuses
+            # any account without this flag, so they ARE the only way to
+            # verify a role end to end.
+            'is_test_account': bool(r.get('is_test_account')),
             'last_login': r['last_login'].isoformat() if r.get('last_login') else None,
             'created_at': r['created_at'].isoformat() if r.get('created_at') else None,
             'primary_role': primary or None,
