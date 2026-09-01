@@ -136,6 +136,45 @@ scrutiny.
    — the queue is visible since migration 074: 2021: 16 · 2022: 93 · 2023: 217 ·
    2024: 322 · 2025: 660 · 2026: 1,596.
 
+## Gate 5 — nobody loses their account at the door
+
+Everyone is keyed on `users.id`, a CHAR(15) Emirates ID. Accounts created before
+UAE Pass supplies a real one carry a synthetic `7840000…` id. At cutover a person
+signs in against **production** UAE Pass with their real Emirates ID, and the
+callback must recognise the account they already have.
+
+Mostly it does: `_migrate_user_id` (`backend/routes/uaepass_routes.py`) moves the
+row onto the real Emirates ID and repoints every foreign key referencing
+`users(id)`. What it will not do is link on an **unverified contact point** into a
+privileged account — issue #95, and the guard is correct: an email match is only
+a claim, and honouring it would let anyone whose UAE Pass profile carried a
+shared address inherit admin or operator rights.
+
+So accounts that hold operator/HR/admin roles **cannot rebind automatically**.
+They would receive a fresh candidate account and leave their roles, board
+membership and authored content on the abandoned row.
+
+```bash
+.venv/bin/python backend/scripts/cutover_identity_check.py        # exit 1 if any strand
+.venv/bin/python backend/scripts/cutover_identity_check.py --all  # show the safe ones too
+```
+
+Run it **before** cutover and clear what it names — collect the real Emirates ID
+for each account listed and migrate it while it is cheap. As measured 2026-09-01:
+**11 accounts would strand, 10 would rebind.**
+
+Two traps the check encodes, both of which read as "fine" if you eyeball the
+table instead:
+
+- **A populated `uaepass_uuid` does not mean the account is linked.** Those UUIDs
+  came from the UAE Pass *staging* IdP; production issues its own subject
+  identifiers. 20 of the 21 accounts holding a UUID were still on a synthetic id.
+- **A shared email or phone makes the match ambiguous**, and ambiguous is
+  refused. There is currently 1 duplicated email and 3 duplicated phones.
+
+Do **not** widen `PRIVILEGED_LINK_ROLES` to make these link automatically. That
+set is the thing standing between a shared `info@` address and an admin account.
+
 ## Preconditions still open
 
 - **The DGHR mailbox** (`emirati@ehrdc.gov.ae`). It gates BOTH halves: seeker
