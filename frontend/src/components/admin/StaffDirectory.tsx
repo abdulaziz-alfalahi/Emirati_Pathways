@@ -152,6 +152,35 @@ const StaffDirectory: React.FC = () => {
             || a.label.localeCompare(b.label));
     }, [byRole]);
 
+    /**
+     * One chip per JOB, not per role id.
+     *
+     * Reported by the owner 2026-09-01: his row showed "Administrator" twice.
+     * He holds both `admin` and `administrator` — two ids that are aliases for
+     * the same job and both render "Administrator" (role_labels.py; the same is
+     * true of employer_admin/hr_manager and candidate/seeker).
+     *
+     * The dedupe below the fold was on the role ID, so two ids sharing a label
+     * produced two identical chips, which reads as two different things.
+     *
+     * The filter chips above already collapse by label — see `grouped`, whose
+     * comment describes this exact problem. It was fixed there and not here,
+     * which is the recurring shape of this bug class: one fact, several
+     * registries. Primary wins when aliases disagree, so the chip keeps its
+     * "Primary role" styling rather than being demoted by an alias.
+     */
+    const chipsFor = (p: StaffMember) => {
+        const byLabel = new Map<string, RoleEntry>();
+        for (const r of p.roles.filter(x => x.is_staff_role)) {
+            const key = label(r);
+            const existing = byLabel.get(key);
+            if (!existing || (existing.source !== 'primary' && r.source === 'primary')) {
+                byLabel.set(key, r);
+            }
+        }
+        return [...byLabel.values()];
+    };
+
     const roleChip = (r: RoleEntry) => (
         <span key={r.role}
               title={r.source === 'primary'
@@ -302,15 +331,18 @@ const StaffDirectory: React.FC = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '10px 12px', verticalAlign: 'top', maxWidth: 460 }}>
-                                        {p.roles.filter(r => r.is_staff_role).map(roleChip)}
+                                        {chipsFor(p).map(roleChip)}
                                         {/* Non-staff roles are shown quietly rather than
                                             hidden: somebody who is both an operator and a
                                             candidate is a fact worth seeing on this row. */}
                                         {p.roles.some(r => !r.is_staff_role) && (
                                             <div style={{ fontSize: 11.5, color: brand.dim, marginTop: 2 }}>
                                                 {b('also', 'وأيضاً')}:{' '}
-                                                {p.roles.filter(r => !r.is_staff_role)
-                                                        .map(r => label(r)).join(', ')}
+                                                {/* Same collision as the chips above:
+                                                    candidate and seeker both read
+                                                    "Job Seeker". Deduped by label. */}
+                                                {[...new Set(p.roles.filter(r => !r.is_staff_role)
+                                                              .map(r => label(r)))].join(', ')}
                                             </div>
                                         )}
                                     </td>
