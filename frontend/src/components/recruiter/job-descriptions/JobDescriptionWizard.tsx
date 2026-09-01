@@ -219,6 +219,12 @@ interface JDData {
     industry?: string;
     job_type: string;
     job_level: string;
+    // Requested by a call-centre operator (fb_1788155502) so nominations can be
+    // matched against what the employer actually asked for. Free text: NAFIS
+    // supplies specialisations as the employer wrote them, and imposing a
+    // taxonomy we do not have would lose their own words.
+    specialization?: string;
+    working_hours?: string;
     emirate: string;
     city: string;
     latitude?: number | null;
