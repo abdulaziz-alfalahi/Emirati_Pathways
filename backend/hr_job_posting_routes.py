@@ -313,6 +313,45 @@ def _uploads_dir() -> str:
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
 
+def _required_skills_for(job):
+    """The skills a vacancy is matched on.
+
+    Taken from an explicit list when the recruiter gave one. Otherwise lifted
+    from the requirements they already filled in — the JD wizard collects those
+    as categorised entries, and a vacancy created through it should start
+    matching without anybody re-entering the same words in a second field.
+
+    Returns a de-duplicated list of plain strings, because
+    backend/match_scoring.py lowercases and substring-matches them.
+    """
+    explicit = job.get('required_skills') or job.get('skills')
+    if isinstance(explicit, str):
+        explicit = [s.strip() for s in explicit.split(',') if s.strip()]
+    out = []
+    for item in (explicit or []):
+        if isinstance(item, str) and item.strip():
+            out.append(item.strip())
+        elif isinstance(item, dict):
+            name = str(item.get('name') or item.get('skill') or '').strip()
+            if name:
+                out.append(name)
+    if out:
+        return list(dict.fromkeys(out))
+
+    # Fall back to the requirements the wizard already captured.
+    reqs = job.get('requirements')
+    if isinstance(reqs, dict):
+        reqs = reqs.get('skills') or reqs.get('items') or list(reqs.values())
+    for item in (reqs or []):
+        if isinstance(item, str) and item.strip():
+            out.append(item.strip())
+        elif isinstance(item, dict):
+            text = str(item.get('description') or item.get('name') or '').strip()
+            if text:
+                out.append(text)
+    return list(dict.fromkeys(out))
+
+
 @hr_job_posting_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for job posting functionality"""
@@ -592,9 +631,12 @@ def create_job_postings_batch():
                         experience_level, status, priority_level, application_deadline,
                         expires_at, uae_compliance_checked, emiratization_target,
                         visa_sponsorship_available, tags, seo_keywords,
-                        latitude, longitude
+                        latitude, longitude,
+                        required_skills, education_level, specialization,
+                        working_hours, number_of_vacancies
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s
                     ) RETURNING *
                     """,
                     (
@@ -624,7 +666,25 @@ def create_job_postings_batch():
                         json.dumps(job.get('tags', [])),
                         json.dumps(job.get('seo_keywords', [])),
                         job.get('latitude'),
-                        job.get('longitude')
+                        job.get('longitude'),
+                        # THE FIELD THE MATCHER READS, WHICH NOTHING WROTE.
+                        #
+                        # backend/match_scoring.py scores 60% of a match on
+                        # required_skills, and on 2026-09-01 it was populated on
+                        # 0 of 298 vacancies because no code anywhere in the
+                        # backend ever wrote it. The dominant axis contributed
+                        # nothing to any candidate on any vacancy.
+                        #
+                        # Skills are taken from an explicit list where the
+                        # recruiter gave one, and otherwise lifted from the
+                        # requirements they already filled in, so a vacancy
+                        # created through the existing wizard starts matching
+                        # without anybody re-entering anything.
+                        json.dumps(_required_skills_for(job)),
+                        job.get('education_level') or job.get('education_requirements'),
+                        job.get('specialization'),
+                        job.get('working_hours'),
+                        job.get('number_of_vacancies') or 1
                     )
                 )
                 created.append(dict(cursor.fetchone()))
