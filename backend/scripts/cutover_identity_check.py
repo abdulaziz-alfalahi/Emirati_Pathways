@@ -43,6 +43,7 @@ would strand, so it can gate the cutover runbook rather than be read by hand.
 import argparse
 import json
 import os
+import re
 import sys
 
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -61,7 +62,39 @@ from dotenv import load_dotenv        # noqa: E402
 # role set would drift silently and report a reassuring answer.
 from routes.uaepass_routes import PRIVILEGED_LINK_ROLES  # noqa: E402
 
+#: The band the platform mints placeholder ids in (workspace_phase2_routes:
+#: f"7840000{seq:07d}0").
 SYNTHETIC_PREFIX = '7840000'
+
+#: An Emirates ID is 784 + a 4-digit birth year + 7 digits + a check digit. That
+#: birth year is what makes a fake id detectable WITHOUT a list of known bands.
+#:
+#: Keying only on SYNTHETIC_PREFIX missed two real cases on 2026-09-01: a July
+#: test fixture minted at 784111100000030, which this check cheerfully reported
+#: as "already keyed on a real Emirates ID", and — more importantly — genuine
+#: people whose imported id cannot be an Emirates ID at all. A prefix list would
+#: have had to be extended every time somebody invented a new band; a
+#: plausibility test does not.
+EID_SHAPE = r'^784[0-9]{12}$'
+EARLIEST_PLAUSIBLE_BIRTH_YEAR = 1900
+
+
+def id_problem(user_id, this_year):
+    """Why can this id not be a real Emirates ID? None if it looks real.
+
+    The reason is reported to the operator, because "synthetic" and "mistyped
+    on import" are the same problem for cutover and completely different
+    problems to fix.
+    """
+    uid = (user_id or '').strip()
+    if not re.match(EID_SHAPE, uid):
+        return 'not the shape of an Emirates ID (784 + 12 digits)'
+    if uid.startswith(SYNTHETIC_PREFIX):
+        return 'placeholder id minted by the platform'
+    year = int(uid[3:7])
+    if year < EARLIEST_PLAUSIBLE_BIRTH_YEAR or year > this_year:
+        return f'impossible birth year in the id ({year})'
+    return None
 
 
 def connect():
@@ -111,11 +144,17 @@ def assess(cur, assume_uuid_carries=False):
         SELECT id, role, user_type, secondary_roles, uaepass_uuid,
                NULLIF(btrim(email), '') AS email,
                NULLIF(btrim(phone), '') AS phone,
-               first_name, last_name, is_test_account, created_at
+               first_name, last_name, is_test_account, created_at,
+               EXTRACT(year FROM now())::int AS this_year
           FROM users
-         WHERE id LIKE %s
+         -- Anything whose id cannot be the Emirates ID the person will present.
+         WHERE id !~ %s
+            OR id LIKE %s
+            OR (substring(id from 4 for 4) ~ '^[0-9]{4}$'
+                AND (substring(id from 4 for 4)::int < %s
+                     OR substring(id from 4 for 4)::int > EXTRACT(year FROM now())::int))
          ORDER BY created_at
-    """, (SYNTHETIC_PREFIX + '%',))
+    """, (EID_SHAPE, SYNTHETIC_PREFIX + '%', EARLIEST_PLAUSIBLE_BIRTH_YEAR))
     candidates = cur.fetchall()
 
     # Ambiguity is decided across the WHOLE table, not just these rows: two
@@ -146,6 +185,8 @@ def assess(cur, assume_uuid_carries=False):
         usable_email = bool(email) and email not in dup_emails
         usable_phone = bool(phone) and phone not in dup_phones
 
+        problem = id_problem(row['id'], row['this_year'])
+
         if assume_uuid_carries and row['uaepass_uuid']:
             verdict, why = 'REBINDS', 'UAE Pass UUID assumed to carry across'
         elif blocking:
@@ -172,6 +213,7 @@ def assess(cur, assume_uuid_carries=False):
             'phone': mask(row['phone']),
             'has_uaepass_uuid': bool(row['uaepass_uuid']),
             'is_test_account': bool(row['is_test_account']),
+            'id_problem': problem,
             'verdict': verdict,
             'why': why,
         })
@@ -211,8 +253,10 @@ def main():
         return 1 if stranded else 0
 
     print('\n  PRE-CUTOVER IDENTITY CHECK')
-    print('  Accounts on a synthetic Emirates ID, and whether the production')
-    print('  UAE Pass sign-in would recognise them.\n')
+    print('  Accounts whose stored id cannot be the Emirates ID its owner will')
+    print('  present at sign-in — placeholder ids, malformed ids, and ids with')
+    print('  an impossible birth year — and whether production UAE Pass would')
+    print('  still recognise them.\n')
 
     if stranded:
         print(f'  STRANDED — {len(stranded)} account(s) would get a NEW account '
@@ -220,6 +264,7 @@ def main():
         for r in stranded:
             print(f"    {r['id']}  {r['name']}")
             print(f"        role={r['role']}  email={r['email']}  phone={r['phone']}")
+            print(f"        id: {r['id_problem']}")
             print(f"        {r['why']}\n")
     else:
         print('  STRANDED — none. Every synthetic account can rebind.\n')

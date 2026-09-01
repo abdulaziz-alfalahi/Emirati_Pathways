@@ -100,5 +100,58 @@ def test_the_synthetic_prefix_matches_what_the_platform_mints():
     assert len(minted) == 15
 
 
-def test_a_real_emirates_id_is_not_treated_as_synthetic():
-    assert not '784111100000030'.startswith(check.SYNTHETIC_PREFIX)
+# ── an id that cannot be an Emirates ID, however it got that way ────────────
+#
+# Keying only on the mint prefix reported 784111100000030 — a July test fixture
+# — as "already keyed on a real Emirates ID". It also missed three REAL people
+# whose imported id cannot be an Emirates ID at all. Both strand at cutover for
+# the same reason, so both must be found.
+
+YEAR = 2026
+
+
+def test_a_plausible_emirates_id_has_no_problem():
+    assert check.id_problem('784199702727936', YEAR) is None
+    assert check.id_problem('784200664029384', YEAR) is None
+
+
+def test_the_platform_mint_band_is_named_as_such():
+    problem = check.id_problem('784000000000240', YEAR)
+    assert problem and 'placeholder' in problem
+
+
+def test_a_fixture_band_outside_the_mint_prefix_is_still_caught():
+    """The exact miss: 784111100000030 does not start with 7840000, and the
+    check called it real."""
+    problem = check.id_problem('784111100000030', YEAR)
+    assert problem, 'a fixture id outside the mint band reads as a real EID'
+    assert '1111' in problem
+
+
+def test_an_impossible_birth_year_is_caught():
+    """784189273907082 belongs to a real person and claims a birth year of
+    1892. Whatever went wrong, it is not the id she will present."""
+    problem = check.id_problem('784189273907082', YEAR)
+    assert problem and '1892' in problem
+
+
+def test_a_birth_year_in_the_future_is_caught():
+    assert check.id_problem('784209900000001', YEAR)
+
+
+@pytest.mark.parametrize('bad', [
+    '789197420484632',   # wrong national prefix
+    '874199876073703',   # 784 with the digits transposed
+    '78419970272793',    # too short
+    '',
+    None,
+])
+def test_a_malformed_id_is_caught(bad):
+    assert check.id_problem(bad, YEAR)
+
+
+def test_the_boundary_years_are_not_rejected():
+    """A living person can be born in 1900 or this year. Neither is a defect,
+    and flagging them would bury the real findings in noise."""
+    assert check.id_problem('784190012345678', YEAR) is None
+    assert check.id_problem(f'784{YEAR}12345678'[:15], YEAR) is None
