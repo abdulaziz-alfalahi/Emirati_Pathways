@@ -13,6 +13,7 @@ import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import InterviewAnalytics from './interviews/InterviewAnalytics';
 import InterviewScorecard from './InterviewScorecard';
 import { VideoRoom } from '@/components/common/VideoRoom';
+import CallStage from '@/components/common/CallStage';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -199,8 +200,10 @@ export default function RecruiterInterviews() {
   }
 
   if (activeSession) {
+    // Full screen — see CallStage. The interviewer loses the tab bar too,
+    // which is the point: it is the same call.
     return (
-      <div className="h-[calc(100vh-100px)]">
+      <CallStage label="Video interview">
         <VideoRoom
           sessionId={activeSession.id}
           userId={activeSession.recruiter_id}
@@ -208,7 +211,7 @@ export default function RecruiterInterviews() {
           isRecruiter={true}
           onEndCall={handleEndCall}
         />
-      </div>
+      </CallStage>
     );
   }
 

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Video, Clock, Loader2, Sparkles, Building, CheckCircle, BookOpen, GraduationCap, Users, ChevronRight } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { VideoRoom } from '@/components/common/VideoRoom';
+import CallStage from '@/components/common/CallStage';
 import { langOf, interviewRoundLabel } from '@/utils/enumLabels';
 import { toast } from 'sonner';
 
@@ -169,21 +170,29 @@ export default function CandidateInterviews() {
         }
     };
 
+    // Connecting belongs on the stage too. By this point the candidate has
+    // committed to joining; showing them the dashboard tabs while they wait is
+    // the same distraction, at the moment they are most likely to fidget.
     if (isConnecting) {
         return (
-            <div className="h-[calc(100vh-100px)] flex items-center justify-center bg-slate-900 rounded-lg">
-                <div className="text-center text-white">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                    <p>{t('Connecting to interview...', 'جاري الاتصال بالمقابلة...')}</p>
+            <CallStage label="Joining the video interview">
+                <div className="w-full flex items-center justify-center bg-slate-900">
+                    <div className="text-center text-white">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                        <p>{t('Connecting to interview...', 'جاري الاتصال بالمقابلة...')}</p>
+                    </div>
                 </div>
-            </div>
+            </CallStage>
         );
     }
 
     if (activeSession) {
         const userData = getUserData();
+        // Full screen, not a frame in the dashboard: a candidate should not sit
+        // through an interview with a tab bar above it, nor be one stray click
+        // from leaving (fb_1788181301).
         return (
-            <div className="h-[calc(100vh-100px)]">
+            <CallStage label="Video interview">
                 <VideoRoom
                     sessionId={activeSession.id}
                     userId={String(userData.id)}
@@ -192,7 +201,7 @@ export default function CandidateInterviews() {
                     livekitUrl={livekitUrl}
                     token={livekitToken}
                 />
-            </div>
+            </CallStage>
         );
     }
 
