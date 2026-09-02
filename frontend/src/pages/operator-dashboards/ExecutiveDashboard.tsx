@@ -80,7 +80,7 @@ const ExecutiveDashboard: React.FC = () => {
    * browser is deliberate: the page holds counts, not people, so there is
    * nothing here to cross-tabulate.
    */
-  const [demoFilter, setDemoFilter] = useState<{ field: string; value: string; label: string } | null>(null);
+  const [demoFilters, setDemoFilters] = useState<{ field: string; value: string; label: string }[]>([]);
   const [demoFilterLoading, setDemoFilterLoading] = useState(false);
   const [newDirective, setNewDirective] = useState({
     title: '', body: '', category: 'strategic_priority', priority: 'normal'
@@ -118,35 +118,46 @@ const ExecutiveDashboard: React.FC = () => {
   const demoSeries = (field: string) =>
     (demoCut?.[field] || []).map((x: any) => ({ ...x, name: demoLabel(x.name), raw: x.name }));
 
-  const applyDemoFilter = async (field: string, datum: any) => {
-    if (!datum?.raw) return;
-    const next = { field, value: String(datum.raw), label: String(datum.name) };
+  const loadDemographics = async (next: { field: string; value: string; label: string }[]) => {
+    const qs = next.map(f =>
+      `filter_field=${encodeURIComponent(f.field)}&filter_value=${encodeURIComponent(f.value)}`
+    ).join('&');
     setDemoFilterLoading(true);
     try {
-      const res = await restClient.get(
-        `/api/metrics/demographics?filter_field=${encodeURIComponent(field)}` +
-        `&filter_value=${encodeURIComponent(next.value)}`);
+      const res = await restClient.get('/api/metrics/demographics' + (qs ? `?${qs}` : ''));
       if (res?.data?.success) {
         setDemographicsData(res.data.data);
-        setDemoFilter(next);
+        setDemoFilters(next);
       }
     } finally {
       setDemoFilterLoading(false);
     }
   };
 
-  const clearDemoFilter = async () => {
-    setDemoFilterLoading(true);
-    try {
-      const res = await restClient.get('/api/metrics/demographics');
-      if (res?.data?.success) {
-        setDemographicsData(res.data.data);
-        setDemoFilter(null);
-      }
-    } finally {
-      setDemoFilterLoading(false);
-    }
+  /**
+   * Filters STACK. Reported an hour after the drill-down shipped
+   * (fb_1788331145): "When I clicked on not working and then a specific age
+   * group the filter took the age group only."
+   *
+   * Clicking within a field that is already filtered REPLACES that field's
+   * value rather than adding a second one — "Male AND Female" is empty, and an
+   * empty chart reads as a bug rather than as a refinement. Clicking the bucket
+   * that is already selected removes it, so a wrong click is undone by
+   * repeating it.
+   */
+  const applyDemoFilter = (field: string, datum: any) => {
+    if (!datum?.raw) return;
+    const value = String(datum.raw);
+    const existing = demoFilters.find(f => f.field === field);
+    const without = demoFilters.filter(f => f.field !== field);
+    if (existing && existing.value === value) return loadDemographics(without);
+    return loadDemographics([...without, { field, value, label: String(datum.name) }]);
   };
+
+  const removeDemoFilter = (field: string) =>
+    loadDemographics(demoFilters.filter(f => f.field !== field));
+
+  const clearDemoFilter = () => loadDemographics([]);
 
   const demoGender = demoSeries('gender');
   const demoAge = demoSeries('age');
@@ -1814,14 +1825,27 @@ const ExecutiveDashboard: React.FC = () => {
               {/* What the tab is filtered to. Stated rather than implied: a
                   chart showing only women looks exactly like a chart of
                   everybody if nothing says otherwise. */}
-              {demoFilter && (
+              {demoFilters.length > 0 && (
                 <div
-                  className="mb-4 flex items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900"
+                  className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900"
                   style={{ direction: isRTL ? 'rtl' : 'ltr' }}
                 >
-                  <span>
+                  <span className="flex flex-wrap items-center gap-1.5">
                     {b('Showing only', 'عرض فقط')}{' '}
-                    <span className="font-dubai-bold">{demoFilter.label}</span>
+                    {/* One removable chip per filter, so a board member can drop
+                        one condition without losing the rest of the question. */}
+                    {demoFilters.map((f, i) => (
+                      <React.Fragment key={f.field}>
+                        {i > 0 && <span className="opacity-60">{b('and', 'و')}</span>}
+                        <button type="button" onClick={() => removeDemoFilter(f.field)}
+                                disabled={demoFilterLoading}
+                                title={b('Remove this filter', 'إزالة هذا التصفية')}
+                                className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-white px-2 py-0.5 font-dubai-bold hover:bg-emerald-100">
+                          {f.label}
+                          <span aria-hidden className="opacity-60">×</span>
+                        </button>
+                      </React.Fragment>
+                    ))}
                     {' — '}
                     {b('every chart below is the profile of this group.',
                        'كل الرسوم أدناه تمثل هذه الفئة.')}
