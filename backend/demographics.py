@@ -238,7 +238,7 @@ def _order_buckets(field, buckets):
     return sorted(buckets, key=lambda b: -b['value'])
 
 
-def build_cuts(cur):
+def build_cuts(cur, filter_field=None, filter_value=None):
     """Every cohort cut of every field, in a fixed number of queries.
 
     The page offers twelve cuts and draws seven charts on each. Asking per cut
@@ -251,19 +251,52 @@ def build_cuts(cur):
     value of 3,191 and the chart would show nothing else. Dropping them
     silently would instead overstate what the data knows, so every cut carries
     a `coverage` block and the UI states it on the card.
+
+    FILTERING TO ONE BUCKET — the drill-down.
+
+    Reported by a board member 2026-09-01 (fb_1788248093): "The gender, when
+    clicked, does not provide a breakdown." Every chart here was one-dimensional
+    and nothing cross-tabulated, so the tab could say how many women there are
+    and never what they look like.
+
+    Passing filter_field/filter_value restricts EVERY chart to that bucket, so
+    clicking "Female" turns the other six charts into the age, education,
+    marital, emirate, employment and reachability profile of women. That reuses
+    the cohort machinery rather than adding a second one, and it generalises:
+    the same gesture works on any chart, so this does not have to be built again
+    for age next month.
+
+    Coverage is recomputed WITHIN the filtered set. A percentage carried over
+    from the unfiltered population would describe a different group of people
+    than the bars beside it.
     """
+    predicate, filter_params = '', []
+    if filter_field and str(filter_value or '').strip():
+        # Whitelisted through FIELDS: the caller names a FIELD, never a column,
+        # so no caller-supplied text reaches the SQL. The value is a bound
+        # parameter.
+        column = FIELDS.get(filter_field)
+        if not column:
+            raise ValueError(f'unknown demographic field: {filter_field}')
+        predicate = f"TRIM(cp.{column}::text) = %s"
+        filter_params = [str(filter_value).strip()]
+
+    where = f"WHERE {predicate}" if predicate else ""
+    andwhere = f"AND {predicate}" if predicate else ""
     known_cols = ', '.join(
         f"COUNT(NULLIF(TRIM(cp.{col}::text), '')) AS {field}_known"
         for field, col in FIELDS.items())
 
-    cur.execute(f"SELECT COUNT(*) AS total, {known_cols} FROM candidate_profiles cp")
+    cur.execute(f"SELECT COUNT(*) AS total, {known_cols} FROM candidate_profiles cp {where}",
+                filter_params)
     overall_coverage = cur.fetchone()
 
     cur.execute(f"""SELECT s.seg AS seg, COUNT(*) AS total, {known_cols}
                       FROM candidate_profiles cp
                       CROSS JOIN LATERAL
                            jsonb_array_elements_text(cp.crm_segments) AS s(seg)
-                     GROUP BY 1""")
+                     {where}
+                     GROUP BY 1""", filter_params)
     segment_coverage = {r['seg']: r for r in cur.fetchall()}
 
     overall_buckets = {}
@@ -273,7 +306,8 @@ def build_cuts(cur):
                           FROM candidate_profiles cp
                          WHERE cp.{col} IS NOT NULL
                            AND TRIM(cp.{col}::text) <> ''
-                         GROUP BY 1""")
+                           {andwhere}
+                         GROUP BY 1""", filter_params)
         overall_buckets[field] = [{'name': r['name'], 'value': int(r['value'])}
                                   for r in cur.fetchall()]
 
@@ -284,7 +318,8 @@ def build_cuts(cur):
                                jsonb_array_elements_text(cp.crm_segments) AS s(seg)
                          WHERE cp.{col} IS NOT NULL
                            AND TRIM(cp.{col}::text) <> ''
-                         GROUP BY 1, 2""")
+                           {andwhere}
+                         GROUP BY 1, 2""", filter_params)
         by_seg = {}
         for r in cur.fetchall():
             by_seg.setdefault(r['seg'], []).append(

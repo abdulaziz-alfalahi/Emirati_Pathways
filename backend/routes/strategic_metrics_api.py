@@ -91,16 +91,36 @@ def get_demographics_metrics():
         return jsonify({'success': False,
                         'message': 'Database unavailable'}), 503
 
+    # The drill-down. A board member asked why clicking the gender chart gave
+    # no breakdown (fb_1788248093); naming a field and a bucket restricts every
+    # chart to that bucket, so "Female" turns the rest of the tab into the
+    # profile of women. Unknown fields are refused rather than ignored — a typo
+    # that silently returned the unfiltered population would be read as the
+    # breakdown.
+    filter_field = (request.args.get('filter_field') or '').strip() or None
+    filter_value = (request.args.get('filter_value') or '').strip() or None
+    if filter_field and filter_field not in demog.FIELDS:
+        return jsonify({'success': False,
+                        'message': f'Unknown demographic field: {filter_field}'}), 400
+    if filter_field and not filter_value:
+        return jsonify({'success': False,
+                        'message': 'filter_value is required with filter_field'}), 400
+
     conn = None
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cuts = demog.build_cuts(cur)
+            cuts = demog.build_cuts(cur, filter_field, filter_value)
 
         note = pop_defs.scope_note_bilingual('board')
         data = dict(cuts)
         data.update({
             'source': 'database',
+            # Echoed so the screen can show what it is filtered to, and so a
+            # cached or racing response cannot be mistaken for the whole
+            # population.
+            'filter': ({'field': filter_field, 'value': filter_value}
+                       if filter_field else None),
             'as_of': datetime.utcnow().isoformat() + 'Z',
             # The same disclosure the population strip carries. These are
             # RECORDED people — imported from NAFIS and the CRM master file —

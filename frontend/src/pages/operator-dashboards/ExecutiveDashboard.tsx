@@ -70,6 +70,18 @@ const ExecutiveDashboard: React.FC = () => {
   const [directives, setDirectives] = useState<any[]>([]);
   const [demographicsData, setDemographicsData] = useState<any>(null);
   const [demoSubTab, setDemoSubTab] = useState<'main' | 'priority'>('main');
+  /**
+   * The drill-down, reported by a board member 2026-09-01 (fb_1788248093):
+   * "The gender, when clicked, does not provide a breakdown."
+   *
+   * Clicking a bucket restricts EVERY chart on the tab to it, so "Female" turns
+   * the other six into the age, education, marital, emirate, employment and
+   * reachability profile of women. Filtering server-side rather than in the
+   * browser is deliberate: the page holds counts, not people, so there is
+   * nothing here to cross-tabulate.
+   */
+  const [demoFilter, setDemoFilter] = useState<{ field: string; value: string; label: string } | null>(null);
+  const [demoFilterLoading, setDemoFilterLoading] = useState(false);
   const [newDirective, setNewDirective] = useState({
     title: '', body: '', category: 'strategic_priority', priority: 'normal'
   });
@@ -101,8 +113,40 @@ const ExecutiveDashboard: React.FC = () => {
     if (!isRTL) return name;
     return demographicsData?.education_labels_ar?.[name] || DEMO_LABELS_AR[name] || name;
   };
+  // `raw` is kept beside the localised name: the filter has to send the value
+  // the database stores, and `name` is a translation by the time it is drawn.
   const demoSeries = (field: string) =>
-    (demoCut?.[field] || []).map((x: any) => ({ ...x, name: demoLabel(x.name) }));
+    (demoCut?.[field] || []).map((x: any) => ({ ...x, name: demoLabel(x.name), raw: x.name }));
+
+  const applyDemoFilter = async (field: string, datum: any) => {
+    if (!datum?.raw) return;
+    const next = { field, value: String(datum.raw), label: String(datum.name) };
+    setDemoFilterLoading(true);
+    try {
+      const res = await restClient.get(
+        `/api/metrics/demographics?filter_field=${encodeURIComponent(field)}` +
+        `&filter_value=${encodeURIComponent(next.value)}`);
+      if (res?.data?.success) {
+        setDemographicsData(res.data.data);
+        setDemoFilter(next);
+      }
+    } finally {
+      setDemoFilterLoading(false);
+    }
+  };
+
+  const clearDemoFilter = async () => {
+    setDemoFilterLoading(true);
+    try {
+      const res = await restClient.get('/api/metrics/demographics');
+      if (res?.data?.success) {
+        setDemographicsData(res.data.data);
+        setDemoFilter(null);
+      }
+    } finally {
+      setDemoFilterLoading(false);
+    }
+  };
 
   const demoGender = demoSeries('gender');
   const demoAge = demoSeries('age');
@@ -1767,6 +1811,29 @@ const ExecutiveDashboard: React.FC = () => {
                 </div>
               )}
 
+              {/* What the tab is filtered to. Stated rather than implied: a
+                  chart showing only women looks exactly like a chart of
+                  everybody if nothing says otherwise. */}
+              {demoFilter && (
+                <div
+                  className="mb-4 flex items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900"
+                  style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+                >
+                  <span>
+                    {b('Showing only', 'عرض فقط')}{' '}
+                    <span className="font-dubai-bold">{demoFilter.label}</span>
+                    {' — '}
+                    {b('every chart below is the profile of this group.',
+                       'كل الرسوم أدناه تمثل هذه الفئة.')}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={clearDemoFilter}
+                          disabled={demoFilterLoading}
+                          className="h-7 bg-white font-dubai-medium">
+                    {b('Show everyone', 'عرض الجميع')}
+                  </Button>
+                </div>
+              )}
+
               {/* MAIN OVERVIEW */}
               {demoSubTab === 'main' && demoCut && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1782,9 +1849,11 @@ const ExecutiveDashboard: React.FC = () => {
                       <div style={{ height: 280 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={demoGender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4}>
+                            <Pie data={demoGender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4}
+                                 onClick={(d: any) => applyDemoFilter('gender', d?.payload ?? d)}
+                                 style={{ cursor: 'pointer', outline: 'none' }}>
                               {demoGender.map((_: any, i: number) => (
-                                <Cell key={`g-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                <Cell key={`g-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} style={{ cursor: 'pointer', outline: 'none' }} />
                               ))}
                             </Pie>
                             <Tooltip content={<CustomTooltip />} />
@@ -1811,7 +1880,9 @@ const ExecutiveDashboard: React.FC = () => {
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#3B82F6" radius={[6, 6, 0, 0]}
+                                 onClick={(d: any) => applyDemoFilter('age', d?.payload ?? d)}
+                                 cursor="pointer" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1834,7 +1905,9 @@ const ExecutiveDashboard: React.FC = () => {
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-20} textAnchor="end" />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#8B5CF6" radius={[6, 6, 0, 0]}
+                                 onClick={(d: any) => applyDemoFilter('education', d?.payload ?? d)}
+                                 cursor="pointer" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1882,6 +1955,8 @@ const ExecutiveDashboard: React.FC = () => {
                             <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={110} orientation={isRTL ? 'right' : 'left'} />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B"
+                                 onClick={(d: any) => applyDemoFilter('employment', d?.payload ?? d)}
+                                 cursor="pointer"
                                  radius={isRTL ? [6, 0, 0, 6] : [0, 6, 6, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
@@ -1920,7 +1995,9 @@ const ExecutiveDashboard: React.FC = () => {
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[6, 6, 0, 0]}
+                                 onClick={(d: any) => applyDemoFilter('military', d?.payload ?? d)}
+                                 cursor="pointer" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -1969,7 +2046,9 @@ const ExecutiveDashboard: React.FC = () => {
                             <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" />
                             <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#14B8A6" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#14B8A6" radius={[6, 6, 0, 0]}
+                                 onClick={(d: any) => applyDemoFilter('emirate', d?.payload ?? d)}
+                                 cursor="pointer" />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
