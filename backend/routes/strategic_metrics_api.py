@@ -97,12 +97,24 @@ def get_demographics_metrics():
     # profile of women. Unknown fields are refused rather than ignored — a typo
     # that silently returned the unfiltered population would be read as the
     # breakdown.
-    filter_field = (request.args.get('filter_field') or '').strip() or None
-    filter_value = (request.args.get('filter_value') or '').strip() or None
-    if filter_field and filter_field not in demog.FIELDS:
+    # Repeated params, paired by position: ?filter_field=employment&filter_value=
+    # Not Working&filter_field=age&filter_value=24-35. Paired positionally rather
+    # than packed into one "field:value" string because a value may contain any
+    # character the CRM typed, and a delimiter would eventually meet it.
+    fields = [f.strip() for f in request.args.getlist('filter_field')]
+    values = [v.strip() for v in request.args.getlist('filter_value')]
+    if len(fields) != len(values):
         return jsonify({'success': False,
-                        'message': f'Unknown demographic field: {filter_field}'}), 400
-    if filter_field and not filter_value:
+                        'message': 'filter_field and filter_value must be paired'}), 400
+    filters = [(f, v) for f, v in zip(fields, values) if f and v]
+    for f, _v in filters:
+        if f not in demog.FIELDS:
+            return jsonify({'success': False,
+                            'message': f'Unknown demographic field: {f}'}), 400
+    if len({f for f, _ in filters}) != len(filters):
+        return jsonify({'success': False,
+                        'message': 'each field may be filtered at most once'}), 400
+    if any(f and not v for f, v in zip(fields, values)):
         return jsonify({'success': False,
                         'message': 'filter_value is required with filter_field'}), 400
 
@@ -110,7 +122,7 @@ def get_demographics_metrics():
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cuts = demog.build_cuts(cur, filter_field, filter_value)
+            cuts = demog.build_cuts(cur, filters=filters)
 
         note = pop_defs.scope_note_bilingual('board')
         data = dict(cuts)
@@ -119,8 +131,7 @@ def get_demographics_metrics():
             # Echoed so the screen can show what it is filtered to, and so a
             # cached or racing response cannot be mistaken for the whole
             # population.
-            'filter': ({'field': filter_field, 'value': filter_value}
-                       if filter_field else None),
+            'filters': [{'field': f, 'value': v} for f, v in filters],
             'as_of': datetime.utcnow().isoformat() + 'Z',
             # The same disclosure the population strip carries. These are
             # RECORDED people — imported from NAFIS and the CRM master file —

@@ -120,3 +120,53 @@ def test_an_empty_value_is_treated_as_no_filter():
 def test_the_value_is_trimmed():
     stmts = statements_for(filter_field='gender', filter_value='  Female  ')
     assert all(p == ['Female'] for _s, p in stmts if p)
+
+
+# ── filters stack ───────────────────────────────────────────────────────────
+#
+# Reported an hour after the drill-down shipped (fb_1788331145): "When I clicked
+# on not working and then a specific age group the filter took the age group
+# only." One filter answers "what do women look like"; it does not answer "how
+# old are the women who are not working", which is two clicks away in any real
+# board conversation.
+
+
+def test_two_filters_produce_two_conditions():
+    stmts = statements_for(filters=[('employment', 'Not Working'), ('age', '24-35')])
+    filtered = [(s, p) for s, p in stmts if p]
+    assert filtered, 'no query carried the filters'
+    for sql, params in filtered:
+        assert params == ['Not Working', '24-35']
+        assert sql.lower().count('trim(cp.') >= 2
+
+
+def test_the_conditions_are_ANDed_not_ORed():
+    """OR would return MORE people than either filter alone — the opposite of a
+    drill-down, and it would look plausible on screen."""
+    stmts = statements_for(filters=[('employment', 'Not Working'), ('age', '24-35')])
+    sql = next(s for s, p in stmts if p)
+    assert ' or ' not in sql.lower().split('where')[-1].split('group by')[0]
+
+
+def test_the_same_field_cannot_be_filtered_twice():
+    """"Male AND Female" is empty. An empty chart reads as a bug rather than as
+    a refinement, so this is refused where the caller can still explain it."""
+    with pytest.raises(ValueError):
+        demog.build_cuts(FakeCursor(), filters=[('gender', 'Male'), ('gender', 'Female')])
+
+
+def test_an_unknown_field_anywhere_in_the_stack_is_refused():
+    with pytest.raises(ValueError):
+        demog.build_cuts(FakeCursor(), filters=[('gender', 'Female'), ('nope', 'x')])
+
+
+def test_blank_entries_are_dropped_not_filtered_on():
+    stmts = statements_for(filters=[('gender', 'Female'), ('age', '')])
+    assert all(p == ['Female'] for _s, p in stmts if p)
+
+
+def test_the_single_filter_form_still_works():
+    """The endpoint kept the one-pair signature; a caller using it must not
+    silently stop filtering."""
+    stmts = statements_for(filter_field='gender', filter_value='Female')
+    assert any(p == ['Female'] for _s, p in stmts if p)

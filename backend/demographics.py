@@ -238,7 +238,7 @@ def _order_buckets(field, buckets):
     return sorted(buckets, key=lambda b: -b['value'])
 
 
-def build_cuts(cur, filter_field=None, filter_value=None):
+def build_cuts(cur, filter_field=None, filter_value=None, filters=None):
     """Every cohort cut of every field, in a fixed number of queries.
 
     The page offers twelve cuts and draws seven charts on each. Asking per cut
@@ -270,16 +270,37 @@ def build_cuts(cur, filter_field=None, filter_value=None):
     from the unfiltered population would describe a different group of people
     than the bars beside it.
     """
-    predicate, filter_params = '', []
+    # FILTERS STACK. Reported by the same board member an hour after the
+    # drill-down shipped (fb_1788331145): "When I clicked on not working and
+    # then a specific age group the filter took the age group only."
+    #
+    # He was right and the first version was too small: one filter at a time
+    # answers "what do women look like" but not "how old are the women who are
+    # not working", which is the question an actual board conversation reaches
+    # in two clicks. Each click now ADDS a condition; clicking within a field
+    # that is already filtered REPLACES that field's value, because "Male AND
+    # Female" is empty and would read as a bug rather than a refinement.
+    pairs = list(filters or [])
     if filter_field and str(filter_value or '').strip():
+        pairs.append((filter_field, filter_value))
+
+    predicates, filter_params, seen_fields = [], [], set()
+    for field, value in pairs:
+        if not field or not str(value or '').strip():
+            continue
         # Whitelisted through FIELDS: the caller names a FIELD, never a column,
         # so no caller-supplied text reaches the SQL. The value is a bound
         # parameter.
-        column = FIELDS.get(filter_field)
+        column = FIELDS.get(field)
         if not column:
-            raise ValueError(f'unknown demographic field: {filter_field}')
-        predicate = f"TRIM(cp.{column}::text) = %s"
-        filter_params = [str(filter_value).strip()]
+            raise ValueError(f'unknown demographic field: {field}')
+        if field in seen_fields:
+            raise ValueError(f'field filtered twice: {field}')
+        seen_fields.add(field)
+        predicates.append(f"TRIM(cp.{column}::text) = %s")
+        filter_params.append(str(value).strip())
+
+    predicate = ' AND '.join(predicates)
 
     where = f"WHERE {predicate}" if predicate else ""
     andwhere = f"AND {predicate}" if predicate else ""
