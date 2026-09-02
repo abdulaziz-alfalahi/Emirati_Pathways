@@ -98,54 +98,31 @@ def provision_workspace():
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # Verify company exists
-        cur.execute("SELECT id, company_name, workspace_enabled FROM companies WHERE id = %s", (company_id,))
-        company = cur.fetchone()
-        if not company:
+        # ONE implementation, shared with the automatic path that runs when a
+        # company is approved (backend/workspace_provisioning.py). Two copies of
+        # slug generation and admin membership would drift, and the drift would
+        # show up as a workspace an HR manager cannot open.
+        try:
+            from backend.workspace_provisioning import provision
+        except ImportError:  # pragma: no cover — the app runs under both roots
+            from workspace_provisioning import provision
+
+        cur.execute("SELECT id, workspace_enabled FROM companies WHERE id = %s",
+                    (company_id,))
+        existing = cur.fetchone()
+        if not existing:
             cur.close(); conn.close()
             return jsonify({"error": "Company not found"}), 404
-
-        if company.get('workspace_enabled'):
+        if existing.get('workspace_enabled'):
             cur.close(); conn.close()
-            return jsonify({"error": "Workspace already provisioned for this company", "company_id": company_id}), 409
+            return jsonify({"error": "Workspace already provisioned for this company",
+                            "company_id": company_id}), 409
 
-        # Generate slug from company name if not provided
-        if not slug:
-            raw_slug = company['company_name'].lower().replace(' ', '-').replace('&', 'and')
-            # Remove non-alphanumeric chars except hyphens
-            slug = ''.join(c for c in raw_slug if c.isalnum() or c == '-')[:100]
-            # Ensure uniqueness
-            cur.execute("SELECT COUNT(*) FROM companies WHERE workspace_slug = %s", (slug,))
-            if cur.fetchone()['count'] > 0:
-                slug = f"{slug}-{str(company_id)[:8]}"
-
-        # Provision the workspace
-        cur.execute("""
-            UPDATE companies SET
-                workspace_enabled = TRUE,
-                workspace_slug = %s,
-                workspace_admin_id = %s,
-                provisioned_by = %s,
-                provisioned_at = NOW()
-            WHERE id = %s
-            RETURNING id, company_name, workspace_slug, workspace_enabled
-        """, (slug, admin_user_id, provisioner_id, company_id))
-        updated = cur.fetchone()
-
-        # If admin_user_id given, ensure they're in company_team_members as admin
-        if admin_user_id:
-            cur.execute("""
-                INSERT INTO company_team_members (company_id, user_id, role, invitation_status, permissions)
-                VALUES (%s, %s, 'admin', 'accepted', '{"workspace.manage_employees": true, "workspace.assign_resources": true, "workspace.post_jobs": true}'::jsonb)
-                ON CONFLICT (company_id, user_id) DO UPDATE SET role = 'admin'
-            """, (company_id, admin_user_id))
-
-            # NOTE (#92): no users.current_company_id write. Migration 001
-            # declares that column but it was never deployed, so this UPDATE
-            # raised UndefinedColumn and 500'd EVERY provision with an
-            # admin_user_id — which is why all workspace_enabled companies
-            # have provisioned_by NULL. Membership lives in
-            # company_team_members (the store the ACL reads), written above.
+        updated = provision(cur, company_id, provisioner_id,
+                            admin_user_id=admin_user_id, slug=slug)
+        if updated is None:
+            cur.close(); conn.close()
+            return jsonify({"error": "Workspace could not be provisioned"}), 409
 
         conn.commit()
         cur.close(); conn.close()
