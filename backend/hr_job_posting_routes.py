@@ -211,7 +211,29 @@ def ensure_job_postings_table_exists():
                 published_at TIMESTAMP
             )
         """)
-        
+
+        # COLUMNS ADDED BY MIGRATION AFTER THIS DDL WAS WRITTEN.
+        #
+        # The CREATE above only runs when the table does not exist, so a
+        # database provisioned from it — CI builds one per run — never receives
+        # anything a later migration added. The code then SELECTs and INSERTs
+        # columns that are not there, and the failure is a 500 on a route rather
+        # than an obvious schema error.
+        #
+        # Adding them here keeps every environment converged on what this module
+        # actually reads and writes. IF NOT EXISTS makes it a no-op against
+        # dghr_prod, where migrations 102 and 106 already ran.
+        cursor.execute("""
+            ALTER TABLE job_postings
+                ADD COLUMN IF NOT EXISTS required_skills JSONB,
+                ADD COLUMN IF NOT EXISTS education_level VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS specialization VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS working_hours VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS number_of_vacancies INTEGER DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS locations JSONB,
+                ADD COLUMN IF NOT EXISTS suitable_for_people_of_determination BOOLEAN
+        """)
+
         # job_shortlists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS job_shortlists (
