@@ -269,7 +269,23 @@ def create_candidate_profile():
                     WHERE id = %s
                 """, (u_first_name, u_last_name, u_phone, current_user_id))            
             conn.commit()
-            
+
+            # Scout: this profile change may have created a match for an open
+            # vacancy (fb_1788343289; owner 2026-09-02, "inform the recruiter
+            # when a new candidate matches a vacancy").
+            #
+            # AFTER the commit and never raising: a candidate's profile save must
+            # not fail because a recruiter's notification could not be written.
+            try:
+                try:
+                    from backend.scout import scout_for_candidate
+                except ImportError:  # pragma: no cover
+                    from scout import scout_for_candidate
+                scout_for_candidate(current_user_id)
+            except Exception as _exc:                          # noqa: BLE001
+                logger.warning('scout after profile save failed for %s: %s',
+                               current_user_id, _exc)
+
             return jsonify({
                 'success': True,
                 'message': f'Candidate profile {action} successfully',
