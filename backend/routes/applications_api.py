@@ -15,7 +15,7 @@ job_postings (id integer) and companies (name/company_name drift → COALESCE).
 
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -179,6 +179,112 @@ def my_applications():
         return jsonify({'success': False, 'message': 'Failed to load applications'}), 500
 
 
+# ── Open-application limit, and the recruiter obligation that makes it fair ──
+#
+# Requested by a recruiter 2026-09-02 (fb_1788343258). The owner settled the
+# shape of it the same day:
+#
+#   "I need to put a mechanism in place so the candidate can't apply for more
+#    than three jobs since the matching and scoring are already done, and at the
+#    same time I need to put some control on recruiters not to keep candidates
+#    hanging there."
+#
+# Those two halves are ONE mechanism, and this is the whole design:
+#
+# A candidate may hold three LIVE applications. Not three ever, and not three
+# per rolling window — three that an employer is currently supposed to be acting
+# on. The justification is that matching already narrows the field, so applying
+# to everything adds nothing.
+#
+# That cap is only defensible if the employer moves. So an application the
+# EMPLOYER has left untouched past the response window stops counting against
+# the candidate, and counts against the employer instead. A recruiter sitting on
+# an application no longer costs the candidate a slot — it costs the recruiter a
+# breach. Nothing else would be fair: without this, three silent employers could
+# lock a citizen out of applying for work indefinitely, with no action available
+# to them.
+#
+# WHERE THE NUMBERS COME FROM: three is the owner's and the requester's.
+# RESPONSE_WINDOW_DAYS is MINE, proposed at 7 and named here so it is one edit
+# to change once somebody decides the real service standard.
+OPEN_APPLICATION_LIMIT = 3
+RESPONSE_WINDOW_DAYS = 7
+
+#: The employer is expected to act next.
+AWAITING_EMPLOYER = ('submitted', 'under_review', 'shortlisted', 'interview_scheduled')
+#: The candidate is expected to act next — the employer has done their part, so
+#: these never age into a breach, and they still occupy a slot.
+AWAITING_CANDIDATE = ('offered', 'offer_received')
+#: Finished. Frees the slot and ends any obligation on either side.
+TERMINAL = ('withdrawn', 'rejected', 'hired', 'accepted', 'declined')
+
+
+def _open_application_state(user_id):
+    """(counted, released, next_free_at) for this candidate.
+
+    `counted` are live applications that still occupy a slot. `released` are
+    live applications the employer has left past the window — they no longer
+    count against the candidate. `next_free_at` is when the oldest counted
+    application would itself age out, so the refusal can say something better
+    than "later".
+    """
+    rows = execute_query(
+        """SELECT status,
+                  COALESCE(updated_at, submitted_at, applied_at) AS last_touched
+             FROM job_applications
+            WHERE candidate_id = %s
+              AND status <> ALL(%s)
+        """, (user_id, list(TERMINAL))) or []
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=RESPONSE_WINDOW_DAYS)
+    counted, released, oldest = 0, 0, None
+    for row in rows:
+        touched = row.get('last_touched')
+        if touched is not None and touched.tzinfo is None:
+            touched = touched.replace(tzinfo=timezone.utc)
+        stale = (row.get('status') in AWAITING_EMPLOYER
+                 and touched is not None and touched < cutoff)
+        if stale:
+            released += 1
+            continue
+        counted += 1
+        if touched is not None and (oldest is None or touched < oldest):
+            oldest = touched
+
+    next_free = (oldest + timedelta(days=RESPONSE_WINDOW_DAYS)) if oldest else None
+    return counted, released, next_free
+
+
+def employers_not_responding(company_id=None):
+    """Applications left past the response window, grouped by employer.
+
+    The other half of the owner's instruction. Reported rather than enforced:
+    the consequence of a red flag is somebody's decision, and a platform that
+    silently penalises an employer it has never told is not governance.
+    """
+    rows = execute_query(
+        """SELECT jp.company_id,
+                  COUNT(*) AS overdue,
+                  MIN(COALESCE(ja.updated_at, ja.submitted_at, ja.applied_at)) AS waiting_since
+             FROM job_applications ja
+             JOIN job_postings jp ON jp.id::text = ja.job_id::text
+            WHERE ja.status = ANY(%s)
+              AND COALESCE(ja.updated_at, ja.submitted_at, ja.applied_at)
+                  < NOW() - make_interval(days => %s)
+              AND (%s IS NULL OR jp.company_id::text = %s)
+            GROUP BY jp.company_id
+            ORDER BY 2 DESC
+        """, (list(AWAITING_EMPLOYER), RESPONSE_WINDOW_DAYS,
+              company_id, company_id)) or []
+    return [{
+        'company_id': str(r['company_id']) if r['company_id'] else None,
+        'overdue': int(r['overdue']),
+        'waiting_since': r['waiting_since'].isoformat() if r['waiting_since'] else None,
+        # "more than three occasions" (fb_1788343258).
+        'flagged': int(r['overdue']) > 3,
+    } for r in rows]
+
+
 @applications_bp.route('/apply', methods=['POST'])
 @require_auth
 def apply():
@@ -204,6 +310,32 @@ def apply():
             (user_id, job_id), fetch_one=True)
         if dup:
             return jsonify({'success': False, 'message': 'You have already applied to this job'}), 409
+
+        # After the duplicate check on purpose: someone re-clicking a job they
+        # already applied to should be told that, not that they are at a limit.
+        counted, released, next_free = _open_application_state(user_id)
+        if counted >= OPEN_APPLICATION_LIMIT:
+            when = (f' The earliest is likely to move on '
+                    f'{next_free.date().isoformat()}.' if next_free else '')
+            return jsonify({
+                'success': False,
+                'code': 'open_application_limit_reached',
+                'message': (
+                    f'You have {counted} applications still being considered, which '
+                    f'is the limit. Employers are matched to you on your profile, so '
+                    f'applying more widely does not improve your chances.{when} '
+                    'Withdraw an application, or wait for an employer to respond.'),
+                'message_ar': (
+                    f'لديك {counted} طلبات ما زالت قيد النظر، وهو الحد الأقصى. '
+                    'يتم ترشيحك لأصحاب العمل بناءً على ملفك، لذا فإن التقديم على '
+                    'المزيد لا يحسّن فرصك. يمكنك سحب أحد الطلبات أو انتظار رد صاحب العمل.'),
+                'limit': OPEN_APPLICATION_LIMIT,
+                'open_applications': counted,
+                # Shown so a candidate can see the platform is not holding them
+                # to applications nobody is acting on.
+                'released_by_employer_delay': released,
+                'next_free_at': next_free.isoformat() if next_free else None,
+            }), 429
 
         app_id = str(uuid.uuid4())
         execute_query(
