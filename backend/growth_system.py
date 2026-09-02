@@ -1125,13 +1125,43 @@ class GrowthSystem:
                     conn.rollback()
                     return None
                 conn.commit()
-                return {
+
+                result = {
                     'id': str(row['id']),
                     'company_name': row['company_name'],
                     'is_verified': row['is_verified'],
                     'verified_by': row['verified_by'],
                     'verified_at': row['verified_at'].isoformat() if row['verified_at'] else None,
                 }
+
+                # Approving a company gives it a workspace (owner, 2026-09-02).
+                # Verification is the trigger because it is the moment a named
+                # operator decides the employer is real, and the same gate that
+                # lets them publish — so the ability to hire and the place to do
+                # it arrive together.
+                #
+                # AFTER the commit and best-effort: a workspace problem must
+                # never cost a company its verification, which is the decision
+                # the operator actually made. The manual "Provision Workspace"
+                # button remains the repair path, and failure is logged loudly
+                # because a silently missing workspace is discovered by an HR
+                # manager who cannot find their own company.
+                if verified:
+                    try:
+                        try:
+                            from backend.workspace_provisioning import provision_on_verification
+                        except ImportError:  # pragma: no cover — dual root
+                            from workspace_provisioning import provision_on_verification
+                        slug = provision_on_verification(
+                            self._get_db_connection, company_id, verified_by)
+                        if slug:
+                            result['workspace_slug'] = slug
+                            result['workspace_provisioned'] = True
+                    except Exception as exc:                   # noqa: BLE001
+                        logger.error('workspace auto-provision raised for %s: %s',
+                                     company_id, exc)
+
+                return result
         except Exception as e:
             conn.rollback()
             logger.error(f"Company verification update failed: {e}")
