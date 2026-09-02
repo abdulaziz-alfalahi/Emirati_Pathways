@@ -211,7 +211,29 @@ def ensure_job_postings_table_exists():
                 published_at TIMESTAMP
             )
         """)
-        
+
+        # COLUMNS ADDED BY MIGRATION AFTER THIS DDL WAS WRITTEN.
+        #
+        # The CREATE above only runs when the table does not exist, so a
+        # database provisioned from it — CI builds one per run — never receives
+        # anything a later migration added. The code then SELECTs and INSERTs
+        # columns that are not there, and the failure is a 500 on a route rather
+        # than an obvious schema error.
+        #
+        # Adding them here keeps every environment converged on what this module
+        # actually reads and writes. IF NOT EXISTS makes it a no-op against
+        # dghr_prod, where migrations 102 and 106 already ran.
+        cursor.execute("""
+            ALTER TABLE job_postings
+                ADD COLUMN IF NOT EXISTS required_skills JSONB,
+                ADD COLUMN IF NOT EXISTS education_level VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS specialization VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS working_hours VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS number_of_vacancies INTEGER DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS locations JSONB,
+                ADD COLUMN IF NOT EXISTS suitable_for_people_of_determination BOOLEAN
+        """)
+
         # job_shortlists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS job_shortlists (
@@ -312,6 +334,68 @@ def _uploads_dir() -> str:
         base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'job_documents')
     os.makedirs(base_dir, exist_ok=True)
     return base_dir
+
+def _vacancy_count(job):
+    """How many people this posting is hiring.
+
+    Requested 2026-09-02 (fb_1788341608): a posting for several openings should
+    keep accepting applications "until all approved vacancies under the same
+    request have been covered". The column has existed since migration 102 and
+    every one of the 289 rows holds 1, because nothing ever let a recruiter say
+    otherwise.
+
+    Anything unparseable or below 1 becomes 1: a vacancy advertising zero
+    openings is a posting nobody can be hired into, and silently accepting it
+    would take the posting off the matcher for a reason no one could see.
+    """
+    try:
+        count = int(job.get('number_of_vacancies') or 1)
+    except (TypeError, ValueError):
+        return 1
+    return max(1, count)
+
+
+def _extra_locations(job):
+    """Branches beyond the first, normalised to {emirate, city, branch}.
+
+    A posting with one location must serialise to nothing at all, so that a
+    single-branch vacancy is byte-for-byte what it was before this field
+    existed.
+    """
+    raw = job.get('locations') or []
+    if isinstance(raw, dict):
+        raw = [raw]
+    out = []
+    for entry in raw:
+        if isinstance(entry, str):
+            entry = {'city': entry}
+        if not isinstance(entry, dict):
+            continue
+        cleaned = {k: str(entry.get(k) or '').strip()
+                   for k in ('emirate', 'city', 'branch')}
+        if any(cleaned.values()):
+            out.append({k: v for k, v in cleaned.items() if v})
+    return out
+
+
+def _tristate(value):
+    """True / False / None, where None means "not stated".
+
+    A missing answer must not collapse to False. On this field that would
+    record, on every posting nobody was asked about, that the employer
+    considered accessibility and declined it.
+    """
+    if value is None or value == '':
+        return None
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in ('true', 'yes', '1', 'y'):
+            return True
+        if lowered in ('false', 'no', '0', 'n'):
+            return False
+        return None
+    return bool(value)
+
 
 def _required_skills_for(job):
     """The skills a vacancy is matched on.
@@ -476,6 +560,11 @@ def get_job_postings():
                     jp.application_deadline,
                     jp.emiratization_target,
                     jp.number_of_vacancies,
+                    -- Branches beyond the first, and the employer's
+                    -- accessibility statement (fb_1788340436, fb_1788342002).
+                    -- The PoD column is tri-state: NULL means not stated.
+                    jp.locations,
+                    jp.suitable_for_people_of_determination,
                     jp.remote_option,
                     jp.applications_count,
                     jp.views_count,
@@ -633,10 +722,11 @@ def create_job_postings_batch():
                         visa_sponsorship_available, tags, seo_keywords,
                         latitude, longitude,
                         required_skills, education_level, specialization,
-                        working_hours, number_of_vacancies
+                        working_hours, number_of_vacancies,
+                        locations, suitable_for_people_of_determination
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING *
                     """,
                     (
@@ -684,7 +774,15 @@ def create_job_postings_batch():
                         job.get('education_level') or job.get('education_requirements'),
                         job.get('specialization'),
                         job.get('working_hours'),
-                        job.get('number_of_vacancies') or 1
+                        _vacancy_count(job),
+                        # Additional branches. The FIRST location stays in
+                        # location/emirate/city so every existing reader is
+                        # unaffected; this holds the rest (fb_1788340436).
+                        json.dumps(_extra_locations(job)) if _extra_locations(job) else None,
+                        # Tri-state: True / False / None. None means the
+                        # employer was never asked, which is not the same as
+                        # them saying no (fb_1788342002).
+                        _tristate(job.get('suitable_for_people_of_determination')),
                     )
                 )
                 created.append(dict(cursor.fetchone()))

@@ -72,6 +72,19 @@ from functools import wraps
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# The wizard saves through THIS path, not through hr_job_posting_routes' batch
+# create. Three fields requested on 2026-09-02 therefore have to be written in
+# both places or they are silently dropped on save — the recurring shape where
+# a screen collects something no writer stores.
+try:
+    from backend.hr_job_posting_routes import (_extra_locations, _tristate,
+                                               _vacancy_count)
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from hr_job_posting_routes import (_extra_locations, _tristate,
+                                       _vacancy_count)
+
+
+
 
 def _caller_company_ids(cur, user_id):
     """Every company the caller belongs to, read from BOTH membership stores —
@@ -389,6 +402,10 @@ def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
             'latitude': jd_dict.get('latitude'),
             'longitude': jd_dict.get('longitude'),
             'remote_option': jd_dict.get('remote_option', False),
+            'locations': jd_dict.get('locations') or [],
+            'suitable_for_people_of_determination':
+                jd_dict.get('suitable_for_people_of_determination'),
+            'number_of_vacancies': jd_dict.get('number_of_vacancies') or 1,
             'application_deadline': jd_dict.get('application_deadline').isoformat() if jd_dict.get('application_deadline') else None
         }
         
@@ -518,6 +535,9 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     latitude = %s,
                     longitude = %s,
                     remote_option = %s,
+                    locations = %s,
+                    suitable_for_people_of_determination = %s,
+                    number_of_vacancies = %s,
                     application_deadline = %s,
                     description = %s,
                     description_arabic = %s,
@@ -545,6 +565,10 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                (json.dumps(_extra_locations(basic_info))
+                 if _extra_locations(basic_info) else None),
+                _tristate(basic_info.get('suitable_for_people_of_determination')),
+                _vacancy_count(basic_info),
                 deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
@@ -567,13 +591,15 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, latitude, longitude, remote_option,
+                    locations, suitable_for_people_of_determination,
+                    number_of_vacancies,
                     application_deadline,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -591,6 +617,10 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                (json.dumps(_extra_locations(basic_info))
+                 if _extra_locations(basic_info) else None),
+                _tristate(basic_info.get('suitable_for_people_of_determination')),
+                _vacancy_count(basic_info),
                 deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
@@ -1826,6 +1856,9 @@ def save_jd(jd_id):
                     city = %s,
                     location = %s,
                     remote_option = %s,
+                    locations = %s,
+                    suitable_for_people_of_determination = %s,
+                    number_of_vacancies = %s,
                     description = %s,
                     description_arabic = %s,
                     requirements = %s,
@@ -1853,6 +1886,10 @@ def save_jd(jd_id):
                 city,
                 location,
                 basic_info.get('remote_option', False),
+                (json.dumps(_extra_locations(basic_info))
+                 if _extra_locations(basic_info) else None),
+                _tristate(basic_info.get('suitable_for_people_of_determination')),
+                _vacancy_count(basic_info),
                 jd_data.get('description'),
                 jd_data.get('description_arabic'),
                 json.dumps(jd_data.get('requirements', [])),
@@ -1877,12 +1914,14 @@ def save_jd(jd_id):
                     jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, location, latitude, longitude, remote_option,
+                    locations, suitable_for_people_of_determination,
+                    number_of_vacancies,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, application_deadline, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1900,6 +1939,10 @@ def save_jd(jd_id):
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                (json.dumps(_extra_locations(basic_info))
+                 if _extra_locations(basic_info) else None),
+                _tristate(basic_info.get('suitable_for_people_of_determination')),
+                _vacancy_count(basic_info),
                 jd_data.get('description'),
                 jd_data.get('description_arabic'),
                 json.dumps(jd_data.get('requirements', [])),

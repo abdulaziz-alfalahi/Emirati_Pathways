@@ -227,6 +227,26 @@ interface JDData {
     working_hours?: string;
     emirate: string;
     city: string;
+    /**
+     * Additional branches for the same vacancy (fb_1788340436: "Multiple
+     * locations needed in the job posting. e.g. different branches").
+     * The FIRST location stays in emirate/city above, so a single-branch
+     * posting is unchanged and every existing reader keeps working.
+     */
+    locations?: { emirate?: string; city?: string; branch?: string }[];
+    /**
+     * fb_1788342002 — the employer's own statement about accessibility.
+     * Tri-state: true / false / undefined, where undefined means NOT ASKED.
+     * Defaulting it to false would record on every posting that the employer
+     * considered it and declined.
+     */
+    suitable_for_people_of_determination?: boolean;
+    /**
+     * fb_1788341608 — how many people this posting is hiring. The column has
+     * existed since migration 102 and every row held 1 because nothing let a
+     * recruiter say otherwise.
+     */
+    number_of_vacancies?: number;
     latitude?: number | null;
     longitude?: number | null;
     remote_option: boolean;
@@ -1245,6 +1265,115 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           label="Pin exact location on map"
           height="250px"
         />
+      </div>
+
+      {/* ── Branches ────────────────────────────────────────────────────
+          fb_1788340436: "Multiple locations needed in the job posting. e.g.
+          different branches." The first location is the emirate/city above —
+          this adds the rest, so a single-branch posting is unchanged. */}
+      <div className="rounded-md border border-slate-200 p-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>Additional branches (optional)</Label>
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => setJDData({
+              ...jdData,
+              basic_info: {
+                ...jdData.basic_info,
+                locations: [...(jdData.basic_info.locations || []), { emirate: '', city: '', branch: '' }],
+              },
+            })}>
+            Add a branch
+          </Button>
+        </div>
+        <p className="text-xs text-slate-500">
+          The location above is the main one. Add a row for each additional branch
+          this vacancy covers.
+        </p>
+        {(jdData.basic_info.locations || []).map((loc, i) => (
+          <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+            <Input placeholder="Emirate" value={loc.emirate || ''}
+              onChange={(e) => {
+                const next = [...(jdData.basic_info.locations || [])];
+                next[i] = { ...next[i], emirate: e.target.value };
+                setJDData({ ...jdData, basic_info: { ...jdData.basic_info, locations: next } });
+              }} />
+            <Input placeholder="City" value={loc.city || ''}
+              onChange={(e) => {
+                const next = [...(jdData.basic_info.locations || [])];
+                next[i] = { ...next[i], city: e.target.value };
+                setJDData({ ...jdData, basic_info: { ...jdData.basic_info, locations: next } });
+              }} />
+            <Input placeholder="Branch name" value={loc.branch || ''}
+              onChange={(e) => {
+                const next = [...(jdData.basic_info.locations || [])];
+                next[i] = { ...next[i], branch: e.target.value };
+                setJDData({ ...jdData, basic_info: { ...jdData.basic_info, locations: next } });
+              }} />
+            <Button type="button" variant="ghost" size="sm" className="text-red-600"
+              onClick={() => setJDData({
+                ...jdData,
+                basic_info: {
+                  ...jdData.basic_info,
+                  locations: (jdData.basic_info.locations || []).filter((_, j) => j !== i),
+                },
+              })}>
+              Remove
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Number of vacancies ─────────────────────────────────────────
+          fb_1788341608. The column has existed since migration 102 and every
+          row held 1, because nothing ever let a recruiter say otherwise. */}
+      <div>
+        <Label htmlFor="number_of_vacancies">Number of vacancies</Label>
+        <Input
+          id="number_of_vacancies"
+          type="number"
+          min={1}
+          value={jdData.basic_info.number_of_vacancies ?? 1}
+          onChange={(e) => setJDData({
+            ...jdData,
+            basic_info: {
+              ...jdData.basic_info,
+              number_of_vacancies: Math.max(1, parseInt(e.target.value, 10) || 1),
+            },
+          })}
+        />
+        <p className="text-xs text-slate-500 mt-1">
+          How many people you are hiring for this posting. It keeps accepting
+          applications until they are all filled.
+        </p>
+      </div>
+
+      {/* ── Accessibility ───────────────────────────────────────────────
+          fb_1788342002. Three states, and "Not stated" is the default: saying
+          No on behalf of an employer who was never asked would be a claim we
+          have no basis for. */}
+      <div>
+        <Label htmlFor="pod">Suitable for People of Determination</Label>
+        <select
+          id="pod"
+          className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm"
+          value={
+            jdData.basic_info.suitable_for_people_of_determination === true ? 'yes'
+              : jdData.basic_info.suitable_for_people_of_determination === false ? 'no'
+              : ''
+          }
+          onChange={(e) => setJDData({
+            ...jdData,
+            basic_info: {
+              ...jdData.basic_info,
+              suitable_for_people_of_determination:
+                e.target.value === 'yes' ? true : e.target.value === 'no' ? false : undefined,
+            },
+          })}
+        >
+          <option value="">Not stated</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
       </div>
 
       <div>
