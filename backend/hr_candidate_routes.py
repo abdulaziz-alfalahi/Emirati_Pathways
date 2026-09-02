@@ -20,6 +20,15 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Candidate contact details do not leave the platform (owner ruling 2026-09-02,
+# fb_1788341745): communication happens on-platform for quality and governance.
+# Operators keep them; the employer side does not.
+try:
+    from backend.candidate_privacy import redact_for_current_user
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from candidate_privacy import redact_for_current_user
+
+
 hr_candidate_bp = Blueprint('hr_candidate', __name__, url_prefix='/api/hr/candidates')
 
 # REMOVED: search_candidates was dead code — shadowed by
@@ -312,7 +321,7 @@ def get_candidate_profile_hr(candidate_id):
             
             return jsonify({
                 'success': True,
-                'data': response_data
+                'data': redact_for_current_user(response_data)
             })
             
         finally:

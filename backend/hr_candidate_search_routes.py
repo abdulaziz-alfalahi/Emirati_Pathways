@@ -29,6 +29,13 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# See candidate_privacy: contact details are concealed from the employer side.
+try:
+    from backend.candidate_privacy import redact_for_current_user
+except ImportError:  # pragma: no cover
+    from candidate_privacy import redact_for_current_user
+
+
 # Create blueprint
 hr_candidate_search_bp = Blueprint('hr_candidate_search', __name__, url_prefix='/api/hr/candidates')
 
@@ -512,7 +519,7 @@ def search_candidates():
             return jsonify({
                 'success': True,
                 'data': {
-                    'candidates': candidates_data,
+                    'candidates': redact_for_current_user(candidates_data),
                     'total_count': total_count,
                     'current_page': current_page,
                     'total_pages': total_pages,
@@ -823,7 +830,7 @@ def match_candidates_to_job(job_id):
                         'location': job_data['location'],
                         'experience_level': job_data['experience_level']
                     },
-                    'matched_candidates': matched_candidates,
+                    'matched_candidates': redact_for_current_user(matched_candidates),
                     'total_matches': len(matched_candidates),
                     'match_summary': {
                         'excellent_matches': len([c for c in matched_candidates if c['match_score']['match_level'] == 'excellent']),

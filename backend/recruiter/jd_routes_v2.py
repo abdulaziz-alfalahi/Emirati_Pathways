@@ -1959,6 +1959,31 @@ def save_jd(jd_id):
         
         conn.commit()
 
+        # ── Scout: who already fits this vacancy? ──────────────────
+        #
+        # Owner, 2026-09-02 (fb_1788343289): "I need the platform to inform the
+        # recruiter when a new candidate matches a vacancy, as a 'new match
+        # found'." Publishing is one of the two events that can create a match;
+        # a candidate updating their profile is the other.
+        #
+        # Deliberately after the commit and deliberately silent on failure:
+        # publishing a vacancy must not fail because a notification could not be
+        # written.
+        if status == 'published':
+            try:
+                try:
+                    from backend.scout import scout_for_vacancy
+                except ImportError:  # pragma: no cover
+                    from scout import scout_for_vacancy
+                cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+                _row = cur.fetchone()
+                if _row:
+                    _raised = scout_for_vacancy(_row['id'] if isinstance(_row, dict) else _row[0])
+                    if _raised:
+                        logger.info("scout: %s match alerts raised for %s", _raised, jd_id)
+            except Exception as _exc:                          # noqa: BLE001
+                logger.warning("scout on publish failed for %s: %s", jd_id, _exc)
+
         # ── G26: Demand Signal on Publish ──────────────────────────
         if status == 'published':
             ds_conn = None

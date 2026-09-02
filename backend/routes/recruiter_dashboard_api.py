@@ -26,8 +26,85 @@ except ImportError:  # pragma: no cover
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Candidate contact details are concealed from the employer side (owner ruling
+# 2026-09-02, fb_1788341745). See backend/candidate_privacy.py.
+try:
+    from backend.candidate_privacy import redact_for_current_user
+except ImportError:  # pragma: no cover
+    from candidate_privacy import redact_for_current_user
+
+
 # Create Blueprint
 recruiter_dashboard_bp = Blueprint('recruiter_dashboard_api', __name__, url_prefix='/api/recruiter')
+
+
+@recruiter_dashboard_bp.after_request
+def _conceal_candidate_contact(response):
+    """Strip candidate contact details from every response this blueprint sends.
+
+    Owner ruling 2026-09-02 (fb_1788341745): "the platform should conceal them,
+    as communication must take place on the platform for quality and governance
+    purposes."
+
+    A hook rather than an edit at each `return jsonify(...)`, because this file
+    selects `u.email as candidate_email` at eight separate places and the next
+    endpoint would be the ninth. A SELECT is easy to add and easy to forget, and
+    the failure mode of forgetting is a citizen's contact details on an
+    employer's screen.
+
+    ONLY the unambiguously candidate-scoped keys are removed here. Bare `email`
+    and `phone` are left alone in this blueprint: a recruiter's own address and
+    a panellist colleague's are spelled the same way, and stripping those would
+    break screens without protecting anybody. The candidate-listing endpoints
+    that use the bare spelling redact explicitly instead.
+
+    Never raises. A response that cannot be parsed is passed through unchanged
+    rather than failing the request — but it is logged, because a payload this
+    hook cannot read is a payload it cannot protect.
+    """
+    try:
+        if not response.is_json:
+            return response
+        try:
+            from backend.candidate_privacy import may_see_contact
+        except ImportError:  # pragma: no cover
+            from candidate_privacy import may_see_contact
+        try:
+            from backend.auth.access_control import resolve_roles
+        except ImportError:  # pragma: no cover
+            from auth.access_control import resolve_roles
+
+        roles = set()
+        try:
+            roles = resolve_roles() or set()
+        except Exception:                                      # noqa: BLE001
+            pass                                               # unknown -> redact
+        if may_see_contact(roles):
+            return response
+
+        payload = response.get_json(silent=True)
+        if payload is None:
+            return response
+        cleaned = _strip_candidate_contact(payload)
+        if cleaned != payload:
+            response.set_data(json.dumps(cleaned, default=str))
+    except Exception as exc:                                   # noqa: BLE001
+        logger.warning('could not conceal candidate contact details: %s', exc)
+    return response
+
+
+#: Spellings that can only mean the candidate.
+_CANDIDATE_CONTACT_KEYS = ('candidate_email', 'candidate_phone',
+                           'candidate_mobile', 'candidate_contact')
+
+
+def _strip_candidate_contact(value):
+    if isinstance(value, dict):
+        return {k: _strip_candidate_contact(v) for k, v in value.items()
+                if k not in _CANDIDATE_CONTACT_KEYS}
+    if isinstance(value, list):
+        return [_strip_candidate_contact(v) for v in value]
+    return value
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
     """Execute a database query with error handling"""
