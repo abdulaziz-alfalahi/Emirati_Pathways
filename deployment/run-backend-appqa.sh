@@ -164,6 +164,35 @@ echo "  rollback: docker rm -f $NAME && docker rename ${NAME}_old $NAME && docke
 #   main, rollback-pre-*    deliberately named safety nets, somebody's decision
 #   everything non-backend  base images especially: this host is behind a
 #                          forward proxy and a re-pull is not guaranteed
+# ── Move :latest onto what is actually running ─────────────────────────────
+#
+# :latest is protected from the clean-up below (it is the tag this script
+# defaults to with no argument), but nothing ever MOVED it. So it went on
+# pointing at whatever was deployed the day it was last set, keeping a ~2GB
+# image alive that no container used, while the running image carried a
+# build-specific tag. /var hit 90% repeatedly because of it, and the workaround
+# was to retag by hand before each build.
+#
+# Retagging by hand is also how the guard goes wrong: on 2026-09-02 an ad-hoc
+# version of this compared an image ID against `docker ps --format {{.Image}}`,
+# which prints image NAMES, so the comparison never matched and the rmi went
+# ahead against the rollback image. Docker refused it — "image is being used by
+# a stopped container" — which is the only reason nothing was lost.
+#
+# Doing it here instead means :latest always names the running build, the
+# previous image becomes untagged, and the ID-comparing clean-up below reclaims
+# it on the next deploy. No hand retagging, and no second guard to get wrong.
+#
+# Only after health passed: tagging a build that did not come up would point
+# the default at something broken.
+if [ "$IMAGE" != "emirati_backend:latest" ]; then
+  if docker tag "$IMAGE" emirati_backend:latest 2>/dev/null; then
+    echo "  :latest now points at $IMAGE"
+  else
+    echo "  WARNING: could not move :latest to $IMAGE"
+  fi
+fi
+
 echo "==> Reclaiming space from images this deploy orphaned"
 
 KEEP_RUNNING="$(docker inspect "$NAME" --format '{{.Image}}' 2>/dev/null || true)"
