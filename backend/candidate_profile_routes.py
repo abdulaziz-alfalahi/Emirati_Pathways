@@ -1628,6 +1628,25 @@ def bulk_update_crm_candidates():
     }})
 
 
+def _audit_crm_export(me, rows, args):
+    """Record who exported the roster, for both formats.
+
+    An export must not fail because the audit write did, but a silent unlogged
+    export is exactly what an audit trail exists to prevent — so it is logged
+    loudly when it cannot be written.
+    """
+    applied = {k: v for k, v in args.items()
+               if k not in ('_cb', 'page', 'per_page', 'format') and v}
+    try:
+        execute_query(
+            """INSERT INTO admin_audit_log (user_id, action, resource_type, details)
+               VALUES (%s, 'crm_export', 'candidate_roster', %s)""",
+            (me, json.dumps({'rows': len(rows), 'filters': applied})), fetch_all=False)
+    except Exception as exc:                                   # noqa: BLE001
+        logger.error("CRM EXPORT NOT AUDITED for %s: %s", me, exc)
+    return applied
+
+
 @crm_profile_bp.route('/crm-candidates/export', methods=['GET'])
 @require_roles(*CAREER_SERVICES_ROLES)
 def export_crm_candidates():
@@ -1701,6 +1720,55 @@ def export_crm_candidates():
             'specialization', 'preferred_sector', 'preferred_locations',
             'candidates_source', 'date_of_call', 'assigned_to', 'counseling_remarks']
 
+    def _cell(row, col):
+        value = row.get(col)
+        if col == 'preferred_locations' and isinstance(value, list):
+            return ', '.join(value)
+        return '' if value is None else value
+
+    #: Columns that are IDENTIFIERS rather than quantities. Excel reads a long
+    #: run of digits as a number and renders 784200000000000 as 7.842E+14 —
+    #: reported by a career services operator 2026-09-02 (fb_1788356973), with
+    #: mobile numbers mangled the same way (9.71508E+11).
+    #:
+    #: Nothing in the CSV can prevent that: CSV has no types, and Excel ignores
+    #: quoting when it decides a field is numeric. The fixes people reach for —
+    #: ="784…" or a leading tab — work in Excel by CHANGING THE VALUE, which on
+    #: this platform means writing a corrupted Emirates ID into a file somebody
+    #: may re-import. Today's cutover work exists because a wrong Emirates ID
+    #: strands a real person; an export must not manufacture one.
+    #:
+    #: So the spreadsheet is offered as a real .xlsx where these columns are
+    #: typed as text, and the CSV keeps the true value for machines.
+    TEXT_COLUMNS = ('emirates_id', 'phone')
+
+    if (request.args.get('format') or '').lower() in ('xlsx', 'excel'):
+        from openpyxl import Workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Candidates'
+        ws.append(cols)
+        for r in rows:
+            ws.append([_cell(r, c) for c in cols])
+        # Force the identifier columns to text so Excel shows the digits it was
+        # given. Applied to the cells, not to the values.
+        for idx, col in enumerate(cols, start=1):
+            if col in TEXT_COLUMNS:
+                for cell in ws.iter_cols(min_col=idx, max_col=idx, min_row=2):
+                    for c in cell:
+                        c.number_format = '@'
+                        if c.value is not None:
+                            c.value = str(c.value)
+        xbuf = _io.BytesIO()
+        wb.save(xbuf)
+        _audit_crm_export(me, rows, request.args)
+        stamp = datetime.now().strftime('%Y%m%d-%H%M')
+        return Response(
+            xbuf.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition':
+                     f'attachment; filename="crm-candidates-{stamp}.xlsx"'})
+
     buf = _io.StringIO()
     # utf-8-sig: Excel opens a plain UTF-8 CSV as mojibake, and these rows carry
     # Arabic names.
@@ -1708,23 +1776,9 @@ def export_crm_candidates():
     w = csv.writer(buf)
     w.writerow(cols)
     for r in rows:
-        w.writerow([
-            (', '.join(r[c]) if c == 'preferred_locations' and isinstance(r.get(c), list)
-             else ('' if r.get(c) is None else r.get(c)))
-            for c in cols
-        ])
+        w.writerow([_cell(r, c) for c in cols])
 
-    applied = {k: v for k, v in request.args.items()
-               if k not in ('_cb', 'page', 'per_page') and v}
-    try:
-        execute_query(
-            """INSERT INTO admin_audit_log (user_id, action, resource_type, details)
-               VALUES (%s, 'crm_export', 'candidate_roster', %s)""",
-            (me, json.dumps({'rows': len(rows), 'filters': applied})), fetch_all=False)
-    except Exception as e:
-        # An export must not fail because the audit write did, but a silent
-        # unlogged export is exactly what an audit trail exists to prevent.
-        logger.error(f"CRM EXPORT NOT AUDITED for {me}: {e}")
+    applied = _audit_crm_export(me, rows, request.args)
 
     logger.info("CRM export by %s: %d rows, filters=%s", me, len(rows), applied)
     stamp = datetime.now().strftime('%Y%m%d-%H%M')

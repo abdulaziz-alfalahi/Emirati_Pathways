@@ -664,12 +664,23 @@ const LOCATION_OPTIONS = [
       if (hideUncontactable) params.set('hide_uncontactable', 'true');
       Object.entries(extraFilters).forEach(([k, v]) => { if (v) params.set(k, v); });
 
+      // Excel, not CSV. Reported by a career services operator 2026-09-02
+      // (fb_1788356973): opening the CSV in Excel turned Emirates ID numbers
+      // into 7.842E+14 and mobile numbers into 9.71508E+11, because CSV has no
+      // types and Excel reads a long run of digits as a number.
+      //
+      // The usual CSV workarounds (="784…", a leading tab) only work by
+      // changing the value, which would put a corrupted Emirates ID in a file
+      // somebody may re-import. A real spreadsheet carries the type instead, so
+      // the identifier columns arrive as text and the value is untouched.
+      params.set('format', 'xlsx');
       const res = await restClient.get(
         `/api/profile/crm-candidates/export?${params.toString()}`, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8' }));
+      const url = URL.createObjectURL(new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `crm-candidates-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `crm-candidates-${new Date().toISOString().slice(0, 10)}.xlsx`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
     } catch {
