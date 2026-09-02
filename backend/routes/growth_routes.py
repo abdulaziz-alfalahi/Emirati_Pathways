@@ -369,10 +369,24 @@ def verify_company(company_id):
         except Exception:
             pass
 
+        # An approval with nobody's name on it is not an approval. The identity
+        # lookup above swallows its own failure, so check here rather than
+        # letting a null approver reach the database and come back as a 500.
+        if verified and not verified_by:
+            return jsonify({
+                'success': False,
+                'error': 'Could not establish who is approving this company. '
+                         'Sign in again and retry — an approval has to record '
+                         'who made it.'}), 401
+
         result = growth_sys.set_company_verification(company_id, verified, verified_by=verified_by)
         if result is None:
             return jsonify({'success': False, 'error': 'Company not found'}), 404
         return jsonify({'success': True, 'company': result})
+    except ValueError as e:
+        # The guard in set_company_verification — an operator-actionable refusal
+        # rather than a stack trace.
+        return jsonify({'success': False, 'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Verify company error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

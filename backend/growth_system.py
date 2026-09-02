@@ -1093,6 +1093,21 @@ class GrowthSystem:
 
         Returns the updated company summary, or None if the id is unknown.
         """
+        # Verification must name who approved it. The database enforces this
+        # too (migration 107, companies_verification_needs_an_approver), but a
+        # constraint violation reaches an operator as a 500; refusing here gives
+        # them a sentence they can act on.
+        #
+        # WHY IT MATTERS: nine seeded companies were found verified with
+        # verified_by NULL — nobody had approved them, and because publishing is
+        # gated on verification they were the only employers on the platform who
+        # could reach a candidate, while 269 companies holding real trade
+        # licences could not.
+        if verified and not verified_by:
+            raise ValueError('Verifying a company requires the id of whoever '
+                             'approved it; is_verified gates publishing and is '
+                             'an approval decision, not a display flag.')
+
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
