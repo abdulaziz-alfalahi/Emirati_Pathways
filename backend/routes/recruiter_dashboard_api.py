@@ -1979,6 +1979,35 @@ def get_approval_stats():
 
 
 
+@recruiter_dashboard_bp.route('/offers/prefill', methods=['GET'])
+@require_auth
+def prefill_offer():
+    """Fill an offer from the vacancy it came from (fb_1788344147).
+
+    Read-only. Returns each field with its SOURCE — vacancy, default, or
+    unknown — so the recruiter can see what to check before sending. Nothing is
+    generated: an offer carries somebody's salary, and a plausible invented
+    figure is worse than an empty box, because an empty box gets filled in.
+    """
+    jd_id = (request.args.get('jd_id') or '').strip()
+    if not jd_id:
+        return jsonify({'success': False, 'message': 'jd_id is required'}), 400
+    try:
+        try:
+            from backend.offer_prefill import build
+        except ImportError:  # pragma: no cover
+            from offer_prefill import build
+        data = build(jd_id, (request.args.get('candidate_id') or '').strip() or None)
+        if data is None:
+            return jsonify({'success': False,
+                            'message': 'That vacancy could not be found'}), 404
+        return jsonify({'success': True, 'data': data})
+    except Exception as exc:                                   # noqa: BLE001
+        logger.error("offer prefill failed for %s: %s", jd_id, exc)
+        return jsonify({'success': False,
+                        'message': 'The offer could not be pre-filled'}), 500
+
+
 @recruiter_dashboard_bp.route('/offers/create', methods=['POST'])
 @optional_auth
 def create_offer_legacy():

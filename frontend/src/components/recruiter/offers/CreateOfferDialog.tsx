@@ -92,6 +92,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   const [flightTickets, setFlightTickets] = useState('2');
   const [additionalBenefits, setAdditionalBenefits] = useState<string[]>([]);
   const [customBenefitInput, setCustomBenefitInput] = useState('');
+  /** What the pre-fill wants the recruiter to check before sending. */
+  const [prefillNotes, setPrefillNotes] = useState<string[]>([]);
 
   const initializedRef = React.useRef(false);
 
@@ -101,6 +103,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       loadCandidates();
       loadJobDescription();
       resetForm();
+      prefillFromVacancy();
 
       // If preselectedCandidate is provided, set it as selected
       if (preselectedCandidate) {
@@ -129,6 +132,64 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       }
     } catch (err) {
       console.error('Error loading JD details:', err);
+    }
+  };
+
+  /**
+   * Pre-fill the offer from the vacancy it came from (fb_1788344147).
+   *
+   * The values are COPIED, not generated. An offer carries somebody's salary,
+   * and a plausible invented figure is worse than an empty box — an empty box
+   * gets filled in, a plausible number gets sent. Where the vacancy is silent
+   * the field stays empty and says so.
+   *
+   * Each field arrives with its source, and the notes are surfaced rather than
+   * dropped: "where did this salary come from" is the first question anybody
+   * sensibly asks of a pre-filled offer.
+   */
+  const prefillFromVacancy = async (candidateId?: string) => {
+    try {
+      const params = new URLSearchParams({ jd_id: String(jdId) });
+      if (candidateId) params.set('candidate_id', candidateId);
+      const res = await restClient.get(`/api/recruiter/offers/prefill?${params}`);
+      const d = res?.data?.data;
+      if (!d) return;
+
+      const notes: string[] = [];
+      const take = (field: any) => {
+        if (field?.note) notes.push(field.note);
+        return field?.value;
+      };
+
+      const title = take(d.position_title);
+      if (title) setPositionTitle(String(title));
+      const salary = take(d.salary_amount);
+      if (salary !== null && salary !== undefined) setSalaryAmount(String(salary));
+      const currency = take(d.salary_currency);
+      if (currency) setSalaryCurrency(String(currency));
+      const period = take(d.salary_period);
+      if (period) setSalaryPeriod(String(period));
+      const location = take(d.work_location);
+      if (location) setWorkLocation(String(location));
+      const employment = take(d.employment_type);
+      if (employment) setContractType(String(employment).replace('_', '-'));
+      const probation = take(d.probation_period_months);
+      if (probation !== null && probation !== undefined) setProbationPeriod(String(probation));
+
+      const benefits = take(d.benefits) || {};
+      if (benefits.annual_leave_days) setAnnualLeave(String(benefits.annual_leave_days));
+      if (typeof benefits.health_insurance === 'boolean') setHealthInsurance(benefits.health_insurance);
+      if (benefits.housing_allowance) setHousingAllowance(String(benefits.housing_allowance));
+      if (benefits.transportation_allowance) setTransportAllowance(String(benefits.transportation_allowance));
+      if (benefits.flight_tickets !== undefined) setFlightTickets(String(benefits.flight_tickets));
+      const extra = take(d.additional_benefits);
+      if (extra) setAdditionalBenefits(String(extra).split(';').map(x => x.trim()).filter(Boolean));
+
+      setPrefillNotes(notes);
+    } catch (err) {
+      // A pre-fill that fails leaves an empty form, which is what the dialog
+      // did before this existed. It must never block creating an offer.
+      console.error('Offer pre-fill failed:', err);
     }
   };
 
@@ -618,6 +679,20 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               </Step>
             ))}
           </Stepper>
+
+          {/* What the pre-fill copied, and what it could not. Surfaced rather
+              than dropped: "where did this salary come from" is the first
+              question anybody sensibly asks of a pre-filled offer, and a note
+              the backend wrote but the screen swallowed would leave the
+              recruiter to find out by sending it. */}
+          {prefillNotes.length > 0 && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <strong>Filled in from the vacancy — please check:</strong>
+              <ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
+                {prefillNotes.map((n, i) => <li key={i}>{n}</li>)}
+              </ul>
+            </Alert>
+          )}
 
           {error && (
             <Alert severity="error" sx={{ mb: 3 }}>
