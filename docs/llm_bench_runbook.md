@@ -138,7 +138,7 @@ python3 backend/scripts/llm_bench/score.py --bundle ~/llm_bench
 | `p50_ms` / `p95_ms` | one request at a time | at or below DashScope's (proxy round-trip included) |
 | `tokens_per_s` | completion tokens / latency | informational; MoE should be ~3× dense |
 | `key_jaccard` | top-level keys vs the baseline answer | ≥ 0.9 — the caller reads named keys; a missing key is a silent `None` downstream |
-| `numeric_mad` | mean abs. diff on shared numeric fields | match scores are out of 100: < 10 is noise between two runs of the *same* model, > 20 changes rankings |
+| `numeric_mad` | mean abs. diff on shared numeric fields | **measured noise floor 1.39** (qwen-plus vs itself on 40 match cases, 2026-09-03: `total_score` identical in 27/40, ±5 in 5, ±10 in 5). Below ~3 is indistinguishable from DashScope's own variance; > 10 changes rankings |
 | `arabic_out_rate` | Arabic-input cases answered with Arabic | should equal the baseline's |
 
 Then read the **largest numeric disagreements** list by hand — those case ids
