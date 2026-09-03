@@ -386,8 +386,9 @@ def run_all(rec, cvs, jobs, transcripts, args):
     for ref, text, syn in cv_texts[:cap]:
         guard(rec, "parse", "cv_parser.CVParser.parse_cv_text", ref, syn)
         out = attempt("parse", lambda: parser.parse_cv_text(text, filename="bench.txt"))
-        if isinstance(out, dict) and ("personal_info" in out or "skills" in out):
-            parsed_cvs[ref] = out
+        # parse_cv_text wraps the parsed CV as {'success', 'cv_id', 'data': {...}}
+        if isinstance(out, dict) and out.get("success") and isinstance(out.get("data"), dict):
+            parsed_cvs[ref] = out["data"]
 
     # -- parse (JD, matching_engine) ------------------------------------------
     jd_inputs = [(f"job_postings:{j['id']}", jd_text(j), False) for j in jobs]
