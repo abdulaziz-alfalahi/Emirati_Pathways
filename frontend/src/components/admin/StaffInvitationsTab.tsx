@@ -50,7 +50,7 @@ const StaffInvitationsTab: React.FC<Props> = ({ isRTL = false }) => {
   const [copiedId, setCopiedId] = useState<number | 'new' | null>(null);
   const [lastLink, setLastLink] = useState<string | null>(null);
   const [form, setForm] = useState({
-    full_name: '', email: '', phone: '', intended_role: '', organization: '', notes: '', expiry_days: '7',
+    full_name: '', emirates_id: '', email: '', phone: '', intended_role: '', organization: '', notes: '', expiry_days: '7',
   });
 
   const load = useCallback(async () => {
@@ -99,7 +99,7 @@ const StaffInvitationsTab: React.FC<Props> = ({ isRTL = false }) => {
       const link = res.data?.magic_link;
       setLastLink(link || null);
       toast({ title: t('Invitation created', 'تم إنشاء الدعوة'), description: t('Copy the link and share it with the invitee.', 'انسخ الرابط وشاركه مع المدعو.') });
-      setForm({ full_name: '', email: '', phone: '', intended_role: '', organization: '', notes: '', expiry_days: '7' });
+      setForm({ full_name: '', emirates_id: '', email: '', phone: '', intended_role: '', organization: '', notes: '', expiry_days: '7' });
       load();
     } catch (e: any) {
       toast({ title: e?.response?.data?.message || t('Could not create the invitation', 'تعذّر إنشاء الدعوة'), variant: 'destructive' });
@@ -154,6 +154,14 @@ const StaffInvitationsTab: React.FC<Props> = ({ isRTL = false }) => {
                   {roles.map((r) => <SelectItem key={r} value={r}>{roleLabel(r)}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              {/* The attribute that authorises THIS person: sign-in with a
+                  different UAE Pass Emirates ID is refused at redemption. */}
+              <label className="text-sm font-medium text-slate-700">{t('Emirates ID', 'رقم الهوية الإماراتية')}</label>
+              <Input value={form.emirates_id} inputMode="numeric" maxLength={18}
+                onChange={(e) => setForm({ ...form, emirates_id: e.target.value })} placeholder="784-XXXX-XXXXXXX-X" />
+              <p className="text-xs text-slate-500">{t('Required for a non-national: only this Emirates ID can accept the invitation.', 'مطلوب لغير المواطن: لا يمكن قبول الدعوة إلا بهذا الرقم.')}</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">{t('Email (optional)', 'البريد الإلكتروني (اختياري)')}</label>

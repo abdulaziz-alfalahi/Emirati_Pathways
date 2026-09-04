@@ -89,6 +89,11 @@ from html import escape as html_escape
 # real traffic; the English is authoritative.
 
 
+def _eid_digits(value):
+    """'784-1999-0000000-1' -> '784199900000001'; None/'' -> ''."""
+    return ''.join(ch for ch in str(value or '') if ch.isdigit())
+
+
 def _staff_role_label(role, arabic=False):
     pair = ROLE_LABELS.get((role or '').strip().lower())
     if not pair:
@@ -214,7 +219,7 @@ class StaffInvitationSystem:
 
     def create_invitation(self, *, full_name, email, intended_role, invited_by,
                           phone=None, organization=None, notes=None,
-                          expiry_days=DEFAULT_EXPIRY_DAYS):
+                          expiry_days=DEFAULT_EXPIRY_DAYS, emirates_id=None):
         role = self.validate_role(intended_role)
         if not role:
             raise ValueError(f"'{intended_role}' is not an invitable staff role")
@@ -225,14 +230,17 @@ class StaffInvitationSystem:
         conn = self._conn()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # emirates_id (migration 109) is the attribute that authorises
+                # THIS person: redemption refuses a different UAE Pass idn.
                 cur.execute("""
                     INSERT INTO staff_invitations
                         (token, full_name, email, phone, intended_role, organization,
-                         notes, expires_at, invited_by)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         notes, expires_at, invited_by, emirates_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING *
                 """, (token, full_name, email, phone, role, organization, notes,
-                      expires_at, str(invited_by)[:15] if invited_by else None))
+                      expires_at, str(invited_by)[:15] if invited_by else None,
+                      emirates_id or None))
                 row = dict(cur.fetchone())
 
                 # A staff invitation confers a ROLE on a named person, which
@@ -369,8 +377,13 @@ class StaffInvitationSystem:
             'organization': row['organization'],
         }
 
-    def redeem_staff_invitation_for_user(self, token, user_id, is_new_user=False):
+    def redeem_staff_invitation_for_user(self, token, user_id, is_new_user=False,
+                                         proven_eid=None):
         """Grant the invited role to the UAE-Pass-proven identity.
+
+        proven_eid: the idn UAE Pass asserted in this sign-in (hyphens or not);
+        empty for an account without one. Checked against the invitation's
+        emirates_id when the administrator recorded one.
 
         Mirrors the company/team redeemers: a brand-new account takes the
         invited role as PRIMARY (this person joined as staff); an existing
@@ -390,6 +403,19 @@ class StaffInvitationSystem:
                 inv = cur.fetchone()
                 if not inv:
                     raise ValueError("Invalid, expired, or already used invitation link")
+
+                # The link is not the credential, the person is (migration 109).
+                # When the administrator named an Emirates ID, only that EID —
+                # asserted by UAE Pass in THIS sign-in — may accept. A forwarded
+                # or intercepted link is refused rather than granting the role.
+                authorised_eid = _eid_digits(inv.get('emirates_id'))
+                if authorised_eid:
+                    if not _eid_digits(proven_eid):
+                        raise ValueError(
+                            "This invitation was issued to a specific Emirates ID; "
+                            "sign in with a verified UAE Pass account (SOP2 or higher)")
+                    if _eid_digits(proven_eid) != authorised_eid:
+                        raise ValueError("This invitation was issued to a different Emirates ID")
 
                 role = self.validate_role(inv['intended_role'])
                 if not role:

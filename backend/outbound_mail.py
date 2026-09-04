@@ -164,7 +164,11 @@ def recipient_allowed(address, allow_list=None):
 #: released, not because the addresses were unfamiliar — the allow-list is the
 #: weakest of the three gates and the only one that cannot express "an employer
 #: we are deliberately contacting for the first time".
-KINDS_EXEMPT_FROM_ALLOW_LIST = frozenset({'guardian_consent', 'company_invitation'})
+#: staff_invitation joined 2026-09-04: it is how a non-national learns they
+#: have been authorised (UAE Pass assessment question), it is operator-typed
+#: to one named person, and a non-national's address is by definition not on
+#: a government allow-list.
+KINDS_EXEMPT_FROM_ALLOW_LIST = frozenset({'guardian_consent', 'company_invitation', 'staff_invitation'})
 
 #: How many guardian requests one registrant may cause in a day. A young person
 #: registers for a handful of programmes; fifty is somebody using the platform

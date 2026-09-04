@@ -1008,10 +1008,25 @@ class AuthenticationManager:
             # Prepare fields to update
             update_fields = []
             update_values = []
-            
+
             # 1. Personal Info (Columns)
             if 'personal_info' in data:
-                pi = data['personal_info']
+                pi = dict(data['personal_info'] or {})
+                # Identity attributes belong to UAE Pass once an account has
+                # been verified through it (assessment item 4: "users can't
+                # edit any attributes fetched from UAE Pass"). The UI locks
+                # them; this is the rule the UI cannot bypass. Contact and
+                # location stay the user's to change.
+                cursor.execute(
+                    "SELECT uaepass_uuid FROM users WHERE id = %s", (user_id,))
+                verified = cursor.fetchone()
+                if verified and verified.get('uaepass_uuid'):
+                    for owned in ('first_name', 'last_name', 'nationality', 'emirates_id'):
+                        if owned in pi:
+                            self.logger.info(
+                                f"Ignoring client edit of UAE Pass attribute '{owned}' "
+                                f"for verified account {str(user_id)[:6]}…")
+                            pi.pop(owned)
                 column_map = {
                     'first_name': 'first_name',
                     'last_name': 'last_name',
