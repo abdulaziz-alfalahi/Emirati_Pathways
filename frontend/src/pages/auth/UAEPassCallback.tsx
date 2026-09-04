@@ -24,8 +24,10 @@ import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 const UAEPassCallback: React.FC = () => {
   const navigate = useNavigate();
   const { setUser } = useAuth();
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
+  const [status, setStatus] = useState<'processing' | 'success' | 'error' | 'refused'>('processing');
   const [message, setMessage] = useState('Completing authentication...');
+  // Set when an invitation was refused: the onward navigation waits for a click.
+  const [held, setHeld] = useState<null | (() => void)>(null);
   const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
@@ -125,9 +127,11 @@ const UAEPassCallback: React.FC = () => {
             : 'Invitation accepted! Redirecting...'
         );
       } else if (invitationError) {
-        // Signed in fine, but the invitation link was stale/used — say so
-        // instead of silently landing them on a candidate dashboard.
-        setMessage(`Signed in, but your invitation could not be applied: ${invitationError}`);
+        // Signed in fine, but the invitation was refused (stale, used, or
+        // issued to a different Emirates ID). Hold the page on the reason —
+        // a 3.5 s toast was read by nobody — and grant nothing.
+        setStatus('refused');
+        setMessage(`Signed in, but the invitation was not applied — no role was granted. ${invitationError}`);
       } else {
         setMessage('Authentication successful! Redirecting...');
       }
@@ -149,7 +153,7 @@ const UAEPassCallback: React.FC = () => {
       const pending = readPendingRedirect();
 
       // Redirect based on user status
-      timeoutRef.current = setTimeout(async () => {
+      const go = async () => {
         if (pending && !invitationAccepted) {
           /* Ahead of the is_new_user branch on purpose. A walk-in at the venue
            * IS a new user — that is the whole point of the QR — so sending new
@@ -179,7 +183,12 @@ const UAEPassCallback: React.FC = () => {
             navigate('/candidate-dashboard', { replace: true });
           }
         }
-      }, invitationError ? 3500 : 1500);
+      };
+      if (invitationError) {
+        setHeld(() => go);
+      } else {
+        timeoutRef.current = setTimeout(go, 1500);
+      }
 
     } catch (error: any) {
       console.error('UAE Pass callback error:', error);
@@ -215,12 +224,24 @@ const UAEPassCallback: React.FC = () => {
           {status === 'error' && (
             <AlertCircle className="h-10 w-10 text-red-600" />
           )}
+          {status === 'refused' && (
+            <AlertCircle className="h-10 w-10 text-amber-600" />
+          )}
 
           <p className={`text-sm ${
-            status === 'error' ? 'text-red-600' : 'text-gray-600'
+            status === 'error' ? 'text-red-600' : status === 'refused' ? 'text-amber-800 font-medium' : 'text-gray-600'
           }`}>
             {message}
           </p>
+
+          {/* A refused invitation holds the page: the person must read why the
+              role was not granted before they are moved on (assessment 2026-09-04). */}
+          {status === 'refused' && held && (
+            <button type="button" onClick={held}
+              className="mt-2 px-5 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700">
+              Continue to your dashboard · متابعة إلى لوحتك
+            </button>
+          )}
 
           {status === 'processing' && (
             <div className="w-full bg-gray-200 rounded-full h-1.5 mt-4">

@@ -481,6 +481,11 @@ def uaepass_callback():
                 if invitation_result.get('primary_role'):
                     user_data['role'] = invitation_result['primary_role']
             except ValueError as e:
+                # A deliberate refusal (expired, used, wrong Emirates ID). It
+                # was silent until 2026-09-04: the one line an assessor wants.
+                logger.warning(
+                    f"Invitation refused for {mask_eid(user_id)} "
+                    f"(type={invitation_type}): {e}")
                 invitation_error = str(e)
             except Exception as e:
                 logger.error(f"Invitation redemption failed for {mask_eid(user_id)}: {e}")
