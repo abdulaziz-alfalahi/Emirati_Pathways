@@ -250,23 +250,27 @@ class StaffInvitationSystem:
                                   extra={'organization': organization})
 
                 # Queue the invitation email on THIS cursor, so the message
-                # commits or rolls back with the token it carries. An address
-                # is mandatory for a staff invitation, unlike a colleague
-                # invitation, so there is no no-email branch here.
+                # commits or rolls back with the token it carries. The admin
+                # form marks the address optional (the link can be handed over
+                # in person); without one there is nothing to queue — an
+                # earlier version queued anyway and the NOT NULL on
+                # outbound_mail.to_email failed the whole invitation (500).
                 link = self.build_link(token)
-                row['message_id'] = outbound_mail.queue(
-                    to_email=email,
-                    to_name=full_name,
-                    subject=_staff_invitation_subject(role),
-                    body_text=_staff_invitation_body(
-                        full_name, role, link, organization),
-                    body_html=_staff_invitation_html(
-                        full_name, role, link, organization),
-                    kind='staff_invitation',
-                    related_type='staff_invitation',
-                    related_id=str(row.get('id')),
-                    created_by=str(invited_by)[:15] if invited_by else None,
-                    cursor=cur)
+                row['message_id'] = None
+                if email:
+                    row['message_id'] = outbound_mail.queue(
+                        to_email=email,
+                        to_name=full_name,
+                        subject=_staff_invitation_subject(role),
+                        body_text=_staff_invitation_body(
+                            full_name, role, link, organization),
+                        body_html=_staff_invitation_html(
+                            full_name, role, link, organization),
+                        kind='staff_invitation',
+                        related_type='staff_invitation',
+                        related_id=str(row.get('id')),
+                        created_by=str(invited_by)[:15] if invited_by else None,
+                        cursor=cur)
             conn.commit()
         finally:
             conn.close()
@@ -276,7 +280,7 @@ class StaffInvitationSystem:
         # Sunday should not be blocked on a review queue.
         row['magic_link'] = self.build_link(token)
         row['message_status'] = ('awaiting_approval' if row.get('message_id')
-                                 else 'not_queued')
+                                 else ('no_address' if not email else 'not_queued'))
         return row
 
     @staticmethod
