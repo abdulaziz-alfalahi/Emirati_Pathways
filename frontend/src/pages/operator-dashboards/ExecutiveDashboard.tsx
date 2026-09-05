@@ -1630,7 +1630,7 @@ const ExecutiveDashboard: React.FC = () => {
                             key={yrs}
                             onClick={() => setMonthSpan(yrs)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                              monthSpan === yrs ? 'bg-white text-[#006E6D] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              monthSpan === yrs ? 'bg-white text-[#006E6F] shadow-sm' : 'text-slate-500 hover:text-slate-700'
                             }`}
                           >
                             {yrs === 0 ? b('All', 'الكل') : b(`Last ${yrs} years`, `آخر ${yrs} سنوات`)}

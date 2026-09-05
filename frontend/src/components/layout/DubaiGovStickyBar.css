@@ -40,7 +40,7 @@
 .minimize-toggle {
   width: 32px;
   height: 20px;
-  background: #006E6D;
+  background: #006E6F;
   border: none;
   border-radius: 6px 6px 0 0;
   color: white;
@@ -59,7 +59,7 @@
 }
 
 .minimize-toggle:focus {
-  outline: 2px solid #006E6D;
+  outline: 2px solid #006E6F;
   outline-offset: 2px;
 }
 
@@ -95,7 +95,7 @@
 }
 
 .sticky-icon:focus {
-  outline: 3px solid #006E6D;
+  outline: 3px solid #006E6F;
   outline-offset: 2px;
 }
 
@@ -115,13 +115,13 @@
 .icon-04 {
   font-weight: bold;
   font-size: 18px; /* Increased from 16px */
-  color: #006E6D;
+  color: #006E6F;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* EHRDC Contact Phone Icon */
 .icon-phone {
-  color: #006E6D;
+  color: #006E6F;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,7 +135,7 @@
 .sticky-icon .tooltip {
   position: absolute;
   right: 64px; /* Adjusted for larger icons */
-  background: linear-gradient(135deg, #006E6D 0%, #005a59 100%);
+  background: linear-gradient(135deg, #006E6F 0%, #005a59 100%);
   color: white;
   padding: 8px 12px; /* Increased padding */
   border-radius: 6px; /* Increased border radius */

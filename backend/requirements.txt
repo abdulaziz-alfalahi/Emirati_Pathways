@@ -112,3 +112,7 @@ livekit-api>=0.8.0
 # (backend/agent-requirements.txt, own container via Dockerfile.agent) —
 # livekit-plugins-openai needs a newer openai than the 1.12.0 pinned here.
 segno==1.6.1
+
+# Real CPU/memory/disk on the admin System tab (fb_1788410870_12ae53c3): without it
+# administrator_system.get_system_health falls back to zeros.
+psutil==6.1.1

@@ -62,7 +62,7 @@ const JoinStaffPage: React.FC = () => {
   };
   const btn: React.CSSProperties = {
     width: '100%', padding: '12px 0', borderRadius: 10, fontSize: 15, fontWeight: 700,
-    border: 'none', cursor: 'pointer', background: '#006E6D', color: '#fff', marginTop: 8,
+    border: 'none', cursor: 'pointer', background: '#006E6F', color: '#fff', marginTop: 8,
   };
 
   return (

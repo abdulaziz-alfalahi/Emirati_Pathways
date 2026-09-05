@@ -74,7 +74,7 @@ const statusMeta: Record<string, { color: string; bg: string; labelEN: string; l
 };
 
 /* Platform design tokens */
-const TEAL = '#006E6D';
+const TEAL = '#006E6F';
 const TEAL_LIGHT = '#ecfdf5';
 const TEAL_600 = '#059669';
 const TEAL_DEEP = '#0A4D4C';
@@ -88,7 +88,7 @@ const FONT = '"Readex Pro", "Dubai", system-ui, -apple-system, sans-serif';
 // to a deep, muted hue that reads as one system alongside the EHRDC teal and
 // works on white. Semantic status colours (active/partial/gap) stay separate.
 const GROUP_PALETTE: Record<string, string> = {
-  teal: '#006E6D', emerald: '#0B7A6A', green: '#2F7D4F', cyan: '#0E7490',
+  teal: '#006E6F', emerald: '#0B7A6A', green: '#2F7D4F', cyan: '#0E7490',
   sky: '#0B6BA8', blue: '#1E5A9C', indigo: '#3F4EA8', violet: '#6A54A6',
   purple: '#7A548F', rose: '#A65468', orange: '#BC5A2E', amber: '#A9740F',
   slate: '#4A5A6B', gray: '#64748B',

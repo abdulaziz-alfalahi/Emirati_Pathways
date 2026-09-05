@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 import { Link } from 'react-router-dom';
 import { Power, Settings, AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
@@ -59,7 +59,7 @@ const FeatureFlagsTab: React.FC = () => {
     try {
       setLoading(true);
       const timestamp = new Date().getTime();
-      const response = await axios.get(`/api/feature-flags?t=${timestamp}`);
+      const response = await restClient.get(`/api/feature-flags?t=${timestamp}`);
       if (response.data.success) {
         setFlags(response.data.data);
       }
@@ -78,7 +78,7 @@ const FeatureFlagsTab: React.FC = () => {
     setFlags(flags.map(f => f.key_name === key_name ? { ...f, is_enabled: newStatus } : f));
     
     try {
-      const response = await axios.put(`/api/feature-flags/${key_name}`, { is_enabled: newStatus });
+      const response = await restClient.put(`/api/feature-flags/${key_name}`, { is_enabled: newStatus });
       
       if (response.data.success) {
         toast.success(response.data.message);

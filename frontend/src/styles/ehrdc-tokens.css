@@ -14,8 +14,8 @@
    DIRECTLY (not `hsl(var(--x))`), so every colour token must hold a FULL colour
    value (hex/rgb), never an HSL triplet. Do not introduce bare triplets here.
 
-   Brand anchor: EHRDC teal sampled from public/ehrdc-logo.png = #006C6C
-   (canonically #006E6D). Gold is retained brand equity, NOT from the logo.
+   Brand anchor: EHRDC teal sampled from public/ehrdc-logo.svg = #006C6C
+   (canonically #006E6F). Gold is retained brand equity, NOT from the logo.
    Type: Readex Pro — one OFL superfamily covering Latin + Arabic, self-hosted.
    ========================================================================== */
 
@@ -38,14 +38,14 @@
      Raw brand scales. Components must NOT consume these directly; use the
      semantic tokens below so theming and density stay centralised.          */
 
-  /* EHRDC Teal — derived from the logo (#006C6C sampled → #006E6D canonical) */
+  /* EHRDC Teal — derived from the logo (#006C6C sampled → #006E6F canonical) */
   --ehrdc-teal-50:#E9F4F3;
   --ehrdc-teal-100:#C7E6E4;
   --ehrdc-teal-200:#94CFCC;
   --ehrdc-teal-300:#57B2AE;
   --ehrdc-teal-400:#23928D;
   --ehrdc-teal-500:#0A7B76;
-  --ehrdc-teal-600:#006E6D;   /* ★ brand anchor — 4.9:1 on white (AA) */
+  --ehrdc-teal-600:#006E6F;   /* ★ brand anchor — 4.9:1 on white (AA) */
   --ehrdc-teal-700:#005957;
   --ehrdc-teal-800:#063F3E;
   --ehrdc-teal-900:#052E2D;

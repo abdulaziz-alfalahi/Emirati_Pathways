@@ -62,11 +62,11 @@
   }
 
   .ehrdc-button-primary {
-    @apply bg-[#006E6D] text-white hover:bg-[#005A59] focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
+    @apply bg-[#006E6F] text-white hover:bg-[#005A59] focus:ring-2 focus:ring-[#006E6F]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
   }
 
   .ehrdc-button-secondary {
-    @apply bg-[#F4F5F7] text-[#1A1A1A] hover:bg-[#E2E5E9] focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
+    @apply bg-[#F4F5F7] text-[#1A1A1A] hover:bg-[#E2E5E9] focus:ring-2 focus:ring-[#006E6F]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
   }
 
   /* Dubai Government Section Styles */
@@ -169,11 +169,11 @@
 
   /* Button components */
   .btn-primary {
-    @apply bg-[#006E6D] hover:bg-[#005A59] text-white font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2;
+    @apply bg-[#006E6F] hover:bg-[#005A59] text-white font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6F]/20 focus:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-[#006E6D] border border-[#006E6D] font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2;
+    @apply bg-white hover:bg-gray-50 text-[#006E6F] border border-[#006E6F] font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6F]/20 focus:ring-offset-2;
   }
 
   /* Card components */
@@ -183,7 +183,7 @@
   }
 
   .card-hover {
-    @apply card-base hover:border-[#006E6D]/30 transition-all duration-200;
+    @apply card-base hover:border-[#006E6F]/30 transition-all duration-200;
 
     &:hover {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -192,7 +192,7 @@
 
   /* Hero section */
   .hero-gradient {
-    background: linear-gradient(135deg, #006E6D 0%, #4A9B9A 100%);
+    background: linear-gradient(135deg, #006E6F 0%, #4A9B9A 100%);
   }
 }
 
@@ -290,7 +290,7 @@
 
 /* Enhanced Focus Indicators */
 .enhanced-focus :focus-visible {
-  outline: 3px solid #006E6D !important;
+  outline: 3px solid #006E6F !important;
   outline-offset: 2px !important;
 }
 

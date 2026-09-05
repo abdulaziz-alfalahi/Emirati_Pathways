@@ -536,7 +536,7 @@ const HRDashboard: React.FC = () => {
                     <div className="relative">
                       <svg width={140} height={140} className="transform -rotate-90">
                         <circle cx={70} cy={70} r={55} fill="none" stroke="#E5E7EB" strokeWidth={12} />
-                        <circle cx={70} cy={70} r={55} fill="none" stroke="#006E6D" strokeWidth={12}
+                        <circle cx={70} cy={70} r={55} fill="none" stroke="#006E6F" strokeWidth={12}
                           strokeDasharray={`${2 * Math.PI * 55}`}
                           strokeDashoffset={`${2 * Math.PI * 55}`}
                           strokeLinecap="round" className="transition-all duration-1000 ease-out" />

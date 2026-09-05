@@ -52,18 +52,18 @@
 
 /* Enhanced Focus Indicators */
 .enhanced-focus *:focus {
-  outline: 3px solid #006E6D !important;
+  outline: 3px solid #006E6F !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 2px white, 0 0 0 5px #006E6D !important;
+  box-shadow: 0 0 0 2px white, 0 0 0 5px #006E6F !important;
 }
 
 .enhanced-focus button:focus,
 .enhanced-focus input:focus,
 .enhanced-focus textarea:focus,
 .enhanced-focus select:focus {
-  outline: 3px solid #006E6D !important;
+  outline: 3px solid #006E6F !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 2px white, 0 0 0 5px #006E6D !important;
+  box-shadow: 0 0 0 2px white, 0 0 0 5px #006E6F !important;
 }
 
 /* Color Blind Filters */

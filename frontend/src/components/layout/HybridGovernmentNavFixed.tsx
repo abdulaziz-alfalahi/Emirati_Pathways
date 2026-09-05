@@ -347,16 +347,16 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     height fixed — the logos rendered horizontally compressed (feedback
                     fb_1786394087). A government crest must never be distorted. */}
                 <img
-                  src="/dubai-gov-logo.jpg"
+                  src="/dubai-gov-logo.svg"
                   alt="Government of Dubai"
                   className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
                 <div className="hidden sm:block w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
                 <img
-                  src="/ehrdc-logo.png"
+                  src="/ehrdc-logo.svg"
                   alt="EHRDC Logo"
-                  className="hidden sm:block h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
+                  className="hidden sm:block h-8 sm:h-11 md:h-16 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>

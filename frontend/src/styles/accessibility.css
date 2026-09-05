@@ -23,7 +23,7 @@
 .skip-link {
   position: static;
   white-space: nowrap;
-  background: var(--ehrdc-teal-600, #006E6D);
+  background: var(--ehrdc-teal-600, #006E6F);
   color: #ffffff;
   padding: 8px 16px;
   text-decoration: none;

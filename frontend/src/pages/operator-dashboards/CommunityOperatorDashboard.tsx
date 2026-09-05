@@ -11,7 +11,7 @@ import Messages from '@/components/recruiter/Messages';
 
 // Platform teal system (replaces the off-brand pink palette)
 const brand = {
-    primary: '#006E6D', secondary: '#0F766E',
+    primary: '#006E6F', secondary: '#0F766E',
     bg: '#F7FAFA', cardBg: '#FFFFFF',
     textPrimary: '#0A2540', textSecondary: '#5A6B7B', border: '#E2E8F0',
     greenBg: '#ECFDF5', greenText: '#059669',

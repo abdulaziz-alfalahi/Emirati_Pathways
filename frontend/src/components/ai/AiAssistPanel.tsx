@@ -17,7 +17,7 @@ import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-rea
 import { restClient } from '@/utils/api';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 
-const TEAL = '#006E6D';
+const TEAL = '#006E6F';
 
 export interface AiAssistPanelProps {
   /** Server-side feature key (see backend/routes/ai_assist_routes.py). */

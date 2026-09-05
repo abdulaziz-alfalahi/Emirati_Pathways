@@ -61,7 +61,7 @@ interface PopulationsPayload {
 const ORDER = ['employed', 'seeking', 'not_working'];
 
 const ACCENT: Record<string, string> = {
-  employed: 'text-[#006E6D]',
+  employed: 'text-[#006E6F]',
   seeking: 'text-amber-600',
   not_working: 'text-slate-700',
 };

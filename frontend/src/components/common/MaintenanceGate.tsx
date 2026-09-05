@@ -64,7 +64,7 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         borderRadius: 16, padding: '48px 40px', textAlign: 'center',
         boxShadow: '0 10px 30px rgba(15,23,42,.06)',
       }}>
-        <img src="/ehrdc-logo.png" alt="EHRDC" style={{ height: 64, marginBottom: 28 }}
+        <img src="/ehrdc-logo.svg" alt="EHRDC" style={{ height: 64, marginBottom: 28 }}
              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0f766e', marginBottom: 12 }}>
           We&rsquo;re upgrading the platform

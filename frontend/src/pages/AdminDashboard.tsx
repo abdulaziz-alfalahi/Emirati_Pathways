@@ -52,6 +52,16 @@ const AdminDashboard = () => {
 
   // Derive tab from URL or default to "overview"
   const activeTab = searchParams.get("tab") || "overview";
+
+  // Dates that can take the service down (TLS certificate, app secrets) —
+  // loaded when the System tab opens (fb_1788410870_12ae53c3).
+  const [expiries, setExpiries] = useState<{ items: any[]; worst: string; checked_at?: string } | null>(null);
+  useEffect(() => {
+    if (activeTab !== 'system') return;
+    restClient.get('/api/admin/system/expiries')
+      .then((r) => setExpiries(r.data))
+      .catch(() => setExpiries({ items: [], worst: 'unknown' }));
+  }, [activeTab]);
   const [initialLoading, setInitialLoading] = useState(true);
 
   // Feedback detail viewer states
@@ -1647,6 +1657,51 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                             allowFullScreen
                           ></iframe>
                         </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Expiries — what can take the service down on a date */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{b('Expiry dates', 'تواريخ الانتهاء')}</CardTitle>
+                    <CardDescription>
+                      {b('Certificates and secrets the platform depends on. The TLS certificate is checked live; the rest are recorded dates.',
+                         'الشهادات والأسرار التي تعتمد عليها المنصة. يتم فحص شهادة TLS مباشرة؛ الباقي تواريخ مسجّلة.')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {!expiries ? (
+                      <p className="text-sm text-gray-500">{b('Checking…', 'جارٍ الفحص…')}</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-gray-500 border-b">
+                              <th className="py-2 pe-4">{b('Item', 'العنصر')}</th>
+                              <th className="py-2 pe-4">{b('Expires on', 'ينتهي في')}</th>
+                              <th className="py-2 pe-4">{b('Days left', 'الأيام المتبقية')}</th>
+                              <th className="py-2 pe-4">{b('Source', 'المصدر')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {expiries.items.map((it) => {
+                              const tone = it.status === 'expired' || it.status === 'critical' ? 'text-red-700 bg-red-50'
+                                : it.status === 'warning' ? 'text-amber-800 bg-amber-50'
+                                : it.status === 'unknown' ? 'text-gray-600 bg-gray-50' : 'text-green-700 bg-green-50';
+                              return (
+                                <tr key={it.key} className="border-b last:border-0">
+                                  <td className="py-2 pe-4 font-medium">{isRTL ? it.label_ar : it.label}{it.detail ? <span className="block text-xs text-gray-500">{it.detail}</span> : null}</td>
+                                  <td className="py-2 pe-4">{it.expires_on || b('not recorded', 'غير مسجّل')}</td>
+                                  <td className="py-2 pe-4"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tone}`}>{it.days_left === null || it.days_left === undefined ? b('unknown', 'غير معروف') : it.days_left < 0 ? b('expired', 'منتهٍ') : it.days_left}</span></td>
+                                  <td className="py-2 pe-4 text-gray-500">{it.source}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        {expiries.checked_at && <p className="text-xs text-gray-400 mt-2">{b('Checked', 'تم الفحص')} {new Date(expiries.checked_at).toLocaleString()}</p>}
                       </div>
                     )}
                   </CardContent>
