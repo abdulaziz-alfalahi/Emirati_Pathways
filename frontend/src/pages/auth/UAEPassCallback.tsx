@@ -15,6 +15,12 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+
+// The handler cleans the query string off the URL, and React's dev-mode
+// double mount (and any re-mount) runs it again on the cleaned URL — where
+// `invitation_error` is gone, so the second run took the "successful" branch
+// and navigated away over the refusal. Keep the original query for re-runs.
+let lastCallbackSearch = '';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
@@ -41,8 +47,11 @@ const UAEPassCallback: React.FC = () => {
 
   const handleCallback = async () => {
     try {
-      // Parse the URL query parameters (T4.1)
-      const params = new URLSearchParams(window.location.search);
+      // Parse the URL query parameters (T4.1) — or the ones a previous run
+      // already stripped from the URL (see lastCallbackSearch).
+      const search = window.location.search.length > 1 ? window.location.search : lastCallbackSearch;
+      lastCallbackSearch = search;
+      const params = new URLSearchParams(search);
 
       const isNewUser = params.get('is_new_user') === 'true';
       const role = params.get('role');
