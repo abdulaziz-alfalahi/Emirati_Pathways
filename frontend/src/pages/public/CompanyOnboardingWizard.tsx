@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     Building2, User, Phone, CheckCircle, Loader2,
-    AlertTriangle, ArrowRight, Briefcase, Mail, ShieldCheck,
+    AlertTriangle, Briefcase, Mail, ShieldCheck,
 } from 'lucide-react';
 
 // ─── Color Palette (consistent with Growth Dashboard) ───
@@ -237,16 +237,26 @@ const CompanyOnboardingWizard: React.FC = () => {
                             </span>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            {/* The official UAE PASS button, identical to /auth — custom
+                                "Continue with UAE PASS" controls were rejected in UAT
+                                (fb_1788426347_8eadbb46, UAE Pass assessment). */}
                             <button
+                                type="button"
+                                id="uaepass-login-btn"
                                 onClick={continueWithUaePass}
                                 disabled={redirecting}
-                                style={{ ...primaryBtnStyle, opacity: redirecting ? 0.6 : 1, cursor: redirecting ? 'wait' : 'pointer' }}
+                                aria-label="Sign in with UAE PASS"
+                                style={{ background: 'transparent', border: 'none', padding: 0, cursor: redirecting ? 'wait' : 'pointer' }}
                             >
                                 {redirecting ? (
-                                    <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Redirecting to UAE PASS...</>
+                                    <span style={{ height: 50, width: 264, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                                   background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, color: '#6b7280', fontWeight: 500 }}>
+                                        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Redirecting to UAE PASS…
+                                    </span>
                                 ) : (
-                                    <>Continue with UAE PASS <ArrowRight size={16} /></>
+                                    <img src="/uae-pass-en.svg" alt="Sign in with UAE PASS"
+                                         style={{ height: 50, width: 264, objectFit: 'contain', borderRadius: 12 }} />
                                 )}
                             </button>
                         </div>
