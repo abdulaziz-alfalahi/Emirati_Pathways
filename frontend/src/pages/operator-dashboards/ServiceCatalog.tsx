@@ -80,7 +80,7 @@ const TEAL_600 = '#059669';
 const TEAL_DEEP = '#0A4D4C';
 const INK = '#0f2b2a';        // near-black with a teal bias, not pure slate
 const INK_MUTED = '#5b7573';
-const FONT = '"Readex Pro", "Dubai", system-ui, -apple-system, sans-serif';
+const FONT = '"DIN Next LT Arabic", "Readex Pro", "Dubai", system-ui, -apple-system, sans-serif';
 
 // Harmonised, teal-anchored palette for the 14 service groups. The catalog
 // data stores Tailwind-ish colour NAMES (teal/amber/cyan/rose/…) that were

@@ -118,7 +118,7 @@ const EventLiveBoard: React.FC = () => {
         return (
             <div dir="rtl" style={{ minHeight: '100vh', background: brand.bg, color: brand.text,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontFamily: 'Readex Pro, Segoe UI, Tahoma, sans-serif' }}>
+                                    fontFamily: 'DIN Next LT Arabic, Readex Pro, Segoe UI, Tahoma, sans-serif' }}>
                 <div style={{ textAlign: 'center', maxWidth: 420, padding: 24 }}>
                     <AlertTriangle size={36} color={brand.amber} />
                     <h1 style={{ fontSize: 22, marginTop: 14 }}>هذا الرابط لم يعد متاحاً</h1>
@@ -232,7 +232,7 @@ const EventLiveBoard: React.FC = () => {
     return (
         <div dir="rtl" style={{ minHeight: '100vh', background: brand.bg, color: brand.text,
                                 padding: '22px 26px',
-                                fontFamily: 'Readex Pro, Segoe UI, Tahoma, sans-serif' }}>
+                                fontFamily: 'DIN Next LT Arabic, Readex Pro, Segoe UI, Tahoma, sans-serif' }}>
             {/* Header: what this is, and whether the figures are current. */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16,
                           flexWrap: 'wrap', marginBottom: 22 }}>

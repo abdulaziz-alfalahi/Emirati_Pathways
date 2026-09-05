@@ -57,7 +57,7 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div style={{
       minHeight: '100vh', background: 'linear-gradient(180deg,#f8fafc 0%,#eef6f6 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      fontFamily: "'Readex Pro',system-ui,sans-serif",
+      fontFamily: "'DIN Next LT Arabic','Readex Pro',system-ui,sans-serif",
     }}>
       <main style={{
         maxWidth: 640, width: '100%', background: '#fff', border: '1px solid #e2e8f0',

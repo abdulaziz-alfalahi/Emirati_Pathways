@@ -16,8 +16,21 @@
 
    Brand anchor: EHRDC teal sampled from public/ehrdc-logo.svg = #006C6C
    (canonically #006E6F). Gold is retained brand equity, NOT from the logo.
-   Type: Readex Pro — one OFL superfamily covering Latin + Arabic, self-hosted.
+   Type: DIN Next LT Arabic — the EHRDC brand typeface (brand guideline,
+   supplied by the owner 2026-09-05), Latin + Arabic in one family, four
+   weights, self-hosted. Readex Pro stays as the fallback for glyphs the
+   brand face lacks (it carries 561 glyphs: no Vietnamese, limited symbols).
    ========================================================================== */
+
+/* ── DIN Next LT Arabic (self-hosted, 300/400/500/700) ────────────────────── */
+@font-face{font-family:'DIN Next LT Arabic';font-style:normal;font-weight:300;font-display:swap;
+  src:url('../assets/fonts/DINNextLTArabic-300.woff2') format('woff2');}
+@font-face{font-family:'DIN Next LT Arabic';font-style:normal;font-weight:400;font-display:swap;
+  src:url('../assets/fonts/DINNextLTArabic-400.woff2') format('woff2');}
+@font-face{font-family:'DIN Next LT Arabic';font-style:normal;font-weight:500;font-display:swap;
+  src:url('../assets/fonts/DINNextLTArabic-500.woff2') format('woff2');}
+@font-face{font-family:'DIN Next LT Arabic';font-style:normal;font-weight:600 700;font-display:swap;
+  src:url('../assets/fonts/DINNextLTArabic-700.woff2') format('woff2');}
 
 /* ── Readex Pro (self-hosted, variable 200–700, subset per script) ───────── */
 @font-face{font-family:'Readex Pro';font-style:normal;font-weight:200 700;font-display:swap;
@@ -158,8 +171,8 @@
   --radius:var(--radius-lg);   /* consumed by tailwind borderRadius */
 
   /* ── TYPOGRAPHY ────────────────────────────────────────────────────────── */
-  --font-sans:'Readex Pro',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --font-arabic:'Readex Pro','Noto Sans Arabic',Tahoma,sans-serif;
+  --font-sans:'DIN Next LT Arabic','Readex Pro',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-arabic:'DIN Next LT Arabic','Readex Pro','Noto Sans Arabic',Tahoma,sans-serif;
   --font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
 
   /* ── DENSITY DIAL — the "one system, many life stages" spine ────────────
