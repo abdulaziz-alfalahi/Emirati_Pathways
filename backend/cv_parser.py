@@ -582,6 +582,13 @@ LANGUAGE & ENCODING
 - The CV may be in English, Arabic, or bilingual. Extract ALL content regardless of language.
 - For Arabic names, transliterate to Latin script in `full_name` AND keep the original in `full_name_ar`.
 - If the CV is entirely in Arabic, still return field keys in English with Arabic values.
+- PRESERVE THE SOURCE LANGUAGE of every free-text value: summary, role descriptions,
+  achievements, project descriptions, institution and degree names, certification names.
+  Arabic stays Arabic — do NOT translate into English. Only these are normalised:
+  dates (YYYY-MM-DD), phone numbers (+971), skill `category`/`level` labels and
+  `proficiency` labels, which use the English vocabulary given below.
+- NEVER invent. A fact that is not in the CV is null (or an empty list); do not
+  guess an email, a nationality, a GPA, a date or a company from context.
 
 ═══════════════════════════════════════════
 EXTRACTION RULES

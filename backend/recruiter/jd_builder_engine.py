@@ -317,7 +317,11 @@ class JDBuilderEngine:
             
             Please write a compelling 3-4 paragraph introduction and role overview.
             Focus on the opportunity, company culture (professional, innovative), and impact of the role.
-            Keep it under 400 words. Use professional business English suitable for the UAE market.
+            Keep it under 400 words. Use professional business English (British spelling) suitable
+            for the UAE market. Plain paragraphs only — no markdown, no headings, no bullet lists.
+            Use ONLY the facts provided above: never invent a salary, a benefit, a team size,
+            a reporting line, a named person or a named client. If a detail is missing, write
+            around it rather than making one up.
             
             Your response must be a JSON object with a single key "description" containing the generated job description text. Example:
             {{

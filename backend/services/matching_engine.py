@@ -176,6 +176,17 @@ def score_match(
         response_format={"type": "json_object"},
     )
 
+    # The overall is the platform's formula over the model's sub-scores, not the
+    # model's own estimate: two engines that agree on every dimension can still
+    # calibrate the headline differently (bench 2026-09-06: the same rankings,
+    # 12 points apart). Recomputing removes that drift from the number a
+    # recruiter compares across candidates.
+    recomputed = recompute_overall(result, employer_emiratisation_weight)
+    if recomputed is not None:
+        if abs(recomputed - float(result.get("overall_score") or 0)) > 5:
+            logger.info(f"overall_score recomputed {result.get('overall_score')} -> {recomputed}")
+        result["overall_score"] = recomputed
+
     # Inject metadata
     result["candidate_name"] = resume_json.get("personal_info", {}).get("full_name", "")
     result["job_title"] = jd_json.get("job_title", "")
@@ -186,6 +197,30 @@ def score_match(
         f"{result.get('job_title', '?')} = {result.get('overall_score', '?')}%"
     )
     return result
+
+
+SCORE_WEIGHTS = {
+    "skills_match_score": 0.35,
+    "experience_relevance_score": 0.30,
+    "education_nqf_score": 0.15,
+    "language_fit_score": 0.10,
+}
+
+
+def recompute_overall(result: Dict, emir_weight: float = 1.0) -> Optional[int]:
+    """The weighted formula from the prompt, applied to the model's sub-scores.
+    Returns None when a weighted sub-score is missing or not numeric, so a
+    partial answer keeps whatever overall the model gave."""
+    total = 0.0
+    for key, weight in SCORE_WEIGHTS.items():
+        value = result.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            return None
+        total += weight * max(0.0, min(100.0, float(value)))
+    emir = result.get("emiratisation_score")
+    if isinstance(emir, (int, float)) and not isinstance(emir, bool):
+        total += 0.10 * emir_weight * max(0.0, min(100.0, float(emir)))
+    return int(round(max(0.0, min(100.0, total))))
 
 
 def _create_matching_prompt(
@@ -224,6 +259,21 @@ SCORING CRITERIA (total = 100%)
 NOTE: Location / emirate / commute is INFORMATIONAL ONLY (audit AI-07). You may report
 `location_score` for reference, but DO NOT include it in `overall_score`, and NEVER penalise
 a candidate for their emirate of residence.
+═══════════════════════════════════════════
+HOW TO SCORE (read carefully)
+═══════════════════════════════════════════
+- Every sub-score is an INDEPENDENT 0-100 assessment of its own dimension on its own
+  merits, even when the overall fit is poor. A candidate who is unsuitable on skills
+  can still score 100 on language fit if the languages match.
+- Missing information is neutral: when the profile is silent on a dimension, give that
+  dimension 50 and record the gap in `experience_gaps` / `skill_gaps`. Never treat
+  absence as failure, never invent a fact to fill it.
+- overall_score = round(0.35 × skills_match_score + 0.30 × experience_relevance_score
+  + 0.15 × education_nqf_score + 0.10 × language_fit_score
+  + 0.10 × {emir_weight} × emiratisation_score). Compute it from your own sub-scores;
+  do not estimate it separately. The platform recomputes it with this formula.
+- `strengths`, `recommendations`, `interview_focus_areas`: concrete and specific, two to
+  five items each, in the language of the job description.
 
 ═══════════════════════════════════════════
 CANDIDATE PROFILE

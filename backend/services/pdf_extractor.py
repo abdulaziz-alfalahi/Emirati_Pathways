@@ -245,30 +245,52 @@ def _extract_pdf_pymupdf(file_path: str) -> str:
 
 
 def _ocr_client():
-    """The DashScope client used for OCR, or None if OCR is unavailable.
+    """The vision client used for OCR, or None if OCR is unavailable.
 
+    Same endpoint rules as qwen_client: the on-premises balancer needs no
+    vendor key and must bypass the corporate proxy; DashScope needs both.
     Returns None rather than raising: OCR is a fallback, so a missing key or
     package should degrade to "no text" and let the caller carry on, not break
     an upload.
     """
-    api_key = os.getenv("DASHSCOPE_API_KEY")
-    if not api_key:
-        logger.warning("DASHSCOPE_API_KEY not set — Vision OCR unavailable")
+    try:
+        from backend.config.qwen_config import QWEN_API_KEY, QWEN_BASE_URL, QWEN_IS_LOCAL
+    except ImportError:  # pragma: no cover — the app runs under both roots
+        from config.qwen_config import QWEN_API_KEY, QWEN_BASE_URL, QWEN_IS_LOCAL
+    if not QWEN_API_KEY:
+        logger.warning("No API key and no local endpoint — Vision OCR unavailable")
         return None
-
     try:
         from openai import OpenAI
     except ImportError:
         logger.warning("openai package not installed — Vision OCR unavailable")
         return None
+    kwargs = {"api_key": QWEN_API_KEY, "base_url": QWEN_BASE_URL}
+    proxy = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy") or os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+    if proxy and not QWEN_IS_LOCAL:
+        import httpx
+        kwargs["http_client"] = httpx.Client(proxy=proxy, timeout=120)
+    return OpenAI(**kwargs)
 
-    base_url = os.getenv("QWEN_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
-    return OpenAI(api_key=api_key, base_url=base_url)
+
+def ocr_image_content(b64_img: str, mime: str) -> list:
+    """The multimodal message content for one image. DashScope's qwen-vl-ocr
+    accepts min/max pixel hints inside the image part; the OpenAI schema vLLM
+    enforces does not, so they are sent only to DashScope."""
+    try:
+        from backend.config.qwen_config import QWEN_IS_LOCAL
+    except ImportError:  # pragma: no cover
+        from config.qwen_config import QWEN_IS_LOCAL
+    image = {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64_img}"}}
+    if not QWEN_IS_LOCAL:
+        image.update({"min_pixels": 28 * 28 * 4, "max_pixels": 1280 * 784})
+    return [image, {"type": "text", "text": OCR_PROMPT}]
 
 
 def _ocr_image_bytes(img_bytes: bytes, client, label: str = "image",
                      mime: str = "image/png") -> str:
-    """OCR one image through qwen-vl-ocr.
+    """OCR one image through the vision model (qwen-vl-ocr on DashScope, the
+    local Qwen3.8 on the balancer — it has native vision).
 
     Args:
         img_bytes: Raw image bytes.
@@ -280,24 +302,16 @@ def _ocr_image_bytes(img_bytes: bytes, client, label: str = "image",
         Extracted text, or "" if the call failed.
     """
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
-
+    try:
+        from backend.config.qwen_config import QWEN_VISION_MODEL
+    except ImportError:  # pragma: no cover
+        from config.qwen_config import QWEN_VISION_MODEL
     try:
         response = client.chat.completions.create(
-            model="qwen-vl-ocr",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:{mime};base64,{b64_img}"},
-                            "min_pixels": 28 * 28 * 4,
-                            "max_pixels": 1280 * 784,
-                        },
-                        {"type": "text", "text": OCR_PROMPT},
-                    ],
-                }
-            ],
+            model=QWEN_VISION_MODEL,
+            messages=[{"role": "user", "content": ocr_image_content(b64_img, mime)}],
+            max_tokens=4096,
+            temperature=0,
         )
         page_text = response.choices[0].message.content
         if page_text and page_text.strip():
