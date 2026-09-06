@@ -524,35 +524,16 @@ def get_profile():
                 from backend.db import get_db_connection
                 _cc = get_db_connection()
                 _ccur = _cc.cursor()
-                _ccur.execute(
-                    """
-                    SELECT ctm.company_id, COALESCE(c.company_name, c.name)
-                    FROM company_team_members ctm
-                    LEFT JOIN companies c ON c.id = ctm.company_id
-                    WHERE ctm.user_id = %s AND ctm.invitation_status = 'accepted'
-                    ORDER BY ctm.joined_at DESC NULLS LAST, ctm.created_at DESC
-                    LIMIT 1
-                    """,
-                    (user_id,),
-                )
-                _crow = _ccur.fetchone()
-                if not _crow:
-                    _ccur.execute(
-                        """
-                        SELECT hp.company_id, COALESCE(c.company_name, c.name)
-                        FROM hr_profiles hp
-                        LEFT JOIN companies c ON c.id = hp.company_id
-                        WHERE hp.user_id = %s AND hp.company_id IS NOT NULL
-                        LIMIT 1
-                        """,
-                        (user_id,),
-                    )
-                    _crow = _ccur.fetchone()
+                try:
+                    from backend.user_company import resolve_user_company
+                except ImportError:
+                    from user_company import resolve_user_company
+                found = resolve_user_company(_ccur, user_id)
                 _cc.close()
-                if _crow and _crow[0]:
-                    profile_data['company_id'] = str(_crow[0])
-                    if _crow[1]:
-                        profile_data['company_name'] = _crow[1]
+                if found:
+                    profile_data['company_id'], _cname = found
+                    if _cname:
+                        profile_data['company_name'] = _cname
             except Exception as _cerr:
                 logger.warning(f"Could not resolve company_id for profile: {_cerr}")
 
