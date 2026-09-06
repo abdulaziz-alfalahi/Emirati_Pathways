@@ -2219,6 +2219,10 @@ Return only the JSON object, no additional text."""
             # now invites a recruiter to the platform instead. Existing links
             # keep working until SHARE_LINK_RETIRES_ON, with a banner; after
             # that the page is gone.
+            try:
+                from backend.cv_projection import fill_from_parsed, mask_contacts, share_retirement
+            except ImportError:  # pragma: no cover - the app runs under both roots
+                from cv_projection import fill_from_parsed, mask_contacts, share_retirement
             from datetime import date as _date
             retired, retires_on = share_retirement(_date.today(), os.getenv('SHARE_LINK_RETIRES_ON'))
             if retired:
@@ -2229,10 +2233,6 @@ Return only the JSON object, no additional text."""
             # reads the structured columns, so uploaded CVs rendered as an
             # empty page headed "User" (owner, 2026-09-06). Project the
             # parsed data into the builder shape where the columns are empty.
-            try:
-                from backend.cv_projection import fill_from_parsed, mask_contacts, share_retirement
-            except ImportError:  # pragma: no cover - the app runs under both roots
-                from cv_projection import fill_from_parsed, mask_contacts, share_retirement
             import json
             cv_dict = dict(cv)
             for key in ('personal_info', 'technical_skills', 'soft_skills',
