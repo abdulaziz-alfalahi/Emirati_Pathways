@@ -195,6 +195,7 @@ const OperatorDashboard = lazy(() => import('./pages/OperatorDashboard'));
 import './index.css';
 
 import { useAuth } from '@/context/AuthContext';
+import DashboardRedirect from '@/components/auth/DashboardRedirect';
 import { getAuthToken } from '@/utils/tokenUtils';
 import { NotificationProvider } from '@/components/notifications/NotificationSystem';
 import ConnectionBanner from '@/components/notifications/ConnectionBanner';
@@ -295,6 +296,8 @@ const AppContent: React.FC = () => {
                   App.tsx trap. */}
               <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
+              {/* The header's Dashboard link: resolve by role (all four groups). */}
+              <Route path="/dashboard" element={<DashboardRedirect />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -360,6 +363,8 @@ const AppContent: React.FC = () => {
                   App.tsx trap. */}
               <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
+              {/* The header's Dashboard link: resolve by role (all four groups). */}
+              <Route path="/dashboard" element={<DashboardRedirect />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -1172,6 +1177,8 @@ const AppContent: React.FC = () => {
                   App.tsx trap. */}
               <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
+              {/* The header's Dashboard link: resolve by role (all four groups). */}
+              <Route path="/dashboard" element={<DashboardRedirect />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
 
               {/* Login Test Route */}
@@ -1238,6 +1245,8 @@ const AppContent: React.FC = () => {
                   App.tsx trap. */}
               <Route path="/youth-consent/:token" element={<YouthConsentPage />} />
               <Route path="/live/:token" element={<EventLiveBoard />} />
+              {/* The header's Dashboard link: resolve by role (all four groups). */}
+              <Route path="/dashboard" element={<DashboardRedirect />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
