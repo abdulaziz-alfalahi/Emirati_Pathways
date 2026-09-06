@@ -4,6 +4,7 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import NafisVacancyImport from '@/components/growth-operator/NafisVacancyImport';
 import Messages from '@/components/recruiter/Messages';
+import CandidateReferralQueue from '@/components/growth/CandidateReferralQueue';
 import { restClient } from '@/utils/api';
 import toast from 'react-hot-toast';
 
@@ -496,6 +497,8 @@ const GrowthOperatorDashboard: React.FC = () => {
           <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
             subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
         </div>
+
+        <CandidateReferralQueue t={t} />
 
         {/* Conversion Funnel */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>

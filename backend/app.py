@@ -807,6 +807,8 @@ _additional_blueprints = [
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
     ('backend.routes.outbound_mail_routes', 'outbound_mail_bp',
      '/api/outbound-mail', 'Outbound mail review'),
+    ('backend.routes.candidate_referral_routes', 'referrals_bp',
+     None, 'Candidate → recruiter referrals'),
     ('backend.routes.staff_directory_routes', 'staff_directory_bp',
      '/api/admin/staff', 'Staff directory'),
     ('backend.routes.youth_programs_routes', 'youth_bp',

@@ -2215,6 +2215,18 @@ Return only the JSON object, no additional text."""
                 return jsonify({'success': False, 'message': 'CV not found'}), 404
             if not cv.get('is_visible'):
                 return jsonify({'success': False, 'message': 'This CV is private'}), 403
+            # The public link is being retired (owner, 2026-09-06): a candidate
+            # now invites a recruiter to the platform instead. Existing links
+            # keep working until SHARE_LINK_RETIRES_ON, with a banner; after
+            # that the page is gone.
+            from datetime import date as _date
+            retires_on = os.getenv('SHARE_LINK_RETIRES_ON', '2026-10-06')
+            try:
+                if _date.today() >= _date.fromisoformat(retires_on):
+                    return jsonify({'success': False, 'retired': True, 'retires_on': retires_on,
+                                    'message': 'Shared CV links have been retired. Ask the candidate to invite you to the platform.'}), 410
+            except ValueError:
+                pass
             # An UPLOADED CV lives in parsed_data and leaves the structured
             # columns NULL; a BUILT CV is the other way round. The share page
             # reads the structured columns, so uploaded CVs rendered as an
@@ -2237,6 +2249,7 @@ Return only the JSON object, no additional text."""
             cv_dict.pop('parsed_data', None)          # never ship the raw parse to the public
             # Mask personal info contacts for external viewers (closed platform security)
             cv_dict['personal_info'] = mask_contacts(cv_dict.get('personal_info'))
+            cv_dict['share_retires_on'] = retires_on
             return jsonify({
                 'success': True,
                 'data': cv_dict

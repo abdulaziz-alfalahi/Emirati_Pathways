@@ -1402,6 +1402,17 @@ class GrowthSystem:
                     WHERE id = %s
                 """, (user_id, invitation['id']))
 
+                # A candidate may have invited this recruiter by email before
+                # they joined (migration 110): grant those views now.
+                try:
+                    from backend.candidate_referrals import CandidateReferralSystem
+                except ImportError:
+                    from candidate_referrals import CandidateReferralSystem
+                try:
+                    CandidateReferralSystem.link_for_user(cur, user_id, invitation.get('company_email'))
+                except Exception as e:
+                    logger.warning(f"referral linking skipped on redemption: {e}")
+
                 conn.commit()
 
                 return {
