@@ -498,8 +498,6 @@ const GrowthOperatorDashboard: React.FC = () => {
             subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
         </div>
 
-        <CandidateReferralQueue t={t} />
-
         {/* Conversion Funnel */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
@@ -645,6 +643,8 @@ const GrowthOperatorDashboard: React.FC = () => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Candidates' recruiter invitations that need an operator (migration 110) */}
+        <CandidateReferralQueue t={t} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: colors.textSecondary }}>
             {t('Order by', 'الترتيب حسب')}
