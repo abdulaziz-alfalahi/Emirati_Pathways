@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useOperationsData } from '@/hooks/useOperationsData';
 import AIUsagePanel from '@/components/admin/AIUsagePanel';
+import ExpiryDatesCard from '@/components/admin/ExpiryDatesCard';
 
 /**
  * OPERATIONS CENTER — AT-DESK SURFACE (/operations-center)
@@ -357,6 +358,11 @@ const OperationsMonitoringCenter: React.FC = () => {
                             the Admin Dashboard, which is where the decision
                             about where inference runs actually gets made. */}
                         <AIUsagePanel compact defaultDays={7} />
+
+                        {/* Dates that can take the service down (TLS cert, mail +
+                            UAE Pass secrets). Same card as the Admin Dashboard's
+                            System tab, through the operator-scoped endpoint. */}
+                        <ExpiryDatesCard endpoint="/api/operations/expiries" isRTL={isRTL} compact />
 
                         {/* ── Emiratization + live feed ────────────────────── */}
                         <div className="grid gap-6 lg:grid-cols-2">

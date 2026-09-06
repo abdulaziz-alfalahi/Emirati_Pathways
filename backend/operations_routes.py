@@ -30,6 +30,27 @@ def safe_int(val):
     return int(val)
 
 
+@operations_bp.route('/expiries', methods=['GET'])
+@require_roles(*OPERATOR_ROLES)
+def operations_expiries():
+    """Dates that can take the service down — the same payload the Admin
+    Dashboard reads at /api/admin/system/expiries, reachable by the
+    Monitoring Operator (platform_operator) for the Operations Center card.
+    See backend/system_expiries.py."""
+    try:
+        from backend.system_expiries import collect as collect_expiries
+    except ImportError:
+        from system_expiries import collect as collect_expiries
+    try:
+        items = collect_expiries()
+        return jsonify({'success': True, 'items': items,
+                        'worst': items[0]['status'] if items else 'ok',
+                        'checked_at': datetime.utcnow().isoformat() + 'Z'})
+    except Exception as e:
+        logger.error(f"operations expiries failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not compute expiries'}), 500
+
+
 @operations_bp.route('/stats', methods=['GET'])
 @require_roles(*OPERATOR_ROLES)
 def get_operations_stats():
