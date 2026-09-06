@@ -8,6 +8,12 @@ Handles bilingual Arabic/English, multi-column layouts, and tables.
 """
 
 import base64
+import time
+
+try:
+    from backend.services import ai_usage_log
+except ImportError:  # pragma: no cover — the app runs under both roots
+    from services import ai_usage_log
 import logging
 import os
 import re
@@ -306,6 +312,21 @@ def _ocr_image_bytes(img_bytes: bytes, client, label: str = "image",
         from backend.config.qwen_config import QWEN_VISION_MODEL
     except ImportError:  # pragma: no cover
         from config.qwen_config import QWEN_VISION_MODEL
+    # Every vision call is one row in ai_usage_log (task_type 'ocr'), like the
+    # text calls that go through qwen_client — otherwise OCR spend and failures
+    # were invisible to the admin AI Usage tab. Logging can never fail the OCR.
+    def _record(outcome, usage=None, latency=None, attempt=1):
+        try:
+            ai_usage_log.record(
+                model=QWEN_VISION_MODEL, task_type='ocr',
+                prompt_tokens=getattr(usage, 'prompt_tokens', 0) or 0,
+                completion_tokens=getattr(usage, 'completion_tokens', 0) or 0,
+                latency_ms=int(latency * 1000) if latency is not None else None,
+                attempt=attempt, outcome=outcome)
+        except Exception as log_err:  # pragma: no cover — defensive
+            logger.debug(f"Vision OCR usage not recorded: {log_err}")
+
+    started = time.time()
     try:
         response = client.chat.completions.create(
             model=QWEN_VISION_MODEL,
@@ -313,13 +334,14 @@ def _ocr_image_bytes(img_bytes: bytes, client, label: str = "image",
             max_tokens=4096,
             temperature=0,
         )
+        _record(ai_usage_log.OUTCOME_OK, getattr(response, 'usage', None), time.time() - started)
         page_text = response.choices[0].message.content
         if page_text and page_text.strip():
             logger.info(f"Vision OCR {label}: {len(page_text)} chars extracted")
             return page_text.strip()
     except Exception as ocr_err:
+        _record(ai_usage_log.OUTCOME_ERROR, None, time.time() - started)
         logger.warning(f"Vision OCR {label} failed: {ocr_err}")
-
     return ""
 
 
