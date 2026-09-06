@@ -237,3 +237,6 @@ frontend/VERSION
 # Claude Code — personal/local state (skills are committed)
 .claude/settings.local.json
 .claude/worktrees/
+
+# LLM benchmark bundles hold CV text and transcripts - never commit one
+backend/scripts/llm_bench/bundle/
