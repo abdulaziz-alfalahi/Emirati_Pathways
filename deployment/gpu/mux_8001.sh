@@ -11,30 +11,43 @@
 set -euo pipefail
 CONF=${CONF:-$HOME/llm-lb.conf}
 [ -f "$CONF" ] || { echo "missing $CONF"; exit 1; }
+grep -q "upstream whisper" "$CONF" || { echo "$CONF is the OLD balancer config (no Whisper route) - copy the new llm-lb.conf first"; exit 1; }
 
 echo "== stt-whisper: recreate on 127.0.0.1:8002 (same image/env/mounts/GPU)"
-sudo docker inspect stt-whisper > /tmp/whisper.json
-RUNARGS=$(python3 - <<'PY'
+# The definition is captured to /tmp/whisper.json BEFORE the container is
+# removed, and reused if the container is already gone (a failed earlier run).
+if sudo docker inspect stt-whisper > /tmp/whisper.json.new 2>/dev/null; then
+  sudo mv /tmp/whisper.json.new /tmp/whisper.json
+elif [ ! -s /tmp/whisper.json ]; then
+  echo "stt-whisper does not exist and /tmp/whisper.json is missing - cannot recreate"; exit 1
+fi
+# Python emits ONE shell line (properly quoted); eval executes it as such.
+RUNLINE=$(sudo python3 - <<'PY'
 import json, shlex
 c = json.load(open('/tmp/whisper.json'))[0]
-args = []
+args = ['sudo', 'docker', 'run', '-d', '--name', 'stt-whisper', '--restart', 'unless-stopped',
+        '-p', '127.0.0.1:8002:8000']
 for e in c['Config'].get('Env') or []:
-    if e.split('=', 1)[0] in ('PATH', 'HOME', 'HOSTNAME'): continue
+    if e.split('=', 1)[0] in ('PATH', 'HOME', 'HOSTNAME'):
+        continue
     args += ['-e', e]
 for m in c.get('Mounts') or []:
-    if m.get('Type') == 'volume': args += ['-v', f"{m['Name']}:{m['Destination']}"]
-    elif m.get('Type') == 'bind': args += ['-v', f"{m['Source']}:{m['Destination']}"]
+    if m.get('Type') == 'volume':
+        args += ['-v', f"{m['Name']}:{m['Destination']}"]
+    elif m.get('Type') == 'bind':
+        args += ['-v', f"{m['Source']}:{m['Destination']}"]
 for d in c['HostConfig'].get('DeviceRequests') or []:
     ids = d.get('DeviceIDs') or []
     args += ['--gpus', ('device=' + ','.join(ids)) if ids else 'all']
     break
-print(' '.join(shlex.quote(a) for a in args + [c['Config']['Image']]))
+args.append(c['Config']['Image'])
+cmd = c['Config'].get('Cmd') or []
+print(' '.join(shlex.quote(a) for a in args + cmd))
 PY
 )
-sudo docker rm -f stt-whisper >/dev/null
-# shellcheck disable=SC2086
-sudo docker run -d --name stt-whisper --restart unless-stopped \
-  -p 127.0.0.1:8002:8000 $RUNARGS >/dev/null
+echo "   $RUNLINE"
+sudo docker rm -f stt-whisper >/dev/null 2>&1 || true
+eval "$RUNLINE" >/dev/null
 echo "   waiting for Whisper on :8002"
 for i in $(seq 1 40); do curl -sf --noproxy '*' localhost:8002/health >/dev/null 2>&1 && break; sleep 5; done
 curl -sf --noproxy '*' localhost:8002/health && echo "   whisper ok" || echo "   whisper NOT healthy yet - check: sudo docker logs stt-whisper"
