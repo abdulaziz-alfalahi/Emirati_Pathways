@@ -2204,38 +2204,39 @@ Return only the JSON object, no additional text."""
                     personal_info, professional_summary,
                     technical_skills, soft_skills,
                     work_experience, education,
+                    parsed_data,
                     status, is_visible,
                     created_at
                 FROM user_cvs
                 WHERE id = %s::uuid
             """
             cv = execute_query(query, (cv_id,), fetch_one=True)
-
             if not cv:
                 return jsonify({'success': False, 'message': 'CV not found'}), 404
-
             if not cv.get('is_visible'):
                 return jsonify({'success': False, 'message': 'This CV is private'}), 403
-
-            # Return data similar to list_cvs but detailed
+            # An UPLOADED CV lives in parsed_data and leaves the structured
+            # columns NULL; a BUILT CV is the other way round. The share page
+            # reads the structured columns, so uploaded CVs rendered as an
+            # empty page headed "User" (owner, 2026-09-06). Project the
+            # parsed data into the builder shape where the columns are empty.
+            try:
+                from backend.cv_projection import fill_from_parsed, mask_contacts
+            except ImportError:  # pragma: no cover - the app runs under both roots
+                from cv_projection import fill_from_parsed, mask_contacts
+            import json
             cv_dict = dict(cv)
-
-            # Mask personal info contacts for external viewers (closed platform security)
-            pi = cv_dict.get('personal_info')
-            if pi:
-                import json
-                if isinstance(pi, str):
+            for key in ('personal_info', 'technical_skills', 'soft_skills',
+                        'work_experience', 'education', 'parsed_data'):
+                if isinstance(cv_dict.get(key), str):
                     try:
-                        pi = json.loads(pi)
+                        cv_dict[key] = json.loads(cv_dict[key])
                     except Exception:
                         pass
-                if isinstance(pi, dict):
-                    # Mask standard variations
-                    for key in ['email', 'phone', 'emailAddress', 'phoneNumber', 'email_address', 'phone_number']:
-                        if key in pi and pi[key]:
-                            pi[key] = '[Hidden - Closed Platform]'
-                    cv_dict['personal_info'] = pi
-
+            cv_dict = fill_from_parsed(cv_dict)
+            cv_dict.pop('parsed_data', None)          # never ship the raw parse to the public
+            # Mask personal info contacts for external viewers (closed platform security)
+            cv_dict['personal_info'] = mask_contacts(cv_dict.get('personal_info'))
             return jsonify({
                 'success': True,
                 'data': cv_dict
