@@ -267,18 +267,17 @@ class AuthenticationManager:
                 effective_role = user_row.get('role') or user_row.get('user_type')
                 user_row['role'] = effective_role
                 
-                if effective_role in ('employer_admin', 'recruiter', 'recruiter', 'employer_admin'):
+                if effective_role in ('employer_admin', 'recruiter'):
+                    # Membership (the ACL's store) first, hr_profiles only as a
+                    # fallback — see user_company.py for the two failure modes.
                     try:
-                        cursor.execute("""
-                            SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
-                            FROM hr_profiles hp
-                            LEFT JOIN companies c ON hp.company_id::text = c.id::text
-                            WHERE hp.user_id = %s
-                        """, (user_id,))
-                        hr_info = cursor.fetchone()
-                        if hr_info:
-                            user_row['company_id'] = str(hr_info['company_id']) if hr_info['company_id'] else None
-                            user_row['company_name'] = hr_info.get('company_name')
+                        try:
+                            from backend.user_company import resolve_user_company
+                        except ImportError:
+                            from user_company import resolve_user_company
+                        found = resolve_user_company(cursor, user_id)
+                        if found:
+                            user_row['company_id'], user_row['company_name'] = found
                     except Exception as e:
                         self.logger.warning(f"Failed to fetch company info for HR user: {e}")
 
@@ -830,23 +829,19 @@ class AuthenticationManager:
                 except:
                     pass
                 
-                # Fetch company_id from hr_profiles for HR users
+                # Fetch the user's company (membership first) for HR users
                 user_role = user_data.get('role') or user_data.get('user_type') or ''
-                if user_role in ('employer_admin', 'recruiter', 'recruiter', 'employer_admin'):
+                if user_role in ('employer_admin', 'recruiter'):
                     try:
                         conn_hr = self._get_db_connection()
                         cursor_hr = conn_hr.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                        cursor_hr.execute("""
-                            SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
-                            FROM hr_profiles hp
-                            LEFT JOIN companies c ON hp.company_id::text = c.id::text
-                            WHERE hp.user_id = %s
-                            LIMIT 1
-                        """, (str(user_data['id']),))
-                        hr_profile = cursor_hr.fetchone()
-                        if hr_profile:
-                            user_data['company_id'] = str(hr_profile['company_id']) if hr_profile['company_id'] else None
-                            user_data['company_name'] = hr_profile.get('company_name')
+                        try:
+                            from backend.user_company import resolve_user_company
+                        except ImportError:
+                            from user_company import resolve_user_company
+                        found = resolve_user_company(cursor_hr, user_data['id'])
+                        if found:
+                            user_data['company_id'], user_data['company_name'] = found
                         cursor_hr.close()
                         conn_hr.close()
                     except Exception as hr_err:
