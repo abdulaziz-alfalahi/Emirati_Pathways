@@ -138,3 +138,23 @@ def mask_contacts(personal: Any) -> Any:
         if masked.get(key):
             masked[key] = MASK
     return masked
+
+
+DEFAULT_SHARE_RETIRES_ON = '2026-10-06'
+
+
+def share_retirement(today, env_value=None):
+    """(retired, retires_on) for the public share link.
+
+    The public page is being retired (owner, 2026-09-06): links keep working
+    with a banner until the date, then answer 410. A misconfigured date must
+    never take the page down early — so an unparseable value keeps the link
+    open AND reports no date, rather than handing the banner "Invalid Date".
+    """
+    from datetime import date as _date
+    value = (env_value or DEFAULT_SHARE_RETIRES_ON).strip()
+    try:
+        retires_on = _date.fromisoformat(value)
+    except ValueError:
+        return False, None
+    return today >= retires_on, retires_on.isoformat()
