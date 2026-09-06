@@ -284,17 +284,29 @@ class AICareerGuidanceEngine:
             - Emiratization Priority: {career_pathway.emiratization_priority}
             - Salary Range: {career_pathway.salary_range_aed}
             
-            Predict outcomes for {timeframe_years} years:
-            1. Probability of successful entry (0-100%)
-            2. Expected salary progression (AED)
-            3. Career advancement timeline
-            4. Skill development requirements
-            5. Market positioning advantages
-            6. Potential challenges and mitigation strategies
-            7. UAE-specific opportunities
-            8. Emiratization benefits (if applicable)
-            
-            Provide detailed analysis with confidence scores.
+            Predict outcomes for {timeframe_years} years for THIS student and THIS pathway.
+            Rules: be specific to the UAE labour market and the pathway named above; do not
+            invent named employers, named people or programmes you are not sure exist; salary
+            figures are monthly AED and must sit inside the pathway's salary range above unless
+            you explain why; probabilities are integers 0-100; write every free-text value in
+            the language of the student profile (Arabic profile → Arabic, otherwise English).
+
+            Return ONLY a JSON object with exactly this shape:
+            {{
+              "success_probability": <int 0-100, probability of successful entry>,
+              "salary_progression": {{"year_1": <int AED/month>, "year_3": <int>, "year_5": <int>}},
+              "advancement_timeline": [
+                {{"year": 1, "position": "<title>", "probability": <int 0-100>}},
+                {{"year": 3, "position": "<title>", "probability": <int>}},
+                {{"year": 5, "position": "<title>", "probability": <int>}}
+              ],
+              "skill_requirements": [{{"skill": "<name>", "priority": "high|medium|low", "timeline": "<e.g. 6 months>"}}],
+              "market_advantages": ["<advantage>", "..."],
+              "challenges": [{{"challenge": "<risk>", "mitigation": "<action>"}}],
+              "uae_opportunities": ["<programme, sector or initiative>", "..."],
+              "emiratization_benefits": "<one sentence, or null if the student is not Emirati>",
+              "confidence_score": <int 0-100, your confidence in this prediction>
+            }}
             """
             
             messages = [
@@ -312,40 +324,37 @@ class AICareerGuidanceEngine:
             response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
             
             if response:
-                # Parse and structure the AI response
+                # The model's answer, shaped for the callers. Until 2026-09-06
+                # this branch returned a hard-coded dict and never read the
+                # response at all (the fabricated-data class, again).
+                def _num(v, lo=0, hi=100, default=None):
+                    try:
+                        return max(lo, min(hi, int(round(float(v)))))
+                    except (TypeError, ValueError):
+                        return default
+                sal = response.get("salary_progression") or {}
+                emir_note = response.get("emiratization_benefits")
                 return {
-                    "success_probability": 85.5,
+                    "success_probability": _num(response.get("success_probability"), default=50),
                     "salary_progression": {
-                        "year_1": 8000,
-                        "year_3": 12000,
-                        "year_5": 18000
+                        k: _num(sal.get(k), 0, 10**7, default=None) for k in ("year_1", "year_3", "year_5")
                     },
                     "advancement_timeline": [
-                        {"year": 1, "position": "Junior Developer", "probability": 90},
-                        {"year": 3, "position": "Senior Developer", "probability": 75},
-                        {"year": 5, "position": "Team Lead", "probability": 60}
+                        {"year": _num(x.get("year"), 0, 50, default=None),
+                         "position": str(x.get("position") or ""),
+                         "probability": _num(x.get("probability"), default=None)}
+                        for x in (response.get("advancement_timeline") or []) if isinstance(x, dict)
                     ],
                     "skill_requirements": [
-                        {"skill": "Advanced Programming", "priority": "high", "timeline": "6 months"},
-                        {"skill": "Project Management", "priority": "medium", "timeline": "12 months"},
-                        {"skill": "Leadership", "priority": "medium", "timeline": "24 months"}
+                        x for x in (response.get("skill_requirements") or []) if isinstance(x, dict) and x.get("skill")
                     ],
-                    "market_advantages": [
-                        "High demand in UAE tech sector",
-                        "Government digitization initiatives",
-                        "Growing startup ecosystem"
-                    ],
+                    "market_advantages": [str(x) for x in (response.get("market_advantages") or []) if x],
                     "challenges": [
-                        {"challenge": "Rapid technology changes", "mitigation": "Continuous learning"},
-                        {"challenge": "Competition", "mitigation": "Specialization in AI/ML"}
+                        x for x in (response.get("challenges") or []) if isinstance(x, dict) and x.get("challenge")
                     ],
-                    "uae_opportunities": [
-                        "Dubai Future Foundation programs",
-                        "Government digital transformation projects",
-                        "Smart city initiatives"
-                    ],
-                    "emiratization_benefits": "Priority hiring in government and semi-government sectors" if student_profile.get('is_emirati') else None,
-                    "confidence_score": 88.5,
+                    "uae_opportunities": [str(x) for x in (response.get("uae_opportunities") or []) if x],
+                    "emiratization_benefits": (emir_note if student_profile.get('is_emirati') and emir_note else None),
+                    "confidence_score": _num(response.get("confidence_score"), default=50),
                     "ai_generated": True
                 }
             else:

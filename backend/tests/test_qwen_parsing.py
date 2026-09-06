@@ -324,7 +324,11 @@ class TestMatchingEngine:
 
         result = score_match(resume, jd)
 
-        assert result["overall_score"] == 95
+        # The headline is the platform's formula over the model's sub-scores
+        # (0.35*90 + 0.30*98 + 0.15*100 + 0.10*100 + 0.10*100 = 95.9), not the
+        # model's own 95: two engines that agree on every dimension must not
+        # disagree on the number a recruiter compares (bench 2026-09-06).
+        assert result["overall_score"] == 96
         assert result["emiratisation_priority"] == "High"
         assert result["nqf_alignment"]["meets_requirement"] is True
         assert result["bilingual_match_score"] == 100

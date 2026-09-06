@@ -344,6 +344,17 @@ CRITICAL RULES:
   let them influence any other score. Where someone lives is not evidence about
   whether they can do the work. The job's location is given above only so you can
   mention it in your advice; commute is shown to the candidate separately.
+- Score against the requirements STATED above, not against an imagined ideal candidate.
+- MISSING INFORMATION IS NEUTRAL, NOT A FAILURE: when the profile says nothing about a
+  criterion ("Not specified", empty), award that criterion its midpoint and name the
+  gap in "cons" so the candidate can complete their profile. Only what the profile
+  contradicts is scored down.
+- CALIBRATION — total_score MUST equal the sum of the four breakdown scores, and
+  fit_assessment MUST follow it: 80-100 excellent, 65-79 good, 45-64 moderate,
+  25-44 poor, 0-24 not_suitable.
+- Write "recommendation", "pros" and "cons" in the language of the candidate profile
+  (Arabic profile → Arabic; otherwise English). Two to four concrete sentences; name
+  the specific skills or experience to add, never generic encouragement.
 
 Return ONLY a valid JSON object in this format:
 {{

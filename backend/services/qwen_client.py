@@ -19,6 +19,9 @@ import httpx
 try:
     from backend.config.qwen_config import (
         DASHSCOPE_API_KEY,
+        QWEN_API_KEY,
+        QWEN_IS_LOCAL,
+        QWEN_THINKING_TASKS,
         QWEN_BASE_URL,
         REQUEST_TIMEOUT,
         MAX_RETRIES,
@@ -29,6 +32,9 @@ try:
 except ImportError:  # pragma: no cover — the app runs under both roots
     from config.qwen_config import (
         DASHSCOPE_API_KEY,
+        QWEN_API_KEY,
+        QWEN_IS_LOCAL,
+        QWEN_THINKING_TASKS,
         QWEN_BASE_URL,
         REQUEST_TIMEOUT,
         MAX_RETRIES,
@@ -107,18 +113,21 @@ def _get_client() -> OpenAI:
     """Lazily initialise the OpenAI client once."""
     global _client
     if _client is None:
-        if not DASHSCOPE_API_KEY:
+        if not QWEN_API_KEY:
             raise QwenClientError(
-                "DASHSCOPE_API_KEY is not set. Cannot initialise Qwen client."
+                "No API key and no local endpoint. Cannot initialise Qwen client."
             )
 
-        # Proxy support for restricted network environments (e.g. MoroHub)
+        # Proxy support for restricted network environments (e.g. MoroHub).
+        # Docker injects HTTP(S)_PROXY into every container; an endpoint inside
+        # the tenancy (the vLLM balancer on the GPU nodes) must bypass it or
+        # the proxy answers with a Squid error page instead of the model.
         https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
         http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
-        proxy_url = https_proxy or http_proxy
+        proxy_url = None if QWEN_IS_LOCAL else (https_proxy or http_proxy)
 
         client_kwargs = {
-            "api_key": DASHSCOPE_API_KEY,
+            "api_key": QWEN_API_KEY,
             "base_url": QWEN_BASE_URL,
             "timeout": REQUEST_TIMEOUT,
         }
@@ -134,8 +143,20 @@ def _get_client() -> OpenAI:
             client_kwargs["max_retries"] = 0
 
         _client = OpenAI(**client_kwargs)
-        logger.info(f"✅ Qwen OpenAI-compatible client initialised (base_url={QWEN_BASE_URL}, proxy={'yes' if proxy_url else 'no'})")
+        logger.info(f"✅ Qwen OpenAI-compatible client initialised (base_url={QWEN_BASE_URL}, "
+                    f"local={QWEN_IS_LOCAL}, proxy={'yes' if proxy_url else 'no'})")
     return _client
+
+
+def request_extras(task_type: str) -> Dict[str, Any]:
+    """Vendor-specific request fields. On the local vLLM endpoint, Qwen3
+    thinking is switched off unless the task is in QWEN_THINKING_TASKS —
+    left on, the model spends its whole max_tokens budget reasoning and
+    returns no JSON. DashScope models ignore the flag, so it is only sent
+    to the local endpoint."""
+    if QWEN_IS_LOCAL:
+        return {"chat_template_kwargs": {"enable_thinking": task_type in QWEN_THINKING_TASKS}}
+    return {}
 
 
 def _record_usage(model: str, task_type: str, prompt_tokens: int, completion_tokens: int,
@@ -250,6 +271,7 @@ def chat_completion(
                 temperature=temp,
                 response_format=response_format,
                 max_tokens=max_tokens,
+                extra_body=request_extras(task_type) or None,
             )
             latency = round(time.time() - start, 3)
             raw_text = response.choices[0].message.content or ""
