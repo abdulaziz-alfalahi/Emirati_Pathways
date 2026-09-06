@@ -18,6 +18,7 @@ const PublicCVViewer: React.FC = () => {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
+    const [retiresOn, setRetiresOn] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchCV = async () => {
@@ -25,8 +26,11 @@ const PublicCVViewer: React.FC = () => {
                 const response = await fetch(`/api/cv/public/${id}`);
                 const result = await response.json();
 
-                if (result.success && result.data) {
+                if (response.status === 410 || result.retired) {
+                    setError(result.message || 'Shared CV links have been retired. Ask the candidate to invite you to the platform.');
+                } else if (result.success && result.data) {
                     const backendRow = result.data;
+                    setRetiresOn(backendRow.share_retires_on || null);
                     const mappedData = {
                         personalInfo: backendRow.personal_info || {},
                         professionalSummary: backendRow.professional_summary || '',
@@ -109,6 +113,17 @@ const PublicCVViewer: React.FC = () => {
                         <p className="text-slate-400 text-sm mt-1">
                           Securely shared via <span className="font-semibold text-teal-400">Emirati Pathways</span> Platform
                         </p>
+                        {/* Shared links are being retired (owner, 2026-09-06):
+                            the candidate now invites the recruiter to the
+                            platform, where the profile, contact and messaging
+                            all live. Existing links work until the date, with
+                            this notice; then the page answers 410. */}
+                        {retiresOn && (
+                            <p className="mt-2 text-xs text-amber-300 bg-amber-900/30 border border-amber-800 rounded-lg px-3 py-2 max-w-xl">
+                                This shared link stops working on {new Date(retiresOn).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                                To keep viewing this candidate, ask them to invite you to the platform from their CV Preview — you will then see the full profile, and can message them there.
+                            </p>
+                        )}
                     </div>
                     {/* Read as an access error ("it said it is a platform
                         protected profile" — fb_1785817165). The CV IS shown;
