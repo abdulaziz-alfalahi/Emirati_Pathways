@@ -185,7 +185,7 @@ const StaffInvitationsTab: React.FC<Props> = ({ isRTL = false }) => {
             <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
           <div className="flex items-center gap-3">
-            <Button onClick={submit} disabled={sending} className="bg-[#006E6D] hover:bg-[#005A59]">
+            <Button onClick={submit} disabled={sending} className="bg-[#006E6F] hover:bg-[#005A59]">
               {sending ? <Loader2 className="h-4 w-4 me-2 animate-spin" /> : <Send className="h-4 w-4 me-2" />}
               {t('Create invitation', 'إنشاء الدعوة')}
             </Button>

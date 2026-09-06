@@ -18,6 +18,7 @@ from functools import wraps
 from typing import Dict, Any, Optional
 
 from backend.administrator_system import AdministratorSystem
+from backend.system_expiries import collect as collect_expiries
 from backend.auth.auth_manager_fixed import AuthenticationManager as AuthManager
 
 # Configure logging
@@ -156,6 +157,22 @@ def permission_required(permission: str):
     return decorator
 
 # Health and Status Endpoints
+
+@admin_bp.route('/system/expiries', methods=['GET'])
+@admin_required
+def system_expiries():
+    """Dates that can take the service down: TLS certificate (checked live
+    through the proxy), mail app secret, UAE Pass secret, anything in
+    EXPIRY_ITEMS. See backend/system_expiries.py (fb_1788410870_12ae53c3)."""
+    try:
+        items = collect_expiries()
+        worst = items[0]['status'] if items else 'ok'
+        return jsonify({'success': True, 'items': items, 'worst': worst,
+                        'checked_at': datetime.utcnow().isoformat() + 'Z'})
+    except Exception as e:
+        logger.error(f"expiries failed: {e}")
+        return jsonify({'success': False, 'message': 'Could not compute expiries'}), 500
+
 
 @admin_bp.route('/health', methods=['GET'])
 def health_check():

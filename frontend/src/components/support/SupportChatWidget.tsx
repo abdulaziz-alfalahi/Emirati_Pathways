@@ -17,7 +17,7 @@ import {
 
 /* ── Brand tokens ──
    These were labelled "brand" but held #0D9488 — Tailwind's built-in teal-600,
-   NOT the EHRDC brand teal (#006E6D). The widget therefore rendered a
+   NOT the EHRDC brand teal (#006E6F). The widget therefore rendered a
    near-miss teal next to genuinely branded chrome. Pointed at the real tokens
    so it tracks the design system instead of drifting from it. */
 const brand = {

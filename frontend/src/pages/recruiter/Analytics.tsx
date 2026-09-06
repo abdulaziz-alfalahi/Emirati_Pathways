@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { restClient } from '@/utils/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, FileSpreadsheet, ArrowLeft } from 'lucide-react';
@@ -8,23 +9,19 @@ import { KeyInsights } from '@/components/recruiter/analytics/KeyInsights';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const API = (p: string) => `${p}`;
 
 export default function RecruiterAnalyticsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(API('/api/hr/analytics/recruiter/summary'), { headers: H as any });
-        if (r.ok) setData(await r.json());
+        setData((await restClient.get('/api/hr/analytics/recruiter/summary')).data);
       } catch { }
     })();
-  }, [H]);
+  }, []);
 
   const handleExportPDF = async () => {
     if (!contentRef.current) return;

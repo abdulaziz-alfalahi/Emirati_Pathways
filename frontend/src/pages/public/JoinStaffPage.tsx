@@ -58,11 +58,11 @@ const JoinStaffPage: React.FC = () => {
   const card: React.CSSProperties = {
     maxWidth: 480, margin: '8vh auto', background: '#fff', border: '1px solid #e5e7eb',
     borderRadius: 16, padding: 32, boxShadow: '0 10px 40px rgba(0,0,0,.08)', textAlign: 'center',
-    fontFamily: "'Readex Pro',system-ui,sans-serif",
+    fontFamily: "'DIN Next LT Arabic','Readex Pro',system-ui,sans-serif",
   };
   const btn: React.CSSProperties = {
     width: '100%', padding: '12px 0', borderRadius: 10, fontSize: 15, fontWeight: 700,
-    border: 'none', cursor: 'pointer', background: '#006E6D', color: '#fff', marginTop: 8,
+    border: 'none', cursor: 'pointer', background: '#006E6F', color: '#fff', marginTop: 8,
   };
 
   return (

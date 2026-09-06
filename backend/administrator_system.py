@@ -195,8 +195,13 @@ class AdministratorSystem:
                 params.extend([search_param, search_param, search_param])
             
             if role_filter:
-                conditions.append("r.name = %s")
-                params.append(role_filter)
+                # users.role is the authoritative role and secondary_roles the
+                # additive ones (CLAUDE.md #3); admin_user_roles is a legacy
+                # table nobody populates, so filtering on it alone returned
+                # "No users found" for every role (fb_1788410655_8e9835db).
+                conditions.append(
+                    "(u.role = %s OR COALESCE(u.secondary_roles, '[]'::jsonb) ? %s OR r.name = %s)")
+                params.extend([role_filter, role_filter, role_filter])
 
             if status_filter and status_filter != 'all':
                 conditions.append("u.is_active = %s")
@@ -307,7 +312,7 @@ class AdministratorSystem:
                     count_search_param = f"%{search}%"
                     count_params.extend([count_search_param, count_search_param, count_search_param])
                 if role_filter:
-                    count_params.append(role_filter)
+                    count_params.extend([role_filter, role_filter, role_filter])
                 
                 count_query += " WHERE " + " AND ".join(conditions)
             

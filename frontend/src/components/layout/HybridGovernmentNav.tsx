@@ -25,25 +25,25 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
       {/* Main Government Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-24">
+          <div dir="ltr" className="flex justify-between items-center h-24">
             {/* Government Logos Section */}
             <div className="flex items-center min-w-0 shrink-0 space-x-3 md:space-x-6">
               <div className="flex items-center shrink-0 space-x-2 sm:space-x-4">
                 <img
-                  src="/dubai-gov-logo.jpg"
+                  src="/dubai-gov-logo.svg"
                   alt="Government of Dubai"
                   className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                 />
                 <div className="hidden sm:block w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
                 <img
-                  src="/ehrdc-logo.png"
+                  src="/ehrdc-logo.svg"
                   alt="EHRDC Logo"
-                  className="hidden sm:block h-10 sm:h-14 w-auto shrink-0 object-contain md:h-[4.5rem]"
+                  className="hidden sm:block h-8 sm:h-11 w-auto shrink-0 object-contain md:h-16"
                 />
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-2xl font-bold text-foreground">{PLATFORM_NAME_EN}</h1>
+                  <h1 dir="ltr" className="text-2xl font-bold text-foreground">{PLATFORM_NAME_EN}</h1>
                   <p className="text-sm text-muted-foreground">UAE Nationals Career Development</p>
                 </Link>
               </div>

@@ -338,31 +338,33 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       {/* Main Government Header */}
       <header className="bg-card border-b border-[#E2E5E9] sticky top-0 z-50" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
+          <div dir="ltr" className="flex flex-row justify-between items-center h-20">
             {/* Government Logos Section */}
-            <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center min-w-0 shrink-0 space-x-3 md:space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
-              <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center shrink-0 space-x-2 sm:space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
+            {/* Government logos + platform title: physically LEFT and LTR in every
+                language (Dubai Government brand guideline p. 28) — never mirrored. */}
+            <div dir="ltr" className="flex flex-row items-center min-w-0 shrink-0 space-x-3 md:space-x-6">
+              <div className="flex flex-row items-center shrink-0 space-x-2 sm:space-x-4">
                 {/* shrink-0 + object-contain: these are flex children with no explicit width,
                     so on a narrow viewport flex squeezed their width while h-20 held the
                     height fixed — the logos rendered horizontally compressed (feedback
                     fb_1786394087). A government crest must never be distorted. */}
                 <img
-                  src="/dubai-gov-logo.jpg"
+                  src="/dubai-gov-logo.svg"
                   alt="Government of Dubai"
                   className="h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
                 <div className="hidden sm:block w-px h-8 sm:h-12 md:h-16 bg-slate-300 shrink-0"></div>
                 <img
-                  src="/ehrdc-logo.png"
+                  src="/ehrdc-logo.svg"
                   alt="EHRDC Logo"
-                  className="hidden sm:block h-10 sm:h-14 md:h-20 w-auto shrink-0 object-contain"
+                  className="hidden sm:block h-8 sm:h-11 md:h-16 w-auto shrink-0 object-contain"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-foreground">{t('platform_title', PLATFORM_NAME_EN)}</h1>
+                  <h1 dir="ltr" className="text-xl font-bold text-foreground">{t('platform_title', PLATFORM_NAME_EN)}</h1>
                   <p className="text-sm text-muted-foreground">{t('platform_subtitle', 'UAE Nationals Career Development')}</p>
                 </Link>
               </div>

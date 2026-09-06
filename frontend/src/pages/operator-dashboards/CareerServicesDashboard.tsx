@@ -743,7 +743,7 @@ const LOCATION_OPTIONS = [
                 size="sm"
                 variant="ghost"
                 onClick={() => setView('candidates')}
-                className={`rounded-lg px-4 ${view === 'candidates' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`rounded-lg px-4 ${view === 'candidates' ? 'bg-[#006E6F] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 {t('Candidates', 'المرشحون')}
               </Button>
@@ -751,7 +751,7 @@ const LOCATION_OPTIONS = [
                 size="sm"
                 variant="ghost"
                 onClick={() => setView('analytics')}
-                className={`rounded-lg px-4 ${view === 'analytics' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`rounded-lg px-4 ${view === 'analytics' ? 'bg-[#006E6F] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <BarChart3 className="h-4 w-4 me-1.5" />
                 {t('Analytics', 'التحليلات')}
@@ -760,7 +760,7 @@ const LOCATION_OPTIONS = [
                 size="sm"
                 variant="ghost"
                 onClick={() => setView('messages')}
-                className={`rounded-lg px-4 ${view === 'messages' ? 'bg-[#006E6D] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`rounded-lg px-4 ${view === 'messages' ? 'bg-[#006E6F] text-white hover:bg-[#005A59] hover:text-white' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 {t('Messages', 'الرسائل')}
               </Button>
@@ -775,7 +775,7 @@ const LOCATION_OPTIONS = [
                 <div className="flex items-center gap-2">
                   <Button onClick={() => { fetchCandidates(); fetchLastImport(); }} variant="outline"
                           className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6D]' : 'text-slate-500'}`} />
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-[#006E6F]' : 'text-slate-500'}`} />
                     {t('Refresh list', 'تحديث القائمة')}
                   </Button>
                   {/* Exports exactly what the current filters show — it reuses the
@@ -783,7 +783,7 @@ const LOCATION_OPTIONS = [
                   <Button onClick={exportCsv} disabled={exporting} variant="outline"
                           className="gap-2 bg-white shadow-sm hover:bg-slate-50 border-slate-200 rounded-xl transition-all">
                     {exporting
-                      ? <RefreshCw className="h-4 w-4 animate-spin text-[#006E6D]" />
+                      ? <RefreshCw className="h-4 w-4 animate-spin text-[#006E6F]" />
                       : <Download className="h-4 w-4 text-slate-500" />}
                     {t('Export CSV', 'تصدير CSV')}
                   </Button>
@@ -808,7 +808,7 @@ const LOCATION_OPTIONS = [
         {view === 'analytics' && (
           statsLoading ? (
             <div className="flex flex-col justify-center items-center py-24 bg-white rounded-2xl shadow-sm">
-              <Loader2 className="h-10 w-10 animate-spin text-[#006E6D] mb-4" />
+              <Loader2 className="h-10 w-10 animate-spin text-[#006E6F] mb-4" />
               <p className="text-slate-500 font-medium">{t('Loading analytics...', 'جاري تحميل التحليلات...')}</p>
             </div>
           ) : !stats ? (
@@ -843,7 +843,7 @@ const LOCATION_OPTIONS = [
                     onClick={() => { setStatsScope(opt.id); fetchStats(opt.id); }}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                       statsScope === opt.id
-                        ? 'bg-white text-[#006E6D] shadow-sm'
+                        ? 'bg-white text-[#006E6F] shadow-sm'
                         : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
@@ -1104,7 +1104,7 @@ const LOCATION_OPTIONS = [
                 <Search className={`absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400`} />
                 <Input 
                   placeholder={t('Search by name, EID or phone...', 'ابحث بالاسم أو الهوية أو رقم الهاتف...')}
-                  className={`ps-10 ${isRTL ? 'pe-3' : ''} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6D]`}
+                  className={`ps-10 ${isRTL ? 'pe-3' : ''} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6F]`}
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 />
@@ -1364,7 +1364,7 @@ const LOCATION_OPTIONS = [
               )}
             {loading ? (
               <div className="flex flex-col justify-center items-center py-20 bg-white">
-                <Loader2 className="h-10 w-10 animate-spin text-[#006E6D] mb-4" />
+                <Loader2 className="h-10 w-10 animate-spin text-[#006E6F] mb-4" />
                 <p className="text-slate-500 font-medium">{t('Loading candidates...', 'جاري تحميل المرشحين...')}</p>
               </div>
             ) : filteredCandidates.length === 0 ? (
@@ -1447,7 +1447,7 @@ const LOCATION_OPTIONS = [
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             {candidate.assignedToName !== 'Unassigned' && (
-                              <div className="w-6 h-6 rounded-full bg-[#006E6D] text-white flex items-center justify-center text-[10px] font-bold">
+                              <div className="w-6 h-6 rounded-full bg-[#006E6F] text-white flex items-center justify-center text-[10px] font-bold">
                                 {getInitials(candidate.assignedToName)}
                               </div>
                             )}
@@ -1475,7 +1475,7 @@ const LOCATION_OPTIONS = [
                                   <a href={digits ? `tel:+${intl}` : undefined}
                                      title={digits ? t('Call', 'اتصال') : t('No phone number on record', 'لا يوجد رقم هاتف')}
                                      aria-label={t('Call', 'اتصال')}
-                                     className={`p-1.5 rounded-md ${digits ? 'text-[#006E6D] hover:bg-[#F0F7F7]' : 'text-slate-300 pointer-events-none'}`}>
+                                     className={`p-1.5 rounded-md ${digits ? 'text-[#006E6F] hover:bg-[#F0F7F7]' : 'text-slate-300 pointer-events-none'}`}>
                                     <Phone className="h-4 w-4" />
                                   </a>
                                   <a href={digits ? `https://wa.me/${intl}` : undefined}
@@ -1527,14 +1527,14 @@ const LOCATION_OPTIONS = [
                               size="sm"
                               variant="ghost"
                               onClick={() => navigate(`/candidate-profile/${candidate.id}`)}
-                              className="text-slate-600 hover:text-[#006E6D] hover:bg-[#F0F7F7] rounded-lg"
+                              className="text-slate-600 hover:text-[#006E6F] hover:bg-[#F0F7F7] rounded-lg"
                             >
                               {t('View full profile', 'عرض الملف الكامل')}
                             </Button>
                             <Button 
                               size="sm" 
                               onClick={() => handleEditClick(candidate)} 
-                              className="bg-white text-[#006E6D] border border-[#006E6D]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg transition-opacity"
+                              className="bg-white text-[#006E6F] border border-[#006E6F]/20 hover:bg-[#F0F7F7] shadow-sm rounded-lg transition-opacity"
                             >
                               {t('Edit Details', 'تعديل التفاصيل')}
                             </Button>
@@ -1577,7 +1577,7 @@ const LOCATION_OPTIONS = [
                           variant={currentPage === pageNum ? "default" : "ghost"}
                           size="sm"
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`h-8 w-8 rounded-lg ${currentPage === pageNum ? 'bg-[#006E6D] hover:bg-[#005A59] text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                          className={`h-8 w-8 rounded-lg ${currentPage === pageNum ? 'bg-[#006E6F] hover:bg-[#005A59] text-white' : 'text-slate-600 hover:bg-slate-200'}`}
                         >
                           {pageNum}
                         </Button>
@@ -2257,7 +2257,7 @@ const LOCATION_OPTIONS = [
                       value={editForm.remarks}
                       onChange={(e) => setEditForm({...editForm, remarks: e.target.value})}
                       placeholder="Add detailed notes about the counseling session..."
-                      className="min-h-[120px] bg-slate-50 border-slate-200 rounded-xl resize-none focus-visible:ring-[#006E6D]"
+                      className="min-h-[120px] bg-slate-50 border-slate-200 rounded-xl resize-none focus-visible:ring-[#006E6F]"
                     />
                   </div>
                 </div>
@@ -2277,7 +2277,7 @@ const LOCATION_OPTIONS = [
               <Button 
                 onClick={handleSave} 
                 disabled={isSaving}
-                className="w-full sm:w-1/2 rounded-xl bg-[#006E6D] hover:bg-[#005A59] text-white shadow-md h-11"
+                className="w-full sm:w-1/2 rounded-xl bg-[#006E6F] hover:bg-[#005A59] text-white shadow-md h-11"
               >
                 {isSaving ? <Loader2 className="h-5 w-5 me-2 animate-spin" /> : <Save className="h-5 w-5 me-2" />}
                 {t('Save Changes', 'حفظ التغييرات')}

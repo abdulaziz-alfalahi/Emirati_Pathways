@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 import ComingSoon from './ComingSoon';
 
 // Setup basic Feature Flag Context
@@ -29,7 +29,7 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const fetchFlags = async () => {
     try {
       const timestamp = new Date().getTime();
-      const response = await axios.get(`/api/feature-flags?t=${timestamp}`);
+      const response = await restClient.get(`/api/feature-flags?t=${timestamp}`);
       if (response.data.success) {
         const flagsMap: Record<string, boolean> = {};
         response.data.data.forEach((flag: FeatureFlag) => {

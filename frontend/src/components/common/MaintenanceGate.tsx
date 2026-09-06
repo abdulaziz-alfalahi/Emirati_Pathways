@@ -57,14 +57,14 @@ const MaintenanceGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div style={{
       minHeight: '100vh', background: 'linear-gradient(180deg,#f8fafc 0%,#eef6f6 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      fontFamily: "'Readex Pro',system-ui,sans-serif",
+      fontFamily: "'DIN Next LT Arabic','Readex Pro',system-ui,sans-serif",
     }}>
       <main style={{
         maxWidth: 640, width: '100%', background: '#fff', border: '1px solid #e2e8f0',
         borderRadius: 16, padding: '48px 40px', textAlign: 'center',
         boxShadow: '0 10px 30px rgba(15,23,42,.06)',
       }}>
-        <img src="/ehrdc-logo.png" alt="EHRDC" style={{ height: 64, marginBottom: 28 }}
+        <img src="/ehrdc-logo.svg" alt="EHRDC" style={{ height: 64, marginBottom: 28 }}
              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0f766e', marginBottom: 12 }}>
           We&rsquo;re upgrading the platform
