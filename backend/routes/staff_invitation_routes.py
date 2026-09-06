@@ -11,10 +11,12 @@ from flask_jwt_extended import get_jwt_identity
 try:
     from backend.auth.access_control import require_roles, ADMIN_ROLES
     from backend.staff_invitation_system import StaffInvitationSystem, ALLOWED_STAFF_ROLES
+    from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
     from backend.notification_helper import create_notification
 except ImportError:  # pragma: no cover — the app runs under both roots
     from auth.access_control import require_roles, ADMIN_ROLES
     from staff_invitation_system import StaffInvitationSystem, ALLOWED_STAFF_ROLES
+    from utils.user_id import strip_eid_hyphens, is_valid_eid
     from notification_helper import create_notification
 
 logger = logging.getLogger(__name__)
@@ -53,9 +55,18 @@ def create_invitation():
         return jsonify({'success': False, 'message': 'Full name is required'}), 400
     if not role:
         return jsonify({'success': False, 'message': 'Role is required'}), 400
+    # The Emirates ID is what authorises a specific person (migration 109): the
+    # callback refuses the grant if UAE Pass asserts a different one. Optional
+    # for a national who already has an account; required in practice for a
+    # non-national, who cannot sign in at all without an invitation that names them.
+    emirates_id = strip_eid_hyphens((data.get('emirates_id') or '').strip()) or None
+    if emirates_id and not is_valid_eid(emirates_id):
+        return jsonify({'success': False,
+                        'message': 'Emirates ID must be 15 digits starting with 784'}), 400
     try:
         inv = _system.create_invitation(
             full_name=full_name,
+            emirates_id=emirates_id,
             email=(data.get('email') or '').strip() or None,
             phone=(data.get('phone') or '').strip() or None,
             intended_role=role,

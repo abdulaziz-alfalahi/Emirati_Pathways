@@ -106,8 +106,25 @@ const JoinTeamPage: React.FC = () => {
                 </button>
               </>
             ) : (
-              <button style={btn} disabled={state === 'joining'} onClick={joinWithUaePass}>
-                {state === 'joining' ? 'Redirecting…' : 'Continue with UAE Pass'}
+              // The official UAE PASS button, identical to /auth — the custom teal
+              // "Continue with UAE Pass" was rejected in UAT (fb_1788426347_8eadbb46).
+              <button
+                type="button"
+                id="uaepass-login-btn"
+                style={{ ...btn, background: 'transparent', padding: 0, display: 'flex', justifyContent: 'center' }}
+                disabled={state === 'joining'}
+                onClick={joinWithUaePass}
+                aria-label="Sign in with UAE PASS"
+              >
+                {state === 'joining' ? (
+                  <span style={{ height: 50, width: 264, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                 background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, color: '#6b7280', fontWeight: 500 }}>
+                    Redirecting to UAE PASS…
+                  </span>
+                ) : (
+                  <img src="/uae-pass-en.svg" alt="Sign in with UAE PASS"
+                       style={{ height: 50, width: 264, objectFit: 'contain', borderRadius: 12 }} />
+                )}
               </button>
             )}
           </>

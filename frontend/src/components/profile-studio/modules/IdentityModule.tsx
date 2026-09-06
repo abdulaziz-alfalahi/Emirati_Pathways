@@ -10,6 +10,54 @@ import { UnifiedProfileHeader } from '../UnifiedProfileHeader';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { useTranslation } from 'react-i18next';
 import AiAssistPanel from '@/components/ai/AiAssistPanel';
+import { restClient } from '@/utils/api';
+
+/** Identity attributes fetched from UAE Pass, shown read-only (assessment item 4). */
+const UaePassIdentityCard = ({ t, isRTL }: { t: (en: string, ar: string) => string; isRTL: boolean }) => {
+    const [identity, setIdentity] = useState<{ name: string; eid: string; nationality: string; dob: string; gender: string } | null>(null);
+    useEffect(() => {
+        let authUser: any = {};
+        try { authUser = JSON.parse(localStorage.getItem('user') || '{}'); } catch { /* no session cache */ }
+        restClient.get('/api/auth/profile').then(({ data }) => {
+            const d = data?.data ?? data ?? {};
+            const pi = d.personal_info ?? d;
+            const name = [pi.first_name, pi.last_name].filter(Boolean).join(' ') || authUser.full_name || d.full_name || '';
+            const rawEid = String(authUser.id || d.id || '');
+            // Show the shape, not the number: 784-XXXX-XXXXXXX-X keeps the ID off the screen.
+            const eid = /^784\d{12}$/.test(rawEid) ? `${rawEid.slice(0, 3)}-${rawEid.slice(3, 7)}-XXXXXX${rawEid.slice(13, 14)}-${rawEid.slice(14)}` : rawEid;
+            setIdentity({ name, eid, nationality: pi.nationality || authUser.nationality || '', dob: pi.date_of_birth || '', gender: pi.gender || '' });
+        }).catch(() => setIdentity({ name: authUser.full_name || '', eid: String(authUser.id || ''), nationality: authUser.nationality || '', dob: '', gender: '' }));
+    }, []);
+    const rows: Array<[string, string]> = [
+        [t('Full name', 'الاسم الكامل'), identity?.name || '—'],
+        [t('Emirates ID', 'رقم الهوية الإماراتية'), identity?.eid || '—'],
+        [t('Nationality', 'الجنسية'), identity?.nationality || '—'],
+        ...(identity?.dob ? [[t('Date of birth', 'تاريخ الميلاد'), identity.dob] as [string, string]] : []),
+        ...(identity?.gender ? [[t('Gender', 'الجنس'), identity.gender] as [string, string]] : []),
+    ];
+    return (
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-6 mb-6" dir={isRTL ? 'rtl' : 'ltr'} data-testid="uaepass-identity">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-foreground">{t('Identity', 'الهوية')}</h3>
+                <span className="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full flex items-center gap-1">
+                    <Check size={12} /> {t('Verified by UAE Pass', 'موثّق عبر الهوية الرقمية')}
+                </span>
+            </div>
+            <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {rows.map(([label, value]) => (
+                    <div key={label}>
+                        <dt className="text-xs text-muted-foreground mb-1">{label}</dt>
+                        <dd className="text-sm font-medium text-foreground bg-muted/60 border border-border rounded-lg px-3 py-2 select-text" aria-readonly="true">{value}</dd>
+                    </div>
+                ))}
+            </dl>
+            <p className="text-xs text-muted-foreground mt-3">
+                {t('These details come from your UAE Pass account and cannot be changed here. To update them, update your UAE Pass profile.',
+                   'هذه البيانات مأخوذة من حسابك في الهوية الرقمية ولا يمكن تعديلها هنا. لتحديثها، حدّث بياناتك في الهوية الرقمية.')}
+            </p>
+        </div>
+    );
+};
 
 export const IdentityModule = () => {
     const [profile, setProfile] = useState<CandidateProfile | null>(null);
@@ -250,6 +298,11 @@ export const IdentityModule = () => {
                     />
                 </div>
             )}
+
+            {/* UAE Pass identity — display only. Name, Emirates ID and nationality
+                come from UAE Pass and are never editable on the platform; the
+                profile API drops them for verified accounts too. */}
+            <UaePassIdentityCard t={t} isRTL={isRTL} />
 
             {/* Commute Intelligence / Location Map */}
             <div className="bg-card rounded-2xl shadow-sm border border-border p-8">

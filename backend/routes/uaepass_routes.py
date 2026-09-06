@@ -233,6 +233,100 @@ def uaepass_login():
         }), 500
 
 
+# ---------------------------------------------------------------------------
+# Access gates — UAE Pass assessment, 2026-09-04
+#
+# Two rules the callback enforces BEFORE any account is found or created:
+#   1. Assurance level. SOP1 is an unverified visitor account with no Emirates
+#      ID; UAE Pass requires service providers to refuse it. The frontend
+#      already carried the standard wording for ?error=SOP1 — nothing sent it.
+#   2. Nationality. The platform serves UAE nationals; a non-national gets in
+#      only by an administrator's decision. Before this gate nothing checked
+#      nationality at all (is_uae_national is written by no code path), and
+#      the live DB held a non-national candidate account with no invitation.
+# ---------------------------------------------------------------------------
+
+UAE_NATIONALITY_CODES = frozenset({'ARE', 'UAE', 'AE', 'UNITED ARAB EMIRATES'})
+
+
+def _min_sop() -> int:
+    """Lowest UAE Pass assurance level allowed to sign in. Default 2.
+
+    Staging E2E personas are SOP1: set UAEPASS_MIN_SOP=1 on APPQA while they
+    are needed, and back to 2 for any recording or for production.
+    """
+    try:
+        return int(os.getenv('UAEPASS_MIN_SOP', '2'))
+    except ValueError:
+        return 2
+
+
+def _sop_level(profile: dict) -> Optional[int]:
+    """'SOP2' -> 2. Absent or unrecognised -> None, which fails the gate: an
+    identity provider that did not say how sure it is has said SOP1."""
+    ut = str(profile.get('uaepass_usertype') or '').strip().upper()
+    if ut.startswith('SOP') and ut[3:].isdigit():
+        return int(ut[3:])
+    return None
+
+
+def _is_uae_national(profile: dict) -> bool:
+    # normalize_profile defaults a missing nationalityEN to 'UAE'. Every SOP2+
+    # profile carries nationalityEN, and SOP1 is refused before this runs, so
+    # the default is never what decides here.
+    return str(profile.get('nationality') or '').strip().upper() in UAE_NATIONALITY_CODES
+
+
+def _existing_account(profile: dict) -> Optional[dict]:
+    """Read-only lookup by the government-verified keys only (uuid, then EID).
+    Email/phone are deliberately not consulted: they are claims, not proof."""
+    conn = _get_db()
+    try:
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        uuid = profile.get('uaepass_uuid')
+        if uuid:
+            cursor.execute("SELECT id, role, secondary_roles FROM users WHERE uaepass_uuid = %s", (uuid,))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+        eid = profile.get('emirates_id') or ''
+        if eid and is_valid_eid(eid):
+            cursor.execute("SELECT id, role, secondary_roles FROM users WHERE id = %s",
+                           (strip_eid_hyphens(eid),))
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+        return None
+    finally:
+        conn.close()
+
+
+def _holds_granted_role(account: Optional[dict]) -> bool:
+    """A role an operator granted — anything beyond the default candidate role,
+    as primary or secondary. A bare candidate account is what a national gets
+    by signing in; for a non-national it is not authorisation."""
+    if not account:
+        return False
+    if (account.get('role') or 'candidate') != 'candidate':
+        return True
+    secondary = account.get('secondary_roles') or []
+    if isinstance(secondary, str):
+        try:
+            secondary = json.loads(secondary)
+        except ValueError:
+            secondary = []
+    return bool(secondary)
+
+
+def _non_national_authorised(profile: dict, state_data: dict, account: Optional[dict] = None) -> bool:
+    """Authorised means an administrator decided: an invitation link carried
+    into this very sign-in, or an account that already holds a granted role
+    from an earlier one. The invitation's own EID check happens at redemption."""
+    if (state_data or {}).get('invitation_token'):
+        return True
+    return _holds_granted_role(account if account is not None else _existing_account(profile))
+
+
 @uaepass_bp.route('/callback', methods=['GET'])
 def uaepass_callback():
     """
@@ -303,6 +397,20 @@ def uaepass_callback():
         if not profile.get('uaepass_uuid'):
             raise UAEPassError("No UUID in user profile — cannot identify user")
 
+        # Step 3b: Access gates (assessment items 1 and 5). Refused sign-ins
+        # never reach the database: no account is created or touched.
+        sop = _sop_level(profile)
+        if sop is None or sop < _min_sop():
+            logger.warning(
+                f"UAE Pass sign-in refused: userType={profile.get('uaepass_usertype')!r} "
+                f"is below SOP{_min_sop()}")
+            return redirect(f"{frontend_url}/auth?error=SOP1")
+        if not _is_uae_national(profile) and not _non_national_authorised(profile, state_data):
+            logger.warning(
+                f"UAE Pass sign-in refused: non-national ({profile.get('nationality')!r}) "
+                f"without administrator authorisation")
+            return redirect(f"{frontend_url}/auth?error=not_authorised")
+
         # Step 4: Find or create user
         user_data, is_new_user = _find_or_create_user(profile)
 
@@ -350,7 +458,8 @@ def uaepass_callback():
                     except ImportError:
                         from staff_invitation_system import StaffInvitationSystem
                     invitation_result = StaffInvitationSystem().redeem_staff_invitation_for_user(
-                        invitation_token, user_id, is_new_user=is_new_user
+                        invitation_token, user_id, is_new_user=is_new_user,
+                        proven_eid=profile.get('emirates_id'),
                     )
                 elif invitation_type == 'team':
                     # HR-manager team invite — join the platform + the workspace
@@ -372,6 +481,11 @@ def uaepass_callback():
                 if invitation_result.get('primary_role'):
                     user_data['role'] = invitation_result['primary_role']
             except ValueError as e:
+                # A deliberate refusal (expired, used, wrong Emirates ID). It
+                # was silent until 2026-09-04: the one line an assessor wants.
+                logger.warning(
+                    f"Invitation refused for {mask_eid(user_id)} "
+                    f"(type={invitation_type}): {e}")
                 invitation_error = str(e)
             except Exception as e:
                 logger.error(f"Invitation redemption failed for {mask_eid(user_id)}: {e}")

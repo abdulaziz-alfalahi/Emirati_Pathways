@@ -169,18 +169,15 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       }
 
       // Structure data for API
+      // Name, nationality and Emirates ID are UAE Pass attributes: not sent.
       const apiPayload = {
         personal_info: {
-          first_name: profileData.name.split(' ')[0],
-          last_name: profileData.name.split(' ').slice(1).join(' '),
           email: profileData.email,
           phone: profileData.phone,
           location: profileData.location,
           latitude: profileData.latitude,
           longitude: profileData.longitude,
-          nationality: profileData.nationality,
           visa_status: profileData.visa_status,
-          emirates_id: profileData.emirates_id,
           linkedin: profileData.linkedin_url,
           portfolio: profileData.portfolio_url
         },
@@ -325,14 +322,18 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="name">Full Name</Label>
+              {/* Name, nationality and Emirates ID come from UAE Pass and are
+                  never editable here; the API drops them for verified accounts
+                  too (auth_manager_fixed.update_user_profile). */}
               <Input
                 id="name"
                 value={profileData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Enter your full name"
+                readOnly
+                disabled
+                aria-readonly="true"
               />
+              <p className="text-xs text-muted-foreground">Verified by UAE Pass · موثّق عبر الهوية الرقمية</p>
             </div>
 
             <div className="space-y-2">
@@ -378,10 +379,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               <Input
                 id="nationality"
                 value={profileData.nationality}
-                onChange={(e) => handleInputChange('nationality', e.target.value)}
-                disabled={!isEditing}
-                placeholder="e.g. Emirati"
+                readOnly
+                disabled
+                aria-readonly="true"
               />
+              <p className="text-xs text-muted-foreground">Verified by UAE Pass · موثّق عبر الهوية الرقمية</p>
             </div>
 
             <div className="space-y-2">
@@ -389,10 +391,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               <Input
                 id="emirates_id"
                 value={profileData.emirates_id}
-                onChange={(e) => handleInputChange('emirates_id', e.target.value)}
-                disabled={!isEditing}
-                placeholder="784-XXXX-XXXXXXX-X"
+                readOnly
+                disabled
+                aria-readonly="true"
               />
+              <p className="text-xs text-muted-foreground">Verified by UAE Pass · موثّق عبر الهوية الرقمية</p>
             </div>
           </div>
         </CardContent>

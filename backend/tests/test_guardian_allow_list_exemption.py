@@ -45,15 +45,24 @@ def sending_on(monkeypatch):
 
 # ── The exemption is exactly one kind wide ──────────────────────────────────
 
-def test_the_exemption_is_exactly_the_two_intended_kinds():
+def test_the_exemption_is_exactly_the_three_intended_kinds():
     """Written as an equality on purpose: a kind added to the set later shows up
-    here as a failing test rather than as silently widened reach."""
+    here as a failing test rather than as silently widened reach.
+    staff_invitation joined 2026-09-04: it is how an authorised non-national
+    is told they may sign in, and their address is never on a government
+    allow-list."""
     assert outbound_mail.KINDS_EXEMPT_FROM_ALLOW_LIST == {
-        'guardian_consent', 'company_invitation'}
+        'guardian_consent', 'company_invitation', 'staff_invitation'}
+
+
+def test_staff_invitation_reaches_a_non_national_off_the_list(sending_on):
+    ok, why = outbound_mail.decide('invitee@outlook.com', approved=True,
+                                   allow_list=['@ehrdc.gov.ae'], kind='staff_invitation')
+    assert ok, why
 
 
 @pytest.mark.parametrize('kind', [
-    'vacancy_verification', 'staff_invitation', 'seeker_invitation',
+    'vacancy_verification', 'seeker_invitation',
     'team_invitation', 'board_office_notice', None,
 ])
 def test_every_other_kind_still_obeys_the_allow_list(kind, sending_on):

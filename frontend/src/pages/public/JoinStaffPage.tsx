@@ -96,8 +96,26 @@ const JoinStaffPage: React.FC = () => {
               from the identity UAE Pass verifies — nothing else is required.
             </p>
             {error && <p style={{ color: '#b91c1c', fontSize: 13, marginBottom: 10 }}>{error}</p>}
-            <button style={btn} disabled={state === 'joining'} onClick={continueWithUaePass}>
-              {state === 'joining' ? 'Redirecting…' : 'Continue with UAE Pass'}
+            {/* The official UAE PASS button, identical to the /auth page — a
+                custom teal "Continue with UAE Pass" is not an accepted sign-in
+                control (feedback fb_1788426347_8eadbb46, UAE Pass assessment). */}
+            <button
+              type="button"
+              id="uaepass-login-btn"
+              style={{ ...btn, background: 'transparent', padding: 0, display: 'flex', justifyContent: 'center' }}
+              disabled={state === 'joining'}
+              onClick={continueWithUaePass}
+              aria-label="Sign in with UAE PASS"
+            >
+              {state === 'joining' ? (
+                <span style={{ height: 50, width: 264, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                               background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, color: '#6b7280', fontWeight: 500 }}>
+                  Redirecting to UAE PASS…
+                </span>
+              ) : (
+                <img src="/uae-pass-en.svg" alt="Sign in with UAE PASS"
+                     style={{ height: 50, width: 264, objectFit: 'contain', borderRadius: 12 }} />
+              )}
             </button>
             <p style={{ color: '#9ca3af', fontSize: 12, marginTop: 14 }}>
               This link is personal to you and expires — do not forward it.

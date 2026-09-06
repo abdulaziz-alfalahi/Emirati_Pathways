@@ -17,7 +17,7 @@ import axios from 'axios';
 import { restClient } from '@/utils/api';
 import {
     User, Mail, Briefcase, GraduationCap, CheckCircle,
-    Loader2, AlertTriangle, MapPin, BookOpen, ShieldCheck, ArrowRight
+    Loader2, AlertTriangle, MapPin, BookOpen, ShieldCheck
 } from 'lucide-react';
 
 const API = ''; // same-origin proxy
@@ -245,8 +245,18 @@ const SeekerOnboardingWizard: React.FC = () => {
                     </p>
                 </div>
 
-                <button onClick={handleUaePassHandoff} style={primaryBtn}>
-                    Continue with UAE PASS <ArrowRight size={16} />
+                {/* The official UAE PASS button, identical to /auth — custom
+                    "Continue with UAE PASS" controls were rejected in UAT
+                    (fb_1788426347_8eadbb46, UAE Pass assessment). */}
+                <button
+                    type="button"
+                    id="uaepass-login-btn"
+                    onClick={handleUaePassHandoff}
+                    aria-label="Sign in with UAE PASS"
+                    style={{ ...primaryBtn, background: 'transparent', padding: 0 }}
+                >
+                    <img src="/uae-pass-en.svg" alt="Sign in with UAE PASS"
+                         style={{ height: 50, width: 264, objectFit: 'contain', borderRadius: 12 }} />
                 </button>
                 <p style={{ textAlign: 'center', fontSize: 12, color: colors.textSec, marginTop: 12 }}>
                     By continuing, you agree to the platform's Terms of Service and Privacy Policy.

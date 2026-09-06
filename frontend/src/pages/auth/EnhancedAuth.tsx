@@ -94,6 +94,10 @@ const EnhancedAuthPage: React.FC = () => {
         setError(`Requestee is not eligible to use this service. Requestee's account is either not upgraded or have a visitor account. Please contact the ${PLATFORM_NAME_EN} to use the services.`);
       } else if (uaePassError === 'access_denied' || uaePassError === 'user_cancelled' || uaePassError === 'uaepass_denied') {
         setError("User cancelled the login");
+      } else if (uaePassError === 'not_authorised') {
+        // A non-UAE national reached UAE Pass without an administrator's
+        // authorisation (invitation). Nationals never see this.
+        setError(`Access to ${PLATFORM_NAME_EN} is for UAE Nationals. Non-nationals are granted access by the platform administrator; if you have been invited, open the link in your invitation email and sign in from there. — الوصول إلى المنصة مخصص لمواطني الدولة. يُمنح غير المواطنين حق الوصول عبر مسؤول المنصة؛ إذا كانت لديك دعوة، فافتح الرابط الوارد في بريد الدعوة وسجّل الدخول من خلاله.`);
       } else {
         setError(uaePassMessage || 'UAE Pass authentication failed. Please try again.');
       }
