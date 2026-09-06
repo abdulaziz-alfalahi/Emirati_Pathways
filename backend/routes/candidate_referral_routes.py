@@ -30,6 +30,18 @@ referrals_bp = Blueprint('candidate_referrals', __name__, url_prefix='/api/refer
 _system = CandidateReferralSystem()
 
 
+def invitation_record_for(ref):
+    """The company-invitation record for a referral. `create_company_invitations`
+    reads the role from the key `role` (the operator's choice) — an unknown
+    key silently degrades to the first-contact role, which is how the first
+    E2E run issued an employer_admin invitation instead of a recruiter one."""
+    return {
+        'name': ref.get('company_display_name') or ref.get('company_name') or '',
+        'code': '', 'email': ref['recruiter_email'], 'phone': '', 'sector': '',
+        'tradeLicense': '', 'role': 'recruiter',
+    }
+
+
 def _me():
     return str(get_jwt_identity() or '').strip()
 
@@ -121,11 +133,7 @@ def operator_invite(referral_id):
         return jsonify({'success': False, 'message': 'Referral not pending'}), 404
     ref = pending[0]
     try:
-        results = GrowthSystem().create_company_invitations([{
-            'name': ref.get('company_display_name') or ref.get('company_name') or '',
-            'code': '', 'email': ref['recruiter_email'], 'phone': '', 'sector': '',
-            'tradeLicense': '', 'intended_role': 'recruiter',
-        }], invited_by=_me())
+        results = GrowthSystem().create_company_invitations([invitation_record_for(ref)], invited_by=_me())
         inv = (results or [{}])[0]
         if not inv.get('id'):
             return jsonify({'success': False, 'message': inv.get('error') or 'Invitation not created'}), 500
